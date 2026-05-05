@@ -3051,3 +3051,86 @@ textarea {
   font-weight: 400;
 }
 
+
+/* =========================
+   INPUTS
+========================= */
+.form-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--sibs-tertiary-8);
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--sibs-primary-1);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--sibs-primary-1);
+}
+
+.search-input {
+  width: 100%;
+  border-radius: 50rem;
+  border: 1px solid var(--sibs-tertiary-8);
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  padding-left: 2.5rem;
+  font-size: 0.875rem;
+  color: var(--sibs-primary-1);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--sibs-primary-1);
+}
+
+/* =========================
+   STATUS BADGES
+========================= */
+.status-present {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.status-absence {
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.status-late {
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* =========================
+   OPTIONAL CARD HELPERS
+========================= */
+.sibs-card {
+  background: var(--bg);
+  border-radius: 1rem;
+  border: 1px solid rgba(190, 203, 218, 0.55);
+  box-shadow: 0 8px 22px rgba(4, 44, 81, 0.04);
+}
+
+.sibs-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: var(--sibs-primary-1);
+  color: white;
+}

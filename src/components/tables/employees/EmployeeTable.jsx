@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import {
   Mail,
   Phone,
@@ -16,7 +16,7 @@ import TableFooter from "../footer/TableFooter";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
-function MobileInfoItem({ icon: Icon, label, value }) {
+function MobileInfoItem({ icon: label, value }) {
   return (
     <div className="employee-mobile-info-item">
       <div className="employee-mobile-info-row">
@@ -93,7 +93,7 @@ export default function EmployeeTable() {
   const { page, search, loading, setLoading, setPagination } =
     usePagination("employees");
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
 
   const routerRef = useRef(router);
@@ -128,7 +128,7 @@ export default function EmployeeTable() {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            routerRef.current.push("/login");
+            navigate("/login");
             return;
           }
 
@@ -149,7 +149,7 @@ export default function EmployeeTable() {
             totalPages: 1,
             currentPage: 1,
             total: 0,
-          }
+          },
         );
       } catch (err) {
         if (cancelled) return;
@@ -174,13 +174,12 @@ export default function EmployeeTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search]);
+  }, [page, search, navigate, setLoading, setPagination]);
 
   const handleOpenEmployee = (emp) => {
     sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
-    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page }));
-
-    router.push("/employee/employee-data");
+    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page: 1 }));
+    navigate("/employee/employee-data");
   };
 
   return (

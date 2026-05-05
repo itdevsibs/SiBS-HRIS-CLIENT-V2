@@ -1,5 +1,4 @@
-import { Link } from "react-router-dom";
-import { usePathname, useRouter } from "@/lib/router";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -29,8 +28,11 @@ import { useUser } from "../../services/context/UserContext";
 
 export default function Sidebar() {
   const { user, loading } = useUser();
-  const pathname = usePathname();
-  const router = useRouter();
+
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const navigate = useNavigate();
 
   const ADMIN_ROLES = useMemo(
     () => [
@@ -42,7 +44,7 @@ export default function Sidebar() {
       "executive",
       "super_admin",
     ],
-    []
+    [],
   );
 
   const [mounted, setMounted] = useState(false);
@@ -67,9 +69,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (mounted && !loading && !user) {
-      router.replace("/login");
+      navigate("/login", { replace: true });
     }
-  }, [mounted, user, loading, router]);
+  }, [mounted, user, loading, navigate]);
 
   useEffect(() => {
     if (!mounted || loading || !user) return;
@@ -86,11 +88,11 @@ export default function Sidebar() {
       ];
 
       const ok = allowed.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`)
+        (path) => pathname === path || pathname.startsWith(`${path}/`),
       );
 
       if (!ok) {
-        router.replace("/dashboard/employee");
+        navigate("/dashboard/employee", { replace: true });
       }
 
       return;
@@ -100,9 +102,9 @@ export default function Sidebar() {
       ADMIN_ROLES.includes(user.role) &&
       pathname.startsWith("/dashboard/employee")
     ) {
-      router.replace("/dashboard/admin");
+      navigate("/dashboard/admin", { replace: true });
     }
-  }, [mounted, user, loading, pathname, router, ADMIN_ROLES]);
+  }, [mounted, user, loading, pathname, navigate, ADMIN_ROLES]);
 
   useEffect(() => {
     if (isMobile) {
@@ -320,7 +322,7 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true
+      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true,
     );
 
   const handleLinkClick = () => {

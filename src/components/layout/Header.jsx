@@ -1,13 +1,15 @@
 import { Bell } from "lucide-react";
-import { useRouter, usePathname } from "@/lib/router";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useUser } from "../../services/context/UserContext";
 import UserDropdown from "./UserDropdown";
 
 export default function Header() {
   const { user, loading } = useUser();
-  const router = useRouter();
-  const pathname = usePathname();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const [mounted, setMounted] = useState(false);
 
@@ -17,9 +19,9 @@ export default function Header() {
 
   useEffect(() => {
     if (mounted && !loading && !user && pathname !== "/login") {
-      router.replace("/login");
+      navigate("/login", { replace: true });
     }
-  }, [mounted, loading, user, pathname, router]);
+  }, [mounted, loading, user, pathname, navigate]);
 
   const avatar =
     user?.firstName

@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import { CircleCheckBig, CircleX } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
+import socket from "@/lib/axios/socket";
 import socket from "@/lib/axios/socket";
 import TableFooter from "./footer/TableFooter";
 import { formatDate } from "@/components/layout/FormatDateTime";
@@ -14,19 +15,19 @@ const AttendanceTable = () => {
   const { page, search, loading, setLoading, setPagination } =
     usePagination("attendance");
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
   const { user } = useUser();
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
-  const routerRef = useRef(router);
+  const navigateRef = useRef(navigate);
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-    routerRef.current = router;
-  }, [setLoading, setPagination, router]);
+    navigateRef.current = navigate;
+  }, [setLoading, setPagination, navigate]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -50,7 +51,7 @@ const AttendanceTable = () => {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            routerRef.current.push("/login");
+            navigateRef.current("/login");
             return;
           }
 
@@ -67,6 +68,7 @@ const AttendanceTable = () => {
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
+          }
           }
         );
       } catch (err) {
@@ -236,6 +238,7 @@ const AttendanceTable = () => {
                         className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_login),
                           item.login_status
+                          item.login_status
                         )}`}
                       >
                         {formatTime(item.gy_tracker_login)}
@@ -259,6 +262,7 @@ const AttendanceTable = () => {
                         className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_breakin),
                           item.breakin_status
+                          item.breakin_status
                         )}`}
                       >
                         {formatTime(item.gy_tracker_breakin)}
@@ -269,6 +273,7 @@ const AttendanceTable = () => {
                       <div
                         className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_logout),
+                          item.logout_status
                           item.logout_status
                         )}`}
                       >

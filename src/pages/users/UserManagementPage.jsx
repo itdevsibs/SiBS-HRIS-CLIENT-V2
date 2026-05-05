@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import {
   Shield,
   Search,
@@ -87,7 +87,7 @@ function getSingleAdminAccess(adminAccess) {
 }
 
 export default function UserManagementPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, loading } = useUser();
 
   const [search, setSearch] = useState("");
@@ -199,14 +199,14 @@ export default function UserManagementPage() {
     if (loading) return;
 
     if (!user) {
-      router.replace("/login");
+      navigate("/login", { replace: true });
       return;
     }
 
     if (user.role !== SUPER_ADMIN_ROLE) {
-      router.replace("/dashboard/admin");
+      navigate("/dashboard/admin", { replace: true });
     }
-  }, [user, loading, router]);
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -403,11 +403,7 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     if (!editForm.adminAccess) {
-      showStatusModal(
-        "error",
-        "Missing Fields",
-        "Please select admin access.",
-      );
+      showStatusModal("error", "Missing Fields", "Please select admin access.");
       return;
     }
 
@@ -768,10 +764,7 @@ export default function UserManagementPage() {
             </div>
 
             <div className="hidden md:block">
-              <div
-                ref={tableScrollRef}
-                className="max-h-[500px] overflow-auto"
-              >
+              <div ref={tableScrollRef} className="max-h-[500px] overflow-auto">
                 <table className="w-full min-w-[1300px] text-sm">
                   <thead className="sticky top-0 z-10 bg-[var(--sibs-tertiary-9)]">
                     <tr>

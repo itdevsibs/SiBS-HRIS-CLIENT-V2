@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 
-import Header from "../../../components/layout/Header";
-import HiringNeedsModal from "../../../components/modals/hiringNeeds/HiringNeedsModal";
+import Header from "../../components/layout/Header";
+import HiringNeedsModal from "../../components/modals/hiringNeeds/HiringNeedsModal";
 
 import { getHiringNeeds, createHiringNeed } from "@/lib/axios/hiringNeeds";
 
@@ -122,9 +122,7 @@ function StatCard({ title, value, icon: Icon, description }) {
         <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
 
         {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
-          </p>
+          <p className="truncate text-xs text-sibs-tertiary-5">{description}</p>
         )}
       </div>
     </div>
@@ -171,7 +169,7 @@ function HiringNeedMobileCard({ item, onView }) {
 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            status
+            status,
           )}`}
         >
           {status}
@@ -201,7 +199,7 @@ function HiringNeedMobileCard({ item, onView }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getPriorityClass(
-            item.priority || "Medium"
+            item.priority || "Medium",
           )}`}
         >
           {item.priority || "Medium"}
@@ -210,7 +208,7 @@ function HiringNeedMobileCard({ item, onView }) {
         {item.jdStatus && (
           <span
             className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getJdStatusClass(
-              item.jdStatus
+              item.jdStatus,
             )}`}
           >
             {item.jdStatus}
@@ -287,7 +285,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
-                  item.jdStatus
+                  item.jdStatus,
                 )}`}
               >
                 {item.jdStatus || "—"}
@@ -310,7 +308,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
-                  item.priority
+                  item.priority,
                 )}`}
               >
                 {item.priority || "Medium"}
@@ -324,7 +322,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                  item.approvalStatus || "Pending"
+                  item.approvalStatus || "Pending",
                 )}`}
               >
                 {item.approvalStatus || "Pending"}
@@ -350,7 +348,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 }
 
 export default function HiringNeedsPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -432,7 +430,7 @@ export default function HiringNeedsPage() {
   function handleCreateNewJobDescription() {
     setShowCreateModal(false);
     setForm(initialForm);
-    router.push("/recruitment/job-description");
+    navigate("/recruitment/job-description");
   }
 
   const filteredList = useMemo(() => {
@@ -444,12 +442,24 @@ export default function HiringNeedsPage() {
 
       const matchesSearch =
         !keyword ||
-        String(item.id || "").toLowerCase().includes(keyword) ||
-        String(item.account || "").toLowerCase().includes(keyword) ||
-        String(item.department || "").toLowerCase().includes(keyword) ||
-        String(item.roleTitle || "").toLowerCase().includes(keyword) ||
-        String(item.hiringManager || "").toLowerCase().includes(keyword) ||
-        String(jobDescription || "").toLowerCase().includes(keyword);
+        String(item.id || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.account || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.department || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.roleTitle || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.hiringManager || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(jobDescription || "")
+          .toLowerCase()
+          .includes(keyword);
 
       const matchesStatus = statusFilter === "All" || status === statusFilter;
 
@@ -461,19 +471,19 @@ export default function HiringNeedsPage() {
     const total = list.length;
 
     const pending = list.filter(
-      (item) => (item.approvalStatus || "Pending") === "Pending"
+      (item) => (item.approvalStatus || "Pending") === "Pending",
     ).length;
 
     const underReview = list.filter(
-      (item) => item.approvalStatus === "Under Review"
+      (item) => item.approvalStatus === "Under Review",
     ).length;
 
     const approved = list.filter(
-      (item) => item.approvalStatus === "Approved"
+      (item) => item.approvalStatus === "Approved",
     ).length;
 
     const rejected = list.filter(
-      (item) => item.approvalStatus === "Rejected"
+      (item) => item.approvalStatus === "Rejected",
     ).length;
 
     return {
@@ -681,7 +691,7 @@ export default function HiringNeedsPage() {
                                   {item.jdStatus && (
                                     <span
                                       className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${getJdStatusClass(
-                                        item.jdStatus
+                                        item.jdStatus,
                                       )}`}
                                     >
                                       {item.jdStatus}
@@ -702,7 +712,7 @@ export default function HiringNeedsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
-                                  item.priority
+                                  item.priority,
                                 )}`}
                               >
                                 {item.priority || "Medium"}
@@ -712,7 +722,7 @@ export default function HiringNeedsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                  item.approvalStatus || "Pending"
+                                  item.approvalStatus || "Pending",
                                 )}`}
                               >
                                 {item.approvalStatus || "Pending"}
@@ -767,8 +777,8 @@ export default function HiringNeedsPage() {
 
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
             Do not depend on PRF for active hiring. This page now links each
-            hiring requirement to a Job Description record before it moves to the
-            Weekly Hiring Plan.
+            hiring requirement to a Job Description record before it moves to
+            the Weekly Hiring Plan.
           </p>
         </section>
       </main>

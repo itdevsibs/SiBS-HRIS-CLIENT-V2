@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -15,9 +15,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-import Header from "../../../components/layout/Header";
-import { useUser } from "../../../services/context/UserContext";
-import { useAdmin } from "../../../services/context/AdminContext";
+import Header from "../../components/layout/Header";
+import AdminLoginModal from "../../components/modals/AdminLoginModal";
+import { useUser } from "../../services/context/UserContext";
+import { useAdmin } from "../../services/context/AdminContext";
 
 const dashboardTitleMap = {
   hr: "Human Resource Dashboard",
@@ -83,7 +84,7 @@ const quickActions = [
 ];
 
 export default function AdminDashboardPage() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
 
@@ -93,14 +94,14 @@ export default function AdminDashboardPage() {
     if (loading) return;
 
     if (!user) {
-      router.replace("/login");
+      navigate("/login", { replace: true });
       return;
     }
 
     if (!ADMIN_ROLES.includes(user.role)) {
-      router.replace("/dashboard/employee");
+      navigate("/dashboard/employee", { replace: true });
     }
-  }, [user, loading, router, ADMIN_ROLES]);
+  }, [user, loading, navigate, ADMIN_ROLES]);
 
   if (loading || !user || !isAdminSide) {
     return (

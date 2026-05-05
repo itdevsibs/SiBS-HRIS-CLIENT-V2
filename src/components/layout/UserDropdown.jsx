@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, UserKey, UserRound } from "lucide-react";
-import { useRouter } from "@/lib/router";
 import api, { handleLogout } from "../../lib/axios/api-template";
 import { useUser } from "../../services/context/UserContext";
 import { useHeader } from "../../services/context/HeaderContext";
@@ -14,7 +14,7 @@ export default function UserDropdown({
 }) {
   const [open, setOpen] = useState(false);
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const ref = useRef(null);
 
   const { user, setUser, refetchUser } = useUser();
@@ -50,10 +50,9 @@ export default function UserDropdown({
       setAdminLogin(false);
 
       await handleLogout(true);
-    } catch (error) {
-      console.error("Logout error:", error);
-      router.replace("/login");
-      router.refresh?.();
+    } catch (err) {
+      console.error("Logout error:", err);
+      navigate("/login", { replace: true });
     }
   };
 
@@ -74,13 +73,13 @@ export default function UserDropdown({
         {},
         {
           withCredentials: true,
-        }
+        },
       );
 
       if (response.data?.expiresAt) {
         sessionStorage.setItem(
           "accessTokenExpiresAt",
-          String(response.data.expiresAt)
+          String(res.data.expiresAt),
         );
       }
 
@@ -94,10 +93,9 @@ export default function UserDropdown({
         await refetchUser();
       }
 
-      router.replace("/dashboard/employee");
-      router.refresh?.();
-    } catch (error) {
-      console.error("Switch to employee error:", error);
+      navigate("/dashboard/employee", { replace: true });
+    } catch (err) {
+      console.error("Switch to employee error:", err);
     }
   };
 
