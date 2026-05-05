@@ -6,14 +6,15 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { usePathname } from "@/lib/router";
+import { useLocation } from "react-router-dom";
 import api, { handleLogout } from "../../lib/axios/api-template";
 
 const UserContext = createContext(null);
 const REFRESH_GAP = 3000; // testing only
 
 export function UserProvider({ children }) {
-  const pathname = usePathname();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,6 @@ export function UserProvider({ children }) {
   const lastRefreshRef = useRef(0);
 
   const clearStoredSession = useCallback(() => {
-    if (typeof window === "undefined") return;
     sessionStorage.removeItem("accessTokenExpiresAt");
   }, []);
 
@@ -42,8 +42,6 @@ export function UserProvider({ children }) {
   }, [clearLogoutTimer, clearStoredSession]);
 
   const startLogoutTimer = useCallback(() => {
-    if (typeof window === "undefined") return;
-
     clearLogoutTimer();
 
     const expiresAtRaw = sessionStorage.getItem("accessTokenExpiresAt");
@@ -109,13 +107,13 @@ export function UserProvider({ children }) {
         {},
         {
           withCredentials: true,
-        }
+        },
       );
 
       if (res.data?.expiresAt) {
         sessionStorage.setItem(
           "accessTokenExpiresAt",
-          String(res.data.expiresAt)
+          String(res.data.expiresAt),
         );
       }
 
@@ -127,10 +125,6 @@ export function UserProvider({ children }) {
         setUser(null);
       }
 
-      // console.error(
-      //   "Session refresh failed:",
-      //   error?.response?.data || error.message
-      // );
       return false;
     } finally {
       refreshInProgressRef.current = false;
@@ -151,45 +145,51 @@ export function UserProvider({ children }) {
     return () => {
       clearLogoutTimer();
     };
-  }, [pathname, fetchUser, startLogoutTimer, clearLogoutTimer, clearStoredSession]);
+  }, [
+    pathname,
+    fetchUser,
+    startLogoutTimer,
+    clearLogoutTimer,
+    clearStoredSession,
+  ]);
 
   useEffect(() => {
-  if (!user || pathname === "/login") return;
+    if (!user || pathname === "/login") return;
 
-  const handleActivity = () => {
-    refreshSession();
-  };
+    const handleActivity = () => {
+      refreshSession();
+    };
 
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible") {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchUser();
+        refreshSession();
+        startLogoutTimer();
+      }
+    };
+
+    const handleFocus = () => {
       fetchUser();
       refreshSession();
       startLogoutTimer();
-    }
-  };
+    };
 
-  const handleFocus = () => {
-    fetchUser();
-    refreshSession();
-    startLogoutTimer();
-  };
+    window.addEventListener("click", handleActivity, { passive: true });
+    window.addEventListener("scroll", handleActivity, { passive: true });
+    window.addEventListener("wheel", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
 
-  window.addEventListener("click", handleActivity, { passive: true });
-  window.addEventListener("scroll", handleActivity, { passive: true });
-  window.addEventListener("wheel", handleActivity, { passive: true });
-  window.addEventListener("keydown", handleActivity);
-  window.addEventListener("focus", handleFocus);
-  document.addEventListener("visibilitychange", handleVisibility);
-
-  return () => {
-    window.removeEventListener("click", handleActivity);
-    window.removeEventListener("scroll", handleActivity);
-    window.removeEventListener("wheel", handleActivity);
-    window.removeEventListener("keydown", handleActivity);
-    window.removeEventListener("focus", handleFocus);
-    document.removeEventListener("visibilitychange", handleVisibility);
-  };
-}, [user, pathname, fetchUser, refreshSession, startLogoutTimer]);
+    return () => {
+      window.removeEventListener("click", handleActivity);
+      window.removeEventListener("scroll", handleActivity);
+      window.removeEventListener("wheel", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [user, pathname, fetchUser, refreshSession, startLogoutTimer]);
 
   useEffect(() => {
     if (pathname === "/login" || !user) return;

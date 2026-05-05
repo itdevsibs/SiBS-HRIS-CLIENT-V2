@@ -1,5 +1,55 @@
 @import "tailwindcss";
 
+/* =========================
+   TAILWIND THEME TOKENS
+   Usage:
+   bg-sibs-primary-1
+   text-sibs-primary-1
+   border-sibs-tertiary-8
+   shadow-sibs
+   font-sans
+========================= */
+@theme {
+  --color-text: var(--text);
+  --color-text-h: var(--text-h);
+  --color-bg: var(--bg);
+  --color-border: var(--border);
+  --color-code-bg: var(--code-bg);
+  --color-accent: var(--accent);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-border: var(--accent-border);
+  --color-social-bg: var(--social-bg);
+
+  --color-sibs-primary-1: var(--sibs-primary-1);
+  --color-sibs-primary-2: var(--sibs-primary-2);
+  --color-sibs-primary-3: var(--sibs-primary-3);
+
+  --color-sibs-secondary-1: var(--sibs-secondary-1);
+  --color-sibs-secondary-2: var(--sibs-secondary-2);
+  --color-sibs-secondary-3: var(--sibs-secondary-3);
+
+  --color-sibs-tertiary-1: var(--sibs-tertiary-1);
+  --color-sibs-tertiary-2: var(--sibs-tertiary-2);
+  --color-sibs-tertiary-3: var(--sibs-tertiary-3);
+  --color-sibs-tertiary-4: var(--sibs-tertiary-4);
+  --color-sibs-tertiary-5: var(--sibs-tertiary-5);
+  --color-sibs-tertiary-6: var(--sibs-tertiary-6);
+  --color-sibs-tertiary-7: var(--sibs-tertiary-7);
+  --color-sibs-tertiary-8: var(--sibs-tertiary-8);
+  --color-sibs-tertiary-9: var(--sibs-tertiary-9);
+  --color-sibs-tertiary-10: var(--sibs-tertiary-10);
+
+  --color-sibs-status-1: var(--sibs-status-1);
+  --color-sibs-status-2: var(--sibs-status-2);
+  --color-sibs-status-3: var(--sibs-status-3);
+
+  --font-sans: var(--sans);
+  --font-heading: var(--heading);
+  --font-mono: var(--mono);
+
+  --shadow-sibs: var(--shadow);
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
@@ -11,10 +61,34 @@
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sibs-primary-1: #042c51;
+  --sibs-primary-2: #ff5c28;
+  --sibs-primary-3: #fff9f0;
+
+  --sibs-secondary-1: #ffd400;
+  --sibs-secondary-2: #4b9dfe;
+  --sibs-secondary-3: #54d4d2;
+
+  --sibs-tertiary-1: #042c51;
+  --sibs-tertiary-2: #063c69;
+  --sibs-tertiary-3: #0d4676;
+  --sibs-tertiary-4: #185081;
+  --sibs-tertiary-5: #215789;
+  --sibs-tertiary-6: #4a6f98;
+  --sibs-tertiary-7: #6b88a8;
+  --sibs-tertiary-8: #94a9c1;
+  --sibs-tertiary-9: #becbda;
+  --sibs-tertiary-10: #e6eaf0;
+
+  --sibs-status-1: #2ecc71;
+  --sibs-status-2: #e67e22;
+  --sibs-status-3: #e74c3c;
+
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --heading: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -26,8 +100,10 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
 
-  @media (max-width: 1024px) {
+@media (max-width: 1024px) {
+  :root {
     font-size: 16px;
   }
 }
@@ -44,10 +120,94 @@
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px,
+      rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
   }
 
   #social .button-icon {
     filter: invert(1) brightness(2);
   }
+}
+
+/* =========================
+   INPUTS
+========================= */
+.form-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--sibs-tertiary-8);
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--sibs-primary-1);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--sibs-primary-1);
+}
+
+.search-input {
+  width: 100%;
+  border-radius: 50rem;
+  border: 1px solid var(--sibs-tertiary-8);
+  background: var(--bg);
+  padding: 0.75rem 1rem;
+  padding-left: 2.5rem;
+  font-size: 0.875rem;
+  color: var(--sibs-primary-1);
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--sibs-primary-1);
+}
+
+/* =========================
+   STATUS BADGES
+========================= */
+.status-present {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.status-absence {
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.status-late {
+  background: #fef3c7;
+  color: #b45309;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* =========================
+   OPTIONAL CARD HELPERS
+========================= */
+.sibs-card {
+  background: var(--bg);
+  border-radius: 1rem;
+  border: 1px solid rgba(190, 203, 218, 0.55);
+  box-shadow: 0 8px 22px rgba(4, 44, 81, 0.04);
+}
+
+.sibs-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: var(--sibs-primary-1);
+  color: white;
 }

@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import { Clock3, Eye, Pencil } from "lucide-react";
 import { getMyAttritions } from "../../lib/axios/getAttrition";
 import { usePagination } from "@/services/context/PaginationContext";
 import { useUser } from "../../services/context/UserContext";
 import TableFooter from "./footer/TableFooter";
-import {
-  formatDate,
-  formatDateTime,
-} from "@/components/layout/FormatDateTime";
+import { formatDate, formatDateTime } from "@/components/layout/FormatDateTime";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 function FileTypeIcon({ filename }) {
   const ext = filename?.split(".").pop()?.toLowerCase() || "";
@@ -79,7 +78,7 @@ function MobileAttritionCard({
 }) {
   const fileUrl =
     item.uploadedFile && item.sibsId
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/resignation/file/${encodeURIComponent(
+      ? `${API_BASE_URL}/api/resignation/file/${encodeURIComponent(
           item.sibsId,
         )}/${encodeURIComponent(item.uploadedFile)}`
       : "";
@@ -108,9 +107,7 @@ function MobileAttritionCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-medium text-sibs-tertiary-5">
-            Request ID
-          </p>
+          <p className="text-xs font-medium text-sibs-tertiary-5">Request ID</p>
 
           <h3 className="text-sm font-semibold text-sibs-primary-1">
             {item.id}
@@ -221,18 +218,18 @@ const AttritionTable = ({ reloadKey = 0, onView, onEdit }) => {
     usePagination("attrition");
 
   const { user } = useUser();
-  const router = useRouter();
+  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
-  const routerRef = useRef(router);
+  const navigateRef = useRef(navigate);
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-    routerRef.current = router;
-  }, [setLoading, setPagination, router]);
+    navigateRef.current = navigate;
+  }, [setLoading, setPagination, navigate]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -256,7 +253,7 @@ const AttritionTable = ({ reloadKey = 0, onView, onEdit }) => {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            routerRef.current.push("/login");
+            navigateRef.current("/login");
             return;
           }
 
@@ -367,7 +364,7 @@ const AttritionTable = ({ reloadKey = 0, onView, onEdit }) => {
                 attritions.map((item) => {
                   const fileUrl =
                     item.uploadedFile && item.sibsId
-                      ? `${process.env.NEXT_PUBLIC_API_URL}/api/resignation/file/${encodeURIComponent(
+                      ? `${API_BASE_URL}/api/resignation/file/${encodeURIComponent(
                           item.sibsId,
                         )}/${encodeURIComponent(item.uploadedFile)}`
                       : "";

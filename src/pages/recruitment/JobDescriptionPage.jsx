@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Header from "../../../components/layout/Header";
-import StatusModal from "../../../components/modals/StatusModal";
+import Header from "../../components/layout/Header";
+import StatusModal from "../../components/modals/StatusModal";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
   createJobDescription,
   saveJobDescriptionRevision,
-} from "../../../lib/axios/jobDescription";
-import { useUser } from "../../../services/context/UserContext";
+} from "../../lib/axios/jobDescription";
+import { useUser } from "../../services/context/UserContext";
 import {
   FileText,
   Plus,
@@ -15,10 +15,10 @@ import {
   AlertTriangle,
   ClipboardList,
 } from "lucide-react";
-import JobDescriptionTable from "../../../components/tables/JobDescriptionTable";
-import AddDescriptionModal from "../../../components/modals/jobDescription/AddJobDescription";
-import ViewJobDescriptionModal from "../../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
-import ReviseJobDescriptionModal from "../../../components/modals/jobDescription/ReviseJobDescriptionModal";
+import JobDescriptionTable from "../../components/tables/JobDescriptionTable";
+import AddDescriptionModal from "../../components/modals/jobDescription/AddJobDescription";
+import ViewJobDescriptionModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
+import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
 
 const emptyForm = {
   linkedHiringRequirement: "",

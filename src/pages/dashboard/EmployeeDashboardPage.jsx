@@ -12,12 +12,12 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 
-import Header from "../../../components/layout/Header";
-import AdminLoginModal from "../../../components/modals/AdminLoginModal";
-import { useUser } from "../../../services/context/UserContext";
-import { useAdmin } from "../../../services/context/AdminContext";
+import Header from "../../components/layout/Header";
+import AdminLoginModal from "../../components/modals/AdminLoginModal";
+import { useUser } from "../../services/context/UserContext";
+import { useAdmin } from "../../services/context/AdminContext";
 
-export default function EmployeeDashboard() {
+export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
