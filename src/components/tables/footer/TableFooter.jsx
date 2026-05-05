@@ -1,73 +1,87 @@
 import React from "react";
 import { usePagination } from "@/services/context/PaginationContext";
 
-const TableFooter = ({ tableEntity, totalLabel = "Total Records" }) => {
-  const { pagination, setPage } = usePagination(tableEntity);
+export default function TableFooter({
+  tableEntity,
+  totalLabel = "Total Records",
+}) {
+  const { page, setPage, pagination } = usePagination(tableEntity);
 
-  const currentPage = Number(pagination?.currentPage || 1);
-  const totalPages = Number(pagination?.totalPages || 1);
-  const total = Number(
+  const currentPage = pagination?.currentPage || page || 1;
+  const totalPages = pagination?.totalPages || 1;
+
+  const totalCount =
+    pagination?.totalItems ??
+    pagination?.totalCount ??
+    pagination?.totalRecords ??
     pagination?.total ??
-      pagination?.totalRecords ??
-      pagination?.totalCount ??
-      0
-  );
+    0;
+
+  const goToPage = (targetPage) => {
+    const safePage = Math.max(1, Math.min(totalPages, targetPage));
+    if (safePage !== currentPage) {
+      setPage(safePage);
+    }
+  };
+
+  const isFirstPage = currentPage <= 1;
+  const isLastPage = currentPage >= totalPages;
 
   return (
-    <div className="border-t px-3 py-4 sm:px-4 bg-white">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-gray-500">
+    <div className="table-footer">
+      <div className="table-footer__left">
+        <span className="table-footer__meta">
           Page {currentPage} of {totalPages}
-        </div>
+        </span>
+      </div>
 
-        <div className="text-center text-sm text-gray-500 sm:text-left">
-          {totalLabel}: {total}
-        </div>
+      <div className="table-footer__center">
+        <span className="table-footer__meta">
+          {totalLabel}: {totalCount}
+        </span>
+      </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setPage(1)}
-            className="rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            &lt;&lt;
-          </button>
+      <div className="table-footer__right">
+        <button
+          type="button"
+          className="table-footer__btn"
+          onClick={() => goToPage(1)}
+          disabled={isFirstPage}
+        >
+          {"<<"}
+        </button>
 
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setPage(Math.max(currentPage - 1, 1))}
-            className="rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            &lt;
-          </button>
+        <button
+          type="button"
+          className="table-footer__btn"
+          onClick={() => goToPage(currentPage - 1)}
+          disabled={isFirstPage}
+        >
+          {"<"}
+        </button>
 
-          <div className="min-w-[72px] text-center text-sm font-medium text-gray-700">
-            {currentPage}/{totalPages}
-          </div>
+        <span className="table-footer__page-indicator">
+          {currentPage}/{totalPages}
+        </span>
 
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() => setPage(Math.min(currentPage + 1, totalPages))}
-            className="rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            &gt;
-          </button>
+        <button
+          type="button"
+          className="table-footer__btn"
+          onClick={() => goToPage(currentPage + 1)}
+          disabled={isLastPage}
+        >
+          {">"}
+        </button>
 
-          <button
-            type="button"
-            disabled={currentPage === totalPages}
-            onClick={() => setPage(totalPages)}
-            className="rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            &gt;&gt;
-          </button>
-        </div>
+        <button
+          type="button"
+          className="table-footer__btn"
+          onClick={() => goToPage(totalPages)}
+          disabled={isLastPage}
+        >
+          {">>"}
+        </button>
       </div>
     </div>
   );
-};
-
-export default TableFooter;
+}

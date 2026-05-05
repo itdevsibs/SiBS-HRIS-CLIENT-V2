@@ -341,16 +341,14 @@ export default function Sidebar() {
           to={item.path}
           onClick={handleLinkClick}
           title={!isMobile && collapsed ? item.name : ""}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all ${
-            !isMobile && collapsed ? "justify-center" : ""
-          } ${
-            isActive
-              ? "bg-[var(--sibs-tertiary-9)] font-medium text-sibs-primary-1"
-              : "text-sibs-tertiary-5 hover:bg-[var(--sibs-tertiary-9)]"
+          className={`sibs-sidebar-link ${isActive ? "active" : ""} ${
+            !isMobile && collapsed ? "collapsed" : ""
           }`}
         >
-          <Icon size={18} />
-          {(!collapsed || isMobile) && <span>{item.name}</span>}
+          <Icon size={18} className="sibs-sidebar-link-icon" />
+          {(!collapsed || isMobile) && (
+            <span className="sibs-sidebar-link-text">{item.name}</span>
+          )}
         </Link>
       );
     });
@@ -364,7 +362,7 @@ export default function Sidebar() {
           type="button"
           aria-label="Close sidebar backdrop"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="sibs-sidebar-backdrop"
         />
       )}
 
@@ -372,36 +370,33 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed left-4 top-4 z-50 rounded-xl border border-sibs-tertiary-9 bg-white p-2 shadow-sm lg:hidden"
+          className="sibs-sidebar-mobile-toggle"
           aria-label="Open sidebar"
         >
-          <Menu size={20} className="text-sibs-primary-1" />
+          <Menu size={20} />
         </button>
       )}
 
       <aside
-        className={`border-r border-sibs-tertiary-9 bg-[var(--sibs-tertiary-10)] transition-all duration-300 ${
-          isMobile
-            ? `fixed inset-y-0 left-0 z-50 w-[280px] transform shadow-2xl ${
-                mobileOpen ? "translate-x-0" : "-translate-x-full"
-              }`
-            : `${collapsed ? "w-20" : "w-64"} relative h-screen shrink-0`
-        }`}
+        className={[
+          "sibs-sidebar",
+          collapsed && !isMobile ? "collapsed" : "",
+          isMobile ? "mobile" : "",
+          isMobile && mobileOpen ? "mobile-open" : "",
+        ].join(" ")}
       >
-        <div className="flex h-[8.3vh] items-center justify-between gap-2 px-4">
+        <div className="sibs-sidebar-brand-row">
           <motion.div
             initial={{ opacity: 0, x: -18 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             whileHover={{ scale: 1.04 }}
-            className="flex items-center gap-2 text-xl font-extrabold"
+            className="sibs-sidebar-brand"
           >
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs font-semibold text-white">
-              S
-            </div>
+            <div className="sibs-sidebar-logo-dot">S</div>
 
             {(!collapsed || isMobile) && (
-              <span className="inline-flex">
+              <span className="sibs-sidebar-logo-text">
                 <motion.span
                   animate={{
                     color: ["#003366", "#ff6b00", "#003366"],
@@ -449,7 +444,7 @@ export default function Sidebar() {
                 setCollapsed((prev) => !prev);
               }
             }}
-            className="rounded p-1 hover:bg-[var(--sibs-tertiary-9)]"
+            className="sibs-sidebar-toggle"
             type="button"
             aria-label={isMobile ? "Close sidebar" : "Toggle sidebar"}
           >
@@ -458,14 +453,14 @@ export default function Sidebar() {
         </div>
 
         {!showMenu ? (
-          <div className="space-y-3 px-4">
-            <div className="h-8 animate-pulse rounded-lg bg-[var(--sibs-tertiary-9)]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[var(--sibs-tertiary-9)]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[var(--sibs-tertiary-9)]" />
-            <div className="h-8 animate-pulse rounded-lg bg-[var(--sibs-tertiary-9)]" />
+          <div className="sibs-sidebar-loading">
+            <div />
+            <div />
+            <div />
+            <div />
           </div>
         ) : (
-          <div className="thin-scroll flex h-[93vh] flex-col overflow-y-scroll pr-2 pt-2 pl-4">
+          <div className="sibs-sidebar-scroll">
             <Section
               title={coreSectionTitle}
               short={coreSectionShort}
@@ -526,16 +521,12 @@ export default function Sidebar() {
 
 function Section({ title, short, collapsed, children }) {
   return (
-    <>
-      <p
-        className={`mb-2 text-xs font-semibold text-sibs-tertiary-6 ${
-          collapsed ? "text-center text-[10px]" : ""
-        }`}
-      >
+    <section className="sibs-sidebar-section">
+      <p className={`sibs-sidebar-section-title ${collapsed ? "collapsed" : ""}`}>
         {collapsed ? short : title}
       </p>
 
-      <nav className="mb-4 space-y-1">{children}</nav>
-    </>
+      <nav className="sibs-sidebar-nav">{children}</nav>
+    </section>
   );
 }

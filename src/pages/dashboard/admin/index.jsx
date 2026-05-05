@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 
 import Header from "../../../components/layout/Header";
-import AdminLoginModal from "../../../components/modals/AdminLoginModal";
 import { useUser } from "../../../services/context/UserContext";
 import { useAdmin } from "../../../services/context/AdminContext";
 
@@ -83,7 +82,7 @@ const quickActions = [
   },
 ];
 
-export default function DashboardPage() {
+export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
@@ -105,33 +104,30 @@ export default function DashboardPage() {
 
   if (loading || !user || !isAdminSide) {
     return (
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
+      <div className="admin-dashboard-page">
         <Header />
 
-        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          <div className="space-y-6">
-            <div className="rounded-xl bg-white p-5 shadow-sm">
-              <div className="mb-4 h-8 w-56 max-w-full animate-pulse rounded bg-gray-200" />
-              <div className="h-4 w-72 max-w-full animate-pulse rounded bg-gray-200" />
+        <main className="admin-dashboard-main">
+          <div className="admin-dashboard-wrapper">
+            <div className="admin-dashboard-skeleton-card">
+              <div className="admin-dashboard-skeleton-title" />
+              <div className="admin-dashboard-skeleton-subtitle" />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="admin-dashboard-stats-grid">
               {[1, 2, 3, 4, 5].map((item) => (
-                <div key={item} className="rounded-xl bg-white p-4 shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 animate-pulse rounded-lg bg-gray-200" />
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-2 h-3 w-24 animate-pulse rounded bg-gray-200" />
-                      <div className="h-5 w-12 animate-pulse rounded bg-gray-200" />
-                    </div>
+                <div key={item} className="admin-dashboard-stat-card">
+                  <div className="admin-dashboard-skeleton-icon" />
+
+                  <div className="admin-dashboard-stat-text">
+                    <div className="admin-dashboard-skeleton-label" />
+                    <div className="admin-dashboard-skeleton-value" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </main>
-
-        <AdminLoginModal />
       </div>
     );
   }
@@ -142,118 +138,100 @@ export default function DashboardPage() {
       .join(" ") || "User";
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
+    <div className="admin-dashboard-page">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <LayoutDashboard
-              size={28}
-              className="shrink-0 text-sibs-primary-1"
-            />
+      <main className="admin-dashboard-main">
+        <div className="admin-dashboard-wrapper">
+          <section className="admin-dashboard-title-section">
+            <div className="admin-dashboard-title-row">
+              <LayoutDashboard size={28} className="admin-dashboard-title-icon" />
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              {dashboardTitleMap[user?.role] || "Dashboard"}
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Welcome back,{" "}
-            <span className="font-bold text-sibs-primary-2">
-              {fullName.toUpperCase()}
-            </span>
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          {summaryCards.map((item) => (
-            <DashboardStatCard
-              key={item.label}
-              label={item.label}
-              value={item.value}
-              description={item.description}
-              icon={item.icon}
-            />
-          ))}
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <DashboardPanel
-            title="Recent Activity"
-            description="Latest system and employee activity"
-            icon={Activity}
-            emptyText="No activity yet"
-            buttonText="View all activity"
-          />
-
-          <DashboardPanel
-            title="Notifications"
-            description="Important updates and pending items"
-            icon={Bell}
-            emptyText="No notifications"
-            buttonText="View all notifications"
-          />
-        </div>
-
-        <section className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-          <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-sibs-primary-1">
-                Quick Actions
-              </h2>
-              <p className="text-sm text-sibs-tertiary-5">
-                Common admin shortcuts for HRIS tasks.
-              </p>
+              <h1>{dashboardTitleMap[user?.role] || "Dashboard"}</h1>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {quickActions.map((item) => (
-              <button
-                key={item.title}
-                type="button"
-                className="group flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC] hover:shadow-md"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
-                  <item.icon size={18} />
-                </div>
+            <p>
+              Welcome back,{" "}
+              <span>{fullName.toUpperCase()}</span>
+            </p>
+          </section>
 
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-sibs-primary-1">
-                    {item.title}
-                  </p>
-                  <p className="truncate text-xs font-semibold text-sibs-tertiary-5">
-                    {item.desc}
-                  </p>
-                </div>
-
-                <ArrowRight
-                  size={16}
-                  className="shrink-0 text-sibs-tertiary-5 transition group-hover:translate-x-1 group-hover:text-sibs-primary-1"
-                />
-              </button>
+          <section className="admin-dashboard-stats-grid">
+            {summaryCards.map((item) => (
+              <DashboardStatCard
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                description={item.description}
+                icon={item.icon}
+              />
             ))}
-          </div>
-        </section>
-      </main>
+          </section>
 
-      <AdminLoginModal />
+          <section className="admin-dashboard-panels-grid">
+            <DashboardPanel
+              title="Recent Activity"
+              description="Latest system and employee activity"
+              icon={Activity}
+              emptyText="No activity yet"
+              buttonText="View all activity"
+            />
+
+            <DashboardPanel
+              title="Notifications"
+              description="Important updates and pending items"
+              icon={Bell}
+              emptyText="No notifications"
+              buttonText="View all notifications"
+            />
+          </section>
+
+          <section className="admin-dashboard-quick-card">
+            <div className="admin-dashboard-quick-header">
+              <div>
+                <h2>Quick Actions</h2>
+                <p>Common admin shortcuts for HRIS tasks.</p>
+              </div>
+            </div>
+
+            <div className="admin-dashboard-quick-grid">
+              {quickActions.map((item) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  className="admin-dashboard-quick-button"
+                >
+                  <div className="admin-dashboard-icon-box">
+                    <item.icon size={18} />
+                  </div>
+
+                  <div className="admin-dashboard-quick-text">
+                    <p>{item.title}</p>
+                    <span>{item.desc}</span>
+                  </div>
+
+                  <ArrowRight size={16} className="admin-dashboard-arrow" />
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }
 
 function DashboardStatCard({ label, value, description, icon: Icon }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+    <div className="admin-dashboard-stat-card">
+      <div className="admin-dashboard-icon-box">
         <Icon size={18} />
       </div>
 
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{label}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
-        <p className="truncate text-xs text-sibs-tertiary-5">{description}</p>
+      <div className="admin-dashboard-stat-text">
+        <p>{label}</p>
+        <h2>{value}</h2>
+        <span>{description}</span>
       </div>
     </div>
   );
@@ -267,28 +245,23 @@ function DashboardPanel({
   buttonText,
 }) {
   return (
-    <section className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold text-sibs-primary-1">{title}</h2>
-          <p className="text-sm text-sibs-tertiary-5">{description}</p>
+    <section className="admin-dashboard-panel">
+      <div className="admin-dashboard-panel-header">
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+        <div className="admin-dashboard-icon-box">
           <Icon size={18} />
         </div>
       </div>
 
-      <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center">
-        <p className="text-sm font-semibold text-sibs-tertiary-5">
-          {emptyText}
-        </p>
+      <div className="admin-dashboard-empty-box">
+        <p>{emptyText}</p>
       </div>
 
-      <button
-        type="button"
-        className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
-      >
+      <button type="button" className="admin-dashboard-panel-button">
         {buttonText}
       </button>
     </section>

@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   FileCheck2,
 } from "lucide-react";
+
 import Header from "../../components/layout/Header";
 import { usePagination } from "@/services/context/PaginationContext";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
@@ -16,14 +17,14 @@ const EMPLOYEE_STATE_KEY = "employeePageState";
 
 function SummaryCard({ label, value, icon: Icon }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+    <div className="employee-summary-card">
+      <div className="employee-summary-icon">
         <Icon size={18} />
       </div>
 
-      <div className="min-w-0">
-        <p className="text-xs text-sibs-tertiary-5">{label}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+      <div className="employee-summary-text">
+        <p>{label}</p>
+        <h2>{value}</h2>
       </div>
     </div>
   );
@@ -58,6 +59,7 @@ export default function EmployeesPage() {
 
       if (savedState) {
         const parsed = JSON.parse(savedState);
+
         if (parsed?.page) {
           setPage(parsed.page);
         }
@@ -80,36 +82,29 @@ export default function EmployeesPage() {
   }, [activeEmployeeTab]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="employee-page">
       <Header />
 
-      <main
-        ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
-      >
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <Users size={28} className="shrink-0 text-sibs-primary-1" />
+      <main ref={mainScrollRef} className="employee-main">
+        <section className="employee-heading">
+          <div className="employee-title-row">
+            <Users size={28} className="employee-title-icon" />
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Employees
-            </h1>
+            <h1>Employees</h1>
           </div>
 
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Manage employees, access requests, and CHWCP records
-          </p>
-        </div>
+          <p>Manage employees, access requests, and CHWCP records</p>
+        </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section className="employee-summary-grid">
           <SummaryCard label="Employees" value="0" icon={UserRoundCheck} />
           <SummaryCard label="Access Requests" value="5" icon={ShieldCheck} />
           <SummaryCard label="CHWCP" value="2" icon={FileCheck2} />
-        </div>
+        </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="inline-flex min-w-max gap-2 rounded-full bg-[#F2F4F7] p-1 shadow-sm">
+        <section className="employee-toolbar">
+          <div className="employee-tabs-scroll no-scrollbar">
+            <div className="employee-tabs">
               {employeeTabs.map(({ label, count }) => {
                 const isActive = activeEmployeeTab === label;
 
@@ -118,27 +113,19 @@ export default function EmployeesPage() {
                     key={label}
                     type="button"
                     onClick={() => setActiveEmployeeTab(label)}
-                    className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-3 text-sm font-medium transition-colors duration-300 ${
-                      isActive
-                        ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
-                        : "text-[#344054]"
-                    }`}
+                    className={`employee-tab-button ${isActive ? "active" : ""}`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span>{label}</span>
+                    <span>{label}</span>
 
-                      {label !== "Employees" && count > 0 && (
-                        <span
-                          className={`flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow ${
-                            isActive
-                              ? "bg-white text-[var(--sibs-primary-1)]"
-                              : "bg-[var(--sibs-primary-1)] text-white"
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </span>
+                    {label !== "Employees" && count > 0 && (
+                      <span
+                        className={`employee-tab-count ${
+                          isActive ? "active" : ""
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -146,11 +133,8 @@ export default function EmployeesPage() {
           </div>
 
           {activeEmployeeTab === "Employees" && (
-            <div className="relative w-full lg:w-[320px]">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
+            <div className="employee-search-wrap">
+              <Search size={18} className="employee-search-icon" />
 
               <input
                 type="text"
@@ -158,26 +142,26 @@ export default function EmployeesPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="search-input w-full"
+                className="employee-search-input"
               />
             </div>
           )}
-        </div>
+        </section>
 
         {activeEmployeeTab === "Employees" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="employee-table-card">
             <EmployeeTable />
           </section>
         )}
 
         {activeEmployeeTab === "Access Requests" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="employee-table-card">
             <AccessRequestTable />
           </section>
         )}
 
         {activeEmployeeTab === "CHWCP" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="employee-table-card">
             <ChwcpTable />
           </section>
         )}

@@ -8,6 +8,7 @@ import {
   CalendarDays,
   UserRound,
 } from "lucide-react";
+
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { formatDate } from "../../../lib/axios/dateFormatter";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -17,14 +18,13 @@ const EMPLOYEE_STATE_KEY = "employeePageState";
 
 function MobileInfoItem({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-      <div className="flex items-start gap-2">
-        <Icon size={14} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
-        <div className="min-w-0">
-          <p className="text-xs text-sibs-tertiary-5">{label}</p>
-          <p className="mt-1 break-words text-sm font-medium text-sibs-primary-1">
-            {value || "N/A"}
-          </p>
+    <div className="employee-mobile-info-item">
+      <div className="employee-mobile-info-row">
+        <Icon size={14} className="employee-mobile-info-icon" />
+
+        <div className="employee-mobile-info-text">
+          <p>{label}</p>
+          <strong>{value || "N/A"}</strong>
         </div>
       </div>
     </div>
@@ -41,38 +41,39 @@ function MobileEmployeeCard({ emp, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(emp)}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:bg-gray-50"
+      className="employee-mobile-card"
     >
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-sibs-tertiary-5">
-          {emp.sibsId || "N/A"}
-        </p>
-        <h3 className="mt-1 text-sm font-semibold text-sibs-primary-1">
-          {fullName || "N/A"}
-        </h3>
+      <div className="employee-mobile-card-heading">
+        <p>{emp.sibsId || "N/A"}</p>
+        <h3>{fullName || "N/A"}</h3>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3">
+      <div className="employee-mobile-card-body">
         <MobileInfoItem icon={Mail} label="Email" value={emp.email} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="employee-mobile-info-grid">
           <MobileInfoItem icon={UserRound} label="Gender" value={emp.gender} />
+
           <MobileInfoItem
             icon={CalendarDays}
             label="Birthdate"
             value={formatDate(emp.birthdate)}
           />
+
           <MobileInfoItem
             icon={Briefcase}
             label="Civil Status"
             value={emp.civilStatus}
           />
+
           <MobileInfoItem icon={Briefcase} label="Account" value={emp.account} />
+
           <MobileInfoItem
             icon={Building2}
             label="Department"
             value={emp.department || "N/A"}
           />
+
           <MobileInfoItem icon={Phone} label="Contact" value={emp.contact} />
         </div>
 
@@ -95,6 +96,16 @@ export default function EmployeeTable() {
   const router = useRouter();
   const tableScrollRef = useRef(null);
 
+  const routerRef = useRef(router);
+  const setLoadingRef = useRef(setLoading);
+  const setPaginationRef = useRef(setPagination);
+
+  useEffect(() => {
+    routerRef.current = router;
+    setLoadingRef.current = setLoading;
+    setPaginationRef.current = setPagination;
+  }, [router, setLoading, setPagination]);
+
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
@@ -109,27 +120,31 @@ export default function EmployeeTable() {
 
     const fetchEmployees = async () => {
       try {
+        setLoadingRef.current?.(true);
+
         const result = await getEmployee(page, search);
 
         if (cancelled) return;
 
         if (!result?.success) {
           if (result?.status === 401) {
-            router.push("/login");
+            routerRef.current.push("/login");
             return;
           }
 
           setEmployees([]);
-          setPagination({
+          setPaginationRef.current?.({
             totalPages: 1,
             currentPage: 1,
             total: 0,
           });
+
           return;
         }
 
         setEmployees(result.data || []);
-        setPagination(
+
+        setPaginationRef.current?.(
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
@@ -140,15 +155,16 @@ export default function EmployeeTable() {
         if (cancelled) return;
 
         console.error("Fetch employees error:", err);
+
         setEmployees([]);
-        setPagination({
+        setPaginationRef.current?.({
           totalPages: 1,
           currentPage: 1,
           total: 0,
         });
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setLoadingRef.current?.(false);
         }
       }
     };
@@ -158,47 +174,45 @@ export default function EmployeeTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, router, setLoading, setPagination]);
+  }, [page, search]);
 
   const handleOpenEmployee = (emp) => {
     sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
-    sessionStorage.setItem(
-      EMPLOYEE_STATE_KEY,
-      JSON.stringify({ page: 1 })
-    );
+    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page }));
+
     router.push("/employee/employee-data");
   };
 
   return (
-    <>
-      <div className="hidden lg:block">
-        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-          <table className="w-full min-w-[1400px] text-sm">
-            <thead className="sticky top-0 z-10 bg-gray-100">
+    <div className="employee-table">
+      <div className="employee-table-desktop">
+        <div ref={tableScrollRef} className="employee-table-scroll">
+          <table className="employee-table-main">
+            <thead>
               <tr>
-                <th className="p-3 text-left">SiBS ID</th>
-                <th className="p-3 text-left">Full Name</th>
-                <th className="p-3 text-left">Email</th>
-                <th className="p-3 text-left">Gender</th>
-                <th className="p-3 text-left">Birthdate</th>
-                <th className="p-3 text-left">Civil Status</th>
-                <th className="p-3 text-left">Account</th>
-                <th className="p-3 text-left">Department</th>
-                <th className="p-3 text-left">Contact</th>
-                <th className="p-3 text-left">Hire Date</th>
+                <th>SiBS ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Gender</th>
+                <th>Birthdate</th>
+                <th>Civil Status</th>
+                <th>Account</th>
+                <th>Department</th>
+                <th>Contact</th>
+                <th>Hire Date</th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="p-6 text-center">
+                  <td colSpan="10" className="employee-table-empty">
                     Loading...
                   </td>
                 </tr>
               ) : employees.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="p-6 text-center">
+                  <td colSpan="10" className="employee-table-empty">
                     No employees found
                   </td>
                 </tr>
@@ -207,23 +221,25 @@ export default function EmployeeTable() {
                   <tr
                     key={emp.sibsId || index}
                     onClick={() => handleOpenEmployee(emp)}
-                    className="cursor-pointer border-t hover:bg-gray-50"
+                    className="employee-table-row"
                   >
-                    <td className="p-3">{emp.sibsId}</td>
-                    <td className="p-3 font-medium">
+                    <td>{emp.sibsId}</td>
+
+                    <td className="employee-name-cell">
                       {[emp.firstName, emp.middleName, emp.lastName]
                         .filter(Boolean)
                         .join(" ")
                         .toUpperCase()}
                     </td>
-                    <td className="p-3">{emp.email}</td>
-                    <td className="p-3">{emp.gender}</td>
-                    <td className="p-3">{formatDate(emp.birthdate)}</td>
-                    <td className="p-3">{emp.civilStatus}</td>
-                    <td className="p-3">{emp.account}</td>
-                    <td className="p-3">{emp.department || "N/A"}</td>
-                    <td className="p-3">{emp.contact}</td>
-                    <td className="p-3">{formatDate(emp.hireDate)}</td>
+
+                    <td>{emp.email}</td>
+                    <td>{emp.gender}</td>
+                    <td>{formatDate(emp.birthdate)}</td>
+                    <td>{emp.civilStatus}</td>
+                    <td>{emp.account}</td>
+                    <td>{emp.department || "N/A"}</td>
+                    <td>{emp.contact}</td>
+                    <td>{formatDate(emp.hireDate)}</td>
                   </tr>
                 ))
               )}
@@ -232,18 +248,14 @@ export default function EmployeeTable() {
         </div>
       </div>
 
-      <div className="lg:hidden">
-        <div ref={tableScrollRef} className="max-h-[670px] overflow-y-auto p-3">
+      <div className="employee-table-mobile">
+        <div ref={tableScrollRef} className="employee-mobile-scroll">
           {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
-              Loading...
-            </div>
+            <div className="employee-mobile-empty">Loading...</div>
           ) : employees.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
-              No employees found
-            </div>
+            <div className="employee-mobile-empty">No employees found</div>
           ) : (
-            <div className="space-y-3">
+            <div className="employee-mobile-list">
               {employees.map((emp, index) => (
                 <MobileEmployeeCard
                   key={emp.sibsId || index}
@@ -257,6 +269,6 @@ export default function EmployeeTable() {
       </div>
 
       <TableFooter tableEntity="employees" totalLabel="Total Employees" />
-    </>
+    </div>
   );
 }

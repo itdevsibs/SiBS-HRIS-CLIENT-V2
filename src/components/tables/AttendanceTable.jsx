@@ -4,7 +4,7 @@ import { CircleCheckBig, CircleX } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
-import  socket  from "@/lib/axios/socket";
+import socket from "@/lib/axios/socket";
 import TableFooter from "./footer/TableFooter";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
@@ -67,7 +67,7 @@ const AttendanceTable = () => {
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
-          },
+          }
         );
       } catch (err) {
         if (cancelled) return;
@@ -112,7 +112,7 @@ const AttendanceTable = () => {
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
-          },
+          }
         );
       } catch (err) {
         console.error("Live attendance refresh error:", err);
@@ -155,7 +155,7 @@ const AttendanceTable = () => {
 
     return (
       <div
-        className={`inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full px-3 py-1 text-center ${
+        className={`attendance-status-badge ${
           approved ? "status-present" : "status-late"
         }`}
       >
@@ -166,66 +166,55 @@ const AttendanceTable = () => {
   };
 
   return (
-    <div className="h-full rounded-xl bg-inherit">
-      <div className="hidden lg:block">
-        <table className="w-full table-fixed text-sm">
-          <thead className="sticky top-0 z-10 bg-gray-100">
-            <tr className="text-center">
-              {user?.tokenType === "admin" && (
-                <th className="w-[6%] rounded-tl-xl p-3">SiBS ID</th>
-              )}
+    <div className="attendance-table">
+      <div className="attendance-table-desktop">
+        <table className="attendance-table-head">
+          <thead>
+            <tr>
+              {user?.tokenType === "admin" && <th className="col-sibs">SiBS ID</th>}
 
               {user?.tokenType === "admin" && (
-                <th className="w-[18%] p-3 text-left">Employee Name</th>
+                <th className="col-employee text-left">Employee Name</th>
               )}
 
-              <th className="w-[9%] p-3 text-center">Tracker Date</th>
-              <th className="w-[8%] p-3">Login</th>
-              <th className="w-[8%] p-3">Start Break</th>
-              <th className="w-[8%] p-3">End Break</th>
-              <th className="w-[8%] p-3">Logout</th>
-              <th className="w-[6%] p-3">WH</th>
-              <th className="w-[6%] p-3">BH</th>
-              <th className="w-[6%] p-3">OT</th>
-              <th className="w-[6%] p-3">ATH</th>
-              <th className="w-[11%] rounded-tr-xl p-3">Status</th>
+              <th className="col-date">Tracker Date</th>
+              <th className="col-time">Login</th>
+              <th className="col-time">Start Break</th>
+              <th className="col-time">End Break</th>
+              <th className="col-time">Logout</th>
+              <th className="col-small">WH</th>
+              <th className="col-small">BH</th>
+              <th className="col-small">OT</th>
+              <th className="col-small">ATH</th>
+              <th className="col-status">Status</th>
             </tr>
           </thead>
         </table>
 
-        <div ref={tableScrollRef} className="max-h-[620px] overflow-y-auto">
-          <table className="w-full table-fixed text-sm">
+        <div ref={tableScrollRef} className="attendance-table-scroll">
+          <table className="attendance-table-body">
             <tbody>
               {loading ? (
                 <tr>
-                  <td
-                    colSpan={user?.tokenType === "admin" ? 12 : 10}
-                    className="p-6 text-center"
-                  >
+                  <td colSpan={user?.tokenType === "admin" ? 12 : 10}>
                     Loading...
                   </td>
                 </tr>
               ) : attendance.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={user?.tokenType === "admin" ? 12 : 10}
-                    className="p-6 text-center"
-                  >
+                  <td colSpan={user?.tokenType === "admin" ? 12 : 10}>
                     No records found
                   </td>
                 </tr>
               ) : (
                 attendance.map((item, index) => (
-                  <tr
-                    key={index}
-                    className="border-t text-center hover:bg-gray-50"
-                  >
+                  <tr key={index}>
                     {user?.tokenType === "admin" && (
-                      <td className="w-[6%] p-3">{item.gy_emp_code}</td>
+                      <td className="col-sibs">{item.gy_emp_code}</td>
                     )}
 
                     {user?.tokenType === "admin" && (
-                      <td className="w-[18%] p-3 text-left">
+                      <td className="col-employee text-left">
                         {[
                           item.gy_emp_fname,
                           item.gy_emp_mname,
@@ -238,24 +227,24 @@ const AttendanceTable = () => {
                       </td>
                     )}
 
-                    <td className="w-[9%] p-3 text-center">
+                    <td className="col-date">
                       {formatDate(item.gy_tracker_date)}
                     </td>
 
-                    <td className="w-[8%] p-3 text-center">
+                    <td className="col-time">
                       <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
+                        className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_login),
-                          item.login_status,
+                          item.login_status
                         )}`}
                       >
                         {formatTime(item.gy_tracker_login)}
                       </div>
                     </td>
 
-                    <td className="w-[8%] p-3 text-center">
+                    <td className="col-time">
                       <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${
+                        className={`attendance-time-badge ${
                           formatTime(item.gy_tracker_breakout) === "--"
                             ? ""
                             : "status-present"
@@ -265,36 +254,34 @@ const AttendanceTable = () => {
                       </div>
                     </td>
 
-                    <td className="w-[8%] p-3 text-center">
+                    <td className="col-time">
                       <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
+                        className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_breakin),
-                          item.breakin_status,
+                          item.breakin_status
                         )}`}
                       >
                         {formatTime(item.gy_tracker_breakin)}
                       </div>
                     </td>
 
-                    <td className="w-[8%] p-3 text-center">
+                    <td className="col-time">
                       <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
+                        className={`attendance-time-badge ${getTimeBadgeClass(
                           formatTime(item.gy_tracker_logout),
-                          item.logout_status,
+                          item.logout_status
                         )}`}
                       >
                         {formatTime(item.gy_tracker_logout)}
                       </div>
                     </td>
 
-                    <td className="w-[6%] p-3">{item.gy_tracker_wh ?? "--"}</td>
-                    <td className="w-[6%] p-3">{item.gy_tracker_bh ?? "--"}</td>
-                    <td className="w-[6%] p-3">{item.gy_tracker_ot ?? "--"}</td>
-                    <td className="w-[6%] p-3">
-                      {item.gy_tracker_ath ?? "--"}
-                    </td>
+                    <td className="col-small">{item.gy_tracker_wh ?? "--"}</td>
+                    <td className="col-small">{item.gy_tracker_bh ?? "--"}</td>
+                    <td className="col-small">{item.gy_tracker_ot ?? "--"}</td>
+                    <td className="col-small">{item.gy_tracker_ath ?? "--"}</td>
 
-                    <td className="w-[11%] p-3 text-center">
+                    <td className="col-status">
                       {renderStatusBadge(item.gy_tracker_status)}
                     </td>
                   </tr>
@@ -305,18 +292,14 @@ const AttendanceTable = () => {
         </div>
       </div>
 
-      <div className="lg:hidden">
-        <div ref={tableScrollRef} className="max-h-[620px] overflow-y-auto p-3">
+      <div className="attendance-table-mobile">
+        <div ref={tableScrollRef} className="attendance-mobile-scroll">
           {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
-              Loading...
-            </div>
+            <div className="attendance-mobile-empty">Loading...</div>
           ) : attendance.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
-              No records found
-            </div>
+            <div className="attendance-mobile-empty">No records found</div>
           ) : (
-            <div className="space-y-3">
+            <div className="attendance-mobile-list">
               {attendance.map((item, index) => {
                 const employeeName = [
                   item.gy_emp_fname,
@@ -329,121 +312,78 @@ const AttendanceTable = () => {
                   .toUpperCase();
 
                 return (
-                  <div
-                    key={index}
-                    className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
-                  >
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                  <div key={index} className="attendance-mobile-card">
+                    <div className="attendance-mobile-card-header">
+                      <div className="attendance-mobile-card-title">
                         {user?.tokenType === "admin" && (
-                          <p className="text-xs font-medium text-sibs-tertiary-5">
+                          <p className="attendance-mobile-id">
                             {item.gy_emp_code || "N/A"}
                           </p>
                         )}
 
-                        <h3 className="text-sm font-semibold text-sibs-primary-1">
+                        <h3>
                           {user?.tokenType === "admin"
                             ? employeeName || "N/A"
                             : formatDate(item.gy_tracker_date)}
                         </h3>
 
                         {user?.tokenType === "admin" && (
-                          <p className="text-xs text-sibs-tertiary-5">
+                          <p className="attendance-mobile-date">
                             {formatDate(item.gy_tracker_date)}
                           </p>
                         )}
                       </div>
 
-                      <div className="shrink-0">
+                      <div className="attendance-mobile-status">
                         {renderStatusBadge(item.gy_tracker_status)}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">Login</p>
+                    <div className="attendance-mobile-grid">
+                      <MobileMetric
+                        label="Login"
+                        value={formatTime(item.gy_tracker_login)}
+                        className={getTimeBadgeClass(
+                          formatTime(item.gy_tracker_login),
+                          item.login_status
+                        )}
+                      />
 
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_login),
-                            item.login_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_login)}
-                        </div>
-                      </div>
+                      <MobileMetric
+                        label="Start Break"
+                        value={formatTime(item.gy_tracker_breakout)}
+                        className={
+                          formatTime(item.gy_tracker_breakout) === "--"
+                            ? ""
+                            : "status-present"
+                        }
+                      />
 
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">
-                          Start Break
-                        </p>
+                      <MobileMetric
+                        label="End Break"
+                        value={formatTime(item.gy_tracker_breakin)}
+                        className={getTimeBadgeClass(
+                          formatTime(item.gy_tracker_breakin),
+                          item.breakin_status
+                        )}
+                      />
 
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${
-                            formatTime(item.gy_tracker_breakout) === "--"
-                              ? ""
-                              : "status-present"
-                          }`}
-                        >
-                          {formatTime(item.gy_tracker_breakout)}
-                        </div>
-                      </div>
+                      <MobileMetric
+                        label="Logout"
+                        value={formatTime(item.gy_tracker_logout)}
+                        className={getTimeBadgeClass(
+                          formatTime(item.gy_tracker_logout),
+                          item.logout_status
+                        )}
+                      />
 
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">
-                          End Break
-                        </p>
-
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_breakin),
-                            item.breakin_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_breakin)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">Logout</p>
-
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_logout),
-                            item.logout_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_logout)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">WH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_wh ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">BH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_bh ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">OT</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_ot ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">ATH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_ath ?? "--"}
-                        </p>
-                      </div>
+                      <MobileMetric label="WH" value={item.gy_tracker_wh ?? "--"} />
+                      <MobileMetric label="BH" value={item.gy_tracker_bh ?? "--"} />
+                      <MobileMetric label="OT" value={item.gy_tracker_ot ?? "--"} />
+                      <MobileMetric
+                        label="ATH"
+                        value={item.gy_tracker_ath ?? "--"}
+                      />
                     </div>
                   </div>
                 );
@@ -457,5 +397,19 @@ const AttendanceTable = () => {
     </div>
   );
 };
+
+function MobileMetric({ label, value, className = "" }) {
+  return (
+    <div className="attendance-mobile-metric">
+      <p>{label}</p>
+
+      {className ? (
+        <div className={`attendance-time-badge ${className}`}>{value}</div>
+      ) : (
+        <strong>{value}</strong>
+      )}
+    </div>
+  );
+}
 
 export default AttendanceTable;

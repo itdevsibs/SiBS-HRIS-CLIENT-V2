@@ -132,62 +132,47 @@ export default function AdminLoginModal() {
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
-        onClick={onClose}
-      >
+      <div className="admin-login-overlay" onClick={onClose}>
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-login-title"
+          className="admin-login-modal"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
         >
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="absolute right-5 top-5 text-sibs-tertiary-5 transition hover:text-sibs-primary-1 disabled:opacity-50"
+            className="admin-login-close"
             aria-label="Close modal"
           >
             <X size={20} />
           </button>
 
-          <div className="border-b border-sibs-tertiary-9 px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)]/10">
-                <Activity size={22} className="text-sibs-primary-1" />
+          <div className="admin-login-header">
+            <div className="admin-login-title-row">
+              <div className="admin-login-icon">
+                <Activity size={24} />
               </div>
 
-              <div>
-                <h2
-                  id="admin-login-title"
-                  className="text-2xl font-bold text-sibs-primary-1"
-                >
-                  {targetAccessLabel} Login
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Enter your password to access {targetAccessLabel} mode
-                </p>
+              <div className="admin-login-title-text">
+                <h2 id="admin-login-title">{targetAccessLabel} Login</h2>
+                <p>Enter your password to access {targetAccessLabel} mode</p>
               </div>
             </div>
           </div>
 
-          <div className="px-6 pt-4">
-            <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5">
-              Target Access:
-              <span className="ml-2 font-semibold text-sibs-primary-1">
-                {targetAccessLabel}
-              </span>
+          <div className="admin-login-access-wrap">
+            <div className="admin-login-access-box">
+              <span>Target Access:</span>
+              <strong>{targetAccessLabel}</strong>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 p-6">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                Password
-              </label>
+          <form onSubmit={handleSubmit} className="admin-login-form">
+            <div className="admin-login-field">
+              <label>Password</label>
 
               <input
                 type="password"
@@ -195,16 +180,16 @@ export default function AdminLoginModal() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={`Enter ${targetAccessLabel} password`}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)] disabled:opacity-50"
+                autoComplete="current-password"
               />
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="admin-login-actions">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
+                className="admin-login-cancel"
               >
                 Cancel
               </button>
@@ -212,7 +197,7 @@ export default function AdminLoginModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="admin-login-submit"
               >
                 {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
               </button>
