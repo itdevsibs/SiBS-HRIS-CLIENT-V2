@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, CalendarDays } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { getSchedule } from "../../lib/axios/getSchedule";
 import { formatDate } from "../../components/layout/FormatDateTime";
-import { useRouter } from "../../lib/router";
 
 const SCHEDULE_STATE_KEY = "schedulePageState";
 
@@ -22,7 +22,7 @@ export default function SchedulePage() {
     limit: 15,
   });
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const restoredRef = useRef(false);
   const mainScrollRef = useRef(null);
   const tableScrollRef = useRef(null);
@@ -59,7 +59,7 @@ export default function SchedulePage() {
       JSON.stringify({
         search,
         page,
-      })
+      }),
     );
   }, [search, page]);
 
@@ -71,7 +71,7 @@ export default function SchedulePage() {
 
       if (!result?.success) {
         if (result?.status === 401) {
-          router.replace("/login");
+          navigate("/login", { replace: true });
           return;
         }
 
@@ -92,7 +92,7 @@ export default function SchedulePage() {
           totalPages: 1,
           totalRecords: 0,
           limit: 15,
-        }
+        },
       );
     } catch (err) {
       console.error("Schedule fetch error:", err);
@@ -248,7 +248,7 @@ export default function SchedulePage() {
       ];
 
       return values.some((value) =>
-        String(value).toLowerCase().includes(keyword)
+        String(value).toLowerCase().includes(keyword),
       );
     });
   }, [schedule, search]);
@@ -317,9 +317,7 @@ export default function SchedulePage() {
 
                         <td
                           className={
-                            String(item.gy_sched_mode) === "0"
-                              ? "day-off"
-                              : ""
+                            String(item.gy_sched_mode) === "0" ? "day-off" : ""
                           }
                         >
                           {formatMode(item.gy_sched_mode)}

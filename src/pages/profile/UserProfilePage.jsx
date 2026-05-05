@@ -11,14 +11,14 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-import Header from "../../../components/layout/Header";
-import { useUser } from "../../../services/context/UserContext";
-import ProfileDropdown from "../../../components/layout/profile/ProfileDropdown";
-import ResignationModal from "../../../components/modals/resignation/ResignationModal";
-import PersonalTab from "../../../components/layout/tabs/profile/PersonalTab";
-import StatusModal from "../../../components/modals/StatusModal";
-import { useResignationList } from "../../../services/context/ResignationListContext";
-import ResignationTab from "../../../components/layout/tabs/profile/ResignationTab";
+import Header from "../../components/layout/Header";
+import { useUser } from "../../services/context/UserContext";
+import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
+import ResignationModal from "../../components/modals/resignation/ResignationModal";
+import PersonalTab from "../../components/layout/tabs/profile/PersonalTab";
+import StatusModal from "../../components/modals/StatusModal";
+import { useResignationList } from "../../services/context/ResignationListContext";
+import ResignationTab from "../../components/layout/tabs/profile/ResignationTab";
 
 export default function UserProfilePage() {
   const { user } = useUser();

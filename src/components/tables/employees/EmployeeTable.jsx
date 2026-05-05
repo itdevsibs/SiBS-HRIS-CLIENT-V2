@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 import {
   Mail,
   Phone,
@@ -15,7 +15,7 @@ import TableFooter from "../footer/TableFooter";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
-function MobileInfoItem({ icon: Icon, label, value }) {
+function MobileInfoItem({ icon: label, value }) {
   return (
     <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
       <div className="flex items-start gap-2">
@@ -67,7 +67,11 @@ function MobileEmployeeCard({ emp, onOpen }) {
             label="Civil Status"
             value={emp.civilStatus}
           />
-          <MobileInfoItem icon={Briefcase} label="Account" value={emp.account} />
+          <MobileInfoItem
+            icon={Briefcase}
+            label="Account"
+            value={emp.account}
+          />
           <MobileInfoItem
             icon={Building2}
             label="Department"
@@ -92,7 +96,7 @@ export default function EmployeeTable() {
   const { page, search, loading, setLoading, setPagination } =
     usePagination("employees");
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
 
   useEffect(() => {
@@ -115,7 +119,7 @@ export default function EmployeeTable() {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            router.push("/login");
+            navigate("/login");
             return;
           }
 
@@ -134,7 +138,7 @@ export default function EmployeeTable() {
             totalPages: 1,
             currentPage: 1,
             total: 0,
-          }
+          },
         );
       } catch (err) {
         if (cancelled) return;
@@ -158,15 +162,12 @@ export default function EmployeeTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, router, setLoading, setPagination]);
+  }, [page, search, navigate, setLoading, setPagination]);
 
   const handleOpenEmployee = (emp) => {
     sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
-    sessionStorage.setItem(
-      EMPLOYEE_STATE_KEY,
-      JSON.stringify({ page: 1 })
-    );
-    router.push("/employee/employee-data");
+    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page: 1 }));
+    navigate("/employee/employee-data");
   };
 
   return (
