@@ -153,7 +153,7 @@ export default function AdminDashboardPage() {
                 className="shrink-0 text-sibs-primary-1"
               />
 
-              <h1 className="min-w-0 break-words text-[26px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+              <h1 className="min-w-0 break-words text-[26px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
                 {dashboardTitleMap[user?.role] || "Dashboard"}
               </h1>
             </div>

@@ -27,7 +27,7 @@ export default function AttendancePage() {
               </div>
 
               <div className="min-w-0">
-                <h1 className="m-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
                   {pageTitle}
                 </h1>
 

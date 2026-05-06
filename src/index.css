@@ -166,7 +166,7 @@
 
   .thin-scroll {
     scrollbar-width: thin;
-    scrollbar-color: #d1d5db transparent; /* bg-gray-300 */
+    scrollbar-color: #c1d1e2 transparent;
   }
 
   .thin-scroll::-webkit-scrollbar {
@@ -180,7 +180,7 @@
 
   .thin-scroll::-webkit-scrollbar-thumb {
     border-radius: 9999px;
-    background: #d1d5db; /* bg-gray-300 */
+    background: #94a9c1;
   }
 }
 
