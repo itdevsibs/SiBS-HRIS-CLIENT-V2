@@ -99,7 +99,7 @@ export default function EmployeesPage() {
           <div className="flex min-w-0 items-center gap-2">
             <Users size={28} className="shrink-0 text-sibs-primary-1" />
 
-            <h1 className="m-0 min-w-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+            <h1 className="m-0 min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
               Employees
             </h1>
           </div>

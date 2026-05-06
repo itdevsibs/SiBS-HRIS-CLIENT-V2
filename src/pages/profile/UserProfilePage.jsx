@@ -291,7 +291,7 @@ export default function UserProfilePage() {
 
 function InfoRow({ icon: Icon, value, breakText = false }) {
   return (
-    <div className="flex min-w-0 items-start gap-3">
+    <div className="flex min-w-0 items-start gap-3 text-sm text-sibs-tertiary-5">
       <Icon size={16} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
 
       <span

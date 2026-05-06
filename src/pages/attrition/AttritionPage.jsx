@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { FileText, Search } from "lucide-react";
+import { FileText, Search, Plus } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import AttritionModal from "@/components/modals/attrition/AttritionModal";
+import AttritionModal from "../../components/modals/attrition/AttritionModal";
 import StatusModal from "../../components/modals/StatusModal";
 import AttritionTable from "../../components/tables/AttritionTable";
 import ResignationTable from "../../components/tables/employees/EmployeeResignationTable";
@@ -15,14 +15,14 @@ import {
   updateSupervisorResignation,
 } from "../../lib/axios/getEmployee";
 
-import { usePagination } from "@/services/context/PaginationContext";
+import { usePagination } from "../../services/context/PaginationContext";
 import { useUser } from "../../services/context/UserContext";
 
 import {
   formatDate,
   formatDateTime,
   getTodayDate,
-} from "@/components/layout/FormatDateTime";
+} from "../../components/layout/FormatDateTime";
 
 export default function AttritionPage() {
   const { user } = useUser();
@@ -50,7 +50,7 @@ export default function AttritionPage() {
     data: null,
   });
 
-  const [form, setForm] = useState({
+  const initialForm = {
     employeeSibsId: "",
     employeeName: "",
     resignationType: "",
@@ -82,7 +82,9 @@ export default function AttritionPage() {
     somRemarks: "",
 
     hideTl: false,
-  });
+  };
+
+  const [form, setForm] = useState(initialForm);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -134,40 +136,17 @@ export default function AttritionPage() {
 
   const resetForm = () => {
     setForm({
-      employeeSibsId: "",
-      employeeName: "",
-      resignationType: "",
+      ...initialForm,
       attritionDate: getTodayDate(),
-      lastWorkingDate: "",
-      reason: "",
-      otherReason: "",
-      remarks: "",
-      uploadedFile: null,
-      uploadedFileName: "",
-      existingUploadedFile: "",
-
-      tlSibsId: "",
-      tlFullName: "",
-      tlIsApproved: 0,
-      tlIsDeclined: 0,
-      tlRemarks: "",
-
-      omSibsId: "",
-      omFullName: "",
-      omIsApproved: 0,
-      omIsDeclined: 0,
-      omRemarks: "",
-
-      somSibsId: "",
-      somFullName: "",
-      somIsApproved: 0,
-      somIsDeclined: 0,
-      somRemarks: "",
-
-      hideTl: false,
     });
 
     setEditingId(null);
+  };
+
+  const handleOpenAdd = () => {
+    resetForm();
+    setEditingId(null);
+    setOpenForm(true);
   };
 
   const closeFormModal = () => {
@@ -425,7 +404,7 @@ export default function AttritionPage() {
               </div>
 
               <div className="min-w-0">
-                <h1 className="m-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
                   {pageTitle}
                 </h1>
 
@@ -436,20 +415,31 @@ export default function AttritionPage() {
             </div>
 
             {activeTab === "Attrition" && (
-              <div className="relative w-full shrink-0 lg:w-80">
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
+              <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+                <div className="relative w-full shrink-0 lg:w-80">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
 
-                <input
-                  type="text"
-                  placeholder="Search attrition..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={handleSearchKeyDown}
-                  className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
+                  <input
+                    type="text"
+                    placeholder="Search attrition..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleOpenAdd}
+                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                >
+                  <Plus size={17} />
+                  Submit Attrition
+                </button>
               </div>
             )}
           </section>

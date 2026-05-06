@@ -9,10 +9,12 @@ import {
   MapPin,
   CalendarDays,
   ChevronLeft,
+  MoreHorizontal,
 } from "lucide-react";
+
 import Header from "../../components/layout/Header";
 import { getEmployeeById } from "../../lib/axios/getEmployee";
-import { formatDate } from "@/components/layout/FormatDateTime";
+import { formatDate } from "../../components/layout/FormatDateTime";
 
 const tabs = [
   "Personal",
@@ -29,6 +31,7 @@ const tabs = [
 
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
+
   const [employee, setEmployee] = useState(null);
   const [activeTab, setActiveTab] = useState("Personal");
   const [loading, setLoading] = useState(true);
@@ -39,21 +42,21 @@ export default function EmployeeDataPage() {
         const sibsId = sessionStorage.getItem("selectedEmployeeId");
 
         if (!sibsId) {
-          navigate("/employee");
+          navigate("/employee", { replace: true });
           return;
         }
 
         const result = await getEmployeeById(sibsId);
 
         if (!result?.success || !result?.data) {
-          navigate("/employee");
+          navigate("/employee", { replace: true });
           return;
         }
 
         setEmployee(result.data);
       } catch (error) {
         console.error("Failed to fetch employee:", error);
-        navigate("/employee");
+        navigate("/employee", { replace: true });
       } finally {
         setLoading(false);
       }
@@ -69,193 +72,197 @@ export default function EmployeeDataPage() {
     : "";
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="flex-1 overflow-y-auto p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <button
+          type="button"
           onClick={() => navigate("/employee")}
-          className="mb-4 inline-flex items-center gap-2 text-sm text-sibs-primary-1 hover:underline"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-sibs-primary-1 transition hover:underline"
         >
           <ChevronLeft size={16} />
           Back to Employees
         </button>
 
         {loading ? (
-          <div className="bg-white rounded-2xl shadow-sm p-6">Loading...</div>
+          <div className="rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
+            Loading...
+          </div>
         ) : !employee ? (
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
             Employee not found
           </div>
         ) : (
           <div className="space-y-6">
             <section className="overflow-hidden rounded-3xl bg-white">
-              <div className="bg-[var(--sibs-primary-1)] px-6 pt-5 pb-0 text-white">
+              <div className="bg-sibs-primary-1 px-4 pb-0 pt-5 text-white sm:px-6">
                 <div className="flex flex-col gap-4">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                    <div className="flex items-start gap-5">
-                      <div
-                        className="h-[110px] w-[110px] rounded-2xl bg-white/15 border border-white/20 
-                          flex items-center justify-center overflow-hidden shrink-0"
-                      >
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 sm:h-[110px] sm:w-[110px]">
                         <User size={36} className="text-white" />
                       </div>
 
-                      <div className="pt-1">
-                        <h1 className="text-4xl font-bold leading-tight">
+                      <div className="min-w-0 pt-1">
+                        <h1 className="break-words text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">
                           {fullName || "Employee Name"}
                         </h1>
 
-                        <p className="mt-1 text-sm text-white/80">
+                        <p className="mt-1 text-sm font-medium text-white/80">
                           {employee.account || "Employee"}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <button className="rounded-full bg-white text-[var(--sibs-primary-1)] px-4 py-2 text-sm font-medium hover:opacity-90 transition">
+                      <button
+                        type="button"
+                        className="rounded-full bg-white px-4 py-2 text-sm font-medium text-sibs-primary-1 transition hover:opacity-90"
+                      >
                         Request a Change
                       </button>
 
-                      <button className="h-10 w-10 rounded-full bg-white text-[var(--sibs-primary-1)] flex items-center justify-center hover:opacity-90 transition">
-                        •••
+                      <button
+                        type="button"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90"
+                        aria-label="More actions"
+                      >
+                        <MoreHorizontal size={20} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex overflow-x-auto no-scrollbar pt-1">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
-                          activeTab === tab
-                            ? "bg-sibs-tertiary-10 text-[var(--sibs-primary-1)]"
-                            : "text-white/90 hover:bg-white/10"
-                        }`}
-                      >
-                        {tab}
-                      </button>
-                    ))}
+                  <div className="overflow-x-auto pt-1 no-scrollbar">
+                    <div className="flex min-w-max">
+                      {tabs.map((tab) => {
+                        const isActive = activeTab === tab;
+
+                        return (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setActiveTab(tab)}
+                            className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+                              isActive
+                                ? "bg-sibs-tertiary-10 text-sibs-primary-1"
+                                : "text-white/90 hover:bg-white/10"
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            <div className="grid grid-cols-1 xl:grid-cols-[23%_1fr] gap-6 min-h-0">
-              <aside className="space-y-4">
-                <div className="bg-white rounded-2xl shadow-sm border p-5">
-                  <h2 className="text-sm font-semibold text-sibs-primary-1 mb-4">
-                    Vitals
-                  </h2>
-
+            <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <aside className="min-w-0 space-y-4">
+                <SideCard title="Vitals">
                   <div className="space-y-3 text-sm text-sibs-tertiary-5">
-                    <div className="flex items-start gap-3">
-                      <Phone size={16} className="mt-0.5 shrink-0" />
-                      <span>{employee.contact || "N/A"}</span>
-                    </div>
+                    <InfoRow icon={Phone} value={employee.contact || "N/A"} />
 
-                    <div className="flex items-start gap-3">
-                      <Mail size={16} className="mt-0.5 shrink-0" />
-                      <span className="break-all">
-                        {employee.email || "N/A"}
-                      </span>
-                    </div>
+                    <InfoRow
+                      icon={Mail}
+                      value={employee.email || "N/A"}
+                      breakText
+                    />
 
-                    <div className="flex items-start gap-3">
-                      <Building2 size={16} className="mt-0.5 shrink-0" />
-                      <span>{employee.department || "N/A"}</span>
-                    </div>
+                    <InfoRow
+                      icon={Building2}
+                      value={employee.department || "N/A"}
+                    />
 
-                    <div className="flex items-start gap-3">
-                      <Briefcase size={16} className="mt-0.5 shrink-0" />
-                      <span>{employee.account || "N/A"}</span>
-                    </div>
+                    <InfoRow
+                      icon={Briefcase}
+                      value={employee.account || "N/A"}
+                    />
 
-                    <div className="flex items-start gap-3">
-                      <MapPin size={16} className="mt-0.5 shrink-0" />
-                      <span>{employee.location || "N/A"}</span>
-                    </div>
+                    <InfoRow
+                      icon={MapPin}
+                      value={employee.location || "N/A"}
+                    />
                   </div>
-                </div>
+                </SideCard>
 
-                <div className="bg-white rounded-2xl shadow-sm border p-5">
-                  <h2 className="text-sm font-semibold text-sibs-primary-1 mb-4">
-                    Hire Date
-                  </h2>
+                <SideCard title="Hire Date">
+                  <InfoRow
+                    icon={CalendarDays}
+                    value={formatDate(employee.hireDate)}
+                  />
+                </SideCard>
 
-                  <div className="flex items-start gap-3 text-sm text-sibs-tertiary-5">
-                    <CalendarDays size={16} className="mt-0.5 shrink-0" />
-                    <span>{formatDate(employee.hireDate)}</span>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm border p-5">
-                  <h2 className="text-sm font-semibold text-sibs-primary-1 mb-4">
-                    Benefits
-                  </h2>
-
+                <SideCard title="Benefits">
                   <div className="space-y-4 text-sm text-sibs-tertiary-5">
                     <SidebarField label="SSS" value={employee.sss || "N/A"} />
                     <SidebarField label="PHIC" value={employee.phic || "N/A"} />
                     <SidebarField label="HDMF" value={employee.hdmf || "N/A"} />
                     <SidebarField label="TIN" value={employee.tin || "N/A"} />
                   </div>
-                </div>
+                </SideCard>
               </aside>
 
-              <section className="space-y-6">
+              <section className="min-w-0 space-y-6">
                 {activeTab === "Personal" && (
-                  <div className="bg-white rounded-[22px] shadow-sm border border-[#D9E2EC] p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="w-5 h-5 rounded-md bg-[var(--sibs-tertiary-9)] flex items-center justify-center shrink-0">
-                        <span className="text-sibs-primary-1 text-[11px] font-bold">
+                  <div className="rounded-[22px] border border-[#D9E2EC] bg-white p-6 shadow-sm">
+                    <div className="mb-6 flex items-center gap-2">
+                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-sibs-tertiary-9">
+                        <span className="text-[11px] font-bold text-sibs-primary-1">
                           ▣
                         </span>
                       </div>
 
-                      <h3 className="text-[28px] font-bold text-sibs-primary-1 leading-none">
+                      <h3 className="text-[28px] font-bold leading-none text-sibs-primary-1">
                         Basic Information
                       </h3>
                     </div>
 
                     <div className="space-y-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <InfoField label="SiBS ID" value={employee.sibsId} />
+
                         <InfoField
                           label="Status"
                           value={employee.status || "Active"}
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <InfoField
                           label="First Name"
                           value={employee.firstName}
                         />
+
                         <InfoField
                           label="Middle Name"
                           value={employee.middleName}
                         />
+
                         <InfoField
                           label="Last Name"
                           value={employee.lastName}
                         />
+
                         <InfoField
                           label="Preferred Name"
                           value={employee.preferredName || ""}
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         <InfoField
                           label="Birth Date"
                           value={formatDate(employee.birthdate)}
                         />
+
                         <InfoField
                           label="Gender"
                           value={employee.gender || ""}
                         />
+
                         <InfoField
                           label="Marital Status"
                           value={employee.civilStatus || ""}
@@ -266,7 +273,7 @@ export default function EmployeeDataPage() {
                 )}
 
                 {activeTab !== "Personal" && (
-                  <div className="bg-white rounded-2xl shadow-sm border p-6 text-sibs-tertiary-5">
+                  <div className="rounded-2xl border border-[#D9E2EC] bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
                     {activeTab} content can be added here.
                   </div>
                 )}
@@ -279,14 +286,38 @@ export default function EmployeeDataPage() {
   );
 }
 
+function SideCard({ title, children }) {
+  return (
+    <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+      <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+        {title}
+      </h2>
+
+      {children}
+    </div>
+  );
+}
+
+function InfoRow({ icon: Icon, value, breakText = false }) {
+  return (
+    <div className="flex min-w-0 items-start gap-3 text-sm text-sibs-tertiary-5">
+      <Icon size={16} className="mt-0.5 shrink-0" />
+
+      <span className={breakText ? "min-w-0 break-all" : "min-w-0 break-words"}>
+        {value || "N/A"}
+      </span>
+    </div>
+  );
+}
+
 function InfoField({ label, value }) {
   return (
     <div className="w-full min-w-0">
-      <label className="block text-[14px] font-medium text-sibs-primary-1 mb-2">
+      <label className="mb-2 block text-[14px] font-medium text-sibs-primary-1">
         {label}
       </label>
 
-      <div className="min-h-[52px] rounded-[10px] border border-[#8FA9C8] bg-white px-4 py-3 text-[15px] text-[#2F5E93] flex items-center">
+      <div className="flex min-h-[52px] items-center rounded-[10px] border border-[#8FA9C8] bg-white px-4 py-3 text-[15px] text-[#2F5E93]">
         <span className="break-words">{value || "N/A"}</span>
       </div>
     </div>
@@ -296,7 +327,7 @@ function InfoField({ label, value }) {
 function SidebarField({ label, value }) {
   return (
     <div className="min-w-0">
-      <p className="font-medium text-sibs-primary-1 mb-1">{label}</p>
+      <p className="mb-1 font-medium text-sibs-primary-1">{label}</p>
       <p className="break-all leading-5">{value || "N/A"}</p>
     </div>
   );

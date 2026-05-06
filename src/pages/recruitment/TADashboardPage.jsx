@@ -673,7 +673,7 @@ export default function TADashboardPage() {
           <div className="flex items-center gap-2 text-sibs-primary-1">
             <LayoutDashboard size={28} className="shrink-0" />
 
-            <h1 className="m-0 text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+            <h1 className="m-0 text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
               TA Dashboard
             </h1>
           </div>
