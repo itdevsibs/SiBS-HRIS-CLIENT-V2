@@ -51,7 +51,7 @@ export default function Header() {
   ).toUpperCase();
 
   return (
-    <header className="relative z-[999] flex h-[73px] shrink-0 items-center border-b border-[#C9D6E4] bg-sibs-tertiary-10 px-4 shadow-sm sm:px-6">
+    <header className="relative z-[999] flex h-[73px] shrink-0 items-center border-b border-gray-300 bg-sibs-tertiary-10 px-4 sm:px-6">
       <div className="flex min-w-0 flex-1 items-center justify-end gap-4 pl-12 sm:pl-0">
         <button
           type="button"
