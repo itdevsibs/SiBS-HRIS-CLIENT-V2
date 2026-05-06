@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   FileCheck2,
 } from "lucide-react";
+
 import Header from "../../components/layout/Header";
 import { usePagination } from "@/services/context/PaginationContext";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
@@ -16,14 +17,19 @@ const EMPLOYEE_STATE_KEY = "employeePageState";
 
 function SummaryCard({ label, value, icon: Icon }) {
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
-        <p className="text-xs text-sibs-tertiary-5">{label}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+        <p className="m-0 text-xs font-normal text-sibs-tertiary-5">
+          {label}
+        </p>
+
+        <h2 className="m-0 text-xl font-bold leading-tight text-sibs-primary-1">
+          {value}
+        </h2>
       </div>
     </div>
   );
@@ -51,6 +57,7 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     if (restoredRef.current) return;
+
     restoredRef.current = true;
 
     try {
@@ -58,6 +65,7 @@ export default function EmployeesPage() {
 
       if (savedState) {
         const parsed = JSON.parse(savedState);
+
         if (parsed?.page) {
           setPage(parsed.page);
         }
@@ -80,36 +88,36 @@ export default function EmployeesPage() {
   }, [activeEmployeeTab]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
+        <section className="mb-6 min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
             <Users size={28} className="shrink-0 text-sibs-primary-1" />
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
+            <h1 className="m-0 min-w-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
               Employees
             </h1>
           </div>
 
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
+          <p className="mt-1 text-sm font-normal text-sibs-tertiary-5">
             Manage employees, access requests, and CHWCP records
           </p>
-        </div>
+        </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <SummaryCard label="Employees" value="0" icon={UserRoundCheck} />
           <SummaryCard label="Access Requests" value="5" icon={ShieldCheck} />
           <SummaryCard label="CHWCP" value="2" icon={FileCheck2} />
-        </div>
+        </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="inline-flex min-w-max gap-2 rounded-full bg-[#F2F4F7] p-1 shadow-sm">
+        <section className="mb-6 grid min-w-0 grid-cols-1 items-center gap-4 lg:grid-cols-[1fr_auto]">
+          <div className="min-w-0 overflow-x-auto no-scrollbar">
+            <div className="inline-flex w-max gap-2 rounded-full bg-[#f2f4f7] p-1 shadow-sm">
               {employeeTabs.map(({ label, count }) => {
                 const isActive = activeEmployeeTab === label;
 
@@ -118,27 +126,25 @@ export default function EmployeesPage() {
                     key={label}
                     type="button"
                     onClick={() => setActiveEmployeeTab(label)}
-                    className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-3 text-sm font-medium transition-colors duration-300 ${
+                    className={`inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-sm font-medium transition ${
                       isActive
-                        ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
-                        : "text-[#344054]"
+                        ? "bg-sibs-primary-1 text-white shadow-sm"
+                        : "bg-transparent text-[#344054] hover:bg-white/70"
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span>{label}</span>
+                    <span>{label}</span>
 
-                      {label !== "Employees" && count > 0 && (
-                        <span
-                          className={`flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow ${
-                            isActive
-                              ? "bg-white text-[var(--sibs-primary-1)]"
-                              : "bg-[var(--sibs-primary-1)] text-white"
-                          }`}
-                        >
-                          {count}
-                        </span>
-                      )}
-                    </span>
+                    {label !== "Employees" && count > 0 && (
+                      <span
+                        className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow-sm ${
+                          isActive
+                            ? "bg-white text-sibs-primary-1"
+                            : "bg-sibs-primary-1 text-white"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -146,10 +152,10 @@ export default function EmployeesPage() {
           </div>
 
           {activeEmployeeTab === "Employees" && (
-            <div className="relative w-full lg:w-[320px]">
+            <div className="relative w-full shrink-0 lg:w-80">
               <Search
                 size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
               />
 
               <input
@@ -158,26 +164,26 @@ export default function EmployeesPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="search-input w-full"
+                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>
           )}
-        </div>
+        </section>
 
         {activeEmployeeTab === "Employees" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
             <EmployeeTable />
           </section>
         )}
 
         {activeEmployeeTab === "Access Requests" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
             <AccessRequestTable />
           </section>
         )}
 
         {activeEmployeeTab === "CHWCP" && (
-          <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
             <ChwcpTable />
           </section>
         )}

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
 import {
-  BriefcaseBusiness,
   Gift,
   Search,
   Eye,
@@ -235,6 +234,14 @@ const emptyOfferForm = {
   source: "",
 };
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function safeReadArray(key) {
   if (typeof window === "undefined") return [];
 
@@ -402,13 +409,14 @@ function RatingStars({ rating }) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
         <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+
         {description && (
           <p className="truncate text-xs text-sibs-tertiary-5">
             {description}
@@ -449,7 +457,7 @@ function ProgressBar({ label, value, total }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-[var(--sibs-primary-1)]"
+          className="h-full rounded-full bg-sibs-primary-1"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -459,7 +467,7 @@ function ProgressBar({ label, value, total }) {
 
 function OfferMobileCard({ offer, onView, onUpdate }) {
   return (
-    <div className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]">
+    <div className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
       <button type="button" onClick={onView} className="w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -527,7 +535,7 @@ function OfferMobileCard({ offer, onView, onUpdate }) {
           <button
             type="button"
             onClick={onUpdate}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-3 py-2 text-xs font-bold text-white transition hover:opacity-90"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 py-2 text-xs font-bold text-white transition hover:opacity-90"
           >
             <CheckCircle2 size={15} />
             Update
@@ -537,7 +545,7 @@ function OfferMobileCard({ offer, onView, onUpdate }) {
         <button
           type="button"
           onClick={onView}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
         >
           <Eye size={15} />
           View
@@ -680,7 +688,7 @@ function CreateOfferModal({
                       required
                       value={form.candidateApplicationId}
                       onChange={(e) => handleCandidateChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select candidate from Offered stage</option>
                       {eligibleCandidates.map((candidate) => (
@@ -760,7 +768,7 @@ function CreateOfferModal({
                       onChange={(e) =>
                         setForm({ ...form, offerDate: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
                 </div>
@@ -783,7 +791,7 @@ function CreateOfferModal({
                       value={form.basicPay}
                       onChange={(e) => handleBasicPayChange(e.target.value)}
                       placeholder="Example: 22000"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -798,7 +806,7 @@ function CreateOfferModal({
                       value={form.deMinimis}
                       onChange={(e) => handleDeMinimisChange(e.target.value)}
                       placeholder="Example: 3000"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -826,7 +834,7 @@ function CreateOfferModal({
                       required
                       value={form.status}
                       onChange={(e) => handleStatusChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="Pending">Pending</option>
                       <option value="Accepted">Accepted</option>
@@ -846,7 +854,7 @@ function CreateOfferModal({
                         onChange={(e) =>
                           setForm({ ...form, acceptedDate: e.target.value })
                         }
-                        className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                        className={inputClass()}
                       />
                     </div>
                   )}
@@ -927,7 +935,7 @@ function CreateOfferModal({
                           }
                           rows={3}
                           placeholder="Optional candidate feedback regarding the offer."
-                          className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                          className={textareaClass()}
                         />
                       </div>
 
@@ -943,7 +951,7 @@ function CreateOfferModal({
                               experienceRating: Number(e.target.value),
                             })
                           }
-                          className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                          className={inputClass()}
                         >
                           <option value={5}>5 - Excellent</option>
                           <option value={4}>4 - Good</option>
@@ -963,7 +971,7 @@ function CreateOfferModal({
                             setForm({ ...form, feedbackTag: e.target.value })
                           }
                           placeholder="Example: Offer Declined, Compensation Concern"
-                          className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                          className={inputClass()}
                         />
                       </div>
                     </>
@@ -980,7 +988,7 @@ function CreateOfferModal({
                       }
                       rows={3}
                       placeholder="Optional offer notes."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
                 </div>
@@ -1082,7 +1090,7 @@ function CreateOfferModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <RotateCcw size={17} />
               Reset
@@ -1099,7 +1107,7 @@ function CreateOfferModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <Plus size={17} />
               Save Offer
@@ -1374,7 +1382,7 @@ function OfferDetailsModal({ open, offer, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -1460,7 +1468,7 @@ function UpdateOfferStatusModal({
                 required
                 value={form.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 <option value="Accepted">Accepted</option>
                 <option value="Declined">Declined</option>
@@ -1479,7 +1487,7 @@ function UpdateOfferStatusModal({
                   onChange={(e) =>
                     setForm({ ...form, acceptedDate: e.target.value })
                   }
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass()}
                 />
               </div>
             )}
@@ -1549,7 +1557,7 @@ function UpdateOfferStatusModal({
                     }
                     rows={3}
                     placeholder="Optional candidate feedback."
-                    className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={textareaClass()}
                   />
                 </div>
 
@@ -1565,7 +1573,7 @@ function UpdateOfferStatusModal({
                         experienceRating: Number(e.target.value),
                       })
                     }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   >
                     <option value={5}>5 - Excellent</option>
                     <option value={4}>4 - Good</option>
@@ -1585,7 +1593,7 @@ function UpdateOfferStatusModal({
                       setForm({ ...form, feedbackTag: e.target.value })
                     }
                     placeholder="Example: Offer Declined"
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
               </>
@@ -1600,7 +1608,7 @@ function UpdateOfferStatusModal({
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                 rows={3}
                 placeholder="Optional remarks."
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
           </div>
@@ -1619,7 +1627,7 @@ function UpdateOfferStatusModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <CheckCircle2 size={16} />
               Save Status
@@ -2133,10 +2141,10 @@ export default function OffersPage() {
   }, [offerList]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <Gift size={28} className="shrink-0 text-sibs-primary-1" />
@@ -2264,7 +2272,7 @@ export default function OffersPage() {
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             Create Offer
@@ -2292,14 +2300,14 @@ export default function OffersPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search candidate, offer ID, role..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -2311,7 +2319,7 @@ export default function OffersPage() {
               <select
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {ownerOptions.map((owner) => (
                   <option key={owner} value={owner}>
@@ -2323,7 +2331,7 @@ export default function OffersPage() {
               <select
                 value={accountFilter}
                 onChange={(e) => setAccountFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {accountOptions.map((account) => (
                   <option key={account} value={account}>
@@ -2442,7 +2450,7 @@ export default function OffersPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleOpenStatusModal(offer)}
-                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
+                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
                                 >
                                   <CheckCircle2 size={15} />
                                   Update
@@ -2452,7 +2460,7 @@ export default function OffersPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedOffer(offer)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                               >
                                 <Eye size={15} />
                                 View
@@ -2483,19 +2491,31 @@ export default function OffersPage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>

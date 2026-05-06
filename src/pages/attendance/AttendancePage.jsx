@@ -15,22 +15,23 @@ export default function AttendancePage() {
   const pageTitle = isEmployee ? "My Attendance" : "Attendance";
 
   return (
-    <div className="attendance-page">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="attendance-main">
-        <div className="attendance-wrapper">
-          {/* PAGE HEADER */}
-          <div className="attendance-header">
-            <div className="attendance-title-area">
-              <div className="attendance-icon-box">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
                 <Clock size={24} strokeWidth={2.2} />
               </div>
 
-              <div className="attendance-title-text">
-                <h1>{pageTitle}</h1>
+              <div className="min-w-0">
+                <h1 className="m-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                  {pageTitle}
+                </h1>
 
-                <p>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
                   {isEmployee
                     ? "View your attendance records and details"
                     : "View attendance records of all employees"}
@@ -38,8 +39,11 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="attendance-search-wrap">
-              <Search size={18} className="attendance-search-icon" />
+            <div className="relative w-full shrink-0 lg:w-80">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              />
 
               <input
                 type="text"
@@ -47,174 +51,16 @@ export default function AttendancePage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="attendance-search-input"
+                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>
-          </div>
+          </section>
 
-          {/* TABLE */}
-          <section className="attendance-table-card">
+          <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
             <AttendanceTable />
           </section>
         </div>
       </main>
-
-      <style>{`
-        .attendance-page {
-          min-width: 0;
-          flex: 1;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          background: var(--sibs-tertiary-10);
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .attendance-main {
-          min-width: 0;
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 24px;
-          background: var(--sibs-tertiary-10);
-        }
-
-        .attendance-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          min-width: 0;
-        }
-
-        .attendance-header {
-          min-width: 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-        }
-
-        .attendance-title-area {
-          min-width: 0;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .attendance-icon-box {
-          width: 56px;
-          height: 56px;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-          background: var(--sibs-primary-1);
-          color: #ffffff;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-        }
-
-        .attendance-title-text {
-          min-width: 0;
-        }
-
-        .attendance-title-text h1 {
-          margin: 0;
-          color: var(--sibs-primary-1);
-          font-size: 36px;
-          line-height: 1.1;
-          font-weight: 800;
-          letter-spacing: -0.8px;
-          word-break: break-word;
-        }
-
-        .attendance-title-text p {
-          margin: 4px 0 0;
-          color: var(--sibs-tertiary-5);
-          font-size: 14px;
-          line-height: 1.4;
-          font-weight: 500;
-        }
-
-        .attendance-search-wrap {
-          position: relative;
-          width: 320px;
-          flex-shrink: 0;
-        }
-
-        .attendance-search-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--sibs-tertiary-5);
-          pointer-events: none;
-        }
-
-        .attendance-search-input {
-          width: 100%;
-          height: 44px;
-          border-radius: 12px;
-          border: 1px solid #e6ecf2;
-          background: #ffffff;
-          padding: 0 16px 0 44px;
-          color: #344054;
-          font-size: 14px;
-          font-weight: 600;
-          outline: none;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .attendance-search-input::placeholder {
-          color: var(--sibs-tertiary-5);
-          font-weight: 500;
-        }
-
-        .attendance-search-input:focus {
-          border-color: var(--sibs-primary-1);
-          box-shadow: 0 0 0 4px rgba(4, 44, 81, 0.1);
-        }
-
-        .attendance-table-card {
-          min-width: 0;
-          overflow: hidden;
-          border-radius: 12px;
-          background: #ffffff;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
-        }
-
-        @media (max-width: 1024px) {
-          .attendance-header {
-            align-items: stretch;
-            flex-direction: column;
-          }
-
-          .attendance-search-wrap {
-            width: 100%;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .attendance-main {
-            padding: 16px;
-          }
-
-          .attendance-title-area {
-            align-items: flex-start;
-          }
-
-          .attendance-icon-box {
-            width: 48px;
-            height: 48px;
-          }
-
-          .attendance-title-text h1 {
-            font-size: 28px;
-          }
-        }
-      `}</style>
     </div>
   );
 }

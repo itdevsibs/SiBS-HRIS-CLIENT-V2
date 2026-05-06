@@ -388,6 +388,14 @@ const emptyMoveToPipelineForm = {
   remarks: "",
 };
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
@@ -499,15 +507,17 @@ function writeLocalStorage(key, value) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
+
         <h2 className="truncate text-lg font-bold text-sibs-primary-1">
           {value}
         </h2>
+
         {description && (
           <p className="truncate text-xs text-sibs-tertiary-5">
             {description}
@@ -523,10 +533,12 @@ function InfoBox({ icon: Icon, label, value }) {
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-center gap-2">
         <Icon size={16} className="text-sibs-primary-1" />
+
         <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
           {label}
         </p>
       </div>
+
       <p className="whitespace-pre-line break-words text-sm font-bold text-[#344054]">
         {value || "—"}
       </p>
@@ -540,6 +552,7 @@ function DetailRow({ label, value }) {
       <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
+
       <p className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
         {value || "—"}
       </p>
@@ -560,16 +573,18 @@ function TalentPoolMobileCard({ candidate, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-sibs-primary-1">
             {candidate.candidateId}
           </p>
+
           <h3 className="mt-1 text-sm font-bold text-[#101828]">
             {candidate.name}
           </h3>
+
           <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
             {candidate.email}
           </p>
@@ -589,6 +604,7 @@ function TalentPoolMobileCard({ candidate, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Role
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {candidate.roleCapability || "—"}
           </p>
@@ -598,6 +614,7 @@ function TalentPoolMobileCard({ candidate, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Availability
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {candidate.availability || "—"}
           </p>
@@ -650,6 +667,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Add Candidate
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               New candidates are saved as New Applicant first, then TA can
               update the classification after review.
@@ -679,6 +697,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       First Name <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.firstName}
@@ -686,19 +705,20 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, firstName: e.target.value })
                       }
                       placeholder="Juan"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
                   <div>
                     <FieldLabel>Middle Name</FieldLabel>
+
                     <input
                       value={form.middleName}
                       onChange={(e) =>
                         setForm({ ...form, middleName: e.target.value })
                       }
                       placeholder="Santos"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -706,6 +726,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Last Name <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.lastName}
@@ -713,19 +734,20 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, lastName: e.target.value })
                       }
                       placeholder="Dela Cruz"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
                   <div>
                     <FieldLabel>Extension</FieldLabel>
+
                     <input
                       value={form.extension}
                       onChange={(e) =>
                         setForm({ ...form, extension: e.target.value })
                       }
                       placeholder="Jr., Sr., III"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -733,6 +755,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Date of Birth <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       type="date"
@@ -743,7 +766,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                       className={`h-11 w-full rounded-xl border bg-white px-4 text-sm font-semibold outline-none transition focus:ring-4 ${
                         isMinor
                           ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                          : "border-[#E6ECF2] focus:border-[var(--sibs-primary-1)] focus:ring-[var(--sibs-primary-1)]/10"
+                          : "border-[#E6ECF2] focus:border-sibs-primary-1 focus:ring-sibs-primary-1/10"
                       }`}
                     />
 
@@ -763,6 +786,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Physical Address <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.physicalAddress}
@@ -770,7 +794,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, physicalAddress: e.target.value })
                       }
                       placeholder="Complete physical address"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -778,6 +802,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Email Address <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       type="email"
@@ -786,7 +811,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, email: e.target.value })
                       }
                       placeholder="candidate@email.com"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -794,6 +819,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Phone Number 1 <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.phoneNumber1}
@@ -801,19 +827,20 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, phoneNumber1: e.target.value })
                       }
                       placeholder="09xxxxxxxxx"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
                   <div>
                     <FieldLabel>Phone Number 2</FieldLabel>
+
                     <input
                       value={form.phoneNumber2}
                       onChange={(e) =>
                         setForm({ ...form, phoneNumber2: e.target.value })
                       }
                       placeholder="Optional"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
                 </div>
@@ -829,13 +856,14 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Role Capability <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <select
                       required
                       value={form.roleCapability}
                       onChange={(e) =>
                         setForm({ ...form, roleCapability: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select role capability</option>
                       {roleOptions
@@ -852,6 +880,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Skills / Language <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.skillsLanguage}
@@ -859,12 +888,13 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         setForm({ ...form, skillsLanguage: e.target.value })
                       }
                       placeholder="English, Chat, RCM"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
                   <div>
                     <FieldLabel>Status Classification</FieldLabel>
+
                     <input
                       readOnly
                       value="New Applicant"
@@ -874,13 +904,14 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
 
                   <div>
                     <FieldLabel>Availability</FieldLabel>
+
                     <select
                       required
                       value={form.availability}
                       onChange={(e) =>
                         setForm({ ...form, availability: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {availabilityOptions
                         .filter((availability) => availability !== "All")
@@ -896,13 +927,14 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Source <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <select
                       required
                       value={form.source}
                       onChange={(e) =>
                         setForm({ ...form, source: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select source</option>
                       {sourceOptions.map((source) => (
@@ -915,13 +947,14 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
 
                   <div>
                     <FieldLabel>Account Fit</FieldLabel>
+
                     <input
                       value={form.accountFit}
                       onChange={(e) =>
                         setForm({ ...form, accountFit: e.target.value })
                       }
                       placeholder="SIBS Operations"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
                 </div>
@@ -951,6 +984,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         }
                         className="h-4 w-4"
                       />
+
                       <span className="text-sm font-semibold text-[#344054]">
                         {item}
                       </span>
@@ -979,9 +1013,12 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                       <input
                         type="checkbox"
                         checked={form[field]}
-                        onChange={(e) => updateCheckbox(field, e.target.checked)}
+                        onChange={(e) =>
+                          updateCheckbox(field, e.target.checked)
+                        }
                         className="h-4 w-4"
                       />
+
                       <span className="text-sm font-semibold text-[#344054]">
                         {label}
                       </span>
@@ -990,13 +1027,14 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
 
                   <div className="md:col-span-2">
                     <FieldLabel>Other Specify</FieldLabel>
+
                     <input
                       value={form.otherAffiliation}
                       onChange={(e) =>
                         setForm({ ...form, otherAffiliation: e.target.value })
                       }
                       placeholder="Other affiliation or certification"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
                 </div>
@@ -1014,7 +1052,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                   }
                   placeholder="List trainings attended"
                   rows={4}
-                  className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={textareaClass()}
                 />
               </div>
 
@@ -1027,7 +1065,10 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                   {[
                     ["fullyVaccinated", "Are you fully vaccinated?"],
                     ["comfortableOnSite", "Are you comfortable working on site?"],
-                    ["willingGraveyard", "Are you willing to work in graveyard shift?"],
+                    [
+                      "willingGraveyard",
+                      "Are you willing to work in graveyard shift?",
+                    ],
                     [
                       "remoteWorkAccess",
                       "If this is a remote position, do you have access to a computer, Internet connection, and a private space?",
@@ -1043,12 +1084,13 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                   ].map(([field, label]) => (
                     <div key={field}>
                       <FieldLabel>{label}</FieldLabel>
+
                       <select
                         value={form[field]}
                         onChange={(e) =>
                           setForm({ ...form, [field]: e.target.value })
                         }
-                        className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                        className={inputClass()}
                       >
                         <option value="">Select answer</option>
                         <option value="Yes">Yes</option>
@@ -1062,6 +1104,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                       Are you interested in full-time employment, part-time, or
                       either?
                     </FieldLabel>
+
                     <select
                       value={form.employmentInterest}
                       onChange={(e) =>
@@ -1070,7 +1113,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                           employmentInterest: e.target.value,
                         })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select employment preference</option>
                       <option value="Full-time">Full-time</option>
@@ -1083,6 +1126,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                     <FieldLabel>
                       Please list three references and their contact information
                     </FieldLabel>
+
                     <textarea
                       value={form.references}
                       onChange={(e) =>
@@ -1092,12 +1136,13 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                         "Reference 1: Name / Contact / Relationship\nReference 2: Name / Contact / Relationship\nReference 3: Name / Contact / Relationship"
                       }
                       rows={5}
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
 
                   <div className="md:col-span-2">
                     <FieldLabel>Recruiter Remarks</FieldLabel>
+
                     <textarea
                       value={form.remarks}
                       onChange={(e) =>
@@ -1105,7 +1150,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                       }
                       placeholder="Internal TA notes."
                       rows={4}
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
                 </div>
@@ -1127,6 +1172,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                 >
                   Age Validation
                 </h3>
+
                 <p
                   className={`mt-2 text-sm leading-6 ${
                     isMinor ? "text-red-700/90" : "text-sibs-primary-1/80"
@@ -1144,6 +1190,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Candidate Entry Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Every manually added candidate starts as{" "}
                   <span className="font-bold">New Applicant</span>. TA should
@@ -1155,6 +1202,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
                 <h3 className="text-sm font-bold text-amber-700">
                   Backend Later
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
                   The backend should also validate age using date of birth and
                   application date, not only frontend validation.
@@ -1169,7 +1217,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <RotateCcw size={16} />
               Reset
@@ -1179,7 +1227,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset }) 
               type="submit"
               onClick={onSubmit}
               disabled={isMinor}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <UserPlus size={16} />
               Save Candidate
@@ -1246,6 +1294,7 @@ function MoveToPipelineModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Move Candidate to Pipeline
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               This creates an active candidate application for a specific hiring
               requirement.
@@ -1269,6 +1318,7 @@ function MoveToPipelineModal({
                 <p className="text-sm font-bold text-sibs-primary-1">
                   {candidate.candidateId} — {candidate.name}
                 </p>
+
                 <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
                   {candidate.roleCapability} / {candidate.skillsLanguage} /
                   Source: {candidate.source}
@@ -1285,11 +1335,12 @@ function MoveToPipelineModal({
                     <FieldLabel>
                       Hiring Requirement <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <select
                       required
                       value={form.hiringRequirementId}
                       onChange={(e) => handleRequirementChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select hiring requirement</option>
                       {hiringRequirementOptions.map((item) => (
@@ -1302,6 +1353,7 @@ function MoveToPipelineModal({
 
                   <div>
                     <FieldLabel>Role Title</FieldLabel>
+
                     <input
                       readOnly
                       value={form.roleTitle}
@@ -1311,6 +1363,7 @@ function MoveToPipelineModal({
 
                   <div>
                     <FieldLabel>Account</FieldLabel>
+
                     <input
                       readOnly
                       value={form.account}
@@ -1320,6 +1373,7 @@ function MoveToPipelineModal({
 
                   <div>
                     <FieldLabel>Job Description</FieldLabel>
+
                     <input
                       readOnly
                       value={selectedRequirement?.jobDescription || ""}
@@ -1331,6 +1385,7 @@ function MoveToPipelineModal({
                     <FieldLabel>
                       TA Owner <span className="text-red-500">*</span>
                     </FieldLabel>
+
                     <input
                       required
                       value={form.taOwner}
@@ -1338,18 +1393,19 @@ function MoveToPipelineModal({
                         setForm({ ...form, taOwner: e.target.value })
                       }
                       placeholder="Recruiter / TA Owner"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
                   <div>
                     <FieldLabel>Initial Stage</FieldLabel>
+
                     <select
                       value={form.initialStage}
                       onChange={(e) =>
                         setForm({ ...form, initialStage: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="Sourced">Sourced</option>
                       <option value="Screened">Screened</option>
@@ -1359,6 +1415,7 @@ function MoveToPipelineModal({
 
                   <div className="md:col-span-2">
                     <FieldLabel>Remarks</FieldLabel>
+
                     <textarea
                       rows={4}
                       value={form.remarks}
@@ -1366,7 +1423,7 @@ function MoveToPipelineModal({
                         setForm({ ...form, remarks: e.target.value })
                       }
                       placeholder="Example: Reactivated from New Applicant for urgent CSR backfill."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
                 </div>
@@ -1380,15 +1437,25 @@ function MoveToPipelineModal({
                 </h3>
 
                 <div className="mt-4">
-                  <DetailRow label="Candidate Master" value="Kept as one record" />
-                  <DetailRow label="Application Record" value="Created in Pipeline" />
+                  <DetailRow
+                    label="Candidate Master"
+                    value="Kept as one record"
+                  />
+                  <DetailRow
+                    label="Application Record"
+                    value="Created in Pipeline"
+                  />
                   <DetailRow label="Initial Stage" value={form.initialStage} />
-                  <DetailRow label="Status" value="Active candidate application" />
+                  <DetailRow
+                    label="Status"
+                    value="Active candidate application"
+                  />
                 </div>
               </div>
 
               <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
                 <h3 className="text-sm font-bold text-amber-700">Important</h3>
+
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
                   This does not duplicate the candidate. It only creates a new
                   application record connected to the selected hiring
@@ -1412,7 +1479,7 @@ function MoveToPipelineModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <ArrowRight size={16} />
               Move to Pipeline
@@ -1452,6 +1519,7 @@ function CandidateProfileModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Candidate Profile
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Persistent candidate record and reusable talent profile.
             </p>
@@ -1472,7 +1540,7 @@ function CandidateProfileModal({
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] text-xl font-bold text-white">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-xl font-bold text-white">
                     {candidate.name
                       .split(" ")
                       .map((word) => word[0])
@@ -1484,6 +1552,7 @@ function CandidateProfileModal({
                     <h3 className="break-words text-xl font-bold text-[#101828]">
                       {candidate.name}
                     </h3>
+
                     <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
                       {candidate.candidateId}
                     </p>
@@ -1614,6 +1683,7 @@ function CandidateProfileModal({
                             <p className="text-sm font-bold text-[#101828]">
                               {item.role}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               {item.account}
                             </p>
@@ -1623,6 +1693,7 @@ function CandidateProfileModal({
                             <p className="text-xs font-bold text-sibs-primary-1">
                               {item.outcome}
                             </p>
+
                             <p className="text-xs text-sibs-tertiary-5">
                               {formatDate(item.date)}
                             </p>
@@ -1647,7 +1718,10 @@ function CandidateProfileModal({
 
                 <div className="mt-4">
                   <DetailRow label="Account Fit" value={candidate.accountFit} />
-                  <DetailRow label="Availability" value={candidate.availability} />
+                  <DetailRow
+                    label="Availability"
+                    value={candidate.availability}
+                  />
                   <DetailRow label="Source" value={candidate.source} />
                   <DetailRow label="Status" value={candidate.status} />
                   <DetailRow
@@ -1683,7 +1757,10 @@ function CandidateProfileModal({
                     label="Remote Access"
                     value={candidate.remoteWorkAccess}
                   />
-                  <DetailRow label="Drug Test" value={candidate.willingDrugTest} />
+                  <DetailRow
+                    label="Drug Test"
+                    value={candidate.willingDrugTest}
+                  />
                   <DetailRow
                     label="Background Check"
                     value={candidate.willingBackgroundCheck}
@@ -1693,6 +1770,7 @@ function CandidateProfileModal({
 
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-[#101828]">References</h3>
+
                 <p className="mt-3 whitespace-pre-line rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
                   {candidate.references || "No references provided."}
                 </p>
@@ -1702,6 +1780,7 @@ function CandidateProfileModal({
                 <h3 className="text-sm font-bold text-[#101828]">
                   Recruiter Remarks
                 </h3>
+
                 <p className="mt-3 whitespace-pre-line rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
                   {candidate.remarks || "No remarks provided."}
                 </p>
@@ -1711,6 +1790,7 @@ function CandidateProfileModal({
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Pipeline Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Move to Pipeline creates an active application for a specific
                   hiring requirement. The candidate master profile remains here.
@@ -1724,7 +1804,7 @@ function CandidateProfileModal({
                   <button
                     type="button"
                     onClick={() => onOpenStatus(candidate)}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                   >
                     <Pencil size={16} />
                     Update Status
@@ -1734,7 +1814,7 @@ function CandidateProfileModal({
                     <button
                       type="button"
                       onClick={() => onOpenMoveToPipeline(candidate)}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
                     >
                       <KanbanSquare size={16} />
                       Move to Pipeline
@@ -1758,7 +1838,7 @@ function CandidateProfileModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -1793,6 +1873,7 @@ function UpdateStatusModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Update Candidate Status
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Change candidate classification after TA review.
             </p>
@@ -1813,6 +1894,7 @@ function UpdateStatusModal({
             <p className="text-sm font-bold text-sibs-primary-1">
               {candidate.candidateId} — {candidate.name}
             </p>
+
             <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
               Current Status: {candidate.status}
             </p>
@@ -1820,11 +1902,12 @@ function UpdateStatusModal({
 
           <div className="mt-5">
             <FieldLabel>Status</FieldLabel>
+
             <select
               required
               value={form.status}
               onChange={(e) => setForm({ ...form, status: e.target.value })}
-              className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+              className={inputClass()}
             >
               {statusOptions
                 .filter((status) => status !== "All")
@@ -1838,12 +1921,13 @@ function UpdateStatusModal({
 
           <div className="mt-5">
             <FieldLabel>Status Remarks</FieldLabel>
+
             <textarea
               rows={4}
               value={form.remarks}
               onChange={(e) => setForm({ ...form, remarks: e.target.value })}
               placeholder="Explain why this status was changed."
-              className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+              className={textareaClass()}
             />
           </div>
 
@@ -1858,7 +1942,7 @@ function UpdateStatusModal({
 
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <Pencil size={16} />
               Save Status
@@ -2337,10 +2421,10 @@ export default function TalentPoolPage() {
   }, [candidateList]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <UsersRound size={28} className="shrink-0 text-sibs-primary-1" />
@@ -2411,7 +2495,7 @@ export default function TalentPoolPage() {
             <button
               type="button"
               onClick={handleOpenPublicForm}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <ExternalLink size={18} />
               Public Form
@@ -2420,7 +2504,7 @@ export default function TalentPoolPage() {
             <button
               type="button"
               onClick={() => setShowAddModal(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
             >
               <Plus size={18} />
               Add Candidate
@@ -2436,18 +2520,19 @@ export default function TalentPoolPage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                 />
+
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search candidate by name, email, ID, role, source, or skills..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
@@ -2459,7 +2544,7 @@ export default function TalentPoolPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -2471,7 +2556,7 @@ export default function TalentPoolPage() {
               <select
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {skillOptions.map((skill) => (
                   <option key={skill} value={skill}>
@@ -2483,7 +2568,7 @@ export default function TalentPoolPage() {
               <select
                 value={availabilityFilter}
                 onChange={(e) => setAvailabilityFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {availabilityOptions.map((availability) => (
                   <option key={availability} value={availability}>
@@ -2494,7 +2579,7 @@ export default function TalentPoolPage() {
 
               <button
                 type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
               >
                 <Filter size={17} />
                 Filters
@@ -2546,9 +2631,11 @@ export default function TalentPoolPage() {
                             <p className="text-sm font-bold text-[#101828]">
                               {candidate.name}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               {candidate.email}
                             </p>
+
                             {candidate.isPublicSubmission && (
                               <p className="mt-1 text-[11px] font-bold text-purple-600">
                                 Public Submission
@@ -2590,7 +2677,7 @@ export default function TalentPoolPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedCandidate(candidate)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                             >
                               <Eye size={15} />
                               View
@@ -2620,19 +2707,31 @@ export default function TalentPoolPage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -2644,6 +2743,7 @@ export default function TalentPoolPage() {
           <h3 className="text-sm font-bold text-sibs-primary-1">
             Talent Pool Design Note
           </h3>
+
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
             Talent Pool stores the candidate master profile. Move to Pipeline
             creates a separate candidate application tied to a hiring

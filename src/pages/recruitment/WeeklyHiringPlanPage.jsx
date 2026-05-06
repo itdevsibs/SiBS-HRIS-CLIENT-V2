@@ -1788,7 +1788,7 @@ export default function WeeklyHiringPlanPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
@@ -1862,7 +1862,7 @@ export default function WeeklyHiringPlanPage() {
               Current week, previous week, and archived weekly plans.
             </p>
 
-            <div className="overflow-x-auto no-scrollbar">
+            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <div className="inline-flex min-w-max gap-2 rounded-full bg-[#F2F4F7] p-1 shadow-sm">
                 {weeklyVersions.map((week) => {
                   const isActive = activeWeekId === week.id;
@@ -1989,7 +1989,7 @@ export default function WeeklyHiringPlanPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search hiring plan..."
-                  className="search-input w-full"
+                  className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
             </div>

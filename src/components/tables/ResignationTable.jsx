@@ -1,106 +1,174 @@
+import React, { useMemo } from "react";
+import { CalendarDays, Clock3, Paperclip } from "lucide-react";
+
 import { usePagination } from "@/services/context/PaginationContext";
 import TableFooter from "./footer/TableFooter";
-import React from "react";
+import {
+  formatDate,
+  formatDateTime,
+} from "@/components/layout/FormatDateTime";
 
-const ResignationTable = () => {
-  const { page, search, loading, setLoading, setPagination } =
-    usePagination("attendance");
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+const ResignationTable = ({ data = [], loading: propLoading = false }) => {
+  const { search, loading: paginationLoading } = usePagination("resignation");
+
+  const loading = propLoading || paginationLoading;
+
+  const filteredResignations = useMemo(() => {
+    const list = Array.isArray(data) ? data : [];
+
+    if (!search) return list;
+
+    const keyword = String(search).toLowerCase();
+
+    return list.filter((item) => {
+      return [
+        item.id,
+        item.sibsId,
+        item.employeeName,
+        item.fullName,
+        item.reason,
+        item.specifyOthers,
+        item.status,
+        item.uploadedFile,
+      ]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(keyword));
+    });
+  }, [data, search]);
 
   return (
-    <div className="overflow-auto">
-      <table className="w-full min-w-[1200px] text-sm">
-        <thead className="bg-[var(--sibs-tertiary-9)]">
-          <tr>
-            <th className="p-4 text-left">ID</th>
-            <th className="p-4 text-left">Resignation Date</th>
-            <th className="p-4 text-left">Last Working Date</th>
-            <th className="p-4 text-left">Reason</th>
-            <th className="p-4 text-left">Specify Others</th>
-            <th className="p-4 text-left">Uploaded File</th>
-            <th className="p-4 text-left">Submitted At</th>
-            <th className="p-4 text-left">Status</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {loading ? (
+    <div className="resignation-table">
+      <div className="resignation-table-scroll">
+        <table className="resignation-table-main">
+          <thead>
             <tr>
-              <td colSpan="8" className="p-6 text-center">
-                Loading...
-              </td>
+              <th>ID</th>
+              <th>Resignation Date</th>
+              <th>Last Working Date</th>
+              <th>Reason</th>
+              <th>Specify Others</th>
+              <th>Uploaded File</th>
+              <th>Submitted At</th>
+              <th>Status</th>
             </tr>
-          ) : filteredResignations.length === 0 ? (
-            <tr>
-              <td colSpan="8" className="p-6 text-center">
-                No resignation records found
-              </td>
-            </tr>
-          ) : (
-            filteredResignations.map((item) => {
-              const fileUrl =
-                item.uploadedFile && item.sibsId
-                  ? `${process.env.NEXT_PUBLIC_API_URL}/api/resignation/file/${item.sibsId}/${item.uploadedFile}`
-                  : "";
+          </thead>
 
-              return (
-                <tr
-                  key={item.id}
-                  className="border-t transition hover:bg-[var(--sibs-tertiary-10)]"
-                >
-                  <td className="p-4 font-medium text-sibs-primary-1">
-                    {item.id}
-                  </td>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="resignation-table-empty">
+                  Loading...
+                </td>
+              </tr>
+            ) : filteredResignations.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="resignation-table-empty">
+                  No resignation records found
+                </td>
+              </tr>
+            ) : (
+              filteredResignations.map((item) => {
+                const fileUrl =
+                  item.uploadedFile && item.sibsId
+                    ? `${API_URL}/api/resignation/file/${item.sibsId}/${item.uploadedFile}`
+                    : "";
 
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays
-                        size={16}
-                        className="text-sibs-tertiary-5"
+                return (
+                  <tr key={item.id}>
+                    <td className="resignation-table-id">{item.id || "N/A"}</td>
+
+                    <td>
+                      <div className="resignation-table-icon-text">
+                        <CalendarDays size={16} />
+                        <span>{formatDate(item.resignationDate)}</span>
+                      </div>
+                    </td>
+
+                    <td>{formatDate(item.lastWorkingDate)}</td>
+
+                    <td>{item.reason || "N/A"}</td>
+
+                    <td className="resignation-table-truncate-cell">
+                      <p>{item.specifyOthers || "N/A"}</p>
+                    </td>
+
+                    <td>
+                      <UploadedFileCell
+                        filename={item.uploadedFile}
+                        fileUrl={fileUrl}
                       />
-                      <span>{formatDate(item.resignationDate)}</span>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="p-4">{formatDate(item.lastWorkingDate)}</td>
+                    <td>
+                      <div className="resignation-table-icon-text">
+                        <Clock3 size={16} />
+                        <span>{formatDateTime(item.createdAt)}</span>
+                      </div>
+                    </td>
 
-                  <td className="p-4">{item.reason || "N/A"}</td>
+                    <td>
+                      <span
+                        className={`resignation-status-badge ${getStatusClasses(
+                          item.status
+                        )}`}
+                      >
+                        {item.status || "Pending"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
-                  <td className="max-w-[240px] p-4">
-                    <p className="truncate">{item.specifyOthers || "N/A"}</p>
-                  </td>
-
-                  <td className="px-4 py-3">
-                    <UploadedFileCell
-                      filename={item.uploadedFile}
-                      fileUrl={fileUrl}
-                    />
-                  </td>
-
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <Clock3 size={16} className="text-sibs-tertiary-5" />
-                      <span>{formatDateTime(item.createdAt)}</span>
-                    </div>
-                  </td>
-
-                  <td className="p-4">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
-                        item.status,
-                      )}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
       <TableFooter tableEntity="resignation" totalLabel="Total Resignations" />
     </div>
   );
 };
+
+function UploadedFileCell({ filename, fileUrl }) {
+  if (!filename) {
+    return <span className="resignation-file-empty">No file</span>;
+  }
+
+  return (
+    <a
+      href={fileUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="resignation-file-link"
+      title={filename}
+    >
+      <Paperclip size={15} />
+      <span>{filename}</span>
+    </a>
+  );
+}
+
+function getStatusClasses(status) {
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
+
+  switch (value) {
+    case "approved":
+      return "status-present";
+
+    case "declined":
+    case "rejected":
+      return "status-absence";
+
+    case "retained":
+      return "resignation-status-retained";
+
+    case "pending":
+    default:
+      return "status-late";
+  }
+}
 
 export default ResignationTable;

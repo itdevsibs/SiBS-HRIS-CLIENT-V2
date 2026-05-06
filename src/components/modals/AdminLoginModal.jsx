@@ -133,59 +133,62 @@ export default function AdminLoginModal() {
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
+        className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
         onClick={onClose}
       >
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="admin-login-title"
+          className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
         >
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="absolute right-5 top-5 text-sibs-tertiary-5 transition hover:text-sibs-primary-1 disabled:opacity-50"
+            className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
             <X size={20} />
           </button>
 
-          <div className="border-b border-sibs-tertiary-9 px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)]/10">
-                <Activity size={22} className="text-sibs-primary-1" />
+          <div className="border-b border-[#E6ECF2] px-5 pb-5 pt-6 sm:px-6">
+            <div className="flex items-start gap-4 pr-10">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sibs-primary-1 text-white shadow-sm">
+                <Activity size={24} />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <h2
                   id="admin-login-title"
-                  className="text-2xl font-bold text-sibs-primary-1"
+                  className="text-xl font-bold text-sibs-primary-1"
                 >
                   {targetAccessLabel} Login
                 </h2>
 
-                <p className="text-sm text-sibs-tertiary-5">
+                <p className="mt-1 text-sm leading-6 text-sibs-tertiary-5">
                   Enter your password to access {targetAccessLabel} mode
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="px-6 pt-4">
-            <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5">
-              Target Access:
-              <span className="ml-2 font-semibold text-sibs-primary-1">
-                {targetAccessLabel}
+          <div className="border-b border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4 sm:px-6">
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-[#E6ECF2] bg-white px-4 py-3">
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-sibs-tertiary-5">
+                Target Access
               </span>
+
+              <strong className="text-sm font-bold text-sibs-primary-1">
+                {targetAccessLabel}
+              </strong>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <form onSubmit={handleSubmit} className="space-y-5 px-5 py-5 sm:px-6">
             <div>
-              <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-[0.14em] text-sibs-tertiary-5">
                 Password
               </label>
 
@@ -195,16 +198,17 @@ export default function AdminLoginModal() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={`Enter ${targetAccessLabel} password`}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)] disabled:opacity-50"
+                autoComplete="current-password"
+                className="h-12 w-full rounded-2xl border border-[#E6ECF2] bg-white px-4 text-sm font-medium text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5/70 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
               />
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -212,7 +216,7 @@ export default function AdminLoginModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
               </button>

@@ -8,7 +8,7 @@ import {
   MapPin,
   CalendarDays,
   UserRoundPen,
-  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -89,107 +89,131 @@ export default function UserProfilePage() {
     ? [user.firstName, user.middleName, user.lastName]
         .filter(Boolean)
         .join(" ")
-        .toUpperCase()
     : "";
 
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="profile-page"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"
     >
       <Header />
 
-      <main className="profile-main">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         {!user ? (
-          <div className="profile-loading-card">Loading...</div>
+          <div className="rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
+            Loading...
+          </div>
         ) : (
-          <div className="profile-wrapper">
-            {/* PROFILE HEADER */}
-            <section className="profile-hero">
-              <div className="profile-hero-content">
-                <div className="profile-user-block">
-                  <div className="profile-avatar">
-                    <User size={42} strokeWidth={2} />
-                  </div>
-
-                  <div className="profile-name-block">
-                    <h1>{fullName || "USER NAME"} </h1>
-                    <p>{user.account || "User"}</p>
-                  </div>
-                </div>
-
-                <div
-                  className="profile-action-area"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button type="button" className="profile-request-btn">
-                    <UserRoundPen size={16} />
-                    <span>Request a Change</span>
-                  </button>
-
-                  <div className="profile-dropdown-wrap">
-                    <ChevronDown
-                      size={18}
-                      onClick={() =>
-                        setOpenProfileDropdown((prev) => !prev)
-                      }
-                      className={`profile-dropdown-icon ${
-                        openProfileDropdown ? "rotate" : ""
-                      }`}
-                    />
-
-                    {openProfileDropdown && (
-                      <div className="profile-dropdown-menu">
-                        <ProfileDropdown
-                          openModal={setOpenAddResignation}
-                          openDropdown={setOpenProfileDropdown}
-                        />
+          <div className="space-y-6">
+            <section className="overflow-visible rounded-3xl bg-white">
+              <div className="relative z-10 overflow-visible rounded-3xl bg-sibs-primary-1 px-4 pb-0 pt-5 text-white sm:px-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+                    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 sm:h-[110px] sm:w-[110px]">
+                        <User size={36} className="text-white" />
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              <div className="profile-tabs-scroll no-scrollbar">
-                <div className="profile-tabs">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab)}
-                      className={activeTab === tab ? "active" : ""}
+                      <div className="min-w-0 pt-1">
+                        <h1 className="break-words text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">
+                          {fullName || "User Name"}
+                        </h1>
+
+                        <p className="mt-1 text-sm font-medium text-white/80">
+                          {user.account || "User"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className="flex items-center justify-between gap-3 sm:justify-end"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {tab}
-                    </button>
-                  ))}
+                      <button
+                        type="button"
+                        onClick={() => setOpenProfileDropdown((prev) => !prev)}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-sibs-primary-1 transition hover:opacity-90"
+                      >
+                        <UserRoundPen size={16} className="shrink-0" />
+
+                        <span className="hidden sm:inline">
+                          Request a Change
+                        </span>
+
+                        <span className="sm:hidden">Request</span>
+                      </button>
+
+                      <div className="relative z-[60]">
+                        <ChevronUp
+                          size={18}
+                          onClick={() =>
+                            setOpenProfileDropdown((prev) => !prev)
+                          }
+                          className={`cursor-pointer shrink-0 text-white transition-transform ${
+                            openProfileDropdown ? "" : "rotate-180"
+                          }`}
+                        />
+
+                        {openProfileDropdown && (
+                          <div className="absolute right-0 top-full z-[70] mt-2">
+                            <ProfileDropdown
+                              openModal={setOpenAddResignation}
+                              openDropdown={setOpenProfileDropdown}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto pb-0 pt-1 no-scrollbar">
+                    <div className="flex min-w-max gap-1">
+                      {tabs.map((tab) => {
+                        const isActive = activeTab === tab;
+
+                        return (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setActiveTab(tab)}
+                            className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+                              isActive
+                                ? "bg-sibs-tertiary-10 text-sibs-primary-1"
+                                : "text-white/90 hover:bg-white/10"
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* PROFILE BODY */}
-            <div className="profile-body-grid">
-              <aside ref={asideRef} className="profile-left-column">
-                <div className="profile-side-card">
-                  <h2>Vitals</h2>
+            <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <aside ref={asideRef} className="min-w-0 space-y-4">
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Vitals
+                  </h2>
 
-                  <div className="profile-info-list">
+                  <div className="space-y-3 text-sm text-sibs-tertiary-5">
                     <InfoRow
                       icon={Phone}
                       value={user.contactNum || user.contact || "N/A"}
                     />
-                    <InfoRow
-                      icon={Mail}
-                      value={user.email || "N/A"}
-                      breakText
-                    />
+
+                    <InfoRow icon={Mail} value={user.email || "N/A"} breakText />
+
                     <InfoRow
                       icon={Building2}
                       value={user.department || "N/A"}
                     />
-                    <InfoRow
-                      icon={Briefcase}
-                      value={user.account || "N/A"}
-                    />
+
+                    <InfoRow icon={Briefcase} value={user.account || "N/A"} />
+
                     <InfoRow
                       icon={MapPin}
                       value={user.homeAddress || user.location || "N/A"}
@@ -197,8 +221,10 @@ export default function UserProfilePage() {
                   </div>
                 </div>
 
-                <div className="profile-side-card">
-                  <h2>Hire Date</h2>
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Hire Date
+                  </h2>
 
                   <InfoRow
                     icon={CalendarDays}
@@ -206,10 +232,12 @@ export default function UserProfilePage() {
                   />
                 </div>
 
-                <div className="profile-side-card">
-                  <h2>Benefits</h2>
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Benefits
+                  </h2>
 
-                  <div className="profile-benefits-list">
+                  <div className="space-y-4 text-sm text-sibs-tertiary-5">
                     <SidebarField label="SSS" value={user.sss || "N/A"} />
                     <SidebarField label="PHIC" value={user.phic || "N/A"} />
                     <SidebarField label="HDMF" value={user.hdmf || "N/A"} />
@@ -218,7 +246,7 @@ export default function UserProfilePage() {
                 </div>
               </aside>
 
-              <section className="profile-right-column">
+              <section className="min-w-0 space-y-6">
                 {activeTab === "Personal" && <PersonalTab />}
 
                 {activeTab === "Resignation" && (
@@ -226,7 +254,7 @@ export default function UserProfilePage() {
                 )}
 
                 {activeTab !== "Personal" && activeTab !== "Resignation" && (
-                  <div className="profile-empty-tab">
+                  <div className="rounded-2xl border border-[#E6ECF2] bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
                     {activeTab} content can be added here.
                   </div>
                 )}
@@ -257,334 +285,31 @@ export default function UserProfilePage() {
           })
         }
       />
-
-      <style>{`
-        .profile-page {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          background: var(--sibs-tertiary-10);
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .profile-main {
-          min-width: 0;
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 24px;
-          background: var(--sibs-tertiary-10);
-        }
-
-        .profile-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .profile-loading-card {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-
-        .profile-hero {
-          overflow: visible;
-          border-radius: 24px;
-          background: var(--sibs-primary-1);
-          color: #ffffff;
-          padding: 20px 24px 0;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-
-        .profile-hero-content {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 24px;
-        }
-
-        .profile-user-block {
-          display: flex;
-          align-items: flex-start;
-          gap: 20px;
-          min-width: 0;
-        }
-
-        .profile-avatar {
-          width: 110px;
-          height: 110px;
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          background: rgba(255, 255, 255, 0.14);
-          color: #ffffff;
-        }
-
-        .profile-name-block {
-          padding-top: 6px;
-          min-width: 0;
-        }
-
-        .profile-name-block h1 {
-          margin: 0;
-          color: #ffffff;
-          font-size: 38px;
-          line-height: 1.1;
-          font-weight: 800;
-          letter-spacing: -0.9px;
-          word-break: break-word;
-        }
-
-        .profile-name-block p {
-          margin: 8px 0 0;
-          color: rgba(255, 255, 255, 0.86);
-          font-size: 14px;
-          font-weight: 500;
-        }
-
-        .profile-action-area {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          position: relative;
-          z-index: 60;
-        }
-
-        .profile-request-btn {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          height: 40px;
-          padding: 0 18px;
-          border: none;
-          border-radius: 999px;
-          background: #ffffff;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .profile-dropdown-wrap {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .profile-dropdown-icon {
-          color: #ffffff;
-          cursor: pointer;
-          transition: transform 0.2s ease;
-        }
-
-        .profile-dropdown-icon.rotate {
-          transform: rotate(180deg);
-        }
-
-        .profile-dropdown-menu {
-          position: absolute;
-          right: 0;
-          top: 100%;
-          z-index: 70;
-          margin-top: 8px;
-        }
-
-        .profile-tabs-scroll {
-          overflow-x: auto;
-          padding-top: 18px;
-        }
-
-        .profile-tabs {
-          display: flex;
-          gap: 4px;
-          min-width: max-content;
-        }
-
-        .profile-tabs button {
-          white-space: nowrap;
-          border: none;
-          border-radius: 8px 8px 0 0;
-          padding: 10px 16px;
-          background: transparent;
-          color: #ffffff;
-          font-size: 14px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-
-        .profile-tabs button:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-
-        .profile-tabs button.active {
-          background: var(--sibs-tertiary-10);
-          color: var(--sibs-primary-1);
-        }
-
-        .profile-body-grid {
-          display: grid;
-          grid-template-columns: 320px minmax(0, 1fr);
-          gap: 24px;
-          align-items: start;
-        }
-
-        .profile-left-column {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        .profile-right-column {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .profile-side-card {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 20px;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-
-        .profile-side-card h2 {
-          margin: 0 0 16px;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .profile-info-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .profile-info-row {
-          display: flex;
-          align-items: flex-start;
-          gap: 12px;
-          color: var(--sibs-tertiary-5);
-          font-size: 14px;
-          line-height: 1.45;
-        }
-
-        .profile-info-row svg {
-          margin-top: 2px;
-          flex-shrink: 0;
-          color: var(--sibs-tertiary-5);
-        }
-
-        .profile-info-row span {
-          min-width: 0;
-        }
-
-        .profile-info-row .break-text {
-          word-break: break-all;
-        }
-
-        .profile-benefits-list {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          color: var(--sibs-tertiary-5);
-          font-size: 14px;
-        }
-
-        .profile-benefit-field {
-          min-width: 0;
-        }
-
-        .profile-benefit-field .label {
-          margin: 0 0 4px;
-          color: var(--sibs-primary-1);
-          font-weight: 600;
-        }
-
-        .profile-benefit-field .value {
-          margin: 0;
-          color: var(--sibs-tertiary-5);
-          line-height: 1.45;
-          word-break: break-all;
-        }
-
-        .profile-empty-tab {
-          background: #ffffff;
-          border-radius: 16px;
-          padding: 24px;
-          color: var(--sibs-tertiary-5);
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-
-        @media (max-width: 1280px) {
-          .profile-body-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .profile-name-block h1 {
-            font-size: 30px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .profile-main {
-            padding: 16px;
-          }
-
-          .profile-hero {
-            padding: 16px 16px 0;
-          }
-
-          .profile-hero-content {
-            flex-direction: column;
-          }
-
-          .profile-user-block {
-            flex-direction: column;
-          }
-
-          .profile-avatar {
-            width: 96px;
-            height: 96px;
-          }
-
-          .profile-action-area {
-            width: 100%;
-            justify-content: space-between;
-          }
-
-          .profile-name-block h1 {
-            font-size: 26px;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
 function InfoRow({ icon: Icon, value, breakText = false }) {
   return (
-    <div className="profile-info-row">
-      <Icon size={16} strokeWidth={2} />
-      <span className={breakText ? "break-text" : ""}>{value || "N/A"}</span>
+    <div className="flex min-w-0 items-start gap-3">
+      <Icon size={16} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
+
+      <span
+        className={`min-w-0 leading-5 ${
+          breakText ? "break-all" : "break-words"
+        }`}
+      >
+        {value || "N/A"}
+      </span>
     </div>
   );
 }
 
 function SidebarField({ label, value }) {
   return (
-    <div className="profile-benefit-field">
-      <p className="label">{label}</p>
-      <p className="value">{value || "N/A"}</p>
+    <div className="min-w-0">
+      <p className="mb-1 font-medium text-sibs-primary-1">{label}</p>
+      <p className="break-all leading-5">{value || "N/A"}</p>
     </div>
   );
 }

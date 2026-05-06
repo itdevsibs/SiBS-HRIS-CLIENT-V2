@@ -245,6 +245,14 @@ const emptyActionForm = {
   remarks: "",
 };
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
@@ -330,7 +338,7 @@ function getDaysLeft(deadline) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
@@ -363,7 +371,7 @@ function ProgressBar({ label, value, total }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-[var(--sibs-primary-1)]"
+          className="h-full rounded-full bg-sibs-primary-1"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -390,7 +398,7 @@ function ActionItemMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -557,7 +565,7 @@ function AddActionItemModal({
                       required
                       value={form.weeklyPlanItemId}
                       onChange={(e) => handleRoleChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select role with hiring gap</option>
                       {activeHiringGaps.map((role) => {
@@ -640,7 +648,7 @@ function AddActionItemModal({
                       }
                       rows={4}
                       placeholder="Example: Add 50 sourced candidates for CSR role before Friday."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
 
@@ -654,7 +662,7 @@ function AddActionItemModal({
                       onChange={(e) =>
                         setForm({ ...form, owner: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select owner</option>
                       {actionOwnerOptions.map((owner) => (
@@ -676,7 +684,7 @@ function AddActionItemModal({
                       onChange={(e) =>
                         setForm({ ...form, deadline: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -690,7 +698,7 @@ function AddActionItemModal({
                       onChange={(e) =>
                         setForm({ ...form, status: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {actionStatusOptions.map((status) => (
                         <option key={status} value={status}>
@@ -710,7 +718,7 @@ function AddActionItemModal({
                       onChange={(e) =>
                         setForm({ ...form, riskLevel: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {actionRiskOptions.map((risk) => (
                         <option key={risk} value={risk}>
@@ -730,7 +738,7 @@ function AddActionItemModal({
                       onChange={(e) =>
                         setForm({ ...form, linkedGap: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {actionGapOptions.map((gap) => (
                         <option key={gap} value={gap}>
@@ -751,7 +759,7 @@ function AddActionItemModal({
                       }
                       rows={3}
                       placeholder="Optional notes for weekly hiring call or report."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
                 </div>
@@ -808,10 +816,9 @@ function AddActionItemModal({
                   Backend Later
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-red-700/90">
-                  This form should later call POST
-                  /api/recruitment/action-items and save weekly_plan_item_id,
-                  hiring_need_id, linked_gap, owner, deadline, status, and risk
-                  level.
+                  This form should later call POST /api/recruitment/action-items
+                  and save weekly_plan_item_id, hiring_need_id, linked_gap,
+                  owner, deadline, status, and risk level.
                 </p>
               </div>
             </div>
@@ -823,7 +830,7 @@ function AddActionItemModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <RotateCcw size={17} />
               Reset
@@ -840,7 +847,7 @@ function AddActionItemModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <Plus size={17} />
               Save Action Item
@@ -856,7 +863,9 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
   if (!open || !item) return null;
 
   const progress =
-    item.requirement > 0 ? Math.round((item.filled / item.requirement) * 100) : 0;
+    item.requirement > 0
+      ? Math.round((item.filled / item.requirement) * 100)
+      : 0;
 
   const isCompleted = item.status === "Completed";
 
@@ -1066,7 +1075,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -1223,15 +1232,19 @@ export default function ActionItemsPage() {
 
   const stats = useMemo(() => {
     const total = actionItemList.length;
+
     const planned = actionItemList.filter(
       (item) => item.status === "Planned"
     ).length;
+
     const ongoing = actionItemList.filter(
       (item) => item.status === "Ongoing"
     ).length;
+
     const completed = actionItemList.filter(
       (item) => item.status === "Completed"
     ).length;
+
     const highRisk = actionItemList.filter(
       (item) => item.riskLevel === "High"
     ).length;
@@ -1263,10 +1276,10 @@ export default function ActionItemsPage() {
   }, [actionItemList]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <Activity size={28} className="shrink-0 text-sibs-primary-1" />
@@ -1414,7 +1427,7 @@ export default function ActionItemsPage() {
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             Add Action Item
@@ -1442,14 +1455,14 @@ export default function ActionItemsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search action, role, owner..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -1461,7 +1474,7 @@ export default function ActionItemsPage() {
               <select
                 value={riskFilter}
                 onChange={(e) => setRiskFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {riskOptions.map((risk) => (
                   <option key={risk} value={risk}>
@@ -1473,7 +1486,7 @@ export default function ActionItemsPage() {
               <select
                 value={gapFilter}
                 onChange={(e) => setGapFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {gapOptions.map((gap) => (
                   <option key={gap} value={gap}>
@@ -1485,7 +1498,7 @@ export default function ActionItemsPage() {
               <select
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {ownerOptions.map((owner) => (
                   <option key={owner} value={owner}>
@@ -1612,7 +1625,7 @@ export default function ActionItemsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedItem(item)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                             >
                               <Eye size={15} />
                               View
@@ -1642,19 +1655,31 @@ export default function ActionItemsPage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>

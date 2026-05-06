@@ -16,19 +16,31 @@ export default function UserDropdown({
 
   const navigate = useNavigate();
   const ref = useRef(null);
+
   const { user, setUser, refetchUser } = useUser();
   const { setAdminLogin } = useHeader();
   const { getAccessLabel, ADMIN_ROLES } = useAdmin();
 
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
         setOpen(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const onLogout = async () => {
@@ -56,7 +68,7 @@ export default function UserDropdown({
     try {
       setOpen(false);
 
-      const res = await api.post(
+      const response = await api.post(
         "/api/users/switch-to-employee",
         {},
         {
@@ -64,15 +76,15 @@ export default function UserDropdown({
         },
       );
 
-      if (res.data?.expiresAt) {
+      if (response.data?.expiresAt) {
         sessionStorage.setItem(
           "accessTokenExpiresAt",
           String(res.data.expiresAt),
         );
       }
 
-      if (res.data?.user) {
-        setUser(res.data.user);
+      if (response.data?.user) {
+        setUser(response.data.user);
       }
 
       setAdminLogin(false);
@@ -111,102 +123,77 @@ export default function UserDropdown({
                 : "Talent Acquisition";
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="user-dropdown" ref={ref}>
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((previous) => !previous);
         }}
-        className="flex max-w-full cursor-pointer select-none items-center gap-2 rounded-xl px-1 py-1 transition hover:bg-white/70 sm:gap-3 sm:px-2"
+        className={`user-dropdown-trigger ${open ? "is-open" : ""}`}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-800 font-semibold text-white">
-          {avatar || "U"}
+        <div className="user-dropdown-avatar">{avatar || "U"}</div>
+
+        <div
+          className={`user-dropdown-info ${
+            mobileCompact ? "mobile-compact" : ""
+          }`}
+        >
+          <span className="user-dropdown-name">{formattedName || "USER"}</span>
+          <span className="user-dropdown-email">
+            {email || "no-email@sibs.com"}
+          </span>
         </div>
-
-        {!mobileCompact && (
-          <div className="hidden min-w-0 flex-col leading-tight text-left sm:flex">
-            <span className="truncate text-sm font-medium text-sibs-primary-1">
-              {formattedName}
-            </span>
-            <span className="truncate text-xs text-sibs-tertiary-5">
-              {email || "no-email@sibs.com"}
-            </span>
-          </div>
-        )}
-
-        {mobileCompact && (
-          <div className="hidden min-w-0 flex-col leading-tight text-left lg:flex">
-            <span className="truncate text-sm font-medium text-sibs-primary-1">
-              {formattedName}
-            </span>
-            <span className="truncate text-xs text-sibs-tertiary-5">
-              {email || "no-email@sibs.com"}
-            </span>
-          </div>
-        )}
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-gray-500 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`user-dropdown-chevron ${open ? "rotate" : ""}`}
         />
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-3 w-[220px] overflow-hidden rounded-lg border border-sibs-tertiary-9 bg-white shadow-lg sm:min-w-[220px]">
-          <div className="border-b border-sibs-tertiary-9 px-4 py-3 sm:hidden">
-            <p className="truncate text-sm font-semibold text-sibs-primary-1">
-              {formattedName}
-            </p>
-            <p className="truncate text-xs text-sibs-tertiary-5">
-              {email || "no-email@sibs.com"}
-            </p>
-          </div>
-
+        <div className="user-dropdown-menu">
           {!isAdminSide && canSwitchToAdmin && (
-            <button
-              type="button"
+            <DropdownItem
+              icon={UserKey}
+              title={switchToAdminLabel}
+              subtitle="Current Role: Employee"
               onClick={handleSwitchToAdmin}
-              className="flex h-14 w-full items-center gap-2 px-4 py-2 text-sm text-sibs-primary-1 transition hover:bg-blue-50"
-            >
-              <UserKey size={20} />
-              <div className="flex flex-col leading-tight text-left">
-                <span className="font-semibold">{switchToAdminLabel}</span>
-                <span className="text-[10px] text-slate-400">
-                  Current Role: Employee
-                </span>
-              </div>
-            </button>
+            />
           )}
 
           {isAdminSide && (
-            <button
-              type="button"
+            <DropdownItem
+              icon={UserRound}
+              title="Switch to Employee"
+              subtitle={`Current Role: ${currentAdminRoleLabel}`}
               onClick={handleSwitchToEmployee}
-              className="flex h-14 w-full items-center gap-2 px-4 py-2 text-sm text-sibs-primary-1 transition hover:bg-blue-50"
-            >
-              <UserRound size={20} />
-              <div className="flex flex-col leading-tight text-left">
-                <span className="font-semibold">Switch to Employee</span>
-                <span className="text-[10px] text-slate-400">
-                  Current Role: {currentAdminRoleLabel}
-                </span>
-              </div>
-            </button>
+            />
           )}
 
           <button
             type="button"
             onClick={onLogout}
-            className="flex h-14 w-full items-center gap-2 px-4 py-2 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+            className="user-dropdown-item user-dropdown-logout"
           >
-            <LogOut size={20} />
-            Logout
+            <LogOut size={20} className="user-dropdown-item-icon" />
+            <span>Logout</span>
           </button>
         </div>
       )}
     </div>
+  );
+}
+
+function DropdownItem({ icon: Icon, title, subtitle, onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="user-dropdown-item">
+      <Icon size={20} className="user-dropdown-item-icon" />
+
+      <div className="user-dropdown-item-content">
+        <p className="user-dropdown-item-title">{title}</p>
+        <p className="user-dropdown-item-subtitle">{subtitle}</p>
+      </div>
+    </button>
   );
 }
