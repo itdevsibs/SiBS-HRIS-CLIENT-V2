@@ -14,7 +14,6 @@ import {
   History,
   CalendarDays,
   UserRound,
-  Tag,
   ChevronLeft,
   ChevronRight,
   ArrowRight,
@@ -383,6 +382,14 @@ const dropOffCategoryOptions = [
   "Others",
 ];
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function safeReadArray(key) {
   if (typeof window === "undefined") return [];
 
@@ -667,7 +674,7 @@ function PipelineStat({ stage, count }) {
 
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
@@ -683,12 +690,8 @@ function CandidateMobileCard({ candidate, onView, onOpenMoveModal }) {
   const nextStage = getNextStage(candidate.currentStage);
 
   return (
-    <div className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]">
-      <button
-        type="button"
-        onClick={onView}
-        className="block w-full text-left"
-      >
+    <div className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
+      <button type="button" onClick={onView} className="block w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p className="whitespace-nowrap text-xs font-bold text-sibs-primary-1">
@@ -751,7 +754,7 @@ function CandidateMobileCard({ candidate, onView, onOpenMoveModal }) {
         <button
           type="button"
           onClick={onView}
-          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
             nextStage ? "flex-1" : "w-full"
           }`}
         >
@@ -763,7 +766,7 @@ function CandidateMobileCard({ candidate, onView, onOpenMoveModal }) {
           <button
             type="button"
             onClick={() => onOpenMoveModal(candidate)}
-            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-3 text-xs font-bold text-white transition hover:opacity-90"
+            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
           >
             <ArrowRight size={15} className="shrink-0" />
             <span>Move</span>
@@ -908,7 +911,7 @@ function MoveStageModal({
           <div className="space-y-5">
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] text-white">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white">
                   <ArrowRight size={22} />
                 </div>
 
@@ -990,7 +993,7 @@ function MoveStageModal({
                 onChange={(e) => setForm({ ...form, reason: e.target.value })}
                 rows={4}
                 placeholder={`Example: Candidate passed ${candidate.currentStage.toLowerCase()} and is ready for ${nextStage.toLowerCase()}.`}
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
 
@@ -1003,7 +1006,7 @@ function MoveStageModal({
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                 rows={3}
                 placeholder="Optional notes for recruiter, hiring manager, or weekly report."
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
           </div>
@@ -1022,7 +1025,7 @@ function MoveStageModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <ArrowRight size={16} />
               Confirm Move to {nextStage}
@@ -1150,7 +1153,7 @@ function DropOffModal({
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                 rows={3}
                 placeholder="Optional recruiter remarks for future reprocessing or reporting."
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
 
@@ -1165,7 +1168,7 @@ function DropOffModal({
                 }
                 rows={3}
                 placeholder="Optional candidate feedback about the hiring process."
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
 
@@ -1191,7 +1194,7 @@ function DropOffModal({
                   setForm({ ...form, feedbackTag: e.target.value })
                 }
                 placeholder="Example: Compensation Concern, Process Delay, No Response"
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               />
             </div>
           </div>
@@ -1267,7 +1270,7 @@ function CandidatePipelineModal({
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] text-xl font-bold text-white">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-xl font-bold text-white">
                     {candidate.name
                       .split(" ")
                       .map((word) => word[0])
@@ -1467,7 +1470,7 @@ function CandidatePipelineModal({
               <button
                 type="button"
                 onClick={() => onOpenMoveModal(candidate)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
               >
                 <ArrowRight size={16} />
                 Move to {nextStage}
@@ -1477,7 +1480,7 @@ function CandidatePipelineModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               Close
             </button>
@@ -1831,10 +1834,10 @@ export default function CandidatePipelinePage() {
   }, [filteredCandidates]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <Table2 size={28} className="shrink-0 text-sibs-primary-1" />
@@ -1850,36 +1853,15 @@ export default function CandidatePipelinePage() {
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <PipelineStat
-            stage="Sourced"
-            count={stageCounts.Sourced || 0}
-          />
-
-          <PipelineStat
-            stage="Screened"
-            count={stageCounts.Screened || 0}
-          />
-
+          <PipelineStat stage="Sourced" count={stageCounts.Sourced || 0} />
+          <PipelineStat stage="Screened" count={stageCounts.Screened || 0} />
           <PipelineStat
             stage="Interviewed"
             count={stageCounts.Interviewed || 0}
           />
-
-          <PipelineStat
-            stage="Offered"
-            count={stageCounts.Offered || 0}
-          />
-
-          <PipelineStat
-            stage="Accepted"
-            count={stageCounts.Accepted || 0}
-          />
-
-          <PipelineStat
-            stage="Hired"
-            count={stageCounts.Hired || 0}
-          />
-
+          <PipelineStat stage="Offered" count={stageCounts.Offered || 0} />
+          <PipelineStat stage="Accepted" count={stageCounts.Accepted || 0} />
+          <PipelineStat stage="Hired" count={stageCounts.Hired || 0} />
           <PipelineStat
             stage="Drop-offs"
             count={stageCounts["Drop-offs"] || 0}
@@ -1904,7 +1886,7 @@ export default function CandidatePipelinePage() {
               onClick={() => setViewMode("kanban")}
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
                 viewMode === "kanban"
-                  ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
+                  ? "bg-sibs-primary-1 text-white shadow-sm"
                   : "text-[#344054] hover:bg-gray-50"
               }`}
             >
@@ -1917,7 +1899,7 @@ export default function CandidatePipelinePage() {
               onClick={() => setViewMode("table")}
               className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
                 viewMode === "table"
-                  ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
+                  ? "bg-sibs-primary-1 text-white shadow-sm"
                   : "text-[#344054] hover:bg-gray-50"
               }`}
             >
@@ -1948,14 +1930,14 @@ export default function CandidatePipelinePage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search candidate, email, ID..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
@@ -1967,7 +1949,7 @@ export default function CandidatePipelinePage() {
               <select
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {ownerOptions.map((owner) => (
                   <option key={owner} value={owner}>
@@ -1979,7 +1961,7 @@ export default function CandidatePipelinePage() {
               <select
                 value={accountFilter}
                 onChange={(e) => setAccountFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {accountOptions.map((account) => (
                   <option key={account} value={account}>
@@ -2149,7 +2131,7 @@ export default function CandidatePipelinePage() {
                                       onClick={() =>
                                         setSelectedCandidate(candidate)
                                       }
-                                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                                     >
                                       <Eye size={15} />
                                       View
@@ -2161,7 +2143,7 @@ export default function CandidatePipelinePage() {
                                         onClick={() =>
                                           handleOpenMoveModal(candidate)
                                         }
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
                                       >
                                         <ArrowRight size={15} />
                                         Move
@@ -2196,15 +2178,24 @@ export default function CandidatePipelinePage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>

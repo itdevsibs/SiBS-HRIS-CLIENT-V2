@@ -5,8 +5,6 @@ import {
   X,
   ArrowRight,
   UserRound,
-  StepBack,
-  Undo2,
 } from "lucide-react";
 import {
   getEditResignationData,
@@ -14,7 +12,7 @@ import {
   saveResignation,
   updateResignation,
 } from "../../../lib/axios/getResignation";
-import { useResignationList } from "@/services/context/ResignationListContext";
+import { useResignationList } from "../../../services/context/ResignationListContext";
 
 const resignationReasons = [
   "Career Change / Advancement",
@@ -61,7 +59,7 @@ function FileTypeIcon({ filename }) {
   return (
     <div className="relative h-12 w-10 shrink-0">
       <div className="absolute inset-0 rounded-md border-2 border-gray-300 bg-white" />
-      <div className="absolute right-0 top-0 h-3 w-3 border-l-2 border-b-2 border-gray-300 bg-gray-100" />
+      <div className="absolute right-0 top-0 h-3 w-3 border-b-2 border-l-2 border-gray-300 bg-gray-100" />
       <div className="absolute left-1 top-1/2 h-[2px] w-6 -translate-y-1/2 bg-gray-300" />
       <div className="absolute left-1 top-[60%] h-[2px] w-5 bg-gray-300" />
 
@@ -129,13 +127,12 @@ export default function ResignationModal({
   const [originalLastWorkingDate, setOriginalLastWorkingDate] = useState(null);
   const [newLastWorkingDate, setNewLastWorkingDate] = useState(null);
   const [reasonForExtending, setReasonForExtending] = useState("");
-  const [openRetractStatusModal, setRetractOpenStatusModal] = useState(false);
 
   const showStatus = (payload) => {
     if (typeof setStatusModal === "function") {
       setStatusModal(payload);
     } else {
-      console.warn("setStatusModal is not passed to AddResignationModal");
+      console.warn("setStatusModal is not passed to ResignationModal");
     }
   };
 
@@ -152,6 +149,12 @@ export default function ResignationModal({
     setTypeOpen(false);
     setPolicyModalOpen(false);
     setPolicyAccepted(false);
+    setExtendOpenWorkingDate(false);
+    setExtendOpenRetract(false);
+    setReasonForRetracting("");
+    setReasonForExtending("");
+    setOriginalLastWorkingDate(null);
+    setNewLastWorkingDate(null);
   };
 
   const handleClose = () => {
@@ -190,6 +193,8 @@ export default function ResignationModal({
       setTypeOpen(false);
       setPolicyModalOpen(false);
       setPolicyAccepted(false);
+      setExtendOpenWorkingDate(false);
+      setExtendOpenRetract(false);
     }
   }, [open]);
 
@@ -399,20 +404,6 @@ export default function ResignationModal({
     }
   };
 
-  const selectedFileName = form?.uploadedFile?.name || "";
-  const isFormal = form.resignationType === "Formal";
-  const isImmediate = form.resignationType === "Immediate";
-
-  const hierarchyGridClass = (() => {
-    const count = [form.tlSibsId, form.omSibsId, form.somSibsId].filter(
-      Boolean,
-    ).length;
-
-    if (count <= 1) return "grid-cols-1";
-    if (count === 2) return "grid-cols-1 md:grid-cols-2";
-    return "grid-cols-1 md:grid-cols-3";
-  })();
-
   const handleSubmitUpdate = async (e) => {
     e.preventDefault();
 
@@ -432,6 +423,26 @@ export default function ResignationModal({
         type: "error",
         title: "Update Failed",
         message: "Please select an action.",
+      });
+      return;
+    }
+
+    if (extendOpenWorkingDate && !reasonForExtending.trim()) {
+      showStatus({
+        open: true,
+        type: "error",
+        title: "Update Failed",
+        message: "Please enter the reason for extending.",
+      });
+      return;
+    }
+
+    if (extendOpenRetract && !reasonForRetracting.trim()) {
+      showStatus({
+        open: true,
+        type: "error",
+        title: "Update Failed",
+        message: "Please enter the reason for retracting.",
       });
       return;
     }
@@ -493,13 +504,27 @@ export default function ResignationModal({
 
   if (!open) return null;
 
+  const selectedFileName = form?.uploadedFile?.name || "";
+  const isFormal = form.resignationType === "Formal";
+  const isImmediate = form.resignationType === "Immediate";
+
+  const hierarchyGridClass = (() => {
+    const count = [form.tlSibsId, form.omSibsId, form.somSibsId].filter(
+      Boolean,
+    ).length;
+
+    if (count <= 1) return "grid-cols-1";
+    if (count === 2) return "grid-cols-1 md:grid-cols-2";
+    return "grid-cols-1 md:grid-cols-3";
+  })();
+
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-8">
-        <div className="my-auto flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-6 py-5">
-            <div>
-              <h2 className="text-2xl font-bold text-sibs-primary-1">
+      <div className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6">
+        <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+          <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-5 sm:px-6">
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-sibs-primary-1 sm:text-2xl">
                 {isEdit ? "Edit Resignation" : "Submit Resignation"}
               </h2>
 
@@ -508,19 +533,20 @@ export default function ResignationModal({
               </p>
             </div>
 
-            {/* <button
+            <button
               type="button"
-              // onClick={handleRetract}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 transition-all duration-200 hover:border-green-300 hover:bg-green-100 hover:text-green-800 active:scale-[0.98]"
+              onClick={handleClose}
+              disabled={submitting}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Close modal"
             >
-              <Undo2 size={16} strokeWidth={2.2} />
-              Retract
-            </button> */}
+              <X size={20} />
+            </button>
           </div>
 
           <form
             onSubmit={isEdit ? handleSubmitUpdate : handleSubmit}
-            className="flex-1 overflow-y-auto px-6 py-6"
+            className="flex-1 overflow-y-auto px-5 py-6 sm:px-6"
           >
             {!isEdit && (
               <div className="mb-5">
@@ -529,7 +555,7 @@ export default function ResignationModal({
                     <button
                       type="button"
                       onClick={() => setTypeOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     >
                       <span
                         className={
@@ -559,7 +585,7 @@ export default function ResignationModal({
                               onClick={() => handleTypeSelect(item)}
                               className={`block w-full px-4 py-3 text-left text-sm transition ${
                                 form.resignationType === item
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
                                   : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
                               }`}
                             >
@@ -594,8 +620,9 @@ export default function ResignationModal({
                     value={form.lastWorkingDate}
                     onChange={handleChange}
                     onClick={(e) => {
-                      if (!isFormal && e.target.showPicker)
+                      if (!isFormal && e.target.showPicker) {
                         e.target.showPicker();
+                      }
                     }}
                     readOnly={isFormal}
                     min={
@@ -612,7 +639,7 @@ export default function ResignationModal({
                     className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
                       isFormal
                         ? "pointer-events-none border-[#D7DEE8] bg-[#F8FAFC] text-sibs-tertiary-5"
-                        : "border-[#D7DEE8] bg-white focus:border-[var(--sibs-primary-1)]"
+                        : "border-[#D7DEE8] bg-white focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     }`}
                   />
                 </Field>
@@ -627,10 +654,11 @@ export default function ResignationModal({
             )}
 
             {isEdit && (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => {
+              <ActionPanel
+                title="Extend Working Date"
+                description="Request to extend your current last working date"
+                checked={extendOpenWorkingDate}
+                onToggle={() => {
                   setExtendOpenWorkingDate((prev) => {
                     const next = !prev;
 
@@ -641,162 +669,90 @@ export default function ResignationModal({
                     return next;
                   });
                 }}
-                className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 transition hover:border-sibs-tertiary-4 hover:bg-white"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-sibs-primary-1">
-                      Extend Working Date
-                    </p>
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <Field label="Resignation Date *">
+                    <input
+                      type="date"
+                      name="resignationDate"
+                      value={form.resignationDate}
+                      readOnly
+                      required={extendOpenWorkingDate}
+                      className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
+                    />
+                  </Field>
 
-                    <p className="mt-0.5 text-xs text-sibs-tertiary-5">
-                      Request to extend your current last working date
-                    </p>
-                  </div>
-
-                  <input
-                    type="checkbox"
-                    checked={extendOpenWorkingDate}
-                    onChange={() => {}}
-                    className="status-present"
-                  />
+                  <Field label="New Last Working Date *">
+                    <input
+                      type="date"
+                      name="newLastWorkingDate"
+                      value={newLastWorkingDate || ""}
+                      onChange={handleChange}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.target.showPicker?.();
+                      }}
+                      min={
+                        extendOpenWorkingDate && originalLastWorkingDate
+                          ? addDays(originalLastWorkingDate, 1)
+                          : undefined
+                      }
+                      required={extendOpenWorkingDate}
+                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+                  </Field>
                 </div>
 
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    extendOpenWorkingDate
-                      ? "grid-rows-[1fr] opacity-100 mt-3"
-                      : "grid-rows-[0fr] opacity-0"
-                  }`}
-                >
-                  <div
-                    className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                      extendOpenWorkingDate
-                        ? "opacity-100 translate-y-0 mt-2"
-                        : "opacity-0 -translate-y-2"
-                    }`}
-                  >
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      <Field label="Resignation Date *">
-                        <input
-                          type="date"
-                          name="resignationDate"
-                          value={form.resignationDate}
-                          readOnly
-                          required={extendOpenWorkingDate == true}
-                          className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
-                        />
-                      </Field>
-
-                      <Field label="New Last Working Date *">
-                        <input
-                          type="date"
-                          name="newLastWorkingDate"
-                          value={newLastWorkingDate}
-                          onChange={handleChange}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.target.showPicker?.();
-                          }}
-                          min={
-                            extendOpenWorkingDate && originalLastWorkingDate
-                              ? addDays(originalLastWorkingDate, 1)
-                              : undefined
-                          }
-                          required={extendOpenWorkingDate == true}
-                          className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
-                        />
-                      </Field>
-                    </div>
-
-                    <div className="mt-5" onClick={(e) => e.stopPropagation()}>
-                      <Field label="Reason for Extending *">
-                        <textarea
-                          name="reasonForExtending"
-                          value={reasonForExtending}
-                          onChange={(e) =>
-                            setReasonForExtending(e.target.value)
-                          }
-                          rows={3}
-                          placeholder="Enter the reason for extending your last working date"
-                          required={extendOpenWorkingDate == true}
-                          className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
-                        />
-                      </Field>
-                    </div>
-                  </div>
+                <div className="mt-5" onClick={(e) => e.stopPropagation()}>
+                  <Field label="Reason for Extending *">
+                    <textarea
+                      name="reasonForExtending"
+                      value={reasonForExtending}
+                      onChange={(e) => setReasonForExtending(e.target.value)}
+                      rows={3}
+                      placeholder="Enter the reason for extending your last working date"
+                      required={extendOpenWorkingDate}
+                      className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+                  </Field>
                 </div>
-              </div>
+              </ActionPanel>
             )}
 
             {isEdit && (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  setExtendOpenRetract((prev) => {
-                    const next = !prev;
+              <div className="mt-5">
+                <ActionPanel
+                  title="Retract Resignation"
+                  description="Request to retract your resignation and cancel the resignation process."
+                  checked={extendOpenRetract}
+                  onToggle={() => {
+                    setExtendOpenRetract((prev) => {
+                      const next = !prev;
 
-                    if (next) {
-                      setExtendOpenWorkingDate(false);
-                    }
+                      if (next) {
+                        setExtendOpenWorkingDate(false);
+                      }
 
-                    return next;
-                  });
-                }}
-                className="mt-5 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 transition hover:border-sibs-tertiary-4 hover:bg-white"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-sibs-primary-1">
-                      Retract Resignation
-                    </p>
-
-                    <p className="mt-0.5 mr-2 text-xs text-sibs-tertiary-5">
-                      Request to retract your resignation and cancel the
-                      resignation process.
-                    </p>
-                  </div>
-
-                  <input
-                    type="checkbox"
-                    checked={extendOpenRetract}
-                    onChange={() => {}}
-                    className="status-present"
-                  />
-                </div>
-
-                <div
-                  className={`grid transition-all duration-300 ease-in-out ${
-                    extendOpenRetract
-                      ? "grid-rows-[1fr] opacity-100 mt-3"
-                      : "grid-rows-[0fr] opacity-0"
-                  }`}
+                      return next;
+                    });
+                  }}
                 >
-                  <div
-                    className={`overflow-hidden transition-all duration-500 ease-in-out ${
-                      extendOpenRetract
-                        ? "opacity-100 translate-y-0 mt-2"
-                        : "opacity-0 -translate-y-2"
-                    }`}
-                  >
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <Field label="Reason for Retracting *">
-                        <textarea
-                          name="reasonForRetracting"
-                          value={reasonForRetracting}
-                          onChange={(e) =>
-                            setReasonForRetracting(e.target.value)
-                          }
-                          rows={3}
-                          placeholder="Enter the reason for retracting your resignation"
-                          required={extendOpenRetract}
-                          className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
-                        />
-                      </Field>
-                    </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Field label="Reason for Retracting *">
+                      <textarea
+                        name="reasonForRetracting"
+                        value={reasonForRetracting}
+                        onChange={(e) =>
+                          setReasonForRetracting(e.target.value)
+                        }
+                        rows={3}
+                        placeholder="Enter the reason for retracting your resignation"
+                        required={extendOpenRetract}
+                        className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      />
+                    </Field>
                   </div>
-                </div>
+                </ActionPanel>
               </div>
             )}
 
@@ -814,7 +770,7 @@ export default function ResignationModal({
                     <button
                       type="button"
                       onClick={() => setReasonOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     >
                       <span
                         className={
@@ -842,7 +798,7 @@ export default function ResignationModal({
                               onClick={() => handleReasonSelect(item)}
                               className={`block w-full px-4 py-3 text-left text-sm transition ${
                                 form.reason === item
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
                                   : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
                               }`}
                             >
@@ -867,14 +823,14 @@ export default function ResignationModal({
                     rows={4}
                     placeholder="Enter specific reason"
                     required
-                    className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                    className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </Field>
               </div>
             )}
 
             {isEdit && (
-              <div className={`grid gap-4 mt-4 ${hierarchyGridClass}`}>
+              <div className={`mt-4 grid gap-4 ${hierarchyGridClass}`}>
                 {form.tlRemarks && (
                   <ApproverCard
                     title="TL / Manager"
@@ -914,7 +870,7 @@ export default function ResignationModal({
               <div className="mt-5">
                 <Field label="Upload File *">
                   <div className="space-y-2">
-                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[#F8FAFC]">
+                    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC]">
                       <div className="flex min-w-0 items-center gap-3">
                         {selectedFileName ? (
                           <FileTypeIcon filename={selectedFileName} />
@@ -936,7 +892,7 @@ export default function ResignationModal({
                         </span>
                       </div>
 
-                      <span className="ml-4 shrink-0 rounded-lg bg-[var(--sibs-tertiary-9)] px-3 py-1.5 text-xs font-medium text-sibs-primary-1">
+                      <span className="ml-4 shrink-0 rounded-lg bg-sibs-tertiary-9 px-3 py-1.5 text-xs font-medium text-sibs-primary-1">
                         Browse
                       </span>
 
@@ -959,39 +915,36 @@ export default function ResignationModal({
               </div>
             )}
 
-            <div className="mt-6 flex items-center justify-end gap-3 border-t border-[#E6ECF2] pt-5">
+            <div className="mt-6 flex flex-col-reverse items-stretch justify-end gap-3 border-t border-[#E6ECF2] pt-5 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleClose}
-                className="rounded-xl border border-[#D7DEE8] px-4 py-2.5 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)]"
+                disabled={submitting}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-4 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-9 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
 
-              {!isEdit ? (
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Submitting..." : "Submit Resignation"}
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Updating..." : "Update Resignation"}
-                </button>
-              )}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting
+                  ? isEdit
+                    ? "Updating..."
+                    : "Submitting..."
+                  : isEdit
+                    ? "Update Resignation"
+                    : "Submit Resignation"}
+              </button>
             </div>
           </form>
         </div>
       </div>
 
       {policyModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
             <div className="px-6 pb-6 pt-6 text-center">
               <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">
@@ -1020,7 +973,7 @@ export default function ResignationModal({
                   type="checkbox"
                   checked={policyAccepted}
                   onChange={(e) => setPolicyAccepted(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#D0D5DD]"
+                  className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1 focus:ring-sibs-primary-1"
                 />
                 <span>I understand and agree with the policy</span>
               </label>
@@ -1029,7 +982,7 @@ export default function ResignationModal({
                 type="button"
                 onClick={() => setPolicyModalOpen(false)}
                 disabled={!policyAccepted}
-                className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continue <ArrowRight size={16} />
               </button>
@@ -1037,20 +990,6 @@ export default function ResignationModal({
           </div>
         </div>
       )}
-      {/* <StatusModal
-        open={openRetractStatusModal}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-        onClose={() =>
-          setStatusModal({
-            open: false,
-            type: "success",
-            title: "",
-            message: "",
-          })
-        }
-      /> */}
     </>
   );
 }
@@ -1069,6 +1008,53 @@ function Field({ label, children }) {
   );
 }
 
+function ActionPanel({ title, description, checked, onToggle, children }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      className="rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 transition hover:border-sibs-tertiary-4 hover:bg-white"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
+
+          <p className="mt-0.5 text-xs text-sibs-tertiary-5">{description}</p>
+        </div>
+
+        <input
+          type="checkbox"
+          checked={checked}
+          readOnly
+          className="h-4 w-4 shrink-0 rounded border-[#D0D5DD] text-sibs-primary-1 focus:ring-sibs-primary-1"
+        />
+      </div>
+
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          checked ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div
+          className={`overflow-hidden transition-all duration-500 ease-in-out ${
+            checked ? "mt-2 translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ApproverCard({
   title,
   sibsId,
@@ -1078,7 +1064,7 @@ function ApproverCard({
   remarks,
 }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[var(--sibs-tertiary-10)] p-4">
+    <div className="rounded-xl border border-[#E6ECF2] bg-sibs-tertiary-10 p-4">
       <div className="mb-2 flex items-center gap-2">
         <UserRound size={16} className="text-sibs-primary-1" />
         <p className="text-sm font-semibold text-sibs-primary-1">{title}</p>
@@ -1088,14 +1074,14 @@ function ApproverCard({
         {formatPerson(sibsId, fullName)}
       </p>
 
-      <div className="mt-4 flex items-center gap-6">
+      <div className="mt-4 flex flex-wrap items-center gap-6">
         <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
           <input
             type="checkbox"
             checked={Number(isApproved) === 1}
             readOnly
             disabled
-            className="h-4 w-4"
+            className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1"
           />
           <span>Approved</span>
         </label>
@@ -1106,7 +1092,7 @@ function ApproverCard({
             checked={Number(isDeclined) === 1}
             readOnly
             disabled
-            className="h-4 w-4"
+            className="h-4 w-4 rounded border-[#D0D5DD] text-sibs-primary-1"
           />
           <span>Declined</span>
         </label>

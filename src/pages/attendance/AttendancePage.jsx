@@ -15,21 +15,23 @@ export default function AttendancePage() {
   const pageTitle = isEmployee ? "My Attendance" : "Attendance";
 
   return (
-    <div className="attendance-page">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="attendance-main">
-        <div className="attendance-wrapper">
-          <div className="attendance-header">
-            <div className="attendance-title-area">
-              <div className="attendance-icon-box">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
                 <Clock size={24} strokeWidth={2.2} />
               </div>
 
-              <div className="attendance-title-text">
-                <h1>{pageTitle}</h1>
+              <div className="min-w-0">
+                <h1 className="m-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                  {pageTitle}
+                </h1>
 
-                <p>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
                   {isEmployee
                     ? "View your attendance records and details"
                     : "View attendance records of all employees"}
@@ -37,23 +39,24 @@ export default function AttendancePage() {
               </div>
             </div>
 
-            <div className="attendance-search-wrap">
-              <Search size={18} className="attendance-search-icon" />
+            <div className="relative w-full shrink-0 lg:w-80">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              />
 
               <input
                 type="text"
-                placeholder={
-                  isEmployee ? "Search records..." : "Search employee..."
-                }
+                placeholder={isEmployee ? "Search records..." : "Search employee..."}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="attendance-search-input"
+                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>
-          </div>
+          </section>
 
-          <section className="attendance-table-card">
+          <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
             <AttendanceTable />
           </section>
         </div>

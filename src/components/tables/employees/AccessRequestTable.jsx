@@ -1,11 +1,13 @@
 export default function AccessRequestTable() {
   return (
-    <div className="access-request-table">
-      <div className="access-request-table-header">
-        <h2>Access Requests Table</h2>
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
+      <div className="border-b border-[#e6ecf2] bg-[#f3f4f6] px-4 py-3">
+        <h2 className="m-0 text-[15px] font-semibold text-sibs-primary-1">
+          Access Requests Table
+        </h2>
       </div>
 
-      <div className="access-request-table-body">
+      <div className="p-6 text-sm font-normal text-sibs-tertiary-5">
         Access Requests table goes here.
       </div>
     </div>

@@ -172,6 +172,10 @@ const weeklyReports = [
 
 const statusOptions = ["All Status", "Generated", "Sent", "Archived"];
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function formatDate(date) {
   if (!date) return "—";
 
@@ -211,13 +215,14 @@ function getRoleStatusClass(status) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
         <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+
         {description && (
           <p className="truncate text-xs text-sibs-tertiary-5">
             {description}
@@ -237,6 +242,7 @@ function MovementBar({ label, value, max }) {
         <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
           {label}
         </p>
+
         <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
           {value}
         </p>
@@ -244,7 +250,7 @@ function MovementBar({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-[var(--sibs-primary-1)]"
+          className="h-full rounded-full bg-sibs-primary-1"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -325,16 +331,18 @@ function WeeklyReportMobileCard({ report, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-sibs-primary-1">
             {report.reportId}
           </p>
+
           <h3 className="mt-1 text-sm font-bold text-[#101828]">
             {report.weekLabel}
           </h3>
+
           <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
             {report.dateRange}
           </p>
@@ -354,6 +362,7 @@ function WeeklyReportMobileCard({ report, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Requirement
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {report.totalRequirement}
           </p>
@@ -363,6 +372,7 @@ function WeeklyReportMobileCard({ report, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Filled
           </p>
+
           <p className="mt-1 text-xs font-bold text-emerald-600">
             {report.totalFilled}
           </p>
@@ -438,6 +448,7 @@ function ReportDetailsModal({ open, report, onClose }) {
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Weekly Report Preview
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Auto-generated weekly hiring report and email format.
             </p>
@@ -462,6 +473,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
                       {report.weekLabel}
                     </h3>
+
                     <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
                       {report.dateRange}
                     </p>
@@ -485,6 +497,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
                       Filled
                     </p>
+
                     <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
                       {report.totalFilled}/{report.totalRequirement}
                     </p>
@@ -552,6 +565,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                           <p className="text-sm font-bold text-[#101828]">
                             {role.role}
                           </p>
+
                           <p className="text-xs font-semibold text-sibs-tertiary-5">
                             {role.account} · Owner: {role.owner}
                           </p>
@@ -580,6 +594,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Report Generation Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Weekly reports should be generated from Hiring Needs, Weekly
                   Hiring Plan, Candidate Pipeline, Offers, Onboarding, Missing
@@ -622,6 +637,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                     <h3 className="text-sm font-bold text-[#101828]">
                       Email Preview
                     </h3>
+
                     <p className="text-xs font-semibold text-sibs-tertiary-5">
                       Copy-ready weekly report format.
                     </p>
@@ -630,7 +646,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                   >
                     <Copy size={14} />
                     {copied ? "Copied" : "Copy"}
@@ -645,7 +661,7 @@ function ReportDetailsModal({ open, report, onClose }) {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                 >
                   <Download size={16} />
                   Export
@@ -653,7 +669,7 @@ function ReportDetailsModal({ open, report, onClose }) {
 
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-bold text-white transition hover:opacity-90"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-3 text-sm font-bold text-white transition hover:opacity-90"
                 >
                   <Send size={16} />
                   Send
@@ -668,7 +684,7 @@ function ReportDetailsModal({ open, report, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -706,11 +722,15 @@ export default function WeeklyReportsPage() {
     const current = weeklyReports[0];
 
     const totalReports = weeklyReports.length;
+
     const generated = weeklyReports.filter(
       (report) => report.status === "Generated"
     ).length;
-    const sent = weeklyReports.filter((report) => report.status === "Sent")
-      .length;
+
+    const sent = weeklyReports.filter(
+      (report) => report.status === "Sent"
+    ).length;
+
     const archived = weeklyReports.filter(
       (report) => report.status === "Archived"
     ).length;
@@ -725,10 +745,10 @@ export default function WeeklyReportsPage() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <FileClock size={28} className="shrink-0 text-sibs-primary-1" />
@@ -794,6 +814,7 @@ export default function WeeklyReportsPage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Current Weekly Report Snapshot
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Hiring plan, KPI snapshot, current status, and action items.
                 </p>
@@ -807,6 +828,7 @@ export default function WeeklyReportsPage() {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Requirement
                 </p>
+
                 <p className="mt-2 text-2xl font-bold text-sibs-primary-1">
                   {stats.current.totalRequirement}
                 </p>
@@ -816,6 +838,7 @@ export default function WeeklyReportsPage() {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Filled
                 </p>
+
                 <p className="mt-2 text-2xl font-bold text-emerald-600">
                   {stats.current.totalFilled}
                 </p>
@@ -825,6 +848,7 @@ export default function WeeklyReportsPage() {
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Drop-offs
                 </p>
+
                 <p className="mt-2 text-2xl font-bold text-red-600">
                   {stats.current.dropOffs}
                 </p>
@@ -835,6 +859,7 @@ export default function WeeklyReportsPage() {
               <h3 className="text-sm font-bold text-[#101828]">
                 Current Week Summary
               </h3>
+
               <p className="mt-2 text-sm leading-6 text-[#344054]">
                 {stats.current.summary}
               </p>
@@ -851,6 +876,7 @@ export default function WeeklyReportsPage() {
                 <h3 className="text-lg font-bold text-sibs-primary-1">
                   Weekly Email Requirement
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   The system should automatically generate the weekly report
                   format with summary per role/account, hiring plan snapshot,
@@ -875,7 +901,7 @@ export default function WeeklyReportsPage() {
 
           <button
             type="button"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <RefreshCcw size={18} />
             Generate Current Week
@@ -889,6 +915,7 @@ export default function WeeklyReportsPage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Weekly Report List
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Search and filter weekly report records.
                 </p>
@@ -899,18 +926,19 @@ export default function WeeklyReportsPage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                 />
+
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search report, week, status..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -971,6 +999,7 @@ export default function WeeklyReportsPage() {
                             <p className="text-sm font-bold text-[#101828]">
                               {report.weekLabel}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               Generated by {report.generatedBy}
                             </p>
@@ -1020,7 +1049,7 @@ export default function WeeklyReportsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedReport(report)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                             >
                               <Eye size={15} />
                               Preview
@@ -1050,19 +1079,31 @@ export default function WeeklyReportsPage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -1074,6 +1115,7 @@ export default function WeeklyReportsPage() {
           <h3 className="text-sm font-bold text-sibs-primary-1">
             Weekly Reports Rule
           </h3>
+
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
             The weekly hiring email should be auto-generated from raw HRIS data:
             Hiring Plan snapshot, Weekly KPI Snapshot, Current Status, Action

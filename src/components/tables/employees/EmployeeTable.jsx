@@ -16,15 +16,20 @@ import TableFooter from "../footer/TableFooter";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
-function MobileInfoItem({ icon: label, value }) {
+function MobileInfoItem({ icon: Icon, label, value }) {
   return (
-    <div className="employee-mobile-info-item">
-      <div className="employee-mobile-info-row">
-        <Icon size={14} className="employee-mobile-info-icon" />
+    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
+      <div className="flex items-start gap-2">
+        <Icon size={14} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
 
-        <div className="employee-mobile-info-text">
-          <p>{label}</p>
-          <strong>{value || "N/A"}</strong>
+        <div className="min-w-0">
+          <p className="m-0 text-xs font-normal text-sibs-tertiary-5">
+            {label}
+          </p>
+
+          <strong className="mt-1 block break-words text-sm font-medium leading-snug text-sibs-primary-1">
+            {value || "N/A"}
+          </strong>
         </div>
       </div>
     </div>
@@ -41,17 +46,22 @@ function MobileEmployeeCard({ emp, onOpen }) {
     <button
       type="button"
       onClick={() => onOpen(emp)}
-      className="employee-mobile-card"
+      className="block w-full cursor-pointer rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition hover:bg-slate-50 hover:shadow-md"
     >
-      <div className="employee-mobile-card-heading">
-        <p>{emp.sibsId || "N/A"}</p>
-        <h3>{fullName || "N/A"}</h3>
+      <div className="min-w-0">
+        <p className="m-0 text-xs font-medium text-sibs-tertiary-5">
+          {emp.sibsId || "N/A"}
+        </p>
+
+        <h3 className="mt-1 text-sm font-semibold leading-tight text-sibs-primary-1">
+          {fullName || "N/A"}
+        </h3>
       </div>
 
-      <div className="employee-mobile-card-body">
+      <div className="mt-4 grid grid-cols-1 gap-3">
         <MobileInfoItem icon={Mail} label="Email" value={emp.email} />
 
-        <div className="employee-mobile-info-grid">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <MobileInfoItem icon={UserRound} label="Gender" value={emp.gender} />
 
           <MobileInfoItem
@@ -94,21 +104,30 @@ export default function EmployeeTable() {
     usePagination("employees");
 
   const navigate = useNavigate();
-  const tableScrollRef = useRef(null);
 
-  const routerRef = useRef(router);
+  const tableScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
+
+  const navigateRef = useRef(navigate);
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
 
   useEffect(() => {
-    routerRef.current = router;
+    navigateRef.current = navigate;
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-  }, [router, setLoading, setPagination]);
+  }, [navigate, setLoading, setPagination]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    }
+
+    if (mobileScrollRef.current) {
+      mobileScrollRef.current.scrollTo({
         top: 0,
         behavior: "smooth",
       });
@@ -128,7 +147,7 @@ export default function EmployeeTable() {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            navigate("/login");
+            navigateRef.current("/login");
             return;
           }
 
@@ -149,7 +168,7 @@ export default function EmployeeTable() {
             totalPages: 1,
             currentPage: 1,
             total: 0,
-          },
+          }
         );
       } catch (err) {
         if (cancelled) return;
@@ -174,44 +193,70 @@ export default function EmployeeTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, navigate, setLoading, setPagination]);
+  }, [page, search]);
 
   const handleOpenEmployee = (emp) => {
     sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
-    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page: 1 }));
+    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page }));
     navigate("/employee/employee-data");
   };
 
   return (
-    <div className="employee-table">
-      <div className="employee-table-desktop">
-        <div ref={tableScrollRef} className="employee-table-scroll">
-          <table className="employee-table-main">
-            <thead>
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
+      <div className="hidden lg:block">
+        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
+          <table className="w-full min-w-[1400px] border-collapse bg-white text-sm text-sibs-primary-1">
+            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
               <tr>
-                <th>SiBS ID</th>
-                <th>Full Name</th>
-                <th>Email</th>
-                <th>Gender</th>
-                <th>Birthdate</th>
-                <th>Civil Status</th>
-                <th>Account</th>
-                <th>Department</th>
-                <th>Contact</th>
-                <th>Hire Date</th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  SiBS ID
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Full Name
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Email
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Gender
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Birthdate
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Civil Status
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Account
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Department
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Contact
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Hire Date
+                </th>
               </tr>
             </thead>
 
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" className="employee-table-empty">
+                  <td
+                    colSpan="10"
+                    className="p-6 text-center text-sibs-tertiary-5"
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : employees.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="employee-table-empty">
+                  <td
+                    colSpan="10"
+                    className="p-6 text-center text-sibs-tertiary-5"
+                  >
                     No employees found
                   </td>
                 </tr>
@@ -220,25 +265,50 @@ export default function EmployeeTable() {
                   <tr
                     key={emp.sibsId || index}
                     onClick={() => handleOpenEmployee(emp)}
-                    className="employee-table-row"
+                    className="cursor-pointer transition hover:bg-slate-50"
                   >
-                    <td>{emp.sibsId}</td>
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.sibsId || "N/A"}
+                    </td>
 
-                    <td className="employee-name-cell">
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-medium text-sibs-primary-1">
                       {[emp.firstName, emp.middleName, emp.lastName]
                         .filter(Boolean)
                         .join(" ")
-                        .toUpperCase()}
+                        .toUpperCase() || "N/A"}
                     </td>
 
-                    <td>{emp.email}</td>
-                    <td>{emp.gender}</td>
-                    <td>{formatDate(emp.birthdate)}</td>
-                    <td>{emp.civilStatus}</td>
-                    <td>{emp.account}</td>
-                    <td>{emp.department || "N/A"}</td>
-                    <td>{emp.contact}</td>
-                    <td>{formatDate(emp.hireDate)}</td>
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.email || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.gender || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {formatDate(emp.birthdate)}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.civilStatus || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.account || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.department || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {emp.contact || "N/A"}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {formatDate(emp.hireDate)}
+                    </td>
                   </tr>
                 ))
               )}
@@ -247,14 +317,18 @@ export default function EmployeeTable() {
         </div>
       </div>
 
-      <div className="employee-table-mobile">
-        <div ref={tableScrollRef} className="employee-mobile-scroll">
+      <div className="block lg:hidden">
+        <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto p-3">
           {loading ? (
-            <div className="employee-mobile-empty">Loading...</div>
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
+              Loading...
+            </div>
           ) : employees.length === 0 ? (
-            <div className="employee-mobile-empty">No employees found</div>
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
+              No employees found
+            </div>
           ) : (
-            <div className="employee-mobile-list">
+            <div className="flex flex-col gap-3">
               {employees.map((emp, index) => (
                 <MobileEmployeeCard
                   key={emp.sibsId || index}

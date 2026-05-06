@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
 import {
   BookOpen,
-  MessageSquareWarning,
   Search,
   Eye,
   X,
@@ -279,6 +278,14 @@ const emptyExperienceForm = {
   feedbackTag: "",
 };
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
@@ -411,13 +418,14 @@ function StarRatingInput({ value, onChange }) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
         <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+
         {description && (
           <p className="truncate text-xs text-sibs-tertiary-5">
             {description}
@@ -437,6 +445,7 @@ function BarRow({ label, value, max }) {
         <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
           {label}
         </p>
+
         <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
           {value}
         </p>
@@ -444,7 +453,7 @@ function BarRow({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-[var(--sibs-primary-1)]"
+          className="h-full rounded-full bg-sibs-primary-1"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -471,16 +480,18 @@ function ExperienceMobileCard({ record, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-sibs-primary-1">
             {record.candidateId}
           </p>
+
           <h3 className="mt-1 text-sm font-bold text-[#101828]">
             {record.candidateName}
           </h3>
+
           <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
             {record.roleTitle} / {record.account}
           </p>
@@ -500,6 +511,7 @@ function ExperienceMobileCard({ record, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Event
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {record.eventType || "—"}
           </p>
@@ -509,6 +521,7 @@ function ExperienceMobileCard({ record, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Exit Stage
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {record.dropOffStage || record.currentStage || "—"}
           </p>
@@ -535,6 +548,7 @@ function ExperienceMobileCard({ record, onView }) {
         <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
           Rating
         </p>
+
         <RatingStars rating={record.experienceRating} />
       </div>
 
@@ -616,6 +630,7 @@ function AddExperienceModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Add Candidate Experience Record
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Record candidate feedback, exit reason, and 1–5 star experience
               rating.
@@ -645,11 +660,12 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Candidate <span className="text-red-500">*</span>
                     </label>
+
                     <select
                       required
                       value={form.candidateId}
                       onChange={(e) => handleCandidateChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select candidate</option>
                       {candidatesForExperience.map((candidate) => (
@@ -668,6 +684,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Candidate Name
                     </label>
+
                     <input
                       readOnly
                       value={form.candidateName}
@@ -679,6 +696,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Candidate Email
                     </label>
+
                     <input
                       readOnly
                       value={form.candidateEmail}
@@ -690,6 +708,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Role
                     </label>
+
                     <input
                       readOnly
                       value={form.roleTitle}
@@ -701,6 +720,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Account
                     </label>
+
                     <input
                       readOnly
                       value={form.account}
@@ -712,6 +732,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Source
                     </label>
+
                     <input
                       readOnly
                       value={form.source}
@@ -723,12 +744,13 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Owner
                     </label>
+
                     <select
                       value={form.owner}
                       onChange={(e) =>
                         setForm({ ...form, owner: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select owner</option>
                       {ownerOptions.map((owner) => (
@@ -751,11 +773,12 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Event Type <span className="text-red-500">*</span>
                     </label>
+
                     <select
                       required
                       value={form.eventType}
                       onChange={(e) => handleEventTypeChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {eventTypeOptions.map((eventType) => (
                         <option key={eventType} value={eventType}>
@@ -769,6 +792,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Current Stage
                     </label>
+
                     <select
                       value={form.currentStage}
                       onChange={(e) =>
@@ -780,7 +804,7 @@ function AddExperienceModal({
                             : form.dropOffStage,
                         })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select stage</option>
                       {candidateStageOptions.map((stage) => (
@@ -797,6 +821,7 @@ function AddExperienceModal({
                         Drop-off / Exit Stage{" "}
                         <span className="text-red-500">*</span>
                       </label>
+
                       <select
                         required
                         value={form.dropOffStage}
@@ -819,13 +844,14 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Reason Category <span className="text-red-500">*</span>
                     </label>
+
                     <select
                       required
                       value={form.reasonCategory}
                       onChange={(e) =>
                         setForm({ ...form, reasonCategory: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select reason category</option>
                       {reasonCategoryOptions.map((category) => (
@@ -840,6 +866,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Reason <span className="text-red-500">*</span>
                     </label>
+
                     <textarea
                       required
                       value={form.reason}
@@ -848,7 +875,7 @@ function AddExperienceModal({
                       }
                       rows={3}
                       placeholder="Example: Candidate declined due to salary expectation mismatch."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
 
@@ -856,6 +883,7 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Candidate Feedback
                     </label>
+
                     <textarea
                       value={form.feedback}
                       onChange={(e) =>
@@ -863,7 +891,7 @@ function AddExperienceModal({
                       }
                       rows={3}
                       placeholder="Example: The recruiter was responsive, but the offer process took too long."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
 
@@ -871,12 +899,14 @@ function AddExperienceModal({
                     <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Experience Rating <span className="text-red-500">*</span>
                     </label>
+
                     <StarRatingInput
                       value={form.experienceRating}
                       onChange={(rating) =>
                         setForm({ ...form, experienceRating: rating })
                       }
                     />
+
                     <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
                       The selected stars are saved as a number from 1 to 5.
                     </p>
@@ -886,13 +916,14 @@ function AddExperienceModal({
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Feedback Tag
                     </label>
+
                     <input
                       value={form.feedbackTag}
                       onChange={(e) =>
                         setForm({ ...form, feedbackTag: e.target.value })
                       }
                       placeholder="Example: Compensation Concern, Process Delay, Positive Experience"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
                 </div>
@@ -904,6 +935,7 @@ function AddExperienceModal({
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Where this data comes from
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   This page reads records created by Candidate Pipeline, Offers,
                   Onboarding, and manual Candidate Experience entries.
@@ -930,6 +962,7 @@ function AddExperienceModal({
                 <h3 className="text-sm font-bold text-amber-700">
                   Backend Later
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
                   Replace localStorage with GET/POST
                   /api/recruitment/candidate-experience when backend is ready.
@@ -944,7 +977,7 @@ function AddExperienceModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <RotateCcw size={17} />
               Reset
@@ -961,7 +994,7 @@ function AddExperienceModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <Plus size={17} />
               Save Experience
@@ -994,6 +1027,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Candidate Experience Details
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Drop-off stage, reason category, candidate feedback, and rating.
             </p>
@@ -1018,6 +1052,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
                       {record.candidateName}
                     </h3>
+
                     <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
                       {record.candidateEmail}
                     </p>
@@ -1051,9 +1086,11 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
                       Experience Rating
                     </p>
+
                     <div className="mt-2 flex justify-center">
                       <RatingStars rating={record.experienceRating} />
                     </div>
+
                     <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
                       {record.experienceRating || 0}/5
                     </p>
@@ -1064,6 +1101,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="mb-5 flex items-center gap-2">
                   <ListChecks size={18} className="text-sibs-primary-1" />
+
                   <h3 className="text-sm font-bold text-[#101828]">
                     Candidate Stage Timeline
                   </h3>
@@ -1096,6 +1134,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                               <p className="text-sm font-bold text-[#101828]">
                                 {item.stage}
                               </p>
+
                               <p className="text-xs font-semibold text-sibs-tertiary-5">
                                 {formatDate(item.date)}
                               </p>
@@ -1131,6 +1170,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                       <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
                         Exit Stage
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-red-700">
                         {record.dropOffStage || "—"}
                       </p>
@@ -1140,6 +1180,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                       <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
                         Reason Category
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-red-700">
                         {record.dropOffCategory || "—"}
                       </p>
@@ -1195,8 +1236,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Rating
                     </p>
+
                     <div className="mt-2 flex items-center justify-between">
                       <RatingStars rating={record.experienceRating} />
+
                       <p className="text-sm font-bold text-sibs-primary-1">
                         {record.experienceRating || 0}/5
                       </p>
@@ -1207,6 +1250,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                       Feedback Tag
                     </p>
+
                     <p className="mt-1 text-sm font-bold text-[#344054]">
                       {record.feedbackTag || "—"}
                     </p>
@@ -1218,6 +1262,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Rating Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   The star rating is saved as a number from 1 to 5. The frontend
                   only converts that number into stars.
@@ -1228,6 +1273,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 <h3 className="text-sm font-bold text-emerald-700">
                   Employer Branding Data
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-emerald-700/90">
                   Candidate feedback and experience rating should be saved at
                   candidate level so TA can analyze perception trends over time.
@@ -1242,7 +1288,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -1500,10 +1546,10 @@ export default function CandidateExperiencePage() {
     "—";
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <BookOpen size={28} className="shrink-0 text-sibs-primary-1" />
@@ -1569,6 +1615,7 @@ export default function CandidateExperiencePage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Drop-offs by Stage
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Shows where candidates are lost.
                 </p>
@@ -1601,6 +1648,7 @@ export default function CandidateExperiencePage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Drop-offs by Reason
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Shows why candidates exit.
                 </p>
@@ -1637,6 +1685,7 @@ export default function CandidateExperiencePage() {
                 <h3 className="text-lg font-bold text-sibs-primary-1">
                   Candidate Experience Insight
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Most candidate losses currently happen during{" "}
                   <span className="font-bold">{topStage}</span>. The top
@@ -1662,7 +1711,7 @@ export default function CandidateExperiencePage() {
           <button
             type="button"
             onClick={handleOpenAddModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             Add Experience Record
@@ -1676,6 +1725,7 @@ export default function CandidateExperiencePage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Candidate Experience List
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Search and filter candidate experience records.
                 </p>
@@ -1686,18 +1736,19 @@ export default function CandidateExperiencePage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                 />
+
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search candidate, role, feedback..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={stageFilter}
                 onChange={(e) => setStageFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {stageOptions.map((stage) => (
                   <option key={stage} value={stage}>
@@ -1709,7 +1760,7 @@ export default function CandidateExperiencePage() {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {categoryOptions.map((category) => (
                   <option key={category} value={category}>
@@ -1721,7 +1772,7 @@ export default function CandidateExperiencePage() {
               <select
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {ratingOptions.map((rating) => (
                   <option key={rating} value={rating}>
@@ -1778,6 +1829,7 @@ export default function CandidateExperiencePage() {
                             <p className="text-sm font-bold text-[#101828]">
                               {record.candidateName}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               {record.candidateEmail}
                             </p>
@@ -1787,6 +1839,7 @@ export default function CandidateExperiencePage() {
                             <p className="text-sm font-bold text-[#344054]">
                               {record.roleTitle}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               {record.account}
                             </p>
@@ -1848,7 +1901,7 @@ export default function CandidateExperiencePage() {
                             <button
                               type="button"
                               onClick={() => setSelectedRecord(record)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                             >
                               <Eye size={15} />
                               View
@@ -1878,19 +1931,31 @@ export default function CandidateExperiencePage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -1902,6 +1967,7 @@ export default function CandidateExperiencePage() {
           <h3 className="text-sm font-bold text-sibs-primary-1">
             Candidate Experience Rule
           </h3>
+
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
             The data comes from Candidate Pipeline drop-offs, Offer declines,
             Onboarding no-shows or withdrawals, and manual candidate feedback.

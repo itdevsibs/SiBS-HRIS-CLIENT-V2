@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { FileText, Search } from "lucide-react";
+
 import Header from "../../components/layout/Header";
 import AttritionModal from "@/components/modals/attrition/AttritionModal";
 import StatusModal from "../../components/modals/StatusModal";
 import AttritionTable from "../../components/tables/AttritionTable";
 import ResignationTable from "../../components/tables/employees/EmployeeResignationTable";
 import EmployeeAttritionTable from "../../components/tables/employees/EmployeeAttritionTable";
+
 import { saveAttrition, updateAttrition } from "../../lib/axios/getAttrition";
 import {
   getSupervisorResignations,
   getSupervisorAttritions,
   updateSupervisorResignation,
 } from "../../lib/axios/getEmployee";
+
 import { usePagination } from "@/services/context/PaginationContext";
 import { useUser } from "../../services/context/UserContext";
+
 import {
   formatDate,
   formatDateTime,
@@ -111,17 +115,6 @@ export default function AttritionPage() {
       }).length,
     },
   ];
-
-  const getSliderClass = () => {
-    switch (activeTab) {
-      case "Resignation":
-        return "left-0 w-1/2 shadow-sm";
-      case "Attrition":
-        return "left-1/2 w-1/2 shadow-sm";
-      default:
-        return "left-0 w-1/2 shadow-sm";
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
@@ -247,6 +240,54 @@ export default function AttritionPage() {
     setOpenForm(true);
   };
 
+  const fetchResignations = async () => {
+    try {
+      setResignationLoading(true);
+
+      const result = await getSupervisorResignations();
+
+      if (!result?.success) {
+        setResignations([]);
+        return [];
+      }
+
+      const data = result.data || [];
+      setResignations(data);
+
+      return data;
+    } catch (error) {
+      console.error("Fetch resignations error:", error);
+      setResignations([]);
+      return [];
+    } finally {
+      setResignationLoading(false);
+    }
+  };
+
+  const fetchAttritions = async () => {
+    try {
+      setAttritionLoading(true);
+
+      const result = await getSupervisorAttritions();
+
+      if (!result?.success) {
+        setAttritions([]);
+        return [];
+      }
+
+      const data = result.data || [];
+      setAttritions(data);
+
+      return data;
+    } catch (error) {
+      console.error("Fetch attritions error:", error);
+      setAttritions([]);
+      return [];
+    } finally {
+      setAttritionLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -331,56 +372,6 @@ export default function AttritionPage() {
     }
   };
 
-  const fetchResignations = async () => {
-    try {
-      setResignationLoading(true);
-
-      const result = await getSupervisorResignations();
-
-      if (!result?.success) {
-        setResignations([]);
-        return [];
-      }
-
-      const data = result.data || [];
-      setResignations(data);
-
-      return data;
-    } catch (error) {
-      console.error("Fetch resignations error:", error);
-
-      setResignations([]);
-      return [];
-    } finally {
-      setResignationLoading(false);
-    }
-  };
-
-  const fetchAttritions = async () => {
-    try {
-      setAttritionLoading(true);
-
-      const result = await getSupervisorAttritions();
-
-      if (!result?.success) {
-        setAttritions([]);
-        return [];
-      }
-
-      const data = result.data || [];
-      setAttritions(data);
-
-      return data;
-    } catch (error) {
-      console.error("Fetch attritions error:", error);
-
-      setAttritions([]);
-      return [];
-    } finally {
-      setAttritionLoading(false);
-    }
-  };
-
   const handleUpdateSupervisor = async (payload) => {
     const result = await updateSupervisorResignation(payload);
 
@@ -419,38 +410,36 @@ export default function AttritionPage() {
   }, [activeTab]);
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
-        <div className="space-y-6">
-          <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-start gap-3 sm:items-center">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] text-white shadow-sm sm:h-14 sm:w-14">
-                  <FileText size={24} />
-                </div>
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
+                <FileText size={24} />
+              </div>
 
-                <div className="min-w-0">
-                  <h1 className="min-w-0 break-words text-2xl font-bold leading-tight text-sibs-primary-1 sm:text-4xl">
-                    {pageTitle}
-                  </h1>
+              <div className="min-w-0">
+                <h1 className="m-0 break-words text-[28px] font-extrabold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                  {pageTitle}
+                </h1>
 
-                  <p className="mt-1 text-sm text-sibs-tertiary-5">
-                    View and manage attrition and resignation requests
-                  </p>
-                </div>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  View and manage attrition and resignation requests
+                </p>
               </div>
             </div>
 
             {activeTab === "Attrition" && (
-              <div className="relative w-full lg:w-80">
+              <div className="relative w-full shrink-0 lg:w-80">
                 <Search
                   size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                 />
 
                 <input
@@ -459,11 +448,11 @@ export default function AttritionPage() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
             )}
-          </div>
+          </section>
 
           <AttritionModal
             mode={editingId ? "edit" : "add"}
@@ -499,40 +488,38 @@ export default function AttritionPage() {
             }
           />
 
-          <div className="flex min-w-0 w-full flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 w-full justify-start">
-              <div className="relative grid w-full max-w-[420px] grid-cols-2 overflow-hidden rounded-full bg-[#F2F4F7] shadow-sm">
-                <div
-                  className={`absolute bottom-0 top-0 rounded-full bg-[var(--sibs-primary-1)] transition-all duration-300 ease-in-out ${getSliderClass()}`}
-                />
+          <section className="min-w-0">
+            <div className="relative grid w-full max-w-[420px] grid-cols-2 overflow-hidden rounded-full bg-[#f2f4f7] shadow-sm">
+              <div
+                className={`absolute bottom-0 top-0 w-1/2 rounded-full bg-sibs-primary-1 shadow-sm transition-all duration-300 ${
+                  activeTab === "Attrition" ? "left-1/2" : "left-0"
+                }`}
+              />
 
-                {tabs.map(({ label, count }) => {
-                  const isActive = activeTab === label;
+              {tabs.map(({ label, count }) => {
+                const isActive = activeTab === label;
 
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={() => setActiveTab(label)}
-                      className={`relative z-10 flex min-w-0 items-center justify-center whitespace-nowrap px-6 py-3 text-sm font-medium transition-colors duration-300 ${
-                        isActive ? "text-white" : "text-[#344054]"
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate">{label}</span>
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setActiveTab(label)}
+                    className={`relative z-[1] flex min-h-11 min-w-0 items-center justify-center gap-2 px-4 text-sm font-medium transition ${
+                      isActive ? "text-white" : "text-[#344054]"
+                    }`}
+                  >
+                    <span className="truncate">{label}</span>
 
-                        {count > 0 && (
-                          <span className="flex h-5 min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow">
-                            {count}
-                          </span>
-                        )}
+                    {count > 0 && (
+                      <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                        {count}
                       </span>
-                    </button>
-                  );
-                })}
-              </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
 
           {activeTab === "Attrition" && (
             <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">

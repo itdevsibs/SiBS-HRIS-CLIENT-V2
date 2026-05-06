@@ -8,7 +8,7 @@ import {
   MapPin,
   CalendarDays,
   UserRoundPen,
-  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -89,100 +89,131 @@ export default function UserProfilePage() {
     ? [user.firstName, user.middleName, user.lastName]
         .filter(Boolean)
         .join(" ")
-        .toUpperCase()
     : "";
 
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="profile-page"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"
     >
       <Header />
 
-      <main className="profile-main">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         {!user ? (
-          <div className="profile-loading-card">Loading...</div>
+          <div className="rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
+            Loading...
+          </div>
         ) : (
-          <div className="profile-wrapper">
-            <section className="profile-hero">
-              <div className="profile-hero-content">
-                <div className="profile-user-block">
-                  <div className="profile-avatar">
-                    <User size={42} strokeWidth={2} />
-                  </div>
+          <div className="space-y-6">
+            <section className="overflow-visible rounded-3xl bg-white">
+              <div className="relative z-10 overflow-visible rounded-3xl bg-sibs-primary-1 px-4 pb-0 pt-5 text-white sm:px-6">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+                    <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 sm:h-[110px] sm:w-[110px]">
+                        <User size={36} className="text-white" />
+                      </div>
 
-                  <div className="profile-name-block">
-                    <h1>{fullName || "USER NAME"}</h1>
-                    <p>{user.account || "User"}</p>
-                  </div>
-                </div>
+                      <div className="min-w-0 pt-1">
+                        <h1 className="break-words text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">
+                          {fullName || "User Name"}
+                        </h1>
 
-                <div
-                  className="profile-action-area"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    className="profile-request-btn"
-                    onClick={() => setOpenProfileDropdown((prev) => !prev)}
-                  >
-                    <UserRoundPen size={16} />
-                    <span>Request a Change</span>
-
-                    <ChevronDown
-                      size={16}
-                      className={`profile-request-chevron ${
-                        openProfileDropdown ? "rotate" : ""
-                      }`}
-                    />
-                  </button>
-
-                  {openProfileDropdown && (
-                    <div className="profile-dropdown-menu">
-                      <ProfileDropdown
-                        openModal={setOpenAddResignation}
-                        openDropdown={setOpenProfileDropdown}
-                      />
+                        <p className="mt-1 text-sm font-medium text-white/80">
+                          {user.account || "User"}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="profile-tabs-scroll no-scrollbar">
-                <div className="profile-tabs">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      onClick={() => setActiveTab(tab)}
-                      className={activeTab === tab ? "active" : ""}
+                    <div
+                      className="flex items-center justify-between gap-3 sm:justify-end"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      {tab}
-                    </button>
-                  ))}
+                      <button
+                        type="button"
+                        onClick={() => setOpenProfileDropdown((prev) => !prev)}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-sibs-primary-1 transition hover:opacity-90"
+                      >
+                        <UserRoundPen size={16} className="shrink-0" />
+
+                        <span className="hidden sm:inline">
+                          Request a Change
+                        </span>
+
+                        <span className="sm:hidden">Request</span>
+                      </button>
+
+                      <div className="relative z-[60]">
+                        <ChevronUp
+                          size={18}
+                          onClick={() =>
+                            setOpenProfileDropdown((prev) => !prev)
+                          }
+                          className={`cursor-pointer shrink-0 text-white transition-transform ${
+                            openProfileDropdown ? "" : "rotate-180"
+                          }`}
+                        />
+
+                        {openProfileDropdown && (
+                          <div className="absolute right-0 top-full z-[70] mt-2">
+                            <ProfileDropdown
+                              openModal={setOpenAddResignation}
+                              openDropdown={setOpenProfileDropdown}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto pb-0 pt-1 no-scrollbar">
+                    <div className="flex min-w-max gap-1">
+                      {tabs.map((tab) => {
+                        const isActive = activeTab === tab;
+
+                        return (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setActiveTab(tab)}
+                            className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+                              isActive
+                                ? "bg-sibs-tertiary-10 text-sibs-primary-1"
+                                : "text-white/90 hover:bg-white/10"
+                            }`}
+                          >
+                            {tab}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
 
-            <div className="profile-body-grid">
-              <aside ref={asideRef} className="profile-left-column">
-                <div className="profile-side-card">
-                  <h2>Vitals</h2>
+            <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+              <aside ref={asideRef} className="min-w-0 space-y-4">
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Vitals
+                  </h2>
 
-                  <div className="profile-info-list">
+                  <div className="space-y-3 text-sm text-sibs-tertiary-5">
                     <InfoRow
                       icon={Phone}
                       value={user.contactNum || user.contact || "N/A"}
                     />
+
                     <InfoRow icon={Mail} value={user.email || "N/A"} breakText />
+
                     <InfoRow
                       icon={Building2}
                       value={user.department || "N/A"}
                     />
-                    <InfoRow
-                      icon={Briefcase}
-                      value={user.account || "N/A"}
-                    />
+
+                    <InfoRow icon={Briefcase} value={user.account || "N/A"} />
+
                     <InfoRow
                       icon={MapPin}
                       value={user.homeAddress || user.location || "N/A"}
@@ -190,8 +221,10 @@ export default function UserProfilePage() {
                   </div>
                 </div>
 
-                <div className="profile-side-card">
-                  <h2>Hire Date</h2>
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Hire Date
+                  </h2>
 
                   <InfoRow
                     icon={CalendarDays}
@@ -199,10 +232,12 @@ export default function UserProfilePage() {
                   />
                 </div>
 
-                <div className="profile-side-card">
-                  <h2>Benefits</h2>
+                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
+                    Benefits
+                  </h2>
 
-                  <div className="profile-benefits-list">
+                  <div className="space-y-4 text-sm text-sibs-tertiary-5">
                     <SidebarField label="SSS" value={user.sss || "N/A"} />
                     <SidebarField label="PHIC" value={user.phic || "N/A"} />
                     <SidebarField label="HDMF" value={user.hdmf || "N/A"} />
@@ -211,7 +246,7 @@ export default function UserProfilePage() {
                 </div>
               </aside>
 
-              <section className="profile-right-column">
+              <section className="min-w-0 space-y-6">
                 {activeTab === "Personal" && <PersonalTab />}
 
                 {activeTab === "Resignation" && (
@@ -219,7 +254,7 @@ export default function UserProfilePage() {
                 )}
 
                 {activeTab !== "Personal" && activeTab !== "Resignation" && (
-                  <div className="profile-empty-tab">
+                  <div className="rounded-2xl border border-[#E6ECF2] bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
                     {activeTab} content can be added here.
                   </div>
                 )}
@@ -256,18 +291,25 @@ export default function UserProfilePage() {
 
 function InfoRow({ icon: Icon, value, breakText = false }) {
   return (
-    <div className="profile-info-row">
-      <Icon size={16} strokeWidth={2} />
-      <span className={breakText ? "break-text" : ""}>{value || "N/A"}</span>
+    <div className="flex min-w-0 items-start gap-3">
+      <Icon size={16} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
+
+      <span
+        className={`min-w-0 leading-5 ${
+          breakText ? "break-all" : "break-words"
+        }`}
+      >
+        {value || "N/A"}
+      </span>
     </div>
   );
 }
 
 function SidebarField({ label, value }) {
   return (
-    <div className="profile-benefit-field">
-      <p className="label">{label}</p>
-      <p className="value">{value || "N/A"}</p>
+    <div className="min-w-0">
+      <p className="mb-1 font-medium text-sibs-primary-1">{label}</p>
+      <p className="break-all leading-5">{value || "N/A"}</p>
     </div>
   );
 }

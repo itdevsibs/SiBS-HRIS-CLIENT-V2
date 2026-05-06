@@ -113,12 +113,13 @@ function getJobDescriptionDisplay(item) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
+
         <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
 
         {description && (
@@ -150,7 +151,7 @@ function HiringNeedMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -169,7 +170,7 @@ function HiringNeedMobileCard({ item, onView }) {
 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            status,
+            status
           )}`}
         >
           {status}
@@ -181,6 +182,7 @@ function HiringNeedMobileCard({ item, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Requirement
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {item.approvedRequirement || "—"}
           </p>
@@ -190,6 +192,7 @@ function HiringNeedMobileCard({ item, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Due Date
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {formatDate(item.dueDate)}
           </p>
@@ -199,7 +202,7 @@ function HiringNeedMobileCard({ item, onView }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getPriorityClass(
-            item.priority || "Medium",
+            item.priority || "Medium"
           )}`}
         >
           {item.priority || "Medium"}
@@ -208,7 +211,7 @@ function HiringNeedMobileCard({ item, onView }) {
         {item.jdStatus && (
           <span
             className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getJdStatusClass(
-              item.jdStatus,
+              item.jdStatus
             )}`}
           >
             {item.jdStatus}
@@ -285,7 +288,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
-                  item.jdStatus,
+                  item.jdStatus
                 )}`}
               >
                 {item.jdStatus || "—"}
@@ -308,7 +311,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
-                  item.priority,
+                  item.priority
                 )}`}
               >
                 {item.priority || "Medium"}
@@ -322,7 +325,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                  item.approvalStatus || "Pending",
+                  item.approvalStatus || "Pending"
                 )}`}
               >
                 {item.approvalStatus || "Pending"}
@@ -336,7 +339,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -442,24 +445,12 @@ export default function HiringNeedsPage() {
 
       const matchesSearch =
         !keyword ||
-        String(item.id || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.account || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.department || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.roleTitle || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.hiringManager || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(jobDescription || "")
-          .toLowerCase()
-          .includes(keyword);
+        String(item.id || "").toLowerCase().includes(keyword) ||
+        String(item.account || "").toLowerCase().includes(keyword) ||
+        String(item.department || "").toLowerCase().includes(keyword) ||
+        String(item.roleTitle || "").toLowerCase().includes(keyword) ||
+        String(item.hiringManager || "").toLowerCase().includes(keyword) ||
+        String(jobDescription || "").toLowerCase().includes(keyword);
 
       const matchesStatus = statusFilter === "All" || status === statusFilter;
 
@@ -471,19 +462,19 @@ export default function HiringNeedsPage() {
     const total = list.length;
 
     const pending = list.filter(
-      (item) => (item.approvalStatus || "Pending") === "Pending",
+      (item) => (item.approvalStatus || "Pending") === "Pending"
     ).length;
 
     const underReview = list.filter(
-      (item) => item.approvalStatus === "Under Review",
+      (item) => item.approvalStatus === "Under Review"
     ).length;
 
     const approved = list.filter(
-      (item) => item.approvalStatus === "Approved",
+      (item) => item.approvalStatus === "Approved"
     ).length;
 
     const rejected = list.filter(
-      (item) => item.approvalStatus === "Rejected",
+      (item) => item.approvalStatus === "Rejected"
     ).length;
 
     return {
@@ -496,10 +487,10 @@ export default function HiringNeedsPage() {
   }, [list]);
 
   return (
-    <div className="flex flex-1 flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <FileText size={28} className="shrink-0 text-sibs-primary-1" />
@@ -565,7 +556,7 @@ export default function HiringNeedsPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             New Hiring Requirement
@@ -595,14 +586,14 @@ export default function HiringNeedsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search role, account, JD..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               >
                 <option value="All">All Status</option>
                 <option value="Pending">Pending</option>
@@ -667,6 +658,7 @@ export default function HiringNeedsPage() {
                               <p className="text-sm font-bold text-[#101828]">
                                 {item.account || "—"}
                               </p>
+
                               <p className="text-xs font-semibold text-sibs-tertiary-5">
                                 {item.department || "—"}
                               </p>
@@ -691,7 +683,7 @@ export default function HiringNeedsPage() {
                                   {item.jdStatus && (
                                     <span
                                       className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${getJdStatusClass(
-                                        item.jdStatus,
+                                        item.jdStatus
                                       )}`}
                                     >
                                       {item.jdStatus}
@@ -712,7 +704,7 @@ export default function HiringNeedsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
-                                  item.priority,
+                                  item.priority
                                 )}`}
                               >
                                 {item.priority || "Medium"}
@@ -722,7 +714,7 @@ export default function HiringNeedsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                  item.approvalStatus || "Pending",
+                                  item.approvalStatus || "Pending"
                                 )}`}
                               >
                                 {item.approvalStatus || "Pending"}
@@ -733,7 +725,7 @@ export default function HiringNeedsPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedItem(item)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                               >
                                 <Eye size={15} />
                                 View
@@ -752,15 +744,24 @@ export default function HiringNeedsPage() {
                   </p>
 
                   <div className="flex items-center gap-2">
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                    >
                       <ChevronLeft size={16} />
                     </button>
 
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                    >
                       1
                     </button>
 
-                    <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                    >
                       <ChevronRight size={16} />
                     </button>
                   </div>

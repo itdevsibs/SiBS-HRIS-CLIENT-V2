@@ -186,6 +186,14 @@ const emptyOutcomeForm = {
   remarks: "",
 };
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
 function safeReadArray(key) {
   if (typeof window === "undefined") return [];
 
@@ -445,7 +453,7 @@ function updatePipelineForOnboarding(record, nextStage, reason) {
 function StatCard({ title, value, icon: Icon, description }) {
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
 
@@ -478,7 +486,7 @@ function ProgressBar({ label, value, total }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-[var(--sibs-primary-1)]"
+          className="h-full rounded-full bg-sibs-primary-1"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -507,7 +515,7 @@ function OnboardingMobileCard({ record, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -678,7 +686,7 @@ function CreateOnboardingModal({
                       required
                       value={form.offerId}
                       onChange={(e) => handleOfferChange(e.target.value)}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       <option value="">Select accepted offer</option>
                       {availableAcceptedOffers.map((offer) => (
@@ -779,7 +787,7 @@ function CreateOnboardingModal({
                           expectedStartDate: e.target.value,
                         })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     />
                   </div>
 
@@ -793,7 +801,7 @@ function CreateOnboardingModal({
                       onChange={(e) =>
                         setForm({ ...form, location: e.target.value })
                       }
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={inputClass()}
                     >
                       {locationOptions.map((location) => (
                         <option key={location} value={location}>
@@ -814,7 +822,7 @@ function CreateOnboardingModal({
                       }
                       rows={4}
                       placeholder="Example: Candidate is waiting for start date confirmation."
-                      className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                      className={textareaClass()}
                     />
                   </div>
                 </div>
@@ -867,7 +875,7 @@ function CreateOnboardingModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
             >
               <RotateCcw size={17} />
               Reset
@@ -884,7 +892,7 @@ function CreateOnboardingModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
             >
               <Plus size={17} />
               Save Onboarding
@@ -1015,7 +1023,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                     onChange={(e) =>
                       setForm({ ...form, reasonCategory: e.target.value })
                     }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   >
                     <option value="">Select reason category</option>
                     {onboardingReasonCategoryOptions.map((category) => (
@@ -1062,7 +1070,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                     }
                     rows={3}
                     placeholder="Optional candidate feedback."
-                    className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={textareaClass()}
                   />
                 </div>
 
@@ -1078,7 +1086,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                         experienceRating: Number(e.target.value),
                       })
                     }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   >
                     <option value={5}>5 - Excellent</option>
                     <option value={4}>4 - Good</option>
@@ -1102,7 +1110,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                         ? "Example: No Show"
                         : "Example: Pre-start Withdrawal"
                     }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
               </>
@@ -1117,7 +1125,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                 rows={3}
                 placeholder="Optional remarks."
-                className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={textareaClass()}
               />
             </div>
 
@@ -1507,7 +1515,7 @@ function OnboardingDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>
@@ -1918,10 +1926,10 @@ export default function OnboardingPage() {
   }, [onboardingList]);
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--sibs-tertiary-10)]">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mb-6">
           <div className="flex items-center gap-2">
             <ClipboardList size={28} className="shrink-0 text-sibs-primary-1" />
@@ -2054,7 +2062,7 @@ export default function OnboardingPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             Add Onboarding Record
@@ -2082,14 +2090,14 @@ export default function OnboardingPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search candidate, role, account..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  className={inputClass("pl-11 pr-4")}
                 />
               </div>
 
               <select
                 value={showStatusFilter}
                 onChange={(e) => setShowStatusFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {showStatusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -2101,7 +2109,7 @@ export default function OnboardingPage() {
               <select
                 value={outcomeFilter}
                 onChange={(e) => setOutcomeFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {outcomeOptions.map((outcome) => (
                   <option key={outcome} value={outcome}>
@@ -2113,7 +2121,7 @@ export default function OnboardingPage() {
               <select
                 value={ownerFilter}
                 onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                className={inputClass()}
               >
                 {ownerOptions.map((owner) => (
                   <option key={owner} value={owner}>
@@ -2241,7 +2249,7 @@ export default function OnboardingPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedRecord(record)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                               >
                                 <Eye size={15} />
                                 View
@@ -2272,19 +2280,31 @@ export default function OnboardingPage() {
               </p>
 
               <div className="flex items-center gap-2">
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronLeft size={16} />
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
+                >
                   1
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+                >
                   2
                 </button>
 
-                <button className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                <button
+                  type="button"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
+                >
                   <ChevronRight size={16} />
                 </button>
               </div>
