@@ -5,20 +5,20 @@ import {
   Search,
   Columns3,
   Table2,
-  Eye,
   UserCheck,
   UserX,
   BriefcaseBusiness,
   CheckCircle2,
   X,
   History,
-  CalendarDays,
   UserRound,
   ChevronLeft,
   ChevronRight,
   ArrowRight,
 } from "lucide-react";
 import { saveCandidateExperienceRecord } from "@/lib/utils/candidateExperienceStore";
+import KanbanTab from "../../components/layout/tabs/CandidatePipeline/KanbanTab.jsx";
+import TableTab from "../../components/layout/tabs/CandidatePipeline/TableTab.jsx";
 
 const CANDIDATE_APPLICATIONS_STORAGE_KEY = "ta_candidate_applications";
 const PIPELINE_CANDIDATES_STORAGE_KEY = "ta_pipeline_candidates";
@@ -686,143 +686,13 @@ function PipelineStat({ stage, count }) {
   );
 }
 
-function CandidateMobileCard({ candidate, onView, onOpenMoveModal }) {
-  const nextStage = getNextStage(candidate.currentStage);
-
-  return (
-    <div className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
-      <button type="button" onClick={onView} className="block w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="whitespace-nowrap text-xs font-bold text-sibs-primary-1">
-              {candidate.candidateId}
-            </p>
-
-            <h3 className="mt-1 break-words text-sm font-bold leading-5 text-[#101828]">
-              {candidate.name}
-            </h3>
-
-            <p className="mt-1 break-words text-xs font-semibold leading-5 text-sibs-tertiary-5">
-              {candidate.roleAccount}
-            </p>
-          </div>
-
-          <span
-            className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStageClass(
-              candidate.currentStage
-            )}`}
-          >
-            {candidate.currentStage}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Owner
-            </p>
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
-              {candidate.owner || "—"}
-            </p>
-          </div>
-
-          <div className="min-w-0 rounded-xl bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Source
-            </p>
-            <p className="mt-1 break-words text-xs font-bold leading-5 text-[#344054]">
-              {candidate.source || "—"}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-          Date Moved:{" "}
-          <span className="font-bold text-[#344054]">
-            {formatDate(candidate.dateMoved)}
-          </span>
-        </div>
-
-        {candidate.dropOffReason && (
-          <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
-            {candidate.dropOffReason}
-          </div>
-        )}
-      </button>
-
-      <div className="mt-4 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onView}
-          className={`inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 ${
-            nextStage ? "flex-1" : "w-full"
-          }`}
-        >
-          <Eye size={15} className="shrink-0" />
-          <span>View</span>
-        </button>
-
-        {nextStage && (
-          <button
-            type="button"
-            onClick={() => onOpenMoveModal(candidate)}
-            className="inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white transition hover:opacity-90"
-          >
-            <ArrowRight size={15} className="shrink-0" />
-            <span>Move</span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StageMobileGroup({ stage, candidates, onView, onOpenMoveModal }) {
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-sm font-bold text-[#101828]">{stage}</h2>
-          <p className="text-xs font-semibold text-sibs-tertiary-5">
-            {candidates.length} candidates
-          </p>
-        </div>
-
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${getStageClass(
-            stage
-          )}`}
-        >
-          {candidates.length}
-        </span>
-      </div>
-
-      <div className="space-y-3">
-        {candidates.length > 0 ? (
-          candidates.map((candidate) => (
-            <CandidateMobileCard
-              key={candidate.id}
-              candidate={candidate}
-              onView={() => onView(candidate)}
-              onOpenMoveModal={onOpenMoveModal}
-            />
-          ))
-        ) : (
-          <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
-            No candidates
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function DetailRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
       <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
+
       <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
         {value || "—"}
       </div>
@@ -892,6 +762,7 @@ function MoveStageModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Move Candidate to Next Stage
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Confirm this movement before updating the candidate pipeline.
             </p>
@@ -919,6 +790,7 @@ function MoveStageModal({
                   <h3 className="text-lg font-bold text-sibs-primary-1">
                     {candidate.name}
                   </h3>
+
                   <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
                     {candidate.roleAccount}
                   </p>
@@ -951,6 +823,7 @@ function MoveStageModal({
                 <h3 className="text-sm font-bold text-amber-700">
                   Offer Module Connection
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
                   After this movement, the candidate will become available in
                   the Offers page. Acceptance or decline should be handled in
@@ -964,6 +837,7 @@ function MoveStageModal({
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Current Stage
                 </label>
+
                 <input
                   readOnly
                   value={candidate.currentStage}
@@ -975,6 +849,7 @@ function MoveStageModal({
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Next Stage
                 </label>
+
                 <input
                   readOnly
                   value={nextStage}
@@ -987,6 +862,7 @@ function MoveStageModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Movement Reason <span className="text-red-500">*</span>
               </label>
+
               <textarea
                 required
                 value={form.reason}
@@ -1001,6 +877,7 @@ function MoveStageModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Internal Remarks
               </label>
+
               <textarea
                 value={form.remarks}
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
@@ -1061,6 +938,7 @@ function DropOffModal({
             <h2 className="text-lg font-bold text-red-700 sm:text-xl">
               Mark Candidate as Drop-off
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Capture the stage, category, reason, feedback, and rating before
               removing this candidate from the active pipeline.
@@ -1089,6 +967,7 @@ function DropOffModal({
                   <h3 className="text-lg font-bold text-red-700">
                     {candidate.name}
                   </h3>
+
                   <p className="mt-1 text-sm font-semibold text-red-700/80">
                     {candidate.roleAccount}
                   </p>
@@ -1101,6 +980,7 @@ function DropOffModal({
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Drop-off Stage
                 </label>
+
                 <input
                   readOnly
                   value={candidate.currentStage}
@@ -1112,6 +992,7 @@ function DropOffModal({
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Reason Category <span className="text-red-500">*</span>
                 </label>
+
                 <select
                   required
                   value={form.category}
@@ -1134,6 +1015,7 @@ function DropOffModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Drop-off Reason <span className="text-red-500">*</span>
               </label>
+
               <textarea
                 required
                 value={form.reason}
@@ -1148,6 +1030,7 @@ function DropOffModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Internal Remarks
               </label>
+
               <textarea
                 value={form.remarks}
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
@@ -1161,6 +1044,7 @@ function DropOffModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Candidate Feedback
               </label>
+
               <textarea
                 value={form.candidateFeedback}
                 onChange={(e) =>
@@ -1176,6 +1060,7 @@ function DropOffModal({
               <label className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Candidate Experience Rating
               </label>
+
               <StarRatingInput
                 value={form.experienceRating}
                 onChange={(rating) =>
@@ -1188,6 +1073,7 @@ function DropOffModal({
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Feedback Tag
               </label>
+
               <input
                 value={form.feedbackTag}
                 onChange={(e) =>
@@ -1250,6 +1136,7 @@ function CandidatePipelineModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Candidate Pipeline Details
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Transaction-level candidate movement and stage history.
             </p>
@@ -1282,6 +1169,7 @@ function CandidatePipelineModal({
                     <h3 className="break-words text-xl font-bold text-[#101828]">
                       {candidate.name}
                     </h3>
+
                     <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
                       {candidate.email}
                     </p>
@@ -1294,9 +1182,11 @@ function CandidatePipelineModal({
                       >
                         {candidate.currentStage}
                       </span>
+
                       <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">
                         {candidate.source}
                       </span>
+
                       <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">
                         {candidate.owner}
                       </span>
@@ -1310,6 +1200,7 @@ function CandidatePipelineModal({
                   <h3 className="text-sm font-bold text-amber-700">
                     Waiting for Offer Management
                   </h3>
+
                   <p className="mt-2 text-sm leading-6 text-amber-700/90">
                     This candidate is already in the Offered stage. Acceptance
                     or decline should be handled in the Offers module.
@@ -1320,6 +1211,7 @@ function CandidatePipelineModal({
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="mb-5 flex items-center gap-2">
                   <History size={18} className="text-sibs-primary-1" />
+
                   <h3 className="text-sm font-bold text-[#101828]">
                     Stage Movement Timeline
                   </h3>
@@ -1351,6 +1243,7 @@ function CandidatePipelineModal({
                             <p className="text-sm font-bold text-[#101828]">
                               {item.stage}
                             </p>
+
                             <p className="text-xs font-semibold text-sibs-tertiary-5">
                               {item.timestamp}
                             </p>
@@ -1410,6 +1303,7 @@ function CandidatePipelineModal({
                 <h3 className="text-sm font-bold text-[#101828]">
                   Reason for Movement
                 </h3>
+
                 <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
                   {candidate.reasonForMovement}
                 </p>
@@ -1442,6 +1336,7 @@ function CandidatePipelineModal({
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Data Capture Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Every movement must capture timestamp, owner, source, stage
                   movement, reason for movement, and drop-off reason if the
@@ -1539,6 +1434,7 @@ export default function CandidatePipelinePage() {
 
   useEffect(() => {
     if (!hasLoadedStorage) return;
+
     savePipelineCandidateData(candidateList);
   }, [candidateList, hasLoadedStorage]);
 
@@ -1593,6 +1489,7 @@ export default function CandidatePipelinePage() {
     if (!nextStage) return;
 
     setMoveCandidate(candidate);
+
     setMoveForm({
       reason: `Candidate moved from ${candidate.currentStage} to ${nextStage}.`,
       remarks: "",
@@ -1601,6 +1498,7 @@ export default function CandidatePipelinePage() {
 
   function handleCloseMoveModal() {
     setMoveCandidate(null);
+
     setMoveForm({
       reason: "",
       remarks: "",
@@ -1675,6 +1573,7 @@ export default function CandidatePipelinePage() {
 
   function handleOpenDropOffModal(candidate) {
     setDropOffCandidate(candidate);
+
     setDropOffForm({
       category: "",
       reason: "",
@@ -1687,6 +1586,7 @@ export default function CandidatePipelinePage() {
 
   function handleCloseDropOffModal() {
     setDropOffCandidate(null);
+
     setDropOffForm({
       category: "",
       reason: "",
@@ -1820,6 +1720,7 @@ export default function CandidatePipelinePage() {
       acc[stage] = filteredCandidates.filter(
         (candidate) => candidate.currentStage === stage
       ).length;
+
       return acc;
     }, {});
   }, [filteredCandidates]);
@@ -1829,6 +1730,7 @@ export default function CandidatePipelinePage() {
       acc[stage] = filteredCandidates.filter(
         (candidate) => candidate.currentStage === stage
       );
+
       return acc;
     }, {});
   }, [filteredCandidates]);
@@ -1868,44 +1770,46 @@ export default function CandidatePipelinePage() {
           />
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="mb-2 font-semibold text-sibs-primary-1">
-              Candidate Pipeline Records
-            </h3>
+        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h3 className="mb-2 font-semibold text-sibs-primary-1">
+                Candidate Pipeline Records
+              </h3>
 
-            <p className="text-sm text-sibs-tertiary-5">
-              Candidate movement connected to Talent Pool, Offers, Onboarding,
-              and Candidate Experience.
-            </p>
-          </div>
+              <p className="text-sm text-sibs-tertiary-5">
+                Candidate movement connected to Talent Pool, Offers, Onboarding,
+                and Candidate Experience.
+              </p>
+            </div>
 
-          <div className="inline-flex w-full rounded-xl border border-[#E6ECF2] bg-white p-1 shadow-sm sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setViewMode("kanban")}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
-                viewMode === "kanban"
-                  ? "bg-sibs-primary-1 text-white shadow-sm"
-                  : "text-[#344054] hover:bg-gray-50"
-              }`}
-            >
-              <Columns3 size={17} />
-              Kanban
-            </button>
+            <div className="inline-flex w-full shrink-0 rounded-xl border border-[#E6ECF2] bg-white p-1 shadow-sm sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode("kanban")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
+                  viewMode === "kanban"
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "text-[#344054] hover:bg-gray-50"
+                }`}
+              >
+                <Columns3 size={17} />
+                Kanban
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setViewMode("table")}
-              className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
-                viewMode === "table"
-                  ? "bg-sibs-primary-1 text-white shadow-sm"
-                  : "text-[#344054] hover:bg-gray-50"
-              }`}
-            >
-              <Table2 size={17} />
-              Table
-            </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
+                  viewMode === "table"
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "text-[#344054] hover:bg-gray-50"
+                }`}
+              >
+                <Table2 size={17} />
+                Table
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1916,6 +1820,7 @@ export default function CandidatePipelinePage() {
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Candidate Pipeline List
                 </h2>
+
                 <p className="text-sm text-sibs-tertiary-5">
                   Search and filter candidate movement records.
                 </p>
@@ -1926,6 +1831,7 @@ export default function CandidatePipelinePage() {
                   size={17}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                 />
+
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -1974,201 +1880,18 @@ export default function CandidatePipelinePage() {
 
           <div className="p-4 sm:p-6">
             {viewMode === "kanban" ? (
-              <>
-                <div className="space-y-4 lg:hidden">
-                  {stages.map((stage) => (
-                    <StageMobileGroup
-                      key={stage}
-                      stage={stage}
-                      candidates={groupedByStage[stage] || []}
-                      onView={setSelectedCandidate}
-                      onOpenMoveModal={handleOpenMoveModal}
-                    />
-                  ))}
-                </div>
-
-                <div className="hidden overflow-x-auto pb-2 lg:block">
-                  <div className="grid min-w-[1320px] grid-cols-7 gap-4">
-                    {stages.map((stage) => {
-                      const items = groupedByStage[stage] || [];
-
-                      return (
-                        <div
-                          key={stage}
-                          className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                        >
-                          <div className="mb-4 flex items-center justify-between">
-                            <div>
-                              <h2 className="text-sm font-bold text-[#101828]">
-                                {stage}
-                              </h2>
-                              <p className="text-xs font-semibold text-sibs-tertiary-5">
-                                {items.length} candidates
-                              </p>
-                            </div>
-
-                            <span
-                              className={`rounded-full border px-2.5 py-1 text-xs font-bold ${getStageClass(
-                                stage
-                              )}`}
-                            >
-                              {items.length}
-                            </span>
-                          </div>
-
-                          <div className="space-y-3">
-                            {items.length > 0 ? (
-                              items.map((candidate) => (
-                                <CandidateMobileCard
-                                  key={candidate.id}
-                                  candidate={candidate}
-                                  onView={() => setSelectedCandidate(candidate)}
-                                  onOpenMoveModal={handleOpenMoveModal}
-                                />
-                              ))
-                            ) : (
-                              <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-white p-5 text-center text-xs font-bold text-sibs-tertiary-5">
-                                No candidates
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
+              <KanbanTab
+                stages={stages}
+                groupedByStage={groupedByStage}
+                onViewCandidate={setSelectedCandidate}
+                onOpenMoveModal={handleOpenMoveModal}
+              />
             ) : (
-              <>
-                <div className="space-y-3 lg:hidden">
-                  {filteredCandidates.length > 0 ? (
-                    filteredCandidates.map((candidate) => (
-                      <CandidateMobileCard
-                        key={candidate.id}
-                        candidate={candidate}
-                        onView={() => setSelectedCandidate(candidate)}
-                        onOpenMoveModal={handleOpenMoveModal}
-                      />
-                    ))
-                  ) : (
-                    <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                      No candidate movement records found.
-                    </div>
-                  )}
-                </div>
-
-                <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-                  <div className="max-h-[520px] overflow-auto">
-                    <table className="w-full min-w-[1200px] border-collapse text-left">
-                      <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                        <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          <th className="px-5 py-4">Candidate</th>
-                          <th className="px-5 py-4">Role / Account</th>
-                          <th className="px-5 py-4">Previous Stage</th>
-                          <th className="px-5 py-4">Current Stage</th>
-                          <th className="px-5 py-4">Owner</th>
-                          <th className="px-5 py-4">Source</th>
-                          <th className="px-5 py-4">Date Moved</th>
-                          <th className="px-5 py-4 text-right">Action</th>
-                        </tr>
-                      </thead>
-
-                      <tbody className="divide-y divide-gray-100 bg-white">
-                        {filteredCandidates.length > 0 ? (
-                          filteredCandidates.map((candidate) => {
-                            const nextStage = getNextStage(
-                              candidate.currentStage
-                            );
-
-                            return (
-                              <tr
-                                key={candidate.id}
-                                className="transition hover:bg-[#F8FAFC]"
-                              >
-                                <td className="px-5 py-4">
-                                  <p className="text-sm font-bold text-[#101828]">
-                                    {candidate.name}
-                                  </p>
-                                  <p className="text-xs font-semibold text-sibs-tertiary-5">
-                                    {candidate.email}
-                                  </p>
-                                </td>
-
-                                <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
-                                  {candidate.roleAccount}
-                                </td>
-
-                                <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                                  {candidate.previousStage || "Initial Entry"}
-                                </td>
-
-                                <td className="px-5 py-4">
-                                  <span
-                                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                                      candidate.currentStage
-                                    )}`}
-                                  >
-                                    {candidate.currentStage}
-                                  </span>
-                                </td>
-
-                                <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                                  {candidate.owner}
-                                </td>
-
-                                <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                                  {candidate.source}
-                                </td>
-
-                                <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                                  {formatDate(candidate.dateMoved)}
-                                </td>
-
-                                <td className="px-5 py-4 text-right">
-                                  <div className="inline-flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        setSelectedCandidate(candidate)
-                                      }
-                                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                                    >
-                                      <Eye size={15} />
-                                      View
-                                    </button>
-
-                                    {nextStage && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleOpenMoveModal(candidate)
-                                        }
-                                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
-                                      >
-                                        <ArrowRight size={15} />
-                                        Move
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={8}
-                              className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                            >
-                              No candidate movement records found.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
+              <TableTab
+                filteredCandidates={filteredCandidates}
+                onViewCandidate={setSelectedCandidate}
+                onOpenMoveModal={handleOpenMoveModal}
+              />
             )}
 
             <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
@@ -2207,6 +1930,7 @@ export default function CandidatePipelinePage() {
           <h3 className="text-sm font-bold text-sibs-primary-1">
             Candidate Pipeline Rule
           </h3>
+
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
             Every candidate movement should be saved as a transaction. When a
             candidate reaches Offered, the offer transaction should be handled in

@@ -542,25 +542,27 @@ export default function HiringNeedsPage() {
           />
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="mb-2 font-semibold text-sibs-primary-1">
-              Existing Hiring Needs
-            </h3>
+        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <h3 className="mb-2 font-semibold text-sibs-primary-1">
+                Existing Hiring Needs
+              </h3>
 
-            <p className="text-sm text-sibs-tertiary-5">
-              Current hiring requirements captured from weekly hiring call.
-            </p>
+              <p className="text-sm text-sibs-tertiary-5">
+                Current hiring requirements captured from weekly hiring call.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            >
+              <Plus size={18} />
+              New Hiring Requirement
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
-          >
-            <Plus size={18} />
-            New Hiring Requirement
-          </button>
         </div>
 
         <section className="overflow-hidden rounded-xl bg-white shadow-sm">
