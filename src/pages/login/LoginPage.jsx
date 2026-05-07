@@ -78,132 +78,58 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <style>
-        {`
-          @keyframes sibsGradientMove {
-            0% {
-              background-position: 0% 50%;
-            }
-
-            50% {
-              background-position: 100% 50%;
-            }
-
-            100% {
-              background-position: 0% 50%;
-            }
-          }
-
-          @keyframes sibsAccentChange {
-            0% {
-              color: #f97316;
-            }
-
-            50% {
-              color: #1e4d7b;
-            }
-
-            100% {
-              color: #f97316;
-            }
-          }
-
-          @keyframes sibsButtonChange {
-            0% {
-              background-color: #f97316;
-              box-shadow: 0 10px 24px rgba(249, 115, 22, 0.28);
-            }
-
-            50% {
-              background-color: #1e4d7b;
-              box-shadow: 0 10px 24px rgba(30, 77, 123, 0.35);
-            }
-
-            100% {
-              background-color: #f97316;
-              box-shadow: 0 10px 24px rgba(249, 115, 22, 0.28);
-            }
-          }
-
-          @keyframes sibsButtonDisabledChange {
-            0% {
-              background-color: rgba(249, 115, 22, 0.72);
-            }
-
-            50% {
-              background-color: rgba(30, 77, 123, 0.72);
-            }
-
-            100% {
-              background-color: rgba(249, 115, 22, 0.72);
-            }
-          }
-        `}
-      </style>
-
-      <div style={styles.page}>
-        <div style={styles.card}>
-          <div style={styles.logoBox}>
-            <Activity size={40} color="white" />
-
-            <span style={styles.logoText}>
-              SiBS <span style={styles.hrisText}>HRIS</span>
-            </span>
-          </div>
-
-          {showError && (
-            <div style={styles.errorBox}>
-              <AlertCircle size={18} color="#fecaca" />
-
-              <div>
-                <p style={styles.errorTitle}>Login Error</p>
-                <p style={styles.errorText}>{errorMessage}</p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleLogin}>
-            <label style={styles.label}>
-              SIBS ID
-              <input
-                type="text"
-                value={sibsId}
-                onChange={(e) => {
-                  setSibsId(e.target.value);
-                  if (showError) clearError();
-                }}
-                style={styles.input}
-              />
-            </label>
-
-            <label style={styles.label}>
-              Password
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (showError) clearError();
-                }}
-                style={styles.input}
-              />
-            </label>
-
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                ...styles.button,
-                ...(loading ? styles.buttonDisabled : {}),
-              }}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.logoBox}>
+          <Activity size={40} color="white" />
+          <span style={styles.logoText}>
+            SiBS <span style={styles.orange}>HRIS</span>
+          </span>
         </div>
+
+        {showError && (
+          <div style={styles.errorBox}>
+            <AlertCircle size={18} color="#fecaca" />
+            <div>
+              <p style={styles.errorTitle}>Login Error</p>
+              <p style={styles.errorText}>{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleLogin}>
+          <label style={styles.label}>
+            SIBS ID
+            <input
+              type="text"
+              value={sibsId}
+              onChange={(e) => {
+                setSibsId(e.target.value);
+                if (showError) clearError();
+              }}
+              style={styles.input}
+            />
+          </label>
+
+          <label style={styles.label}>
+            Password
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (showError) clearError();
+              }}
+              style={styles.input}
+            />
+          </label>
+
+          <button type="submit" disabled={loading} style={styles.button}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -216,9 +142,7 @@ const styles = {
     justifyContent: "center",
     padding: "24px",
     background:
-      "linear-gradient(135deg, #1e4d7b 0%, #3b5f7f 35%, #f05a28 70%, #1e4d7b 100%)",
-    backgroundSize: "300% 300%",
-    animation: "sibsGradientMove 12s ease infinite",
+      "linear-gradient(135deg, #1e4d7b 0%, #3b5f7f 45%, #f05a28 100%)",
     boxSizing: "border-box",
   },
   card: {
@@ -244,9 +168,8 @@ const styles = {
     fontSize: "30px",
     fontWeight: "600",
   },
-  hrisText: {
+  orange: {
     color: "#f97316",
-    animation: "sibsAccentChange 12s ease infinite",
   },
   label: {
     display: "block",
@@ -276,14 +199,6 @@ const styles = {
     color: "white",
     fontWeight: "600",
     cursor: "pointer",
-    opacity: 1,
-    animation: "sibsButtonChange 12s ease infinite",
-    transition: "transform 0.2s ease, opacity 0.2s ease",
-  },
-  buttonDisabled: {
-    cursor: "not-allowed",
-    opacity: 0.75,
-    animation: "sibsButtonDisabledChange 12s ease infinite",
   },
   errorBox: {
     display: "flex",
