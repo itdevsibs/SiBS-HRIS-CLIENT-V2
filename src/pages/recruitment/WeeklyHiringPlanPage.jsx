@@ -1,295 +1,366 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import {
-  CalendarDays,
-  Eye,
-  Flag,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  BarChart3,
-  Archive,
-  Clock3,
-  CheckCircle2,
   AlertTriangle,
-  CircleAlert,
-  Plus,
-  X,
-  Lock,
-  Unlock,
+  CheckCircle2,
+  ChevronDown,
   ClipboardList,
+  Eye,
+  Lock,
+  PieChart,
+  Plus,
   RotateCcw,
-  Target,
+  Search,
+  Unlock,
+  UserRound,
+  X,
 } from "lucide-react";
-
-const approvedHiringRequirements = [
-  {
-    id: "HIR-001",
-    roleAccount: "CSR - SIBS",
-    jobDescription: "JD-001 — Customer Service Representative",
-    approvedRequirement: 20,
-    currentFilled: 12,
-    dueDate: "2026-05-15",
-    taOwner: "Maria Reyes",
-    priority: "High",
-  },
-  {
-    id: "HIR-002",
-    roleAccount: "QA - SIBS",
-    jobDescription: "JD-002 — QA Specialist",
-    approvedRequirement: 5,
-    currentFilled: 2,
-    dueDate: "2026-05-10",
-    taOwner: "John Dela Cruz",
-    priority: "High",
-  },
-  {
-    id: "HIR-003",
-    roleAccount: "RCM Analyst - SIBS",
-    jobDescription: "JD-003 — RCM Analyst",
-    approvedRequirement: 5,
-    currentFilled: 3,
-    dueDate: "2026-05-20",
-    taOwner: "Kim Domingo",
-    priority: "Medium",
-  },
-  {
-    id: "HIR-004",
-    roleAccount: "Accountant - SIBS",
-    jobDescription: "JD-004 — Accountant",
-    approvedRequirement: 2,
-    currentFilled: 1,
-    dueDate: "2026-05-18",
-    taOwner: "Paul Garcia",
-    priority: "Medium",
-  },
-  {
-    id: "HIR-005",
-    roleAccount: "System Developer - SIBS",
-    jobDescription: "JD-005 — System Developer",
-    approvedRequirement: 3,
-    currentFilled: 1,
-    dueDate: "2026-04-30",
-    taOwner: "Maria Reyes",
-    priority: "High",
-  },
-];
 
 const initialWeeklyVersions = [
   {
-    id: "WEEK-2026-05-06",
-    label: "Current Week",
-    weekRange: "May 6 - May 12, 2026",
-    createdAt: "2026-05-06",
+    id: "WEEK-2026-08-11",
+    label: "Week 33",
+    weekRange: "Aug 11 - Aug 17, 2026",
+    createdAt: "2026-08-11",
     locked: false,
     type: "current",
     records: [
       {
         id: 1,
-        hiringRequirementId: "HIR-001",
-        roleAccount: "CSR - SIBS",
-        jobDescription: "JD-001 — Customer Service Representative",
-        approvedRequirement: 20,
-        currentFilled: 12,
-        dueDate: "2026-05-15",
-        status: "At Risk",
-        taOwner: "Maria Reyes",
-        riskFlag: "High",
-        priority: "High",
-        missingDataExplanation:
-          "Interview pass rate and final offer decision count need validation.",
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "Collect IV",
+        requiredHeadcount: 30,
+        actualHeadcount: 28,
+        bufferHeadcount: 3,
+        bufferPercent: 10,
+        absenteeismCount: 6,
+        absenteeismPercent: 19.38,
+        attritionPastCount: 4,
+        attritionPastPercent: 10.69,
+        opsPrf: 16,
+        attritionFstToPstCount: 21,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 24,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 26,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 38,
+        hiringRate: 70,
+        pipelineStatus: "At Risk",
+        statusNote: "Low interview show rate",
+        owner: "John D.",
         actionItems: [
           {
             id: 1,
-            actionItem: "Increase sourcing volume for CSR role.",
-            owner: "Maria Reyes",
-            deadline: "2026-05-09",
-            status: "Ongoing",
-            riskLevel: "High",
-            linkedGap: "Pipeline",
+            actionItem: "Increase sourcing for Collect IV.",
+            roleAccount: "Collect IV / Coast Dental",
+            owner: "John D.",
+            deadline: "2026-08-14",
+            status: "In Progress",
             remarks: "Need additional qualified screened candidates.",
           },
         ],
       },
       {
         id: 2,
-        hiringRequirementId: "HIR-002",
-        roleAccount: "QA - SIBS",
-        jobDescription: "JD-002 — QA Specialist",
-        approvedRequirement: 5,
-        currentFilled: 2,
-        dueDate: "2026-05-10",
-        status: "Delayed",
-        taOwner: "John Dela Cruz",
-        riskFlag: "High",
-        priority: "High",
-        missingDataExplanation:
-          "Hiring manager interview availability was not updated.",
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "Collect AR",
+        requiredHeadcount: 55,
+        actualHeadcount: 42,
+        bufferHeadcount: 6,
+        bufferPercent: 10,
+        absenteeismCount: 7,
+        absenteeismPercent: 11.76,
+        attritionPastCount: 11,
+        attritionPastPercent: 18.18,
+        opsPrf: 37,
+        attritionFstToPstCount: 49,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 55,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 61,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 1218,
+        hiringRate: 5,
+        pipelineStatus: "At Risk",
+        statusNote: "High leads needed",
+        owner: "Jane S.",
         actionItems: [
           {
             id: 1,
-            actionItem: "Confirm QA interview schedule with hiring manager.",
-            owner: "John Dela Cruz",
-            deadline: "2026-05-08",
-            status: "Planned",
-            riskLevel: "High",
-            linkedGap: "Interview",
-            remarks: "Role is delayed and needs immediate interview alignment.",
+            actionItem: "Add sourcing channels for Collect AR.",
+            roleAccount: "Collect AR / Coast Dental",
+            owner: "Jane S.",
+            deadline: "2026-08-15",
+            status: "Pending",
+            remarks: "High interview volume required because of low hiring rate.",
           },
         ],
       },
       {
         id: 3,
-        hiringRequirementId: "HIR-003",
-        roleAccount: "RCM Analyst - SIBS",
-        jobDescription: "JD-003 — RCM Analyst",
-        approvedRequirement: 5,
-        currentFilled: 3,
-        dueDate: "2026-05-20",
-        status: "On Track",
-        taOwner: "Kim Domingo",
-        riskFlag: "None",
-        priority: "Medium",
-        missingDataExplanation: "",
-        actionItems: [
-          {
-            id: 1,
-            actionItem: "Continue screening RCM applicants from Jobstreet.",
-            owner: "Kim Domingo",
-            deadline: "2026-05-10",
-            status: "Ongoing",
-            riskLevel: "Low",
-            linkedGap: "Screening",
-            remarks: "Pipeline is still active.",
-          },
-        ],
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "Connect",
+        requiredHeadcount: 57,
+        actualHeadcount: 47,
+        bufferHeadcount: 6,
+        bufferPercent: 10,
+        absenteeismCount: 4,
+        absenteeismPercent: 5.77,
+        attritionPastCount: 9,
+        attritionPastPercent: 15.38,
+        opsPrf: 29,
+        attritionFstToPstCount: 39,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 43,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 48,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 955,
+        hiringRate: 5,
+        pipelineStatus: "At Risk",
+        statusNote: "Insufficient pipeline",
+        owner: "Maria R.",
+        actionItems: [],
       },
-    ],
-  },
-  {
-    id: "WEEK-2026-04-29",
-    label: "Previous Week",
-    weekRange: "Apr 29 - May 5, 2026",
-    createdAt: "2026-04-29",
-    locked: true,
-    type: "previous",
-    records: [
+      {
+        id: 4,
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "DentistRX",
+        requiredHeadcount: 1,
+        actualHeadcount: 1,
+        bufferHeadcount: 0,
+        bufferPercent: 0,
+        absenteeismCount: 0,
+        absenteeismPercent: 0,
+        attritionPastCount: 0,
+        attritionPastPercent: 0,
+        opsPrf: 0,
+        attritionFstToPstCount: 0,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 0,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 0,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 0,
+        hiringRate: 5,
+        pipelineStatus: "On Track",
+        statusNote: "-",
+        owner: "Mark T.",
+        actionItems: [],
+      },
+      {
+        id: 5,
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "Reconciliation",
+        requiredHeadcount: 2,
+        actualHeadcount: 2,
+        bufferHeadcount: 0,
+        bufferPercent: 0,
+        absenteeismCount: 0,
+        absenteeismPercent: 0,
+        attritionPastCount: 0,
+        attritionPastPercent: 0,
+        opsPrf: 0,
+        attritionFstToPstCount: 0,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 0,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 0,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 0,
+        hiringRate: 5,
+        pipelineStatus: "On Track",
+        statusNote: "-",
+        owner: "Kim D.",
+        actionItems: [],
+      },
       {
         id: 6,
-        hiringRequirementId: "HIR-001",
-        roleAccount: "CSR - SIBS",
-        jobDescription: "JD-001 — Customer Service Representative",
-        approvedRequirement: 20,
-        currentFilled: 10,
-        dueDate: "2026-05-08",
-        status: "At Risk",
-        taOwner: "Maria Reyes",
-        riskFlag: "High",
-        priority: "High",
-        missingDataExplanation:
-          "Final candidate movement was incomplete during reporting cutoff.",
-        actionItems: [
-          {
-            id: 1,
-            actionItem: "Validate pending final interview results.",
-            owner: "Maria Reyes",
-            deadline: "2026-05-02",
-            status: "Completed",
-            riskLevel: "High",
-            linkedGap: "Interview",
-            remarks: "Pending results validated after hiring call.",
-          },
-        ],
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "TeleDentistry",
+        requiredHeadcount: 3,
+        actualHeadcount: 3,
+        bufferHeadcount: 0,
+        bufferPercent: 0,
+        absenteeismCount: 0,
+        absenteeismPercent: 0,
+        attritionPastCount: 0,
+        attritionPastPercent: 0,
+        opsPrf: 0,
+        attritionFstToPstCount: 0,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 0,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 0,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 0,
+        hiringRate: 5,
+        pipelineStatus: "On Track",
+        statusNote: "-",
+        owner: "Paul G.",
+        actionItems: [],
       },
       {
         id: 7,
-        hiringRequirementId: "HIR-002",
-        roleAccount: "QA - SIBS",
-        jobDescription: "JD-002 — QA Specialist",
-        approvedRequirement: 5,
-        currentFilled: 1,
-        dueDate: "2026-05-03",
-        status: "Delayed",
-        taOwner: "John Dela Cruz",
-        riskFlag: "High",
-        priority: "High",
-        missingDataExplanation:
-          "Only one candidate completed assessment before cutoff.",
-        actionItems: [
-          {
-            id: 1,
-            actionItem: "Reopen sourcing for QA candidates.",
-            owner: "John Dela Cruz",
-            deadline: "2026-05-03",
-            status: "Completed",
-            riskLevel: "High",
-            linkedGap: "Pipeline",
-            remarks: "Additional sourcing channels activated.",
-          },
-        ],
+        week: "Week 33",
+        cluster: "Coast Dental",
+        account: "Cash",
+        requiredHeadcount: 2,
+        actualHeadcount: 2,
+        bufferHeadcount: 0,
+        bufferPercent: 0,
+        absenteeismCount: 0,
+        absenteeismPercent: 0,
+        attritionPastCount: 0,
+        attritionPastPercent: 0,
+        opsPrf: 0,
+        attritionFstToPstCount: 0,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 0,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 0,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 0,
+        hiringRate: 5,
+        pipelineStatus: "On Track",
+        statusNote: "-",
+        owner: "Grace L.",
+        actionItems: [],
       },
-    ],
-  },
-  {
-    id: "WEEK-2026-04-22",
-    label: "Archive",
-    weekRange: "Apr 22 - Apr 28, 2026",
-    createdAt: "2026-04-22",
-    locked: true,
-    type: "archive",
-    records: [
+      {
+        id: 8,
+        week: "Week 33",
+        cluster: "US Visa",
+        account: "US Visa",
+        requiredHeadcount: 20,
+        actualHeadcount: 15,
+        bufferHeadcount: 2,
+        bufferPercent: 10,
+        absenteeismCount: 2,
+        absenteeismPercent: 8,
+        attritionPastCount: 3,
+        attritionPastPercent: 12,
+        opsPrf: 12,
+        attritionFstToPstCount: 16,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 18,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 20,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 120,
+        hiringRate: 15,
+        pipelineStatus: "At Risk",
+        statusNote: "Need additional sourcing",
+        owner: "Lara M.",
+        actionItems: [],
+      },
       {
         id: 9,
-        hiringRequirementId: "HIR-006",
-        roleAccount: "CSR - SIBS",
-        jobDescription: "JD-001 — Customer Service Representative",
-        approvedRequirement: 15,
-        currentFilled: 15,
-        dueDate: "2026-04-25",
-        status: "Completed",
-        taOwner: "Maria Reyes",
-        riskFlag: "None",
-        priority: "Medium",
-        missingDataExplanation: "",
+        week: "Week 33",
+        cluster: "SME",
+        account: "Channel Assist",
+        requiredHeadcount: 12,
+        actualHeadcount: 10,
+        bufferHeadcount: 1,
+        bufferPercent: 10,
+        absenteeismCount: 1,
+        absenteeismPercent: 7.5,
+        attritionPastCount: 1,
+        attritionPastPercent: 8,
+        opsPrf: 5,
+        attritionFstToPstCount: 7,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 8,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 9,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 45,
+        hiringRate: 20,
+        pipelineStatus: "On Track",
+        statusNote: "-",
+        owner: "Nina P.",
         actionItems: [],
       },
       {
         id: 10,
-        hiringRequirementId: "HIR-007",
-        roleAccount: "QA - SIBS",
-        jobDescription: "JD-002 — QA Specialist",
-        approvedRequirement: 3,
-        currentFilled: 3,
-        dueDate: "2026-04-25",
-        status: "Completed",
-        taOwner: "John Dela Cruz",
-        riskFlag: "None",
-        priority: "Medium",
-        missingDataExplanation: "",
+        week: "Week 33",
+        cluster: "Yomdel",
+        account: "Yomdel",
+        requiredHeadcount: 18,
+        actualHeadcount: 12,
+        bufferHeadcount: 2,
+        bufferPercent: 10,
+        absenteeismCount: 2,
+        absenteeismPercent: 9,
+        attritionPastCount: 3,
+        attritionPastPercent: 14,
+        opsPrf: 13,
+        attritionFstToPstCount: 18,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 20,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 22,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 147,
+        hiringRate: 15,
+        pipelineStatus: "At Risk",
+        statusNote: "Pipeline gap",
+        owner: "Rex C.",
+        actionItems: [],
+      },
+    ],
+  },
+  {
+    id: "WEEK-2026-08-04",
+    label: "Week 32",
+    weekRange: "Aug 4 - Aug 10, 2026",
+    createdAt: "2026-08-04",
+    locked: true,
+    type: "previous",
+    records: [
+      {
+        id: 101,
+        week: "Week 32",
+        cluster: "Coast Dental",
+        account: "Collect IV",
+        requiredHeadcount: 30,
+        actualHeadcount: 27,
+        bufferHeadcount: 3,
+        bufferPercent: 10,
+        absenteeismCount: 5,
+        absenteeismPercent: 17,
+        attritionPastCount: 4,
+        attritionPastPercent: 10,
+        opsPrf: 15,
+        attritionFstToPstCount: 20,
+        attritionFstToPstPercent: 25,
+        attritionNhoToFstPstCount: 22,
+        attritionNhoToFstPstPercent: 10,
+        attritionInterviewToNhoCount: 24,
+        attritionInterviewToNhoPercent: 10,
+        leadsToInterview: 35,
+        hiringRate: 70,
+        pipelineStatus: "At Risk",
+        statusNote: "Final interviews pending",
+        owner: "John D.",
         actionItems: [],
       },
     ],
   },
 ];
 
-const initialAddRoleForm = {
-  hiringRequirementId: "",
-};
-
-const initialUpdateProgressForm = {
-  currentFilled: "",
-  status: "",
-  riskFlag: "",
-  missingDataExplanation: "",
-};
-
 const initialActionItemForm = {
   actionItem: "",
   owner: "",
   deadline: "",
-  status: "Planned",
-  riskLevel: "Medium",
-  linkedGap: "Pipeline",
+  status: "Pending",
   remarks: "",
 };
 
@@ -304,6 +375,22 @@ function formatDate(date) {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatPercent(value) {
+  const numberValue = Number(value || 0);
+
+  if (numberValue > 0 && numberValue <= 1) {
+    return `${(numberValue * 100).toFixed(2)}%`;
+  }
+
+  return `${numberValue.toFixed(2)}%`;
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 0,
   });
 }
 
@@ -328,39 +415,48 @@ function getNextWeekRange() {
   return `${startText} - ${endText}`;
 }
 
-function calculateStatus(item) {
-  const today = new Date(getTodayDate());
-  const dueDate = new Date(item.dueDate);
+function getNextWeekLabel(currentLabel) {
+  const weekNumber = Number(String(currentLabel).replace(/\D/g, ""));
+  if (!weekNumber) return "Current Week";
+  return `Week ${weekNumber + 1}`;
+}
 
-  if (Number(item.currentFilled) >= Number(item.approvedRequirement)) {
+function getOverallStatus(records) {
+  const delayed = records.some((item) => item.pipelineStatus === "Delayed");
+  const atRisk = records.some((item) => item.pipelineStatus === "At Risk");
+
+  if (delayed || atRisk) return "AT RISK";
+
+  const completed =
+    records.length > 0 &&
+    records.every(
+      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount)
+    );
+
+  if (completed) return "COMPLETED";
+
+  return "ON TRACK";
+}
+
+function calculatePipelineStatus(item) {
+  if (Number(item.actualHeadcount) >= Number(item.requiredHeadcount)) {
     return "Completed";
   }
 
-  if (dueDate < today) {
+  const gap =
+    Number(item.requiredHeadcount || 0) - Number(item.actualHeadcount || 0);
+
+  if (gap <= 0) return "Completed";
+
+  if (Number(item.leadsToInterview || 0) === 0 && gap > 0) {
     return "Delayed";
   }
 
-  const remaining = Number(item.approvedRequirement) - Number(item.currentFilled);
-
-  const fillRate =
-    Number(item.approvedRequirement) > 0
-      ? Number(item.currentFilled) / Number(item.approvedRequirement)
-      : 0;
-
-  if (remaining > 0 && fillRate < 0.65) {
+  if (Number(item.leadsToInterview || 0) < Number(item.opsPrf || 0)) {
     return "At Risk";
   }
 
   return "On Track";
-}
-
-function calculateRiskFlag(item) {
-  const status = calculateStatus(item);
-
-  if (status === "Delayed") return "High";
-  if (status === "At Risk") return item.priority === "High" ? "High" : "Medium";
-
-  return "None";
 }
 
 function getStatusClass(status) {
@@ -373,57 +469,38 @@ function getStatusClass(status) {
       return "border-red-200 bg-red-50 text-red-700";
     case "Completed":
       return "border-blue-200 bg-blue-50 text-blue-700";
+    case "In Progress":
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    case "Pending":
+      return "border-gray-200 bg-gray-50 text-gray-700";
+    case "Not Started":
+      return "border-slate-200 bg-slate-50 text-slate-700";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
-function getRiskClass(risk) {
-  switch (risk) {
-    case "High":
-      return "text-red-600";
-    case "Medium":
-      return "text-amber-500";
-    default:
-      return "text-gray-300";
-  }
-}
-
-function getRiskBadgeClass(risk) {
-  switch (risk) {
-    case "High":
-      return "border-red-200 bg-red-50 text-red-700";
-    case "Medium":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "Low":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
-  }
-}
-
-function StatCard({ title, value, icon: Icon, description }) {
+function MetricCard({
+  title,
+  value,
+  icon: Icon,
+  iconClassName = "bg-blue-50 text-sibs-primary-1",
+  valueClassName = "text-sibs-primary-1",
+}) {
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
-          </p>
-
-          <h3 className="mt-2 truncate text-2xl font-bold text-sibs-primary-1">
-            {value}
-          </h3>
-
-          {description && (
-            <p className="mt-1 text-xs font-medium leading-5 text-sibs-tertiary-5">
-              {description}
-            </p>
-          )}
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
+        >
+          <Icon size={22} />
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)]/10 text-sibs-primary-1">
-          <Icon size={20} />
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-[#101828]">{title}</p>
+          <h3 className={`mt-1 truncate text-3xl font-bold ${valueClassName}`}>
+            {value}
+          </h3>
         </div>
       </div>
     </div>
@@ -437,381 +514,220 @@ function InfoBox({ label, value }) {
         {label}
       </p>
 
-      <div className="text-sm font-bold text-[#344054]">{value || "—"}</div>
+      <div className="text-sm font-bold text-[#344054]">{value ?? "—"}</div>
     </div>
   );
 }
 
-function HiringPlanMobileCard({ item, onView }) {
-  const remaining =
-    Number(item.approvedRequirement || 0) - Number(item.currentFilled || 0);
+function PercentageGraphSection({ filteredPlans, overallStatus }) {
+  const [openMetric, setOpenMetric] = useState("attritionPastPercent");
 
-  const actionMissing =
-    remaining > 0 && (!item.actionItems || item.actionItems.length === 0);
+  const percentageMetrics = [
+    {
+      countKey: "absenteeismCount",
+      percentKey: "absenteeismPercent",
+      label: "Absenteeism",
+    },
+    {
+      countKey: "attritionPastCount",
+      percentKey: "attritionPastPercent",
+      label: "Attrition - Past 6 Weeks",
+    },
+    {
+      countKey: "attritionFstToPstCount",
+      percentKey: "attritionFstToPstPercent",
+      label: "Attrition - FST to PST / c/o QDS",
+    },
+    {
+      countKey: "attritionNhoToFstPstCount",
+      percentKey: "attritionNhoToFstPstPercent",
+      label: "Attrition - NHO to FST-PST / c/o TA",
+    },
+    {
+      countKey: "attritionInterviewToNhoCount",
+      percentKey: "attritionInterviewToNhoPercent",
+      label: "Attrition - Interview to NHO / c/o TA",
+    },
+  ];
 
-  return (
-    <button
-      type="button"
-      onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-[#101828]">
-            {item.roleAccount}
-          </h3>
+  const graphData = percentageMetrics.map((metric) => {
+    const totalCount = filteredPlans.reduce(
+      (sum, item) => sum + Number(item[metric.countKey] || 0),
+      0
+    );
 
-          <p className="mt-1 line-clamp-2 text-xs font-semibold text-sibs-tertiary-5">
-            {item.jobDescription}
-          </p>
-        </div>
+    const averagePercent =
+      filteredPlans.length > 0
+        ? filteredPlans.reduce(
+            (sum, item) => sum + Number(item[metric.percentKey] || 0),
+            0
+          ) / filteredPlans.length
+        : 0;
 
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            item.status
-          )}`}
-        >
-          {item.status}
-        </span>
-      </div>
+    return {
+      ...metric,
+      totalCount,
+      averagePercent,
+    };
+  });
 
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Required
-          </p>
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {item.approvedRequirement}
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Filled
-          </p>
-          <p className="mt-1 text-sm font-bold text-emerald-600">
-            {item.currentFilled}
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Gap
-          </p>
-          <p className="mt-1 text-sm font-bold text-red-600">
-            {Math.max(remaining, 0)}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <p className="font-semibold text-sibs-tertiary-5">
-          Owner:{" "}
-          <span className="font-bold text-[#344054]">{item.taOwner}</span>
-        </p>
-
-        <p className="font-semibold text-sibs-tertiary-5">
-          Due:{" "}
-          <span className="font-bold text-[#344054]">
-            {formatDate(item.dueDate)}
-          </span>
-        </p>
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {item.riskFlag !== "None" && (
-          <span
-            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskBadgeClass(
-              item.riskFlag
-            )}`}
-          >
-            {item.riskFlag} Risk
-          </span>
-        )}
-
-        {actionMissing ? (
-          <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[10px] font-bold text-red-700">
-            Action Required
-          </span>
-        ) : (
-          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
-            {(item.actionItems || []).length} Action Item/s
-          </span>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function AddRoleModal({
-  open,
-  form,
-  setForm,
-  availableRequirements,
-  onClose,
-  onSubmit,
-}) {
-  if (!open) return null;
-
-  const selectedRequirement = availableRequirements.find(
-    (item) => item.id === form.hiringRequirementId
+  const maxPercent = Math.max(
+    25,
+    ...graphData.map((item) => Number(item.averagePercent || 0))
   );
 
-  return (
-    <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Add Approved Hiring Requirement
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Add an approved hiring requirement into the current weekly plan.
-            </p>
-          </div>
+  function getBarColor(value) {
+    if (value >= 20) return "bg-red-500";
+    if (value >= 10) return "bg-orange-400";
+    return "bg-emerald-500";
+  }
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
+  return (
+    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-base font-bold text-[#101828]">
+            Percentage Risk Graph
+          </h2>
+
+          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            Combined count and average percentage based on the selected account
+            or cluster filter. Click each item to view account details.
+          </p>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            Approved Hiring Requirement <span className="text-red-500">*</span>
-          </label>
-
-          <select
-            required
-            value={form.hiringRequirementId}
-            onChange={(e) =>
-              setForm({ ...form, hiringRequirementId: e.target.value })
-            }
-            className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-          >
-            <option value="">Select approved hiring requirement</option>
-            {availableRequirements.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.id} — {item.roleAccount} / Required:{" "}
-                {item.approvedRequirement}
-              </option>
-            ))}
-          </select>
-
-          {selectedRequirement && (
-            <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <InfoBox
-                label="Role / Account"
-                value={selectedRequirement.roleAccount}
-              />
-              <InfoBox
-                label="Job Description"
-                value={selectedRequirement.jobDescription}
-              />
-              <InfoBox
-                label="Approved Requirement"
-                value={selectedRequirement.approvedRequirement}
-              />
-              <InfoBox
-                label="Current Filled"
-                value={selectedRequirement.currentFilled}
-              />
-              <InfoBox
-                label="Due Date"
-                value={formatDate(selectedRequirement.dueDate)}
-              />
-              <InfoBox label="TA Owner" value={selectedRequirement.taOwner} />
-            </div>
-          )}
-
-          {availableRequirements.length === 0 && (
-            <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-5">
-              <p className="text-sm font-bold text-amber-700">
-                No available approved hiring requirements to add.
-              </p>
-              <p className="mt-1 text-sm text-amber-700/80">
-                All mock approved hiring requirements are already included in
-                this weekly plan.
-              </p>
-            </div>
-          )}
-
-          <div className="mt-6 flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={availableRequirements.length === 0}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Plus size={17} />
-              Add to Weekly Plan
-            </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="inline-flex w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+            Accounts Included: {filteredPlans.length}
           </div>
-        </form>
+
+          <div
+            className={`inline-flex w-fit items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${
+              overallStatus === "AT RISK"
+                ? "border-orange-200 bg-orange-50 text-orange-600"
+                : overallStatus === "COMPLETED"
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            <AlertTriangle size={17} />
+            Overall Status: {overallStatus}
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
 
-function UpdateProgressModal({
-  open,
-  item,
-  form,
-  setForm,
-  onClose,
-  onSubmit,
-}) {
-  if (!open || !item) return null;
+      {filteredPlans.length > 0 ? (
+        <div className="space-y-3">
+          {graphData.map((metric) => {
+            const isOpen = openMetric === metric.percentKey;
+            const width = Math.min(
+              (metric.averagePercent / maxPercent) * 100,
+              100
+            );
 
-  return (
-    <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Update Weekly Progress
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Update filled count, risk, and missing data explanation.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-bold text-sibs-primary-1">
-              {item.roleAccount}
-            </p>
-            <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
-              Required: {item.approvedRequirement} / Current Filled:{" "}
-              {item.currentFilled}
-            </p>
-          </div>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Current Filled <span className="text-red-500">*</span>
-              </label>
-              <input
-                required
-                type="number"
-                min="0"
-                max={item.approvedRequirement}
-                value={form.currentFilled}
-                onChange={(e) =>
-                  setForm({ ...form, currentFilled: e.target.value })
-                }
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Status
-              </label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+            return (
+              <div
+                key={metric.percentKey}
+                className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F8FAFC]"
               >
-                <option value="">Auto Calculate</option>
-                <option value="On Track">On Track</option>
-                <option value="At Risk">At Risk</option>
-                <option value="Delayed">Delayed</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenMetric(isOpen ? "" : metric.percentKey)
+                  }
+                  className="w-full p-4 text-left transition hover:bg-white"
+                >
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ChevronDown
+                        size={18}
+                        className={`shrink-0 text-sibs-primary-1 transition-transform ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
 
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Risk Flag
-              </label>
-              <select
-                value={form.riskFlag}
-                onChange={(e) =>
-                  setForm({ ...form, riskFlag: e.target.value })
-                }
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-              >
-                <option value="">Auto Calculate</option>
-                <option value="None">None</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-          </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#101828]">
+                          {metric.label}
+                        </p>
 
-          <div className="mt-5">
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-              Missing Data Explanation
-            </label>
-            <textarea
-              rows={4}
-              value={form.missingDataExplanation}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  missingDataExplanation: e.target.value,
-                })
-              }
-              placeholder="Explain missing data, hiring blocker, or reporting limitation."
-              className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-            />
-          </div>
+                        <p className="text-xs font-semibold text-sibs-tertiary-5">
+                          Total Count: {formatNumber(metric.totalCount)}
+                        </p>
+                      </div>
+                    </div>
 
-          <div className="mt-6 flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
+                    <div className="shrink-0 text-left sm:text-right">
+                      <p className="text-sm font-bold text-sibs-primary-1">
+                        {formatPercent(metric.averagePercent)}
+                      </p>
 
-            <button
-              type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              <Target size={17} />
-              Save Progress
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+                      <p className="text-xs font-semibold text-sibs-tertiary-5">
+                        Average %
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="h-3 overflow-hidden rounded-full bg-[#E6ECF2]">
+                    <div
+                      className={`h-full rounded-full ${getBarColor(
+                        metric.averagePercent
+                      )}`}
+                      style={{ width: `${width}%` }}
+                    />
+                  </div>
+                </button>
+
+                {isOpen && (
+                  <div className="border-t border-[#E6ECF2] bg-white p-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[520px] border-collapse text-left">
+                        <thead>
+                          <tr className="border-b border-[#E6ECF2] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                            <th className="px-3 py-3">Account</th>
+                            <th className="px-3 py-3">Cluster</th>
+                            <th className="px-3 py-3 text-center">Count</th>
+                            <th className="px-3 py-3 text-center">
+                              Percentage
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody className="divide-y divide-[#E6ECF2]">
+                          {filteredPlans.map((item) => (
+                            <tr key={`${metric.percentKey}-${item.id}`}>
+                              <td className="px-3 py-3 text-sm font-bold text-[#101828]">
+                                {item.account}
+                              </td>
+
+                              <td className="px-3 py-3 text-sm font-semibold text-[#344054]">
+                                {item.cluster}
+                              </td>
+
+                              <td className="px-3 py-3 text-center text-sm font-semibold text-[#344054]">
+                                {formatNumber(item[metric.countKey])}
+                              </td>
+
+                              <td className="px-3 py-3 text-center text-sm font-bold text-sibs-primary-1">
+                                {formatPercent(item[metric.percentKey])}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+          No graph data available for the selected filter.
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -840,8 +756,7 @@ function ActionItemModal({
               Add Action Item
             </h2>
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Every role that is not fully hired should have at least one action
-              item.
+              Add a weekly action item for {item.account} / {item.cluster}.
             </p>
           </div>
 
@@ -858,11 +773,11 @@ function ActionItemModal({
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
             <p className="text-sm font-bold text-sibs-primary-1">
-              {item.roleAccount}
+              {item.account} / {item.cluster}
             </p>
             <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
-              Status: {item.status} / Required: {item.approvedRequirement} /
-              Filled: {item.currentFilled}
+              Required: {item.requiredHeadcount} / Actual:{" "}
+              {item.actualHeadcount} / Leads: {item.leadsToInterview}
             </p>
           </div>
 
@@ -877,7 +792,7 @@ function ActionItemModal({
                 onChange={(e) =>
                   setForm({ ...form, actionItem: e.target.value })
                 }
-                placeholder="Example: Increase sourcing volume for CSR."
+                placeholder="Example: Increase sourcing volume."
                 className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               />
             </div>
@@ -919,47 +834,10 @@ function ActionItemModal({
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
                 className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               >
-                <option value="Planned">Planned</option>
-                <option value="Ongoing">Ongoing</option>
+                <option value="Not Started">Not Started</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Risk Level
-              </label>
-              <select
-                value={form.riskLevel}
-                onChange={(e) =>
-                  setForm({ ...form, riskLevel: e.target.value })
-                }
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-              >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Linked Gap
-              </label>
-              <select
-                value={form.linkedGap}
-                onChange={(e) =>
-                  setForm({ ...form, linkedGap: e.target.value })
-                }
-                className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-              >
-                <option value="Pipeline">Pipeline</option>
-                <option value="Screening">Screening</option>
-                <option value="Interview">Interview</option>
-                <option value="Offer">Offer</option>
-                <option value="JD">JD</option>
-                <option value="Approval">Approval</option>
-                <option value="Capacity/Manpower">Capacity/Manpower</option>
               </select>
             </div>
 
@@ -1006,17 +884,15 @@ function ViewPlanModal({
   open,
   item,
   locked,
+  previousWeekItem,
   onClose,
-  onOpenProgress,
   onOpenActionItem,
 }) {
   if (!open || !item) return null;
 
-  const remaining =
-    Number(item.approvedRequirement || 0) - Number(item.currentFilled || 0);
-
-  const hasRequiredActionItem =
-    remaining <= 0 || (item.actionItems && item.actionItems.length > 0);
+  const previousLeadsNeeded = Number(previousWeekItem?.leadsToInterview || 0);
+  const currentLeadsNeeded = Number(item.leadsToInterview || 0);
+  const remaining = Math.max(currentLeadsNeeded - previousLeadsNeeded, 0);
 
   return (
     <div
@@ -1033,7 +909,7 @@ function ViewPlanModal({
               Weekly Hiring Plan Details
             </h2>
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Role movement, gap, risk, missing data, and action items.
+              {item.account} / {item.cluster}
             </p>
           </div>
 
@@ -1054,40 +930,40 @@ function ViewPlanModal({
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
-                      {item.roleAccount}
+                      {item.account}
                     </h3>
 
                     <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                      {item.jobDescription}
+                      {item.week} / {item.cluster}
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          item.status
+                          item.pipelineStatus
                         )}`}
                       >
-                        {item.status}
+                        {item.pipelineStatus}
                       </span>
 
-                      {item.riskFlag !== "None" && (
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getRiskBadgeClass(
-                            item.riskFlag
-                          )}`}
-                        >
-                          {item.riskFlag} Risk
-                        </span>
-                      )}
+                      <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">
+                        Owner: {item.owner}
+                      </span>
                     </div>
                   </div>
 
                   <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-center">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
-                      Gap
+                      Leads Gap vs Previous Week
                     </p>
+
                     <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
-                      {Math.max(remaining, 0)}
+                      {remaining}
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
+                      Prev: {previousLeadsNeeded} / This Week:{" "}
+                      {currentLeadsNeeded}
                     </p>
                   </div>
                 </div>
@@ -1095,100 +971,71 @@ function ViewPlanModal({
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <InfoBox
-                  label="Approved Requirement"
-                  value={item.approvedRequirement}
+                  label="Required Headcount"
+                  value={item.requiredHeadcount}
                 />
-                <InfoBox label="Current Filled" value={item.currentFilled} />
-                <InfoBox label="Due Date" value={formatDate(item.dueDate)} />
-                <InfoBox label="TA Owner" value={item.taOwner} />
-                <InfoBox label="Priority" value={item.priority} />
                 <InfoBox
-                  label="Hiring Requirement"
-                  value={item.hiringRequirementId}
+                  label="Actual Headcount"
+                  value={item.actualHeadcount}
                 />
-              </div>
-
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">
-                  Missing Data Explanation
-                </h3>
-
-                <p className="mt-3 whitespace-pre-line rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                  {item.missingDataExplanation ||
-                    "No missing data explanation recorded."}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">
-                  Action Items
-                </h3>
-
-                {!hasRequiredActionItem && (
-                  <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-4">
-                    <p className="text-sm font-bold text-red-700">
-                      Action item required
-                    </p>
-                    <p className="mt-1 text-sm text-red-700/80">
-                      This role is not fully hired and must have at least one
-                      action item.
-                    </p>
-                  </div>
-                )}
-
-                <div className="mt-4 space-y-3">
-                  {item.actionItems && item.actionItems.length > 0 ? (
-                    item.actionItems.map((action) => (
-                      <div
-                        key={action.id}
-                        className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                      >
-                        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#101828]">
-                              {action.actionItem}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                              Owner: {action.owner} / Deadline:{" "}
-                              {formatDate(action.deadline)}
-                            </p>
-                          </div>
-
-                          <span
-                            className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold ${getRiskBadgeClass(
-                              action.riskLevel
-                            )}`}
-                          >
-                            {action.status}
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-                          Linked Gap: {action.linkedGap}
-                        </p>
-
-                        {action.remarks && (
-                          <p className="mt-2 text-sm leading-6 text-[#344054]">
-                            {action.remarks}
-                          </p>
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold text-sibs-tertiary-5">
-                      No action items yet.
-                    </p>
-                  )}
-                </div>
+                <InfoBox
+                  label="Buffer"
+                  value={`${item.bufferHeadcount} / ${formatPercent(
+                    item.bufferPercent
+                  )}`}
+                />
+                <InfoBox
+                  label="Absenteeism"
+                  value={`${item.absenteeismCount} / ${formatPercent(
+                    item.absenteeismPercent
+                  )}`}
+                />
+                <InfoBox
+                  label="Attrition Past 6 Weeks"
+                  value={`${item.attritionPastCount} / ${formatPercent(
+                    item.attritionPastPercent
+                  )}`}
+                />
+                <InfoBox label="OPS PRF" value={item.opsPrf} />
+                <InfoBox
+                  label="FST to PST"
+                  value={`${item.attritionFstToPstCount} / ${formatPercent(
+                    item.attritionFstToPstPercent
+                  )}`}
+                />
+                <InfoBox
+                  label="NHO to FST-PST"
+                  value={`${item.attritionNhoToFstPstCount} / ${formatPercent(
+                    item.attritionNhoToFstPstPercent
+                  )}`}
+                />
+                <InfoBox
+                  label="Interview to NHO"
+                  value={`${item.attritionInterviewToNhoCount} / ${formatPercent(
+                    item.attritionInterviewToNhoPercent
+                  )}`}
+                />
+                <InfoBox
+                  label="Leads to Interview"
+                  value={item.leadsToInterview}
+                />
+                <InfoBox
+                  label="Hiring Rate"
+                  value={formatPercent(item.hiringRate)}
+                />
+                <InfoBox label="Status Note" value={item.statusNote} />
               </div>
             </div>
 
             <div className="space-y-5">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">Rule</h3>
+                <h3 className="text-sm font-bold text-sibs-primary-1">
+                  Excel Logic
+                </h3>
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  Every role that is not fully hired must have at least one
-                  action item linked to a hiring gap.
+                  Required HC vs Actual HC plus buffer, absenteeism, attrition,
+                  and conversion attrition determines OPS PRF and leads to
+                  interview.
                 </p>
               </div>
 
@@ -1221,15 +1068,6 @@ function ViewPlanModal({
                   <h3 className="text-sm font-bold text-[#101828]">Actions</h3>
 
                   <div className="mt-4 space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => onOpenProgress(item)}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90"
-                    >
-                      <Target size={16} />
-                      Update Progress
-                    </button>
-
                     <button
                       type="button"
                       onClick={() => onOpenActionItem(item)}
@@ -1266,45 +1104,25 @@ function KpiSnapshotModal({ open, week, onClose }) {
 
   const records = week.records || [];
 
-  const totalRequired = records.reduce(
-    (sum, item) => sum + Number(item.approvedRequirement || 0),
+  const required = records.reduce(
+    (sum, item) => sum + Number(item.requiredHeadcount || 0),
     0
   );
 
-  const totalFilled = records.reduce(
-    (sum, item) => sum + Number(item.currentFilled || 0),
+  const actual = records.reduce(
+    (sum, item) => sum + Number(item.actualHeadcount || 0),
     0
   );
 
-  const previousWeekExecution = records.map((item) => ({
-    roleAccount: item.roleAccount,
-    progress:
-      Number(item.approvedRequirement) > 0
-        ? Math.round(
-            (Number(item.currentFilled) / Number(item.approvedRequirement)) *
-              100
-          )
-        : 0,
-    gap: Math.max(
-      Number(item.approvedRequirement || 0) - Number(item.currentFilled || 0),
-      0
-    ),
-    status: item.status,
-  }));
-
-  const missingExplanations = records.filter((item) =>
-    item.missingDataExplanation?.trim()
+  const opsPrf = records.reduce(
+    (sum, item) => sum + Number(item.opsPrf || 0),
+    0
   );
 
-  const actionItems = records.flatMap((item) =>
-    (item.actionItems || []).map((action) => ({
-      ...action,
-      roleAccount: item.roleAccount,
-    }))
+  const leads = records.reduce(
+    (sum, item) => sum + Number(item.leadsToInterview || 0),
+    0
   );
-
-  const progress =
-    totalRequired > 0 ? Math.round((totalFilled / totalRequired) * 100) : 0;
 
   return (
     <div
@@ -1321,7 +1139,7 @@ function KpiSnapshotModal({ open, week, onClose }) {
               Weekly KPI Snapshot
             </h2>
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Previous week execution first, current status second.
+              Weekly manpower requirement, OPS PRF, and leads needed.
             </p>
           </div>
 
@@ -1337,135 +1155,10 @@ function KpiSnapshotModal({ open, week, onClose }) {
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <InfoBox label="Week" value={week.weekRange} />
-            <InfoBox label="Required" value={totalRequired} />
-            <InfoBox label="Filled" value={totalFilled} />
-            <InfoBox label="Progress" value={`${progress}%`} />
-          </div>
-
-          <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-[#101828]">
-                Weekly Performance
-              </h3>
-
-              <div className="mt-4 space-y-3">
-                {previousWeekExecution.map((item) => (
-                  <div
-                    key={item.roleAccount}
-                    className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-[#101828]">
-                          {item.roleAccount}
-                        </p>
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          Gap: {item.gap}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          item.status
-                        )}`}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        className="h-full rounded-full bg-[var(--sibs-primary-1)]"
-                        style={{ width: `${Math.min(item.progress, 100)}%` }}
-                      />
-                    </div>
-
-                    <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                      {item.progress}% filled
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-[#101828]">
-                Current Status Reference
-              </h3>
-
-              <div className="mt-4 space-y-3">
-                {records.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                  >
-                    <p className="text-sm font-bold text-[#101828]">
-                      {item.roleAccount}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      Required {item.approvedRequirement} / Filled{" "}
-                      {item.currentFilled} / Due {formatDate(item.dueDate)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-[#101828]">
-                Missing Data Explanation
-              </h3>
-
-              <div className="mt-4 space-y-3">
-                {missingExplanations.length > 0 ? (
-                  missingExplanations.map((item) => (
-                    <div
-                      key={item.id}
-                      className="rounded-xl border border-amber-100 bg-amber-50 p-4"
-                    >
-                      <p className="text-sm font-bold text-amber-700">
-                        {item.roleAccount}
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-amber-700/90">
-                        {item.missingDataExplanation}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold text-sibs-tertiary-5">
-                    No missing data explanation recorded.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-[#101828]">Action Items</h3>
-
-              <div className="mt-4 space-y-3">
-                {actionItems.length > 0 ? (
-                  actionItems.map((item) => (
-                    <div
-                      key={`${item.roleAccount}-${item.id}`}
-                      className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                    >
-                      <p className="text-sm font-bold text-[#101828]">
-                        {item.actionItem}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                        {item.roleAccount} / Owner: {item.owner} / Deadline:{" "}
-                        {formatDate(item.deadline)}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold text-sibs-tertiary-5">
-                    No action items recorded.
-                  </p>
-                )}
-              </div>
-            </div>
+            <InfoBox label="Required Headcount" value={required} />
+            <InfoBox label="Actual Headcount" value={actual} />
+            <InfoBox label="OPS PRF" value={opsPrf} />
+            <InfoBox label="Leads to Interview" value={leads} />
           </div>
         </div>
 
@@ -1491,19 +1184,12 @@ export default function WeeklyHiringPlanPage() {
   const [weeklyVersions, setWeeklyVersions] = useState(initialWeeklyVersions);
   const [activeWeekId, setActiveWeekId] = useState(initialWeeklyVersions[0].id);
   const [search, setSearch] = useState("");
-  const [activeHiringTab, setActiveHiringTab] = useState("Weekly Plan");
-
-  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
-  const [addRoleForm, setAddRoleForm] = useState(initialAddRoleForm);
+  const [clusterFilter, setClusterFilter] = useState("All");
+  const [accountFilter, setAccountFilter] = useState("All");
 
   const [selectedPlan, setSelectedPlan] = useState(null);
-
-  const [progressItem, setProgressItem] = useState(null);
-  const [progressForm, setProgressForm] = useState(initialUpdateProgressForm);
-
   const [actionItemTarget, setActionItemTarget] = useState(null);
   const [actionItemForm, setActionItemForm] = useState(initialActionItemForm);
-
   const [showKpiSnapshot, setShowKpiSnapshot] = useState(false);
 
   const activeWeek =
@@ -1513,117 +1199,125 @@ export default function WeeklyHiringPlanPage() {
   const activeData = activeWeek?.records || [];
   const isLocked = !!activeWeek?.locked;
 
+  const clusterOptions = useMemo(() => {
+    const clusters = activeData
+      .map((item) => item.cluster || "Unassigned Cluster")
+      .filter(Boolean);
+
+    return ["All", ...Array.from(new Set(clusters))];
+  }, [activeData]);
+
+  const accountOptions = useMemo(() => {
+    const accounts = activeData
+      .filter((item) => {
+        if (clusterFilter === "All") return true;
+        return (item.cluster || "Unassigned Cluster") === clusterFilter;
+      })
+      .map((item) => item.account || "Unassigned Account")
+      .filter(Boolean);
+
+    return ["All", ...Array.from(new Set(accounts))];
+  }, [activeData, clusterFilter]);
+
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) return activeData;
-
     return activeData.filter((item) => {
-      return (
-        item.roleAccount.toLowerCase().includes(keyword) ||
-        item.taOwner.toLowerCase().includes(keyword) ||
-        item.status.toLowerCase().includes(keyword) ||
-        item.riskFlag.toLowerCase().includes(keyword) ||
-        item.jobDescription.toLowerCase().includes(keyword)
-      );
+      const cluster = item.cluster || "Unassigned Cluster";
+      const account = item.account || "Unassigned Account";
+
+      const matchesCluster =
+        clusterFilter === "All" || cluster === clusterFilter;
+
+      const matchesAccount =
+        accountFilter === "All" || account === accountFilter;
+
+      const matchesKeyword =
+        !keyword ||
+        String(item.week || activeWeek.label || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        cluster.toLowerCase().includes(keyword) ||
+        account.toLowerCase().includes(keyword) ||
+        String(item.pipelineStatus || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.statusNote || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.owner || "")
+          .toLowerCase()
+          .includes(keyword);
+
+      return matchesCluster && matchesAccount && matchesKeyword;
     });
-  }, [activeData, search]);
+  }, [activeData, activeWeek.label, search, clusterFilter, accountFilter]);
 
   const totals = useMemo(() => {
-    const totalRequired = activeData.reduce(
-      (sum, item) => sum + Number(item.approvedRequirement || 0),
+    const totalRequired = filteredPlans.reduce(
+      (sum, item) => sum + Number(item.requiredHeadcount || 0),
       0
     );
 
-    const totalFilled = activeData.reduce(
-      (sum, item) => sum + Number(item.currentFilled || 0),
+    const actualHeadcount = filteredPlans.reduce(
+      (sum, item) => sum + Number(item.actualHeadcount || 0),
       0
     );
 
-    const atRisk = activeData.filter(
-      (item) => item.status === "At Risk"
-    ).length;
+    const opsPrf = filteredPlans.reduce(
+      (sum, item) => sum + Number(item.opsPrf || 0),
+      0
+    );
 
-    const delayed = activeData.filter(
-      (item) => item.status === "Delayed"
-    ).length;
+    const leadsToInterview = filteredPlans.reduce(
+      (sum, item) => sum + Number(item.leadsToInterview || 0),
+      0
+    );
 
-    const actionMissing = activeData.filter((item) => {
-      const remaining =
-        Number(item.approvedRequirement || 0) - Number(item.currentFilled || 0);
-
-      return (
-        remaining > 0 && (!item.actionItems || item.actionItems.length === 0)
-      );
-    }).length;
-
-    const progress =
-      totalRequired > 0 ? Math.round((totalFilled / totalRequired) * 100) : 0;
+    const overallStatus = getOverallStatus(filteredPlans);
 
     return {
       totalRequired,
-      totalFilled,
-      atRisk,
-      delayed,
-      actionMissing,
-      progress,
+      actualHeadcount,
+      opsPrf,
+      leadsToInterview,
+      overallStatus,
     };
-  }, [activeData]);
+  }, [filteredPlans]);
 
-  const hiringTabs = [
-    { label: "Weekly Plan", count: filteredPlans.length },
-    { label: "KPI Snapshot", count: 0 },
-    { label: "Status Guide", count: 0 },
-  ];
+  const activeWeekIndex = weeklyVersions.findIndex(
+    (week) => week.id === activeWeekId
+  );
 
-  const availableRequirements = useMemo(() => {
-    const includedIds = new Set(
-      activeData.map((item) => item.hiringRequirementId)
-    );
+  const previousWeek = weeklyVersions[activeWeekIndex + 1];
 
-    return approvedHiringRequirements.filter(
-      (item) => !includedIds.has(item.id)
-    );
-  }, [activeData]);
-
-  useEffect(() => {
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
-  }, [activeHiringTab]);
-
-  function updateActiveWeekRecords(nextRecords) {
-    setWeeklyVersions((prev) =>
-      prev.map((week) =>
-        week.id === activeWeekId
-          ? {
-              ...week,
-              records: nextRecords,
-            }
-          : week
+  const previousSelectedPlan = selectedPlan
+    ? previousWeek?.records?.find(
+        (record) =>
+          record.account === selectedPlan.account &&
+          record.cluster === selectedPlan.cluster
       )
-    );
-  }
+    : null;
 
   function handleCreateNewWeeklyVersion() {
     const today = getTodayDate();
     const newWeekId = `WEEK-${today}-${Date.now()}`;
-
     const currentWeek = activeWeek;
+    const newWeekLabel = getNextWeekLabel(currentWeek.label);
 
-    const clonedRecords = (currentWeek.records || [])
-      .filter((item) => item.status !== "Completed")
-      .map((item, index) => {
-        return {
-          ...item,
-          id: Date.now() + index,
-          status: calculateStatus(item),
-          riskFlag: calculateRiskFlag(item),
-        };
-      });
+    const clonedRecords = (currentWeek.records || []).map((item, index) => {
+      const nextItem = {
+        ...item,
+        id: Date.now() + index,
+        week: newWeekLabel,
+        actionItems: [],
+      };
+
+      return {
+        ...nextItem,
+        pipelineStatus: calculatePipelineStatus(nextItem),
+      };
+    });
 
     setWeeklyVersions((prev) => {
       const lockedPrevious = prev.map((week) =>
@@ -1642,7 +1336,7 @@ export default function WeeklyHiringPlanPage() {
 
       const newWeek = {
         id: newWeekId,
-        label: "Current Week",
+        label: newWeekLabel,
         weekRange: getNextWeekRange(),
         createdAt: today,
         locked: false,
@@ -1654,101 +1348,36 @@ export default function WeeklyHiringPlanPage() {
     });
 
     setActiveWeekId(newWeekId);
-  }
+    setClusterFilter("All");
+    setAccountFilter("All");
+    setSearch("");
 
-  function handleOpenAddRoleModal() {
-    setAddRoleForm(initialAddRoleForm);
-    setShowAddRoleModal(true);
-  }
-
-  function handleCloseAddRoleModal() {
-    setAddRoleForm(initialAddRoleForm);
-    setShowAddRoleModal(false);
-  }
-
-  function handleAddRoleToWeeklyPlan(e) {
-    e.preventDefault();
-
-    const selectedRequirement = approvedHiringRequirements.find(
-      (item) => item.id === addRoleForm.hiringRequirementId
-    );
-
-    if (!selectedRequirement) {
-      alert("Please select an approved hiring requirement.");
-      return;
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     }
-
-    const newRecordBase = {
-      id: Date.now(),
-      hiringRequirementId: selectedRequirement.id,
-      roleAccount: selectedRequirement.roleAccount,
-      jobDescription: selectedRequirement.jobDescription,
-      approvedRequirement: selectedRequirement.approvedRequirement,
-      currentFilled: selectedRequirement.currentFilled,
-      dueDate: selectedRequirement.dueDate,
-      taOwner: selectedRequirement.taOwner,
-      priority: selectedRequirement.priority,
-      missingDataExplanation: "",
-      actionItems: [],
-    };
-
-    const newRecord = {
-      ...newRecordBase,
-      status: calculateStatus(newRecordBase),
-      riskFlag: calculateRiskFlag(newRecordBase),
-    };
-
-    updateActiveWeekRecords([newRecord, ...activeData]);
-    handleCloseAddRoleModal();
   }
 
-  function handleOpenProgressModal(item) {
-    setProgressItem(item);
-    setProgressForm({
-      currentFilled: item.currentFilled,
-      status: "",
-      riskFlag: "",
-      missingDataExplanation: item.missingDataExplanation || "",
-    });
-  }
-
-  function handleCloseProgressModal() {
-    setProgressItem(null);
-    setProgressForm(initialUpdateProgressForm);
-  }
-
-  function handleSubmitProgress(e) {
-    e.preventDefault();
-
-    if (!progressItem) return;
-
-    const baseUpdated = {
-      ...progressItem,
-      currentFilled: Number(progressForm.currentFilled),
-      missingDataExplanation: progressForm.missingDataExplanation,
-    };
-
-    const updatedItem = {
-      ...baseUpdated,
-      status: progressForm.status || calculateStatus(baseUpdated),
-      riskFlag: progressForm.riskFlag || calculateRiskFlag(baseUpdated),
-    };
-
-    const nextRecords = activeData.map((item) =>
-      item.id === progressItem.id ? updatedItem : item
+  function updateActiveWeekRecords(nextRecords) {
+    setWeeklyVersions((prev) =>
+      prev.map((week) =>
+        week.id === activeWeekId
+          ? {
+              ...week,
+              records: nextRecords,
+            }
+          : week
+      )
     );
-
-    updateActiveWeekRecords(nextRecords);
-    setSelectedPlan(updatedItem);
-    handleCloseProgressModal();
   }
 
   function handleOpenActionItemModal(item) {
     setActionItemTarget(item);
     setActionItemForm({
       ...initialActionItemForm,
-      owner: item.taOwner || "",
-      riskLevel: item.riskFlag === "None" ? "Medium" : item.riskFlag,
+      owner: item.owner || "",
     });
   }
 
@@ -1765,11 +1394,10 @@ export default function WeeklyHiringPlanPage() {
     const newActionItem = {
       id: Date.now(),
       actionItem: actionItemForm.actionItem.trim(),
+      roleAccount: `${actionItemTarget.account} / ${actionItemTarget.cluster}`,
       owner: actionItemForm.owner.trim(),
       deadline: actionItemForm.deadline,
       status: actionItemForm.status,
-      riskLevel: actionItemForm.riskLevel,
-      linkedGap: actionItemForm.linkedGap,
       remarks: actionItemForm.remarks.trim(),
     };
 
@@ -1795,386 +1423,363 @@ export default function WeeklyHiringPlanPage() {
         ref={mainScrollRef}
         className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <CalendarDays
-              size={28}
-              className="shrink-0 text-sibs-primary-1"
-            />
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-sibs-primary-1 sm:text-3xl">
+                Weekly Hiring Plan
+              </h1>
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Weekly Hiring Plan
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Manage weekly hiring execution, risks, action items, and weekly plan
-            versions
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard
-            title="Total Required"
-            value={totals.totalRequired}
-            icon={Archive}
-            description="Approved requirement"
-          />
-          <StatCard
-            title="Total Filled"
-            value={totals.totalFilled}
-            icon={CheckCircle2}
-            description="Current filled"
-          />
-          <StatCard
-            title="Progress"
-            value={`${totals.progress}%`}
-            icon={BarChart3}
-            description="Filled vs required"
-          />
-          <StatCard
-            title="At Risk"
-            value={totals.atRisk}
-            icon={AlertTriangle}
-            description="Needs attention"
-          />
-          <StatCard
-            title="Delayed"
-            value={totals.delayed}
-            icon={CircleAlert}
-            description="Past expected movement"
-          />
-          <StatCard
-            title="Missing Actions"
-            value={totals.actionMissing}
-            icon={ClipboardList}
-            description="Unfilled without action"
-          />
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="mb-2 font-semibold text-sibs-primary-1">
-              Hiring Plan Versions
-            </h3>
-
-            <p className="mb-4 text-sm text-sibs-tertiary-5">
-              Current week, previous week, and archived weekly plans.
-            </p>
-
-            <div className="w-full overflow-hidden rounded-full bg-[#F2F4F7] p-1 shadow-sm">
-              <div className="grid grid-cols-3 gap-1">
-                {weeklyVersions.slice(0, 3).map((week) => {
-                  const isActive = activeWeekId === week.id;
-
-                  return (
-                    <button
-                      key={week.id}
-                      type="button"
-                      onClick={() => setActiveWeekId(week.id)}
-                      className={`inline-flex min-w-0 items-center justify-center rounded-full px-3 py-3 text-sm font-semibold transition-all duration-300 ${
-                        isActive
-                          ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
-                          : "text-[#344054] hover:bg-white hover:text-sibs-primary-1"
-                      }`}
-                    >
-                      <span className="flex min-w-0 items-center justify-center gap-2">
-                        {week.locked ? (
-                          <Lock size={14} className="shrink-0" />
-                        ) : (
-                          <Unlock size={14} className="shrink-0" />
-                        )}
-
-                        <span className="shrink-0">{week.label}</span>
-
-                        <span
-                          className={`hidden truncate text-xs font-bold 2xl:inline ${
-                            isActive ? "text-white/80" : "text-gray-400"
-                          }`}
-                        >
-                          {week.weekRange}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Manage weekly manpower requirement, OPS PRF, leads needed, and
+                action items.
+              </p>
             </div>
-          </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <h3 className="mb-2 font-semibold text-sibs-primary-1">
-              Quick Actions
-            </h3>
-
-            <p className="mb-4 text-sm text-sibs-tertiary-5">
-              Manage the active weekly hiring board.
-            </p>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={() => setShowKpiSnapshot(true)}
-                className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left transition hover:shadow-md"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
-                  <BarChart3 size={18} />
-                </div>
+                <Eye size={17} />
+                KPI Snapshot
+              </button>
 
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-sibs-primary-1">
-                    KPI Snapshot
-                  </p>
-                  <p className="text-xs text-sibs-tertiary-5">View summary</p>
-                </div>
+              <button
+                type="button"
+                onClick={handleCreateNewWeeklyVersion}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+              >
+                <RotateCcw size={17} />
+                Create New Week
               </button>
 
               {!isLocked && (
                 <button
                   type="button"
-                  onClick={handleOpenAddRoleModal}
-                  className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left transition hover:shadow-md"
+                  onClick={handleCreateNewWeeklyVersion}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
-                    <Plus size={18} />
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-sibs-primary-1">
-                      Add Requirement
-                    </p>
-                    <p className="text-xs text-sibs-tertiary-5">Add to board</p>
-                  </div>
+                  <Plus size={18} />
+                  New Version
                 </button>
               )}
-
-              <button
-                type="button"
-                onClick={handleCreateNewWeeklyVersion}
-                className="flex items-center gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left transition hover:shadow-md"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
-                  <RotateCcw size={18} />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-sibs-primary-1">
-                    Create New Week
-                  </p>
-                  <p className="text-xs text-sibs-tertiary-5">Lock old board</p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Weekly Hiring Board
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  {activeWeek.weekRange} ·{" "}
-                  {activeWeek.locked
-                    ? "Locked historical version"
-                    : "Active editable weekly plan"}
-                </p>
-              </div>
-
-              <div className="relative w-full lg:max-w-[320px]">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search hiring plan..."
-                  className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
-              </div>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            <div className="mb-5 rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
-              <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-                <div>
-                  <p className="text-sm font-bold text-sibs-primary-1">
-                    {activeWeek.weekRange}
-                  </p>
+          <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr] xl:items-end">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Weekly Version
+                </label>
 
-                  <p className="mt-1 text-sm font-semibold text-sibs-primary-1/70">
-                    {activeWeek.locked
-                      ? "This weekly version is locked for historical tracking."
-                      : "This is the active editable weekly hiring plan."}
-                  </p>
-                </div>
+                <div className="relative">
+                  <select
+                    value={activeWeekId}
+                    onChange={(e) => {
+                      setActiveWeekId(e.target.value);
+                      setClusterFilter("All");
+                      setAccountFilter("All");
+                    }}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  >
+                    {weeklyVersions.map((week) => (
+                      <option key={week.id} value={week.id}>
+                        {week.weekRange} ({week.label})
+                      </option>
+                    ))}
+                  </select>
 
-                <span
-                  className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold ${
-                    activeWeek.locked
-                      ? "border-gray-200 bg-gray-50 text-gray-600"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  }`}
-                >
-                  {activeWeek.locked ? "Locked" : "Editable"}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3 lg:hidden">
-              {filteredPlans.length > 0 ? (
-                filteredPlans.map((item) => (
-                  <HiringPlanMobileCard
-                    key={item.id}
-                    item={item}
-                    onView={() => setSelectedPlan(item)}
+                  <ChevronDown
+                    size={18}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
                   />
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No weekly hiring plan records found.
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Cluster
+                </label>
+
+                <div className="relative">
+                  <select
+                    value={clusterFilter}
+                    onChange={(e) => {
+                      setClusterFilter(e.target.value);
+                      setAccountFilter("All");
+                    }}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  >
+                    {clusterOptions.map((cluster) => (
+                      <option key={cluster} value={cluster}>
+                        {cluster === "All" ? "All Clusters" : cluster}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown
+                    size={18}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Account
+                </label>
+
+                <div className="relative">
+                  <select
+                    value={accountFilter}
+                    onChange={(e) => setAccountFilter(e.target.value)}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  >
+                    {accountOptions.map((account) => (
+                      <option key={account} value={account}>
+                        {account === "All" ? "All Accounts" : account}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown
+                    size={18}
+                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Search
+                </label>
+
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search hiring plan..."
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex w-fit items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${
+                  isLocked
+                    ? "border-gray-200 bg-gray-50 text-gray-600"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {isLocked ? <Lock size={13} /> : <Unlock size={13} />}
+                {isLocked ? "Locked" : "Editable"}
+              </span>
+
+              {(clusterFilter !== "All" || accountFilter !== "All" || search) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClusterFilter("All");
+                    setAccountFilter("All");
+                    setSearch("");
+                  }}
+                  className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                >
+                  Clear Filters
+                </button>
               )}
             </div>
+          </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[1180px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Role / Account</th>
-                      <th className="px-5 py-4">Job Description</th>
-                      <th className="px-5 py-4 text-center">Approved Requirement</th>
-                      <th className="px-5 py-4 text-center">Current Filled</th>
-                      <th className="px-5 py-4">Due Date</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">TA Owner</th>
-                      <th className="px-5 py-4 text-center">Risk Flag</th>
-                      <th className="px-5 py-4 text-center">Action Items</th>
-                      <th className="px-5 py-4 text-right">Action</th>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <MetricCard
+              title="Required Headcount"
+              value={totals.totalRequired}
+              icon={ClipboardList}
+              iconClassName="bg-blue-50 text-sibs-primary-1"
+              valueClassName="text-sibs-primary-1"
+            />
+
+            <MetricCard
+              title="Actual Headcount"
+              value={totals.actualHeadcount}
+              icon={UserRound}
+              iconClassName="bg-indigo-50 text-sibs-primary-1"
+              valueClassName="text-sibs-primary-1"
+            />
+
+            <MetricCard
+              title="OPS PRF"
+              value={totals.opsPrf}
+              icon={CheckCircle2}
+              iconClassName="bg-emerald-50 text-emerald-600"
+              valueClassName="text-emerald-600"
+            />
+
+            <MetricCard
+              title="Leads Needed"
+              value={totals.leadsToInterview}
+              icon={PieChart}
+              iconClassName="bg-violet-50 text-sibs-primary-1"
+              valueClassName="text-sibs-primary-1"
+            />
+
+            <MetricCard
+              title="Overall Status"
+              value={totals.overallStatus}
+              icon={AlertTriangle}
+              iconClassName="bg-orange-50 text-orange-500"
+              valueClassName={
+                totals.overallStatus === "AT RISK"
+                  ? "text-orange-500"
+                  : totals.overallStatus === "COMPLETED"
+                    ? "text-blue-600"
+                    : "text-emerald-600"
+              }
+            />
+          </div>
+
+          <PercentageGraphSection
+            filteredPlans={filteredPlans}
+            overallStatus={totals.overallStatus}
+          />
+
+          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="hidden lg:block">
+              <div className="overflow-x-auto p-6">
+                <table className="w-full min-w-[1200px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                  <thead>
+                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 first:rounded-tl-2xl">
+                        Account
+                      </th>
+                      <th className="px-5 py-4 text-center">
+                        Required
+                        <br />
+                        Headcount
+                      </th>
+                      <th className="px-5 py-4 text-center">
+                        Actual
+                        <br />
+                        Headcount
+                      </th>
+                      <th className="px-5 py-4 text-center">
+                        Buffer
+                        <br />
+                        Count
+                      </th>
+                      <th className="px-5 py-4 text-center">
+                        Buffer
+                        <br />%
+                      </th>
+                      <th className="px-5 py-4 text-center">OPS PRF</th>
+                      <th className="px-5 py-4 text-center">
+                        Leads to
+                        <br />
+                        Interview
+                      </th>
+                      <th className="px-5 py-4 text-center">
+                        Hiring
+                        <br />
+                        Rate
+                      </th>
+                      <th className="px-5 py-4 text-center">Status</th>
+                      <th className="px-5 py-4">Status Note</th>
+                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody>
                     {filteredPlans.length > 0 ? (
-                      filteredPlans.map((item) => {
-                        const remaining =
-                          Number(item.approvedRequirement || 0) -
-                          Number(item.currentFilled || 0);
-
-                        const actionMissing =
-                          remaining > 0 &&
-                          (!item.actionItems || item.actionItems.length === 0);
-
-                        return (
-                          <tr key={item.id} className="transition hover:bg-[#F8FAFC]">
-                            <td className="px-5 py-4">
-                              <p className="text-sm font-bold text-sibs-primary-1">
-                                {item.roleAccount}
+                      filteredPlans.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="transition hover:bg-[#FAFBFC]"
+                        >
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold text-[#0F172A]">
+                                {item.account}
                               </p>
-                              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                                {item.hiringRequirementId}
+                              <p className="mt-1 text-xs font-medium text-[#174A7C]">
+                                {item.cluster}
                               </p>
-                            </td>
+                            </div>
+                          </td>
 
-                            <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {item.jobDescription}
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {item.requiredHeadcount}
+                          </td>
 
-                            <td className="px-5 py-4 text-center">
-                              <span className="text-sm font-bold text-[#344054]">
-                                {item.approvedRequirement}
-                              </span>
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {item.actualHeadcount}
+                          </td>
 
-                            <td className="px-5 py-4 text-center">
-                              <span className="text-sm font-bold text-[#344054]">
-                                {item.currentFilled}
-                              </span>
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {item.bufferHeadcount}
+                          </td>
 
-                            <td className="px-5 py-4">
-                              <div className="flex items-center gap-2 text-sm font-semibold text-[#344054]">
-                                <Clock3 size={15} className="text-gray-400" />
-                                {formatDate(item.dueDate)}
-                              </div>
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {formatPercent(item.bufferPercent)}
+                          </td>
 
-                            <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                  item.status
-                                )}`}
-                              >
-                                {item.status}
-                              </span>
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
+                            {item.opsPrf}
+                          </td>
 
-                            <td className="px-5 py-4">
-                              <p className="text-sm font-bold text-[#344054]">
-                                {item.taOwner}
-                              </p>
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {item.leadsToInterview}
+                          </td>
 
-                            <td className="px-5 py-4 text-center">
-                              {item.riskFlag === "None" ? (
-                                <span className="text-sm font-bold text-gray-300">
-                                  —
-                                </span>
-                              ) : (
-                                <div className="inline-flex items-center justify-center gap-1">
-                                  <Flag
-                                    size={17}
-                                    className={getRiskClass(item.riskFlag)}
-                                    fill="currentColor"
-                                  />
-                                  <span
-                                    className={`text-xs font-bold ${getRiskClass(
-                                      item.riskFlag
-                                    )}`}
-                                  >
-                                    {item.riskFlag}
-                                  </span>
-                                </div>
-                              )}
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
+                            {formatPercent(item.hiringRate)}
+                          </td>
 
-                            <td className="px-5 py-4 text-center">
-                              {actionMissing ? (
-                                <span className="inline-flex rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-bold text-red-700">
-                                  Required
-                                </span>
-                              ) : (
-                                <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                                  {(item.actionItems || []).length}
-                                </span>
-                              )}
-                            </td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                            <span
+                              className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                                item.pipelineStatus
+                              )}`}
+                            >
+                              {item.pipelineStatus}
+                            </span>
+                          </td>
 
-                            <td className="px-5 py-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedPlan(item)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
-                              >
-                                <Eye size={15} />
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <span className="text-sm font-medium text-sibs-tertiary-5">
+                              {item.statusNote || "-"}
+                            </span>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPlan(item)}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                            >
+                              <Eye size={16} />
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))
                     ) : (
                       <tr>
                         <td
-                          colSpan={10}
+                          colSpan={11}
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           No weekly hiring plan records found.
@@ -2184,66 +1789,128 @@ export default function WeeklyHiringPlanPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
 
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredPlans.length} of {activeData.length} hiring
-                requirements
-              </p>
+              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-6 py-4">
+                <p className="text-sm font-medium text-sibs-primary-1">
+                  Showing 1 to {filteredPlans.length} of {filteredPlans.length}{" "}
+                  hiring plan
+                  {filteredPlans.length === 1 ? " record" : " records"}
+                </p>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                  >
+                    ‹
+                  </button>
 
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-sm font-bold text-white"
-                >
-                  1
-                </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
+                  >
+                    1
+                  </button>
 
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      </main>
 
-      <AddRoleModal
-        open={showAddRoleModal}
-        form={addRoleForm}
-        setForm={setAddRoleForm}
-        availableRequirements={availableRequirements}
-        onClose={handleCloseAddRoleModal}
-        onSubmit={handleAddRoleToWeeklyPlan}
-      />
+            <div className="space-y-3 p-4 lg:hidden">
+              {filteredPlans.length > 0 ? (
+                filteredPlans.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedPlan(item)}
+                    className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-[#0F172A]">
+                          {item.account}
+                        </h3>
+
+                        <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                          {item.cluster}
+                        </p>
+                      </div>
+
+                      <span
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+                          item.pipelineStatus
+                        )}`}
+                      >
+                        {item.pipelineStatus}
+                      </span>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Required
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                          {item.requiredHeadcount}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Actual
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                          {item.actualHeadcount}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Leads
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-emerald-600">
+                          {item.leadsToInterview}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Rate
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-[#1E293B]">
+                          {formatPercent(item.hiringRate)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mt-3 text-xs font-medium text-[#475467]">
+                      Status Note: {item.statusNote || "-"}
+                    </p>
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                  No weekly hiring plan records found.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
 
       <ViewPlanModal
         open={!!selectedPlan}
         item={selectedPlan}
         locked={isLocked}
+        previousWeekItem={previousSelectedPlan}
         onClose={() => setSelectedPlan(null)}
-        onOpenProgress={handleOpenProgressModal}
         onOpenActionItem={handleOpenActionItemModal}
-      />
-
-      <UpdateProgressModal
-        open={!!progressItem}
-        item={progressItem}
-        form={progressForm}
-        setForm={setProgressForm}
-        onClose={handleCloseProgressModal}
-        onSubmit={handleSubmitProgress}
       />
 
       <ActionItemModal
