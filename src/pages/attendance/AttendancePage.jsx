@@ -21,22 +21,24 @@ export default function AttendancePage() {
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="flex min-w-0 flex-col gap-6">
           <section className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
-                <Clock size={24} strokeWidth={2.2} />
-              </div>
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <Clock
+                  size={34}
+                  strokeWidth={2.2}
+                  className="shrink-0 text-sibs-primary-1"
+                />
 
-              <div className="min-w-0">
                 <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
                   {pageTitle}
                 </h1>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  {isEmployee
-                    ? "View your attendance records and details"
-                    : "View attendance records of all employees"}
-                </p>
               </div>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                {isEmployee
+                  ? "View your attendance records and details"
+                  : "View attendance records of all employees"}
+              </p>
             </div>
 
             <div className="relative w-full shrink-0 lg:w-80">
