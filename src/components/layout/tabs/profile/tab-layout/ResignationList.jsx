@@ -70,7 +70,7 @@ const ResignationList = ({ maxHeight }) => {
             currentPage: 1,
             total: 0,
             limit,
-          },
+          }
         );
       } catch (error) {
         console.error("My resignation fetch error:", error);
@@ -96,7 +96,15 @@ const ResignationList = ({ maxHeight }) => {
     return () => {
       isMounted = false;
     };
-  }, [page, search, statusFilter, refreshKey, limit]);
+  }, [
+    page,
+    search,
+    statusFilter,
+    refreshKey,
+    limit,
+    setLoading,
+    setPagination,
+  ]);
 
   const getStatusClasses = (status) => {
     const value = String(status || "")
@@ -119,7 +127,7 @@ const ResignationList = ({ maxHeight }) => {
       case "no record":
       case "no request":
       case "not attrited":
-        return "bg-gray-100 text-gray-400";
+        return "bg-gray-100 text-gray-500";
 
       case "pending":
       default:
@@ -197,17 +205,29 @@ const ResignationList = ({ maxHeight }) => {
     return `${total} case${total !== 1 ? "s" : ""} found`;
   }, [pagination?.total]);
 
+  const containerStyle =
+    Number(maxHeight) > 0
+      ? {
+          height: maxHeight,
+          minHeight: 480,
+        }
+      : {
+          minHeight: 520,
+        };
+
   return (
     <div
-      className="flex w-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm"
-      style={{ height: maxHeight }}
+      className="flex w-full min-w-0 flex-col overflow-hidden rounded-[22px] border border-[#D9E2EC] bg-white shadow-sm"
+      style={containerStyle}
     >
-      <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5">
+      {/* HEADER */}
+      <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-[28px] font-semibold leading-none text-sibs-primary-1">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-bold leading-tight text-sibs-primary-1 sm:text-[28px]">
               Resignation Cases
             </h2>
+
             <p className="mt-2 text-sm text-sibs-tertiary-5">
               {totalCasesLabel}
             </p>
@@ -219,20 +239,21 @@ const ResignationList = ({ maxHeight }) => {
                 size={16}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
               />
+
               <input
                 type="text"
                 placeholder="Search"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
-                className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-white pl-9 pr-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)] sm:w-[220px]"
+                className="h-10 w-full rounded-xl border border-[#D7DEE8] bg-white pl-9 pr-3 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] sm:w-[220px]"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-10 rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+              className="h-10 rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm text-sibs-primary-1 outline-none transition focus:border-[var(--sibs-primary-1)]"
             >
               <option value="">Filter Status</option>
               <option value="Pending">Pending</option>
@@ -244,21 +265,17 @@ const ResignationList = ({ maxHeight }) => {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-100 p-5">
+      {/* LIST */}
+      <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-5">
         {loading ? (
-          <div className="rounded-2xl border border-dashed border-[#D7DEE8] p-8 text-center text-sm text-sibs-tertiary-5">
-            Loading attrition records...
-          </div>
+          <EmptyState text="Loading resignation records..." />
         ) : data.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#D7DEE8] p-8 text-center text-sm text-sibs-tertiary-5">
-            No attrition records found.
-          </div>
+          <EmptyState text="No resignation records found." />
         ) : (
           <div className="space-y-4">
             {data.map((item, index) => (
               <div
                 key={item.id}
-                // role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -266,18 +283,18 @@ const ResignationList = ({ maxHeight }) => {
                     handleOpenView(item);
                   }
                 }}
-                className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition"
+                className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition hover:shadow-md"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-base font-semibold text-sibs-primary-1">
-                        {item.reason}
+                      <h3 className="text-base font-bold text-sibs-primary-1">
+                        {item.reason || "Resignation Request"}
                       </h3>
 
                       <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusClasses(
-                          item.status,
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getStatusClasses(
+                          item.status
                         )}`}
                       >
                         {item.status || "Pending"}
@@ -285,129 +302,85 @@ const ResignationList = ({ maxHeight }) => {
                     </div>
 
                     <p className="mt-1 text-sm text-sibs-tertiary-5">
-                      Resignation Request No.{data.length - index}
+                      Resignation Request No. {data.length - index}
                     </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
+                    <ActionButton
+                      icon={Pencil}
+                      label="Edit"
                       onClick={(e) => {
                         e.stopPropagation();
                         setOpenEditResignationModal(true);
                         setResignationId(item.id);
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#D7DEE8] px-3 py-2 text-sm font-medium text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)]"
-                    >
-                      <Pencil size={14} />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // setOpenViewAttritionModal(true);
-                        handleOpenView(item);
-                      }}
+                    />
+
+                    <ActionButton
+                      icon={Eye}
+                      label="View Attrition"
                       disabled={
                         !item.status || item.status.toLowerCase() === "pending"
                       }
-                      className="inline-flex items-center gap-1 rounded-lg border
-                       border-[#D7DEE8] px-3 py-2 text-sm font-medium
-                        text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)]
-                        disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Eye size={14} />
-                      View Attrition
-                    </button>
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenView(item);
+                      }}
+                    />
 
-                    <button
-                      type="button"
+                    <ActionButton
+                      icon={Paperclip}
+                      label="Attachments"
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
-                      className="inline-flex items-center gap-1 rounded-lg border border-[#D7DEE8] px-3 py-2 text-sm font-medium text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)]"
-                    >
-                      <Paperclip size={14} />
-                      Attachments
-                    </button>
+                    />
                   </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_360px]">
-                  <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                    <div className="flex items-center gap-2 text-sibs-primary-1">
-                      <CalendarDays size={15} />
-                      <p className="text-xs font-semibold uppercase tracking-wide">
-                        Notice Date
-                      </p>
-                    </div>
+                  <DateCard
+                    title="Notice Date"
+                    value={formatDate(
+                      item.attritionDate ||
+                        item.resignationDate ||
+                        item.resignation_date
+                    )}
+                  />
 
-                    <p className="mt-2 text-sm font-medium text-sibs-primary-1">
-                      {formatDate(
-                        item.attritionDate ||
-                          item.resignationDate ||
-                          item.resignation_date,
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                    <div className="flex items-center gap-2 text-sibs-primary-1">
-                      <CalendarDays size={15} />
-                      <p className="text-xs font-semibold uppercase tracking-wide">
-                        Last Working Date
-                      </p>
-                    </div>
-
-                    <p className="mt-2 text-sm font-medium text-sibs-primary-1">
-                      {formatDate(
-                        item.extendedLastWorkingDate ||
-                          item.extended_last_working_date ||
-                          item.lastWorkingDate ||
-                          item.last_working_date,
-                      )}
-                    </p>
-                  </div>
+                  <DateCard
+                    title="Last Working Date"
+                    value={formatDate(
+                      item.extendedLastWorkingDate ||
+                        item.extended_last_working_date ||
+                        item.lastWorkingDate ||
+                        item.last_working_date
+                    )}
+                  />
 
                   <div className="grid gap-3">
-                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6ECF2] bg-white px-4 py-3">
-                      <div className="flex items-center gap-2 text-sibs-primary-1">
-                        <UserCheck size={18} />
-                        <p className="text-xs font-semibold uppercase tracking-wide">
-                          Attrition Status
-                        </p>
-                      </div>
+                    <StatusCard
+                      icon={UserCheck}
+                      title="Attrition Status"
+                      value={item.status || "Not Attrited"}
+                      className={getStatusClasses(item.status)}
+                    />
 
-                      <span
-                        className={`inline-flex shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${getStatusClasses(
-                          item.status,
-                        )}`}
-                      >
-                        {item.status || "Not Attrited"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6ECF2] bg-white px-4 py-3">
-                      <div className="flex items-center gap-2 text-sibs-primary-1">
-                        <Undo2 size={18} />
-                        <p className="text-xs font-semibold uppercase tracking-wide">
-                          Retract Status
-                        </p>
-                      </div>
-
-                      <span
-                        className={`inline-flex shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${getStatusClasses(
-                          item.retractStatus ||
-                            item.retract_status ||
-                            "No Retraction Request",
-                        )}`}
-                      >
-                        {item.retractStatus ||
+                    <StatusCard
+                      icon={Undo2}
+                      title="Retract Status"
+                      value={
+                        item.retractStatus ||
+                        item.retract_status ||
+                        "No Retraction Request"
+                      }
+                      className={getStatusClasses(
+                        item.retractStatus ||
                           item.retract_status ||
-                          "No Retraction Request"}
-                      </span>
-                    </div>
+                          "No Retraction Request"
+                      )}
+                    />
                   </div>
                 </div>
               </div>
@@ -430,11 +403,67 @@ const ResignationList = ({ maxHeight }) => {
         formatDateTime={formatDateTime}
       />
 
-      <div className="shrink-0">
+      <div className="shrink-0 border-t border-[#E6ECF2] bg-white">
         <TableFooter tableEntity={ENTITY} totalLabel="Total Resignations" />
       </div>
     </div>
   );
 };
+
+function EmptyState({ text }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[#D7DEE8] bg-white p-8 text-center text-sm text-sibs-tertiary-5">
+      {text}
+    </div>
+  );
+}
+
+function ActionButton({ icon: Icon, label, onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex h-10 items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-3 text-sm font-medium text-sibs-primary-1 transition hover:bg-[var(--sibs-tertiary-10)] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <Icon size={14} />
+      {label}
+    </button>
+  );
+}
+
+function DateCard({ title, value }) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+      <div className="flex items-center gap-2 text-sibs-primary-1">
+        <CalendarDays size={15} />
+        <p className="text-xs font-semibold uppercase tracking-wide">
+          {title}
+        </p>
+      </div>
+
+      <p className="mt-2 text-sm font-medium text-sibs-primary-1">
+        {value || "N/A"}
+      </p>
+    </div>
+  );
+}
+
+function StatusCard({ icon: Icon, title, value, className }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#E6ECF2] bg-white px-4 py-3">
+      <div className="flex items-center gap-2 text-sibs-primary-1">
+        <Icon size={18} />
+        <p className="text-xs font-semibold uppercase tracking-wide">{title}</p>
+      </div>
+
+      <span
+        className={`inline-flex shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold ${className}`}
+      >
+        {value || "N/A"}
+      </span>
+    </div>
+  );
+}
 
 export default ResignationList;

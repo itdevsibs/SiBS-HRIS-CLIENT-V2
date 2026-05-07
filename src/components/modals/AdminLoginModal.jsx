@@ -88,7 +88,7 @@ export default function AdminLoginModal() {
     setLoading(true);
 
     try {
-      const data = await getAdminLogin(password);
+      const data = await getAdminLogin(password.trim());
 
       if (!data?.success) {
         showStatus({
@@ -133,7 +133,7 @@ export default function AdminLoginModal() {
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
+        className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/30 px-4 py-6 backdrop-blur-sm"
         onClick={onClose}
       >
         <div
@@ -141,33 +141,33 @@ export default function AdminLoginModal() {
           aria-modal="true"
           aria-labelledby="admin-login-title"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
+          className="relative w-full max-w-[448px] overflow-hidden rounded-[14px] border border-[#C9D6E4] bg-white shadow-2xl"
         >
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="absolute right-5 top-5 text-sibs-tertiary-5 transition hover:text-sibs-primary-1 disabled:opacity-50"
+            className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-sibs-tertiary-10 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
-            <X size={20} />
+            <X size={20} strokeWidth={2} />
           </button>
 
-          <div className="border-b border-sibs-tertiary-9 px-6 py-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)]/10">
-                <Activity size={22} className="text-sibs-primary-1" />
+          <div className="border-b border-[#C9D6E4] px-6 py-5">
+            <div className="flex items-center gap-4 pr-8">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sibs-primary-1">
+                <Activity size={26} strokeWidth={2} />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <h2
                   id="admin-login-title"
-                  className="text-2xl font-bold text-sibs-primary-1"
+                  className="text-[25px] font-bold leading-tight text-sibs-primary-1"
                 >
                   {targetAccessLabel} Login
                 </h2>
 
-                <p className="text-sm text-sibs-tertiary-5">
+                <p className="mt-1 text-[14px] font-normal leading-5 text-sibs-tertiary-5">
                   Enter your password to access {targetAccessLabel} mode
                 </p>
               </div>
@@ -175,17 +175,18 @@ export default function AdminLoginModal() {
           </div>
 
           <div className="px-6 pt-4">
-            <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 px-4 py-3 text-sm text-sibs-tertiary-5">
-              Target Access:
-              <span className="ml-2 font-semibold text-sibs-primary-1">
+            <div className="flex min-h-[46px] items-center rounded-xl border border-[#AFC2D8] bg-sibs-tertiary-10 px-4 text-sm text-sibs-tertiary-5">
+              <span>Target Access:</span>
+
+              <span className="ml-2 font-bold text-sibs-primary-1">
                 {targetAccessLabel}
               </span>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <form onSubmit={handleSubmit} className="px-6 pb-6 pt-6">
             <div>
-              <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+              <label className="mb-2 block text-sm font-normal text-sibs-primary-1">
                 Password
               </label>
 
@@ -195,16 +196,17 @@ export default function AdminLoginModal() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={`Enter ${targetAccessLabel} password`}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)] disabled:opacity-50"
+                autoComplete="current-password"
+                className="h-[46px] w-full rounded-xl border border-[#9FB5D0] bg-white px-4 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-[#A5AFBD] focus:border-sibs-primary-1 focus:ring-2 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
               />
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="mt-7 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading}
-                className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
+                className="h-[46px] rounded-xl border border-[#9FB5D0] bg-white px-4 text-sm font-semibold text-sibs-primary-1 transition hover:bg-sibs-tertiary-10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -212,7 +214,7 @@ export default function AdminLoginModal() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="h-[46px] rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Logging in..." : `Login as ${targetAccessLabel}`}
               </button>

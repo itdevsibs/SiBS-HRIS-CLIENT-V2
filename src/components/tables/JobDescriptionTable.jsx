@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from "react";
 import { Eye, UserRound } from "lucide-react";
 import TableHeader from "./tableHeader/TableHeader";
-import { usePagination } from "@/services/context/PaginationContext";
+import { usePagination } from "../../services/context/PaginationContext";
 import TableFooter from "./footer/TableFooter";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
@@ -16,6 +16,10 @@ function formatDate(date) {
   });
 }
 
+function safeText(value) {
+  return String(value || "").toLowerCase();
+}
+
 function normalizeJdStatus(status) {
   if (status === "New JD") return "New Job Description";
   return status || "New Job Description";
@@ -25,13 +29,28 @@ function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
     case "Existing":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
     case "For Revision":
       return "border-amber-200 bg-amber-50 text-amber-700";
+
     case "New Job Description":
-      return "border-blue-200 bg-blue-50 text-blue-700";
+      return "border-[#B7D0FF] bg-[#EAF3FF] text-[#1D4ED8]";
+
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
+}
+
+function JdStatusBadge({ status }) {
+  return (
+    <span
+      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full border px-4 py-1 text-[12px] font-semibold leading-none ${getJdStatusClass(
+        status,
+      )}`}
+    >
+      {normalizeJdStatus(status)}
+    </span>
+  );
 }
 
 function JobDescriptionMobileCard({ item, onView }) {
@@ -45,28 +64,24 @@ function JobDescriptionMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-sibs-primary-1">{item.jdCode}</p>
+          <p className="text-xs font-bold text-sibs-primary-1">
+            {item.jdCode || "—"}
+          </p>
 
           <h3 className="mt-1 text-sm font-bold text-[#101828]">
-            {item.roleTitle}
+            {item.roleTitle || "—"}
           </h3>
 
           <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            {item.account} / {item.department}
+            {item.account || "—"} / {item.department || "—"}
           </p>
         </div>
 
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getJdStatusClass(
-            item.jdStatus,
-          )}`}
-        >
-          {normalizeJdStatus(item.jdStatus)}
-        </span>
+        <JdStatusBadge status={item.jdStatus} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -74,6 +89,7 @@ function JobDescriptionMobileCard({ item, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Owner
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {item.owner || "—"}
           </p>
@@ -83,6 +99,7 @@ function JobDescriptionMobileCard({ item, onView }) {
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Linked Req.
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {item.linkedHiringRequirement || "—"}
           </p>
@@ -94,7 +111,7 @@ function JobDescriptionMobileCard({ item, onView }) {
         <span className="font-bold text-[#344054]">
           {latestRevision
             ? `${formatDate(latestRevision.revisedDate)} by ${
-                latestRevision.revisedBy
+                latestRevision.revisedBy || "—"
               }`
             : "—"}
         </span>
@@ -134,20 +151,18 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
   }, [setTableHeader, tableHeader]);
 
   const filteredList = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = String(search || "").trim().toLowerCase();
     const jdStatusFilter = filterValues?.status || "All Status";
 
     return jobDescriptionList.filter((item) => {
       const matchesSearch =
         !keyword ||
-        item.jdCode.toLowerCase().includes(keyword) ||
-        item.roleTitle.toLowerCase().includes(keyword) ||
-        item.account.toLowerCase().includes(keyword) ||
-        item.department.toLowerCase().includes(keyword) ||
-        item.owner.toLowerCase().includes(keyword) ||
-        String(item.linkedHiringRequirement || "")
-          .toLowerCase()
-          .includes(keyword);
+        safeText(item.jdCode).includes(keyword) ||
+        safeText(item.roleTitle).includes(keyword) ||
+        safeText(item.account).includes(keyword) ||
+        safeText(item.department).includes(keyword) ||
+        safeText(item.owner).includes(keyword) ||
+        safeText(item.linkedHiringRequirement).includes(keyword);
 
       const matchesJdStatus =
         jdStatusFilter === "All Status" ||
@@ -168,13 +183,13 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
   return (
     <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-xl bg-white shadow-sm">
-      <div className="shrink-0">
+      <div className="shrink-0 border-b border-gray-100">
         <TableHeader tableEntity={JOB_DESCRIPTION_ENTITY} />
       </div>
 
-      <div className="min-h-0 flex-1 p-4">
+      <div className="min-h-0 flex-1 p-4 sm:p-6">
         <div className="h-full lg:hidden">
-          <div className="h-full overflow-y-auto">
+          <div className="thin-scroll h-full overflow-y-auto">
             {filteredList.length > 0 ? (
               <div className="space-y-3">
                 {filteredList.map((item) => (
@@ -186,44 +201,30 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                 ))}
               </div>
             ) : (
-              <div className="flex h-full min-h-[280px] items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
                 No job description records found.
               </div>
             )}
           </div>
         </div>
 
-        <div className="hidden h-full overflow-hidden rounded-xl border border-[#E6ECF2] lg:block bg-white">
-          <div className="h-full overflow-x-auto overflow-y-auto">
-            <table className="w-full min-w-[1080px] border-separate border-spacing-0 text-left">
+        <div className="hidden h-full overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+          <div className="thin-scroll h-full overflow-auto">
+            <table className="w-full min-w-[1080px] border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
                 <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    JD Code
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    Role / Account
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    Department
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    JD Status
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">Owner</th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    Linked Requirement
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4">
-                    Latest Revision
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4 text-right">
-                    Action
-                  </th>
+                  <th className="px-5 py-4">JD Code</th>
+                  <th className="px-5 py-4">Role / Account</th>
+                  <th className="px-5 py-4">Department</th>
+                  <th className="px-5 py-4">JD Status</th>
+                  <th className="px-5 py-4">Owner</th>
+                  <th className="px-5 py-4">Linked Requirement</th>
+                  <th className="px-5 py-4">Latest Revision</th>
+                  <th className="px-5 py-4 text-right">Action</th>
                 </tr>
               </thead>
 
-              <tbody className="bg-white">
+              <tbody className="divide-y divide-gray-100 bg-white">
                 {filteredList.length > 0 ? (
                   filteredList.map((item) => {
                     const revisionHistory = Array.isArray(item.revisionHistory)
@@ -235,54 +236,50 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                     return (
                       <tr
                         key={item.id}
-                        className="border-b border-[#E6ECF2] transition hover:bg-[#F8FAFC]"
+                        className="transition hover:bg-[#F8FAFC]"
                       >
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-sm font-bold text-sibs-primary-1">
-                          {item.jdCode}
+                        <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
+                          {item.jdCode || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4">
+                        <td className="px-5 py-4">
                           <p className="text-sm font-bold text-[#101828]">
-                            {item.roleTitle}
+                            {item.roleTitle || "—"}
                           </p>
-                          <p className="text-xs font-semibold text-sibs-tertiary-5">
-                            {item.account}
+
+                          <p className="mt-0.5 text-xs font-semibold text-sibs-tertiary-5">
+                            {item.account || "—"}
                           </p>
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-sm font-semibold text-[#344054]">
-                          {item.department}
+                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                          {item.department || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
-                              item.jdStatus,
-                            )}`}
-                          >
-                            {normalizeJdStatus(item.jdStatus)}
-                          </span>
+                        <td className="px-5 py-4">
+                          <JdStatusBadge status={item.jdStatus} />
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
                           <div className="flex items-center gap-2">
                             <UserRound size={15} className="text-gray-400" />
-                            {item.owner}
+                            <span>{item.owner || "—"}</span>
                           </div>
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-sm font-bold text-[#344054]">
+                        <td className="px-5 py-4 text-sm font-bold text-[#344054]">
                           {item.linkedHiringRequirement || "—"}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
                           {latestRevision ? (
                             <div>
                               <p className="font-bold text-purple-700">
                                 {formatDate(latestRevision.revisedDate)}
                               </p>
+
                               <p className="text-xs text-sibs-tertiary-5">
-                                by {latestRevision.revisedBy}
+                                by {latestRevision.revisedBy || "—"}
                               </p>
                             </div>
                           ) : (
@@ -290,11 +287,11 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                           )}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
+                        <td className="px-5 py-4 text-right">
                           <button
                             type="button"
                             onClick={() => onView?.(item)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
                           >
                             <Eye size={15} />
                             View
@@ -305,10 +302,11 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12">
-                      <div className="flex min-h-[280px] items-center justify-center text-center text-sm font-bold text-gray-500">
-                        No job description records found.
-                      </div>
+                    <td
+                      colSpan={8}
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                    >
+                      No job description records found.
                     </td>
                   </tr>
                 )}

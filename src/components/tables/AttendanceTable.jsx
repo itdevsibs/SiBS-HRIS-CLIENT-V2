@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useRouter } from "@/lib/router";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CircleCheckBig, CircleX } from "lucide-react";
+
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
-import  socket  from "@/lib/axios/socket";
+import socket from "@/lib/axios/socket";
 import TableFooter from "./footer/TableFooter";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
@@ -14,26 +15,28 @@ const AttendanceTable = () => {
   const { page, search, loading, setLoading, setPagination } =
     usePagination("attendance");
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const tableScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
   const { user } = useUser();
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
-  const routerRef = useRef(router);
+  const navigateRef = useRef(navigate);
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
-    routerRef.current = router;
-  }, [setLoading, setPagination, router]);
+    navigateRef.current = navigate;
+  }, [setLoading, setPagination, navigate]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
-      tableScrollRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+      tableScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    if (mobileScrollRef.current) {
+      mobileScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [page]);
 
@@ -50,7 +53,7 @@ const AttendanceTable = () => {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            routerRef.current.push("/login");
+            navigateRef.current("/login");
             return;
           }
 
@@ -58,25 +61,31 @@ const AttendanceTable = () => {
           setPaginationRef.current?.({
             totalPages: 1,
             currentPage: 1,
+            total: 0,
           });
+
           return;
         }
 
         setAttendance(result.data || []);
+
         setPaginationRef.current?.(
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
-          },
+            total: 0,
+          }
         );
       } catch (err) {
         if (cancelled) return;
 
         console.error("Fetch attendance error:", err);
+
         setAttendance([]);
         setPaginationRef.current?.({
           totalPages: 1,
           currentPage: 1,
+          total: 0,
         });
       } finally {
         if (!cancelled) {
@@ -108,11 +117,13 @@ const AttendanceTable = () => {
         if (!result?.success) return;
 
         setAttendance(result.data || []);
+
         setPaginationRef.current?.(
           result.pagination || {
             totalPages: 1,
             currentPage: 1,
-          },
+            total: 0,
+          }
         );
       } catch (err) {
         console.error("Live attendance refresh error:", err);
@@ -144,10 +155,15 @@ const AttendanceTable = () => {
   };
 
   const getTimeBadgeClass = (value, statusKey) => {
-    if (value === "--") return "";
+    if (value === "--") {
+      return "text-sibs-primary-1";
+    }
 
-    if (statusKey === "on-time") return "status-present";
-    return "status-absence";
+    if (statusKey === "on-time") {
+      return "bg-green-100 text-green-700";
+    }
+
+    return "bg-red-100 text-red-600";
   };
 
   const renderStatusBadge = (status) => {
@@ -155,8 +171,8 @@ const AttendanceTable = () => {
 
     return (
       <div
-        className={`inline-flex min-w-[92px] items-center justify-center gap-1 rounded-full px-3 py-1 text-center ${
-          approved ? "status-present" : "status-late"
+        className={`inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
+          approved ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
         }`}
       >
         {approved ? <CircleCheckBig size={16} /> : <CircleX size={16} />}
@@ -165,42 +181,66 @@ const AttendanceTable = () => {
     );
   };
 
+  const adminView = user?.tokenType === "admin";
+
   return (
-    <div className="h-full rounded-xl bg-inherit">
+    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="hidden lg:block">
-        <table className="w-full table-fixed text-sm">
-          <thead className="sticky top-0 z-10 bg-gray-100">
-            <tr className="text-center">
-              {user?.tokenType === "admin" && (
-                <th className="w-[6%] rounded-tl-xl p-3">SiBS ID</th>
-              )}
+        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
+          <table className="w-full min-w-[1280px] border-collapse bg-white text-sm text-sibs-primary-1">
+            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
+              <tr>
+                {adminView && (
+                  <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                    SiBS ID
+                  </th>
+                )}
 
-              {user?.tokenType === "admin" && (
-                <th className="w-[18%] p-3 text-left">Employee Name</th>
-              )}
+                {adminView && (
+                  <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                    Employee Name
+                  </th>
+                )}
 
-              <th className="w-[9%] p-3 text-center">Tracker Date</th>
-              <th className="w-[8%] p-3">Login</th>
-              <th className="w-[8%] p-3">Start Break</th>
-              <th className="w-[8%] p-3">End Break</th>
-              <th className="w-[8%] p-3">Logout</th>
-              <th className="w-[6%] p-3">WH</th>
-              <th className="w-[6%] p-3">BH</th>
-              <th className="w-[6%] p-3">OT</th>
-              <th className="w-[6%] p-3">ATH</th>
-              <th className="w-[11%] rounded-tr-xl p-3">Status</th>
-            </tr>
-          </thead>
-        </table>
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Tracker Date
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  Login
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  Start Break
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  End Break
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  Logout
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  WH
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  BH
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  OT
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  ATH
+                </th>
+                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
+                  Status
+                </th>
+              </tr>
+            </thead>
 
-        <div ref={tableScrollRef} className="max-h-[620px] overflow-y-auto">
-          <table className="w-full table-fixed text-sm">
             <tbody>
               {loading ? (
                 <tr>
                   <td
-                    colSpan={user?.tokenType === "admin" ? 12 : 10}
-                    className="p-6 text-center"
+                    className="p-6 text-center text-sm text-sibs-tertiary-5"
+                    colSpan={adminView ? 12 : 10}
                   >
                     Loading...
                   </td>
@@ -208,115 +248,133 @@ const AttendanceTable = () => {
               ) : attendance.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={user?.tokenType === "admin" ? 12 : 10}
-                    className="p-6 text-center"
+                    className="p-6 text-center text-sm text-sibs-tertiary-5"
+                    colSpan={adminView ? 12 : 10}
                   >
                     No records found
                   </td>
                 </tr>
               ) : (
-                attendance.map((item, index) => (
-                  <tr
-                    key={index}
-                    className="border-t text-center hover:bg-gray-50"
-                  >
-                    {user?.tokenType === "admin" && (
-                      <td className="w-[6%] p-3">{item.gy_emp_code}</td>
-                    )}
+                attendance.map((item, index) => {
+                  const loginTime = formatTime(item.gy_tracker_login);
+                  const breakoutTime = formatTime(item.gy_tracker_breakout);
+                  const breakinTime = formatTime(item.gy_tracker_breakin);
+                  const logoutTime = formatTime(item.gy_tracker_logout);
 
-                    {user?.tokenType === "admin" && (
-                      <td className="w-[18%] p-3 text-left">
-                        {[
-                          item.gy_emp_fname,
-                          item.gy_emp_mname,
-                          item.gy_emp_lname,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")
-                          .trim()
-                          .toUpperCase()}
+                  return (
+                    <tr
+                      key={`${item.gy_tracker_date || "row"}-${index}`}
+                      className="transition hover:bg-slate-50"
+                    >
+                      {adminView && (
+                        <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                          {item.gy_emp_code || "--"}
+                        </td>
+                      )}
+
+                      {adminView && (
+                        <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-medium text-sibs-primary-1">
+                          {[
+                            item.gy_emp_fname,
+                            item.gy_emp_mname,
+                            item.gy_emp_lname,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")
+                            .trim()
+                            .toUpperCase() || "--"}
+                        </td>
+                      )}
+
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                        {formatDate(item.gy_tracker_date)}
                       </td>
-                    )}
 
-                    <td className="w-[9%] p-3 text-center">
-                      {formatDate(item.gy_tracker_date)}
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
+                        <div
+                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                            loginTime,
+                            item.login_status
+                          )}`}
+                        >
+                          {loginTime}
+                        </div>
+                      </td>
 
-                    <td className="w-[8%] p-3 text-center">
-                      <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
-                          formatTime(item.gy_tracker_login),
-                          item.login_status,
-                        )}`}
-                      >
-                        {formatTime(item.gy_tracker_login)}
-                      </div>
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
+                        <div
+                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            breakoutTime === "--"
+                              ? "text-sibs-primary-1"
+                              : "bg-green-100 text-green-700"
+                          }`}
+                        >
+                          {breakoutTime}
+                        </div>
+                      </td>
 
-                    <td className="w-[8%] p-3 text-center">
-                      <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${
-                          formatTime(item.gy_tracker_breakout) === "--"
-                            ? ""
-                            : "status-present"
-                        }`}
-                      >
-                        {formatTime(item.gy_tracker_breakout)}
-                      </div>
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
+                        <div
+                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                            breakinTime,
+                            item.breakin_status
+                          )}`}
+                        >
+                          {breakinTime}
+                        </div>
+                      </td>
 
-                    <td className="w-[8%] p-3 text-center">
-                      <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
-                          formatTime(item.gy_tracker_breakin),
-                          item.breakin_status,
-                        )}`}
-                      >
-                        {formatTime(item.gy_tracker_breakin)}
-                      </div>
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
+                        <div
+                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                            logoutTime,
+                            item.logout_status
+                          )}`}
+                        >
+                          {logoutTime}
+                        </div>
+                      </td>
 
-                    <td className="w-[8%] p-3 text-center">
-                      <div
-                        className={`mx-auto inline-flex min-w-[70px] justify-center px-2 py-[2px] text-center ${getTimeBadgeClass(
-                          formatTime(item.gy_tracker_logout),
-                          item.logout_status,
-                        )}`}
-                      >
-                        {formatTime(item.gy_tracker_logout)}
-                      </div>
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
+                        {item.gy_tracker_wh ?? "--"}
+                      </td>
 
-                    <td className="w-[6%] p-3">{item.gy_tracker_wh ?? "--"}</td>
-                    <td className="w-[6%] p-3">{item.gy_tracker_bh ?? "--"}</td>
-                    <td className="w-[6%] p-3">{item.gy_tracker_ot ?? "--"}</td>
-                    <td className="w-[6%] p-3">
-                      {item.gy_tracker_ath ?? "--"}
-                    </td>
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
+                        {item.gy_tracker_bh ?? "--"}
+                      </td>
 
-                    <td className="w-[11%] p-3 text-center">
-                      {renderStatusBadge(item.gy_tracker_status)}
-                    </td>
-                  </tr>
-                ))
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
+                        {item.gy_tracker_ot ?? "--"}
+                      </td>
+
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
+                        {item.gy_tracker_ath ?? "--"}
+                      </td>
+
+                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
+                        {renderStatusBadge(item.gy_tracker_status)}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <div className="lg:hidden">
-        <div ref={tableScrollRef} className="max-h-[620px] overflow-y-auto p-3">
+      <div className="block lg:hidden">
+        <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto p-3">
           {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               Loading...
             </div>
           ) : attendance.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               No records found
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {attendance.map((item, index) => {
                 const employeeName = [
                   item.gy_emp_fname,
@@ -328,27 +386,32 @@ const AttendanceTable = () => {
                   .trim()
                   .toUpperCase();
 
+                const loginTime = formatTime(item.gy_tracker_login);
+                const breakoutTime = formatTime(item.gy_tracker_breakout);
+                const breakinTime = formatTime(item.gy_tracker_breakin);
+                const logoutTime = formatTime(item.gy_tracker_logout);
+
                 return (
                   <div
-                    key={index}
-                    className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+                    key={`${item.gy_tracker_date || "mobile"}-${index}`}
+                    className="rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm"
                   >
-                    <div className="mb-3 flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        {user?.tokenType === "admin" && (
-                          <p className="text-xs font-medium text-sibs-tertiary-5">
+                        {adminView && (
+                          <p className="m-0 text-xs font-medium text-sibs-tertiary-5">
                             {item.gy_emp_code || "N/A"}
                           </p>
                         )}
 
-                        <h3 className="text-sm font-semibold text-sibs-primary-1">
-                          {user?.tokenType === "admin"
+                        <h3 className="m-0 text-sm font-semibold leading-tight text-sibs-primary-1">
+                          {adminView
                             ? employeeName || "N/A"
                             : formatDate(item.gy_tracker_date)}
                         </h3>
 
-                        {user?.tokenType === "admin" && (
-                          <p className="text-xs text-sibs-tertiary-5">
+                        {adminView && (
+                          <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
                             {formatDate(item.gy_tracker_date)}
                           </p>
                         )}
@@ -359,91 +422,60 @@ const AttendanceTable = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">Login</p>
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <MobileMetric
+                        label="Login"
+                        value={loginTime}
+                        className={getTimeBadgeClass(
+                          loginTime,
+                          item.login_status
+                        )}
+                      />
 
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_login),
-                            item.login_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_login)}
-                        </div>
-                      </div>
+                      <MobileMetric
+                        label="Start Break"
+                        value={breakoutTime}
+                        className={
+                          breakoutTime === "--"
+                            ? "text-sibs-primary-1"
+                            : "bg-green-100 text-green-700"
+                        }
+                      />
 
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">
-                          Start Break
-                        </p>
+                      <MobileMetric
+                        label="End Break"
+                        value={breakinTime}
+                        className={getTimeBadgeClass(
+                          breakinTime,
+                          item.breakin_status
+                        )}
+                      />
 
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${
-                            formatTime(item.gy_tracker_breakout) === "--"
-                              ? ""
-                              : "status-present"
-                          }`}
-                        >
-                          {formatTime(item.gy_tracker_breakout)}
-                        </div>
-                      </div>
+                      <MobileMetric
+                        label="Logout"
+                        value={logoutTime}
+                        className={getTimeBadgeClass(
+                          logoutTime,
+                          item.logout_status
+                        )}
+                      />
 
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">
-                          End Break
-                        </p>
-
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_breakin),
-                            item.breakin_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_breakin)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">Logout</p>
-
-                        <div
-                          className={`mt-1 inline-flex min-w-[70px] justify-center rounded-full px-2 py-[2px] ${getTimeBadgeClass(
-                            formatTime(item.gy_tracker_logout),
-                            item.logout_status,
-                          )}`}
-                        >
-                          {formatTime(item.gy_tracker_logout)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">WH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_wh ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">BH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_bh ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">OT</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_ot ?? "--"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-                        <p className="text-xs text-sibs-tertiary-5">ATH</p>
-                        <p className="mt-1 font-medium text-sibs-primary-1">
-                          {item.gy_tracker_ath ?? "--"}
-                        </p>
-                      </div>
+                      <MobileMetric
+                        label="WH"
+                        value={item.gy_tracker_wh ?? "--"}
+                      />
+                      <MobileMetric
+                        label="BH"
+                        value={item.gy_tracker_bh ?? "--"}
+                      />
+                      <MobileMetric
+                        label="OT"
+                        value={item.gy_tracker_ot ?? "--"}
+                      />
+                      <MobileMetric
+                        label="ATH"
+                        value={item.gy_tracker_ath ?? "--"}
+                      />
                     </div>
                   </div>
                 );
@@ -457,5 +489,25 @@ const AttendanceTable = () => {
     </div>
   );
 };
+
+function MobileMetric({ label, value, className = "" }) {
+  return (
+    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
+      <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
+
+      {className ? (
+        <div
+          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}
+        >
+          {value}
+        </div>
+      ) : (
+        <strong className="mt-1 block text-sm font-medium text-sibs-primary-1">
+          {value}
+        </strong>
+      )}
+    </div>
+  );
+}
 
 export default AttendanceTable;
