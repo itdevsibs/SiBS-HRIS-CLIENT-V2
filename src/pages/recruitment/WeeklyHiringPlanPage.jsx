@@ -1862,9 +1862,9 @@ export default function WeeklyHiringPlanPage() {
               Current week, previous week, and archived weekly plans.
             </p>
 
-            <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <div className="inline-flex min-w-max gap-2 rounded-full bg-[#F2F4F7] p-1 shadow-sm">
-                {weeklyVersions.map((week) => {
+            <div className="w-full overflow-hidden rounded-full bg-[#F2F4F7] p-1 shadow-sm">
+              <div className="grid grid-cols-3 gap-1">
+                {weeklyVersions.slice(0, 3).map((week) => {
                   const isActive = activeWeekId === week.id;
 
                   return (
@@ -1872,17 +1872,23 @@ export default function WeeklyHiringPlanPage() {
                       key={week.id}
                       type="button"
                       onClick={() => setActiveWeekId(week.id)}
-                      className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-3 text-sm font-medium transition-colors duration-300 ${
+                      className={`inline-flex min-w-0 items-center justify-center rounded-full px-3 py-3 text-sm font-semibold transition-all duration-300 ${
                         isActive
                           ? "bg-[var(--sibs-primary-1)] text-white shadow-sm"
-                          : "text-[#344054]"
+                          : "text-[#344054] hover:bg-white hover:text-sibs-primary-1"
                       }`}
                     >
-                      <span className="inline-flex items-center gap-2">
-                        {week.locked ? <Lock size={14} /> : <Unlock size={14} />}
-                        <span>{week.label}</span>
+                      <span className="flex min-w-0 items-center justify-center gap-2">
+                        {week.locked ? (
+                          <Lock size={14} className="shrink-0" />
+                        ) : (
+                          <Unlock size={14} className="shrink-0" />
+                        )}
+
+                        <span className="shrink-0">{week.label}</span>
+
                         <span
-                          className={`hidden text-xs font-semibold sm:inline ${
+                          className={`hidden truncate text-xs font-bold 2xl:inline ${
                             isActive ? "text-white/80" : "text-gray-400"
                           }`}
                         >
