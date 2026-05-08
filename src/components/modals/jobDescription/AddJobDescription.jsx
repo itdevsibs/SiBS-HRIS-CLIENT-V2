@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { UserPlus, ChevronDown, Plus, RotateCcw, X } from "lucide-react";
+import StatusGuide from "../../../lib/utils/react-utils/StatusGuide";
+import DesiredCompetenciesTable from "../../tables/jobDescription/DesiredCompetenciesTable";
 
 const jdStatusOptions = [
   { value: "Existing", label: "Existing" },
@@ -104,14 +106,16 @@ function SearchDropdown({
   zIndex = "z-20",
 }) {
   const filteredOptions = useMemo(() => {
-    const keyword = String(searchValue || "").trim().toLowerCase();
+    const keyword = String(searchValue || "")
+      .trim()
+      .toLowerCase();
 
     if (!keyword) return options;
 
     return options.filter((option) => {
       const labelText = String(getOptionLabel(option) || "").toLowerCase();
       const subLabelText = String(
-        getOptionSubLabel?.(option) || ""
+        getOptionSubLabel?.(option) || "",
       ).toLowerCase();
 
       return labelText.includes(keyword) || subLabelText.includes(keyword);
@@ -237,17 +241,17 @@ export default function AddJobDescription({
         label: "No linked hiring requirement — New Job Description",
       },
     ],
-    []
+    [],
   );
 
   const selectedLinkedRequirement =
     linkedRequirementOptions.find(
-      (option) => option.value === String(form.linkedHiringRequirement || "")
+      (option) => option.value === String(form.linkedHiringRequirement || ""),
     )?.label || "";
 
   const selectedJdStatus =
     jdStatusOptions.find(
-      (option) => option.value === String(form.jdStatus || "")
+      (option) => option.value === String(form.jdStatus || ""),
     )?.label || "";
 
   useEffect(() => {
@@ -390,403 +394,384 @@ export default function AddJobDescription({
 
         <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-8">
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-              <div className="space-y-5">
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                    Hiring Requirement Link
-                  </h3>
+            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+              <p className="text-sm font-bold text-sibs-primary-1">
+                Module Relationship
+              </p>
 
-                  {dropdownError && (
-                    <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
-                      {dropdownError}
-                    </div>
-                  )}
+              <p className="mt-1 text-sm leading-6 text-sibs-primary-1/80">
+                Hiring Needs Intake links to this Job Description page. This
+                page stores the actual JD record used by Weekly Hiring Plan and
+                Candidate Pipeline.
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <h3 className="mb-4 text-sm font-bold text-[#101828]">
+                Hiring Requirement Link
+              </h3>
 
-                  <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-                    <div className="md:col-span-2">
-                      <SingleSelect
-                        refBox={linkedRequirementRef}
-                        label="Linked Hiring Requirement"
-                        value={selectedLinkedRequirement}
-                        placeholder="Select hiring requirement"
-                        open={linkedRequirementOpen}
-                        setOpen={setLinkedRequirementOpen}
-                        disabled={false}
-                        options={linkedRequirementOptions}
-                        selectedValue={form.linkedHiringRequirement}
-                        zIndex="z-50"
-                        onBeforeOpen={() => {
-                          setAccountOpen(false);
-                          setDepartmentOpen(false);
-                          setJdStatusOpen(false);
-                          setRequestedByOpen(false);
-                        }}
-                        onSelect={() => {
-                          handleRequirementChange();
-                          setLinkedRequirementOpen(false);
-                        }}
-                      />
-                    </div>
+              {dropdownError && (
+                <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
+                  {dropdownError}
+                </div>
+              )}
 
-                    <div className="self-start">
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Role Title <span className="text-red-500">*</span>
-                      </label>
+              <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <SingleSelect
+                    refBox={linkedRequirementRef}
+                    label="Linked Hiring Requirement"
+                    value={selectedLinkedRequirement}
+                    placeholder="Select hiring requirement"
+                    open={linkedRequirementOpen}
+                    setOpen={setLinkedRequirementOpen}
+                    disabled={false}
+                    options={linkedRequirementOptions}
+                    selectedValue={form.linkedHiringRequirement}
+                    zIndex="z-50"
+                    onBeforeOpen={() => {
+                      setAccountOpen(false);
+                      setDepartmentOpen(false);
+                      setJdStatusOpen(false);
+                      setRequestedByOpen(false);
+                    }}
+                    onSelect={() => {
+                      handleRequirementChange();
+                      setLinkedRequirementOpen(false);
+                    }}
+                  />
 
-                      <input
-                        required
-                        value={form.roleTitle}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            roleTitle: e.target.value,
-                          }))
-                        }
-                        placeholder="New Role Title"
-                        className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
+                  <div className="mt-2 self-start">
+                    <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                      Document Title <span className="text-red-500">*</span>
+                    </label>
 
-                    <SearchDropdown
-                      refBox={accountSearchRef}
-                      label="Account"
+                    <input
                       required
-                      value={form.account}
-                      searchValue={accountSearch}
-                      setSearchValue={setAccountSearch}
-                      placeholder="Search account"
-                      open={accountOpen}
-                      setOpen={setAccountOpen}
-                      disabled={false}
-                      loading={dropdownLoading}
-                      loadingText="Loading accounts..."
-                      options={accounts}
-                      selectedValue={form.accountId}
-                      getOptionValue={(item) => item.gy_acc_id}
-                      getOptionLabel={(item) => item.gy_acc_name}
-                      onBeforeOpen={() => {
-                        setLinkedRequirementOpen(false);
-                        setDepartmentOpen(false);
-                        setJdStatusOpen(false);
-                        setRequestedByOpen(false);
-                      }}
-                      onSelect={(selectedAccount) => {
+                      value={form.documentTitle}
+                      onChange={(e) =>
                         setForm((prev) => ({
                           ...prev,
-                          accountId: selectedAccount
-                            ? selectedAccount.gy_acc_id
-                            : "",
-                          account: selectedAccount
-                            ? selectedAccount.gy_acc_name
-                            : "",
-                        }));
-                      }}
-                      zIndex="z-40"
+                          documentTitle: e.target.value,
+                        }))
+                      }
+                      placeholder="New Document Title"
+                      className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
                     />
-
-                    <SearchDropdown
-                      refBox={departmentSearchRef}
-                      label="Department"
-                      required
-                      value={form.department}
-                      searchValue={departmentSearch}
-                      setSearchValue={setDepartmentSearch}
-                      placeholder="Search department"
-                      open={departmentOpen}
-                      setOpen={setDepartmentOpen}
-                      disabled={false}
-                      loading={dropdownLoading}
-                      loadingText="Loading departments..."
-                      options={departments}
-                      selectedValue={form.departmentId}
-                      getOptionValue={(item) => item.id_department}
-                      getOptionLabel={(item) => item.name_department}
-                      onBeforeOpen={() => {
-                        setLinkedRequirementOpen(false);
-                        setAccountOpen(false);
-                        setJdStatusOpen(false);
-                        setRequestedByOpen(false);
-                      }}
-                      onSelect={(selectedDepartment) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          departmentId: selectedDepartment
-                            ? selectedDepartment.id_department
-                            : "",
-                          department: selectedDepartment
-                            ? selectedDepartment.name_department
-                            : "",
-                        }));
-                      }}
-                      zIndex="z-30"
-                    />
-
-                    {hasLinkedHiringRequirement ? (
-                      <SingleSelect
-                        refBox={jdStatusRef}
-                        label="Job Description Status"
-                        required
-                        value={selectedJdStatus}
-                        placeholder="Select Job Description status"
-                        open={jdStatusOpen}
-                        setOpen={setJdStatusOpen}
-                        disabled={false}
-                        options={jdStatusOptions}
-                        selectedValue={form.jdStatus}
-                        zIndex="z-20"
-                        onBeforeOpen={() => {
-                          setLinkedRequirementOpen(false);
-                          setAccountOpen(false);
-                          setDepartmentOpen(false);
-                          setRequestedByOpen(false);
-                        }}
-                        onSelect={(value) => {
-                          setForm((prev) => ({
-                            ...prev,
-                            jdStatus: value,
-                          }));
-
-                          setJdStatusOpen(false);
-                        }}
-                      />
-                    ) : (
-                      <div className="self-start">
-                        <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                          Job Description Status{" "}
-                          <span className="text-red-500">*</span>
-                        </label>
-
-                        <input
-                          readOnly
-                          value="New Job Description"
-                          className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
-                        />
-
-                        <p className="mt-2 text-xs font-semibold text-blue-700">
-                          Since this Job Description has no linked hiring
-                          requirement, the only valid status is New Job
-                          Description.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="self-start">
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Owner <span className="text-red-500">*</span>
-                      </label>
-
-                      <input
-                        readOnly
-                        value={form.owner || ""}
-                        placeholder="Logged-in user account"
-                        className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
-                      />
-
-                      <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-                        Owner is automatically set based on the logged-in user
-                        account.
-                      </p>
-                    </div>
-
-                    <SearchDropdown
-                      refBox={requestedByRef}
-                      label="Requested By"
-                      required
-                      value={form.requestedBy}
-                      searchValue={requestedBySearch}
-                      setSearchValue={setRequestedBySearch}
-                      placeholder="Search requested by"
-                      open={requestedByOpen}
-                      setOpen={setRequestedByOpen}
-                      disabled={false}
-                      loading={dropdownLoading}
-                      loadingText="Loading requested by..."
-                      options={requestedByUsers}
-                      selectedValue={form.requestedBySibsId}
-                      getOptionValue={(item) => item.sibs_id}
-                      getOptionLabel={(item) => item.display_name}
-                      getOptionSubLabel={(item) => `SIBS ID: ${item.sibs_id}`}
-                      onBeforeOpen={() => {
-                        setLinkedRequirementOpen(false);
-                        setAccountOpen(false);
-                        setDepartmentOpen(false);
-                        setJdStatusOpen(false);
-                      }}
-                      onSelect={(selectedRequester) => {
-                        setForm((prev) => ({
-                          ...prev,
-                          requestedBySibsId: selectedRequester
-                            ? selectedRequester.sibs_id
-                            : "",
-                          requestedBy: selectedRequester
-                            ? selectedRequester.display_name
-                            : "",
-                        }));
-                      }}
-                      zIndex="z-10"
-                    />
-
-                    <div className="self-start">
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Date Requested
-                      </label>
-
-                      <input
-                        type="date"
-                        value={form.dateRequested}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            dateRequested: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                    Job Description Content
-                  </h3>
+                <div className="self-start">
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Role Title <span className="text-red-500">*</span>
+                  </label>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Job Summary / Description{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-
-                      <textarea
-                        required
-                        rows={4}
-                        value={form.description}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            description: e.target.value,
-                          }))
-                        }
-                        placeholder="Describe the main purpose of the role."
-                        className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Key Responsibilities{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-
-                      <textarea
-                        required
-                        rows={4}
-                        value={form.responsibilities}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            responsibilities: e.target.value,
-                          }))
-                        }
-                        placeholder="List the main responsibilities for this role."
-                        className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Qualifications / Requirements{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-
-                      <textarea
-                        required
-                        rows={4}
-                        value={form.qualifications}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            qualifications: e.target.value,
-                          }))
-                        }
-                        placeholder="List required skills, experience, education, tools, or certifications."
-                        className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                        Remarks
-                      </label>
-
-                      <textarea
-                        rows={3}
-                        value={form.remarks}
-                        onChange={(e) =>
-                          setForm((prev) => ({
-                            ...prev,
-                            remarks: e.target.value,
-                          }))
-                        }
-                        placeholder="Optional notes for HR, TA, or Hiring Manager."
-                        className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                      />
-                    </div>
-                  </div>
+                  <input
+                    required
+                    value={form.roleTitle}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        roleTitle: e.target.value,
+                      }))
+                    }
+                    placeholder="New Role Title"
+                    className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
                 </div>
-              </div>
 
-              <div className="space-y-5">
-                <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                  <h3 className="text-sm font-bold text-sibs-primary-1">
-                    Module Relationship
-                  </h3>
+                <SearchDropdown
+                  refBox={accountSearchRef}
+                  label="Account"
+                  required
+                  value={form.account}
+                  searchValue={accountSearch}
+                  setSearchValue={setAccountSearch}
+                  placeholder="Search account"
+                  open={accountOpen}
+                  setOpen={setAccountOpen}
+                  disabled={false}
+                  loading={dropdownLoading}
+                  loadingText="Loading accounts..."
+                  options={accounts}
+                  selectedValue={form.accountId}
+                  getOptionValue={(item) => item.gy_acc_id}
+                  getOptionLabel={(item) => item.gy_acc_name}
+                  onBeforeOpen={() => {
+                    setLinkedRequirementOpen(false);
+                    setDepartmentOpen(false);
+                    setJdStatusOpen(false);
+                    setRequestedByOpen(false);
+                  }}
+                  onSelect={(selectedAccount) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      accountId: selectedAccount
+                        ? selectedAccount.gy_acc_id
+                        : "",
+                      account: selectedAccount
+                        ? selectedAccount.gy_acc_name
+                        : "",
+                    }));
+                  }}
+                  zIndex="z-40"
+                />
 
-                  <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                    Hiring Needs Intake links to this Job Description page. This
-                    page stores the actual JD record used by Weekly Hiring Plan
-                    and Candidate Pipeline.
+                <SearchDropdown
+                  refBox={departmentSearchRef}
+                  label="Department"
+                  required
+                  value={form.department}
+                  searchValue={departmentSearch}
+                  setSearchValue={setDepartmentSearch}
+                  placeholder="Search department"
+                  open={departmentOpen}
+                  setOpen={setDepartmentOpen}
+                  disabled={false}
+                  loading={dropdownLoading}
+                  loadingText="Loading departments..."
+                  options={departments}
+                  selectedValue={form.departmentId}
+                  getOptionValue={(item) => item.id_department}
+                  getOptionLabel={(item) => item.name_department}
+                  onBeforeOpen={() => {
+                    setLinkedRequirementOpen(false);
+                    setAccountOpen(false);
+                    setJdStatusOpen(false);
+                    setRequestedByOpen(false);
+                  }}
+                  onSelect={(selectedDepartment) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      departmentId: selectedDepartment
+                        ? selectedDepartment.id_department
+                        : "",
+                      department: selectedDepartment
+                        ? selectedDepartment.name_department
+                        : "",
+                    }));
+                  }}
+                  zIndex="z-30"
+                />
+
+                {hasLinkedHiringRequirement ? (
+                  <SingleSelect
+                    refBox={jdStatusRef}
+                    label="Job Description Status"
+                    required
+                    value={selectedJdStatus}
+                    placeholder="Select Job Description status"
+                    open={jdStatusOpen}
+                    setOpen={setJdStatusOpen}
+                    disabled={false}
+                    options={jdStatusOptions}
+                    selectedValue={form.jdStatus}
+                    zIndex="z-20"
+                    onBeforeOpen={() => {
+                      setLinkedRequirementOpen(false);
+                      setAccountOpen(false);
+                      setDepartmentOpen(false);
+                      setRequestedByOpen(false);
+                    }}
+                    onSelect={(value) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        jdStatus: value,
+                      }));
+
+                      setJdStatusOpen(false);
+                    }}
+                  />
+                ) : (
+                  <div className="self-start">
+                    <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                      Job Description Status{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+
+                    <input
+                      readOnly
+                      value="New Job Description"
+                      className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
+                    />
+
+                    <p className="mt-2 text-xs font-semibold text-blue-700">
+                      Since this Job Description has no linked hiring
+                      requirement, the only valid status is New Job Description.
+                    </p>
+                  </div>
+                )}
+
+                <div className="md:col-span-2">
+                  <StatusGuide />
+                </div>
+
+                <div className="self-start">
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Owner <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    readOnly
+                    value={form.owner || ""}
+                    placeholder="Logged-in user account"
+                    className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
+                  />
+
+                  <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+                    Owner is automatically set based on the logged-in user
+                    account.
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                  <h3 className="text-sm font-bold text-[#101828]">
-                    Status Meaning
-                  </h3>
+                <SearchDropdown
+                  refBox={requestedByRef}
+                  label="Requested By"
+                  required
+                  value={form.requestedBy}
+                  searchValue={requestedBySearch}
+                  setSearchValue={setRequestedBySearch}
+                  placeholder="Search requested by"
+                  open={requestedByOpen}
+                  setOpen={setRequestedByOpen}
+                  disabled={false}
+                  loading={dropdownLoading}
+                  loadingText="Loading requested by..."
+                  options={requestedByUsers}
+                  selectedValue={form.requestedBySibsId}
+                  getOptionValue={(item) => item.sibs_id}
+                  getOptionLabel={(item) => item.display_name}
+                  getOptionSubLabel={(item) => `SIBS ID: ${item.sibs_id}`}
+                  onBeforeOpen={() => {
+                    setLinkedRequirementOpen(false);
+                    setAccountOpen(false);
+                    setDepartmentOpen(false);
+                    setJdStatusOpen(false);
+                  }}
+                  onSelect={(selectedRequester) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      requestedBySibsId: selectedRequester
+                        ? selectedRequester.sibs_id
+                        : "",
+                      requestedBy: selectedRequester
+                        ? selectedRequester.display_name
+                        : "",
+                    }));
+                  }}
+                  zIndex="z-10"
+                />
 
-                  <div className="mt-4 space-y-3">
-                    <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
-                      <p className="text-sm font-bold text-emerald-700">
-                        Existing
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-emerald-700/80">
-                        JD already exists and can be used for sourcing.
-                      </p>
-                    </div>
+                <div className="self-start">
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Date Requested
+                  </label>
 
-                    <div className="rounded-xl border border-amber-100 bg-amber-50 p-4">
-                      <p className="text-sm font-bold text-amber-700">
-                        For Revision
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-amber-700/80">
-                        JD exists but needs updates before sourcing.
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
-                      <p className="text-sm font-bold text-blue-700">
-                        New Job Description
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-blue-700/80">
-                        New role or unlinked JD requiring a new JD document.
-                      </p>
-                    </div>
-                  </div>
+                  <input
+                    type="date"
+                    value={form.dateRequested}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        dateRequested: e.target.value,
+                      }))
+                    }
+                    className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
                 </div>
               </div>
             </div>
+
+            <div className="mt-5 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <h3 className="mb-4 text-sm font-bold text-[#101828]">
+                Job Description Content
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Job Summary / Description{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+
+                  <textarea
+                    required
+                    rows={4}
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
+                    placeholder="Describe the main purpose of the role."
+                    className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Key Responsibilities <span className="text-red-500">*</span>
+                  </label>
+
+                  <textarea
+                    required
+                    rows={4}
+                    value={form.responsibilities}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        responsibilities: e.target.value,
+                      }))
+                    }
+                    placeholder="List the main responsibilities for this role."
+                    className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Qualifications / Requirements{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+
+                  <textarea
+                    required
+                    rows={4}
+                    value={form.qualifications}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        qualifications: e.target.value,
+                      }))
+                    }
+                    placeholder="List required skills, experience, education, tools, or certifications."
+                    className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Remarks
+                  </label>
+
+                  <textarea
+                    rows={3}
+                    value={form.remarks}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        remarks: e.target.value,
+                      }))
+                    }
+                    placeholder="Optional notes for HR, TA, or Hiring Manager."
+                    className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DesiredCompetenciesTable />
           </div>
 
           <div className="shrink-0 border-t border-sibs-tertiary-9 bg-white px-5 py-4 sm:px-6">
@@ -820,6 +805,6 @@ export default function AddJobDescription({
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
