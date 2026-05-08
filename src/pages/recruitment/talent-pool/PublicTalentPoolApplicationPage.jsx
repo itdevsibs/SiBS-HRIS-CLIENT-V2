@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Send,
   UserPlus,
@@ -10,11 +10,30 @@ import {
   GraduationCap,
   ShieldCheck,
   ClipboardList,
+  Mic,
+  UploadCloud,
+  Users,
+  MapPin,
 } from "lucide-react";
 
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
 
-const roleOptions = [
+const hearAboutUsOptions = [
+  "Employee Referral Program",
+  "Print Ads (Billboards, Brochures, Flyers, Posters)",
+  "Social Media Pages",
+  "Social Media Ads",
+  "Online Job Portals",
+  "Walk In",
+  "Word of Mouth",
+  "Institutional Partnership",
+  "External Referral Listings",
+  "Job Fairs",
+  "Employee Retention Program",
+  "Others",
+];
+
+const openPositionOptions = [
   "CSR",
   "QA",
   "RCM Analyst",
@@ -24,45 +43,98 @@ const roleOptions = [
   "Accounting",
 ];
 
-const availabilityOptions = [
-  "Available",
-  "Available in 2 weeks",
-  "Available in 30 days",
-  "Unavailable",
+const locationOptions = ["Davao Site", "Tagum Site", "Mabini Site"];
+
+const workExperienceOptions = [
+  "Has work Experience (at least 6 months relevant work experience)",
+  "No work Experience",
+];
+
+const lengthOfExperienceOptions = [
+  "6 months to less than 1 year",
+  "1 year to less than 2 years",
+  "2 years to less than 3 years",
+  "3 years to less than 5 years",
+  "5 years and above",
 ];
 
 const educationalAttainmentOptions = [
-  "Secondary (Grade 11 and Grade 12)",
-  "Tertiary (College Level or College Degree Holder)",
-  "Tertiary (Graduate School Level or Graduate Holder)",
-  "Tertiary (Doctorate Level or Doctorate Holder or equivalent)",
+  "High School Graduate",
+  "Senior High School Graduate",
+  "College Level",
+  "College Graduate",
+  "Vocational / Technical Graduate",
+  "Graduate School Level",
+  "Master's Degree Holder",
+  "Doctorate Degree Holder",
 ];
 
+const affiliationCertificationOptions = [
+  "CPA",
+  "LPT",
+  "Master Degree Holder",
+  "Doctorate Holder",
+  "Lean Six Sigma Belt Holder",
+  "NC II",
+  "BOSH / COSH",
+  "First Aid Certification",
+  "Other",
+];
+
+const yesNoOptions = ["Yes", "No"];
+
+const employmentInterestOptions = [
+  "Full Time",
+  "Part Time",
+  "Full Time or Part Time",
+];
+
+const acceptedDocumentTypes =
+  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif";
+
+function createEmptyExperience() {
+  return {
+    industryRelevantExperience: "",
+    lengthOfWorkExperience: "",
+    years: "",
+    role: "",
+    company: "",
+    monthlyCompensation: "",
+    reasonForLeaving: "",
+  };
+}
+
 const emptyPublicForm = {
+  hearAboutUs: [],
+  openPosition: "",
+  nickname: "",
+  applyingLocation: "",
+  referredBy: "",
+  employeeId: "",
+
   firstName: "",
-  middleName: "",
   lastName: "",
-  extension: "",
-
+  middleName: "",
+  suffix: "",
   dateOfBirth: "",
-  physicalAddress: "",
   email: "",
-  phoneNumber1: "",
-  phoneNumber2: "",
+  physicalAddress: "",
+  workExperience: "",
+  phone1: "",
+  phone2: "",
 
-  roleCapability: "",
-  skillsLanguage: "",
-  availability: "Available",
+  industryRelevantExperience: "",
+  lengthOfWorkExperience: "",
+  years: "",
+  role: "",
+  company: "",
+  monthlyCompensation: "",
+  reasonForLeaving: "",
+  hasOtherExperience: "",
+  otherExperiences: [],
 
-  educationalAttainment: "",
-
-  cpa: false,
-  lpt: false,
-  masterDegreeHolder: false,
-  doctorateHolder: false,
-  leanSixSigmaBeltHolder: false,
-  otherAffiliation: "",
-
+  highestEducationalAttainment: "",
+  affiliationsAndCertifications: [],
   trainingAttended: "",
 
   fullyVaccinated: "",
@@ -72,8 +144,16 @@ const emptyPublicForm = {
   remoteWorkAccess: "",
   willingDrugTest: "",
   willingBackgroundCheck: "",
-  references: "",
 
+  reference1Name: "",
+  reference1Phone: "",
+  reference2Name: "",
+  reference2Phone: "",
+  reference3Name: "",
+  reference3Phone: "",
+
+  audioFile: null,
+  attachmentFile: null,
   consent: false,
 };
 
@@ -109,7 +189,7 @@ function buildFullName(candidate) {
     candidate.firstName,
     candidate.middleName,
     candidate.lastName,
-    candidate.extension,
+    candidate.suffix,
   ]
     .filter(Boolean)
     .join(" ")
@@ -138,12 +218,24 @@ function writeLocalStorage(key, value) {
   }
 }
 
+function inputClass(extra = "") {
+  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+}
+
+function textareaClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+}
+
 function FieldLabel({ children }) {
   return (
     <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-400">
       {children}
     </label>
   );
+}
+
+function RequiredMark() {
+  return <span className="text-red-500">*</span>;
 }
 
 function InfoCard({ icon: Icon, title, description }) {
@@ -163,6 +255,234 @@ function InfoCard({ icon: Icon, title, description }) {
   );
 }
 
+function SectionCard({ icon: Icon, title, description, children }) {
+  return (
+    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-start gap-3">
+        {Icon && (
+          <div className="rounded-2xl bg-[var(--sibs-primary-1)]/10 p-3 text-sibs-primary-1">
+            <Icon size={18} />
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
+          {description && (
+            <p className="mt-1 text-sm leading-6 text-gray-500">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+function MultiSelectCheckboxGroup({ options, values, onChange }) {
+  function toggleValue(option) {
+    if (values.includes(option)) {
+      onChange(values.filter((item) => item !== option));
+      return;
+    }
+
+    onChange([...values, option]);
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {options.map((option) => (
+        <label
+          key={option}
+          className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+        >
+          <input
+            type="checkbox"
+            checked={values.includes(option)}
+            onChange={() => toggleValue(option)}
+            className="h-4 w-4"
+          />
+          <span className="text-sm font-semibold text-gray-700">{option}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function YesNoSelect({ value, onChange, required = true }) {
+  return (
+    <select
+      required={required}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={inputClass()}
+    >
+      <option value="">Select answer</option>
+      {yesNoOptions.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function ExperienceFields({
+  experience,
+  onChange,
+  title = "Industry or Relevant Experience",
+  showRemove = false,
+  onRemove,
+}) {
+  return (
+    <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h4 className="text-sm font-extrabold text-sibs-primary-1">
+          {title}
+        </h4>
+
+        {showRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-9 items-center justify-center rounded-xl border border-red-100 bg-white px-4 text-xs font-bold text-red-600 transition hover:bg-red-50"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <FieldLabel>Industry or Relevant Experience</FieldLabel>
+          <input
+            value={experience.industryRelevantExperience}
+            onChange={(e) =>
+              onChange({
+                ...experience,
+                industryRelevantExperience: e.target.value,
+              })
+            }
+            placeholder="Example: BPO, Healthcare, RCM, Finance"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Length of work experience <RequiredMark />
+          </FieldLabel>
+          <select
+            required
+            value={experience.lengthOfWorkExperience}
+            onChange={(e) =>
+              onChange({
+                ...experience,
+                lengthOfWorkExperience: e.target.value,
+              })
+            }
+            className={inputClass()}
+          >
+            <option value="">Select length</option>
+            {lengthOfExperienceOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <FieldLabel>
+            Years <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            type="number"
+            min="0"
+            step="0.1"
+            value={experience.years}
+            onChange={(e) =>
+              onChange({ ...experience, years: e.target.value })
+            }
+            placeholder="Example: 2"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Role <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={experience.role}
+            onChange={(e) =>
+              onChange({ ...experience, role: e.target.value })
+            }
+            placeholder="Previous role"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Company <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={experience.company}
+            onChange={(e) =>
+              onChange({ ...experience, company: e.target.value })
+            }
+            placeholder="Previous company"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Monthly Compensation <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            type="number"
+            min="0"
+            value={experience.monthlyCompensation}
+            onChange={(e) =>
+              onChange({
+                ...experience,
+                monthlyCompensation: e.target.value,
+              })
+            }
+            placeholder="Example: 20000"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Reason for leaving <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={experience.reasonForLeaving}
+            onChange={(e) =>
+              onChange({
+                ...experience,
+                reasonForLeaving: e.target.value,
+              })
+            }
+            placeholder="Reason for leaving"
+            className={inputClass()}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PublicTalentPoolApplicationPage() {
   const [form, setForm] = useState(emptyPublicForm);
   const [submittedRecord, setSubmittedRecord] = useState(null);
@@ -170,75 +490,251 @@ export default function PublicTalentPoolApplicationPage() {
   const age = calculateAge(form.dateOfBirth);
   const isMinor = age !== null && age < 18;
 
+  const hasRelevantExperience =
+    form.workExperience ===
+    "Has work Experience (at least 6 months relevant work experience)";
+
+  const canSubmit = useMemo(() => {
+    if (isMinor) return false;
+    return true;
+  }, [isMinor]);
+
   function handleReset() {
     setForm(emptyPublicForm);
     setSubmittedRecord(null);
   }
 
-  function updateCheckbox(field, checked) {
+  function handleFileChange(field, file) {
     setForm({
       ...form,
-      [field]: checked,
+      [field]: file || null,
     });
+  }
+
+  function updatePrimaryExperience(nextExperience) {
+    setForm({
+      ...form,
+      industryRelevantExperience: nextExperience.industryRelevantExperience,
+      lengthOfWorkExperience: nextExperience.lengthOfWorkExperience,
+      years: nextExperience.years,
+      role: nextExperience.role,
+      company: nextExperience.company,
+      monthlyCompensation: nextExperience.monthlyCompensation,
+      reasonForLeaving: nextExperience.reasonForLeaving,
+    });
+  }
+
+  function updateOtherExperience(index, nextExperience) {
+    setForm({
+      ...form,
+      otherExperiences: form.otherExperiences.map((experience, itemIndex) =>
+        itemIndex === index ? nextExperience : experience
+      ),
+    });
+  }
+
+  function addOtherExperience() {
+    setForm({
+      ...form,
+      hasOtherExperience: "Yes",
+      otherExperiences: [...form.otherExperiences, createEmptyExperience()],
+    });
+  }
+
+  function removeOtherExperience(index) {
+    const nextOtherExperiences = form.otherExperiences.filter(
+      (_, itemIndex) => itemIndex !== index
+    );
+
+    setForm({
+      ...form,
+      otherExperiences: nextOtherExperiences,
+      hasOtherExperience:
+        nextOtherExperiences.length > 0 ? form.hasOtherExperience : "No",
+    });
+  }
+
+  function handleOtherExperienceAnswer(value) {
+    setForm({
+      ...form,
+      hasOtherExperience: value,
+      otherExperiences:
+        value === "Yes"
+          ? form.otherExperiences.length > 0
+            ? form.otherExperiences
+            : [createEmptyExperience()]
+          : [],
+    });
+  }
+
+  function validateBeforeSubmit() {
+    if (form.hearAboutUs.length === 0) {
+      alert("Please select at least one source under How did you first hear about us?");
+      return false;
+    }
+
+    if (isMinor) {
+      alert("Applicant is below 18 years old as of date of application.");
+      return false;
+    }
+
+    if (hasRelevantExperience) {
+      const requiredExperienceFields = [
+        [form.lengthOfWorkExperience, "Length of work experience"],
+        [form.years, "Years"],
+        [form.role, "Role"],
+        [form.company, "Company"],
+        [form.monthlyCompensation, "Monthly Compensation"],
+        [form.reasonForLeaving, "Reason for leaving"],
+        [form.highestEducationalAttainment, "Highest Educational Attainment"],
+      ];
+
+      const missingField = requiredExperienceFields.find(
+        ([value]) => !String(value || "").trim()
+      );
+
+      if (missingField) {
+        alert(`${missingField[1]} is required.`);
+        return false;
+      }
+
+      if (form.hasOtherExperience === "Yes") {
+        if (!form.otherExperiences.length) {
+          alert("Please add your other work experience details.");
+          return false;
+        }
+
+        const requiredOtherExperienceFields = [
+          "lengthOfWorkExperience",
+          "years",
+          "role",
+          "company",
+          "monthlyCompensation",
+          "reasonForLeaving",
+        ];
+
+        const hasIncompleteOtherExperience = form.otherExperiences.some(
+          (experience) =>
+            requiredOtherExperienceFields.some(
+              (field) => !String(experience[field] || "").trim()
+            )
+        );
+
+        if (hasIncompleteOtherExperience) {
+          alert("Please complete all required fields in your other work experience.");
+          return false;
+        }
+      }
+    }
+
+    if (!form.audioFile) {
+      alert("Please upload a single audio file for the interview questions.");
+      return false;
+    }
+
+    if (!form.attachmentFile) {
+      alert("Please upload your supporting document or file.");
+      return false;
+    }
+
+    if (!form.consent) {
+      alert("Please agree to the terms and conditions before submitting.");
+      return false;
+    }
+
+    return true;
   }
 
   function handleSubmit(e) {
     e.preventDefault();
 
-    if (isMinor) {
-      alert("Applicant is below 18 years old as of date of application.");
-      return;
-    }
-
-    if (!form.consent) {
-      alert("Please confirm the data privacy consent before submitting.");
-      return;
-    }
+    if (!validateBeforeSubmit()) return;
 
     const today = getTodayDate();
-
-    const affiliations = [
-      form.cpa ? "CPA" : null,
-      form.lpt ? "LPT" : null,
-      form.masterDegreeHolder ? "Master Degree Holder" : null,
-      form.doctorateHolder ? "Doctorate Holder" : null,
-      form.leanSixSigmaBeltHolder ? "Lean Six Sigma Belt Holder" : null,
-      form.otherAffiliation?.trim() || null,
-    ].filter(Boolean);
 
     const newSubmission = {
       id: Date.now(),
       candidateId: generatePublicCandidateId(),
 
-      firstName: form.firstName.trim(),
-      middleName: form.middleName.trim(),
-      lastName: form.lastName.trim(),
-      extension: form.extension.trim(),
-      name: buildFullName(form),
+      hearAboutUs: form.hearAboutUs,
+      openPosition: form.openPosition,
+      nickname: form.nickname.trim(),
+      applyingLocation: form.applyingLocation,
+      referredBy: form.referredBy.trim(),
+      employeeId: form.employeeId.trim(),
 
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      middleName: form.middleName.trim(),
+      suffix: form.suffix.trim(),
+      name: buildFullName(form),
       dateOfBirth: form.dateOfBirth,
       ageAsOfApplication: age,
-      physicalAddress: form.physicalAddress.trim(),
-
       email: form.email.trim(),
-      contactNumber: form.phoneNumber1.trim(),
-      phoneNumber1: form.phoneNumber1.trim(),
-      phoneNumber2: form.phoneNumber2.trim(),
+      physicalAddress: form.physicalAddress.trim(),
+      workExperience: form.workExperience,
+      contactNumber: form.phone1.trim(),
+      phone1: form.phone1.trim(),
+      phone2: form.phone2.trim(),
 
-      roleCapability: form.roleCapability,
-      skillsLanguage: form.skillsLanguage.trim(),
-      availability: form.availability,
+      industryRelevantExperience: form.industryRelevantExperience.trim(),
+      lengthOfWorkExperience: hasRelevantExperience
+        ? form.lengthOfWorkExperience
+        : "",
+      years: hasRelevantExperience ? form.years.trim() : "",
+      role: hasRelevantExperience ? form.role.trim() : "",
+      company: hasRelevantExperience ? form.company.trim() : "",
+      monthlyCompensation: hasRelevantExperience
+        ? form.monthlyCompensation.trim()
+        : "",
+      reasonForLeaving: hasRelevantExperience
+        ? form.reasonForLeaving.trim()
+        : "",
+      hasOtherExperience: hasRelevantExperience ? form.hasOtherExperience : "",
+      workExperiences: hasRelevantExperience
+        ? [
+            {
+              industryRelevantExperience:
+                form.industryRelevantExperience.trim(),
+              lengthOfWorkExperience: form.lengthOfWorkExperience,
+              years: form.years.trim(),
+              role: form.role.trim(),
+              company: form.company.trim(),
+              monthlyCompensation: form.monthlyCompensation.trim(),
+              reasonForLeaving: form.reasonForLeaving.trim(),
+            },
+            ...(form.hasOtherExperience === "Yes"
+              ? form.otherExperiences.map((experience) => ({
+                  industryRelevantExperience:
+                    experience.industryRelevantExperience.trim(),
+                  lengthOfWorkExperience:
+                    experience.lengthOfWorkExperience,
+                  years: experience.years.trim(),
+                  role: experience.role.trim(),
+                  company: experience.company.trim(),
+                  monthlyCompensation:
+                    experience.monthlyCompensation.trim(),
+                  reasonForLeaving:
+                    experience.reasonForLeaving.trim(),
+                }))
+              : []),
+          ]
+        : [],
+      otherExperiences: hasRelevantExperience && form.hasOtherExperience === "Yes"
+        ? form.otherExperiences.map((experience) => ({
+            industryRelevantExperience:
+              experience.industryRelevantExperience.trim(),
+            lengthOfWorkExperience: experience.lengthOfWorkExperience,
+            years: experience.years.trim(),
+            role: experience.role.trim(),
+            company: experience.company.trim(),
+            monthlyCompensation: experience.monthlyCompensation.trim(),
+            reasonForLeaving: experience.reasonForLeaving.trim(),
+          }))
+        : [],
 
-      educationalAttainment: form.educationalAttainment,
-
-      affiliations,
-      cpa: form.cpa,
-      lpt: form.lpt,
-      masterDegreeHolder: form.masterDegreeHolder,
-      doctorateHolder: form.doctorateHolder,
-      leanSixSigmaBeltHolder: form.leanSixSigmaBeltHolder,
-      otherAffiliation: form.otherAffiliation.trim(),
-
+      highestEducationalAttainment: form.highestEducationalAttainment,
+      affiliationsAndCertifications: form.affiliationsAndCertifications,
       trainingAttended: form.trainingAttended.trim(),
 
       fullyVaccinated: form.fullyVaccinated,
@@ -248,7 +744,28 @@ export default function PublicTalentPoolApplicationPage() {
       remoteWorkAccess: form.remoteWorkAccess,
       willingDrugTest: form.willingDrugTest,
       willingBackgroundCheck: form.willingBackgroundCheck,
-      references: form.references.trim(),
+
+      references: [
+        {
+          name: form.reference1Name.trim(),
+          phone: form.reference1Phone.trim(),
+        },
+        {
+          name: form.reference2Name.trim(),
+          phone: form.reference2Phone.trim(),
+        },
+        {
+          name: form.reference3Name.trim(),
+          phone: form.reference3Phone.trim(),
+        },
+      ],
+
+      audioFileName: form.audioFile?.name || "",
+      audioFileType: form.audioFile?.type || "",
+      audioFileSize: form.audioFile?.size || 0,
+      attachmentFileName: form.attachmentFile?.name || "",
+      attachmentFileType: form.attachmentFile?.type || "",
+      attachmentFileSize: form.attachmentFile?.size || 0,
 
       source: "Public Application",
       status: "New Applicant",
@@ -267,12 +784,17 @@ export default function PublicTalentPoolApplicationPage() {
     /*
       BACKEND LATER:
 
+      Use FormData because this form has file uploads.
+
       POST /api/public/recruitment/candidates
 
-      Backend should set:
-      source = Public Application
-      status = New Applicant
-      is_public_submission = true
+      Backend should store:
+      - candidate profile fields
+      - audio file
+      - attachment file
+      - source = Public Application
+      - status = New Applicant
+      - is_public_submission = true
     */
   }
 
@@ -289,12 +811,12 @@ export default function PublicTalentPoolApplicationPage() {
                 </div>
 
                 <h1 className="mt-4 text-3xl font-extrabold">
-                  Submit Your Candidate Profile
+                  Public Application Form
                 </h1>
 
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-                  Complete this form so our Talent Acquisition team can review
-                  your profile for current and future hiring opportunities.
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/80">
+                  Complete your candidate profile for current and future SiBS
+                  openings. Fields marked with * are required.
                 </p>
               </div>
 
@@ -303,7 +825,7 @@ export default function PublicTalentPoolApplicationPage() {
                   Application Type
                 </p>
                 <p className="mt-1 text-lg font-extrabold">
-                  Public Application
+                  Public Talent Pool
                 </p>
               </div>
             </div>
@@ -326,14 +848,14 @@ export default function PublicTalentPoolApplicationPage() {
                   <span className="font-extrabold">
                     {submittedRecord.candidateId}
                   </span>
-                  . Our recruitment team will review your profile.
+                  . Our Talent Acquisition team will review your profile.
                 </p>
               </div>
             </div>
           </section>
         )}
 
-        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
+        <section>
           <form
             onSubmit={handleSubmit}
             className="space-y-5 rounded-3xl bg-white p-6 shadow-sm"
@@ -343,19 +865,129 @@ export default function PublicTalentPoolApplicationPage() {
                 Candidate Information
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Fields marked with * are required.
+                Please complete the required details before submitting.
               </p>
             </div>
 
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 text-sm font-extrabold text-gray-900">
-                Personal Information
-              </h3>
+            <SectionCard
+              icon={BriefcaseBusiness}
+              title="Application Source and Position"
+              description="Tell us where you learned about SiBS and what position you are applying for."
+            >
+              <div className="space-y-4">
+                <div>
+                  <FieldLabel>
+                    How did you first hear about us? <RequiredMark />
+                  </FieldLabel>
+                  <MultiSelectCheckboxGroup
+                    options={hearAboutUsOptions}
+                    values={form.hearAboutUs}
+                    onChange={(values) =>
+                      setForm({ ...form, hearAboutUs: values })
+                    }
+                  />
+                </div>
 
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <FieldLabel>
+                      Check our open positions <RequiredMark />
+                    </FieldLabel>
+                    <select
+                      required
+                      value={form.openPosition}
+                      onChange={(e) =>
+                        setForm({ ...form, openPosition: e.target.value })
+                      }
+                      className={inputClass()}
+                    >
+                      <option value="">Select open position</option>
+                      {openPositionOptions.map((position) => (
+                        <option key={position} value={position}>
+                          {position}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <FieldLabel>Nickname</FieldLabel>
+                    <input
+                      value={form.nickname}
+                      onChange={(e) =>
+                        setForm({ ...form, nickname: e.target.value })
+                      }
+                      placeholder="Preferred nickname"
+                      className={inputClass()}
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>
+                      Which location are you applying for? <RequiredMark />
+                    </FieldLabel>
+                    <select
+                      required
+                      value={form.applyingLocation}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          applyingLocation: e.target.value,
+                        })
+                      }
+                      className={inputClass()}
+                    >
+                      <option value="">Select location</option>
+                      {locationOptions.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <FieldLabel>
+                      Who referred you to us? <RequiredMark />
+                    </FieldLabel>
+                    <input
+                      required
+                      value={form.referredBy}
+                      onChange={(e) =>
+                        setForm({ ...form, referredBy: e.target.value })
+                      }
+                      placeholder="Referrer name or N/A"
+                      className={inputClass()}
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>
+                      Employee ID <RequiredMark />
+                    </FieldLabel>
+                    <input
+                      required
+                      value={form.employeeId}
+                      onChange={(e) =>
+                        setForm({ ...form, employeeId: e.target.value })
+                      }
+                      placeholder="Referrer employee ID or N/A"
+                      className={inputClass()}
+                    />
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={UserPlus}
+              title="Personal Information"
+              description="Enter your legal name, contact details, and address."
+            >
               <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div>
                   <FieldLabel>
-                    First Name <span className="text-red-500">*</span>
+                    First Name <RequiredMark />
                   </FieldLabel>
                   <input
                     required
@@ -364,7 +996,22 @@ export default function PublicTalentPoolApplicationPage() {
                       setForm({ ...form, firstName: e.target.value })
                     }
                     placeholder="Juan"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Last Name <RequiredMark />
+                  </FieldLabel>
+                  <input
+                    required
+                    value={form.lastName}
+                    onChange={(e) =>
+                      setForm({ ...form, lastName: e.target.value })
+                    }
+                    placeholder="Dela Cruz"
+                    className={inputClass()}
                   />
                 </div>
 
@@ -376,40 +1023,25 @@ export default function PublicTalentPoolApplicationPage() {
                       setForm({ ...form, middleName: e.target.value })
                     }
                     placeholder="Santos"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
 
                 <div>
-                  <FieldLabel>
-                    Last Name <span className="text-red-500">*</span>
-                  </FieldLabel>
+                  <FieldLabel>Suffix</FieldLabel>
                   <input
-                    required
-                    value={form.lastName}
+                    value={form.suffix}
                     onChange={(e) =>
-                      setForm({ ...form, lastName: e.target.value })
-                    }
-                    placeholder="Dela Cruz"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Extension</FieldLabel>
-                  <input
-                    value={form.extension}
-                    onChange={(e) =>
-                      setForm({ ...form, extension: e.target.value })
+                      setForm({ ...form, suffix: e.target.value })
                     }
                     placeholder="Jr., Sr., III"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
 
                 <div>
                   <FieldLabel>
-                    Date of Birth <span className="text-red-500">*</span>
+                    Date of Birth <RequiredMark />
                   </FieldLabel>
                   <input
                     required
@@ -437,24 +1069,9 @@ export default function PublicTalentPoolApplicationPage() {
                   )}
                 </div>
 
-                <div className="md:col-span-3">
-                  <FieldLabel>
-                    Physical Address <span className="text-red-500">*</span>
-                  </FieldLabel>
-                  <input
-                    required
-                    value={form.physicalAddress}
-                    onChange={(e) =>
-                      setForm({ ...form, physicalAddress: e.target.value })
-                    }
-                    placeholder="Complete physical address"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  />
-                </div>
-
                 <div>
                   <FieldLabel>
-                    Email Address <span className="text-red-500">*</span>
+                    Email <RequiredMark />
                   </FieldLabel>
                   <input
                     required
@@ -464,251 +1081,244 @@ export default function PublicTalentPoolApplicationPage() {
                       setForm({ ...form, email: e.target.value })
                     }
                     placeholder="candidate@email.com"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
 
                 <div>
-                  <FieldLabel>
-                    Phone Number 1 <span className="text-red-500">*</span>
-                  </FieldLabel>
+                  <FieldLabel>Phone 1</FieldLabel>
                   <input
-                    required
-                    value={form.phoneNumber1}
+                    value={form.phone1}
                     onChange={(e) =>
-                      setForm({ ...form, phoneNumber1: e.target.value })
+                      setForm({ ...form, phone1: e.target.value })
                     }
                     placeholder="09xxxxxxxxx"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   />
                 </div>
 
                 <div>
-                  <FieldLabel>Phone Number 2</FieldLabel>
+                  <FieldLabel>Phone 2</FieldLabel>
                   <input
-                    value={form.phoneNumber2}
+                    value={form.phone2}
                     onChange={(e) =>
-                      setForm({ ...form, phoneNumber2: e.target.value })
+                      setForm({ ...form, phone2: e.target.value })
                     }
                     placeholder="Optional"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div className="md:col-span-4">
+                  <FieldLabel>
+                    Physical Address <RequiredMark />
+                  </FieldLabel>
+                  <input
+                    required
+                    value={form.physicalAddress}
+                    onChange={(e) =>
+                      setForm({ ...form, physicalAddress: e.target.value })
+                    }
+                    placeholder="Complete physical address"
+                    className={inputClass()}
                   />
                 </div>
               </div>
-            </div>
+            </SectionCard>
 
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 text-sm font-extrabold text-gray-900">
-                Role and Availability
-              </h3>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <SectionCard
+              icon={BriefcaseBusiness}
+              title="Work Experience"
+              description="Additional work experience fields will appear when you select Has work Experience."
+            >
+              <div className="space-y-4">
                 <div>
                   <FieldLabel>
-                    Role Capability <span className="text-red-500">*</span>
+                    Work experience <RequiredMark />
                   </FieldLabel>
                   <select
                     required
-                    value={form.roleCapability}
+                    value={form.workExperience}
                     onChange={(e) =>
-                      setForm({ ...form, roleCapability: e.target.value })
+                      setForm({ ...form, workExperience: e.target.value })
                     }
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   >
-                    <option value="">Select role capability</option>
-                    {roleOptions.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
+                    <option value="">Select work experience</option>
+                    {workExperienceOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <FieldLabel>
-                    Skills / Language <span className="text-red-500">*</span>
-                  </FieldLabel>
-                  <input
-                    required
-                    value={form.skillsLanguage}
-                    onChange={(e) =>
-                      setForm({ ...form, skillsLanguage: e.target.value })
-                    }
-                    placeholder="English, Chat, RCM"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <FieldLabel>Availability</FieldLabel>
-                  <select
-                    value={form.availability}
-                    onChange={(e) =>
-                      setForm({ ...form, availability: e.target.value })
-                    }
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    {availabilityOptions.map((availability) => (
-                      <option key={availability} value={availability}>
-                        {availability}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <GraduationCap size={18} className="text-sibs-primary-1" />
-                <h3 className="text-sm font-extrabold text-gray-900">
-                  Educational Attainment
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3">
-                {educationalAttainmentOptions.map((item) => (
-                  <label
-                    key={item}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
-                  >
-                    <input
-                      type="radio"
-                      name="educationalAttainment"
-                      value={item}
-                      checked={form.educationalAttainment === item}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          educationalAttainment: e.target.value,
-                        })
-                      }
-                      className="h-4 w-4"
+                {hasRelevantExperience && (
+                  <div className="space-y-4">
+                    <ExperienceFields
+                      title="Industry or Relevant Experience"
+                      experience={{
+                        industryRelevantExperience:
+                          form.industryRelevantExperience,
+                        lengthOfWorkExperience:
+                          form.lengthOfWorkExperience,
+                        years: form.years,
+                        role: form.role,
+                        company: form.company,
+                        monthlyCompensation: form.monthlyCompensation,
+                        reasonForLeaving: form.reasonForLeaving,
+                      }}
+                      onChange={updatePrimaryExperience}
                     />
-                    <span className="text-sm font-semibold text-gray-700">
-                      {item}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
 
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <ShieldCheck size={18} className="text-sibs-primary-1" />
-                <h3 className="text-sm font-extrabold text-gray-900">
-                  Affiliations and Certifications
-                </h3>
-              </div>
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
+                        <div>
+                          <FieldLabel>Do you have other experience?</FieldLabel>
+                          <YesNoSelect
+                            required={false}
+                            value={form.hasOtherExperience}
+                            onChange={handleOtherExperienceAnswer}
+                          />
+                        </div>
 
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {[
-                  ["cpa", "CPA"],
-                  ["lpt", "LPT"],
-                  ["masterDegreeHolder", "Master Degree Holder"],
-                  ["doctorateHolder", "Doctorate Holder"],
-                  ["leanSixSigmaBeltHolder", "Lean Six Sigma Belt Holder"],
-                ].map(([field, label]) => (
-                  <label
-                    key={field}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={form[field]}
-                      onChange={(e) => updateCheckbox(field, e.target.checked)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-sm font-semibold text-gray-700">
-                      {label}
-                    </span>
-                  </label>
-                ))}
+                        {form.hasOtherExperience === "Yes" && (
+                          <button
+                            type="button"
+                            onClick={addOtherExperience}
+                            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] px-4 text-sm font-bold text-white transition hover:opacity-90"
+                          >
+                            Add Other Experience
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-                <div className="md:col-span-2">
-                  <FieldLabel>Other Specify</FieldLabel>
-                  <input
-                    value={form.otherAffiliation}
-                    onChange={(e) =>
-                      setForm({ ...form, otherAffiliation: e.target.value })
-                    }
-                    placeholder="Other affiliation or certification"
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <ClipboardList size={18} className="text-sibs-primary-1" />
-                <h3 className="text-sm font-extrabold text-gray-900">
-                  Training Attended
-                </h3>
-              </div>
-
-              <textarea
-                value={form.trainingAttended}
-                onChange={(e) =>
-                  setForm({ ...form, trainingAttended: e.target.value })
-                }
-                placeholder="List trainings attended"
-                rows={4}
-                className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-              />
-            </div>
-
-            <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 text-sm font-extrabold text-gray-900">
-                Work Readiness Questions
-              </h3>
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {[
-                  ["fullyVaccinated", "Are you fully vaccinated?"],
-                  [
-                    "comfortableOnSite",
-                    "Are you comfortable working on site?",
-                  ],
-                  [
-                    "willingGraveyard",
-                    "Are you willing to work in graveyard shift?",
-                  ],
-                  [
-                    "remoteWorkAccess",
-                    "If this is a remote position, do you have access to a computer, Internet connection, and a private space?",
-                  ],
-                  [
-                    "willingDrugTest",
-                    "Are you willing to undertake a drug test as part of this hiring process?",
-                  ],
-                  [
-                    "willingBackgroundCheck",
-                    "Are you willing to undergo a background check as part of this hiring process?",
-                  ],
-                ].map(([field, label]) => (
-                  <div key={field}>
-                    <FieldLabel>{label}</FieldLabel>
-                    <select
-                      value={form[field]}
-                      onChange={(e) =>
-                        setForm({ ...form, [field]: e.target.value })
-                      }
-                      className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                    >
-                      <option value="">Select answer</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
+                    {form.hasOtherExperience === "Yes" &&
+                      form.otherExperiences.map((experience, index) => (
+                        <ExperienceFields
+                          key={`other-experience-${index}`}
+                          title={`Other Experience ${index + 1}`}
+                          experience={experience}
+                          onChange={(nextExperience) =>
+                            updateOtherExperience(index, nextExperience)
+                          }
+                          showRemove
+                          onRemove={() => removeOtherExperience(index)}
+                        />
+                      ))}
                   </div>
-                ))}
+                )}
+              </div>
+            </SectionCard>
 
-                <div className="md:col-span-2">
+            <SectionCard
+              icon={GraduationCap}
+              title="Education, Affiliations, and Training"
+              description="Select educational attainment and any applicable affiliations or certifications."
+            >
+              <div className="space-y-5">
+                <div>
                   <FieldLabel>
-                    Are you interested in full-time employment, part-time, or
-                    either?
+                    Highest Educational Attainment <RequiredMark />
                   </FieldLabel>
                   <select
+                    required
+                    value={form.highestEducationalAttainment}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        highestEducationalAttainment: e.target.value,
+                      })
+                    }
+                    className={inputClass()}
+                  >
+                    <option value="">Select educational attainment</option>
+                    {educationalAttainmentOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <FieldLabel>Affiliations and Certifications</FieldLabel>
+                  <MultiSelectCheckboxGroup
+                    options={affiliationCertificationOptions}
+                    values={form.affiliationsAndCertifications}
+                    onChange={(values) =>
+                      setForm({
+                        ...form,
+                        affiliationsAndCertifications: values,
+                      })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Training Attended</FieldLabel>
+                  <textarea
+                    value={form.trainingAttended}
+                    onChange={(e) =>
+                      setForm({ ...form, trainingAttended: e.target.value })
+                    }
+                    placeholder="List trainings attended"
+                    rows={4}
+                    className={textareaClass()}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={ShieldCheck}
+              title="Work Readiness Questions"
+              description="These questions help Talent Acquisition review work setup and compliance readiness."
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <FieldLabel>
+                    Are you fully vaccinated? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={form.fullyVaccinated}
+                    onChange={(value) =>
+                      setForm({ ...form, fullyVaccinated: value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you comfortable working on site? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={form.comfortableOnSite}
+                    onChange={(value) =>
+                      setForm({ ...form, comfortableOnSite: value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you willing to work in graveyard shift? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={form.willingGraveyard}
+                    onChange={(value) =>
+                      setForm({ ...form, willingGraveyard: value })
+                    }
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Full-time, part-time, or either? <RequiredMark />
+                  </FieldLabel>
+                  <select
+                    required
                     value={form.employmentInterest}
                     onChange={(e) =>
                       setForm({
@@ -716,33 +1326,217 @@ export default function PublicTalentPoolApplicationPage() {
                         employmentInterest: e.target.value,
                       })
                     }
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    className={inputClass()}
                   >
                     <option value="">Select employment preference</option>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Either">Either</option>
+                    {employmentInterestOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="md:col-span-2">
                   <FieldLabel>
-                    Please list three references and their contact information
+                    If this is a remote position, do you have access to a
+                    computer, Internet connection, and a private space to work
+                    remotely? <RequiredMark />
                   </FieldLabel>
-                  <textarea
-                    value={form.references}
-                    onChange={(e) =>
-                      setForm({ ...form, references: e.target.value })
+                  <YesNoSelect
+                    value={form.remoteWorkAccess}
+                    onChange={(value) =>
+                      setForm({ ...form, remoteWorkAccess: value })
                     }
-                    placeholder={
-                      "Reference 1: Name / Contact / Relationship\nReference 2: Name / Contact / Relationship\nReference 3: Name / Contact / Relationship"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you willing to undertake a drug test as part of this
+                    hiring process? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={form.willingDrugTest}
+                    onChange={(value) =>
+                      setForm({ ...form, willingDrugTest: value })
                     }
-                    rows={5}
-                    className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you willing to allow SiBS to undergo a background check
+                    as part of this hiring process? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={form.willingBackgroundCheck}
+                    onChange={(value) =>
+                      setForm({ ...form, willingBackgroundCheck: value })
+                    }
                   />
                 </div>
               </div>
-            </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={Users}
+              title="References"
+              description="Please list at least three references and their contact information."
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <FieldLabel>
+                    Reference 1 <RequiredMark />
+                  </FieldLabel>
+                  <input
+                    required
+                    value={form.reference1Name}
+                    onChange={(e) =>
+                      setForm({ ...form, reference1Name: e.target.value })
+                    }
+                    placeholder="Reference 1 name"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Phone</FieldLabel>
+                  <input
+                    value={form.reference1Phone}
+                    onChange={(e) =>
+                      setForm({ ...form, reference1Phone: e.target.value })
+                    }
+                    placeholder="Reference 1 phone"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Reference 2 <RequiredMark />
+                  </FieldLabel>
+                  <input
+                    required
+                    value={form.reference2Name}
+                    onChange={(e) =>
+                      setForm({ ...form, reference2Name: e.target.value })
+                    }
+                    placeholder="Reference 2 name"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Phone</FieldLabel>
+                  <input
+                    value={form.reference2Phone}
+                    onChange={(e) =>
+                      setForm({ ...form, reference2Phone: e.target.value })
+                    }
+                    placeholder="Reference 2 phone"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Reference 3 <RequiredMark />
+                  </FieldLabel>
+                  <input
+                    required
+                    value={form.reference3Name}
+                    onChange={(e) =>
+                      setForm({ ...form, reference3Name: e.target.value })
+                    }
+                    placeholder="Reference 3 name"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Phone</FieldLabel>
+                  <input
+                    value={form.reference3Phone}
+                    onChange={(e) =>
+                      setForm({ ...form, reference3Phone: e.target.value })
+                    }
+                    placeholder="Reference 3 phone"
+                    className={inputClass()}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              icon={Mic}
+              title="Audio and File Upload"
+              description="Upload a single audio file answering the listed questions and one supporting document/file."
+            >
+              <div className="space-y-5">
+                <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
+                  <p className="font-extrabold">
+                    Your audio file must answer these questions:
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    <li>Why did you apply for this position?</li>
+                    <li>Why would you like to work with our company?</li>
+                    <li>
+                      How does this position fit in with your long-term goals?
+                    </li>
+                    <li>How did you learn about this job or source card?</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Upload single audio file <RequiredMark />
+                  </FieldLabel>
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5">
+                    <Mic size={26} className="text-sibs-primary-1" />
+                    <p className="mt-2 text-sm font-extrabold text-gray-800">
+                      {form.audioFile?.name || "Choose audio file"}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-gray-500">
+                      Accepted: audio files only
+                    </p>
+                    <input
+                      required
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) =>
+                        handleFileChange("audioFile", e.target.files?.[0])
+                      }
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Upload supporting file <RequiredMark />
+                  </FieldLabel>
+                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5">
+                    <UploadCloud size={26} className="text-sibs-primary-1" />
+                    <p className="mt-2 text-sm font-extrabold text-gray-800">
+                      {form.attachmentFile?.name || "Choose file"}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-gray-500">
+                      PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
+                    </p>
+                    <input
+                      required
+                      type="file"
+                      accept={acceptedDocumentTypes}
+                      onChange={(e) =>
+                        handleFileChange("attachmentFile", e.target.files?.[0])
+                      }
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+            </SectionCard>
 
             <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
               <label className="flex items-start gap-3">
@@ -755,9 +1549,9 @@ export default function PublicTalentPoolApplicationPage() {
                   className="mt-1 h-4 w-4"
                 />
                 <span className="text-sm leading-6 text-gray-600">
-                  I confirm that the information I provided is true and I
-                  consent to having my candidate profile stored for current and
-                  future recruitment opportunities.
+                  I agree to terms & conditions provided by the company. By
+                  providing my phone number, I agree to receive text messages
+                  from the business.
                 </span>
               </label>
             </div>
@@ -774,61 +1568,15 @@ export default function PublicTalentPoolApplicationPage() {
 
               <button
                 type="submit"
-                disabled={isMinor}
+                disabled={!canSubmit}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send size={16} />
-                Submit Profile
+                Submit Application
               </button>
             </div>
           </form>
 
-          <div className="space-y-5">
-            <div
-              className={`rounded-3xl border p-5 ${
-                isMinor
-                  ? "border-red-100 bg-red-50"
-                  : "border-blue-100 bg-blue-50"
-              }`}
-            >
-              <h3
-                className={`text-sm font-extrabold ${
-                  isMinor ? "text-red-700" : "text-sibs-primary-1"
-                }`}
-              >
-                Age Validation
-              </h3>
-              <p
-                className={`mt-2 text-sm leading-6 ${
-                  isMinor ? "text-red-700/90" : "text-sibs-primary-1/80"
-                }`}
-              >
-                {age === null
-                  ? "Enter date of birth to calculate age as of application date."
-                  : isMinor
-                    ? `Applicant is ${age} years old and below 18 years old. The system will prevent submission.`
-                    : `Applicant is ${age} years old and meets the 18 years old age validation.`}
-              </p>
-            </div>
-
-            <InfoCard
-              icon={BriefcaseBusiness}
-              title="Reusable Candidate Profile"
-              description="Your profile may be matched with current or future openings based on role capability and skills."
-            />
-
-            <InfoCard
-              icon={Mail}
-              title="Recruitment Contact"
-              description="The Talent Acquisition team may contact you through the email or phone number you provide."
-            />
-
-            <InfoCard
-              icon={Phone}
-              title="Talent Pool"
-              description="Submitting this form does not guarantee immediate hiring, but it allows your profile to be considered for future requirements."
-            />
-          </div>
         </section>
       </div>
     </div>
