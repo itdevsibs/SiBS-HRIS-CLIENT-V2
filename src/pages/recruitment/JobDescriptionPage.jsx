@@ -80,16 +80,22 @@ function formatLoggedInOwner(user) {
 
 function StatCard({ title, value, icon: Icon, description }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--sibs-primary-1)] text-white">
-        <Icon size={18} />
+    <div className="flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F3F7FB] text-sibs-primary-1">
+        <Icon size={20} />
       </div>
 
       <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+        <p className="truncate text-sm font-bold text-[#101828]">{title}</p>
+
+        <h2 className="mt-1 text-3xl font-extrabold tracking-[0.18em] text-sibs-primary-1">
+          {value}
+        </h2>
+
         {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">{description}</p>
+          <p className="mt-1 truncate text-xs font-medium text-sibs-tertiary-5">
+            {description}
+          </p>
         )}
       </div>
     </div>
@@ -117,6 +123,7 @@ export default function JobDescriptionPage() {
 
   const jdTabs = [
     { label: "All JD", value: "All JD" },
+    { label: "For Approval", value: "For Approval" },
     { label: "Active JD", value: "Active JD" },
     { label: "Archived JD", value: "Archived JD" },
   ];
@@ -378,23 +385,23 @@ export default function JobDescriptionPage() {
     <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden p-4 sm:p-6">
+      <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <ClipboardList size={28} className="shrink-0 text-sibs-primary-1" />
+          <div className="flex items-center gap-3">
+            <ClipboardList size={30} className="shrink-0 text-sibs-primary-1" />
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
+            <h1 className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-4xl">
               Job Description
             </h1>
           </div>
 
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
+          <p className="mt-2 text-sm font-medium text-sibs-primary-1/80">
             Manage JD readiness for Existing, For Revision, and New Job
             Description requirements
           </p>
         </div>
 
-        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Total JD"
             value={stats.total}
@@ -424,7 +431,7 @@ export default function JobDescriptionPage() {
           />
         </div>
 
-        <div className="mb-2 grid grid-cols-1 gap-4 rounded-xl py-2 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="mb-4 grid grid-cols-1 gap-4 rounded-xl py-2 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex flex-col items-start justify-center">
             <div className="lg:col-span-2">
               <SlidingTabs
@@ -438,7 +445,7 @@ export default function JobDescriptionPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-2xs transition hover:opacity-90"
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
           >
             <Plus size={18} />
             Add Job Description

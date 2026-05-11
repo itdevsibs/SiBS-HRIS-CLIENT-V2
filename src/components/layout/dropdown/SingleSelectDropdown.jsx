@@ -35,7 +35,10 @@ const SingleSelectDropdown = ({
             setOpen((prev) => !prev);
           }}
           disabled={disabled}
-          className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-between rounded-xl border
+           border-sibs-tertiary-8 bg-white px-4 py-3 text-left text-sm outline-none 
+           transition focus:border-sibs-primary-1 disabled:cursor-not-allowed 
+           disabled:opacity-60"
         >
           <span className={value ? "text-sibs-primary-1" : "text-gray-400"}>
             {value || placeholder}
@@ -50,7 +53,10 @@ const SingleSelectDropdown = ({
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+          <div
+            className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-hidden
+           rounded-xl border border-sibs-tertiary-8 bg-white shadow-2xl"
+          >
             <div className="max-h-60 overflow-y-auto py-2">
               {options.map((option) => (
                 <button
