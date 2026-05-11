@@ -22,6 +22,19 @@ function formatPerson(sibsId, fullName) {
   return `${sibsId || "N/A"} - ${fullName || "N/A"}`;
 }
 
+function formatEmployeeDisplay(employee) {
+  if (!employee) return "";
+
+  const sibsId = employee.sibsId || "";
+  const fullName = employee.fullName || "";
+
+  if (sibsId && fullName) return `${sibsId} - ${fullName}`;
+  if (sibsId) return sibsId;
+  if (fullName) return fullName;
+
+  return "";
+}
+
 function FileTypeIcon({ filename }) {
   const ext = filename?.split(".").pop()?.toLowerCase() || "";
 
@@ -205,6 +218,7 @@ export default function AttritionModal({
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [reasonOpen, setReasonOpen] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
 
   const [hierarchy, setHierarchy] = useState({
     hideTl: false,
@@ -234,6 +248,71 @@ export default function AttritionModal({
 
   const isApproverEditMode = isEdit && (canEditTl || canEditOm || canEditSom);
 
+  const mergedEmployeeOptions = useMemo(() => {
+    if (!safeForm?.employeeSibsId) return employeeOptions;
+
+    const exists = employeeOptions.some(
+      (item) => String(item.sibsId) === String(safeForm.employeeSibsId),
+    );
+
+    if (exists) return employeeOptions;
+
+    return [
+      {
+        sibsId: safeForm.employeeSibsId,
+        fullName:
+          safeForm.employeeName || safeForm.fullName || "Selected Employee",
+      },
+      ...employeeOptions,
+    ];
+  }, [
+    employeeOptions,
+    safeForm?.employeeSibsId,
+    safeForm?.employeeName,
+    safeForm?.fullName,
+  ]);
+
+  const selectedEmployee = useMemo(() => {
+    if (isView) {
+      const employeeName =
+        data?.employeeName ||
+        data?.fullName ||
+        [data?.firstName, data?.middleName, data?.lastName]
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+
+      return {
+        sibsId: data?.sibsId || data?.employeeSibsId || "",
+        fullName: employeeName || "",
+      };
+    }
+
+    return (
+      mergedEmployeeOptions.find(
+        (item) => String(item.sibsId) === String(safeForm?.employeeSibsId),
+      ) || null
+    );
+  }, [isView, data, mergedEmployeeOptions, safeForm?.employeeSibsId]);
+
+  const filteredEmployeeOptions = useMemo(() => {
+    const keyword = employeeSearch.trim().toLowerCase();
+
+    if (!keyword) return mergedEmployeeOptions;
+
+    return mergedEmployeeOptions.filter((employee) => {
+      const sibsId = String(employee.sibsId || "").toLowerCase();
+      const fullName = String(employee.fullName || "").toLowerCase();
+      const combined = `${sibsId} - ${fullName}`;
+
+      return (
+        sibsId.includes(keyword) ||
+        fullName.includes(keyword) ||
+        combined.includes(keyword)
+      );
+    });
+  }, [employeeSearch, mergedEmployeeOptions]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -248,6 +327,12 @@ export default function AttritionModal({
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
+
+        if (selectedEmployee) {
+          setEmployeeSearch(formatEmployeeDisplay(selectedEmployee));
+        } else {
+          setEmployeeSearch("");
+        }
       }
 
       if (
@@ -274,7 +359,7 @@ export default function AttritionModal({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [open, onClose]);
+  }, [open, onClose, selectedEmployee]);
 
   useEffect(() => {
     if (!open || !isAdd) return;
@@ -476,52 +561,17 @@ export default function AttritionModal({
     safeForm?.somFullName,
   ]);
 
-  const mergedEmployeeOptions = useMemo(() => {
-    if (!safeForm?.employeeSibsId) return employeeOptions;
+  useEffect(() => {
+    if (!open) return;
 
-    const exists = employeeOptions.some(
-      (item) => String(item.sibsId) === String(safeForm.employeeSibsId),
-    );
-
-    if (exists) return employeeOptions;
-
-    return [
-      {
-        sibsId: safeForm.employeeSibsId,
-        fullName:
-          safeForm.employeeName || safeForm.fullName || "Selected Employee",
-      },
-      ...employeeOptions,
-    ];
-  }, [
-    employeeOptions,
-    safeForm?.employeeSibsId,
-    safeForm?.employeeName,
-    safeForm?.fullName,
-  ]);
-
-  const selectedEmployee = useMemo(() => {
-    if (isView) {
-      const employeeName =
-        data?.employeeName ||
-        data?.fullName ||
-        [data?.firstName, data?.middleName, data?.lastName]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-
-      return {
-        sibsId: data?.sibsId || data?.employeeSibsId || "",
-        fullName: employeeName || "",
-      };
+    if (selectedEmployee && !dropdownOpen) {
+      setEmployeeSearch(formatEmployeeDisplay(selectedEmployee));
     }
 
-    return (
-      mergedEmployeeOptions.find(
-        (item) => String(item.sibsId) === String(safeForm?.employeeSibsId),
-      ) || null
-    );
-  }, [isView, data, mergedEmployeeOptions, safeForm?.employeeSibsId]);
+    if (!selectedEmployee && !dropdownOpen) {
+      setEmployeeSearch("");
+    }
+  }, [open, selectedEmployee, dropdownOpen]);
 
   const displayedFileName =
     activeData?.uploadedFile?.name ||
@@ -559,6 +609,7 @@ export default function AttritionModal({
       });
     }
 
+    setEmployeeSearch(formatEmployeeDisplay(employee));
     setDropdownOpen(false);
   };
 
@@ -647,86 +698,87 @@ export default function AttritionModal({
                 Employee
               </label>
 
-              <button
-                type="button"
-                disabled={isEdit || isView}
-                onClick={() => {
-                  if (isEdit || isView) return;
-                  setDropdownOpen((prev) => !prev);
-                  setReasonOpen(false);
-                }}
-                className={`relative flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] px-4 py-3 text-left text-sm ${
-                  isEdit || isView
-                    ? "cursor-not-allowed bg-gray-50"
-                    : "bg-white"
-                }`}
-              >
-                <div className="min-w-0">
-                  {selectedEmployee ? (
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-sibs-primary-1">
-                        {selectedEmployee.sibsId || "N/A"}
-                      </p>
+              {isEdit || isView ? (
+                <input
+                  type="text"
+                  value={formatEmployeeDisplay(selectedEmployee) || "N/A"}
+                  readOnly
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-sibs-primary-1 outline-none"
+                />
+              ) : (
+                <>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={employeeSearch}
+                      onChange={(e) => {
+                        setEmployeeSearch(e.target.value);
+                        setDropdownOpen(true);
+                        setReasonOpen(false);
+                      }}
+                      onFocus={(e) => {
+                        setDropdownOpen(true);
+                        setReasonOpen(false);
+                        e.target.select();
+                      }}
+                      placeholder="Search SiBS ID or employee name"
+                      autoComplete="off"
+                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 pr-10 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1"
+                    />
 
-                      <p className="truncate text-sm text-sibs-tertiary-5">
-                        {selectedEmployee.fullName || "N/A"}
-                      </p>
-                    </div>
-                  ) : (
-                    <span className="text-sibs-tertiary-5">
-                      Select employee
-                    </span>
-                  )}
-                </div>
-
-                {!isEdit && !isView && (
-                  <ChevronDown
-                    size={18}
-                    className={`ml-3 shrink-0 text-sibs-tertiary-5 transition ${
-                      dropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                )}
-              </button>
-
-              {dropdownOpen && isAdd && (
-                <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-64 overflow-y-auto">
-                    {loadingEmployees ? (
-                      <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                        Loading employees...
-                      </div>
-                    ) : mergedEmployeeOptions.length > 0 ? (
-                      mergedEmployeeOptions.map((employee) => {
-                        const isSelected =
-                          String(safeForm?.employeeSibsId) ===
-                          String(employee.sibsId);
-
-                        return (
-                          <button
-                            key={employee.sibsId}
-                            type="button"
-                            onClick={() => handleEmployeeSelect(employee)}
-                            className={`block w-full border-b border-[#E6ECF2] px-4 py-3 text-left transition last:border-b-0 ${
-                              isSelected
-                                ? "bg-sibs-tertiary-10 font-medium text-sibs-primary-1"
-                                : "text-sibs-primary-1 hover:bg-sibs-tertiary-10"
-                            }`}
-                          >
-                            <p className="font-medium">{employee.sibsId}</p>
-                            <p className="text-sm text-sibs-tertiary-5">
-                              {employee.fullName}
-                            </p>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                        No employees found.
-                      </div>
-                    )}
+                    <ChevronDown
+                      size={18}
+                      className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5 transition-transform ${
+                        dropdownOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </div>
-                </div>
+
+                  {dropdownOpen && isAdd && (
+                    <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-xl border border-sibs-tertiary-9 bg-white shadow-2xl">
+                      {loadingEmployees ? (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          Searching...
+                        </div>
+                      ) : filteredEmployeeOptions.length > 0 ? (
+                        filteredEmployeeOptions.map((employee) => {
+                          const isSelected =
+                            String(safeForm?.employeeSibsId) ===
+                            String(employee.sibsId);
+
+                          return (
+                            <button
+                              key={employee.sibsId}
+                              type="button"
+                              onClick={() => handleEmployeeSelect(employee)}
+                              className={`block w-full border-b border-sibs-tertiary-9 px-4 py-3 text-left transition last:border-b-0 ${
+                                isSelected
+                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                                  : "text-sibs-primary-1 hover:bg-sibs-tertiary-10"
+                              }`}
+                            >
+                              <div className="text-sm font-semibold text-sibs-primary-1">
+                                {employee.sibsId}
+                              </div>
+
+                              <div className="text-xs text-sibs-tertiary-5">
+                                {employee.fullName}
+                              </div>
+                            </button>
+                          );
+                        })
+                      ) : employeeSearch.trim() ? (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          No employees found
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          Type to search
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -871,6 +923,12 @@ export default function AttritionModal({
                     onClick={() => {
                       setReasonOpen((prev) => !prev);
                       setDropdownOpen(false);
+
+                      if (selectedEmployee) {
+                        setEmployeeSearch(
+                          formatEmployeeDisplay(selectedEmployee),
+                        );
+                      }
                     }}
                     className={`relative flex w-full items-center justify-between rounded-xl border bg-white px-4 py-3 text-left text-sm transition ${
                       reasonOpen
