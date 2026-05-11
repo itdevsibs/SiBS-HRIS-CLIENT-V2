@@ -4,10 +4,10 @@ import StatusModal from "../../components/modals/StatusModal";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
-  createJobDescription,
   saveJobDescriptionRevision,
 } from "../../lib/axios/jobDescription";
 import { useUser } from "../../services/context/UserContext";
+import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import {
   FileText,
   Plus,
@@ -21,25 +21,6 @@ import ViewJobDescriptionModal from "../../components/modals/jobDescription/View
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
 import SlidingTabs from "../../lib/utils/react-utils/SlidingTabs";
 
-const emptyForm = {
-  linkedHiringRequirement: "",
-  roleTitle: "",
-  accountId: "",
-  account: "",
-  departmentId: "",
-  department: "",
-  jdStatus: "New Job Description",
-  ownerSibsId: "",
-  owner: "",
-  requestedBySibsId: "",
-  requestedBy: "",
-  dateRequested: new Date().toISOString().split("T")[0],
-  description: "",
-  responsibilities: "",
-  qualifications: "",
-  remarks: "",
-};
-
 const emptyRevisionForm = {
   revisedBySibsId: "",
   revisedBy: "",
@@ -48,10 +29,6 @@ const emptyRevisionForm = {
   responsibilities: "",
   qualifications: "",
 };
-
-function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
-}
 
 function normalizeJdStatus(status) {
   if (status === "New JD") return "New Job Description";
@@ -122,17 +99,17 @@ function StatCard({ title, value, icon: Icon, description }) {
 export default function JobDescriptionPage() {
   const { user } = useUser();
 
+  const {
+    setAccounts,
+    setDepartments,
+    setRequestedByUsers,
+    setDropdownLoading,
+    setDropdownError,
+  } = useJobDescription();
+
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
-
-  const [accounts, setAccounts] = useState([]);
-  const [departments, setDepartments] = useState([]);
-  const [requestedByUsers, setRequestedByUsers] = useState([]);
-  const [dropdownLoading, setDropdownLoading] = useState(false);
-  const [dropdownError, setDropdownError] = useState("");
-
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [form, setForm] = useState(emptyForm);
 
   const [revisionItem, setRevisionItem] = useState(null);
   const [revisionForm, setRevisionForm] = useState(emptyRevisionForm);
@@ -251,30 +228,21 @@ export default function JobDescriptionPage() {
   }
 
   function handleOpenCreateModal() {
-    const loggedInOwner = getLoggedInOwner();
-
-    setForm({
-      ...emptyForm,
-      ownerSibsId: loggedInOwner.ownerSibsId,
-      owner: loggedInOwner.owner,
-    });
-
     setShowCreateModal(true);
   }
 
   function handleCloseCreateModal() {
     setShowCreateModal(false);
-    setForm(emptyForm);
   }
 
-  function handleReset() {
-    const loggedInOwner = getLoggedInOwner();
+  function handleCreatedJobDescription(newItem) {
+    setJobDescriptionList((prev) => [
+      newItem,
+      ...prev.filter((item) => item.id !== newItem.id),
+    ]);
 
-    setForm({
-      ...emptyForm,
-      ownerSibsId: loggedInOwner.ownerSibsId,
-      owner: loggedInOwner.owner,
-    });
+    setSelectedItem(newItem);
+    setShowCreateModal(false);
   }
 
   function handleOpenRevision(item) {
@@ -294,126 +262,6 @@ export default function JobDescriptionPage() {
   function handleCloseRevision() {
     setRevisionItem(null);
     setRevisionForm(emptyRevisionForm);
-  }
-
-  async function handleCreateJobDescription(e) {
-    e.preventDefault();
-
-    if (!form.roleTitle.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Role Title",
-        message: "Role title is required.",
-      });
-      return;
-    }
-
-    if (!form.accountId) {
-      showStatus({
-        type: "error",
-        title: "Missing Account",
-        message: "Account is required.",
-      });
-      return;
-    }
-
-    if (!form.departmentId) {
-      showStatus({
-        type: "error",
-        title: "Missing Department",
-        message: "Department is required.",
-      });
-      return;
-    }
-
-    if (!form.ownerSibsId) {
-      showStatus({
-        type: "error",
-        title: "Missing Owner",
-        message: "Owner is required.",
-      });
-      return;
-    }
-
-    if (!form.requestedBySibsId) {
-      showStatus({
-        type: "error",
-        title: "Missing Requested By",
-        message: "Requested By is required.",
-      });
-      return;
-    }
-
-    if (!form.description.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Job Description",
-        message: "Job description is required.",
-      });
-      return;
-    }
-
-    if (!form.responsibilities.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Responsibilities",
-        message: "Responsibilities are required.",
-      });
-      return;
-    }
-
-    if (!form.qualifications.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Qualifications",
-        message: "Qualifications are required.",
-      });
-      return;
-    }
-
-    const payload = {
-      linkedHiringRequirement: form.linkedHiringRequirement,
-      roleTitle: form.roleTitle.trim(),
-      accountId: form.accountId,
-      departmentId: form.departmentId,
-      jdStatus: form.linkedHiringRequirement
-        ? normalizeJdStatus(form.jdStatus)
-        : "New Job Description",
-      ownerSibsId: form.ownerSibsId,
-      requestedBySibsId: form.requestedBySibsId,
-      dateRequested: form.dateRequested || getTodayDate(),
-      description: form.description.trim(),
-      responsibilities: form.responsibilities.trim(),
-      qualifications: form.qualifications.trim(),
-      remarks: form.remarks.trim(),
-    };
-
-    const result = await createJobDescription(payload);
-
-    if (!result.success) {
-      showStatus({
-        type: "error",
-        title: "Save Failed",
-        message: result.message || "Failed to create job description.",
-      });
-      return;
-    }
-
-    const newItem = normalizeJobDescriptionItem(result.data);
-
-    setJobDescriptionList((prev) => [
-      newItem,
-      ...prev.filter((item) => item.id !== newItem.id),
-    ]);
-
-    setSelectedItem(newItem);
-    handleCloseCreateModal();
-
-    showStatus({
-      type: "success",
-      title: "Job Description Saved",
-      message: result.message || "Job description created successfully.",
-    });
   }
 
   async function handleSubmitRevision(e) {
@@ -576,7 +424,7 @@ export default function JobDescriptionPage() {
           />
         </div>
 
-        <div className="mb-2 grid grid-cols-1 gap-4 rounded-xl  py-2 lg:grid-cols-[1fr_auto] lg:items-center">
+        <div className="mb-2 grid grid-cols-1 gap-4 rounded-xl py-2 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="flex flex-col items-start justify-center">
             <div className="lg:col-span-2">
               <SlidingTabs
@@ -590,9 +438,7 @@ export default function JobDescriptionPage() {
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl 
-              bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-2xs
-              transition hover:opacity-90"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-2xs transition hover:opacity-90"
           >
             <Plus size={18} />
             Add Job Description
@@ -607,16 +453,9 @@ export default function JobDescriptionPage() {
 
       <AddDescriptionModal
         open={showCreateModal}
-        form={form}
-        setForm={setForm}
-        accounts={accounts}
-        departments={departments}
-        requestedByUsers={requestedByUsers}
-        dropdownLoading={dropdownLoading}
-        dropdownError={dropdownError}
         onClose={handleCloseCreateModal}
-        onSubmit={handleCreateJobDescription}
-        onReset={handleReset}
+        onCreated={handleCreatedJobDescription}
+        onStatus={showStatus}
       />
 
       <ViewJobDescriptionModal

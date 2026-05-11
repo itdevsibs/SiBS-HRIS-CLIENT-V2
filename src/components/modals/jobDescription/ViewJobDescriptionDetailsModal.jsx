@@ -18,7 +18,6 @@ export default function ViewJobDescriptionDetailsModal({
   open,
   item,
   onClose,
-  onOpenRevision,
 }) {
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
 
@@ -39,16 +38,6 @@ export default function ViewJobDescriptionDetailsModal({
       default:
         return "border-gray-200 bg-gray-50 text-gray-600";
     }
-  }
-
-  function formatDate(date) {
-    if (!date) return "—";
-
-    return new Date(date).toLocaleDateString("en-PH", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
   }
 
   useLayoutEffect(() => {
@@ -166,7 +155,7 @@ export default function ViewJobDescriptionDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
             >
               Close
             </button>

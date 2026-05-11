@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, UserKey, UserRound } from "lucide-react";
-import api, { handleLogout } from "../../lib/axios/api-template";
-import { useUser } from "../../services/context/UserContext";
-import { useHeader } from "../../services/context/HeaderContext";
-import { useAdmin } from "../../services/context/AdminContext";
+import api, { handleLogout } from "../../../lib/axios/api-template";
+import { useUser } from "../../../services/context/UserContext";
+import { useHeader } from "../../../services/context/HeaderContext";
+import { useAdmin } from "../../../services/context/AdminContext";
 
 export default function UserDropdown({
   avatar,
