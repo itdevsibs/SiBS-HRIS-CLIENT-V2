@@ -76,7 +76,7 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
               >
                 <div className="border-b border-[#E6ECF2] p-4 md:border-b-0 md:border-r">
                   <div className="space-y-3">
-                    <input
+                    {/* <input
                       type="text"
                       value={item.title}
                       onChange={(e) =>
@@ -84,16 +84,23 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
                       }
                       placeholder={`Competency ${index + 1} title`}
                       className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                    />
+                    /> */}
 
                     <textarea
-                      rows={4}
+                      rows={1}
                       value={item.description}
-                      onChange={(e) =>
-                        handleChange(item.id, "description", e.target.value)
-                      }
+                      onChange={(e) => {
+                        handleChange(item.id, "description", e.target.value);
+
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
+                      onInput={(e) => {
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
                       placeholder="Describe this competency..."
-                      className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+                      className="min-h-[90px] w-full resize-none overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
                     />
                   </div>
                 </div>
