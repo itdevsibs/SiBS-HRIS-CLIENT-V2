@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo } from "react";
 import { Eye, UserRound } from "lucide-react";
-import TableHeader from "./tableHeader/TableHeader";
-import { usePagination } from "../../services/context/PaginationContext";
-import TableFooter from "./footer/TableFooter";
+import TableHeader from "../tableHeader/TableHeader";
+import { usePagination } from "../../../services/context/PaginationContext";
+import TableFooter from "../footer/TableFooter";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
 
@@ -28,37 +28,75 @@ function normalizeJdStatus(status) {
 function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
     case "Existing":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Active":
+      return "bg-emerald-50 text-emerald-700";
 
     case "For Revision":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "For Approval":
+      return "bg-amber-50 text-amber-700";
 
     case "New Job Description":
-      return "border-[#B7D0FF] bg-[#EAF3FF] text-[#1D4ED8]";
+    case "Draft":
+      return "bg-blue-50 text-blue-700";
+
+    case "Returned for Revision":
+      return "bg-red-50 text-red-700";
 
     default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
+      return "bg-gray-50 text-gray-600";
+  }
+}
+
+function getJdStatusLabel(status) {
+  switch (normalizeJdStatus(status)) {
+    case "Existing":
+      return "Active";
+    case "For Revision":
+      return "For Approval";
+    case "New Job Description":
+      return "New Job Description";
+    default:
+      return normalizeJdStatus(status);
   }
 }
 
 function JdStatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full border px-4 py-1 text-[12px] font-semibold leading-none ${getJdStatusClass(
-        status,
-      )}`}
+      className={`inline-flex w-fit items-center justify-center whitespace-nowrap
+        rounded-md px-3 py-2 text-[11px] font-bold leading-none ${getJdStatusClass(
+          status,
+        )}`}
     >
-      {normalizeJdStatus(status)}
+      {getJdStatusLabel(status)}
     </span>
   );
 }
 
-function JobDescriptionMobileCard({ item, onView }) {
+function getLatestRevision(item) {
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
 
-  const latestRevision = revisionHistory[0];
+  return revisionHistory[0];
+}
+
+function getVersion(item) {
+  return item.version || item.jdVersion || item.currentVersion || "—";
+}
+
+function getLastApproved(item) {
+  return (
+    item.lastApproved ||
+    item.lastApprovedDate ||
+    item.approvedDate ||
+    getLatestRevision(item)?.revisedDate ||
+    ""
+  );
+}
+
+function JobDescriptionMobileCard({ item, onView }) {
+  const latestRevision = getLatestRevision(item);
 
   return (
     <button
@@ -151,7 +189,9 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
   }, [setTableHeader, tableHeader]);
 
   const filteredList = useMemo(() => {
-    const keyword = String(search || "").trim().toLowerCase();
+    const keyword = String(search || "")
+      .trim()
+      .toLowerCase();
     const jdStatusFilter = filterValues?.status || "All Status";
 
     return jobDescriptionList.filter((item) => {
@@ -208,102 +248,72 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
           </div>
         </div>
 
-        <div className="hidden h-full overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+        <div className="hidden h-full overflow-hidden rounded-lg border border-[#E5E7EB] bg-white lg:block">
           <div className="thin-scroll h-full overflow-auto">
-            <table className="w-full min-w-[1080px] border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+              <thead className="sticky top-0 z-10 bg-slate-100">
+                <tr className="border-b border-[#E5E7EB] text-[12px] font- text-[#344054]">
+                  <th className="px-5 py-4">Job Title</th>
                   <th className="px-5 py-4">JD Code</th>
-                  <th className="px-5 py-4">Role / Account</th>
                   <th className="px-5 py-4">Department</th>
-                  <th className="px-5 py-4">JD Status</th>
-                  <th className="px-5 py-4">Owner</th>
-                  <th className="px-5 py-4">Linked Requirement</th>
-                  <th className="px-5 py-4">Latest Revision</th>
-                  <th className="px-5 py-4 text-right">Action</th>
+                  <th className="px-5 py-4">Status</th>
+                  <th className="px-5 py-4">Version</th>
+                  <th className="px-5 py-4">Last Approved</th>
+                  <th className="px-5 py-4 text-center">Action</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-100 bg-white">
+              <tbody className="bg-white">
                 {filteredList.length > 0 ? (
-                  filteredList.map((item) => {
-                    const revisionHistory = Array.isArray(item.revisionHistory)
-                      ? item.revisionHistory
-                      : [];
+                  filteredList.map((item) => (
+                    <tr
+                      key={item.id}
+                      className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
+                    >
+                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        {item.roleTitle || "—"}
+                      </td>
 
-                    const latestRevision = revisionHistory[0];
+                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        {item.jdCode || "—"}
+                      </td>
 
-                    return (
-                      <tr
-                        key={item.id}
-                        className="transition hover:bg-[#F8FAFC]"
-                      >
-                        <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
-                          {item.jdCode || "—"}
-                        </td>
+                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        {item.department || "—"}
+                      </td>
 
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-bold text-[#101828]">
-                            {item.roleTitle || "—"}
-                          </p>
+                      <td className="px-5 py-4">
+                        <JdStatusBadge status={item.jdStatus} />
+                      </td>
 
-                          <p className="mt-0.5 text-xs font-semibold text-sibs-tertiary-5">
-                            {item.account || "—"}
-                          </p>
-                        </td>
+                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        {getVersion(item)}
+                      </td>
 
-                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                          {item.department || "—"}
-                        </td>
+                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        {formatDate(getLastApproved(item))}
+                      </td>
 
-                        <td className="px-5 py-4">
-                          <JdStatusBadge status={item.jdStatus} />
-                        </td>
-
-                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                          <div className="flex items-center gap-2">
-                            <UserRound size={15} className="text-gray-400" />
-                            <span>{item.owner || "—"}</span>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm font-bold text-[#344054]">
-                          {item.linkedHiringRequirement || "—"}
-                        </td>
-
-                        <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                          {latestRevision ? (
-                            <div>
-                              <p className="font-bold text-purple-700">
-                                {formatDate(latestRevision.revisedDate)}
-                              </p>
-
-                              <p className="text-xs text-sibs-tertiary-5">
-                                by {latestRevision.revisedBy || "—"}
-                              </p>
-                            </div>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => onView?.(item)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                          >
-                            <Eye size={15} />
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
+                      <td className="px-5 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => onView?.(item)}
+                          className="inline-flex items-center justify-center gap-2 
+                            rounded-xl border border-[#E6ECF2] bg-white px-4 py-2
+                            text-xs font-bold text-sibs-primary-1 transition
+                            hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5
+                            hover:cursor-pointer"
+                        >
+                          <Eye size={15} />
+                          Preview
+                        </button>
+                      </td>
+                    </tr>
+                  ))
                 ) : (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={7}
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       No job description records found.

@@ -52,7 +52,7 @@ export async function getJobDescriptions({
   status = "",
 } = {}) {
   try {
-    const res = await api.get("/api/job-description", {
+    const res = await api.get("/api/job-description/get-job-description", {
       params: {
         page,
         limit,
@@ -228,8 +228,7 @@ export async function saveJobDescriptionRevision(id, payload) {
     return {
       success: true,
       data: data.data,
-      message:
-        data.message || "Job description revision saved successfully.",
+      message: data.message || "Job description revision saved successfully.",
     };
   } catch (err) {
     return {
