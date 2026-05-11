@@ -268,10 +268,7 @@ function EditResignationModal({
                 {readOnly ? (
                   <ReadOnlyInput value={form.commentSpoken || "N/A"} />
                 ) : (
-                  <div
-                    id="comment-spoken-dropdown-wrapper"
-                    className="relative"
-                  >
+                  <div id="comment-spoken-dropdown-wrapper" className="relative">
                     <button
                       type="button"
                       onClick={() => setCommentSpokenOpen((prev) => !prev)}
@@ -693,32 +690,46 @@ export default function ResignationTable({
   return (
     <>
       <div className="hidden min-w-0 lg:block">
-        <div ref={tableScrollRef} className="max-h-[620px] overflow-auto">
-          <table className="w-full table-fixed border-collapse bg-white text-sm text-sibs-primary-1">
+        <div
+          ref={tableScrollRef}
+          className="max-h-[620px] overflow-auto rounded-xl bg-white"
+        >
+          <table className="w-full min-w-[1280px] table-fixed border-collapse bg-white text-sm text-sibs-primary-1">
+            <colgroup>
+              <col className="w-[110px]" />
+              <col className="w-[170px]" />
+              <col className="w-[220px]" />
+              <col className="w-[180px]" />
+              <col className="w-[260px]" />
+              <col className="w-[170px]" />
+              <col className="w-[190px]" />
+              <col className="w-[170px]" />
+            </colgroup>
+
             <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
               <tr>
-                <th className="w-[7%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   SiBS ID
                 </th>
-                <th className="w-[10%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Resignation Type
                 </th>
-                <th className="w-[18%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Employee Name
                 </th>
-                <th className="w-[11%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Assigned Location
                 </th>
-                <th className="w-[24%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Uploaded File
                 </th>
-                <th className="w-[10%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Resignation Date
                 </th>
-                <th className="w-[10%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Last Working Date
                 </th>
-                <th className="w-[10%] h-12 whitespace-nowrap px-4 text-left text-sm font-semibold text-sibs-primary-1">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Submitted At
                 </th>
               </tr>
@@ -759,37 +770,37 @@ export default function ResignationTable({
                           : "cursor-not-allowed"
                       }`}
                     >
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {item.sibsId || "N/A"}
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {item.resignationType || "N/A"}
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-medium uppercase">
                           {item.fullName || "N/A"}
                         </p>
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {mapAssignedLocation(item.location)}
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         <UploadedFileCell item={item} />
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDate(item.resignationDate)}
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDate(item.lastWorkingDate)}
                       </td>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-4 text-sm text-sibs-primary-1">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDateTime(item.createdAt)}
                       </td>
                     </tr>

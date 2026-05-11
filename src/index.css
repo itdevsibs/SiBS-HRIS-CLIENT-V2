@@ -571,3 +571,26 @@
   }
 }
 
+.sibs-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sibs-primary-1) transparent;
+}
+
+.sibs-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sibs-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sibs-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: var(--sibs-primary-1);
+}
+
+.sibs-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--sibs-tertiary-3);
+}
+

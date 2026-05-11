@@ -1,5 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
+import {
+  getWeeklyHiringPlanAccounts,
+  getWeeklyHiringPlanWeeks,
+} from "../../lib/axios/getWeeklyHiringPlan";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -16,343 +20,164 @@ import {
   X,
 } from "lucide-react";
 
-const initialWeeklyVersions = [
+const CLUSTER_OPTIONS = ["All", "Coast Dental", "US Visa", "SME", "Yomdel"];
+
+const sampleWeeklyRecords = [
   {
-    id: "WEEK-2026-08-11",
-    label: "Week 33",
-    weekRange: "Aug 11 - Aug 17, 2026",
-    createdAt: "2026-08-11",
-    locked: false,
-    type: "current",
-    records: [
-      {
-        id: 1,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "Collect IV",
-        requiredHeadcount: 30,
-        actualHeadcount: 28,
-        bufferHeadcount: 3,
-        bufferPercent: 10,
-        absenteeismCount: 6,
-        absenteeismPercent: 19.38,
-        attritionPastCount: 4,
-        attritionPastPercent: 10.69,
-        opsPrf: 16,
-        attritionFstToPstCount: 21,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 24,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 26,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 38,
-        hiringRate: 70,
-        pipelineStatus: "At Risk",
-        statusNote: "Low interview show rate",
-        owner: "John D.",
-        actionItems: [
-          {
-            id: 1,
-            actionItem: "Increase sourcing for Collect IV.",
-            roleAccount: "Collect IV / Coast Dental",
-            owner: "John D.",
-            deadline: "2026-08-14",
-            status: "In Progress",
-            remarks: "Need additional qualified screened candidates.",
-          },
-        ],
-      },
-      {
-        id: 2,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "Collect AR",
-        requiredHeadcount: 55,
-        actualHeadcount: 42,
-        bufferHeadcount: 6,
-        bufferPercent: 10,
-        absenteeismCount: 7,
-        absenteeismPercent: 11.76,
-        attritionPastCount: 11,
-        attritionPastPercent: 18.18,
-        opsPrf: 37,
-        attritionFstToPstCount: 49,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 55,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 61,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 1218,
-        hiringRate: 5,
-        pipelineStatus: "At Risk",
-        statusNote: "High leads needed",
-        owner: "Jane S.",
-        actionItems: [
-          {
-            id: 1,
-            actionItem: "Add sourcing channels for Collect AR.",
-            roleAccount: "Collect AR / Coast Dental",
-            owner: "Jane S.",
-            deadline: "2026-08-15",
-            status: "Pending",
-            remarks: "High interview volume required because of low hiring rate.",
-          },
-        ],
-      },
-      {
-        id: 3,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "Connect",
-        requiredHeadcount: 57,
-        actualHeadcount: 47,
-        bufferHeadcount: 6,
-        bufferPercent: 10,
-        absenteeismCount: 4,
-        absenteeismPercent: 5.77,
-        attritionPastCount: 9,
-        attritionPastPercent: 15.38,
-        opsPrf: 29,
-        attritionFstToPstCount: 39,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 43,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 48,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 955,
-        hiringRate: 5,
-        pipelineStatus: "At Risk",
-        statusNote: "Insufficient pipeline",
-        owner: "Maria R.",
-        actionItems: [],
-      },
-      {
-        id: 4,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "DentistRX",
-        requiredHeadcount: 1,
-        actualHeadcount: 1,
-        bufferHeadcount: 0,
-        bufferPercent: 0,
-        absenteeismCount: 0,
-        absenteeismPercent: 0,
-        attritionPastCount: 0,
-        attritionPastPercent: 0,
-        opsPrf: 0,
-        attritionFstToPstCount: 0,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 0,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 0,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 0,
-        hiringRate: 5,
-        pipelineStatus: "On Track",
-        statusNote: "-",
-        owner: "Mark T.",
-        actionItems: [],
-      },
-      {
-        id: 5,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "Reconciliation",
-        requiredHeadcount: 2,
-        actualHeadcount: 2,
-        bufferHeadcount: 0,
-        bufferPercent: 0,
-        absenteeismCount: 0,
-        absenteeismPercent: 0,
-        attritionPastCount: 0,
-        attritionPastPercent: 0,
-        opsPrf: 0,
-        attritionFstToPstCount: 0,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 0,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 0,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 0,
-        hiringRate: 5,
-        pipelineStatus: "On Track",
-        statusNote: "-",
-        owner: "Kim D.",
-        actionItems: [],
-      },
-      {
-        id: 6,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "TeleDentistry",
-        requiredHeadcount: 3,
-        actualHeadcount: 3,
-        bufferHeadcount: 0,
-        bufferPercent: 0,
-        absenteeismCount: 0,
-        absenteeismPercent: 0,
-        attritionPastCount: 0,
-        attritionPastPercent: 0,
-        opsPrf: 0,
-        attritionFstToPstCount: 0,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 0,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 0,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 0,
-        hiringRate: 5,
-        pipelineStatus: "On Track",
-        statusNote: "-",
-        owner: "Paul G.",
-        actionItems: [],
-      },
-      {
-        id: 7,
-        week: "Week 33",
-        cluster: "Coast Dental",
-        account: "Cash",
-        requiredHeadcount: 2,
-        actualHeadcount: 2,
-        bufferHeadcount: 0,
-        bufferPercent: 0,
-        absenteeismCount: 0,
-        absenteeismPercent: 0,
-        attritionPastCount: 0,
-        attritionPastPercent: 0,
-        opsPrf: 0,
-        attritionFstToPstCount: 0,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 0,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 0,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 0,
-        hiringRate: 5,
-        pipelineStatus: "On Track",
-        statusNote: "-",
-        owner: "Grace L.",
-        actionItems: [],
-      },
-      {
-        id: 8,
-        week: "Week 33",
-        cluster: "US Visa",
-        account: "US Visa",
-        requiredHeadcount: 20,
-        actualHeadcount: 15,
-        bufferHeadcount: 2,
-        bufferPercent: 10,
-        absenteeismCount: 2,
-        absenteeismPercent: 8,
-        attritionPastCount: 3,
-        attritionPastPercent: 12,
-        opsPrf: 12,
-        attritionFstToPstCount: 16,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 18,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 20,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 120,
-        hiringRate: 15,
-        pipelineStatus: "At Risk",
-        statusNote: "Need additional sourcing",
-        owner: "Lara M.",
-        actionItems: [],
-      },
-      {
-        id: 9,
-        week: "Week 33",
-        cluster: "SME",
-        account: "Channel Assist",
-        requiredHeadcount: 12,
-        actualHeadcount: 10,
-        bufferHeadcount: 1,
-        bufferPercent: 10,
-        absenteeismCount: 1,
-        absenteeismPercent: 7.5,
-        attritionPastCount: 1,
-        attritionPastPercent: 8,
-        opsPrf: 5,
-        attritionFstToPstCount: 7,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 8,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 9,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 45,
-        hiringRate: 20,
-        pipelineStatus: "On Track",
-        statusNote: "-",
-        owner: "Nina P.",
-        actionItems: [],
-      },
-      {
-        id: 10,
-        week: "Week 33",
-        cluster: "Yomdel",
-        account: "Yomdel",
-        requiredHeadcount: 18,
-        actualHeadcount: 12,
-        bufferHeadcount: 2,
-        bufferPercent: 10,
-        absenteeismCount: 2,
-        absenteeismPercent: 9,
-        attritionPastCount: 3,
-        attritionPastPercent: 14,
-        opsPrf: 13,
-        attritionFstToPstCount: 18,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 20,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 22,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 147,
-        hiringRate: 15,
-        pipelineStatus: "At Risk",
-        statusNote: "Pipeline gap",
-        owner: "Rex C.",
-        actionItems: [],
-      },
-    ],
+    id: 1,
+    cluster: "Coast Dental",
+    account: "Collect IV",
+    requiredHeadcount: 30,
+    actualHeadcount: 28,
+    bufferHeadcount: 3,
+    bufferPercent: 10,
+    absenteeismCount: 6,
+    absenteeismPercent: 19.38,
+    attritionPastCount: 4,
+    attritionPastPercent: 10.69,
+    opsPrf: 16,
+    attritionFstToPstCount: 21,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 24,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 26,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 38,
+    hiringRate: 70,
+    pipelineStatus: "At Risk",
+    statusNote: "Low interview show rate",
+    owner: "John D.",
+    actionItems: [],
   },
   {
-    id: "WEEK-2026-08-04",
-    label: "Week 32",
-    weekRange: "Aug 4 - Aug 10, 2026",
-    createdAt: "2026-08-04",
-    locked: true,
-    type: "previous",
-    records: [
-      {
-        id: 101,
-        week: "Week 32",
-        cluster: "Coast Dental",
-        account: "Collect IV",
-        requiredHeadcount: 30,
-        actualHeadcount: 27,
-        bufferHeadcount: 3,
-        bufferPercent: 10,
-        absenteeismCount: 5,
-        absenteeismPercent: 17,
-        attritionPastCount: 4,
-        attritionPastPercent: 10,
-        opsPrf: 15,
-        attritionFstToPstCount: 20,
-        attritionFstToPstPercent: 25,
-        attritionNhoToFstPstCount: 22,
-        attritionNhoToFstPstPercent: 10,
-        attritionInterviewToNhoCount: 24,
-        attritionInterviewToNhoPercent: 10,
-        leadsToInterview: 35,
-        hiringRate: 70,
-        pipelineStatus: "At Risk",
-        statusNote: "Final interviews pending",
-        owner: "John D.",
-        actionItems: [],
-      },
-    ],
+    id: 2,
+    cluster: "Coast Dental",
+    account: "Collect AR",
+    requiredHeadcount: 55,
+    actualHeadcount: 42,
+    bufferHeadcount: 6,
+    bufferPercent: 10,
+    absenteeismCount: 7,
+    absenteeismPercent: 11.76,
+    attritionPastCount: 11,
+    attritionPastPercent: 18.18,
+    opsPrf: 37,
+    attritionFstToPstCount: 49,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 55,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 61,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 1218,
+    hiringRate: 5,
+    pipelineStatus: "At Risk",
+    statusNote: "High leads needed",
+    owner: "Jane S.",
+    actionItems: [],
+  },
+  {
+    id: 3,
+    cluster: "Coast Dental",
+    account: "Connect",
+    requiredHeadcount: 57,
+    actualHeadcount: 47,
+    bufferHeadcount: 6,
+    bufferPercent: 10,
+    absenteeismCount: 4,
+    absenteeismPercent: 5.77,
+    attritionPastCount: 9,
+    attritionPastPercent: 15.38,
+    opsPrf: 29,
+    attritionFstToPstCount: 39,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 43,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 48,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 955,
+    hiringRate: 5,
+    pipelineStatus: "At Risk",
+    statusNote: "Insufficient pipeline",
+    owner: "Maria R.",
+    actionItems: [],
+  },
+  {
+    id: 4,
+    cluster: "US Visa",
+    account: "US Visa",
+    requiredHeadcount: 20,
+    actualHeadcount: 15,
+    bufferHeadcount: 2,
+    bufferPercent: 10,
+    absenteeismCount: 2,
+    absenteeismPercent: 8,
+    attritionPastCount: 3,
+    attritionPastPercent: 12,
+    opsPrf: 12,
+    attritionFstToPstCount: 16,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 18,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 20,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 120,
+    hiringRate: 15,
+    pipelineStatus: "At Risk",
+    statusNote: "Need additional sourcing",
+    owner: "Lara M.",
+    actionItems: [],
+  },
+  {
+    id: 5,
+    cluster: "SME",
+    account: "Channel Assist",
+    requiredHeadcount: 12,
+    actualHeadcount: 10,
+    bufferHeadcount: 1,
+    bufferPercent: 10,
+    absenteeismCount: 1,
+    absenteeismPercent: 7.5,
+    attritionPastCount: 1,
+    attritionPastPercent: 8,
+    opsPrf: 5,
+    attritionFstToPstCount: 7,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 8,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 9,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 45,
+    hiringRate: 20,
+    pipelineStatus: "On Track",
+    statusNote: "-",
+    owner: "Nina P.",
+    actionItems: [],
+  },
+  {
+    id: 6,
+    cluster: "Yomdel",
+    account: "Yomdel",
+    requiredHeadcount: 18,
+    actualHeadcount: 12,
+    bufferHeadcount: 2,
+    bufferPercent: 10,
+    absenteeismCount: 2,
+    absenteeismPercent: 9,
+    attritionPastCount: 3,
+    attritionPastPercent: 14,
+    opsPrf: 13,
+    attritionFstToPstCount: 18,
+    attritionFstToPstPercent: 25,
+    attritionNhoToFstPstCount: 20,
+    attritionNhoToFstPstPercent: 10,
+    attritionInterviewToNhoCount: 22,
+    attritionInterviewToNhoPercent: 10,
+    leadsToInterview: 147,
+    hiringRate: 15,
+    pipelineStatus: "At Risk",
+    statusNote: "Pipeline gap",
+    owner: "Rex C.",
+    actionItems: [],
   },
 ];
 
@@ -368,13 +193,17 @@ function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
 
-function formatDate(date) {
-  if (!date) return "—";
+function toDateKey(date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy.toISOString().split("T")[0];
+}
 
-  return new Date(date).toLocaleDateString("en-PH", {
+function formatWeekDate(date, includeYear = false) {
+  return date.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    ...(includeYear ? { year: "numeric" } : {}),
   });
 }
 
@@ -394,25 +223,21 @@ function formatNumber(value) {
   });
 }
 
-function getNextWeekRange() {
-  const today = new Date();
-  const start = new Date(today);
-  const end = new Date(today);
+function getNextWeekRangeFromActiveWeek(activeWeek) {
+  const nextStart = new Date(activeWeek?.endDate || getTodayDate());
+  nextStart.setDate(nextStart.getDate() + 1);
 
-  end.setDate(start.getDate() + 6);
+  const nextEnd = new Date(nextStart);
+  nextEnd.setDate(nextStart.getDate() + 6);
 
-  const startText = start.toLocaleDateString("en-PH", {
-    month: "short",
-    day: "numeric",
-  });
-
-  const endText = end.toLocaleDateString("en-PH", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  return `${startText} - ${endText}`;
+  return {
+    startDate: toDateKey(nextStart),
+    endDate: toDateKey(nextEnd),
+    weekRange: `${formatWeekDate(nextStart)} - ${formatWeekDate(
+      nextEnd,
+      true
+    )}`,
+  };
 }
 
 function getNextWeekLabel(currentLabel) {
@@ -520,12 +345,16 @@ function InfoBox({ label, value }) {
 }
 
 function PercentageGraphSection({ filteredPlans, overallStatus }) {
-  const [openMetric, setOpenMetric] = useState("attritionPastPercent");
+  const [openMetric, setOpenMetric] = useState("absenteeismPercent");
+
+  const maxActualPercent = 100;
+  const maxDisplayPercent = 25;
 
   const percentageMetrics = [
     {
       countKey: "absenteeismCount",
       percentKey: "absenteeismPercent",
+      denominatorKey: "scheduledCount",
       label: "Absenteeism",
     },
     {
@@ -550,31 +379,61 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
     },
   ];
 
+  function scaleToDisplayPercent(actualPercent) {
+    const safeActualPercent = Math.max(0, Math.min(Number(actualPercent || 0), 100));
+    return (safeActualPercent / maxActualPercent) * maxDisplayPercent;
+  }
+
+  function getItemPercent(item, metric) {
+    const directPercent = Number(item[metric.percentKey] || 0);
+
+    if (metric.denominatorKey) {
+      const count = Number(item[metric.countKey] || 0);
+      const denominator = Number(item[metric.denominatorKey] || 0);
+
+      if (denominator > 0) {
+        return (count / denominator) * 100;
+      }
+
+      return directPercent;
+    }
+
+    return directPercent;
+  }
+
   const graphData = percentageMetrics.map((metric) => {
     const totalCount = filteredPlans.reduce(
       (sum, item) => sum + Number(item[metric.countKey] || 0),
       0
     );
 
-    const averagePercent =
-      filteredPlans.length > 0
-        ? filteredPlans.reduce(
-            (sum, item) => sum + Number(item[metric.percentKey] || 0),
-            0
-          ) / filteredPlans.length
-        : 0;
+    let actualPercent = 0;
+
+    if (metric.denominatorKey) {
+      const totalDenominator = filteredPlans.reduce(
+        (sum, item) => sum + Number(item[metric.denominatorKey] || 0),
+        0
+      );
+
+      actualPercent =
+        totalDenominator > 0 ? (totalCount / totalDenominator) * 100 : 0;
+    } else {
+      actualPercent =
+        filteredPlans.length > 0
+          ? filteredPlans.reduce(
+              (sum, item) => sum + Number(item[metric.percentKey] || 0),
+              0
+            ) / filteredPlans.length
+          : 0;
+    }
 
     return {
       ...metric,
       totalCount,
-      averagePercent,
+      actualPercent: Number(actualPercent || 0),
+      displayPercent: scaleToDisplayPercent(actualPercent),
     };
   });
-
-  const maxPercent = Math.max(
-    25,
-    ...graphData.map((item) => Number(item.averagePercent || 0))
-  );
 
   function getBarColor(value) {
     if (value >= 20) return "bg-red-500";
@@ -591,8 +450,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
           </h2>
 
           <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            Combined count and average percentage based on the selected account
-            or cluster filter. Click each item to view account details.
+            Absenteeism is scaled from actual percentage into a 25% maximum risk scale.
           </p>
         </div>
 
@@ -620,8 +478,9 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
         <div className="space-y-3">
           {graphData.map((metric) => {
             const isOpen = openMetric === metric.percentKey;
+
             const width = Math.min(
-              (metric.averagePercent / maxPercent) * 100,
+              (metric.actualPercent / maxActualPercent) * 100,
               100
             );
 
@@ -653,17 +512,27 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
 
                         <p className="text-xs font-semibold text-sibs-tertiary-5">
                           Total Count: {formatNumber(metric.totalCount)}
+                          {metric.denominatorKey
+                            ? ` / Scheduled: ${formatNumber(
+                                filteredPlans.reduce(
+                                  (sum, item) =>
+                                    sum +
+                                    Number(item[metric.denominatorKey] || 0),
+                                  0
+                                )
+                              )}`
+                            : ""}
                         </p>
                       </div>
                     </div>
 
                     <div className="shrink-0 text-left sm:text-right">
                       <p className="text-sm font-bold text-sibs-primary-1">
-                        {formatPercent(metric.averagePercent)}
+                        {formatPercent(metric.displayPercent)}
                       </p>
 
                       <p className="text-xs font-semibold text-sibs-tertiary-5">
-                        Average %
+                        25% Scale
                       </p>
                     </div>
                   </div>
@@ -671,7 +540,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                   <div className="h-3 overflow-hidden rounded-full bg-[#E6ECF2]">
                     <div
                       className={`h-full rounded-full ${getBarColor(
-                        metric.averagePercent
+                        metric.displayPercent
                       )}`}
                       style={{ width: `${width}%` }}
                     />
@@ -681,12 +550,19 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                 {isOpen && (
                   <div className="border-t border-[#E6ECF2] bg-white p-4">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[520px] border-collapse text-left">
+                      <table className="w-full min-w-[620px] border-collapse text-left">
                         <thead>
                           <tr className="border-b border-[#E6ECF2] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                             <th className="px-3 py-3">Account</th>
                             <th className="px-3 py-3">Cluster</th>
                             <th className="px-3 py-3 text-center">Count</th>
+
+                            {metric.denominatorKey && (
+                              <th className="px-3 py-3 text-center">
+                                Scheduled
+                              </th>
+                            )}
+
                             <th className="px-3 py-3 text-center">
                               Percentage
                             </th>
@@ -694,25 +570,37 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                         </thead>
 
                         <tbody className="divide-y divide-[#E6ECF2]">
-                          {filteredPlans.map((item) => (
-                            <tr key={`${metric.percentKey}-${item.id}`}>
-                              <td className="px-3 py-3 text-sm font-bold text-[#101828]">
-                                {item.account}
-                              </td>
+                          {filteredPlans.map((item) => {
+                            const rowActualPercent = getItemPercent(item, metric);
+                            const rowDisplayPercent =
+                              scaleToDisplayPercent(rowActualPercent);
 
-                              <td className="px-3 py-3 text-sm font-semibold text-[#344054]">
-                                {item.cluster}
-                              </td>
+                            return (
+                              <tr key={`${metric.percentKey}-${item.id}`}>
+                                <td className="px-3 py-3 text-sm font-bold text-[#101828]">
+                                  {item.account}
+                                </td>
 
-                              <td className="px-3 py-3 text-center text-sm font-semibold text-[#344054]">
-                                {formatNumber(item[metric.countKey])}
-                              </td>
+                                <td className="px-3 py-3 text-sm font-semibold text-[#344054]">
+                                  {item.cluster}
+                                </td>
 
-                              <td className="px-3 py-3 text-center text-sm font-bold text-sibs-primary-1">
-                                {formatPercent(item[metric.percentKey])}
-                              </td>
-                            </tr>
-                          ))}
+                                <td className="px-3 py-3 text-center text-sm font-semibold text-[#344054]">
+                                  {formatNumber(item[metric.countKey])}
+                                </td>
+
+                                {metric.denominatorKey && (
+                                  <td className="px-3 py-3 text-center text-sm font-semibold text-[#344054]">
+                                    {formatNumber(item[metric.denominatorKey])}
+                                  </td>
+                                )}
+
+                                <td className="px-3 py-3 text-center text-sm font-bold text-sibs-primary-1">
+                                  {formatPercent(rowDisplayPercent)}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -731,14 +619,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   );
 }
 
-function ActionItemModal({
-  open,
-  item,
-  form,
-  setForm,
-  onClose,
-  onSubmit,
-}) {
+function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
   if (!open || !item) return null;
 
   return (
@@ -1181,11 +1062,26 @@ function KpiSnapshotModal({ open, week, onClose }) {
 export default function WeeklyHiringPlanPage() {
   const mainScrollRef = useRef(null);
 
-  const [weeklyVersions, setWeeklyVersions] = useState(initialWeeklyVersions);
-  const [activeWeekId, setActiveWeekId] = useState(initialWeeklyVersions[0].id);
+  const [weeklyVersions, setWeeklyVersions] = useState([]);
+  const [activeWeekId, setActiveWeekId] = useState("");
+  const [weeksLoading, setWeeksLoading] = useState(false);
   const [search, setSearch] = useState("");
+
+  const [weekSearch, setWeekSearch] = useState("");
+  const [showWeekDropdown, setShowWeekDropdown] = useState(false);
+  const weekDropdownRef = useRef(null);
+
   const [clusterFilter, setClusterFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
+  const [accountOptions, setAccountOptions] = useState([
+    {
+      id: "All",
+      accountName: "All Accounts",
+      ghlName: "",
+    },
+  ]);
+  const [remoteAccounts, setRemoteAccounts] = useState([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [actionItemTarget, setActionItemTarget] = useState(null);
@@ -1199,30 +1095,295 @@ export default function WeeklyHiringPlanPage() {
   const activeData = activeWeek?.records || [];
   const isLocked = !!activeWeek?.locked;
 
-  const clusterOptions = useMemo(() => {
-    const clusters = activeData
-      .map((item) => item.cluster || "Unassigned Cluster")
-      .filter(Boolean);
+  const clusterOptions = CLUSTER_OPTIONS;
 
-    return ["All", ...Array.from(new Set(clusters))];
-  }, [activeData]);
+  const activeWeekStartDate = activeWeek?.startDate || "";
+  const activeWeekEndDate = activeWeek?.endDate || "";
 
-  const accountOptions = useMemo(() => {
-    const accounts = activeData
-      .filter((item) => {
-        if (clusterFilter === "All") return true;
-        return (item.cluster || "Unassigned Cluster") === clusterFilter;
-      })
-      .map((item) => item.account || "Unassigned Account")
-      .filter(Boolean);
+  const filteredWeeklyVersions = useMemo(() => {
+    const keyword = weekSearch.trim().toLowerCase();
 
-    return ["All", ...Array.from(new Set(accounts))];
-  }, [activeData, clusterFilter]);
+    if (!keyword) return weeklyVersions;
+
+    return weeklyVersions.filter((week) => {
+      const searchableText = [
+        week.label,
+        week.weekRange,
+        week.startDate,
+        week.endDate,
+        week.locked ? "Locked" : "Editable",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(keyword);
+    });
+  }, [weeklyVersions, weekSearch]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchAccountsByCluster() {
+      try {
+        setAccountsLoading(true);
+
+        const accounts = await getWeeklyHiringPlanAccounts(
+          clusterFilter,
+          activeWeekStartDate,
+          activeWeekEndDate
+        );
+
+        if (!ignore) {
+          setRemoteAccounts(accounts || []);
+
+          setAccountOptions([
+            {
+              id: "All",
+              accountName: "All Accounts",
+              ghlName: "",
+            },
+            ...(accounts || []),
+          ]);
+
+          setAccountFilter("All");
+        }
+      } catch (error) {
+        console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
+
+        if (!ignore) {
+          setRemoteAccounts([]);
+          setAccountOptions([
+            {
+              id: "All",
+              accountName: "All Accounts",
+              ghlName: "",
+            },
+          ]);
+
+          setAccountFilter("All");
+        }
+      } finally {
+        if (!ignore) {
+          setAccountsLoading(false);
+        }
+      }
+    }
+
+    if (activeWeekStartDate && activeWeekEndDate) {
+      fetchAccountsByCluster();
+    }
+
+    return () => {
+      ignore = true;
+    };
+  }, [clusterFilter, activeWeekStartDate, activeWeekEndDate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        weekDropdownRef.current &&
+        !weekDropdownRef.current.contains(e.target)
+      ) {
+        setShowWeekDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchWeeklyVersions() {
+      try {
+        setWeeksLoading(true);
+
+        const weeks = await getWeeklyHiringPlanWeeks();
+
+        const formattedWeeks = (weeks || []).map((week) => ({
+          ...week,
+          records: sampleWeeklyRecords.map((record, index) => ({
+            ...record,
+            id: Number(`${week.year}${week.weekNumber}${index + 1}`),
+            week: week.label,
+            actionItems: [],
+          })),
+        }));
+
+        if (!ignore) {
+          setWeeklyVersions(formattedWeeks);
+          setActiveWeekId(formattedWeeks[0]?.id || "");
+        }
+      } catch (error) {
+        console.error("FETCH WEEKLY VERSIONS ERROR:", error);
+
+        if (!ignore) {
+          setWeeklyVersions([]);
+          setActiveWeekId("");
+        }
+      } finally {
+        if (!ignore) {
+          setWeeksLoading(false);
+        }
+      }
+    }
+
+    fetchWeeklyVersions();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const displayData = useMemo(() => {
+    if (!remoteAccounts.length) {
+      if (clusterFilter === "All") {
+        return activeData;
+      }
+
+      return activeData.filter((item) => item.cluster === clusterFilter);
+    }
+
+    return remoteAccounts.map((account, index) => {
+      const accountName = account.accountName || "Unassigned Account";
+
+      const accountCluster =
+        account.clusterName ||
+        account.cluster ||
+        (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+
+      const existingRecord = activeData.find(
+        (item) =>
+          item.cluster === accountCluster &&
+          String(item.account || "").toLowerCase() ===
+            String(accountName).toLowerCase()
+      );
+
+      if (existingRecord) {
+        return {
+          ...existingRecord,
+
+          cluster: accountCluster,
+          account: accountName,
+
+          actualHeadcount: Number(
+            account.actualHeadcount ?? existingRecord.actualHeadcount ?? 0
+          ),
+
+          scheduledCount: Number(account.scheduledCount ?? 0),
+          presentCount: Number(account.presentCount ?? 0),
+
+          absenteeismCount: Number(account.absenteeismCount ?? 0),
+          absenteeismPercent: Number(account.absenteeismPercent ?? 0),
+
+          attritionPastCount: Number(
+            account.attritionPastCount ??
+              existingRecord.attritionPastCount ??
+              0
+          ),
+          attritionPastPercent: Number(
+            account.attritionPastPercent ??
+              existingRecord.attritionPastPercent ??
+              0
+          ),
+
+          attritionFstToPstCount: Number(
+            account.attritionFstToPstCount ??
+              existingRecord.attritionFstToPstCount ??
+              0
+          ),
+          attritionFstToPstPercent: Number(
+            account.attritionFstToPstPercent ??
+              existingRecord.attritionFstToPstPercent ??
+              0
+          ),
+
+          attritionNhoToFstPstCount: Number(
+            account.attritionNhoToFstPstCount ??
+              existingRecord.attritionNhoToFstPstCount ??
+              0
+          ),
+          attritionNhoToFstPstPercent: Number(
+            account.attritionNhoToFstPstPercent ??
+              existingRecord.attritionNhoToFstPstPercent ??
+              0
+          ),
+
+          attritionInterviewToNhoCount: Number(
+            account.attritionInterviewToNhoCount ??
+              existingRecord.attritionInterviewToNhoCount ??
+              0
+          ),
+          attritionInterviewToNhoPercent: Number(
+            account.attritionInterviewToNhoPercent ??
+              existingRecord.attritionInterviewToNhoPercent ??
+              0
+          ),
+
+          departmentName: account.departmentName || "",
+        };
+      }
+
+      return {
+        id: `db-${accountCluster}-${account.id || index}`,
+        week: activeWeek?.label || "Current Week",
+        cluster: accountCluster,
+        account: accountName,
+
+        requiredHeadcount: 0,
+        actualHeadcount: Number(account.actualHeadcount || 0),
+
+        bufferHeadcount: 0,
+        bufferPercent: 0,
+
+        scheduledCount: Number(account.scheduledCount || 0),
+        presentCount: Number(account.presentCount || 0),
+
+        absenteeismCount: Number(account.absenteeismCount || 0),
+        absenteeismPercent: Number(account.absenteeismPercent || 0),
+
+        attritionPastCount: Number(account.attritionPastCount || 0),
+        attritionPastPercent: Number(account.attritionPastPercent || 0),
+
+        opsPrf: 0,
+
+        attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
+        attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
+
+        attritionNhoToFstPstCount: Number(
+          account.attritionNhoToFstPstCount || 0
+        ),
+        attritionNhoToFstPstPercent: Number(
+          account.attritionNhoToFstPstPercent || 0
+        ),
+
+        attritionInterviewToNhoCount: Number(
+          account.attritionInterviewToNhoCount || 0
+        ),
+        attritionInterviewToNhoPercent: Number(
+          account.attritionInterviewToNhoPercent || 0
+        ),
+
+        leadsToInterview: 0,
+        hiringRate: 0,
+
+        pipelineStatus: "On Track",
+        statusNote: account.departmentName || "-",
+        owner: "-",
+        actionItems: [],
+        departmentName: account.departmentName || "",
+      };
+    });
+  }, [activeData, activeWeek?.label, clusterFilter, remoteAccounts]);
 
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return activeData.filter((item) => {
+    return displayData.filter((item) => {
       const cluster = item.cluster || "Unassigned Cluster";
       const account = item.account || "Unassigned Account";
 
@@ -1234,7 +1395,7 @@ export default function WeeklyHiringPlanPage() {
 
       const matchesKeyword =
         !keyword ||
-        String(item.week || activeWeek.label || "")
+        String(item.week || activeWeek?.label || "")
           .toLowerCase()
           .includes(keyword) ||
         cluster.toLowerCase().includes(keyword) ||
@@ -1251,7 +1412,7 @@ export default function WeeklyHiringPlanPage() {
 
       return matchesCluster && matchesAccount && matchesKeyword;
     });
-  }, [activeData, activeWeek.label, search, clusterFilter, accountFilter]);
+  }, [displayData, activeWeek?.label, search, clusterFilter, accountFilter]);
 
   const totals = useMemo(() => {
     const totalRequired = filteredPlans.reduce(
@@ -1304,6 +1465,7 @@ export default function WeeklyHiringPlanPage() {
     const newWeekId = `WEEK-${today}-${Date.now()}`;
     const currentWeek = activeWeek;
     const newWeekLabel = getNextWeekLabel(currentWeek.label);
+    const nextWeekDate = getNextWeekRangeFromActiveWeek(currentWeek);
 
     const clonedRecords = (currentWeek.records || []).map((item, index) => {
       const nextItem = {
@@ -1325,7 +1487,6 @@ export default function WeeklyHiringPlanPage() {
           ? {
               ...week,
               locked: true,
-              label: "Previous Week",
               type: "previous",
             }
           : {
@@ -1337,7 +1498,9 @@ export default function WeeklyHiringPlanPage() {
       const newWeek = {
         id: newWeekId,
         label: newWeekLabel,
-        weekRange: getNextWeekRange(),
+        weekRange: nextWeekDate.weekRange,
+        startDate: nextWeekDate.startDate,
+        endDate: nextWeekDate.endDate,
         createdAt: today,
         locked: false,
         type: "current",
@@ -1436,66 +1599,115 @@ export default function WeeklyHiringPlanPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={() => setShowKpiSnapshot(true)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
-              >
-                <Eye size={17} />
-                KPI Snapshot
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCreateNewWeeklyVersion}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
-              >
-                <RotateCcw size={17} />
-                Create New Week
-              </button>
-
-              {!isLocked && (
-                <button
-                  type="button"
-                  onClick={handleCreateNewWeeklyVersion}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
-                >
-                  <Plus size={18} />
-                  New Version
-                </button>
-              )}
-            </div>
           </div>
 
           <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr] xl:items-end">
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
+              <div ref={weekDropdownRef} className="relative z-40">
+                <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
                   Weekly Version
                 </label>
 
                 <div className="relative">
-                  <select
-                    value={activeWeekId}
+                  <Search
+                    size={17}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    type="text"
+                    value={
+                      showWeekDropdown
+                        ? weekSearch
+                        : activeWeek
+                          ? `${activeWeek.label} | ${activeWeek.weekRange}`
+                          : ""
+                    }
                     onChange={(e) => {
-                      setActiveWeekId(e.target.value);
-                      setClusterFilter("All");
-                      setAccountFilter("All");
+                      setWeekSearch(e.target.value);
+                      setShowWeekDropdown(true);
                     }}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    {weeklyVersions.map((week) => (
-                      <option key={week.id} value={week.id}>
-                        {week.weekRange} ({week.label})
-                      </option>
-                    ))}
-                  </select>
+                    onFocus={() => {
+                      setShowWeekDropdown(true);
+                      setWeekSearch("");
+                    }}
+                    placeholder="Search weekly version..."
+                    autoComplete="off"
+                    className="h-12 w-full rounded-xl border border-[#D7DEE8] bg-white px-4 pl-10 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)]"
+                  />
 
                   <ChevronDown
                     size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    onClick={() => {
+                      setShowWeekDropdown((prev) => !prev);
+                      setWeekSearch("");
+                    }}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                      showWeekDropdown ? "rotate-180" : ""
+                    }`}
                   />
+
+                  {showWeekDropdown && (
+                    <div className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+                      <div className="max-h-60 overflow-y-auto py-2 sibs-scrollbar">
+                        {filteredWeeklyVersions.length > 0 ? (
+                          filteredWeeklyVersions.map((week) => {
+                            const isSelected = week.id === activeWeekId;
+
+                            return (
+                              <button
+                                key={week.id}
+                                type="button"
+                                onClick={() => {
+                                  setActiveWeekId(week.id);
+                                  setClusterFilter("All");
+                                  setAccountFilter("All");
+                                  setSearch("");
+                                  setWeekSearch("");
+                                  setShowWeekDropdown(false);
+                                }}
+                                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                                  isSelected
+                                    ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                                    : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate font-semibold">
+                                      {week.weekRange} ({week.label})
+                                    </p>
+
+                                    <p className="mt-1 text-xs text-sibs-tertiary-5">
+                                      {week.label} | {week.weekRange}
+                                    </p>
+                                  </div>
+
+                                  <span
+                                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                                      week.locked
+                                        ? "border-gray-200 bg-gray-50 text-gray-600"
+                                        : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    }`}
+                                  >
+                                    {week.locked ? "Locked" : "Editable"}
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })
+                        ) : weekSearch.trim() ? (
+                          <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                            No weekly version found
+                          </div>
+                        ) : (
+                          <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                            Type to search
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1536,11 +1748,19 @@ export default function WeeklyHiringPlanPage() {
                   <select
                     value={accountFilter}
                     onChange={(e) => setAccountFilter(e.target.value)}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                    disabled={accountsLoading}
+                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
                   >
                     {accountOptions.map((account) => (
-                      <option key={account} value={account}>
-                        {account === "All" ? "All Accounts" : account}
+                      <option
+                        key={account.id}
+                        value={account.id === "All" ? "All" : account.accountName}
+                      >
+                        {account.id === "All"
+                          ? accountsLoading
+                            ? "Loading accounts..."
+                            : "All Accounts"
+                          : account.accountName}
                       </option>
                     ))}
                   </select>
