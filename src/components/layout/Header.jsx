@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useUser } from "../../services/context/UserContext";
-import UserDropdown from "./UserDropdown";
+import UserDropdown from "./dropdown/UserDropdown";
 
 export default function Header() {
   const { user, loading } = useUser();
