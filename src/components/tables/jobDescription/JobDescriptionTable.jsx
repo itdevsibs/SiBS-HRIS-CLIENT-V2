@@ -54,7 +54,7 @@ function getJdStatusLabel(status) {
     case "For Revision":
       return "For Approval";
     case "New Job Description":
-      return "Draft";
+      return "New Job Description";
     default:
       return normalizeJdStatus(status);
   }
