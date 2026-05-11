@@ -53,9 +53,7 @@ export default function ViewJobDescriptionDetailsModal({
 
   if (!open || !item) return null;
 
-  const jdTitle = `${item.roleTitle || "Job Description"} (${
-    item.jdCode || "—"
-  }) - Version ${
+  const jdTitle = `${item.roleTitle || "Job Description"} - Version ${
     item.version || item.jdVersion || item.currentVersion || "2.0"
   }`;
 

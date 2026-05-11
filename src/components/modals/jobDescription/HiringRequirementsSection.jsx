@@ -29,7 +29,7 @@ export default function HiringRequirementSection({
     accountSearchRef,
     departmentSearchRef,
     jdStatusRef,
-    requestedByRef,
+    preparedByRef,
   } = refs;
 
   const {
@@ -113,7 +113,7 @@ export default function HiringRequirementSection({
 
         <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Role Title <span className="text-red-500">*</span>
+            Position <span className="text-red-500">*</span>
           </label>
 
           <input
@@ -125,14 +125,14 @@ export default function HiringRequirementSection({
                 roleTitle: e.target.value,
               }))
             }
-            placeholder="New Role Title"
+            placeholder="New Position"
             className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
           />
         </div>
 
         <SearchDropdown
           refBox={accountSearchRef}
-          label="Account"
+          label="Prepared For"
           required
           value={form.account}
           searchValue={accountSearch}
@@ -200,60 +200,21 @@ export default function HiringRequirementSection({
           zIndex="z-30"
         />
 
-        {hasLinkedHiringRequirement ? (
-          <SingleSelectDropdown
-            refBox={jdStatusRef}
-            label="Job Description Status"
-            required
-            value={selectedJdStatus}
-            placeholder="Select Job Description status"
-            open={jdStatusOpen}
-            setOpen={setJdStatusOpen}
-            disabled={false}
-            options={jdStatusOptions}
-            selectedValue={form.jdStatus}
-            zIndex="z-20"
-            onBeforeOpen={() => {
-              setLinkedRequirementOpen(false);
-              setAccountOpen(false);
-              setDepartmentOpen(false);
-              setRequestedByOpen(false);
-            }}
-            onSelect={(value) => {
-              setForm((prev) => ({
-                ...prev,
-                jdStatus: value,
-              }));
+        {/* <div className="self-start">
+          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+            Effectivity Date <span className="text-red-500">*</span>
+          </label>
 
-              setJdStatusOpen(false);
-            }}
+          <input
+            value={form.owner || ""}
+            placeholder="Logged-in user account"
+            className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
           />
-        ) : (
-          <div className="self-start">
-            <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-              Job Description Status <span className="text-red-500">*</span>
-            </label>
-
-            <input
-              readOnly
-              value="New Job Description"
-              className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
-            />
-
-            <p className="mt-2 text-xs font-semibold text-blue-700">
-              Since this Job Description has no linked hiring requirement, the
-              only valid status is New Job Description.
-            </p>
-          </div>
-        )}
-
-        <div className="md:col-span-2">
-          <StatusGuide />
-        </div>
+        </div> */}
 
         <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Owner <span className="text-red-500">*</span>
+            Created by <span className="text-red-500">*</span>
           </label>
 
           <input
@@ -267,63 +228,53 @@ export default function HiringRequirementSection({
             Owner is automatically set based on the logged-in user account.
           </p>
         </div>
-
-        <SearchDropdown
-          refBox={requestedByRef}
-          label="Requested By"
+      </div>
+      {hasLinkedHiringRequirement ? (
+        <SingleSelectDropdown
+          refBox={jdStatusRef}
+          label="Job Description Status"
           required
-          value={form.requestedBy}
-          searchValue={requestedBySearch}
-          setSearchValue={setRequestedBySearch}
-          placeholder="Search requested by"
-          open={requestedByOpen}
-          setOpen={setRequestedByOpen}
+          value={selectedJdStatus}
+          placeholder="Select Job Description status"
+          open={jdStatusOpen}
+          setOpen={setJdStatusOpen}
           disabled={false}
-          loading={dropdownLoading}
-          loadingText="Loading requested by..."
-          options={requestedByUsers}
-          selectedValue={form.requestedBySibsId}
-          getOptionValue={(item) => item.sibs_id}
-          getOptionLabel={(item) => item.display_name}
-          getOptionSubLabel={(item) => `SIBS ID: ${item.sibs_id}`}
+          options={jdStatusOptions}
+          selectedValue={form.jdStatus}
+          zIndex="z-20"
           onBeforeOpen={() => {
             setLinkedRequirementOpen(false);
             setAccountOpen(false);
             setDepartmentOpen(false);
-            setJdStatusOpen(false);
+            setRequestedByOpen(false);
           }}
-          onSelect={(selectedRequester) => {
+          onSelect={(value) => {
             setForm((prev) => ({
               ...prev,
-              requestedBySibsId: selectedRequester
-                ? selectedRequester.sibs_id
-                : "",
-              requestedBy: selectedRequester
-                ? selectedRequester.display_name
-                : "",
+              jdStatus: value,
             }));
-          }}
-          zIndex="z-10"
-        />
 
+            setJdStatusOpen(false);
+          }}
+        />
+      ) : (
         <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Date Requested
+            Job Description Status <span className="text-red-500">*</span>
           </label>
 
           <input
-            type="date"
-            value={form.dateRequested}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                dateRequested: e.target.value,
-              }))
-            }
-            className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+            readOnly
+            value="New Job Description"
+            className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
           />
+
+          <p className="mt-2 text-xs font-semibold text-blue-700">
+            Since this Job Description has no linked hiring requirement, the
+            only valid status is New Job Description.
+          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 }
