@@ -79,21 +79,61 @@ function formatLoggedInOwner(user) {
 }
 
 function StatCard({ title, value, icon: Icon, description }) {
+  const cardTheme = {
+    "Total JD": {
+      iconBg: "bg-[#F3F7FB]",
+      iconText: "text-sibs-primary-1",
+      valueText: "text-sibs-primary-1",
+      descriptionText: "text-sibs-primary-1",
+    },
+    Existing: {
+      iconBg: "bg-emerald-50",
+      iconText: "text-emerald-600",
+      valueText: "text-emerald-600",
+      descriptionText: "text-emerald-600",
+    },
+    "For Revision": {
+      iconBg: "bg-amber-50",
+      iconText: "text-amber-500",
+      valueText: "text-amber-600",
+      descriptionText: "text-amber-600",
+    },
+    "New Job Description": {
+      iconBg: "bg-[#F3F7FB]",
+      iconText: "text-sibs-primary-1",
+      valueText: "text-sibs-primary-1",
+      descriptionText: "text-sibs-primary-1",
+    },
+  };
+
+  const theme = cardTheme[title] || {
+    iconBg: "bg-[#F3F7FB]",
+    iconText: "text-sibs-primary-1",
+    valueText: "text-sibs-primary-1",
+    descriptionText: "text-sibs-primary-1",
+  };
+
   return (
     <div className="flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#F3F7FB] text-sibs-primary-1">
+      <div
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${theme.iconBg} ${theme.iconText}`}
+      >
         <Icon size={20} />
       </div>
 
       <div className="min-w-0">
         <p className="truncate text-sm font-bold text-[#101828]">{title}</p>
 
-        <h2 className="mt-1 text-3xl font-extrabold tracking-[0.18em] text-sibs-primary-1">
+        <h2
+          className={`mt-1 text-3xl font-extrabold tracking-[0.18em] ${theme.valueText}`}
+        >
           {value}
         </h2>
 
         {description && (
-          <p className="mt-1 truncate text-xs font-medium text-sibs-tertiary-5">
+          <p
+            className={`mt-1 truncate text-xs font-medium ${theme.descriptionText}`}
+          >
             {description}
           </p>
         )}
@@ -387,12 +427,29 @@ export default function JobDescriptionPage() {
 
       <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <div className="flex items-center gap-3">
-            <ClipboardList size={30} className="shrink-0 text-sibs-primary-1" />
+          <div className=" gap-3">
+            <div
+              className="flex items-center gap-1 bg-white/80 px-2 py-1 text-xs 
+              font-bold text-sibs-primary-1 w-fit rounded-full mb-1 shadow-2xs"
+            >
+              <ClipboardList
+                size={15}
+                className="shrink-0 text-sibs-primary-1"
+              />
 
-            <h1 className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-4xl">
-              Job Description
-            </h1>
+              <span className="text-xs">Personel Requisition</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <ClipboardList
+                size={30}
+                className="shrink-0 text-sibs-primary-1"
+              />
+
+              <h1 className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-4xl">
+                Job Description
+              </h1>
+            </div>
           </div>
 
           <p className="mt-2 text-sm font-medium text-sibs-primary-1/80">
