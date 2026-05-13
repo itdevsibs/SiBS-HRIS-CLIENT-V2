@@ -65,6 +65,25 @@ function formatNumber(value) {
   });
 }
 
+function getBackendNumber(record, keys, fallback = 0) {
+  for (const key of keys) {
+    const rawValue = record?.[key];
+
+    if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
+      const numberValue = Number(rawValue);
+
+      if (Number.isFinite(numberValue)) {
+        return numberValue;
+      }
+    }
+  }
+
+  const fallbackNumber = Number(fallback || 0);
+
+  return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
+}
+
+
 function getNextWeekRangeFromActiveWeek(activeWeek) {
   const nextStart = new Date(activeWeek?.endDate || getTodayDate());
   nextStart.setDate(nextStart.getDate() + 1);
@@ -154,101 +173,6 @@ function getStatusClass(status) {
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
-}
-
-function safePercent(value) {
-  const numberValue = Number(value || 0);
-
-  if (!Number.isFinite(numberValue)) return 0;
-
-  if (numberValue > 0 && numberValue <= 1) {
-    return numberValue * 100;
-  }
-
-  return numberValue;
-}
-
-function calculateOpsPrfAndLeads({
-  requiredHeadcount,
-  actualHeadcount,
-  absenteeismCount,
-  absenteeismPercent,
-  attritionPastCount,
-  attritionPastPercent,
-}) {
-  const required = Number(requiredHeadcount || 0);
-  const actual = Number(actualHeadcount || 0);
-
-  function resolveExcelCount(rawCount, percentValue, baseHeadcount) {
-    const raw = Number(rawCount || 0);
-    const rate = safePercent(percentValue);
-    const base = Number(baseHeadcount || 0);
-
-    if (rate <= 0 || base <= 0) {
-      return Math.max(raw, 0);
-    }
-
-    const percentCount = Math.ceil(base * (rate / 100));
-
-    /*
-      Backend counts can be daily/occurrence counts, while the Excel OPS PRF
-      uses headcount-equivalent counts. When raw is clearly inflated, use the
-      percentage-derived headcount. Otherwise use whichever matches the Excel
-      count better by taking the larger of raw and derived.
-    */
-    if (raw > 10 && raw > percentCount * 3) {
-      return percentCount;
-    }
-
-    return Math.max(raw, percentCount);
-  }
-
-  const excelAbsenteeismCount = resolveExcelCount(
-    absenteeismCount,
-    absenteeismPercent,
-    actual
-  );
-
-  const excelAttritionPastCount = resolveExcelCount(
-    attritionPastCount,
-    attritionPastPercent,
-    actual
-  );
-
-  /*
-    Excel formula:
-    OPS PRF = Required HC + Absenteeism Count + Attrition Count - Actual HC
-  */
-  const opsPrf = Math.max(
-    required + excelAbsenteeismCount + excelAttritionPastCount - actual,
-    0
-  );
-
-  const hiringRate = 5;
-  const hiringRateDecimal = hiringRate / 100;
-
-  const fstRetention = 1 - 9.45 / 100;
-  const nhoRetention = 1 - 10 / 100;
-  const interviewRetention = 1 - 10 / 100;
-
-  const leadsToInterview =
-    opsPrf > 0
-      ? Math.round(
-          opsPrf /
-            hiringRateDecimal /
-            fstRetention /
-            nhoRetention /
-            interviewRetention
-        )
-      : 0;
-
-  return {
-    opsPrf,
-    leadsToInterview,
-    hiringRate,
-    absenteeismCount: excelAbsenteeismCount,
-    attritionPastCount: excelAttritionPastCount,
-  };
 }
 
 async function saveRequiredHeadcount(payload) {
@@ -728,6 +652,10 @@ function ViewPlanModal({
   item,
   locked,
   previousWeekItem,
+  requiredInputValue,
+  savingRequiredId,
+  onRequiredInputChange,
+  onSaveRequiredHeadcount,
   onClose,
   onOpenActionItem,
 }) {
@@ -813,10 +741,40 @@ function ViewPlanModal({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <InfoBox
-                  label="Required Headcount"
-                  value={item.requiredHeadcount}
-                />
+                <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
+                  <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                    Required Headcount
+                  </p>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      value={requiredInputValue ?? ""}
+                      disabled={savingRequiredId === item.id}
+                      onChange={(e) =>
+                        onRequiredInputChange(item.id, e.target.value)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          onSaveRequiredHeadcount(item);
+                        }
+                      }}
+                      className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#1E293B] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => onSaveRequiredHeadcount(item)}
+                      disabled={savingRequiredId === item.id}
+                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                      title="Save required headcount"
+                    >
+                      <Save size={15} />
+                    </button>
+                  </div>
+                </div>
                 <InfoBox
                   label="Actual Headcount"
                   value={item.actualHeadcount}
@@ -826,6 +784,17 @@ function ViewPlanModal({
                   value={`${item.bufferHeadcount} / ${formatPercent(
                     item.bufferPercent
                   )}`}
+                />
+                <InfoBox
+                  label="Missing Headcount"
+                  value={
+                    <div>
+                      <div>{formatNumber(item.missingHeadcount)}</div>
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Required + Buffer Count - Actual Headcount
+                      </div>
+                    </div>
+                  }
                 />
                 <InfoBox
                   label="Absenteeism"
@@ -1138,7 +1107,7 @@ export default function WeeklyHiringPlanPage() {
     };
   }, []);
 
-  async function fetchAccountsByCluster() {
+  async function fetchAccountsByCluster({ resetAccountFilter = true } = {}) {
     try {
       setAccountsLoading(true);
 
@@ -1159,7 +1128,11 @@ export default function WeeklyHiringPlanPage() {
         ...(accounts || []),
       ]);
 
-      setAccountFilter("All");
+      if (resetAccountFilter) {
+        setAccountFilter("All");
+      }
+
+      return accounts || [];
     } catch (error) {
       console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
 
@@ -1172,7 +1145,11 @@ export default function WeeklyHiringPlanPage() {
         },
       ]);
 
-      setAccountFilter("All");
+      if (resetAccountFilter) {
+        setAccountFilter("All");
+      }
+
+      return [];
     } finally {
       setAccountsLoading(false);
     }
@@ -1194,65 +1171,54 @@ export default function WeeklyHiringPlanPage() {
         account.cluster ||
         (clusterFilter === "All" ? "Unassigned" : clusterFilter);
 
-      const requiredHeadcount = Number(account.requiredHeadcount || 0);
-      const actualHeadcount = Number(account.actualHeadcount || 0);
+      const requiredHeadcount = getBackendNumber(account, [
+        "requiredHeadcount",
+        "required_headcount",
+      ]);
 
-      const bufferHeadcount =
-        account.bufferHeadcount !== undefined && account.bufferHeadcount !== null
-          ? Number(account.bufferHeadcount || 0)
-          : actualHeadcount - requiredHeadcount;
+      const actualHeadcount = getBackendNumber(account, [
+        "actualHeadcount",
+        "actual_headcount",
+      ]);
 
-      const bufferPercent =
-        account.bufferPercent !== undefined && account.bufferPercent !== null
-          ? Number(account.bufferPercent || 0)
-          : actualHeadcount > 0
-            ? (bufferHeadcount / actualHeadcount) * 100
-            : 0;
+      /*
+        Backend-owned values:
+        Buffer Count, Buffer %, Missing Headcount, OPS PRF,
+        Leads to Interview, and Hiring Rate are calculated by weeklyHiringPlan.js.
+        Frontend only displays the backend response.
+      */
+      const bufferHeadcount = getBackendNumber(account, [
+        "bufferHeadcount",
+        "buffer_headcount",
+        "buffer_head_count",
+      ]);
 
-      const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
-      const rawAttritionPastCount = Number(account.attritionPastCount || 0);
+      const bufferPercent = getBackendNumber(account, [
+        "bufferPercent",
+        "buffer_percent",
+      ]);
 
-      const absenteeismOpsCount =
-        account.absenteeismOpsCount !== undefined &&
-        account.absenteeismOpsCount !== null
-          ? Number(account.absenteeismOpsCount || 0)
-          : rawAbsenteeismCount > 0
-            ? Math.ceil(rawAbsenteeismCount / 6)
-            : 0;
-
-      const fallbackCalculated = calculateOpsPrfAndLeads({
-        requiredHeadcount,
-        actualHeadcount,
-        absenteeismCount: absenteeismOpsCount,
-        absenteeismPercent: 0,
-        attritionPastCount: rawAttritionPastCount,
-        attritionPastPercent: account.attritionPastPercent,
-      });
+      const missingHeadcount = getBackendNumber(account, [
+        "missingHeadcount",
+        "missing_headcount",
+        "missing_head_count",
+      ]);
 
       const calculated = {
-        opsPrf:
-          account.opsPrf !== undefined && account.opsPrf !== null
-            ? Number(account.opsPrf || 0)
-            : fallbackCalculated.opsPrf,
-
-        leadsToInterview:
-          account.leadsToInterview !== undefined &&
-          account.leadsToInterview !== null
-            ? Number(account.leadsToInterview || 0)
-            : fallbackCalculated.leadsToInterview,
-
-        hiringRate:
-          account.hiringRate !== undefined && account.hiringRate !== null
-            ? Number(account.hiringRate || 5)
-            : fallbackCalculated.hiringRate,
+        opsPrf: getBackendNumber(account, ["opsPrf", "ops_prf"]),
+        leadsToInterview: getBackendNumber(account, [
+          "leadsToInterview",
+          "leads_to_interview",
+        ]),
+        hiringRate: getBackendNumber(account, ["hiringRate", "hiring_rate"], 5),
 
         absenteeismCount:
           account.absenteeismOpsCount !== undefined &&
           account.absenteeismOpsCount !== null
             ? Number(account.absenteeismOpsCount || 0)
-            : fallbackCalculated.absenteeismCount,
+            : Number(account.absenteeismCount || 0),
 
-        attritionPastCount: fallbackCalculated.attritionPastCount,
+        attritionPastCount: Number(account.attritionPastCount || 0),
       };
 
       const row = {
@@ -1267,6 +1233,8 @@ export default function WeeklyHiringPlanPage() {
 
         bufferHeadcount,
         bufferPercent,
+        missingHeadcount,
+        missingHeadcount: requiredHeadcount + bufferHeadcount - actualHeadcount,
 
         scheduledCount: Number(account.scheduledCount || 0),
         presentCount: Number(account.presentCount || 0),
@@ -1437,71 +1405,89 @@ export default function WeeklyHiringPlanPage() {
         remarks: item.headcountRemarks || null,
       });
 
-      setRemoteAccounts((prev) =>
-        prev.map((account) => {
-          const accountName = account.accountName || "Unassigned Account";
-          const accountCluster =
-            account.clusterName ||
-            account.cluster ||
-            (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+      const refreshedAccounts = await fetchAccountsByCluster({
+        resetAccountFilter: false,
+      });
 
-          const isSame =
-            String(accountName).toLowerCase() ===
+      const refreshedAccount = (refreshedAccounts || []).find((account) => {
+        const accountName = account.accountName || "Unassigned Account";
+        const accountCluster =
+          account.clusterName ||
+          account.cluster ||
+          (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+
+        return (
+          String(accountName).toLowerCase() ===
+            String(item.account).toLowerCase() &&
+          String(accountCluster).toLowerCase() ===
+            String(item.cluster).toLowerCase()
+        );
+      });
+
+      if (refreshedAccount) {
+        setSelectedPlan((current) => {
+          if (!current) return current;
+
+          const sameSelectedPlan =
+            String(current.account).toLowerCase() ===
               String(item.account).toLowerCase() &&
-            String(accountCluster).toLowerCase() ===
+            String(current.cluster).toLowerCase() ===
               String(item.cluster).toLowerCase();
 
-          if (!isSame) return account;
-
-          const actualHeadcount = Number(account.actualHeadcount || 0);
-          const nextRequiredHeadcount = Number(requiredHeadcount || 0);
-          const bufferHeadcount = actualHeadcount - nextRequiredHeadcount;
-          const bufferPercent =
-            actualHeadcount > 0
-              ? (bufferHeadcount / actualHeadcount) * 100
-              : 0;
-
-          const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
-          const rawAttritionPastCount = Number(account.attritionPastCount || 0);
-
-          const absenteeismOpsCount =
-            account.absenteeismOpsCount !== undefined &&
-            account.absenteeismOpsCount !== null
-              ? Number(account.absenteeismOpsCount || 0)
-              : rawAbsenteeismCount > 0
-                ? Math.ceil(rawAbsenteeismCount / 6)
-                : 0;
-
-          const calculated = calculateOpsPrfAndLeads({
-            requiredHeadcount: nextRequiredHeadcount,
-            actualHeadcount,
-            absenteeismCount: absenteeismOpsCount,
-            absenteeismPercent: 0,
-            attritionPastCount: rawAttritionPastCount,
-            attritionPastPercent: account.attritionPastPercent,
-          });
+          if (!sameSelectedPlan) return current;
 
           return {
-            ...account,
-            requiredHeadcount: nextRequiredHeadcount,
-            actualHeadcount,
-            bufferHeadcount,
-            bufferPercent,
-            absenteeismCount: calculated.absenteeismCount,
-            attritionPastCount: calculated.attritionPastCount,
-            opsPrf: calculated.opsPrf,
-            leadsToInterview: calculated.leadsToInterview,
-            hiringRate: calculated.hiringRate,
-            pipelineStatus: calculatePipelineStatus({
-              ...account,
-              requiredHeadcount: nextRequiredHeadcount,
-              actualHeadcount,
-              opsPrf: calculated.opsPrf,
-              leadsToInterview: calculated.leadsToInterview,
-            }),
+            ...current,
+            requiredHeadcount: getBackendNumber(refreshedAccount, [
+              "requiredHeadcount",
+              "required_headcount",
+            ]),
+            actualHeadcount: getBackendNumber(refreshedAccount, [
+              "actualHeadcount",
+              "actual_headcount",
+            ]),
+            bufferHeadcount: getBackendNumber(refreshedAccount, [
+              "bufferHeadcount",
+              "buffer_headcount",
+              "buffer_head_count",
+            ]),
+            bufferPercent: getBackendNumber(refreshedAccount, [
+              "bufferPercent",
+              "buffer_percent",
+            ]),
+            missingHeadcount: getBackendNumber(refreshedAccount, [
+              "missingHeadcount",
+              "missing_headcount",
+              "missing_head_count",
+            ]),
+            absenteeismCount:
+              refreshedAccount.absenteeismOpsCount !== undefined &&
+              refreshedAccount.absenteeismOpsCount !== null
+                ? Number(refreshedAccount.absenteeismOpsCount || 0)
+                : Number(refreshedAccount.absenteeismCount || 0),
+            attritionPastCount: Number(refreshedAccount.attritionPastCount || 0),
+            opsPrf: getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"]),
+            leadsToInterview: getBackendNumber(refreshedAccount, [
+              "leadsToInterview",
+              "leads_to_interview",
+            ]),
+            hiringRate: getBackendNumber(
+              refreshedAccount,
+              ["hiringRate", "hiring_rate"],
+              5
+            ),
+            pipelineStatus:
+              refreshedAccount.pipelineStatus || current.pipelineStatus,
+            priorityLevel: refreshedAccount.priorityLevel || null,
+            headcountRemarks: refreshedAccount.headcountRemarks || null,
+            statusNote:
+              refreshedAccount.headcountRemarks ||
+              refreshedAccount.departmentName ||
+              current.statusNote ||
+              "-",
           };
-        })
-      );
+        });
+      }
 
       setRequiredSaveMessage("Required headcount saved.");
     } catch (error) {
@@ -1514,6 +1500,13 @@ export default function WeeklyHiringPlanPage() {
     } finally {
       setSavingRequiredId("");
     }
+  }
+
+  function handleRequiredInputChange(itemId, value) {
+    setRequiredInputs((prev) => ({
+      ...prev,
+      [itemId]: value,
+    }));
   }
 
   function handleOpenActionItemModal(item) {
@@ -1860,7 +1853,7 @@ export default function WeeklyHiringPlanPage() {
           <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <div className="hidden lg:block">
               <div className="overflow-x-auto p-6">
-                <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                <table className="w-full min-w-[1450px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                       <th className="px-5 py-4 first:rounded-tl-2xl">
@@ -1885,6 +1878,14 @@ export default function WeeklyHiringPlanPage() {
                         Buffer
                         <br />%
                       </th>
+                      <th className="px-5 py-4 text-center">
+                        Missing
+                        <br />
+                        Headcount
+                        <div className="mt-1 text-[10px] font-bold normal-case tracking-normal text-sibs-tertiary-5">
+                          Required + Buffer Count - Actual Headcount
+                        </div>
+                      </th>
                       <th className="px-5 py-4 text-center">OPS PRF</th>
                       <th className="px-5 py-4 text-center">
                         Leads to
@@ -1908,7 +1909,7 @@ export default function WeeklyHiringPlanPage() {
                     {accountsLoading ? (
                       <tr>
                         <td
-                          colSpan={11}
+                          colSpan={12}
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           Loading weekly hiring plan records...
@@ -1931,40 +1932,8 @@ export default function WeeklyHiringPlanPage() {
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                            <div className="mx-auto flex max-w-[150px] items-center justify-center gap-2">
-                              <input
-                                type="number"
-                                min="0"
-                                value={requiredInputs[item.id] ?? ""}
-                                disabled={savingRequiredId === item.id}
-                                onChange={(e) =>
-                                  setRequiredInputs((prev) => ({
-                                    ...prev,
-                                    [item.id]: e.target.value,
-                                  }))
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleSaveRequiredHeadcount(item);
-                                  }
-                                }}
-                                className="h-10 w-20 rounded-xl border border-[#D0D5DD] bg-white px-3 text-center text-sm font-bold text-[#1E293B] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                              />
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleSaveRequiredHeadcount(item)
-                                }
-                                disabled={savingRequiredId === item.id}
-                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-                                title="Save required headcount"
-                              >
-                                <Save size={15} />
-                              </button>
-                            </div>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#1E293B]">
+                            {formatNumber(item.requiredHeadcount)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
@@ -1977,6 +1946,10 @@ export default function WeeklyHiringPlanPage() {
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
                             {formatPercent(item.bufferPercent)}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-cyan-700">
+                            {formatNumber(item.missingHeadcount)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
@@ -2022,7 +1995,7 @@ export default function WeeklyHiringPlanPage() {
                     ) : (
                       <tr>
                         <td
-                          colSpan={11}
+                          colSpan={12}
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           No weekly hiring plan records found.
@@ -2107,31 +2080,9 @@ export default function WeeklyHiringPlanPage() {
                         <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
                           Required
                         </p>
-
-                        <div className="mt-2 flex items-center gap-2">
-                          <input
-                            type="number"
-                            min="0"
-                            value={requiredInputs[item.id] ?? ""}
-                            disabled={savingRequiredId === item.id}
-                            onChange={(e) =>
-                              setRequiredInputs((prev) => ({
-                                ...prev,
-                                [item.id]: e.target.value,
-                              }))
-                            }
-                            className="h-9 w-full rounded-lg border border-[#D0D5DD] bg-white px-2 text-sm font-bold text-sibs-primary-1 outline-none disabled:bg-gray-50"
-                          />
-
-                          <button
-                            type="button"
-                            onClick={() => handleSaveRequiredHeadcount(item)}
-                            disabled={savingRequiredId === item.id}
-                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1 disabled:opacity-60"
-                          >
-                            <Save size={14} />
-                          </button>
-                        </div>
+                        <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                          {formatNumber(item.requiredHeadcount)}
+                        </p>
                       </div>
 
                       <div className="rounded-xl bg-[#F8FAFC] p-3">
@@ -2140,6 +2091,18 @@ export default function WeeklyHiringPlanPage() {
                         </p>
                         <p className="mt-1 text-sm font-bold text-sibs-primary-1">
                           {formatNumber(item.actualHeadcount)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Missing Headcount
+                        </p>
+                        <p className="mt-0.5 text-[9px] font-bold leading-tight text-sibs-tertiary-5">
+                          Required + Buffer Count - Actual Headcount
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-cyan-700">
+                          {formatNumber(item.missingHeadcount)}
                         </p>
                       </div>
 
@@ -2182,6 +2145,10 @@ export default function WeeklyHiringPlanPage() {
         item={selectedPlan}
         locked={isLocked}
         previousWeekItem={previousSelectedPlan}
+        requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}
+        savingRequiredId={savingRequiredId}
+        onRequiredInputChange={handleRequiredInputChange}
+        onSaveRequiredHeadcount={handleSaveRequiredHeadcount}
         onClose={() => setSelectedPlan(null)}
         onOpenActionItem={handleOpenActionItemModal}
       />
