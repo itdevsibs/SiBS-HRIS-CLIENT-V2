@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
+import api from "../../lib/axios/api-template";
 import {
   getWeeklyHiringPlanAccounts,
   getWeeklyHiringPlanWeeks,
@@ -13,7 +14,7 @@ import {
   Lock,
   PieChart,
   Plus,
-  RotateCcw,
+  Save,
   Search,
   Unlock,
   UserRound,
@@ -21,165 +22,6 @@ import {
 } from "lucide-react";
 
 const CLUSTER_OPTIONS = ["All", "Coast Dental", "US Visa", "SME", "Yomdel"];
-
-const sampleWeeklyRecords = [
-  {
-    id: 1,
-    cluster: "Coast Dental",
-    account: "Collect IV",
-    requiredHeadcount: 30,
-    actualHeadcount: 28,
-    bufferHeadcount: 3,
-    bufferPercent: 10,
-    absenteeismCount: 6,
-    absenteeismPercent: 19.38,
-    attritionPastCount: 4,
-    attritionPastPercent: 10.69,
-    opsPrf: 16,
-    attritionFstToPstCount: 21,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 24,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 26,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 38,
-    hiringRate: 70,
-    pipelineStatus: "At Risk",
-    statusNote: "Low interview show rate",
-    owner: "John D.",
-    actionItems: [],
-  },
-  {
-    id: 2,
-    cluster: "Coast Dental",
-    account: "Collect AR",
-    requiredHeadcount: 55,
-    actualHeadcount: 42,
-    bufferHeadcount: 6,
-    bufferPercent: 10,
-    absenteeismCount: 7,
-    absenteeismPercent: 11.76,
-    attritionPastCount: 11,
-    attritionPastPercent: 18.18,
-    opsPrf: 37,
-    attritionFstToPstCount: 49,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 55,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 61,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 1218,
-    hiringRate: 5,
-    pipelineStatus: "At Risk",
-    statusNote: "High leads needed",
-    owner: "Jane S.",
-    actionItems: [],
-  },
-  {
-    id: 3,
-    cluster: "Coast Dental",
-    account: "Connect",
-    requiredHeadcount: 57,
-    actualHeadcount: 47,
-    bufferHeadcount: 6,
-    bufferPercent: 10,
-    absenteeismCount: 4,
-    absenteeismPercent: 5.77,
-    attritionPastCount: 9,
-    attritionPastPercent: 15.38,
-    opsPrf: 29,
-    attritionFstToPstCount: 39,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 43,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 48,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 955,
-    hiringRate: 5,
-    pipelineStatus: "At Risk",
-    statusNote: "Insufficient pipeline",
-    owner: "Maria R.",
-    actionItems: [],
-  },
-  {
-    id: 4,
-    cluster: "US Visa",
-    account: "US Visa",
-    requiredHeadcount: 20,
-    actualHeadcount: 15,
-    bufferHeadcount: 2,
-    bufferPercent: 10,
-    absenteeismCount: 2,
-    absenteeismPercent: 8,
-    attritionPastCount: 3,
-    attritionPastPercent: 12,
-    opsPrf: 12,
-    attritionFstToPstCount: 16,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 18,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 20,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 120,
-    hiringRate: 15,
-    pipelineStatus: "At Risk",
-    statusNote: "Need additional sourcing",
-    owner: "Lara M.",
-    actionItems: [],
-  },
-  {
-    id: 5,
-    cluster: "SME",
-    account: "Channel Assist",
-    requiredHeadcount: 12,
-    actualHeadcount: 10,
-    bufferHeadcount: 1,
-    bufferPercent: 10,
-    absenteeismCount: 1,
-    absenteeismPercent: 7.5,
-    attritionPastCount: 1,
-    attritionPastPercent: 8,
-    opsPrf: 5,
-    attritionFstToPstCount: 7,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 8,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 9,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 45,
-    hiringRate: 20,
-    pipelineStatus: "On Track",
-    statusNote: "-",
-    owner: "Nina P.",
-    actionItems: [],
-  },
-  {
-    id: 6,
-    cluster: "Yomdel",
-    account: "Yomdel",
-    requiredHeadcount: 18,
-    actualHeadcount: 12,
-    bufferHeadcount: 2,
-    bufferPercent: 10,
-    absenteeismCount: 2,
-    absenteeismPercent: 9,
-    attritionPastCount: 3,
-    attritionPastPercent: 14,
-    opsPrf: 13,
-    attritionFstToPstCount: 18,
-    attritionFstToPstPercent: 25,
-    attritionNhoToFstPstCount: 20,
-    attritionNhoToFstPstPercent: 10,
-    attritionInterviewToNhoCount: 22,
-    attritionInterviewToNhoPercent: 10,
-    leadsToInterview: 147,
-    hiringRate: 15,
-    pipelineStatus: "At Risk",
-    statusNote: "Pipeline gap",
-    owner: "Rex C.",
-    actionItems: [],
-  },
-];
 
 const initialActionItemForm = {
   actionItem: "",
@@ -264,21 +106,30 @@ function getOverallStatus(records) {
 }
 
 function calculatePipelineStatus(item) {
-  if (Number(item.actualHeadcount) >= Number(item.requiredHeadcount)) {
+  const requiredHeadcount = Number(item.requiredHeadcount || 0);
+  const actualHeadcount = Number(item.actualHeadcount || 0);
+  const leadsToInterview = Number(item.leadsToInterview || 0);
+  const opsPrf = Number(item.opsPrf || 0);
+
+  if (requiredHeadcount <= 0) return "Pending";
+
+  /*
+    Excel logic:
+    Even if Actual HC is equal to or higher than Required HC,
+    the account is still At Risk when OPS PRF / Leads Needed exists.
+  */
+  if (opsPrf > 0 || leadsToInterview > 0) {
+    return "At Risk";
+  }
+
+  if (actualHeadcount >= requiredHeadcount) {
     return "Completed";
   }
 
-  const gap =
-    Number(item.requiredHeadcount || 0) - Number(item.actualHeadcount || 0);
+  const gap = requiredHeadcount - actualHeadcount;
 
-  if (gap <= 0) return "Completed";
-
-  if (Number(item.leadsToInterview || 0) === 0 && gap > 0) {
+  if (leadsToInterview === 0 && gap > 0) {
     return "Delayed";
-  }
-
-  if (Number(item.leadsToInterview || 0) < Number(item.opsPrf || 0)) {
-    return "At Risk";
   }
 
   return "On Track";
@@ -303,6 +154,109 @@ function getStatusClass(status) {
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
+}
+
+function safePercent(value) {
+  const numberValue = Number(value || 0);
+
+  if (!Number.isFinite(numberValue)) return 0;
+
+  if (numberValue > 0 && numberValue <= 1) {
+    return numberValue * 100;
+  }
+
+  return numberValue;
+}
+
+function calculateOpsPrfAndLeads({
+  requiredHeadcount,
+  actualHeadcount,
+  absenteeismCount,
+  absenteeismPercent,
+  attritionPastCount,
+  attritionPastPercent,
+}) {
+  const required = Number(requiredHeadcount || 0);
+  const actual = Number(actualHeadcount || 0);
+
+  function resolveExcelCount(rawCount, percentValue, baseHeadcount) {
+    const raw = Number(rawCount || 0);
+    const rate = safePercent(percentValue);
+    const base = Number(baseHeadcount || 0);
+
+    if (rate <= 0 || base <= 0) {
+      return Math.max(raw, 0);
+    }
+
+    const percentCount = Math.ceil(base * (rate / 100));
+
+    /*
+      Backend counts can be daily/occurrence counts, while the Excel OPS PRF
+      uses headcount-equivalent counts. When raw is clearly inflated, use the
+      percentage-derived headcount. Otherwise use whichever matches the Excel
+      count better by taking the larger of raw and derived.
+    */
+    if (raw > 10 && raw > percentCount * 3) {
+      return percentCount;
+    }
+
+    return Math.max(raw, percentCount);
+  }
+
+  const excelAbsenteeismCount = resolveExcelCount(
+    absenteeismCount,
+    absenteeismPercent,
+    actual
+  );
+
+  const excelAttritionPastCount = resolveExcelCount(
+    attritionPastCount,
+    attritionPastPercent,
+    actual
+  );
+
+  /*
+    Excel formula:
+    OPS PRF = Required HC + Absenteeism Count + Attrition Count - Actual HC
+  */
+  const opsPrf = Math.max(
+    required + excelAbsenteeismCount + excelAttritionPastCount - actual,
+    0
+  );
+
+  const hiringRate = 5;
+  const hiringRateDecimal = hiringRate / 100;
+
+  const fstRetention = 1 - 9.45 / 100;
+  const nhoRetention = 1 - 10 / 100;
+  const interviewRetention = 1 - 10 / 100;
+
+  const leadsToInterview =
+    opsPrf > 0
+      ? Math.round(
+          opsPrf /
+            hiringRateDecimal /
+            fstRetention /
+            nhoRetention /
+            interviewRetention
+        )
+      : 0;
+
+  return {
+    opsPrf,
+    leadsToInterview,
+    hiringRate,
+    absenteeismCount: excelAbsenteeismCount,
+    attritionPastCount: excelAttritionPastCount,
+  };
+}
+
+async function saveRequiredHeadcount(payload) {
+  const res = await api.post("/api/weekly-hiring-plan/headcount", payload, {
+    withCredentials: true,
+  });
+
+  return res.data;
 }
 
 function MetricCard({
@@ -380,7 +334,11 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   ];
 
   function scaleToDisplayPercent(actualPercent) {
-    const safeActualPercent = Math.max(0, Math.min(Number(actualPercent || 0), 100));
+    const safeActualPercent = Math.max(
+      0,
+      Math.min(Number(actualPercent || 0), 100)
+    );
+
     return (safeActualPercent / maxActualPercent) * maxDisplayPercent;
   }
 
@@ -450,7 +408,8 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
           </h2>
 
           <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            Absenteeism is scaled from actual percentage into a 25% maximum risk scale.
+            Absenteeism is scaled from actual percentage into a 25% maximum risk
+            scale.
           </p>
         </div>
 
@@ -571,7 +530,10 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
 
                         <tbody className="divide-y divide-[#E6ECF2]">
                           {filteredPlans.map((item) => {
-                            const rowActualPercent = getItemPercent(item, metric);
+                            const rowActualPercent = getItemPercent(
+                              item,
+                              metric
+                            );
                             const rowDisplayPercent =
                               scaleToDisplayPercent(rowActualPercent);
 
@@ -980,10 +942,8 @@ function ViewPlanModal({
   );
 }
 
-function KpiSnapshotModal({ open, week, onClose }) {
+function KpiSnapshotModal({ open, week, records, onClose }) {
   if (!open || !week) return null;
-
-  const records = week.records || [];
 
   const required = records.reduce(
     (sum, item) => sum + Number(item.requiredHeadcount || 0),
@@ -1061,18 +1021,19 @@ function KpiSnapshotModal({ open, week, onClose }) {
 
 export default function WeeklyHiringPlanPage() {
   const mainScrollRef = useRef(null);
+  const weekDropdownRef = useRef(null);
 
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
   const [weeksLoading, setWeeksLoading] = useState(false);
-  const [search, setSearch] = useState("");
 
+  const [search, setSearch] = useState("");
   const [weekSearch, setWeekSearch] = useState("");
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
-  const weekDropdownRef = useRef(null);
 
   const [clusterFilter, setClusterFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
+
   const [accountOptions, setAccountOptions] = useState([
     {
       id: "All",
@@ -1080,6 +1041,7 @@ export default function WeeklyHiringPlanPage() {
       ghlName: "",
     },
   ]);
+
   const [remoteAccounts, setRemoteAccounts] = useState([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
 
@@ -1088,15 +1050,15 @@ export default function WeeklyHiringPlanPage() {
   const [actionItemForm, setActionItemForm] = useState(initialActionItemForm);
   const [showKpiSnapshot, setShowKpiSnapshot] = useState(false);
 
+  const [requiredInputs, setRequiredInputs] = useState({});
+  const [savingRequiredId, setSavingRequiredId] = useState("");
+  const [requiredSaveMessage, setRequiredSaveMessage] = useState("");
+
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
     weeklyVersions[0];
 
-  const activeData = activeWeek?.records || [];
   const isLocked = !!activeWeek?.locked;
-
-  const clusterOptions = CLUSTER_OPTIONS;
-
   const activeWeekStartDate = activeWeek?.startDate || "";
   const activeWeekEndDate = activeWeek?.endDate || "";
 
@@ -1119,64 +1081,6 @@ export default function WeeklyHiringPlanPage() {
       return searchableText.includes(keyword);
     });
   }, [weeklyVersions, weekSearch]);
-
-  useEffect(() => {
-    let ignore = false;
-
-    async function fetchAccountsByCluster() {
-      try {
-        setAccountsLoading(true);
-
-        const accounts = await getWeeklyHiringPlanAccounts(
-          clusterFilter,
-          activeWeekStartDate,
-          activeWeekEndDate
-        );
-
-        if (!ignore) {
-          setRemoteAccounts(accounts || []);
-
-          setAccountOptions([
-            {
-              id: "All",
-              accountName: "All Accounts",
-              ghlName: "",
-            },
-            ...(accounts || []),
-          ]);
-
-          setAccountFilter("All");
-        }
-      } catch (error) {
-        console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
-
-        if (!ignore) {
-          setRemoteAccounts([]);
-          setAccountOptions([
-            {
-              id: "All",
-              accountName: "All Accounts",
-              ghlName: "",
-            },
-          ]);
-
-          setAccountFilter("All");
-        }
-      } finally {
-        if (!ignore) {
-          setAccountsLoading(false);
-        }
-      }
-    }
-
-    if (activeWeekStartDate && activeWeekEndDate) {
-      fetchAccountsByCluster();
-    }
-
-    return () => {
-      ignore = true;
-    };
-  }, [clusterFilter, activeWeekStartDate, activeWeekEndDate]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -1206,12 +1110,7 @@ export default function WeeklyHiringPlanPage() {
 
         const formattedWeeks = (weeks || []).map((week) => ({
           ...week,
-          records: sampleWeeklyRecords.map((record, index) => ({
-            ...record,
-            id: Number(`${week.year}${week.weekNumber}${index + 1}`),
-            week: week.label,
-            actionItems: [],
-          })),
+          records: [],
         }));
 
         if (!ignore) {
@@ -1239,16 +1138,55 @@ export default function WeeklyHiringPlanPage() {
     };
   }, []);
 
-  const displayData = useMemo(() => {
-    if (!remoteAccounts.length) {
-      if (clusterFilter === "All") {
-        return activeData;
-      }
+  async function fetchAccountsByCluster() {
+    try {
+      setAccountsLoading(true);
 
-      return activeData.filter((item) => item.cluster === clusterFilter);
+      const accounts = await getWeeklyHiringPlanAccounts(
+        clusterFilter,
+        activeWeekStartDate,
+        activeWeekEndDate
+      );
+
+      setRemoteAccounts(accounts || []);
+
+      setAccountOptions([
+        {
+          id: "All",
+          accountName: "All Accounts",
+          ghlName: "",
+        },
+        ...(accounts || []),
+      ]);
+
+      setAccountFilter("All");
+    } catch (error) {
+      console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
+
+      setRemoteAccounts([]);
+      setAccountOptions([
+        {
+          id: "All",
+          accountName: "All Accounts",
+          ghlName: "",
+        },
+      ]);
+
+      setAccountFilter("All");
+    } finally {
+      setAccountsLoading(false);
     }
+  }
 
-    return remoteAccounts.map((account, index) => {
+  useEffect(() => {
+    if (activeWeekStartDate && activeWeekEndDate) {
+      fetchAccountsByCluster();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clusterFilter, activeWeekStartDate, activeWeekEndDate]);
+
+  const displayData = useMemo(() => {
+    return (remoteAccounts || []).map((account, index) => {
       const accountName = account.accountName || "Unassigned Account";
 
       const accountCluster =
@@ -1256,100 +1194,90 @@ export default function WeeklyHiringPlanPage() {
         account.cluster ||
         (clusterFilter === "All" ? "Unassigned" : clusterFilter);
 
-      const existingRecord = activeData.find(
-        (item) =>
-          item.cluster === accountCluster &&
-          String(item.account || "").toLowerCase() ===
-            String(accountName).toLowerCase()
-      );
+      const requiredHeadcount = Number(account.requiredHeadcount || 0);
+      const actualHeadcount = Number(account.actualHeadcount || 0);
 
-      if (existingRecord) {
-        return {
-          ...existingRecord,
+      const bufferHeadcount =
+        account.bufferHeadcount !== undefined && account.bufferHeadcount !== null
+          ? Number(account.bufferHeadcount || 0)
+          : actualHeadcount - requiredHeadcount;
 
-          cluster: accountCluster,
-          account: accountName,
+      const bufferPercent =
+        account.bufferPercent !== undefined && account.bufferPercent !== null
+          ? Number(account.bufferPercent || 0)
+          : actualHeadcount > 0
+            ? (bufferHeadcount / actualHeadcount) * 100
+            : 0;
 
-          actualHeadcount: Number(
-            account.actualHeadcount ?? existingRecord.actualHeadcount ?? 0
-          ),
+      const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
+      const rawAttritionPastCount = Number(account.attritionPastCount || 0);
 
-          scheduledCount: Number(account.scheduledCount ?? 0),
-          presentCount: Number(account.presentCount ?? 0),
+      const absenteeismOpsCount =
+        account.absenteeismOpsCount !== undefined &&
+        account.absenteeismOpsCount !== null
+          ? Number(account.absenteeismOpsCount || 0)
+          : rawAbsenteeismCount > 0
+            ? Math.ceil(rawAbsenteeismCount / 6)
+            : 0;
 
-          absenteeismCount: Number(account.absenteeismCount ?? 0),
-          absenteeismPercent: Number(account.absenteeismPercent ?? 0),
+      const fallbackCalculated = calculateOpsPrfAndLeads({
+        requiredHeadcount,
+        actualHeadcount,
+        absenteeismCount: absenteeismOpsCount,
+        absenteeismPercent: 0,
+        attritionPastCount: rawAttritionPastCount,
+        attritionPastPercent: account.attritionPastPercent,
+      });
 
-          attritionPastCount: Number(
-            account.attritionPastCount ??
-              existingRecord.attritionPastCount ??
-              0
-          ),
-          attritionPastPercent: Number(
-            account.attritionPastPercent ??
-              existingRecord.attritionPastPercent ??
-              0
-          ),
+      const calculated = {
+        opsPrf:
+          account.opsPrf !== undefined && account.opsPrf !== null
+            ? Number(account.opsPrf || 0)
+            : fallbackCalculated.opsPrf,
 
-          attritionFstToPstCount: Number(
-            account.attritionFstToPstCount ??
-              existingRecord.attritionFstToPstCount ??
-              0
-          ),
-          attritionFstToPstPercent: Number(
-            account.attritionFstToPstPercent ??
-              existingRecord.attritionFstToPstPercent ??
-              0
-          ),
+        leadsToInterview:
+          account.leadsToInterview !== undefined &&
+          account.leadsToInterview !== null
+            ? Number(account.leadsToInterview || 0)
+            : fallbackCalculated.leadsToInterview,
 
-          attritionNhoToFstPstCount: Number(
-            account.attritionNhoToFstPstCount ??
-              existingRecord.attritionNhoToFstPstCount ??
-              0
-          ),
-          attritionNhoToFstPstPercent: Number(
-            account.attritionNhoToFstPstPercent ??
-              existingRecord.attritionNhoToFstPstPercent ??
-              0
-          ),
+        hiringRate:
+          account.hiringRate !== undefined && account.hiringRate !== null
+            ? Number(account.hiringRate || 5)
+            : fallbackCalculated.hiringRate,
 
-          attritionInterviewToNhoCount: Number(
-            account.attritionInterviewToNhoCount ??
-              existingRecord.attritionInterviewToNhoCount ??
-              0
-          ),
-          attritionInterviewToNhoPercent: Number(
-            account.attritionInterviewToNhoPercent ??
-              existingRecord.attritionInterviewToNhoPercent ??
-              0
-          ),
+        absenteeismCount:
+          account.absenteeismOpsCount !== undefined &&
+          account.absenteeismOpsCount !== null
+            ? Number(account.absenteeismOpsCount || 0)
+            : fallbackCalculated.absenteeismCount,
 
-          departmentName: account.departmentName || "",
-        };
-      }
+        attritionPastCount: fallbackCalculated.attritionPastCount,
+      };
 
-      return {
+      const row = {
         id: `db-${accountCluster}-${account.id || index}`,
+        backendAccountId: account.id,
         week: activeWeek?.label || "Current Week",
         cluster: accountCluster,
         account: accountName,
 
-        requiredHeadcount: 0,
-        actualHeadcount: Number(account.actualHeadcount || 0),
+        requiredHeadcount,
+        actualHeadcount,
 
-        bufferHeadcount: 0,
-        bufferPercent: 0,
+        bufferHeadcount,
+        bufferPercent,
 
         scheduledCount: Number(account.scheduledCount || 0),
         presentCount: Number(account.presentCount || 0),
 
-        absenteeismCount: Number(account.absenteeismCount || 0),
+        absenteeismCount: calculated.absenteeismCount,
         absenteeismPercent: Number(account.absenteeismPercent || 0),
 
-        attritionPastCount: Number(account.attritionPastCount || 0),
+        attritionPastCount: calculated.attritionPastCount,
         attritionPastPercent: Number(account.attritionPastPercent || 0),
 
-        opsPrf: 0,
+        opsPrf: calculated.opsPrf,
 
         attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
@@ -1368,17 +1296,34 @@ export default function WeeklyHiringPlanPage() {
           account.attritionInterviewToNhoPercent || 0
         ),
 
-        leadsToInterview: 0,
-        hiringRate: 0,
+        leadsToInterview: calculated.leadsToInterview,
+        hiringRate: calculated.hiringRate,
 
-        pipelineStatus: "On Track",
-        statusNote: account.departmentName || "-",
-        owner: "-",
-        actionItems: [],
+        pipelineStatus: account.pipelineStatus || "Pending",
+        statusNote: account.headcountRemarks || account.departmentName || "-",
+        owner: account.owner || "-",
+        actionItems: account.actionItems || [],
         departmentName: account.departmentName || "",
+        priorityLevel: account.priorityLevel || "",
+        headcountRemarks: account.headcountRemarks || "",
+      };
+
+      return {
+        ...row,
+        pipelineStatus: account.pipelineStatus || calculatePipelineStatus(row),
       };
     });
-  }, [activeData, activeWeek?.label, clusterFilter, remoteAccounts]);
+  }, [activeWeek?.label, clusterFilter, remoteAccounts]);
+
+  useEffect(() => {
+    const nextInputs = {};
+
+    displayData.forEach((item) => {
+      nextInputs[item.id] = String(item.requiredHeadcount ?? 0);
+    });
+
+    setRequiredInputs(nextInputs);
+  }, [displayData]);
 
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -1460,80 +1405,115 @@ export default function WeeklyHiringPlanPage() {
       )
     : null;
 
-  function handleCreateNewWeeklyVersion() {
-    const today = getTodayDate();
-    const newWeekId = `WEEK-${today}-${Date.now()}`;
-    const currentWeek = activeWeek;
-    const newWeekLabel = getNextWeekLabel(currentWeek.label);
-    const nextWeekDate = getNextWeekRangeFromActiveWeek(currentWeek);
+  async function handleSaveRequiredHeadcount(item) {
+    if (!activeWeekStartDate || !activeWeekEndDate) return;
 
-    const clonedRecords = (currentWeek.records || []).map((item, index) => {
-      const nextItem = {
-        ...item,
-        id: Date.now() + index,
-        week: newWeekLabel,
-        actionItems: [],
-      };
+    const rawValue = requiredInputs[item.id];
 
-      return {
-        ...nextItem,
-        pipelineStatus: calculatePipelineStatus(nextItem),
-      };
-    });
+    const requiredHeadcount =
+      rawValue === "" || rawValue === null || rawValue === undefined
+        ? null
+        : Number(rawValue);
 
-    setWeeklyVersions((prev) => {
-      const lockedPrevious = prev.map((week) =>
-        week.id === currentWeek.id
-          ? {
-              ...week,
-              locked: true,
-              type: "previous",
-            }
-          : {
-              ...week,
-              type: week.type === "previous" ? "archive" : week.type,
-            }
+    if (requiredHeadcount !== null && !Number.isFinite(requiredHeadcount)) {
+      setRequiredSaveMessage("Invalid required headcount.");
+      return;
+    }
+
+    try {
+      setSavingRequiredId(item.id);
+      setRequiredSaveMessage("");
+
+      await saveRequiredHeadcount({
+        weekNumber: activeWeek?.weekNumber || null,
+        weekLabel: activeWeek?.label || null,
+        weekStart: activeWeekStartDate,
+        weekEnd: activeWeekEndDate,
+        clusterName: item.cluster,
+        accountName: item.account,
+        requiredHeadcount,
+        actualHeadcount: Number(item.actualHeadcount || 0),
+        priorityLevel: item.priorityLevel || null,
+        remarks: item.headcountRemarks || null,
+      });
+
+      setRemoteAccounts((prev) =>
+        prev.map((account) => {
+          const accountName = account.accountName || "Unassigned Account";
+          const accountCluster =
+            account.clusterName ||
+            account.cluster ||
+            (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+
+          const isSame =
+            String(accountName).toLowerCase() ===
+              String(item.account).toLowerCase() &&
+            String(accountCluster).toLowerCase() ===
+              String(item.cluster).toLowerCase();
+
+          if (!isSame) return account;
+
+          const actualHeadcount = Number(account.actualHeadcount || 0);
+          const nextRequiredHeadcount = Number(requiredHeadcount || 0);
+          const bufferHeadcount = actualHeadcount - nextRequiredHeadcount;
+          const bufferPercent =
+            actualHeadcount > 0
+              ? (bufferHeadcount / actualHeadcount) * 100
+              : 0;
+
+          const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
+          const rawAttritionPastCount = Number(account.attritionPastCount || 0);
+
+          const absenteeismOpsCount =
+            account.absenteeismOpsCount !== undefined &&
+            account.absenteeismOpsCount !== null
+              ? Number(account.absenteeismOpsCount || 0)
+              : rawAbsenteeismCount > 0
+                ? Math.ceil(rawAbsenteeismCount / 6)
+                : 0;
+
+          const calculated = calculateOpsPrfAndLeads({
+            requiredHeadcount: nextRequiredHeadcount,
+            actualHeadcount,
+            absenteeismCount: absenteeismOpsCount,
+            absenteeismPercent: 0,
+            attritionPastCount: rawAttritionPastCount,
+            attritionPastPercent: account.attritionPastPercent,
+          });
+
+          return {
+            ...account,
+            requiredHeadcount: nextRequiredHeadcount,
+            actualHeadcount,
+            bufferHeadcount,
+            bufferPercent,
+            absenteeismCount: calculated.absenteeismCount,
+            attritionPastCount: calculated.attritionPastCount,
+            opsPrf: calculated.opsPrf,
+            leadsToInterview: calculated.leadsToInterview,
+            hiringRate: calculated.hiringRate,
+            pipelineStatus: calculatePipelineStatus({
+              ...account,
+              requiredHeadcount: nextRequiredHeadcount,
+              actualHeadcount,
+              opsPrf: calculated.opsPrf,
+              leadsToInterview: calculated.leadsToInterview,
+            }),
+          };
+        })
       );
 
-      const newWeek = {
-        id: newWeekId,
-        label: newWeekLabel,
-        weekRange: nextWeekDate.weekRange,
-        startDate: nextWeekDate.startDate,
-        endDate: nextWeekDate.endDate,
-        createdAt: today,
-        locked: false,
-        type: "current",
-        records: clonedRecords,
-      };
-
-      return [newWeek, ...lockedPrevious];
-    });
-
-    setActiveWeekId(newWeekId);
-    setClusterFilter("All");
-    setAccountFilter("All");
-    setSearch("");
-
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
+      setRequiredSaveMessage("Required headcount saved.");
+    } catch (error) {
+      console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
+      setRequiredSaveMessage(
+        error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          "Failed to save required headcount."
+      );
+    } finally {
+      setSavingRequiredId("");
     }
-  }
-
-  function updateActiveWeekRecords(nextRecords) {
-    setWeeklyVersions((prev) =>
-      prev.map((week) =>
-        week.id === activeWeekId
-          ? {
-              ...week,
-              records: nextRecords,
-            }
-          : week
-      )
-    );
   }
 
   function handleOpenActionItemModal(item) {
@@ -1569,11 +1549,6 @@ export default function WeeklyHiringPlanPage() {
       actionItems: [...(actionItemTarget.actionItems || []), newActionItem],
     };
 
-    const nextRecords = activeData.map((item) =>
-      item.id === actionItemTarget.id ? updatedItem : item
-    );
-
-    updateActiveWeekRecords(nextRecords);
     setSelectedPlan(updatedItem);
     handleCloseActionItemModal();
   }
@@ -1598,7 +1573,6 @@ export default function WeeklyHiringPlanPage() {
                 action items.
               </p>
             </div>
-
           </div>
 
           <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
@@ -1631,7 +1605,11 @@ export default function WeeklyHiringPlanPage() {
                       setShowWeekDropdown(true);
                       setWeekSearch("");
                     }}
-                    placeholder="Search weekly version..."
+                    placeholder={
+                      weeksLoading
+                        ? "Loading weekly versions..."
+                        : "Search weekly version..."
+                    }
                     autoComplete="off"
                     className="h-12 w-full rounded-xl border border-[#D7DEE8] bg-white px-4 pl-10 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)]"
                   />
@@ -1702,7 +1680,7 @@ export default function WeeklyHiringPlanPage() {
                           </div>
                         ) : (
                           <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                            Type to search
+                            No weekly versions available
                           </div>
                         )}
                       </div>
@@ -1725,7 +1703,7 @@ export default function WeeklyHiringPlanPage() {
                     }}
                     className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
                   >
-                    {clusterOptions.map((cluster) => (
+                    {CLUSTER_OPTIONS.map((cluster) => (
                       <option key={cluster} value={cluster}>
                         {cluster === "All" ? "All Clusters" : cluster}
                       </option>
@@ -1751,10 +1729,12 @@ export default function WeeklyHiringPlanPage() {
                     disabled={accountsLoading}
                     className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
                   >
-                    {accountOptions.map((account) => (
+                    {accountOptions.map((account, index) => (
                       <option
-                        key={account.id}
-                        value={account.id === "All" ? "All" : account.accountName}
+                        key={`${account.id || account.accountName}-${index}`}
+                        value={
+                          account.id === "All" ? "All" : account.accountName
+                        }
                       >
                         {account.id === "All"
                           ? accountsLoading
@@ -1819,29 +1799,32 @@ export default function WeeklyHiringPlanPage() {
                   Clear Filters
                 </button>
               )}
+
+              {requiredSaveMessage && (
+                <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                  {requiredSaveMessage}
+                </span>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               title="Required Headcount"
-              value={totals.totalRequired}
+              value={formatNumber(totals.totalRequired)}
               icon={ClipboardList}
-              iconClassName="bg-blue-50 text-sibs-primary-1"
-              valueClassName="text-sibs-primary-1"
             />
 
             <MetricCard
               title="Actual Headcount"
-              value={totals.actualHeadcount}
+              value={formatNumber(totals.actualHeadcount)}
               icon={UserRound}
               iconClassName="bg-indigo-50 text-sibs-primary-1"
-              valueClassName="text-sibs-primary-1"
             />
 
             <MetricCard
               title="OPS PRF"
-              value={totals.opsPrf}
+              value={formatNumber(totals.opsPrf)}
               icon={CheckCircle2}
               iconClassName="bg-emerald-50 text-emerald-600"
               valueClassName="text-emerald-600"
@@ -1849,10 +1832,9 @@ export default function WeeklyHiringPlanPage() {
 
             <MetricCard
               title="Leads Needed"
-              value={totals.leadsToInterview}
+              value={formatNumber(totals.leadsToInterview)}
               icon={PieChart}
               iconClassName="bg-violet-50 text-sibs-primary-1"
-              valueClassName="text-sibs-primary-1"
             />
 
             <MetricCard
@@ -1878,7 +1860,7 @@ export default function WeeklyHiringPlanPage() {
           <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <div className="hidden lg:block">
               <div className="overflow-x-auto p-6">
-                <table className="w-full min-w-[1200px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                       <th className="px-5 py-4 first:rounded-tl-2xl">
@@ -1923,7 +1905,16 @@ export default function WeeklyHiringPlanPage() {
                   </thead>
 
                   <tbody>
-                    {filteredPlans.length > 0 ? (
+                    {accountsLoading ? (
+                      <tr>
+                        <td
+                          colSpan={11}
+                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        >
+                          Loading weekly hiring plan records...
+                        </td>
+                      </tr>
+                    ) : filteredPlans.length > 0 ? (
                       filteredPlans.map((item) => (
                         <tr
                           key={item.id}
@@ -1940,16 +1931,48 @@ export default function WeeklyHiringPlanPage() {
                             </div>
                           </td>
 
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
-                            {item.requiredHeadcount}
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                            <div className="mx-auto flex max-w-[150px] items-center justify-center gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={requiredInputs[item.id] ?? ""}
+                                disabled={savingRequiredId === item.id}
+                                onChange={(e) =>
+                                  setRequiredInputs((prev) => ({
+                                    ...prev,
+                                    [item.id]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveRequiredHeadcount(item);
+                                  }
+                                }}
+                                className="h-10 w-20 rounded-xl border border-[#D0D5DD] bg-white px-3 text-center text-sm font-bold text-[#1E293B] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleSaveRequiredHeadcount(item)
+                                }
+                                disabled={savingRequiredId === item.id}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Save required headcount"
+                              >
+                                <Save size={15} />
+                              </button>
+                            </div>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
-                            {item.actualHeadcount}
+                            {formatNumber(item.actualHeadcount)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
-                            {item.bufferHeadcount}
+                            {formatNumber(item.bufferHeadcount)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
@@ -1957,11 +1980,11 @@ export default function WeeklyHiringPlanPage() {
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
-                            {item.opsPrf}
+                            {formatNumber(item.opsPrf)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
-                            {item.leadsToInterview}
+                            {formatNumber(item.leadsToInterview)}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
@@ -2043,42 +2066,72 @@ export default function WeeklyHiringPlanPage() {
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">
-              {filteredPlans.length > 0 ? (
+              {accountsLoading ? (
+                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                  Loading weekly hiring plan records...
+                </div>
+              ) : filteredPlans.length > 0 ? (
                 filteredPlans.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    type="button"
-                    onClick={() => setSelectedPlan(item)}
-                    className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
+                    className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[#0F172A]">
-                          {item.account}
-                        </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan(item)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-bold text-[#0F172A]">
+                            {item.account}
+                          </h3>
 
-                        <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                          {item.cluster}
-                        </p>
+                          <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                            {item.cluster}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+                            item.pipelineStatus
+                          )}`}
+                        >
+                          {item.pipelineStatus}
+                        </span>
                       </div>
-
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                          item.pipelineStatus
-                        )}`}
-                      >
-                        {item.pipelineStatus}
-                      </span>
-                    </div>
+                    </button>
 
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
                       <div className="rounded-xl bg-[#F8FAFC] p-3">
                         <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
                           Required
                         </p>
-                        <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-                          {item.requiredHeadcount}
-                        </p>
+
+                        <div className="mt-2 flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={requiredInputs[item.id] ?? ""}
+                            disabled={savingRequiredId === item.id}
+                            onChange={(e) =>
+                              setRequiredInputs((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                            className="h-9 w-full rounded-lg border border-[#D0D5DD] bg-white px-2 text-sm font-bold text-sibs-primary-1 outline-none disabled:bg-gray-50"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => handleSaveRequiredHeadcount(item)}
+                            disabled={savingRequiredId === item.id}
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1 disabled:opacity-60"
+                          >
+                            <Save size={14} />
+                          </button>
+                        </div>
                       </div>
 
                       <div className="rounded-xl bg-[#F8FAFC] p-3">
@@ -2086,7 +2139,7 @@ export default function WeeklyHiringPlanPage() {
                           Actual
                         </p>
                         <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-                          {item.actualHeadcount}
+                          {formatNumber(item.actualHeadcount)}
                         </p>
                       </div>
 
@@ -2095,7 +2148,7 @@ export default function WeeklyHiringPlanPage() {
                           Leads
                         </p>
                         <p className="mt-1 text-sm font-bold text-emerald-600">
-                          {item.leadsToInterview}
+                          {formatNumber(item.leadsToInterview)}
                         </p>
                       </div>
 
@@ -2112,7 +2165,7 @@ export default function WeeklyHiringPlanPage() {
                     <p className="mt-3 text-xs font-medium text-[#475467]">
                       Status Note: {item.statusNote || "-"}
                     </p>
-                  </button>
+                  </div>
                 ))
               ) : (
                 <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
@@ -2145,6 +2198,7 @@ export default function WeeklyHiringPlanPage() {
       <KpiSnapshotModal
         open={showKpiSnapshot}
         week={activeWeek}
+        records={filteredPlans}
         onClose={() => setShowKpiSnapshot(false)}
       />
     </div>
