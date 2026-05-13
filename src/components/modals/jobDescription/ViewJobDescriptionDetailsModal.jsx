@@ -1,6 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { History, PencilLine } from "lucide-react";
-import InfoBox from "../../layout/InfoBox";
+import { AlertTriangle } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
 import Approvals from "../../layout/tabs/JobDescriptionView/Approvals";
@@ -20,12 +19,28 @@ export default function ViewJobDescriptionDetailsModal({
   onClose,
 }) {
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
+  const [revisionComments, setRevisionComments] = useState([]);
+  const [hasEditedChanges, setHasEditedChanges] = useState(false);
 
   const tabRefs = useRef({});
   const [tabIndicator, setTabIndicator] = useState({
     left: 0,
     width: 0,
   });
+
+  const hasRevisionComments = revisionComments.length > 0;
+
+  const primaryButtonLabel = hasRevisionComments
+    ? "Save"
+    : hasEditedChanges
+      ? "Save as New Version"
+      : "Approve";
+
+  const primaryButtonTitle = hasRevisionComments
+    ? "Save this job description as tagged for revision."
+    : hasEditedChanges
+      ? "Save the edited job description as a new version."
+      : "Approve job description.";
 
   function getJdStatusClass(status) {
     switch (normalizeJdStatus(status)) {
@@ -60,8 +75,6 @@ export default function ViewJobDescriptionDetailsModal({
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
-
-  // const latestRevision = revisionHistory.length > 0 ? revisionHistory[0] : null;
 
   return (
     <div
@@ -137,7 +150,15 @@ export default function ViewJobDescriptionDetailsModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {activeDetailTab === "Details" && <Details item={item} />}
+          {activeDetailTab === "Details" && (
+            <Details
+              item={item}
+              revisionComments={revisionComments}
+              setRevisionComments={setRevisionComments}
+              hasEditedChanges={hasEditedChanges}
+              onEditedChange={setHasEditedChanges}
+            />
+          )}
 
           {activeDetailTab === "Approvals" && <Approvals />}
 
@@ -149,13 +170,42 @@ export default function ViewJobDescriptionDetailsModal({
         </div>
 
         <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex justify-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            {hasRevisionComments && (
+              <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-amber-700">
+                <AlertTriangle size={16} />
+                Tagged for revision
+              </div>
+            )}
+
+            {!hasRevisionComments && hasEditedChanges && (
+              <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 text-sm font-extrabold text-sibs-primary-1">
+                <AlertTriangle size={16} />
+                New version changes
+              </div>
+            )}
+
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98]"
             >
-              Close
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              title={primaryButtonTitle}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
+                hasRevisionComments
+                  ? "bg-sibs-primary-2 hover:opacity-90"
+                  : hasEditedChanges
+                    ? "bg-sibs-primary-1 hover:opacity-90"
+                    : "bg-sibs-primary-1 hover:opacity-90"
+              }`}
+            >
+              {primaryButtonLabel}
             </button>
           </div>
         </div>
