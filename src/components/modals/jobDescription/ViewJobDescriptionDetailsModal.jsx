@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Eye } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
 import Approvals from "../../layout/tabs/JobDescriptionView/Approvals";
@@ -21,6 +21,8 @@ export default function ViewJobDescriptionDetailsModal({
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
   const [revisionComments, setRevisionComments] = useState([]);
   const [hasEditedChanges, setHasEditedChanges] = useState(false);
+  const [editedChangeDetails, setEditedChangeDetails] = useState([]);
+  const [showEditedChanges, setShowEditedChanges] = useState(false);
 
   const tabRefs = useRef({});
   const [tabIndicator, setTabIndicator] = useState({
@@ -157,6 +159,8 @@ export default function ViewJobDescriptionDetailsModal({
               setRevisionComments={setRevisionComments}
               hasEditedChanges={hasEditedChanges}
               onEditedChange={setHasEditedChanges}
+              editedChangeDetails={editedChangeDetails}
+              setEditedChangeDetails={setEditedChangeDetails}
             />
           )}
 
@@ -179,10 +183,21 @@ export default function ViewJobDescriptionDetailsModal({
             )}
 
             {!hasRevisionComments && hasEditedChanges && (
-              <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 text-sm font-extrabold text-sibs-primary-1">
-                <AlertTriangle size={16} />
-                New version changes
-              </div>
+              <>
+                <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 text-sm font-extrabold text-sibs-primary-1">
+                  <AlertTriangle size={16} />
+                  New version changes
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowEditedChanges(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98]"
+                >
+                  <Eye size={16} />
+                  View Changes
+                </button>
+              </>
             )}
 
             <button
@@ -196,20 +211,118 @@ export default function ViewJobDescriptionDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              title={primaryButtonTitle}
+              title={
+                hasRevisionComments
+                  ? "Save this job description as tagged for revision."
+                  : hasEditedChanges
+                    ? "Save the edited job description as a new version."
+                    : "Approve job description."
+              }
               className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
                 hasRevisionComments
                   ? "bg-sibs-primary-2 hover:opacity-90"
-                  : hasEditedChanges
-                    ? "bg-sibs-primary-1 hover:opacity-90"
-                    : "bg-sibs-primary-1 hover:opacity-90"
+                  : "bg-sibs-primary-1 hover:opacity-90"
               }`}
             >
-              {primaryButtonLabel}
+              {hasRevisionComments
+                ? "Save"
+                : hasEditedChanges
+                  ? "Save as New Version"
+                  : "Approve"}
             </button>
           </div>
         </div>
       </div>
+
+      {showEditedChanges && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4">
+          <div
+            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
+              <div>
+                <h3 className="text-base font-extrabold text-[#101828]">
+                  Edited Changes
+                </h3>
+
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  Review the fields that will be saved as a new version.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowEditedChanges(false)}
+                className="rounded-lg px-3 py-1 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-[60dvh] overflow-y-auto p-5">
+              {editedChangeDetails.length > 0 ? (
+                <div className="space-y-3">
+                  {editedChangeDetails.map((change) => (
+                    <div
+                      key={change.key}
+                      className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                    >
+                      <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <h4 className="text-sm font-extrabold text-[#101828]">
+                          {change.label}
+                        </h4>
+
+                        <span className="w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[11px] font-extrabold text-sibs-primary-1">
+                          Edited
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div className="rounded-lg border border-[#E6ECF2] bg-white p-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                            Previous Value
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-line text-sm font-medium leading-6 text-[#667085]">
+                            {change.oldValue || "—"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                            New Value
+                          </p>
+
+                          <p className="mt-2 whitespace-pre-line text-sm font-bold leading-6 text-sibs-primary-1">
+                            {change.newValue || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-6 text-center">
+                  <p className="text-sm font-semibold text-sibs-tertiary-5">
+                    No edited changes detected.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setShowEditedChanges(false)}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
