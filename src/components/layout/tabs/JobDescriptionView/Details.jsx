@@ -11,6 +11,8 @@ const Details = ({
   setRevisionComments,
   hasEditedChanges = false,
   onEditedChange,
+  editedChangeDetails = [],
+  setEditedChangeDetails,
 }) => {
   const [commentModal, setCommentModal] = useState({
     open: false,
@@ -163,8 +165,32 @@ const Details = ({
     setEditingDraft("");
   }
 
+  const fieldLabels = {
+    roleTitle: "Document Title / Position",
+    department: "Department",
+    dateRequested: "Date Requested",
+    linkedHiringRequirement: "Linked Hiring Requirement",
+    preparedFor: "Prepared For",
+    requestedBy: "Created By",
+    jdCode: "Document Code",
+    currentVersion: "Revision No.",
+    effectiveDate: "Effective Date",
+    lastUpdated: "Last Reviewed",
+    reportsTo: "Reports To",
+    supervisory: "Supervisory",
+    description: "Position Overview",
+    responsibilities: "Duties & Responsibilities",
+    qualifications: "Qualifications & Characteristics",
+    remarks: "Preferred Personality Type",
+  };
+
+  function updateEditedChanges(nextChanges) {
+    setEditedChangeDetails?.(nextChanges);
+    onEditedChange?.(nextChanges.length > 0);
+  }
+
   function saveEditSection(sectionKey) {
-    const oldValue = String(editableContent[sectionKey] || "");
+    const oldValue = String(item?.[sectionKey] || "");
     const newValue = String(editingDraft || "");
 
     setEditableContent((prev) => ({
@@ -172,9 +198,26 @@ const Details = ({
       [sectionKey]: editingDraft,
     }));
 
-    if (oldValue !== newValue) {
-      onEditedChange?.(true);
-    }
+    setEditedChangeDetails?.((prev) => {
+      const withoutCurrent = prev.filter((change) => change.key !== sectionKey);
+
+      const nextChanges =
+        oldValue === newValue
+          ? withoutCurrent
+          : [
+              ...withoutCurrent,
+              {
+                key: sectionKey,
+                label: fieldLabels[sectionKey] || sectionKey,
+                oldValue,
+                newValue,
+              },
+            ];
+
+      onEditedChange?.(nextChanges.length > 0);
+
+      return nextChanges;
+    });
 
     setEditingSection("");
     setEditingDraft("");
@@ -222,15 +265,32 @@ const Details = ({
       supervisory: item.supervisory || "No",
     };
 
-    const hasChanged = Object.keys(originalRecordInfo).some(
-      (key) =>
-        String(originalRecordInfo[key] || "") !==
-        String(recordInfoDraft[key] || ""),
-    );
+    setEditedChangeDetails?.((prev) => {
+      const recordKeys = Object.keys(originalRecordInfo);
 
-    if (hasChanged) {
-      onEditedChange?.(true);
-    }
+      const withoutRecordInfo = prev.filter(
+        (change) => !recordKeys.includes(change.key),
+      );
+
+      const recordChanges = recordKeys
+        .filter(
+          (key) =>
+            String(originalRecordInfo[key] || "") !==
+            String(recordInfoDraft[key] || ""),
+        )
+        .map((key) => ({
+          key,
+          label: fieldLabels[key] || key,
+          oldValue: originalRecordInfo[key] || "",
+          newValue: recordInfoDraft[key] || "",
+        }));
+
+      const nextChanges = [...withoutRecordInfo, ...recordChanges];
+
+      onEditedChange?.(nextChanges.length > 0);
+
+      return nextChanges;
+    });
 
     setEditingRecordInfo(false);
   }
@@ -544,6 +604,11 @@ const Details = ({
         <div>
           <DesiredCompetenciesViewTable
             competencies={item.competencies || []}
+            comments={getSectionComments("competencies")}
+            onAddComment={openSectionComment}
+            disableEdit={disableEditBecauseCommented}
+            disableComment={disableCommentBecauseEdited}
+            onEditedChange={onEditedChange}
           />
 
           <RevisionCommentList comments={getSectionComments("competencies")} />
