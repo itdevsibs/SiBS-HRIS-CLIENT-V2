@@ -21,10 +21,14 @@ const DesiredCompetenciesViewTable = ({
   onAddComment,
   disableEdit = false,
   disableComment = false,
+  canManageActions = false,
   onEditedChange,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editableCompetencies, setEditableCompetencies] = useState([]);
+
+  const finalDisableEdit = !canManageActions || disableEdit;
+  const finalDisableComment = !canManageActions || disableComment;
 
   useEffect(() => {
     setEditableCompetencies(
@@ -83,6 +87,30 @@ const DesiredCompetenciesViewTable = ({
     setIsEditing(false);
   }
 
+  function getEditTitle() {
+    if (!canManageActions) {
+      return "Only admin access roles 6 and 7 can edit desired competencies.";
+    }
+
+    if (disableEdit) {
+      return "Editing is disabled because this JD has revision comments.";
+    }
+
+    return "Edit desired competencies.";
+  }
+
+  function getCommentTitle() {
+    if (!canManageActions) {
+      return "Only admin access roles 6 and 7 can add revision comments.";
+    }
+
+    if (disableComment) {
+      return "Commenting is disabled because this JD already has edited changes.";
+    }
+
+    return "Add revision comment.";
+  }
+
   const displayCompetencies = isEditing
     ? editableCompetencies
     : editableCompetencies.length
@@ -115,23 +143,19 @@ const DesiredCompetenciesViewTable = ({
           </p>
         </div>
 
-        {!isEditing ? (
+        {!isEditing && !finalDisableEdit ? (
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                if (disableEdit) return;
+                if (finalDisableEdit) return;
                 setIsEditing(true);
               }}
-              disabled={disableEdit}
-              title={
-                disableEdit
-                  ? "Editing is disabled because this JD has revision comments."
-                  : "Edit desired competencies."
-              }
+              disabled={finalDisableEdit}
+              title={getEditTitle()}
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                disableEdit
+                finalDisableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
               }`}
@@ -143,17 +167,14 @@ const DesiredCompetenciesViewTable = ({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() =>
-                onAddComment?.("competencies", "Desired Competencies")
-              }
-              disabled={disableComment}
-              title={
-                disableComment
-                  ? "Commenting is disabled because this JD already has edited changes."
-                  : "Add revision comment."
-              }
+              onClick={() => {
+                if (finalDisableComment) return;
+                onAddComment?.("competencies", "Desired Competencies");
+              }}
+              disabled={finalDisableComment}
+              title={getCommentTitle()}
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                disableComment
+                finalDisableComment
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
               }`}
@@ -163,23 +184,25 @@ const DesiredCompetenciesViewTable = ({
             </button>
           </div>
         ) : (
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-            >
-              Cancel
-            </button>
+          !finalDisableEdit && (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                Cancel
+              </button>
 
-            <button
-              type="button"
-              onClick={handleSaveEdit}
-              className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90"
-            >
-              Save
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90"
+              >
+                Save
+              </button>
+            </div>
+          )
         )}
       </div>
 

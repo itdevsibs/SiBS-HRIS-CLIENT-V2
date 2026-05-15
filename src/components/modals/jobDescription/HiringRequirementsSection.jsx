@@ -68,29 +68,82 @@ export default function HiringRequirementSection({
 
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <SingleSelectDropdown
-            refBox={linkedRequirementRef}
-            label="Linked Hiring Requirement"
-            value={selectedLinkedRequirement}
-            placeholder="Select hiring requirement"
-            open={linkedRequirementOpen}
-            setOpen={setLinkedRequirementOpen}
-            disabled={false}
-            options={linkedRequirementOptions}
-            selectedValue={form.linkedHiringRequirement}
-            zIndex="z-50"
-            onBeforeOpen={() => {
-              setAccountOpen(false);
-              setDepartmentOpen(false);
-              setJdStatusOpen(false);
-              setRequestedByOpen(false);
-            }}
-            onSelect={() => {
-              handleLinkedRequirementChange();
-              setLinkedRequirementOpen(false);
-            }}
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <SingleSelectDropdown
+                refBox={linkedRequirementRef}
+                label="Existing Job Description"
+                value={selectedLinkedRequirement}
+                placeholder="Select existing job description"
+                open={linkedRequirementOpen}
+                setOpen={setLinkedRequirementOpen}
+                disabled={false}
+                options={linkedRequirementOptions}
+                selectedValue={form.linkedHiringRequirement}
+                zIndex="z-50"
+                onBeforeOpen={() => {
+                  setAccountOpen(false);
+                  setDepartmentOpen(false);
+                  setJdStatusOpen(false);
+                  setRequestedByOpen(false);
+                }}
+                onSelect={(value) => {
+                  handleLinkedRequirementChange(value);
+                  setLinkedRequirementOpen(false);
+                }}
+              />
+            </div>
 
+            <div>
+              {hasLinkedHiringRequirement ? (
+                <SingleSelectDropdown
+                  refBox={jdStatusRef}
+                  label="Job Description Status"
+                  required
+                  value={selectedJdStatus}
+                  placeholder="Select Job Description status"
+                  open={jdStatusOpen}
+                  setOpen={setJdStatusOpen}
+                  disabled={false}
+                  options={jdStatusOptions}
+                  selectedValue={form.jdStatus}
+                  zIndex="z-20"
+                  onBeforeOpen={() => {
+                    setLinkedRequirementOpen(false);
+                    setAccountOpen(false);
+                    setDepartmentOpen(false);
+                    setRequestedByOpen(false);
+                  }}
+                  onSelect={(value) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      jdStatus: value,
+                    }));
+
+                    setJdStatusOpen(false);
+                  }}
+                />
+              ) : (
+                <div className="self-start">
+                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+                    Job Description Status{" "}
+                    <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    readOnly
+                    value="New Job Description"
+                    className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
+                  />
+
+                  <p className="mt-2 text-xs font-semibold text-blue-700">
+                    Since this Job Description has no linked hiring requirement,
+                    the only valid status is New Job Description.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
           <div className="mt-2 self-start">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
               Document Title <span className="text-red-500">*</span>
@@ -229,52 +282,6 @@ export default function HiringRequirementSection({
           </p>
         </div>
       </div>
-      {hasLinkedHiringRequirement ? (
-        <SingleSelectDropdown
-          refBox={jdStatusRef}
-          label="Job Description Status"
-          required
-          value={selectedJdStatus}
-          placeholder="Select Job Description status"
-          open={jdStatusOpen}
-          setOpen={setJdStatusOpen}
-          disabled={false}
-          options={jdStatusOptions}
-          selectedValue={form.jdStatus}
-          zIndex="z-20"
-          onBeforeOpen={() => {
-            setLinkedRequirementOpen(false);
-            setAccountOpen(false);
-            setDepartmentOpen(false);
-            setRequestedByOpen(false);
-          }}
-          onSelect={(value) => {
-            setForm((prev) => ({
-              ...prev,
-              jdStatus: value,
-            }));
-
-            setJdStatusOpen(false);
-          }}
-        />
-      ) : (
-        <div className="self-start">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Job Description Status <span className="text-red-500">*</span>
-          </label>
-
-          <input
-            readOnly
-            value="New Job Description"
-            className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
-          />
-
-          <p className="mt-2 text-xs font-semibold text-blue-700">
-            Since this Job Description has no linked hiring requirement, the
-            only valid status is New Job Description.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
