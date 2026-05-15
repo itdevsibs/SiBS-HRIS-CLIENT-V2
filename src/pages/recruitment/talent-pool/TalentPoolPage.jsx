@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../../components/layout/Header";
 import { useUser } from "../../../services/context/UserContext";
 import {
@@ -28,6 +28,8 @@ import {
   UserRound,
   Trash2,
   Pencil,
+  Upload,
+  Download,
 } from "lucide-react";
 
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
@@ -345,6 +347,63 @@ const emptyMoveToPipelineForm = {
   remarks: "",
 };
 
+const leadUploadTemplateColumns = [
+  "candidateId",
+  "firstName",
+  "middleName",
+  "lastName",
+  "suffix",
+  "nickname",
+  "email",
+  "phoneNumber1",
+  "phoneNumber2",
+  "dateOfBirth",
+  "physicalAddress",
+  "openPosition",
+  "applyingLocation",
+  "hearAboutUs",
+  "referredBy",
+  "employeeId",
+  "workExperience",
+  "educationalAttainment",
+  "skillsLanguage",
+  "status",
+  "source",
+  "availability",
+  "accountFit",
+  "remarks",
+];
+
+const leadUploadTemplateRows = [
+  {
+    candidateId: "",
+    firstName: "Ana",
+    middleName: "",
+    lastName: "Santos",
+    suffix: "",
+    nickname: "Ana",
+    email: "ana.santos@email.com",
+    phoneNumber1: "09171234567",
+    phoneNumber2: "",
+    dateOfBirth: "1999-04-14",
+    physicalAddress: "Davao City",
+    openPosition: "Customer Service Representative",
+    applyingLocation: "Davao Site",
+    hearAboutUs: "Social Media Ads",
+    referredBy: "N/A",
+    employeeId: "N/A",
+    workExperience: "Has work Experience (at least 6 months relevant work experience)",
+    educationalAttainment: "Tertiary (College Level or College Degree Holder)",
+    skillsLanguage: "English, Chat",
+    status: "New Applicant",
+    source: "Social Media Ads",
+    availability: "Available",
+    accountFit: "Collect IV",
+    remarks: "Imported sample lead",
+  },
+];
+
+
 function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
@@ -482,6 +541,195 @@ function formatCurrency(value) {
   });
 }
 
+function normalizeUploadHeader(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getUploadValue(row, aliases, fallback = "") {
+  const normalizedMap = Object.entries(row || {}).reduce((acc, [key, value]) => {
+    acc[normalizeUploadHeader(key)] = value;
+    return acc;
+  }, {});
+
+  for (const alias of aliases) {
+    const key = normalizeUploadHeader(alias);
+    if (normalizedMap[key] !== undefined && normalizedMap[key] !== null) {
+      return String(normalizedMap[key]).trim();
+    }
+  }
+
+  return fallback;
+}
+
+function splitUploadList(value) {
+  return String(value || "")
+    .split(/[|;]+|,(?=\s*[^)]*(?:$|,))/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function buildLeadUploadCsvTemplate() {
+  const escapeCell = (value) => {
+    const text = String(value ?? "");
+    if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+    return text;
+  };
+
+  const header = leadUploadTemplateColumns.map(escapeCell).join(",");
+  const body = leadUploadTemplateRows
+    .map((row) => leadUploadTemplateColumns.map((column) => escapeCell(row[column])).join(","))
+    .join("\n");
+
+  return `${header}\n${body}`;
+}
+
+function parseCsvLine(line) {
+  const values = [];
+  let current = "";
+  let insideQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const nextChar = line[index + 1];
+
+    if (char === '"' && insideQuotes && nextChar === '"') {
+      current += '"';
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+      continue;
+    }
+
+    if (char === "," && !insideQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+
+  return values.map((value) => value.trim());
+}
+
+function parseLeadUploadCsvText(text) {
+  const cleanedText = String(text || "").replace(/^\uFEFF/, "");
+  const lines = cleanedText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (!lines.length) return [];
+
+  const headers = parseCsvLine(lines[0]);
+
+  return lines.slice(1).map((line) => {
+    const values = parseCsvLine(line);
+
+    return headers.reduce((row, header, index) => {
+      row[header] = values[index] || "";
+      return row;
+    }, {});
+  });
+}
+
+function parseUploadedLeadRow(row, nextId, index) {
+  const firstName = getUploadValue(row, ["firstName", "First Name", "first_name"]);
+  const middleName = getUploadValue(row, ["middleName", "Middle Name", "middle_name"]);
+  const lastName = getUploadValue(row, ["lastName", "Last Name", "last_name"]);
+  const suffix = getUploadValue(row, ["suffix", "extension"]);
+  const fullName = getUploadValue(row, ["name", "fullName", "Full Name"]);
+  const openPosition = getUploadValue(row, ["openPosition", "Open Position", "position", "role"]);
+  const hearAboutUsRaw = getUploadValue(row, ["hearAboutUs", "How did you first hear about us", "source", "applicationSource"]);
+  const hearAboutUs = splitUploadList(hearAboutUsRaw);
+  const source = getUploadValue(row, ["source", "applicationSource", "Application Source"], hearAboutUs[0] || "CSV Upload");
+  const status = getUploadValue(row, ["status", "talentPoolStatus"], "New Applicant");
+  const dateOfBirth = getUploadValue(row, ["dateOfBirth", "Date of Birth", "birthdate"]);
+  const phoneNumber1 = getUploadValue(row, ["phoneNumber1", "phone", "contactNumber", "Contact Number"]);
+  const candidateId = getUploadValue(row, ["candidateId", "Candidate ID"], generateCandidateId(nextId + index));
+
+  const candidate = {
+    id: nextId + index,
+    candidateId,
+    hearAboutUs,
+    openPosition,
+    nickname: getUploadValue(row, ["nickname", "Nick Name"]),
+    applyingLocation: getUploadValue(row, ["applyingLocation", "location", "site", "Applying Location"]),
+    referredBy: getUploadValue(row, ["referredBy", "Referred By"], "N/A"),
+    employeeId: getUploadValue(row, ["employeeId", "Employee ID"], "N/A"),
+    firstName,
+    middleName,
+    lastName,
+    suffix,
+    extension: suffix,
+    name: fullName || [firstName, middleName, lastName, suffix].filter(Boolean).join(" "),
+    dateOfBirth,
+    ageAsOfApplication: calculateAge(dateOfBirth),
+    physicalAddress: getUploadValue(row, ["physicalAddress", "address", "Physical Address"]),
+    email: getUploadValue(row, ["email", "Email Address"]),
+    workExperience: getUploadValue(row, ["workExperience", "Work Experience"], ""),
+    workExperiences: [],
+    phoneNumber1,
+    phoneNumber2: getUploadValue(row, ["phoneNumber2", "alternatePhone", "Phone 2"]),
+    contactNumber: phoneNumber1,
+    roleCapability: openPosition,
+    skillsLanguage: getUploadValue(row, ["skillsLanguage", "skills", "Skills / Language"]),
+    educationalAttainment: getUploadValue(row, ["educationalAttainment", "education", "Educational Attainment"]),
+    affiliations: splitUploadList(getUploadValue(row, ["affiliations", "certifications"])),
+    trainingAttended: getUploadValue(row, ["trainingAttended", "training"]),
+    fullyVaccinated: getUploadValue(row, ["fullyVaccinated", "vaccinated"]),
+    comfortableOnSite: getUploadValue(row, ["comfortableOnSite", "onSite"]),
+    willingGraveyard: getUploadValue(row, ["willingGraveyard", "graveyard"]),
+    employmentInterest: getUploadValue(row, ["employmentInterest", "employment"]),
+    remoteWorkAccess: getUploadValue(row, ["remoteWorkAccess", "remote"]),
+    willingDrugTest: getUploadValue(row, ["willingDrugTest", "drugTest"]),
+    willingBackgroundCheck: getUploadValue(row, ["willingBackgroundCheck", "backgroundCheck"]),
+    references: [
+      {
+        name: getUploadValue(row, ["reference1Name", "Reference 1 Name"]),
+        phone: getUploadValue(row, ["reference1Phone", "Reference 1 Phone"]),
+      },
+      {
+        name: getUploadValue(row, ["reference2Name", "Reference 2 Name"]),
+        phone: getUploadValue(row, ["reference2Phone", "Reference 2 Phone"]),
+      },
+      {
+        name: getUploadValue(row, ["reference3Name", "Reference 3 Name"]),
+        phone: getUploadValue(row, ["reference3Phone", "Reference 3 Phone"]),
+      },
+    ],
+    audioFileName: getUploadValue(row, ["audioFileName", "audio"]),
+    attachmentFileName: getUploadValue(row, ["attachmentFileName", "file", "resume"]),
+    consent: true,
+    status,
+    source,
+    availability: getUploadValue(row, ["availability", "Availability"], "Available"),
+    accountFit: getUploadValue(row, ["accountFit", "account", "Account Fit"], "N/A"),
+    lastActivity: getTodayDate(),
+    tags: normalizeTags(openPosition, getUploadValue(row, ["skillsLanguage", "skills"])),
+    isPublicSubmission: false,
+    applicationHistory: [
+      {
+        role: openPosition,
+        account: getUploadValue(row, ["accountFit", "account"], "Unassigned"),
+        outcome: "Imported from CSV",
+        date: getTodayDate(),
+      },
+    ],
+    remarks: getUploadValue(row, ["remarks", "notes", "Remarks"], "Imported lead."),
+  };
+
+  return normalizeCandidateRecord(candidate);
+}
+
 function getStatusClass(status) {
   switch (status) {
     case "Silver Pool":
@@ -608,23 +856,27 @@ function candidateToForm(candidate) {
   };
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
+function StatCard({ title, value, icon: Icon, description, valueClassName = "text-sibs-primary-1" }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="truncate text-lg font-bold text-sibs-primary-1">
-          {value}
-        </h2>
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
           </p>
-        )}
+          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
+            {value}
+          </p>
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
@@ -1971,6 +2223,7 @@ function MoveToPipelineModal({ open, candidate, form, setForm, onClose, onSubmit
 
 export default function TalentPoolPage() {
   const { user } = useUser();
+  const uploadInputRef = useRef(null);
   const currentTaOwner =
     user?.name ||
     user?.fullName ||
@@ -1982,13 +2235,8 @@ export default function TalentPoolPage() {
   const [candidateList, setCandidateList] = useState(initialCandidates.map(normalizeCandidateRecord));
 
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [locationFilter, setLocationFilter] = useState("All");
-  const [workExperienceFilter, setWorkExperienceFilter] = useState("All");
   const [sourceFilter, setSourceFilter] = useState("All");
-  const [educationFilter, setEducationFilter] = useState("All");
-  const [accountFilter, setAccountFilter] = useState("All Accounts");
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -2050,6 +2298,83 @@ export default function TalentPoolPage() {
 
   function handleOpenPublicForm() {
     window.open("/recruitment/talent-pool/apply", "_blank", "noopener,noreferrer");
+  }
+
+
+  function handleDownloadLeadTemplate() {
+    const csv = buildLeadUploadCsvTemplate();
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "talent-pool-leads-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleUploadLeadsFile(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const isCsv =
+      file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+
+    if (!isCsv) {
+      alert("Please upload a CSV file only.");
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const rows = parseLeadUploadCsvText(String(reader.result || ""));
+
+        if (!rows.length) {
+          alert("The uploaded CSV has no rows to import.");
+          return;
+        }
+
+        const nextId =
+          candidateList.length > 0
+            ? Math.max(...candidateList.map((candidate) => Number(candidate.id) || 0)) + 1
+            : 1;
+
+        const importedCandidates = rows
+          .map((row, index) => parseUploadedLeadRow(row, nextId, index))
+          .filter((candidate) => candidate.name && candidate.email);
+
+        if (!importedCandidates.length) {
+          alert("No valid leads were imported. Please make sure firstName, lastName/name, and email are provided.");
+          return;
+        }
+
+        setCandidateList((prev) => [...importedCandidates, ...prev]);
+        alert(`${importedCandidates.length} lead(s) imported successfully.`);
+      } catch (error) {
+        console.error("LEAD CSV UPLOAD ERROR:", error);
+        alert("Unable to import the CSV file. Please use the provided CSV template.");
+      } finally {
+        if (uploadInputRef.current) {
+          uploadInputRef.current.value = "";
+        }
+      }
+    };
+
+    reader.onerror = () => {
+      alert("Unable to read the CSV file.");
+      if (uploadInputRef.current) {
+        uploadInputRef.current.value = "";
+      }
+    };
+
+    reader.readAsText(file);
   }
 
   function handleAddCandidate(e) {
@@ -2483,10 +2808,6 @@ export default function TalentPoolPage() {
         candidate.candidateId,
         candidate.name,
         candidate.nickname,
-        candidate.firstName,
-        candidate.middleName,
-        candidate.lastName,
-        candidate.suffix,
         candidate.email,
         candidate.phoneNumber1,
         candidate.phoneNumber2,
@@ -2504,8 +2825,6 @@ export default function TalentPoolPage() {
         candidate.trainingAttended,
         readinessText,
         referencesText,
-        candidate.audioFileName,
-        candidate.attachmentFileName,
         candidate.status,
         candidate.remarks,
       ]
@@ -2514,43 +2833,15 @@ export default function TalentPoolPage() {
         .toLowerCase();
 
       const matchesSearch = !keyword || searchableText.includes(keyword);
-      const matchesRole = roleFilter === "All" || roleValue === roleFilter;
       const matchesStatus = statusFilter === "All" || candidate.status === statusFilter;
-      const matchesLocation =
-        locationFilter === "All" || candidate.applyingLocation === locationFilter;
-      const matchesWorkExperience =
-        workExperienceFilter === "All" || candidate.workExperience === workExperienceFilter;
       const matchesSource =
         sourceFilter === "All" ||
         sourceValue.toLowerCase().includes(sourceFilter.toLowerCase()) ||
         (candidate.hearAboutUs || []).some((item) => item === sourceFilter);
-      const matchesEducation =
-        educationFilter === "All" || candidate.educationalAttainment === educationFilter;
-      const matchesAccount =
-        accountFilter === "All Accounts" || candidate.accountFit === accountFilter;
 
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesStatus &&
-        matchesLocation &&
-        matchesWorkExperience &&
-        matchesSource &&
-        matchesEducation &&
-        matchesAccount
-      );
+      return matchesSearch && matchesStatus && matchesSource;
     });
-  }, [
-    candidateList,
-    search,
-    roleFilter,
-    statusFilter,
-    locationFilter,
-    workExperienceFilter,
-    sourceFilter,
-    educationFilter,
-    accountFilter,
-  ]);
+  }, [candidateList, search, statusFilter, sourceFilter]);
 
   const stats = useMemo(() => {
     return {
@@ -2568,44 +2859,28 @@ export default function TalentPoolPage() {
       <Header />
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <UsersRound size={28} className="shrink-0 text-sibs-primary-1" />
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Talent Pool / Candidate Database
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Build reusable candidate profiles using the same fields as the public application form.
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard title="Total Candidates" value={stats.total} icon={UsersRound} description="Persistent profiles" />
-          <StatCard title="Silver Pool" value={stats.silverPool} icon={UserCheck} description="Passed, no opening" />
-          <StatCard title="Recyclable" value={stats.recyclable} icon={RefreshCcw} description="Can be reconsidered" />
-          <StatCard title="Do Not Reprocess" value={stats.doNotReprocess} icon={Ban} description="Not fit" />
-          <StatCard title="Hired / Active" value={stats.hiredActive} icon={BriefcaseBusiness} description="Converted" />
-          <StatCard title="Public Entries" value={stats.publicSubmissions} icon={ExternalLink} description="From outside form" />
-        </div>
-
-        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h3 className="mb-2 font-semibold text-sibs-primary-1">
-                Candidate Master Profiles
-              </h3>
-              <p className="text-sm text-sibs-tertiary-5">
-                Talent Pool stores the complete candidate profile. Moving to Pipeline creates a separate application record.
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <UsersRound size={14} />
+                Talent Pool
+              </div>
+
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Talent Pool / Candidate Database
+              </h1>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Store reusable candidate master profiles, import leads from CSV, and move qualified candidates to the pipeline.
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={handleOpenPublicForm}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
               >
                 <ExternalLink size={18} />
                 Public Form
@@ -2613,95 +2888,111 @@ export default function TalentPoolPage() {
 
               <button
                 type="button"
+                onClick={handleDownloadLeadTemplate}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                <Download size={18} />
+                CSV Template
+              </button>
+
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                <Upload size={18} />
+                Upload CSV Leads
+              </button>
+
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleUploadLeadsFile}
+                className="hidden"
+              />
+
+              <button
+                type="button"
                 onClick={() => setShowAddModal(true)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
               >
                 <Plus size={18} />
                 Add Candidate
               </button>
             </div>
           </div>
-        </div>
 
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_170px_180px_170px_210px_180px_230px_auto] xl:items-center">
-              <div className="relative">
-                <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search any talent pool field: name, email, phone, source, location, work, education, references..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
+          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-base font-bold text-[#101828]">Talent Pool Summary</h2>
 
-              <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className={inputClass()}>
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>{role === "All" ? "Open Position" : role}</option>
-                ))}
-              </select>
-
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={inputClass()}>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>{status === "All" ? "Status" : status}</option>
-                ))}
-              </select>
-
-
-              <select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className={inputClass()}>
-                {accountOptions.map((account) => (
-                  <option key={account} value={account}>{account}</option>
-                ))}
-              </select>
-
-              <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className={inputClass()}>
-                <option value="All">Location</option>
-                {locationOptions.map((location) => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-
-              <select value={workExperienceFilter} onChange={(e) => setWorkExperienceFilter(e.target.value)} className={inputClass()}>
-                <option value="All">Work Experience</option>
-                {workExperienceOptions.map((item) => (
-                  <option key={item} value={item}>{item}</option>
-                ))}
-              </select>
-
-              <select value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className={inputClass()}>
-                <option value="All">Source</option>
-                {[...new Set([...sourceOptions, ...hearAboutUsOptions])].map((source) => (
-                  <option key={source} value={source}>{source}</option>
-                ))}
-              </select>
-
-              <select value={educationFilter} onChange={(e) => setEducationFilter(e.target.value)} className={inputClass()}>
-                <option value="All">Educational Attainment</option>
-                {educationalAttainmentOptions.map((education) => (
-                  <option key={education} value={education}>{education}</option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSearch("");
-                  setRoleFilter("All");
-                  setStatusFilter("All");
-                  setLocationFilter("All");
-                  setAccountFilter("All Accounts");
-                  setWorkExperienceFilter("All");
-                  setSourceFilter("All");
-                  setEducationFilter("All");
-                }}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-              >
-                <Filter size={17} />
-                Reset
-              </button>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <StatCard title="Total Candidates" value={stats.total} icon={UsersRound} description="Persistent profiles" />
+              <StatCard title="Silver Pool" value={stats.silverPool} icon={UserCheck} description="Passed, no opening" />
+              <StatCard title="Recyclable" value={stats.recyclable} icon={RefreshCcw} description="Can be reconsidered" />
+              <StatCard title="Do Not Reprocess" value={stats.doNotReprocess} icon={Ban} description="Not fit" />
+              <StatCard title="Hired / Active" value={stats.hiredActive} icon={BriefcaseBusiness} description="Converted" valueClassName="text-emerald-600" />
+              <StatCard title="Public Entries" value={stats.publicSubmissions} icon={ExternalLink} description="From outside form" />
             </div>
-          </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_260px_auto] xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Search</label>
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search candidate, email, phone, source, position, location..."
+                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>{status === "All" ? "All Statuses" : status}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Source</label>
+                  <select
+                    value={sourceFilter}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  >
+                    <option value="All">All Sources</option>
+                    {[...new Set([...sourceOptions, ...hearAboutUsOptions])].map((source) => (
+                      <option key={source} value={source}>{source}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("All");
+                    setSourceFilter("All");
+                  }}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                >
+                  <Filter size={17} />
+                  Clear
+                </button>
+              </div>
+            </div>
 
           <div className="p-4 sm:p-6">
             <div className="space-y-3 lg:hidden">
@@ -2716,111 +3007,73 @@ export default function TalentPoolPage() {
               )}
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[2200px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Candidate</th>
-                      <th className="px-5 py-4">Open Position / Site</th>
-                      <th className="px-5 py-4">Source / Referral</th>
-                      <th className="px-5 py-4">Personal Details</th>
-                      <th className="px-5 py-4">Contact / Address</th>
-                      <th className="px-5 py-4">Work Experience</th>
-                      <th className="px-5 py-4">Education / Certifications</th>
-                      <th className="px-5 py-4">Readiness</th>
-                      <th className="px-5 py-4">References</th>
-                      <th className="px-5 py-4">Uploads</th>
+            <div className="hidden lg:block">
+              <div className="overflow-x-auto p-0">
+                <table className="w-full min-w-[1250px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                  <thead>
+                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 first:rounded-tl-2xl">Candidate</th>
+                      <th className="px-5 py-4">Applied Position</th>
+                      <th className="px-5 py-4">Application Source</th>
+                      <th className="px-5 py-4">Contact</th>
+                      <th className="px-5 py-4">Location / Account</th>
                       <th className="px-5 py-4">Status</th>
                       <th className="px-5 py-4">Last Activity</th>
-                      <th className="px-5 py-4 text-right">Actions</th>
+                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">Actions</th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-gray-100 bg-white">
+                  <tbody>
                     {filteredCandidates.length > 0 ? (
                       filteredCandidates.map((candidate) => (
-                        <tr key={candidate.id} className="align-top transition hover:bg-[#F8FAFC]">
-                          <td className="px-5 py-4">
+                        <tr key={candidate.id} className="transition hover:bg-[#FAFBFC]">
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
                             <p className="text-sm font-bold text-[#101828]">{candidate.name}</p>
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">{candidate.email}</p>
-                            <p className="mt-1 text-[11px] font-bold text-sibs-primary-1">{candidate.candidateId}</p>
+                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{candidate.candidateId}</p>
                             {candidate.isPublicSubmission && (
-                              <p className="mt-1 text-[11px] font-bold text-purple-600">Public Submission</p>
+                              <span className="mt-2 inline-flex rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700">
+                                Public Submission
+                              </span>
                             )}
                           </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                             <p className="font-bold text-sibs-primary-1">{candidate.openPosition || candidate.roleCapability || "—"}</p>
-                            <p className="mt-1">{candidate.applyingLocation || "—"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">Skills: {candidate.skillsLanguage || "—"}</p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <p className="max-w-[260px] whitespace-pre-line">{formatList(candidate.hearAboutUs)}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">Ref: {candidate.referredBy || "—"}</p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <p>{candidate.email || "—"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">{candidate.phoneNumber1 || candidate.contactNumber || "—"}</p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <p>{candidate.applyingLocation || "—"}</p>
                             <p className="mt-1 text-xs text-sibs-tertiary-5">Account: {candidate.accountFit || "—"}</p>
                           </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <p className="whitespace-pre-line">{formatList(candidate.hearAboutUs)}</p>
-                            <p className="mt-2 text-xs text-sibs-tertiary-5">Referred by: {candidate.referredBy || "—"}</p>
-                            <p className="text-xs text-sibs-tertiary-5">Employee ID: {candidate.employeeId || "—"}</p>
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <p>Nickname: {candidate.nickname || "—"}</p>
-                            <p>DOB: {formatDate(candidate.dateOfBirth)}</p>
-                            <p>Age: {candidate.ageAsOfApplication || "—"}</p>
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <p>{candidate.phoneNumber1 || "—"}</p>
-                            <p>{candidate.phoneNumber2 || "—"}</p>
-                            <p className="mt-2 max-w-[240px] whitespace-pre-line text-xs text-sibs-tertiary-5">{candidate.physicalAddress || "—"}</p>
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <p className="font-bold">{candidate.workExperience || "—"}</p>
-                            <p className="mt-2 max-w-[320px] whitespace-pre-line text-xs leading-5 text-sibs-tertiary-5">
-                              {getPrimaryExperienceSummary(candidate)}
-                            </p>
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <p className="max-w-[260px]">{candidate.educationalAttainment || "—"}</p>
-                            <p className="mt-2 max-w-[260px] whitespace-pre-line text-xs leading-5 text-sibs-tertiary-5">
-                              {formatList(candidate.affiliations)}
-                            </p>
-                            <p className="mt-2 max-w-[260px] whitespace-pre-line text-xs leading-5 text-sibs-tertiary-5">
-                              Training: {candidate.trainingAttended || "—"}
-                            </p>
-                          </td>
-
-                          <td className="px-5 py-4 text-xs font-semibold leading-5 text-[#344054]">
-                            <p className="max-w-[260px] whitespace-pre-line">{getReadinessSummary(candidate)}</p>
-                          </td>
-
-                          <td className="px-5 py-4 text-xs font-semibold leading-5 text-[#344054]">
-                            <p className="max-w-[260px] whitespace-pre-line">{formatReferences(candidate.references)}</p>
-                          </td>
-
-                          <td className="px-5 py-4 text-xs font-semibold leading-5 text-[#344054]">
-                            <p>Audio: {candidate.audioFileName || "—"}</p>
-                            <p>File: {candidate.attachmentFileName || "—"}</p>
-                          </td>
-
-                          <td className="px-5 py-4">
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
                             <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(candidate.status)}`}>
                               {candidate.status}
                             </span>
                           </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                             {formatDate(candidate.lastActivity)}
                           </td>
 
-                          <td className="px-5 py-4 text-right">
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
                             <button
                               type="button"
                               onClick={() => setSelectedCandidate(candidate)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
                             >
-                              <Eye size={15} />
+                              <Eye size={16} />
                               View
                             </button>
                           </td>
@@ -2828,7 +3081,7 @@ export default function TalentPoolPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={13} className="px-5 py-12 text-center text-sm font-bold text-gray-500">
+                        <td colSpan={8} className="px-5 py-12 text-center text-sm font-bold text-gray-500">
                           No candidate profiles found.
                         </td>
                       </tr>
@@ -2837,7 +3090,6 @@ export default function TalentPoolPage() {
                 </table>
               </div>
             </div>
-
             <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <p className="text-sm font-semibold text-sibs-tertiary-5">
                 Showing 1 to {filteredCandidates.length} of {candidateList.length} candidate profiles
@@ -2864,6 +3116,7 @@ export default function TalentPoolPage() {
             Talent Pool stores the full candidate master profile using the same inputs as the public form. Move to Pipeline creates a separate candidate application tied to a hiring requirement.
           </p>
         </section>
+        </div>
       </main>
 
       <AddCandidateModal

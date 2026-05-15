@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Send,
   UserPlus,
@@ -484,6 +484,52 @@ function ExperienceFields({
 }
 
 export default function PublicTalentPoolApplicationPage() {
+  useEffect(() => {
+    const styleId = "public-talent-pool-hide-sidebar-style";
+
+    document.body.classList.add("public-talent-pool-form-page");
+    document.documentElement.classList.add("public-talent-pool-form-page");
+
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.innerHTML = `
+        body.public-talent-pool-form-page aside,
+        body.public-talent-pool-form-page .sidebar,
+        body.public-talent-pool-form-page [data-sidebar],
+        body.public-talent-pool-form-page nav.sidebar,
+        body.public-talent-pool-form-page .app-sidebar,
+        body.public-talent-pool-form-page .main-sidebar {
+          display: none !important;
+          width: 0 !important;
+          min-width: 0 !important;
+          max-width: 0 !important;
+        }
+
+        body.public-talent-pool-form-page main,
+        body.public-talent-pool-form-page .main-content,
+        body.public-talent-pool-form-page .content-wrapper,
+        body.public-talent-pool-form-page .page-content,
+        body.public-talent-pool-form-page #root > div {
+          width: 100% !important;
+          max-width: 100% !important;
+          margin-left: 0 !important;
+          padding-left: 0 !important;
+        }
+
+        body.public-talent-pool-form-page {
+          overflow-x: hidden !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      document.body.classList.remove("public-talent-pool-form-page");
+      document.documentElement.classList.remove("public-talent-pool-form-page");
+    };
+  }, []);
+
   const [form, setForm] = useState(emptyPublicForm);
   const [submittedRecord, setSubmittedRecord] = useState(null);
 

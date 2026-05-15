@@ -102,14 +102,9 @@ const jobDescriptionOptions = positionOptions.map((item) => ({
 }));
 
 const reasonForHiringOptions = [
-  "Replacement",
-  "Ramp-up",
-  "Backfill",
   "New Position",
+  "Ramp-up",
   "Forecasted Growth",
-  "Attrition Coverage",
-  "Business Expansion",
-  "Seasonal Requirement",
 ];
 
 const initialForm = {
@@ -201,14 +196,6 @@ function getApprovalIcon(status) {
   }
 
   return <Clock size={18} className="text-amber-500" />;
-}
-
-function getJobDescriptionId(jd) {
-  return jd?.id || "";
-}
-
-function getJobDescriptionTitle(jd) {
-  return jd?.title || "Untitled Job Description";
 }
 
 function normalizeItem(item) {
@@ -1152,6 +1139,11 @@ export default function HiringNeedsPage() {
 
     if (!form.reasonForHiring) {
       alert("Reason for Hiring is required.");
+      return;
+    }
+
+    if (!reasonForHiringOptions.includes(form.reasonForHiring)) {
+      alert("Invalid Reason for Hiring selected.");
       return;
     }
 
