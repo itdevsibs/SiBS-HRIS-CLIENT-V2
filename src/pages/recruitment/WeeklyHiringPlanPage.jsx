@@ -5,6 +5,7 @@ import {
   getWeeklyHiringPlanAccounts,
   getWeeklyHiringPlanWeeks,
 } from "../../lib/axios/getWeeklyHiringPlan";
+import { useUser } from "../../services/context/UserContext";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -55,6 +56,12 @@ function formatPercent(value) {
   if (numberValue > 0 && numberValue <= 1) {
     return `${(numberValue * 100).toFixed(2)}%`;
   }
+
+  return `${numberValue.toFixed(2)}%`;
+}
+
+function formatGraphPercent(value) {
+  const numberValue = Number(value || 0);
 
   return `${numberValue.toFixed(2)}%`;
 }
@@ -411,7 +418,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
 
                     <div className="shrink-0 text-left sm:text-right">
                       <p className="text-sm font-bold text-sibs-primary-1">
-                        {formatPercent(metric.displayPercent)}
+                        {formatGraphPercent(metric.displayPercent)}
                       </p>
 
                       <p className="text-xs font-semibold text-sibs-tertiary-5">
@@ -482,7 +489,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                                 )}
 
                                 <td className="px-3 py-3 text-center text-sm font-bold text-sibs-primary-1">
-                                  {formatPercent(rowDisplayPercent)}
+                                  {formatGraphPercent(rowDisplayPercent)}
                                 </td>
                               </tr>
                             );
@@ -502,6 +509,85 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
         </div>
       )}
     </section>
+  );
+}
+
+
+function StatusModal({ open, type = "success", title, message, onClose }) {
+  if (!open) return null;
+
+  const isSuccess = type === "success";
+  const Icon = isSuccess ? CheckCircle2 : AlertTriangle;
+
+  return (
+    <div
+      className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className={`border-b px-6 py-5 ${
+            isSuccess
+              ? "border-emerald-100 bg-emerald-50"
+              : "border-red-100 bg-red-50"
+          }`}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
+                isSuccess
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              <Icon size={24} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h2
+                className={`text-lg font-bold ${
+                  isSuccess ? "text-emerald-900" : "text-red-900"
+                }`}
+              >
+                {title || (isSuccess ? "Success" : "Failed")}
+              </h2>
+
+              <p
+                className={`mt-1 text-sm font-medium leading-6 ${
+                  isSuccess ? "text-emerald-800" : "text-red-800"
+                }`}
+              >
+                {message}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-full p-1.5 text-gray-400 transition hover:bg-white/80 hover:text-gray-700"
+              aria-label="Close status modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex justify-end px-6 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold text-white transition hover:opacity-90 ${
+              isSuccess ? "bg-emerald-600" : "bg-red-600"
+            }`}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -651,6 +737,7 @@ function ViewPlanModal({
   open,
   item,
   locked,
+  canEditRequiredHeadcount,
   previousWeekItem,
   requiredInputValue,
   savingRequiredId,
@@ -664,6 +751,9 @@ function ViewPlanModal({
   const previousLeadsNeeded = Number(previousWeekItem?.leadsToInterview || 0);
   const currentLeadsNeeded = Number(item.leadsToInterview || 0);
   const remaining = Math.max(currentLeadsNeeded - previousLeadsNeeded, 0);
+
+  const requiredHeadcountDisabled =
+    locked || !canEditRequiredHeadcount || savingRequiredId === item.id;
 
   return (
     <div
@@ -751,14 +841,17 @@ function ViewPlanModal({
                       type="number"
                       min="0"
                       value={requiredInputValue ?? ""}
-                      disabled={savingRequiredId === item.id}
+                      disabled={requiredHeadcountDisabled}
                       onChange={(e) =>
                         onRequiredInputChange(item.id, e.target.value)
                       }
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
-                          onSaveRequiredHeadcount(item);
+
+                          if (!requiredHeadcountDisabled) {
+                            onSaveRequiredHeadcount(item);
+                          }
                         }
                       }}
                       className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#1E293B] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
@@ -767,13 +860,25 @@ function ViewPlanModal({
                     <button
                       type="button"
                       onClick={() => onSaveRequiredHeadcount(item)}
-                      disabled={savingRequiredId === item.id}
+                      disabled={requiredHeadcountDisabled}
                       className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
                       title="Save required headcount"
                     >
                       <Save size={15} />
                     </button>
                   </div>
+
+                  {!canEditRequiredHeadcount && (
+                    <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+                      View only. TA and HR cannot edit required headcount.
+                    </p>
+                  )}
+
+                  {locked && (
+                    <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+                      This historical weekly version is locked.
+                    </p>
+                  )}
                 </div>
                 <InfoBox
                   label="Actual Headcount"
@@ -989,8 +1094,12 @@ function KpiSnapshotModal({ open, week, records, onClose }) {
 }
 
 export default function WeeklyHiringPlanPage() {
+  const { user } = useUser();
+
   const mainScrollRef = useRef(null);
   const weekDropdownRef = useRef(null);
+
+  const canEditRequiredHeadcount = [5, 7].includes(Number(user?.adminAccess));
 
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
@@ -1022,6 +1131,12 @@ export default function WeeklyHiringPlanPage() {
   const [requiredInputs, setRequiredInputs] = useState({});
   const [savingRequiredId, setSavingRequiredId] = useState("");
   const [requiredSaveMessage, setRequiredSaveMessage] = useState("");
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
@@ -1373,8 +1488,55 @@ export default function WeeklyHiringPlanPage() {
       )
     : null;
 
+  function openStatusModal({ type = "success", title = "", message = "" }) {
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  }
+
+  function closeStatusModal() {
+    setStatusModal((current) => ({
+      ...current,
+      open: false,
+    }));
+  }
+
   async function handleSaveRequiredHeadcount(item) {
-    if (!activeWeekStartDate || !activeWeekEndDate) return;
+    if (!canEditRequiredHeadcount) {
+      const message = "You do not have permission to edit required headcount.";
+      setRequiredSaveMessage(message);
+      openStatusModal({
+        type: "error",
+        title: "Permission Denied",
+        message,
+      });
+      return;
+    }
+
+    if (isLocked) {
+      const message = "This weekly version is locked.";
+      setRequiredSaveMessage(message);
+      openStatusModal({
+        type: "error",
+        title: "Locked Weekly Version",
+        message,
+      });
+      return;
+    }
+
+    if (!activeWeekStartDate || !activeWeekEndDate) {
+      const message = "Missing weekly date range. Please select a valid weekly version.";
+      setRequiredSaveMessage(message);
+      openStatusModal({
+        type: "error",
+        title: "Unable to Save",
+        message,
+      });
+      return;
+    }
 
     const rawValue = requiredInputs[item.id];
 
@@ -1384,7 +1546,13 @@ export default function WeeklyHiringPlanPage() {
         : Number(rawValue);
 
     if (requiredHeadcount !== null && !Number.isFinite(requiredHeadcount)) {
-      setRequiredSaveMessage("Invalid required headcount.");
+      const message = "Invalid required headcount.";
+      setRequiredSaveMessage(message);
+      openStatusModal({
+        type: "error",
+        title: "Invalid Input",
+        message,
+      });
       return;
     }
 
@@ -1489,14 +1657,27 @@ export default function WeeklyHiringPlanPage() {
         });
       }
 
+      const message = `Required headcount for ${item.account} was saved successfully.`;
       setRequiredSaveMessage("Required headcount saved.");
+      openStatusModal({
+        type: "success",
+        title: "Required Headcount Saved",
+        message,
+      });
     } catch (error) {
       console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
-      setRequiredSaveMessage(
+
+      const message =
         error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          "Failed to save required headcount."
-      );
+        error?.response?.data?.message ||
+        "Failed to save required headcount.";
+
+      setRequiredSaveMessage(message);
+      openStatusModal({
+        type: "error",
+        title: "Save Failed",
+        message,
+      });
     } finally {
       setSavingRequiredId("");
     }
@@ -1778,6 +1959,12 @@ export default function WeeklyHiringPlanPage() {
                 {isLocked ? <Lock size={13} /> : <Unlock size={13} />}
                 {isLocked ? "Locked" : "Editable"}
               </span>
+
+              {!canEditRequiredHeadcount && (
+                <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                  View only: Required Headcount
+                </span>
+              )}
 
               {(clusterFilter !== "All" || accountFilter !== "All" || search) && (
                 <button
@@ -2140,10 +2327,19 @@ export default function WeeklyHiringPlanPage() {
         </div>
       </main>
 
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+      />
+
       <ViewPlanModal
         open={!!selectedPlan}
         item={selectedPlan}
         locked={isLocked}
+        canEditRequiredHeadcount={canEditRequiredHeadcount}
         previousWeekItem={previousSelectedPlan}
         requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}
         savingRequiredId={savingRequiredId}
