@@ -26,6 +26,8 @@ import CandidateExperiencePage from "./pages/recruitment/CandidateExperiencePage
 import SourcingAnalyticsPage from "./pages/recruitment/SourcingAnalyticsPage";
 import ActionItemsPage from "./pages/recruitment/ActionItemPage";
 import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
+import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
+
 
 const Router = () => {
   return (
@@ -78,6 +80,10 @@ const Router = () => {
       <Route
         path="/recruitment/weekly-reports"
         element={<WeeklyReportsPage />}
+      />
+      <Route
+        path="/recruitment/available-positions"
+        element={<AvailablePositionsPage />}
       />
 
       <Route path="*" element={<NotFound />} />
