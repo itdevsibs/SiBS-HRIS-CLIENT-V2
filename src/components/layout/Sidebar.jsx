@@ -158,6 +158,18 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
     },
     {
+      name: "TA Dashboard",
+      icon: LayoutDashboard,
+      path: "/recruitment/ta-dashboard",
+      allowedUsers: [1, 2, 3, 7],
+    },
+    {
+      name: "OM Dashboard",
+      icon: LayoutDashboard,
+      path: "/recruitment/om-dashboard",
+      allowedUsers: [1, 2, 3, 7],
+    },
+    {
       name: "Employees",
       icon: Users,
       path: "/employee",
@@ -185,12 +197,6 @@ export default function Sidebar() {
 
   const recruitmentMenu = [
     {
-      name: "TA Dashboard",
-      icon: LayoutDashboard,
-      path: "/recruitment/ta-dashboard",
-      allowedUsers: [1, 2, 3, 7],
-    },
-    {
       name: "Weekly Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/weekly-hiring-plan",
@@ -206,7 +212,7 @@ export default function Sidebar() {
       name: "Hiring Needs Intake",
       icon: FileText,
       path: "/recruitment/hiring-needs",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 5, 7],
     },
     {
       name: "Available Positions",
@@ -254,7 +260,7 @@ export default function Sidebar() {
       name: "Weekly Reports",
       icon: FileClock,
       path: "/recruitment/weekly-reports",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 5, 7],
     },
     {
       name: "Candidate Experience",
