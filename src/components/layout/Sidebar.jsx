@@ -5,6 +5,7 @@ import {
   Activity,
   BarChart3,
   BookOpen,
+  BriefcaseBusiness,
   Building2,
   Calendar,
   CalendarDays,
@@ -43,7 +44,7 @@ export default function Sidebar() {
       "executive",
       "super_admin",
     ],
-    [],
+    []
   );
 
   const [mounted, setMounted] = useState(false);
@@ -87,7 +88,7 @@ export default function Sidebar() {
       ];
 
       const ok = allowed.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`),
+        (path) => pathname === path || pathname.startsWith(`${path}/`)
       );
 
       if (!ok) {
@@ -208,6 +209,12 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 7],
     },
     {
+      name: "Available Positions",
+      icon: BriefcaseBusiness,
+      path: "/recruitment/available-positions",
+      allowedUsers: [1, 2, 3, 7],
+    },
+    {
       name: "Sourcing Analytics",
       icon: BarChart3,
       path: "/recruitment/sourcing-analytics",
@@ -321,7 +328,7 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true,
+      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true
     );
 
   const handleLinkClick = () => {
