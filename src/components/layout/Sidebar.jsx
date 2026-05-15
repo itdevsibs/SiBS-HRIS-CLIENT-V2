@@ -193,7 +193,7 @@ export default function Sidebar() {
       name: "Weekly Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/weekly-hiring-plan",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 5, 7],
     },
     {
       name: "Job Description",
