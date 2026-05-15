@@ -199,7 +199,7 @@ const employmentInterestOptions = [
 ];
 
 const initialCandidates = [
-  {
+{
     id: 1,
     candidateId: "CAND-001",
     hearAboutUs: ["Employee Referral Program"],
@@ -209,13 +209,13 @@ const initialCandidates = [
     referredBy: "Maria Reyes",
     employeeId: "EMP-0001",
     firstName: "Juan",
-    middleName: "",
+    middleName: "Santos",
     lastName: "Dela Cruz",
     suffix: "",
-    name: "Juan Dela Cruz",
+    name: "Juan Santos Dela Cruz",
     dateOfBirth: "1998-04-12",
     ageAsOfApplication: 28,
-    physicalAddress: "Davao City",
+    physicalAddress: "Buhangin, Davao City",
     email: "juan.delacruz@email.com",
     workExperience: "Has work Experience (at least 6 months relevant work experience)",
     workExperiences: [
@@ -224,8 +224,8 @@ const initialCandidates = [
         industry: "BPO",
         lengthOfWorkExperience: "1 year to 2 years",
         years: "2",
-        role: "CSR",
-        company: "Sample BPO",
+        role: "Customer Service Representative",
+        company: "Sample BPO Services",
         monthlyCompensation: "18000",
         reasonForLeaving: "Career growth",
         hasOtherExperience: "No",
@@ -235,10 +235,10 @@ const initialCandidates = [
     phoneNumber1: "09123456789",
     phoneNumber2: "",
     roleCapability: "Customer Service Representative",
-    skillsLanguage: "English, Chat",
+    skillsLanguage: "English, Chat Support, Customer Service",
     educationalAttainment: "Tertiary (College Level or College Degree Holder)",
     affiliations: ["Lean Six Sigma Belt Holder"],
-    trainingAttended: "Customer service training",
+    trainingAttended: "Customer service and call handling training",
     fullyVaccinated: "Yes",
     comfortableOnSite: "Yes",
     willingGraveyard: "Yes",
@@ -247,30 +247,457 @@ const initialCandidates = [
     willingDrugTest: "Yes",
     willingBackgroundCheck: "Yes",
     references: [
-      { name: "Sample Reference 1", phone: "09111111111" },
-      { name: "Sample Reference 2", phone: "09222222222" },
-      { name: "Sample Reference 3", phone: "09333333333" },
+      { name: "Ana Reyes", phone: "09111111111" },
+      { name: "Mark Lopez", phone: "09222222222" },
+      { name: "Grace Lim", phone: "09333333333" },
     ],
-    audioFileName: "",
-    attachmentFileName: "",
+    audioFileName: "juan-audio.mp3",
+    attachmentFileName: "juan-resume.pdf",
     consent: true,
     status: "Silver Pool",
     source: "Employee Referral Program",
     availability: "Available",
-    accountFit: "Collect IV",
+    accountFit: "Not assigned yet",
     lastActivity: "2026-05-02",
     tags: ["Customer Service Representative", "Chat Support", "English"],
     isPublicSubmission: false,
+    entryType: "TA Manual Entry",
+    createdBy: "Maria Reyes",
+    createdBySibsId: "TA-101",
+    createdAt: "2026-05-01",
+    pipelineStatus: "Active",
+    currentApplicationId: "APP-001",
+    currentHiringRequirementId: "",
+    currentPipelineStage: "Initial Screening",
+    currentApplicationStatus: "Active",
+    currentAppliedRole: "Not assigned yet",
+    currentAppliedAccount: "Not assigned yet",
+    currentTaOwner: "Maria Reyes",
+    currentPrfStatus: "Review",
+    currentAssessmentStatus: "Not Take",
+    currentAssessmentResult: "",
+    currentInterviewStatus: "For Assessment",
+    currentOfferStatus: "For Review",
+    currentOfferDecision: "",
+    currentInterviewDate: "",
+    lastPipelineUpdate: "2026-05-02",
     applicationHistory: [
       {
         role: "Customer Service Representative",
-        account: "Collect IV",
-        outcome: "Passed - No Opening",
-        date: "2026-04-20",
+        account: "Not assigned yet",
+        outcome: "Moved to Pipeline - Initial Screening",
+        date: "2026-05-02",
       },
     ],
-    remarks: "Passed screening and interview but no available opening yet.",
+    remarks: "Interested in CSR. Final account will be assigned during offer.",
   },
+{
+    id: 2,
+    candidateId: "CAND-002",
+    hearAboutUs: ["Social Media Ads"],
+    openPosition: "QA Specialist",
+    nickname: "Mia",
+    applyingLocation: "Davao Site",
+    referredBy: "N/A",
+    employeeId: "N/A",
+    firstName: "Maria",
+    middleName: "Lopez",
+    lastName: "Santos",
+    suffix: "",
+    name: "Maria Lopez Santos",
+    dateOfBirth: "1997-09-18",
+    ageAsOfApplication: 28,
+    physicalAddress: "Matina, Davao City",
+    email: "maria.santos@email.com",
+    workExperience: "Has work Experience (at least 6 months relevant work experience)",
+    workExperiences: [
+      {
+        id: 1,
+        industry: "BPO Quality Assurance",
+        lengthOfWorkExperience: "3 years to 4 years",
+        years: "3",
+        role: "QA Analyst",
+        company: "Quality Contact Center",
+        monthlyCompensation: "24000",
+        reasonForLeaving: "Looking for a better opportunity",
+        hasOtherExperience: "No",
+      },
+    ],
+    contactNumber: "09171234567",
+    phoneNumber1: "09171234567",
+    phoneNumber2: "",
+    roleCapability: "QA Specialist",
+    skillsLanguage: "QA, English, Documentation",
+    educationalAttainment: "Tertiary (College Level or College Degree Holder)",
+    affiliations: ["Civil Service Eligible"],
+    trainingAttended: "Quality assurance calibration training",
+    fullyVaccinated: "Yes",
+    comfortableOnSite: "Yes",
+    willingGraveyard: "Yes",
+    employmentInterest: "Full Time",
+    remoteWorkAccess: "Yes",
+    willingDrugTest: "Yes",
+    willingBackgroundCheck: "Yes",
+    references: [
+      { name: "Jose Cruz", phone: "09190000001" },
+      { name: "Leah Tan", phone: "09190000002" },
+      { name: "Rico Salva", phone: "09190000003" },
+    ],
+    audioFileName: "maria-audio.mp3",
+    attachmentFileName: "maria-resume.pdf",
+    consent: true,
+    status: "New Applicant",
+    source: "Social Media Ads",
+    availability: "Available in 2 weeks",
+    accountFit: "Not assigned yet",
+    lastActivity: "2026-05-04",
+    tags: ["QA Specialist", "Documentation", "English"],
+    isPublicSubmission: false,
+    entryType: "TA Manual Entry",
+    createdBy: "John Dela Cruz",
+    createdBySibsId: "TA-102",
+    createdAt: "2026-05-01",
+    pipelineStatus: "Active",
+    currentApplicationId: "APP-002",
+    currentHiringRequirementId: "",
+    currentPipelineStage: "Initial Screening",
+    currentApplicationStatus: "Active",
+    currentAppliedRole: "Not assigned yet",
+    currentAppliedAccount: "Not assigned yet",
+    currentTaOwner: "John Dela Cruz",
+    currentPrfStatus: "Matched",
+    currentAssessmentStatus: "Not Take",
+    currentAssessmentResult: "",
+    currentInterviewStatus: "For Assessment",
+    currentOfferStatus: "For Review",
+    currentOfferDecision: "",
+    currentInterviewDate: "",
+    lastPipelineUpdate: "2026-05-04",
+    applicationHistory: [
+      {
+        role: "QA Specialist",
+        account: "Not assigned yet",
+        outcome: "PRF Status Updated: Matched",
+        date: "2026-05-04",
+      },
+    ],
+    remarks: "Preferred position is QA Specialist. No final account yet.",
+  },
+{
+    id: 3,
+    candidateId: "CAND-003",
+    hearAboutUs: ["Online Job Portals"],
+    openPosition: "RCM Analyst",
+    nickname: "Mark",
+    applyingLocation: "Tagum Site",
+    referredBy: "N/A",
+    employeeId: "N/A",
+    firstName: "Mark",
+    middleName: "Villanueva",
+    lastName: "Reyes",
+    suffix: "",
+    name: "Mark Villanueva Reyes",
+    dateOfBirth: "1996-01-22",
+    ageAsOfApplication: 30,
+    physicalAddress: "Tagum City",
+    email: "mark.reyes@email.com",
+    workExperience: "Has work Experience (at least 6 months relevant work experience)",
+    workExperiences: [
+      {
+        id: 1,
+        industry: "Healthcare RCM",
+        lengthOfWorkExperience: "1 year to 2 years",
+        years: "2",
+        role: "RCM Associate",
+        company: "Healthcare Billing Co.",
+        monthlyCompensation: "22000",
+        reasonForLeaving: "Relocation",
+        hasOtherExperience: "No",
+      },
+    ],
+    contactNumber: "09281234567",
+    phoneNumber1: "09281234567",
+    phoneNumber2: "",
+    roleCapability: "RCM Analyst",
+    skillsLanguage: "RCM, Healthcare, Documentation",
+    educationalAttainment: "Tertiary (College Level or College Degree Holder)",
+    affiliations: ["NC II Holder"],
+    trainingAttended: "Medical billing and claims processing",
+    fullyVaccinated: "Yes",
+    comfortableOnSite: "Yes",
+    willingGraveyard: "Yes",
+    employmentInterest: "Full Time",
+    remoteWorkAccess: "No",
+    willingDrugTest: "Yes",
+    willingBackgroundCheck: "Yes",
+    references: [
+      { name: "Carlos Mendoza", phone: "09200000001" },
+      { name: "Nina Gomez", phone: "09200000002" },
+      { name: "Paolo Reyes", phone: "09200000003" },
+    ],
+    audioFileName: "mark-audio.mp3",
+    attachmentFileName: "mark-resume.pdf",
+    consent: true,
+    status: "New Applicant",
+    source: "Online Job Portals",
+    availability: "Available",
+    accountFit: "Not assigned yet",
+    lastActivity: "2026-05-06",
+    tags: ["RCM Analyst", "Healthcare", "Documentation"],
+    isPublicSubmission: false,
+    entryType: "TA Manual Entry",
+    createdBy: "Kim Domingo",
+    createdBySibsId: "TA-103",
+    createdAt: "2026-05-01",
+    pipelineStatus: "Active",
+    currentApplicationId: "APP-003",
+    currentHiringRequirementId: "",
+    currentPipelineStage: "Online Assessment",
+    currentApplicationStatus: "Active",
+    currentAppliedRole: "Not assigned yet",
+    currentAppliedAccount: "Not assigned yet",
+    currentTaOwner: "Kim Domingo",
+    currentPrfStatus: "Matched",
+    currentAssessmentStatus: "Taken",
+    currentAssessmentResult: "Assessment Fit",
+    currentInterviewStatus: "For Assessment",
+    currentOfferStatus: "For Review",
+    currentOfferDecision: "",
+    currentInterviewDate: "",
+    lastPipelineUpdate: "2026-05-06",
+    applicationHistory: [
+      {
+        role: "RCM Analyst",
+        account: "Not assigned yet",
+        outcome: "Assessment Result: Assessment Fit",
+        date: "2026-05-06",
+      },
+    ],
+    remarks: "Passed online assessment; ready for interview scheduling.",
+  },
+  {
+    id: 4,
+    candidateId: "CAND-004",
+    hearAboutUs: ["Walk In"],
+    openPosition: "IT Support",
+    nickname: "Ana",
+    applyingLocation: "Mabini Site",
+    referredBy: "N/A",
+    employeeId: "N/A",
+    firstName: "Ana",
+    middleName: "Garcia",
+    lastName: "Lim",
+    suffix: "",
+    name: "Ana Garcia Lim",
+    dateOfBirth: "1999-07-09",
+    ageAsOfApplication: 26,
+    physicalAddress: "Mabini, Davao de Oro",
+    email: "ana.lim@email.com",
+    workExperience: "Has work Experience (at least 6 months relevant work experience)",
+    workExperiences: [
+      {
+        id: 1,
+        industry: "IT Helpdesk",
+        lengthOfWorkExperience: "1 year to 2 years",
+        years: "2",
+        role: "IT Helpdesk Associate",
+        company: "TechDesk PH",
+        monthlyCompensation: "21000",
+        reasonForLeaving: "End of contract",
+        hasOtherExperience: "No",
+      },
+    ],
+    contactNumber: "09351234567",
+    phoneNumber1: "09351234567",
+    phoneNumber2: "",
+    roleCapability: "IT Support",
+    skillsLanguage: "Tech, Troubleshooting, English",
+    educationalAttainment: "Tertiary (College Level or College Degree Holder)",
+    affiliations: ["NC II Holder"],
+    trainingAttended: "Basic networking and hardware troubleshooting",
+    fullyVaccinated: "Yes",
+    comfortableOnSite: "Yes",
+    willingGraveyard: "Yes",
+    employmentInterest: "Full Time",
+    remoteWorkAccess: "Yes",
+    willingDrugTest: "Yes",
+    willingBackgroundCheck: "Yes",
+    references: [
+      { name: "Victor Chan", phone: "09300000001" },
+      { name: "Sarah Yu", phone: "09300000002" },
+      { name: "Dennis Lim", phone: "09300000003" },
+    ],
+    audioFileName: "ana-audio.mp3",
+    attachmentFileName: "ana-resume.pdf",
+    consent: true,
+    status: "New Applicant",
+    source: "Walk In",
+    availability: "Available in 30 days",
+    accountFit: "SIBS IT",
+    lastActivity: "2026-05-10",
+    tags: ["IT Support", "Tech", "Troubleshooting"],
+    isPublicSubmission: false,
+    entryType: "TA Manual Entry",
+    createdBy: "Paul Garcia",
+    createdBySibsId: "TA-104",
+    createdAt: "2026-05-01",
+    pipelineStatus: "Active",
+    currentApplicationId: "APP-004",
+    currentHiringRequirementId: "",
+    currentPipelineStage: "Offered",
+    currentApplicationStatus: "Active",
+    currentAppliedRole: "IT Support",
+    currentAppliedAccount: "SIBS IT",
+    currentTaOwner: "Paul Garcia",
+    currentPrfStatus: "Matched",
+    currentAssessmentStatus: "Taken",
+    currentAssessmentResult: "Assessment Fit",
+    currentInterviewStatus: "Completed",
+    currentOfferStatus: "For Review",
+    currentOfferDecision: "",
+    currentInterviewDate: "2026-05-10T10:30",
+    lastPipelineUpdate: "2026-05-10",
+    applicationHistory: [
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "Candidate moved from Talent Pool without final role or account assignment.",
+        date: "2026-05-08",
+      },
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "PRF status changed to Matched. Candidate moved to Initial Screening.",
+        date: "2026-05-08",
+      },
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "Assessment marked as Taken and tagged as Assessment Fit.",
+        date: "2026-05-08",
+      },
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "Interview completed. Candidate moved to Interviewed.",
+        date: "2026-05-10",
+      },
+      {
+        role: "IT Support",
+        account: "SIBS IT",
+        outcome: "Final role and account assigned during Offered stage.",
+        date: "2026-05-10",
+      },
+    ],
+    remarks: "Final role and account were assigned only when the candidate reached Offered stage.",
+  },
+  {
+    id: 5,
+    candidateId: "CAND-005",
+    hearAboutUs: ["Institutional Partnership"],
+    openPosition: "Accounting Staff",
+    nickname: "Leo",
+    applyingLocation: "Davao Site",
+    referredBy: "Davao College Career Office",
+    employeeId: "N/A",
+    firstName: "Leonardo",
+    middleName: "Ramos",
+    lastName: "Cruz",
+    suffix: "",
+    name: "Leonardo Ramos Cruz",
+    dateOfBirth: "1995-11-30",
+    ageAsOfApplication: 30,
+    physicalAddress: "Toril, Davao City",
+    email: "leo.cruz@email.com",
+    workExperience: "Has work Experience (at least 6 months relevant work experience)",
+    workExperiences: [
+      {
+        id: 1,
+        industry: "Accounting",
+        lengthOfWorkExperience: "3 years to 4 years",
+        years: "4",
+        role: "Accounting Assistant",
+        company: "Finance Shared Services Inc.",
+        monthlyCompensation: "26000",
+        reasonForLeaving: "Career advancement",
+        hasOtherExperience: "No",
+      },
+    ],
+    contactNumber: "09451234567",
+    phoneNumber1: "09451234567",
+    phoneNumber2: "",
+    roleCapability: "Accounting Staff",
+    skillsLanguage: "Accounting, Documentation, Excel",
+    educationalAttainment: "Tertiary (College Level or College Degree Holder)",
+    affiliations: ["CPA"],
+    trainingAttended: "Bookkeeping and accounting systems training",
+    fullyVaccinated: "Yes",
+    comfortableOnSite: "Yes",
+    willingGraveyard: "No",
+    employmentInterest: "Full Time",
+    remoteWorkAccess: "Yes",
+    willingDrugTest: "Yes",
+    willingBackgroundCheck: "Yes",
+    references: [
+      { name: "Liza Ramos", phone: "09400000001" },
+      { name: "Albert Tan", phone: "09400000002" },
+      { name: "Celine Cruz", phone: "09400000003" },
+    ],
+    audioFileName: "leo-audio.mp3",
+    attachmentFileName: "leo-resume.pdf",
+    consent: true,
+    status: "Withdrawn",
+    source: "Institutional Partnership",
+    availability: "Available",
+    accountFit: "Not assigned yet",
+    lastActivity: "2026-05-13",
+    tags: ["Accounting Staff", "Accounting", "Excel"],
+    isPublicSubmission: false,
+    entryType: "TA Manual Entry",
+    createdBy: "Maria Reyes",
+    createdBySibsId: "TA-101",
+    createdAt: "2026-05-01",
+    pipelineStatus: "Closed",
+    currentApplicationId: "APP-005",
+    currentHiringRequirementId: "",
+    currentPipelineStage: "Drop-off",
+    currentApplicationStatus: "Closed",
+    currentAppliedRole: "Not assigned yet",
+    currentAppliedAccount: "Not assigned yet",
+    currentTaOwner: "Maria Reyes",
+    currentPrfStatus: "Matched",
+    currentAssessmentStatus: "Not Take",
+    currentAssessmentResult: "",
+    currentInterviewStatus: "For Assessment",
+    currentOfferStatus: "For Review",
+    currentOfferDecision: "",
+    currentInterviewDate: "",
+    currentDropOffCategory: "No Response",
+    currentDropOffReason: "No response after follow-up calls and messages.",
+    lastPipelineUpdate: "2026-05-13",
+    applicationHistory: [
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "Candidate moved from Talent Pool without final role or account assignment.",
+        date: "2026-05-12",
+      },
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "PRF status changed to Matched. Candidate moved to Initial Screening.",
+        date: "2026-05-12",
+      },
+      {
+        role: "Not assigned yet",
+        account: "Not assigned yet",
+        outcome: "Drop-off - No Response: No response after follow-up calls and messages.",
+        date: "2026-05-13",
+      },
+    ],
+    remarks: "Dropped off during Initial Screening. Reason: No response after follow-up calls and messages.",
+  }
+
 ];
 
 const emptyExperience = {
@@ -340,10 +767,10 @@ const emptyStatusForm = {
 const emptyMoveToPipelineForm = {
   hiringRequirementId: "",
   jobDescriptionId: "",
-  roleTitle: "",
-  account: "",
+  roleTitle: "Not assigned yet",
+  account: "Not assigned yet",
   taOwner: "",
-  initialStage: "Lead / Sourced",
+  initialStage: "Initial Screening",
   remarks: "",
 };
 
@@ -414,6 +841,80 @@ function textareaClass(extra = "") {
 
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
+}
+
+function ConfirmationModal({ open, title = "Confirm Action", message, confirmLabel = "Continue", cancelLabel = "Cancel", onCancel, onConfirm }) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-slate-950/40 px-4 py-4 backdrop-blur-[1px]"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-[#EEF2F6] px-5 py-4">
+          <h3 className="text-base font-extrabold text-sibs-primary-1">{title}</h3>
+          <p className="mt-1 text-sm font-semibold leading-6 text-[#667085]">{message}</p>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white px-5 text-sm font-bold text-[#344054] transition hover:border-[#B8C4D2] hover:bg-[#F8FAFC] focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10"
+          >
+            {cancelLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/20"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useConfirmDialog() {
+  const [confirmState, setConfirmState] = useState(null);
+
+  function confirmAction(message, options = {}) {
+    return new Promise((resolve) => {
+      setConfirmState({
+        message,
+        title: options.title || "Confirm Action",
+        confirmLabel: options.confirmLabel || "Continue",
+        cancelLabel: options.cancelLabel || "Cancel",
+        resolve,
+      });
+    });
+  }
+
+  function closeConfirm(result) {
+    if (confirmState?.resolve) confirmState.resolve(result);
+    setConfirmState(null);
+  }
+
+  const ConfirmationDialog = (
+    <ConfirmationModal
+      open={Boolean(confirmState)}
+      title={confirmState?.title}
+      message={confirmState?.message}
+      confirmLabel={confirmState?.confirmLabel}
+      cancelLabel={confirmState?.cancelLabel}
+      onCancel={() => closeConfirm(false)}
+      onConfirm={() => closeConfirm(true)}
+    />
+  );
+
+  return { confirmAction, ConfirmationDialog };
 }
 
 function generateCandidateId(nextNumber) {
@@ -712,7 +1213,11 @@ function parseUploadedLeadRow(row, nextId, index) {
     status,
     source,
     availability: getUploadValue(row, ["availability", "Availability"], "Available"),
-    accountFit: getUploadValue(row, ["accountFit", "account", "Account Fit"], "N/A"),
+    accountFit: "Not assigned yet",
+    entryType: "TA CSV Upload",
+    createdBy: "TA CSV Upload",
+    createdBySibsId: "",
+    createdAt: getTodayDate(),
     lastActivity: getTodayDate(),
     tags: normalizeTags(openPosition, getUploadValue(row, ["skillsLanguage", "skills"])),
     isPublicSubmission: false,
@@ -820,9 +1325,154 @@ function normalizeCandidateRecord(candidate) {
     attachmentFileName: candidate.attachmentFileName || "",
     source,
     availability: candidate.availability || "Available",
-    accountFit: candidate.accountFit || candidate.appliedAccount || "N/A",
+    accountFit: candidate.accountFit || candidate.appliedAccount || "Not assigned yet",
+    entryType: candidate.entryType || (candidate.isPublicSubmission ? "Public Application" : "TA Manual Entry"),
+    createdBy: candidate.createdBy || candidate.addedBy || (candidate.isPublicSubmission ? "Candidate" : "TA Team"),
+    createdBySibsId: candidate.createdBySibsId || candidate.addedBySibsId || "",
+    createdAt: candidate.createdAt || candidate.submittedAt || candidate.lastActivity || getTodayDate(),
     lastActivity: candidate.lastActivity || candidate.submittedAt || getTodayDate(),
     tags: candidate.tags || normalizeTags(openPosition, candidate.skillsLanguage),
+  };
+}
+
+function getPipelineStageClass(stage) {
+  switch (stage) {
+    case "Initial Screening":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "Initial Screening":
+      return "border-indigo-200 bg-indigo-50 text-indigo-700";
+    case "Online Assessment":
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    case "Interview Scheduled":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    case "Interviewed":
+      return "border-violet-200 bg-violet-50 text-violet-700";
+    case "Offered":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Accepted":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Drop-off":
+      return "border-red-200 bg-red-50 text-red-700";
+    default:
+      return "border-gray-200 bg-gray-50 text-gray-600";
+  }
+}
+
+function normalizePipelineApplication(application) {
+  if (!application) return null;
+
+  const roleTitle =
+    application.roleTitle ||
+    application.appliedRole ||
+    application.openPosition ||
+    (application.roleAccount ? String(application.roleAccount).split(" - ")[0] : "");
+  const account =
+    application.account ||
+    application.appliedAccount ||
+    application.offerDetails?.account ||
+    (application.roleAccount ? String(application.roleAccount).split(" - ").slice(1).join(" - ") : "");
+
+  return {
+    ...application,
+    roleTitle,
+    account,
+    currentStage: application.currentStage || application.pipelineStage || "Initial Screening",
+    applicationStatus: application.applicationStatus || "Active",
+    taOwner: application.taOwner || application.owner || "—",
+    updatedAt: application.updatedAt || application.dateMoved || application.createdAt || getTodayDate(),
+  };
+}
+
+function getCandidatePipelineApplications(candidate) {
+  const applications = readLocalStorage(CANDIDATE_APPLICATIONS_KEY, []);
+  if (!candidate || !Array.isArray(applications)) return [];
+
+  return applications
+    .map(normalizePipelineApplication)
+    .filter(Boolean)
+    .filter((application) => {
+      return (
+        String(application.candidateMasterId || application.masterCandidateId || "") === String(candidate.id || "") ||
+        String(application.candidateId || "") === String(candidate.candidateId || "") ||
+        String(application.email || application.candidateEmail || "").toLowerCase() ===
+          String(candidate.email || "").toLowerCase()
+      );
+    })
+    .sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.dateMoved || a.createdAt || 0).getTime();
+      const bTime = new Date(b.updatedAt || b.dateMoved || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+}
+
+function getLatestPipelineSummary(candidate) {
+  const applications = getCandidatePipelineApplications(candidate);
+  const latestApplication = applications[0];
+
+  if (!latestApplication) {
+    return {
+      hasPipeline: Boolean(candidate.currentPipelineStage),
+      activeApplications: 0,
+      applicationId: candidate.currentApplicationId || "",
+      stage: candidate.currentPipelineStage || "Not in Pipeline",
+      applicationStatus: candidate.currentApplicationStatus || "Not Started",
+      roleTitle: candidate.currentAppliedRole || "Not assigned yet",
+      account: candidate.currentAppliedAccount || "Not assigned yet",
+      taOwner: candidate.currentTaOwner || "—",
+      prfStatus: candidate.currentPrfStatus || "—",
+      assessmentStatus: candidate.currentAssessmentStatus || "—",
+      assessmentResult: candidate.currentAssessmentResult || "—",
+      interviewStatus: candidate.currentInterviewStatus || "—",
+      offerStatus: candidate.currentOfferStatus || "—",
+      offerDecision: candidate.currentOfferDecision || "—",
+      lastPipelineUpdate: candidate.lastPipelineUpdate || "",
+    };
+  }
+
+  return {
+    hasPipeline: true,
+    activeApplications: applications.filter((item) => item.applicationStatus === "Active").length,
+    applicationId: latestApplication.applicationId || latestApplication.id || "",
+    stage: latestApplication.currentStage || "Initial Screening",
+    applicationStatus: latestApplication.applicationStatus || "Active",
+    roleTitle:
+      latestApplication.offerDetails?.roleTitle ||
+      latestApplication.roleTitle ||
+      "Not assigned yet",
+    account:
+      latestApplication.offerDetails?.account ||
+      latestApplication.account ||
+      "Not assigned yet",
+    taOwner: latestApplication.taOwner || latestApplication.owner || "—",
+    prfStatus: latestApplication.prfStatus || "Review",
+    assessmentStatus: latestApplication.assessmentStatus || "Not Take",
+    assessmentResult: latestApplication.assessmentResult || "—",
+    interviewStatus: latestApplication.interviewStatus || "—",
+    offerStatus: latestApplication.offerApprovalStatus || "—",
+    offerDecision: latestApplication.offerDecision || "—",
+    lastPipelineUpdate: latestApplication.updatedAt || latestApplication.dateMoved || latestApplication.createdAt || "",
+  };
+}
+
+function enrichCandidateWithPipelineSummary(candidate) {
+  const normalized = normalizeCandidateRecord(candidate);
+  const pipelineSummary = getLatestPipelineSummary(normalized);
+
+  return {
+    ...normalized,
+    pipelineSummary,
+    currentPipelineStage: pipelineSummary.stage,
+    currentApplicationStatus: pipelineSummary.applicationStatus,
+    currentAppliedRole: pipelineSummary.roleTitle,
+    currentAppliedAccount: pipelineSummary.account,
+    currentTaOwner: pipelineSummary.taOwner,
+    currentPrfStatus: pipelineSummary.prfStatus,
+    currentAssessmentStatus: pipelineSummary.assessmentStatus,
+    currentAssessmentResult: pipelineSummary.assessmentResult,
+    currentInterviewStatus: pipelineSummary.interviewStatus,
+    currentOfferStatus: pipelineSummary.offerStatus,
+    currentOfferDecision: pipelineSummary.offerDecision,
+    lastPipelineUpdate: pipelineSummary.lastPipelineUpdate,
   };
 }
 
@@ -1007,6 +1657,15 @@ function TalentPoolMobileCard({ candidate, onView }) {
         <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[10px] font-bold text-gray-600">
           {candidate.source || "—"}
         </span>
+        {candidate.pipelineSummary?.hasPipeline && (
+          <span
+            className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getPipelineStageClass(
+              candidate.pipelineSummary.stage
+            )}`}
+          >
+            Pipeline: {candidate.pipelineSummary.stage}
+          </span>
+        )}
         {candidate.isPublicSubmission && (
           <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700">
             Public Submission
@@ -1204,7 +1863,7 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset, mo
       onClick={onClose}
     >
       <div
-        className="flex max-h-[94dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
@@ -1720,7 +2379,10 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset, mo
             </section>
 
             <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-              <SectionTitle title="Internal Talent Pool Fields" />
+              <SectionTitle
+                title="Internal Talent Pool Fields"
+                description="Source is based on 'How did you first hear about us?'. Account, role, and hiring requirement are assigned only during the Offered stage."
+              />
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
@@ -1739,22 +2401,6 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset, mo
                 </div>
 
                 <div>
-                  <FieldLabel>Source</FieldLabel>
-                  <select
-                    value={form.source}
-                    onChange={(e) => setForm({ ...form, source: e.target.value })}
-                    className={inputClass()}
-                  >
-                    <option value="">Select source</option>
-                    {sourceOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
                   <FieldLabel>Availability</FieldLabel>
                   <select
                     value={form.availability}
@@ -1764,22 +2410,6 @@ function AddCandidateModal({ open, form, setForm, onClose, onSubmit, onReset, mo
                     {availabilityOptions.filter((item) => item !== "All").map((item) => (
                       <option key={item} value={item}>
                         {item}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <FieldLabel>Account Fit</FieldLabel>
-                  <select
-                    value={form.accountFit}
-                    onChange={(e) => setForm({ ...form, accountFit: e.target.value })}
-                    className={inputClass()}
-                  >
-                    <option value="">Select account</option>
-                    {accountOptions.filter((item) => item !== "All Accounts").map((account) => (
-                      <option key={account} value={account}>
-                        {account}
                       </option>
                     ))}
                   </select>
@@ -1990,11 +2620,37 @@ function CandidateProfileModal({ open, candidate, onClose, onOpenStatus, onOpenM
               <section className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
                 <SectionTitle title="Talent Pool Status" />
                 <DetailRow label="Status" value={candidate.status} />
-                <DetailRow label="Source" value={candidate.source} />
+                <DetailRow label="Source" value={formatList(candidate.hearAboutUs) || candidate.source} />
+                <DetailRow label="Entry Type" value={candidate.entryType} />
+                <DetailRow label="Added / Submitted By" value={candidate.createdBy} />
+                <DetailRow label="Date Added" value={formatDate(candidate.createdAt)} />
                 <DetailRow label="Availability" value={candidate.availability} />
-                <DetailRow label="Account Fit" value={candidate.accountFit} />
+                <DetailRow label="Final Account" value={candidate.currentAppliedAccount || "Not assigned yet"} />
                 <DetailRow label="Last Activity" value={formatDate(candidate.lastActivity)} />
-                <DetailRow label="Remarks" value={candidate.remarks} />
+                <DetailRow label="Remarks / TA Notes" value={candidate.remarks} />
+              </section>
+
+              <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                <SectionTitle title="Pipeline Summary" />
+                {candidate.pipelineSummary?.hasPipeline ? (
+                  <>
+                    <DetailRow label="Current Stage" value={candidate.pipelineSummary.stage} />
+                    <DetailRow label="Application Status" value={candidate.pipelineSummary.applicationStatus} />
+                    <DetailRow label="Applied Role" value={candidate.pipelineSummary.roleTitle} />
+                    <DetailRow label="Applied Account" value={candidate.pipelineSummary.account} />
+                    <DetailRow label="TA Owner" value={candidate.pipelineSummary.taOwner} />
+                    <DetailRow label="PRF Status" value={candidate.pipelineSummary.prfStatus} />
+                    <DetailRow label="Assessment" value={`${candidate.pipelineSummary.assessmentStatus || "—"} / ${candidate.pipelineSummary.assessmentResult || "—"}`} />
+                    <DetailRow label="Interview Status" value={candidate.pipelineSummary.interviewStatus} />
+                    <DetailRow label="Offer Status" value={candidate.pipelineSummary.offerStatus} />
+                    <DetailRow label="Offer Decision" value={candidate.pipelineSummary.offerDecision} />
+                    <DetailRow label="Last Pipeline Update" value={formatDate(candidate.pipelineSummary.lastPipelineUpdate)} />
+                  </>
+                ) : (
+                  <p className="text-sm font-semibold leading-6 text-sibs-primary-1/75">
+                    This candidate has no active pipeline application yet.
+                  </p>
+                )}
               </section>
 
               <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
@@ -2117,26 +2773,13 @@ function UpdateStatusModal({ open, candidate, form, setForm, onClose, onSubmit }
 function MoveToPipelineModal({ open, candidate, form, setForm, onClose, onSubmit, currentTaOwner }) {
   if (!open || !candidate) return null;
 
-  function handleRequirementChange(requirementId) {
-    const selectedRequirement = hiringRequirementOptions.find((item) => item.id === requirementId);
-
-    setForm({
-      ...form,
-      hiringRequirementId: requirementId,
-      jobDescriptionId: selectedRequirement?.jobDescriptionId || "",
-      roleTitle: selectedRequirement?.roleTitle || "",
-      account: selectedRequirement?.account || "",
-      taOwner: currentTaOwner || selectedRequirement?.taOwner || "",
-    });
-  }
-
   return (
     <div className="fixed inset-0 z-[10002] flex h-dvh items-center justify-center bg-black/40 px-4 py-4" onClick={onClose}>
-      <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
           <div>
-            <h2 className="text-lg font-bold text-sibs-primary-1">Move to Candidate Pipeline</h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">{candidate.name}</p>
+            <h2 className="text-base font-extrabold text-sibs-primary-1">Move to Pipeline</h2>
+            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">{candidate.name}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
             <X size={20} />
@@ -2144,31 +2787,18 @@ function MoveToPipelineModal({ open, candidate, form, setForm, onClose, onSubmit
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4 p-5">
-          <div>
-            <FieldLabel>Hiring Requirement</FieldLabel>
-            <select
-              required
-              value={form.hiringRequirementId}
-              onChange={(e) => handleRequirementChange(e.target.value)}
-              className={inputClass()}
-            >
-              <option value="">Select hiring requirement</option>
-              {hiringRequirementOptions.map((requirement) => (
-                <option key={requirement.id} value={requirement.id}>
-                  {requirement.id} — {requirement.roleTitle} / {requirement.account}
-                </option>
-              ))}
-            </select>
+          <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold leading-6 text-[#475467]">
+            No role, account, or hiring requirement will be assigned yet. Final assignment is captured during Offered stage.
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <FieldLabel>Role Title</FieldLabel>
-              <input value={form.roleTitle} readOnly className={inputClass("bg-[#F8FAFC]")} />
+              <input value="Not assigned yet" readOnly className={inputClass("bg-[#F8FAFC]")} />
             </div>
             <div>
               <FieldLabel>Account</FieldLabel>
-              <input value={form.account} readOnly className={inputClass("bg-[#F8FAFC]")} />
+              <input value="Not assigned yet" readOnly className={inputClass("bg-[#F8FAFC]")} />
             </div>
             <div>
               <FieldLabel>TA Owner</FieldLabel>
@@ -2183,14 +2813,8 @@ function MoveToPipelineModal({ open, candidate, form, setForm, onClose, onSubmit
             </div>
             <div>
               <FieldLabel>Initial Stage</FieldLabel>
-              <select
-                value={form.initialStage}
-                onChange={(e) => setForm({ ...form, initialStage: e.target.value })}
-                className={inputClass()}
-              >
-                <option value="Lead / Sourced">Lead / Sourced</option>
-                <option value="Initial Screening">Initial Screening</option>
-              </select>
+              <input value="Initial Screening" readOnly className={inputClass("bg-[#F8FAFC]")} />
+              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">Candidates go directly to Initial Screening for match tagging.</p>
             </div>
           </div>
 
@@ -2223,14 +2847,24 @@ function MoveToPipelineModal({ open, candidate, form, setForm, onClose, onSubmit
 
 export default function TalentPoolPage() {
   const { user } = useUser();
+  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
   const uploadInputRef = useRef(null);
   const currentTaOwner =
     user?.name ||
     user?.fullName ||
     user?.employeeName ||
+    user?.displayName ||
     user?.username ||
-    user?.email ||
     "Current User";
+  const currentTaSibsId =
+    user?.sibsId ||
+    user?.sibsID ||
+    user?.employeeId ||
+    user?.employeeID ||
+    user?.gy_emp_code ||
+    user?.id ||
+    "";
+  const currentTaEmail = "";
 
   const [candidateList, setCandidateList] = useState(initialCandidates.map(normalizeCandidateRecord));
 
@@ -2268,12 +2902,17 @@ export default function TalentPoolPage() {
           candidateId:
             submission.candidateId || generateCandidateId(initialCandidates.length + index + 1),
           status: "New Applicant",
-          source: submission.source || "Public Application",
+          source: submission.source || (Array.isArray(submission.hearAboutUs) ? submission.hearAboutUs.join(", ") : submission.hearAboutUs) || "Public Application",
+          entryType: "Public Application",
+          createdBy: "Candidate",
+          createdBySibsId: "",
+                createdAt: submission.submittedAt || getTodayDate(),
           isPublicSubmission: true,
+          accountFit: "Not assigned yet",
           applicationHistory: [
             {
               role: submission.openPosition || submission.roleCapability,
-              account: submission.accountFit || "Unassigned",
+              account: "Not assigned yet",
               outcome: "Public Application Submitted",
               date: submission.submittedAt || getTodayDate(),
             },
@@ -2292,16 +2931,16 @@ export default function TalentPoolPage() {
     writeLocalStorage(INTERNAL_CANDIDATES_KEY, candidateList);
   }, [candidateList]);
 
-  function handleResetCandidateForm() {
+  async function handleResetCandidateForm() {
     setCandidateForm(emptyCandidateForm);
   }
 
-  function handleOpenPublicForm() {
+  async function handleOpenPublicForm() {
     window.open("/recruitment/talent-pool/apply", "_blank", "noopener,noreferrer");
   }
 
 
-  function handleDownloadLeadTemplate() {
+  async function handleDownloadLeadTemplate() {
     const csv = buildLeadUploadCsvTemplate();
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -2314,7 +2953,7 @@ export default function TalentPoolPage() {
     URL.revokeObjectURL(url);
   }
 
-  function handleUploadLeadsFile(event) {
+  async function handleUploadLeadsFile(event) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -2377,7 +3016,7 @@ export default function TalentPoolPage() {
     reader.readAsText(file);
   }
 
-  function handleAddCandidate(e) {
+  async function handleAddCandidate(e) {
     e.preventDefault();
 
     const age = calculateAge(candidateForm.dateOfBirth);
@@ -2394,6 +3033,10 @@ export default function TalentPoolPage() {
 
     if (!candidateForm.consent) {
       alert("Please confirm the terms and conditions consent.");
+      return;
+    }
+
+    if (!(await confirmAction(`Save ${buildFullName(candidateForm) || "this candidate"} as a TA Manual Entry under ${currentTaOwner}?`))) {
       return;
     }
 
@@ -2420,14 +3063,14 @@ export default function TalentPoolPage() {
 
     const today = getTodayDate();
     const fullName = buildFullName(candidateForm);
-    const source = candidateForm.source || candidateForm.hearAboutUs.join(", ");
+    const source = candidateForm.hearAboutUs.join(", ");
     const roleCapability = candidateForm.openPosition;
 
     const applicationHistory = [
       {
         role: candidateForm.openPosition,
-        account: candidateForm.accountFit || candidateForm.applyingLocation || "Unassigned",
-        outcome: candidateForm.applicationOutcome || "Initial Entry",
+        account: "Not assigned yet",
+        outcome: `TA Manual Entry by ${currentTaOwner}`,
         date: today,
       },
     ];
@@ -2478,7 +3121,11 @@ export default function TalentPoolPage() {
       status: candidateForm.status || "New Applicant",
       source,
       availability: candidateForm.availability,
-      accountFit: candidateForm.accountFit || candidateForm.applyingLocation || "N/A",
+      accountFit: "Not assigned yet",
+      entryType: "TA Manual Entry",
+      createdBy: currentTaOwner,
+      createdBySibsId: currentTaSibsId,
+      createdAt: today,
       lastActivity: today,
       tags: normalizeTags(roleCapability, candidateForm.skillsLanguage),
       isPublicSubmission: false,
@@ -2493,23 +3140,23 @@ export default function TalentPoolPage() {
   }
 
 
-  function handleOpenEditCandidate(candidate) {
+  async function handleOpenEditCandidate(candidate) {
     setEditCandidate(candidate);
     setEditCandidateForm(candidateToForm(candidate));
     setSelectedCandidate(null);
   }
 
-  function handleCloseEditCandidate() {
+  async function handleCloseEditCandidate() {
     setEditCandidate(null);
     setEditCandidateForm(emptyCandidateForm);
   }
 
-  function handleResetEditCandidateForm() {
+  async function handleResetEditCandidateForm() {
     if (!editCandidate) return;
     setEditCandidateForm(candidateToForm(editCandidate));
   }
 
-  function handleSubmitEditCandidate(e) {
+  async function handleSubmitEditCandidate(e) {
     e.preventDefault();
 
     if (!editCandidate) return;
@@ -2528,6 +3175,10 @@ export default function TalentPoolPage() {
 
     if (!editCandidateForm.consent) {
       alert("Please confirm the terms and conditions consent.");
+      return;
+    }
+
+    if (!(await confirmAction(`Save changes for ${buildFullName(editCandidateForm) || editCandidate.name}?`))) {
       return;
     }
 
@@ -2592,16 +3243,20 @@ export default function TalentPoolPage() {
       attachmentFileName: editCandidateForm.attachmentFileName,
       consent: editCandidateForm.consent,
       status: editCandidateForm.status || editCandidate.status || "New Applicant",
-      source: editCandidateForm.source || editCandidateForm.hearAboutUs.join(", "),
+      source: editCandidateForm.hearAboutUs.join(", "),
       availability: editCandidateForm.availability,
-      accountFit: editCandidateForm.accountFit || "N/A",
+      accountFit: editCandidate.accountFit || "Not assigned yet",
+      entryType: editCandidate.entryType || "TA Manual Entry",
+      createdBy: editCandidate.createdBy || currentTaOwner,
+      createdBySibsId: editCandidate.createdBySibsId || currentTaSibsId,
+      createdAt: editCandidate.createdAt || today,
       lastActivity: today,
       tags: normalizeTags(roleCapability, editCandidateForm.skillsLanguage),
       applicationHistory: [
         ...(editCandidate.applicationHistory || []),
         {
           role: roleCapability,
-          account: editCandidateForm.accountFit || "Unassigned",
+          account: editCandidate.currentAppliedAccount || editCandidate.accountFit || "Not assigned yet",
           outcome: "Candidate Details Updated",
           date: today,
         },
@@ -2619,7 +3274,7 @@ export default function TalentPoolPage() {
     handleCloseEditCandidate();
   }
 
-  function handleOpenStatus(candidate) {
+  async function handleOpenStatus(candidate) {
     setStatusTarget(candidate);
     setStatusForm({
       status: candidate.status,
@@ -2627,15 +3282,19 @@ export default function TalentPoolPage() {
     });
   }
 
-  function handleCloseStatus() {
+  async function handleCloseStatus() {
     setStatusTarget(null);
     setStatusForm(emptyStatusForm);
   }
 
-  function handleSubmitStatus(e) {
+  async function handleSubmitStatus(e) {
     e.preventDefault();
 
     if (!statusTarget) return;
+
+    if (!(await confirmAction(`Update ${statusTarget.name} status to ${statusForm.status}?`))) {
+      return;
+    }
 
     const today = getTodayDate();
     const updatedRemarks = statusForm.remarks.trim()
@@ -2668,22 +3327,22 @@ export default function TalentPoolPage() {
     handleCloseStatus();
   }
 
-  function handleOpenMoveToPipeline(candidate) {
+  async function handleOpenMoveToPipeline(candidate) {
     setPipelineTarget(candidate);
     setMoveToPipelineForm({
       ...emptyMoveToPipelineForm,
-      roleTitle: candidate.openPosition || candidate.roleCapability || "",
-      account: candidate.accountFit === "N/A" ? "" : candidate.accountFit,
+      roleTitle: "Not assigned yet",
+      account: "Not assigned yet",
       taOwner: currentTaOwner,
     });
   }
 
-  function handleCloseMoveToPipeline() {
+  async function handleCloseMoveToPipeline() {
     setPipelineTarget(null);
     setMoveToPipelineForm(emptyMoveToPipelineForm);
   }
 
-  function handleSubmitMoveToPipeline(e) {
+  async function handleSubmitMoveToPipeline(e) {
     e.preventDefault();
 
     if (!pipelineTarget) return;
@@ -2693,17 +3352,7 @@ export default function TalentPoolPage() {
       return;
     }
 
-    if (!moveToPipelineForm.hiringRequirementId) {
-      alert("Hiring Requirement is required.");
-      return;
-    }
-
-    const selectedRequirement = hiringRequirementOptions.find(
-      (item) => item.id === moveToPipelineForm.hiringRequirementId
-    );
-
-    if (!selectedRequirement) {
-      alert("Selected hiring requirement is invalid.");
+    if (!(await confirmAction(`Move ${pipelineTarget.name} to Candidate Pipeline? Role, account, and hiring requirement will remain unassigned until Offered stage.`))) {
       return;
     }
 
@@ -2713,31 +3362,58 @@ export default function TalentPoolPage() {
     const duplicateActiveApplication = existingApplications.some(
       (application) =>
         application.candidateId === pipelineTarget.candidateId &&
-        application.hiringRequirementId === selectedRequirement.id &&
-        application.applicationStatus === "Active"
+        application.applicationStatus === "Active" &&
+        application.currentStage !== "Accepted" &&
+        application.currentStage !== "Drop-off"
     );
 
     if (duplicateActiveApplication) {
-      alert("This candidate is already active in the pipeline for this requirement.");
+      alert("This candidate already has an active pipeline application.");
       return;
     }
 
+    const todayTimestamp = Date.now();
+    const applicationId = generateApplicationId();
+    const owner = currentTaOwner || moveToPipelineForm.taOwner || "Current User";
+    const initialStage = "Initial Screening";
+    const movementReason = moveToPipelineForm.remarks.trim() || "Moved from Talent Pool to Candidate Pipeline. Role, account, and hiring requirement are not assigned yet.";
+
     const newApplication = {
-      id: Date.now(),
-      applicationId: generateApplicationId(),
+      id: todayTimestamp,
+      candidateApplicationId: todayTimestamp,
+      applicationId,
       candidateId: pipelineTarget.candidateId,
       candidateMasterId: pipelineTarget.id,
       candidateName: pipelineTarget.name,
+      name: pipelineTarget.name,
       email: pipelineTarget.email,
       contactNumber: pipelineTarget.phoneNumber1 || pipelineTarget.contactNumber,
-      hiringRequirementId: selectedRequirement.id,
-      jobDescriptionId: selectedRequirement.jobDescriptionId,
-      jobDescription: selectedRequirement.jobDescription,
-      roleTitle: selectedRequirement.roleTitle,
-      account: selectedRequirement.account,
-      taOwner: currentTaOwner || moveToPipelineForm.taOwner || selectedRequirement.taOwner,
-      currentStage: moveToPipelineForm.initialStage,
+      hiringRequirementId: "",
+      jobDescriptionId: "",
+      jobDescription: "",
+      roleTitle: "Not assigned yet",
+      account: "Not assigned yet",
+      roleAccount: "Not assigned yet - Not assigned yet",
+      taOwner: owner,
+      owner,
+      currentStage: initialStage,
+      previousStage: "Talent Pool",
       applicationStatus: "Active",
+      prfStatus: "Review",
+      prfReviewed: false,
+      prfReviewedAt: null,
+      interviewDate: null,
+      interviewType: "-",
+      interviewStatus: "For Assessment",
+      assessmentStatus: "Not Take",
+      assessmentResult: "",
+      assessmentEmailSent: false,
+      assessmentEmailSentAt: null,
+      offerDetails: null,
+      offerApprovalStatus: "For Review",
+      offerDecision: "",
+      dateMoved: today,
+      reasonForMovement: movementReason,
       source: pipelineTarget.source,
       fromTalentPool: true,
       remarks: moveToPipelineForm.remarks.trim(),
@@ -2746,40 +3422,64 @@ export default function TalentPoolPage() {
       stageHistory: [
         {
           fromStage: "Talent Pool",
-          toStage: moveToPipelineForm.initialStage,
-          owner: currentTaOwner || moveToPipelineForm.taOwner || selectedRequirement.taOwner,
-          reason:
-            moveToPipelineForm.remarks.trim() ||
-            "Moved from Talent Pool to Candidate Pipeline",
+          toStage: initialStage,
+          owner,
+          reason: movementReason,
           timestamp: new Date().toISOString(),
+        },
+      ],
+      timeline: [
+        {
+          stage: initialStage,
+          owner,
+          source: "Talent Pool",
+          reason: movementReason,
+          timestamp: new Date().toLocaleString("en-PH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
         },
       ],
       candidateSnapshot: pipelineTarget,
     };
 
-    writeLocalStorage(CANDIDATE_APPLICATIONS_KEY, [
-      newApplication,
-      ...existingApplications,
-    ]);
+    writeLocalStorage(CANDIDATE_APPLICATIONS_KEY, [newApplication, ...existingApplications]);
 
     const updatedCandidate = normalizeCandidateRecord({
       ...pipelineTarget,
-      status:
-        pipelineTarget.status === "New Applicant"
-          ? "Recyclable"
-          : pipelineTarget.status,
+      status: pipelineTarget.status,
+      pipelineStatus: "Active",
+      currentApplicationId: applicationId,
+      currentHiringRequirementId: "",
+      currentPipelineStage: initialStage,
+      currentApplicationStatus: "Active",
+      currentAppliedRole: "Not assigned yet",
+      currentAppliedAccount: "Not assigned yet",
+      currentTaOwner: owner,
+      currentPrfStatus: "Review",
+      currentAssessmentStatus: "Not Take",
+      currentAssessmentResult: "",
+      currentInterviewStatus: "For Assessment",
+      currentOfferStatus: "For Review",
+      currentOfferDecision: "",
+      lastPipelineUpdate: today,
       lastActivity: today,
       applicationHistory: [
         ...(pipelineTarget.applicationHistory || []),
         {
-          role: selectedRequirement.roleTitle,
-          account: selectedRequirement.account,
-          outcome: `Moved to Pipeline - ${moveToPipelineForm.initialStage}`,
+          role: "Not assigned yet",
+          account: "Not assigned yet",
+          outcome: `Moved to Pipeline - ${initialStage}`,
           date: today,
         },
       ],
       remarks: moveToPipelineForm.remarks.trim()
-        ? `${pipelineTarget.remarks || ""}\n\nMoved to Pipeline (${today}): ${moveToPipelineForm.remarks.trim()}`
+        ? `${pipelineTarget.remarks || ""}
+
+Moved to Pipeline (${today}): ${moveToPipelineForm.remarks.trim()}`
         : pipelineTarget.remarks,
     });
 
@@ -2791,13 +3491,13 @@ export default function TalentPoolPage() {
 
     setSelectedCandidate(updatedCandidate);
     handleCloseMoveToPipeline();
-    alert("Candidate moved to Candidate Pipeline.");
+    alert("Candidate moved to Candidate Pipeline without role/account assignment.");
   }
 
   const filteredCandidates = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return candidateList.map(normalizeCandidateRecord).filter((candidate) => {
+    return candidateList.map(enrichCandidateWithPipelineSummary).filter((candidate) => {
       const roleValue = candidate.openPosition || candidate.roleCapability || "";
       const sourceValue = candidate.source || formatList(candidate.hearAboutUs);
       const referencesText = formatReferences(candidate.references);
@@ -2826,6 +3526,17 @@ export default function TalentPoolPage() {
         readinessText,
         referencesText,
         candidate.status,
+        candidate.currentPipelineStage,
+        candidate.currentApplicationStatus,
+        candidate.currentAppliedRole,
+        candidate.currentAppliedAccount,
+        candidate.currentTaOwner,
+        candidate.currentPrfStatus,
+        candidate.currentAssessmentStatus,
+        candidate.currentAssessmentResult,
+        candidate.currentInterviewStatus,
+        candidate.currentOfferStatus,
+        candidate.currentOfferDecision,
         candidate.remarks,
       ]
         .filter(Boolean)
@@ -2851,6 +3562,7 @@ export default function TalentPoolPage() {
       doNotReprocess: candidateList.filter((candidate) => candidate.status === "Do Not Reprocess").length,
       hiredActive: candidateList.filter((candidate) => candidate.status === "Hired / Active").length,
       publicSubmissions: candidateList.filter((candidate) => candidate.isPublicSubmission).length,
+      activePipeline: candidateList.map(enrichCandidateWithPipelineSummary).filter((candidate) => candidate.pipelineSummary?.hasPipeline && candidate.pipelineSummary?.applicationStatus === "Active").length,
     };
   }, [candidateList]);
 
@@ -2926,13 +3638,14 @@ export default function TalentPoolPage() {
           <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
             <h2 className="text-base font-bold text-[#101828]">Talent Pool Summary</h2>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
               <StatCard title="Total Candidates" value={stats.total} icon={UsersRound} description="Persistent profiles" />
               <StatCard title="Silver Pool" value={stats.silverPool} icon={UserCheck} description="Passed, no opening" />
               <StatCard title="Recyclable" value={stats.recyclable} icon={RefreshCcw} description="Can be reconsidered" />
               <StatCard title="Do Not Reprocess" value={stats.doNotReprocess} icon={Ban} description="Not fit" />
               <StatCard title="Hired / Active" value={stats.hiredActive} icon={BriefcaseBusiness} description="Converted" valueClassName="text-emerald-600" />
               <StatCard title="Public Entries" value={stats.publicSubmissions} icon={ExternalLink} description="From outside form" />
+              <StatCard title="Active Pipeline" value={stats.activePipeline} icon={ArrowRight} description="In process" valueClassName="text-blue-600" />
             </div>
           </section>
 
@@ -3009,15 +3722,17 @@ export default function TalentPoolPage() {
 
             <div className="hidden lg:block">
               <div className="overflow-x-auto p-0">
-                <table className="w-full min-w-[1250px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                <table className="w-full min-w-[1650px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                       <th className="px-5 py-4 first:rounded-tl-2xl">Candidate</th>
                       <th className="px-5 py-4">Applied Position</th>
                       <th className="px-5 py-4">Application Source</th>
-                      <th className="px-5 py-4">Contact</th>
-                      <th className="px-5 py-4">Location / Account</th>
-                      <th className="px-5 py-4">Status</th>
+                      <th className="px-5 py-4">Contact / Entry</th>
+                      <th className="px-5 py-4">Preferred Location / Final Account</th>
+                      <th className="px-5 py-4">Talent Status</th>
+                      <th className="px-5 py-4">Pipeline Stage</th>
+                      <th className="px-5 py-4">Pipeline Assignment / Owner</th>
                       <th className="px-5 py-4">Last Activity</th>
                       <th className="px-5 py-4 text-right last:rounded-tr-2xl">Actions</th>
                     </tr>
@@ -3050,11 +3765,13 @@ export default function TalentPoolPage() {
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                             <p>{candidate.email || "—"}</p>
                             <p className="mt-1 text-xs text-sibs-tertiary-5">{candidate.phoneNumber1 || candidate.contactNumber || "—"}</p>
+                            <p className="mt-2 text-xs font-bold text-sibs-primary-1">{candidate.entryType || "TA Manual Entry"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">By: {candidate.createdBy || "—"}</p>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                             <p>{candidate.applyingLocation || "—"}</p>
-                            <p className="mt-1 text-xs text-sibs-tertiary-5">Account: {candidate.accountFit || "—"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">Final Account: {candidate.currentAppliedAccount || "Not assigned yet"}</p>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5">
@@ -3063,8 +3780,40 @@ export default function TalentPoolPage() {
                             </span>
                           </td>
 
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            {candidate.pipelineSummary?.hasPipeline ? (
+                              <div className="space-y-2">
+                                <span
+                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPipelineStageClass(
+                                    candidate.pipelineSummary.stage
+                                  )}`}
+                                >
+                                  {candidate.pipelineSummary.stage}
+                                </span>
+                                <p className="text-xs font-semibold text-sibs-tertiary-5">
+                                  PRF: {candidate.pipelineSummary.prfStatus || "—"}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">
+                                Not in Pipeline
+                              </span>
+                            )}
+                          </td>
+
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                            {formatDate(candidate.lastActivity)}
+                            <p className="font-bold text-sibs-primary-1">{candidate.pipelineSummary?.roleTitle || "—"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">Account: {candidate.pipelineSummary?.account || "—"}</p>
+                            <p className="mt-1 text-xs text-sibs-tertiary-5">TA: {candidate.pipelineSummary?.taOwner || "—"}</p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            <p>{formatDate(candidate.lastActivity)}</p>
+                            {candidate.pipelineSummary?.lastPipelineUpdate && (
+                              <p className="mt-1 text-xs text-sibs-tertiary-5">
+                                Pipeline: {formatDate(candidate.pipelineSummary.lastPipelineUpdate)}
+                              </p>
+                            )}
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
@@ -3081,7 +3830,7 @@ export default function TalentPoolPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={8} className="px-5 py-12 text-center text-sm font-bold text-gray-500">
+                        <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-gray-500">
                           No candidate profiles found.
                         </td>
                       </tr>
@@ -3113,7 +3862,7 @@ export default function TalentPoolPage() {
         <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
           <h3 className="text-sm font-bold text-sibs-primary-1">Talent Pool Design Note</h3>
           <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            Talent Pool stores the full candidate master profile using the same inputs as the public form. Move to Pipeline creates a separate candidate application tied to a hiring requirement.
+            Talent Pool stores the full candidate master profile using the same inputs as the public form. Move to Pipeline creates a separate candidate application without assigning a hiring requirement, role, or account yet. Final role and account are captured during the Offered stage.
           </p>
         </section>
         </div>
@@ -3166,6 +3915,7 @@ export default function TalentPoolPage() {
         onSubmit={handleSubmitMoveToPipeline}
         currentTaOwner={currentTaOwner}
       />
+      {ConfirmationDialog}
     </div>
   );
 }
