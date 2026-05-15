@@ -1,220 +1,444 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
 import {
+  Activity,
   BarChart3,
-  Search,
-  Eye,
-  UsersRound,
-  UserCheck,
-  TrendingUp,
-  MousePointerClick,
-  Filter,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  X,
+  Eye,
+  Filter,
+  MousePointerClick,
+  Plus,
+  ReceiptText,
+  Search,
   Target,
-  Activity,
+  TrendingUp,
+  UserCheck,
+  UsersRound,
+  X,
 } from "lucide-react";
 
-const sourcingData = [
+const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
+const SOURCE_COST_ENTRIES_KEY = "ta_sourcing_cost_entries";
+
+const sourcingOptions = [
+  "Employee Referral Program",
+  "Print Ads (Billboards, Brochures, Flyers, Posters)",
+  "Social Media Pages",
+  "Social Media Ads",
+  "Online Job Portals",
+  "Walk In",
+  "Word of Mouth",
+  "Institutional Partnership",
+  "External Referral Listings",
+  "Job Fairs",
+  "Employee Retention Program",
+  "Others",
+];
+
+const samplePublicSubmissions = [
   {
-    id: 1,
-    source: "JobStreet",
-    sourceType: "Job Board",
-    volume: 120,
-    screened: 78,
-    interviewed: 38,
-    offered: 14,
-    hired: 15,
-    conversionRate: 12.5,
-    topRole: "CSR",
-    topAccount: "SIBS Operations",
-    owner: "Maria Reyes",
-    costLabel: "Paid Channel",
-    lastActivity: "2026-05-06",
-    notes:
-      "Highest applicant volume. Good for CSR roles but conversion requires screening quality review.",
+    id: 1001,
+    candidateId: "PUB-SAMPLE-001",
+    name: "Juan Dela Cruz",
+    email: "juan.delacruz@email.com",
+    hearAboutUs: ["Social Media Ads"],
+    openPosition: "CSR",
+    applyingLocation: "Davao Site",
+    status: "Hired",
+    submittedAt: "2026-05-01",
+    isPublicSubmission: true,
   },
   {
-    id: 2,
-    source: "LinkedIn",
-    sourceType: "Professional Network",
-    volume: 80,
-    screened: 52,
-    interviewed: 26,
-    offered: 10,
-    hired: 10,
-    conversionRate: 12.5,
-    topRole: "System Developer",
-    topAccount: "SIBS IT",
-    owner: "Kim Domingo",
-    costLabel: "Paid Channel",
-    lastActivity: "2026-05-05",
-    notes:
-      "Stronger for specialized and professional roles. Useful for IT and leadership sourcing.",
+    id: 1002,
+    candidateId: "PUB-SAMPLE-002",
+    name: "Maria Santos",
+    email: "maria.santos@email.com",
+    hearAboutUs: ["Social Media Ads", "Online Job Portals"],
+    openPosition: "CSR",
+    applyingLocation: "Davao Site",
+    status: "Hired",
+    submittedAt: "2026-05-02",
+    isPublicSubmission: true,
   },
   {
-    id: 3,
-    source: "Referral",
-    sourceType: "Employee Referral",
-    volume: 35,
-    screened: 30,
-    interviewed: 22,
-    offered: 12,
-    hired: 9,
-    conversionRate: 25.7,
-    topRole: "CSR",
-    topAccount: "SIBS Operations",
-    owner: "John Dela Cruz",
-    costLabel: "Internal Channel",
-    lastActivity: "2026-05-04",
-    notes:
-      "Lower volume but strongest conversion to hire. Good channel for urgent backfills.",
+    id: 1003,
+    candidateId: "PUB-SAMPLE-003",
+    name: "Carlo Reyes",
+    email: "carlo.reyes@email.com",
+    hearAboutUs: ["Employee Referral Program"],
+    openPosition: "RCM Analyst",
+    applyingLocation: "Tagum Site",
+    status: "Interviewed",
+    submittedAt: "2026-05-03",
+    isPublicSubmission: true,
   },
   {
-    id: 4,
-    source: "Facebook",
-    sourceType: "Social Media",
-    volume: 65,
-    screened: 36,
-    interviewed: 14,
-    offered: 5,
-    hired: 4,
-    conversionRate: 6.2,
-    topRole: "CSR",
-    topAccount: "SIBS Operations",
-    owner: "Paul Garcia",
-    costLabel: "Organic / Campaign",
-    lastActivity: "2026-05-03",
-    notes:
-      "Good for awareness and candidate volume, but lower conversion after screening.",
+    id: 1004,
+    candidateId: "PUB-SAMPLE-004",
+    name: "Angela Lim",
+    email: "angela.lim@email.com",
+    hearAboutUs: ["Walk In"],
+    openPosition: "HR Assistant",
+    applyingLocation: "Davao Site",
+    status: "Initial Screening",
+    submittedAt: "2026-05-04",
+    isPublicSubmission: true,
   },
   {
-    id: 5,
-    source: "Walk-in",
-    sourceType: "Direct Applicant",
-    volume: 28,
-    screened: 18,
-    interviewed: 9,
-    offered: 4,
-    hired: 3,
-    conversionRate: 10.7,
-    topRole: "HR Assistant",
-    topAccount: "SIBS HR",
-    owner: "Maria Reyes",
-    costLabel: "Organic Channel",
-    lastActivity: "2026-05-02",
-    notes: "Useful for local hiring needs and immediate availability.",
+    id: 1005,
+    candidateId: "PUB-SAMPLE-005",
+    name: "Mark Villanueva",
+    email: "mark.villanueva@email.com",
+    hearAboutUs: ["Job Fairs"],
+    openPosition: "CSR",
+    applyingLocation: "Mabini Site",
+    status: "Hired",
+    submittedAt: "2026-05-05",
+    isPublicSubmission: true,
   },
   {
-    id: 6,
-    source: "Talent Pool Reactivation",
-    sourceType: "Internal Database",
-    volume: 42,
-    screened: 34,
-    interviewed: 20,
-    offered: 11,
-    hired: 8,
-    conversionRate: 19.0,
-    topRole: "RCM Analyst",
-    topAccount: "SIBS RCM",
-    owner: "Kim Domingo",
-    costLabel: "Internal Channel",
-    lastActivity: "2026-05-01",
-    notes:
-      "Strong reusable source because candidate history already exists in the HRIS.",
+    id: 1006,
+    candidateId: "PUB-SAMPLE-006",
+    name: "Christine Gomez",
+    email: "christine.gomez@email.com",
+    hearAboutUs: ["Social Media Pages"],
+    openPosition: "QA",
+    applyingLocation: "Davao Site",
+    status: "Offered",
+    submittedAt: "2026-05-06",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1007,
+    candidateId: "PUB-SAMPLE-007",
+    name: "Paolo Garcia",
+    email: "paolo.garcia@email.com",
+    hearAboutUs: ["Word of Mouth"],
+    openPosition: "IT Support",
+    applyingLocation: "Davao Site",
+    status: "New Applicant",
+    submittedAt: "2026-05-07",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1008,
+    candidateId: "PUB-SAMPLE-008",
+    name: "Rica Mendoza",
+    email: "rica.mendoza@email.com",
+    hearAboutUs: ["Institutional Partnership"],
+    openPosition: "CSR",
+    applyingLocation: "Tagum Site",
+    status: "Interview Scheduled",
+    submittedAt: "2026-05-08",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1009,
+    candidateId: "PUB-SAMPLE-009",
+    name: "Lester Ramos",
+    email: "lester.ramos@email.com",
+    hearAboutUs: ["Print Ads (Billboards, Brochures, Flyers, Posters)"],
+    openPosition: "CSR",
+    applyingLocation: "Davao Site",
+    status: "Interviewed",
+    submittedAt: "2026-05-09",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1010,
+    candidateId: "PUB-SAMPLE-010",
+    name: "Jessa Navarro",
+    email: "jessa.navarro@email.com",
+    hearAboutUs: ["External Referral Listings"],
+    openPosition: "RCM Analyst",
+    applyingLocation: "Tagum Site",
+    status: "Hired",
+    submittedAt: "2026-05-10",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1011,
+    candidateId: "PUB-SAMPLE-011",
+    name: "Nico Flores",
+    email: "nico.flores@email.com",
+    hearAboutUs: ["Employee Retention Program"],
+    openPosition: "CSR",
+    applyingLocation: "Davao Site",
+    status: "Accepted",
+    submittedAt: "2026-05-11",
+    isPublicSubmission: true,
+  },
+  {
+    id: 1012,
+    candidateId: "PUB-SAMPLE-012",
+    name: "Arlene Dizon",
+    email: "arlene.dizon@email.com",
+    hearAboutUs: ["Others"],
+    openPosition: "Accounting",
+    applyingLocation: "Davao Site",
+    status: "Screened",
+    submittedAt: "2026-05-12",
+    isPublicSubmission: true,
   },
 ];
 
-const sourceTypeOptions = [
-  "All Types",
-  "Job Board",
-  "Professional Network",
-  "Employee Referral",
-  "Social Media",
-  "Direct Applicant",
-  "Internal Database",
+const sampleSourceCostEntries = [
+  {
+    id: 2001,
+    source: "Social Media Ads",
+    description: "Facebook Ads - CSR Hiring Campaign May 2026",
+    amount: 10000,
+    dateSpent: "2026-05-01",
+    createdAt: "2026-05-01",
+  },
+  {
+    id: 2002,
+    source: "Online Job Portals",
+    description: "Job portal posting package for CSR hiring",
+    amount: 7500,
+    dateSpent: "2026-05-02",
+    createdAt: "2026-05-02",
+  },
+  {
+    id: 2003,
+    source: "Job Fairs",
+    description: "Booth setup and materials for local job fair",
+    amount: 5000,
+    dateSpent: "2026-05-05",
+    createdAt: "2026-05-05",
+  },
+  {
+    id: 2004,
+    source: "Print Ads (Billboards, Brochures, Flyers, Posters)",
+    description: "Flyers and poster printing for recruitment campaign",
+    amount: 3500,
+    dateSpent: "2026-05-06",
+    createdAt: "2026-05-06",
+  },
+  {
+    id: 2005,
+    source: "External Referral Listings",
+    description: "External referral listing boost",
+    amount: 4000,
+    dateSpent: "2026-05-08",
+    createdAt: "2026-05-08",
+  },
 ];
 
-const ownerOptions = [
-  "All Owners",
-  "Maria Reyes",
-  "John Dela Cruz",
-  "Kim Domingo",
-  "Paul Garcia",
-];
+const initialCostForm = {
+  source: "",
+  description: "",
+  amount: "",
+  dateSpent: "",
+};
 
-const roleOptions = [
-  "All Roles",
-  "CSR",
-  "System Developer",
-  "HR Assistant",
-  "RCM Analyst",
-];
+function readLocalStorage(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalStorage(key, value) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // frontend-only fallback
+  }
+}
+
+function getTodayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return "—";
+
+  return parsed.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function getSourceTypeClass(type) {
-  switch (type) {
-    case "Employee Referral":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "Internal Database":
-      return "border-blue-200 bg-blue-50 text-blue-700";
-    case "Job Board":
-      return "border-violet-200 bg-violet-50 text-violet-700";
-    case "Professional Network":
-      return "border-indigo-200 bg-indigo-50 text-indigo-700";
-    case "Social Media":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "Direct Applicant":
-      return "border-gray-200 bg-gray-50 text-gray-700";
-    default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
-  }
+function formatCurrency(value) {
+  const amount = Number(value || 0);
+
+  return amount.toLocaleString("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
+function calculateConversionRate(hired, volume) {
+  const safeHired = Number(hired || 0);
+  const safeVolume = Number(volume || 0);
+
+  if (safeVolume <= 0) return 0;
+
+  return Number(((safeHired / safeVolume) * 100).toFixed(1));
+}
+
+function calculateCostPerHire(sourceCost, hired) {
+  const safeCost = Number(sourceCost || 0);
+  const safeHired = Number(hired || 0);
+
+  if (safeCost <= 0 || safeHired <= 0) return 0;
+
+  return Number((safeCost / safeHired).toFixed(2));
+}
+
+function normalizeStatus(status) {
+  return String(status || "").trim().toLowerCase();
+}
+
+function isScreenedCandidate(candidate) {
+  const status = normalizeStatus(candidate.status);
+
+  return [
+    "screened",
+    "initial screening",
+    "for interview",
+    "interview scheduled",
+    "interviewed",
+    "online assessment",
+    "assessment taken",
+    "offered",
+    "accepted",
+    "hired",
+  ].includes(status);
+}
+
+function isInterviewedCandidate(candidate) {
+  const status = normalizeStatus(candidate.status);
+
+  return [
+    "interviewed",
+    "online assessment",
+    "assessment taken",
+    "offered",
+    "accepted",
+    "hired",
+  ].includes(status);
+}
+
+function isOfferedCandidate(candidate) {
+  const status = normalizeStatus(candidate.status);
+
+  return ["offered", "accepted", "hired"].includes(status);
+}
+
+function isHiredCandidate(candidate) {
+  const status = normalizeStatus(candidate.status);
+
+  return ["hired", "accepted"].includes(status);
+}
+
+function FieldLabel({ children, required = false }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
+    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+      {children}
+      {required && <span className="text-red-500"> *</span>}
+    </label>
+  );
+}
 
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
+function TextInput({ className = "", ...props }) {
+  return (
+    <input
+      {...props}
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+    />
+  );
+}
 
-        <h2 className="truncate text-lg font-bold text-sibs-primary-1">
-          {value}
-        </h2>
+function TextArea({ className = "", ...props }) {
+  return (
+    <textarea
+      {...props}
+      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+    />
+  );
+}
 
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
+function SelectInput({ children, className = "", ...props }) {
+  return (
+    <div className="relative">
+      <select
+        {...props}
+        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      >
+        {children}
+      </select>
+
+      <ChevronDown
+        size={18}
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+      />
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  value,
+  icon,
+  valueClassName = "text-sibs-primary-1",
+  description,
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
           </p>
-        )}
+
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}
+          >
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          {icon}
+        </div>
       </div>
     </div>
   );
 }
 
-function ConversionBar({ label, value, max }) {
-  const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
+function VolumeBar({ label, value, max }) {
+  const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="text-sm font-bold text-[#344054]">{label}</p>
+        <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
 
-        <p className="text-sm font-bold text-sibs-primary-1">
-          {value.toFixed(1)}%
+        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
+          {value}
         </p>
       </div>
 
@@ -228,15 +452,40 @@ function ConversionBar({ label, value, max }) {
   );
 }
 
-function VolumeBar({ label, value, max }) {
-  const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
+function ConversionBar({ label, value, max }) {
+  const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="text-sm font-bold text-[#344054]">{label}</p>
+        <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
 
-        <p className="text-sm font-bold text-sibs-primary-1">{value}</p>
+        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
+          {Number(value || 0).toFixed(1)}%
+        </p>
+      </div>
+
+      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
+        <div
+          className="h-full rounded-full bg-sibs-primary-1"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CostBar({ label, value, max }) {
+  const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-4">
+        <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
+
+        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
+          {formatCurrency(value)}
+        </p>
       </div>
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
@@ -250,7 +499,7 @@ function VolumeBar({ label, value, max }) {
 }
 
 function FunnelRow({ label, value, max }) {
-  const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
+  const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
@@ -289,30 +538,26 @@ function SourceMobileCard({ source, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-sm font-bold text-[#101828]">{source.source}</h3>
 
           <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            {source.costLabel}
+            Total Cost: {formatCurrency(source.sourceCost)}
           </p>
         </div>
 
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getSourceTypeClass(
-            source.sourceType
-          )}`}
-        >
-          {source.sourceType}
+        <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-sibs-primary-1">
+          {source.costEntries.length} cost entries
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Volume
+            Applicants
           </p>
 
           <p className="mt-1 text-sm font-bold text-sibs-primary-1">
@@ -320,7 +565,7 @@ function SourceMobileCard({ source, onView }) {
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Hired
           </p>
@@ -330,28 +575,185 @@ function SourceMobileCard({ source, onView }) {
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Conv.
+            CPH
           </p>
 
           <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {source.conversionRate.toFixed(1)}%
+            {formatCurrency(source.costPerHire)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <p className="font-semibold text-sibs-tertiary-5">
-          Role:{" "}
-          <span className="font-bold text-[#344054]">{source.topRole}</span>
-        </p>
-
-        <p className="font-semibold text-sibs-tertiary-5">
-          Owner: <span className="font-bold text-[#344054]">{source.owner}</span>
-        </p>
+      <div className="mt-4 text-xs font-semibold text-sibs-tertiary-5">
+        Latest Applicant:{" "}
+        <span className="font-bold text-[#344054]">
+          {source.latestCandidate || "—"}
+        </span>
       </div>
     </button>
+  );
+}
+
+function AddSourceCostModal({
+  open,
+  form,
+  setForm,
+  onClose,
+  onSubmit,
+  onReset,
+}) {
+  if (!open) return null;
+
+  function updateField(field, value) {
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={onSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
+        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <ReceiptText size={14} />
+                New Source Cost
+              </div>
+
+              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
+                ADD SOURCE COST
+              </h2>
+
+              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
+                Add a cost entry and tag it to one sourcing option. Candidates
+                who selected the same source in the public form will be included
+                in that source’s cost per hire calculation.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
+          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6">
+              <h3 className="text-base font-extrabold text-[#101828]">
+                Cost Information
+              </h3>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Example: tag Facebook ads spend to Social Media Ads.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5">
+              <div>
+                <FieldLabel required>Sourcing Option</FieldLabel>
+                <SelectInput
+                  value={form.source}
+                  onChange={(e) => updateField("source", e.target.value)}
+                >
+                  <option value="">Select sourcing option</option>
+                  {sourcingOptions.map((source) => (
+                    <option key={source} value={source}>
+                      {source}
+                    </option>
+                  ))}
+                </SelectInput>
+              </div>
+
+              <div>
+                <FieldLabel required>Description</FieldLabel>
+                <TextArea
+                  value={form.description}
+                  onChange={(e) => updateField("description", e.target.value)}
+                  placeholder="Example: Facebook Ads - CSR Hiring Campaign May 2026"
+                />
+              </div>
+
+              <div>
+                <FieldLabel required>Amount</FieldLabel>
+                <TextInput
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={(e) => updateField("amount", e.target.value)}
+                  placeholder="Example: 10000"
+                />
+              </div>
+
+              <div>
+                <FieldLabel required>Date Spent</FieldLabel>
+                <TextInput
+                  type="date"
+                  value={form.dateSpent}
+                  onChange={(e) => updateField("dateSpent", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <p className="text-sm font-bold text-sibs-primary-1">
+              Cost per Hire Formula
+            </p>
+
+            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
+              Cost per Hire = Total Source Cost / Hires from candidates who
+              selected that source.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+            >
+              Reset
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+            >
+              <Plus size={17} />
+              Add Source Cost
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -364,17 +766,18 @@ function SourceDetailsModal({ open, source, onClose }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Source Performance Details
+            <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
+              SOURCE PERFORMANCE DETAILS
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Source volume, pipeline conversion, and hiring effectiveness.
+              Auto-generated from public application form submissions and source
+              cost entries.
             </p>
           </div>
 
@@ -389,48 +792,44 @@ function SourceDetailsModal({ open, source, onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
+                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Sourcing Platform
+                    </p>
+
+                    <h3 className="mt-1 text-xl font-extrabold text-[#101828]">
                       {source.source}
                     </h3>
 
-                    <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                      {source.sourceType}
-                    </p>
-
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getSourceTypeClass(
-                          source.sourceType
-                        )}`}
-                      >
-                        {source.sourceType}
+                      <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                        Total Cost: {formatCurrency(source.sourceCost)}
                       </span>
 
-                      <span className="inline-flex rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-bold text-gray-600">
-                        {source.costLabel}
+                      <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                        {source.costEntries.length} Cost Entries
                       </span>
                     </div>
                   </div>
 
                   <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-center">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
-                      Conversion to Hire
+                      Cost per Hire
                     </p>
 
-                    <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
-                      {source.conversionRate.toFixed(1)}%
+                    <p className="mt-1 text-3xl font-extrabold text-sibs-primary-1">
+                      {formatCurrency(source.costPerHire)}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-5 text-sm font-bold text-[#101828]">
+              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <h3 className="mb-5 text-sm font-extrabold text-[#101828]">
                   Source Funnel
                 </h3>
 
@@ -463,31 +862,89 @@ function SourceDetailsModal({ open, source, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-extrabold text-[#101828]">
+                  Source Cost Entries
+                </h3>
+
+                <div className="mt-4 space-y-3">
+                  {source.costEntries.length > 0 ? (
+                    source.costEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-sm font-extrabold text-[#101828]">
+                              {entry.description}
+                            </p>
+
+                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                              Date Spent: {formatDate(entry.dateSpent)}
+                            </p>
+                          </div>
+
+                          <p className="text-sm font-extrabold text-sibs-primary-1">
+                            {formatCurrency(entry.amount)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-gray-500">
+                      No cost entries tagged to this source yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
                 <h3 className="text-sm font-bold text-sibs-primary-1">
-                  Source Notes
+                  Data Source
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  {source.notes}
+                  Candidate counts are generated from public application form
+                  submissions. Cost entries are frontend-only and tagged to a
+                  sourcing option.
                 </p>
               </div>
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
+              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                <h3 className="text-sm font-extrabold text-[#101828]">
                   Source Summary
                 </h3>
 
                 <div className="mt-4">
                   <DetailRow label="Source" value={source.source} />
-                  <DetailRow label="Source Type" value={source.sourceType} />
-                  <DetailRow label="Owner" value={source.owner} />
-                  <DetailRow label="Top Role" value={source.topRole} />
-                  <DetailRow label="Top Account" value={source.topAccount} />
+                  <DetailRow
+                    label="Total Source Cost"
+                    value={formatCurrency(source.sourceCost)}
+                  />
+                  <DetailRow
+                    label="Cost per Hire"
+                    value={formatCurrency(source.costPerHire)}
+                  />
                   <DetailRow label="Volume" value={source.volume} />
+                  <DetailRow label="Screened" value={source.screened} />
+                  <DetailRow label="Interviewed" value={source.interviewed} />
+                  <DetailRow label="Offered" value={source.offered} />
                   <DetailRow label="Hired" value={source.hired} />
+                  <DetailRow
+                    label="Conversion"
+                    value={`${Number(source.conversionRate || 0).toFixed(1)}%`}
+                  />
+                  <DetailRow
+                    label="Cost Entries"
+                    value={source.costEntries.length}
+                  />
+                  <DetailRow
+                    label="Latest Applicant"
+                    value={source.latestCandidate}
+                  />
                   <DetailRow
                     label="Last Activity"
                     value={formatDate(source.lastActivity)}
@@ -495,24 +952,12 @@ function SourceDetailsModal({ open, source, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                <h3 className="text-sm font-bold text-emerald-700">
-                  Interpretation
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-emerald-700/90">
-                  High-volume sources help sourcing coverage, while
-                  high-conversion sources should be prioritized for urgent
-                  hiring requirements.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
-                <h3 className="text-sm font-bold text-amber-700">Data Rule</h3>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+                <h3 className="text-sm font-bold text-amber-700">Important</h3>
 
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
-                  Source must be captured at candidate entry and preserved
-                  across the full pipeline.
+                  Since this is frontend-only, cost entries and public
+                  submissions are read from browser localStorage only.
                 </p>
               </div>
             </div>
@@ -536,258 +981,583 @@ function SourceDetailsModal({ open, source, onClose }) {
 }
 
 export default function SourcingAnalyticsPage() {
+  const [publicSubmissions, setPublicSubmissions] = useState([]);
+  const [costEntries, setCostEntries] = useState([]);
+
   const [search, setSearch] = useState("");
-  const [sourceTypeFilter, setSourceTypeFilter] = useState("All Types");
-  const [ownerFilter, setOwnerFilter] = useState("All Owners");
-  const [roleFilter, setRoleFilter] = useState("All Roles");
   const [selectedSource, setSelectedSource] = useState(null);
+
+  const [showAddCostModal, setShowAddCostModal] = useState(false);
+  const [costForm, setCostForm] = useState({
+    ...initialCostForm,
+    dateSpent: getTodayISO(),
+  });
+
+  useEffect(() => {
+    refreshFromLocalStorage();
+  }, []);
+
+  const sourceRows = useMemo(() => {
+    return sourcingOptions.map((sourceName, index) => {
+      const matchedCandidates = publicSubmissions.filter((candidate) => {
+        const candidateSources = Array.isArray(candidate.hearAboutUs)
+          ? candidate.hearAboutUs
+          : [];
+
+        return candidateSources.includes(sourceName);
+      });
+
+      const matchedCostEntries = costEntries.filter((entry) => {
+        return entry.source === sourceName;
+      });
+
+      const volume = matchedCandidates.length;
+      const screened = matchedCandidates.filter(isScreenedCandidate).length;
+      const interviewed = matchedCandidates.filter(
+        isInterviewedCandidate
+      ).length;
+      const offered = matchedCandidates.filter(isOfferedCandidate).length;
+      const hired = matchedCandidates.filter(isHiredCandidate).length;
+
+      const sourceCost = matchedCostEntries.reduce((sum, entry) => {
+        return sum + Number(entry.amount || 0);
+      }, 0);
+
+      const latestCandidate = matchedCandidates[0];
+
+      return {
+        id: `${sourceName}-${index}`,
+        source: sourceName,
+        sourceCost,
+        costEntries: matchedCostEntries,
+        volume,
+        screened,
+        interviewed,
+        offered,
+        hired,
+        conversionRate: calculateConversionRate(hired, volume),
+        costPerHire: calculateCostPerHire(sourceCost, hired),
+        latestCandidate:
+          latestCandidate?.name ||
+          latestCandidate?.candidateName ||
+          latestCandidate?.email ||
+          "",
+        lastActivity: latestCandidate?.submittedAt || "",
+      };
+    });
+  }, [publicSubmissions, costEntries]);
 
   const filteredSources = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return sourcingData.filter((source) => {
-      const matchesSearch =
+    return sourceRows.filter((source) => {
+      return (
         !keyword ||
-        source.source.toLowerCase().includes(keyword) ||
-        source.sourceType.toLowerCase().includes(keyword) ||
-        source.topRole.toLowerCase().includes(keyword) ||
-        source.topAccount.toLowerCase().includes(keyword) ||
-        source.owner.toLowerCase().includes(keyword);
-
-      const matchesType =
-        sourceTypeFilter === "All Types" ||
-        source.sourceType === sourceTypeFilter;
-
-      const matchesOwner =
-        ownerFilter === "All Owners" || source.owner === ownerFilter;
-
-      const matchesRole =
-        roleFilter === "All Roles" || source.topRole === roleFilter;
-
-      return matchesSearch && matchesType && matchesOwner && matchesRole;
+        String(source.source || "").toLowerCase().includes(keyword) ||
+        String(source.latestCandidate || "").toLowerCase().includes(keyword)
+      );
     });
-  }, [search, sourceTypeFilter, ownerFilter, roleFilter]);
+  }, [sourceRows, search]);
 
   const totals = useMemo(() => {
-    const totalVolume = sourcingData.reduce(
-      (sum, source) => sum + source.volume,
+    const activeSourceRows = sourceRows.filter((source) => source.volume > 0);
+
+    const totalVolume = sourceRows.reduce(
+      (sum, source) => sum + Number(source.volume || 0),
       0
     );
 
-    const totalHired = sourcingData.reduce(
-      (sum, source) => sum + source.hired,
+    const totalHired = sourceRows.reduce(
+      (sum, source) => sum + Number(source.hired || 0),
+      0
+    );
+
+    const totalSourceCost = sourceRows.reduce(
+      (sum, source) => sum + Number(source.sourceCost || 0),
       0
     );
 
     const averageConversion =
       totalVolume > 0 ? ((totalHired / totalVolume) * 100).toFixed(1) : "0.0";
 
-    const bestSource = [...sourcingData].sort(
-      (a, b) => b.conversionRate - a.conversionRate
+    const overallCostPerHire =
+      totalHired > 0 ? totalSourceCost / totalHired : 0;
+
+    const topVolumeSource = [...sourceRows].sort(
+      (a, b) => Number(b.volume || 0) - Number(a.volume || 0)
     )[0];
 
-    const topVolumeSource = [...sourcingData].sort(
-      (a, b) => b.volume - a.volume
+    const highestCostSource = [...sourceRows].sort(
+      (a, b) => Number(b.sourceCost || 0) - Number(a.sourceCost || 0)
     )[0];
 
     return {
-      totalSources: sourcingData.length,
+      totalSources: sourceRows.length,
+      activeSources: activeSourceRows.length,
       totalVolume,
       totalHired,
+      totalSourceCost,
       averageConversion,
-      bestSource,
+      overallCostPerHire,
       topVolumeSource,
+      highestCostSource,
     };
-  }, []);
+  }, [sourceRows]);
 
-  const maxVolume = Math.max(...sourcingData.map((source) => source.volume));
-  const maxConversion = Math.max(
-    ...sourcingData.map((source) => source.conversionRate)
-  );
+  const maxVolume = useMemo(() => {
+    return Math.max(
+      1,
+      ...sourceRows.map((source) => Number(source.volume || 0))
+    );
+  }, [sourceRows]);
+
+  const maxConversion = useMemo(() => {
+    return Math.max(
+      1,
+      ...sourceRows.map((source) => Number(source.conversionRate || 0))
+    );
+  }, [sourceRows]);
+
+  const maxCost = useMemo(() => {
+    return Math.max(
+      1,
+      ...sourceRows.map((source) => Number(source.sourceCost || 0))
+    );
+  }, [sourceRows]);
+
+  function refreshFromLocalStorage() {
+    const storedSubmissions = readLocalStorage(PUBLIC_SUBMISSIONS_KEY, []);
+    const storedCostEntries = readLocalStorage(SOURCE_COST_ENTRIES_KEY, []);
+
+    setPublicSubmissions(
+      Array.isArray(storedSubmissions) ? storedSubmissions : []
+    );
+
+    setCostEntries(Array.isArray(storedCostEntries) ? storedCostEntries : []);
+  }
+
+  function loadSampleData() {
+    writeLocalStorage(PUBLIC_SUBMISSIONS_KEY, samplePublicSubmissions);
+    writeLocalStorage(SOURCE_COST_ENTRIES_KEY, sampleSourceCostEntries);
+
+    setPublicSubmissions(samplePublicSubmissions);
+    setCostEntries(sampleSourceCostEntries);
+  }
+
+  function resetCostForm() {
+    setCostForm({
+      ...initialCostForm,
+      dateSpent: getTodayISO(),
+    });
+  }
+
+  function handleOpenAddCostModal() {
+    resetCostForm();
+    setShowAddCostModal(true);
+  }
+
+  function handleCloseAddCostModal() {
+    setShowAddCostModal(false);
+    resetCostForm();
+  }
+
+  function handleAddSourceCost(e) {
+    e.preventDefault();
+
+    if (!costForm.source) {
+      alert("Sourcing Option is required.");
+      return;
+    }
+
+    if (!costForm.description.trim()) {
+      alert("Description is required.");
+      return;
+    }
+
+    if (costForm.amount === "" || Number(costForm.amount) <= 0) {
+      alert("Amount must be greater than 0.");
+      return;
+    }
+
+    if (!costForm.dateSpent) {
+      alert("Date Spent is required.");
+      return;
+    }
+
+    const newEntry = {
+      id: Date.now(),
+      source: costForm.source,
+      description: costForm.description.trim(),
+      amount: Number(costForm.amount || 0),
+      dateSpent: costForm.dateSpent,
+      createdAt: getTodayISO(),
+    };
+
+    const updatedEntries = [newEntry, ...costEntries];
+
+    setCostEntries(updatedEntries);
+    writeLocalStorage(SOURCE_COST_ENTRIES_KEY, updatedEntries);
+
+    setShowAddCostModal(false);
+    resetCostForm();
+  }
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <BarChart3 size={28} className="shrink-0 text-sibs-primary-1" />
-
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Sourcing Analytics
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Track candidate source performance and conversion to hire
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard
-            title="Tracked Sources"
-            value={totals.totalSources}
-            icon={MousePointerClick}
-            description="Active candidate channels"
-          />
-          <StatCard
-            title="Candidate Volume"
-            value={totals.totalVolume}
-            icon={UsersRound}
-            description={`${totals.topVolumeSource?.source} leads volume`}
-          />
-          <StatCard
-            title="Hired From Sources"
-            value={totals.totalHired}
-            icon={UserCheck}
-            description="Converted to hires"
-          />
-          <StatCard
-            title="Avg. Conversion"
-            value={`${totals.averageConversion}%`}
-            icon={TrendingUp}
-            description="Volume to hire"
-          />
-          <StatCard
-            title="Best Source"
-            value={totals.bestSource?.source || "—"}
-            icon={Target}
-            description={`${totals.bestSource?.conversionRate || 0}% conversion`}
-          />
-        </div>
-
-        <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Volume per Source
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Candidate count captured at entry point.
-                </p>
+      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <BarChart3 size={14} />
+                Sourcing Analytics
               </div>
 
-              <UsersRound size={20} className="shrink-0 text-gray-400" />
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Sourcing Analytics
+              </h1>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Automatically tracks candidate source volume from public
+                application form submissions and calculates cost per hire from
+                tagged source costs.
+              </p>
             </div>
 
-            <div className="space-y-5">
-              {sourcingData.map((source) => (
-                <VolumeBar
-                  key={source.id}
-                  label={source.source}
-                  value={source.volume}
-                  max={maxVolume}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Conversion to Hire per Source
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Shows which channels generate hires, not only volume.
-                </p>
-              </div>
-
-              <Activity size={20} className="shrink-0 text-gray-400" />
-            </div>
-
-            <div className="space-y-5">
-              {sourcingData.map((source) => (
-                <ConversionBar
-                  key={source.id}
-                  label={source.source}
-                  value={source.conversionRate}
-                  max={maxConversion}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px_180px_180px_160px_auto] xl:items-center">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Source Performance Table
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Source volume, conversion, owner, and top role visibility.
-                </p>
-              </div>
-
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search source, owner, role..."
-                  className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
-              </div>
-
-              <select
-                value={sourceTypeFilter}
-                onChange={(e) => setSourceTypeFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={refreshFromLocalStorage}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
               >
-                {sourceTypeOptions.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              >
-                {ownerOptions.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
-                className="h-11 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              >
-                {roleOptions.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </select>
+                <Activity size={18} />
+                Refresh Data
+              </button>
 
               <button
                 type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                onClick={loadSampleData}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
               >
-                <Filter size={17} />
-                Filters
+                <ReceiptText size={18} />
+                Load Sample Data
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenAddCostModal}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              >
+                <Plus size={18} />
+                Add Source Cost
               </button>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 lg:hidden">
+          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_auto] xl:items-end">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Search
+                </label>
+
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search source or latest applicant..."
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                <Filter size={17} />
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-base font-bold text-[#101828]">
+              Sourcing Performance Summary
+            </h2>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              <SummaryCard
+                title="Tracked Sources"
+                value={totals.totalSources}
+                icon={<MousePointerClick size={22} />}
+                description={`${totals.activeSources} with applicants`}
+              />
+
+              <SummaryCard
+                title="Public Applicants"
+                value={totals.totalVolume}
+                icon={<UsersRound size={22} />}
+                description="From public form"
+              />
+
+              <SummaryCard
+                title="Hired From Sources"
+                value={totals.totalHired}
+                valueClassName="text-emerald-600"
+                icon={<UserCheck size={22} />}
+                description="Based on frontend status"
+              />
+
+              <SummaryCard
+                title="Total Source Cost"
+                value={formatCurrency(totals.totalSourceCost)}
+                valueClassName="text-blue-600"
+                icon={<TrendingUp size={22} />}
+                description={`${costEntries.length} cost entries`}
+              />
+
+              <SummaryCard
+                title="Overall Cost per Hire"
+                value={formatCurrency(totals.overallCostPerHire)}
+                icon={<Target size={22} />}
+                description="Total cost / total hired"
+              />
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Applicant Volume per Source
+                  </h2>
+
+                  <p className="text-sm font-medium text-sibs-tertiary-5">
+                    Counted from public form source answers.
+                  </p>
+                </div>
+
+                <UsersRound size={20} className="shrink-0 text-gray-400" />
+              </div>
+
+              <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
+                {sourceRows.map((source) => (
+                  <VolumeBar
+                    key={source.id}
+                    label={source.source}
+                    value={source.volume}
+                    max={maxVolume}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Conversion to Hire
+                  </h2>
+
+                  <p className="text-sm font-medium text-sibs-tertiary-5">
+                    Hired divided by applicants.
+                  </p>
+                </div>
+
+                <Activity size={20} className="shrink-0 text-gray-400" />
+              </div>
+
+              <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
+                {sourceRows.map((source) => (
+                  <ConversionBar
+                    key={source.id}
+                    label={source.source}
+                    value={source.conversionRate}
+                    max={maxConversion}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Source Cost
+                  </h2>
+
+                  <p className="text-sm font-medium text-sibs-tertiary-5">
+                    Total cost tagged per source.
+                  </p>
+                </div>
+
+                <ReceiptText size={20} className="shrink-0 text-gray-400" />
+              </div>
+
+              <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
+                {sourceRows.map((source) => (
+                  <CostBar
+                    key={source.id}
+                    label={source.source}
+                    value={source.sourceCost}
+                    max={maxCost}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="hidden lg:block">
+              <div className="overflow-x-auto p-6">
+                <table className="w-full min-w-[1350px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                  <thead>
+                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 first:rounded-tl-2xl">
+                        Source
+                      </th>
+                      <th className="px-5 py-4 text-center">Source Cost</th>
+                      <th className="px-5 py-4 text-center">Cost Entries</th>
+                      <th className="px-5 py-4 text-center">Applicants</th>
+                      <th className="px-5 py-4 text-center">Screened</th>
+                      <th className="px-5 py-4 text-center">Interviewed</th>
+                      <th className="px-5 py-4 text-center">Offered</th>
+                      <th className="px-5 py-4 text-center">Hired</th>
+                      <th className="px-5 py-4 text-center">Conversion</th>
+                      <th className="px-5 py-4 text-center">Cost per Hire</th>
+                      <th className="px-5 py-4">Latest Applicant</th>
+                      <th className="px-5 py-4">Last Activity</th>
+                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredSources.length > 0 ? (
+                      filteredSources.map((source) => (
+                        <tr
+                          key={source.id}
+                          className="transition hover:bg-[#FAFBFC]"
+                        >
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <p className="text-sm font-bold text-[#0F172A]">
+                              {source.source}
+                            </p>
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                            {formatCurrency(source.sourceCost)}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                            {source.costEntries.length}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                            {source.volume}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                            {source.screened}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                            {source.interviewed}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                            {source.offered}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-emerald-600">
+                            {source.hired}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                            {Number(source.conversionRate || 0).toFixed(1)}%
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                            {formatCurrency(source.costPerHire)}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            {source.latestCandidate || "—"}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                            {formatDate(source.lastActivity)}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedSource(source)}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                            >
+                              <Eye size={16} />
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={13}
+                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        >
+                          No source performance records found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-6 py-4">
+                <p className="text-sm font-medium text-sibs-primary-1">
+                  Showing 1 to {filteredSources.length} of {sourceRows.length}{" "}
+                  source records
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
+                  >
+                    1
+                  </button>
+
+                  <button
+                    type="button"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 p-4 lg:hidden">
               {filteredSources.length > 0 ? (
                 filteredSources.map((source) => (
                   <SourceMobileCard
@@ -802,151 +1572,34 @@ export default function SourcingAnalyticsPage() {
                 </div>
               )}
             </div>
+          </section>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[1180px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Source</th>
-                      <th className="px-5 py-4">Type</th>
-                      <th className="px-5 py-4 text-center">Volume</th>
-                      <th className="px-5 py-4 text-center">Screened</th>
-                      <th className="px-5 py-4 text-center">Interviewed</th>
-                      <th className="px-5 py-4 text-center">Hired</th>
-                      <th className="px-5 py-4 text-center">Conversion</th>
-                      <th className="px-5 py-4">Top Role</th>
-                      <th className="px-5 py-4">Owner</th>
-                      <th className="px-5 py-4 text-right">Action</th>
-                    </tr>
-                  </thead>
+          <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+            <h3 className="text-sm font-bold text-sibs-primary-1">
+              Cost per Hire Rule
+            </h3>
 
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {filteredSources.length > 0 ? (
-                      filteredSources.map((source) => (
-                        <tr
-                          key={source.id}
-                          className="transition hover:bg-[#F8FAFC]"
-                        >
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-bold text-[#101828]">
-                              {source.source}
-                            </p>
-
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {source.costLabel}
-                            </p>
-                          </td>
-
-                          <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getSourceTypeClass(
-                                source.sourceType
-                              )}`}
-                            >
-                              {source.sourceType}
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-sm font-bold text-[#344054]">
-                            {source.volume}
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-sm font-bold text-[#344054]">
-                            {source.screened}
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-sm font-bold text-[#344054]">
-                            {source.interviewed}
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-sm font-bold text-emerald-600">
-                            {source.hired}
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
-                            {source.conversionRate.toFixed(1)}%
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-bold text-[#344054]">
-                            {source.topRole}
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {source.owner}
-                          </td>
-
-                          <td className="px-5 py-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedSource(source)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                            >
-                              <Eye size={15} />
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No source performance records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredSources.length} of {sourcingData.length}{" "}
-                source records
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
-                >
-                  1
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <h3 className="text-sm font-bold text-sibs-primary-1">
-            Sourcing Engine Rule
-          </h3>
-
-          <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            Source must be captured at candidate entry and preserved across the
-            entire pipeline. Reports should show both volume per source and
-            conversion to hire per source, not only manual tags.
-          </p>
-        </section>
+            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+              Candidate volume is counted from the public application form
+              source selection. Source cost is added separately and tagged to the
+              same sourcing option. Cost per Hire is calculated as{" "}
+              <span className="font-extrabold">
+                Total Cost Tagged to Source / Hired Candidates From That Source
+              </span>
+              .
+            </p>
+          </section>
+        </div>
       </main>
+
+      <AddSourceCostModal
+        open={showAddCostModal}
+        form={costForm}
+        setForm={setCostForm}
+        onClose={handleCloseAddCostModal}
+        onSubmit={handleAddSourceCost}
+        onReset={resetCostForm}
+      />
 
       <SourceDetailsModal
         open={!!selectedSource}
