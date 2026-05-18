@@ -26,6 +26,7 @@ import {
 const CANDIDATE_APPLICATIONS_STORAGE_KEY = "ta_candidate_applications";
 const PIPELINE_CANDIDATES_STORAGE_KEY = "ta_pipeline_candidates";
 const OFFER_ELIGIBLE_STORAGE_KEY = "ta_offer_eligible_candidates";
+const OFFER_RECORDS_STORAGE_KEY = "ta_offer_records";
 const INTERNAL_CANDIDATES_STORAGE_KEY = "ta_internal_candidates";
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
 const PIPELINE_SYNC_EVENTS_KEY = "ta_pipeline_sync_events";
@@ -608,7 +609,7 @@ Please review your contract using the link below:
 
 ${offerLink}
 
-You may choose Negotiate, Reject, or Accepted after checking the contract.
+You may choose Accept, Reject, or Request to Negotiate after checking the contract.
 
 Thank you,
 SIBS Talent Acquisition`
@@ -1344,6 +1345,79 @@ function savePipelineCandidateData(candidates) {
   safeWriteArray(CANDIDATE_APPLICATIONS_STORAGE_KEY, candidates);
 }
 
+
+function getOfferRecordStatusFromCandidate(candidate) {
+  if (candidate?.offerDecision === "Accepted" || candidate?.currentStage === "Accepted") return "Accepted";
+  if (candidate?.offerDecision === "Rejected" || candidate?.currentStage === "Drop-off") return "Declined";
+  if (candidate?.offerDecision === "Negotiate") return "Negotiation";
+  if (candidate?.offerEmailSent) return "Contract Sent";
+  if (isOfferApproved(candidate)) return "Approved";
+  if ((candidate?.offerApprovalStatus || getOfferApprovalSummary(candidate)) === "Rejected") return "Rejected";
+  return "For Review";
+}
+
+function upsertOfferRecordFromPipeline(candidate) {
+  if (!candidate || typeof window === "undefined") return;
+
+  const current = safeReadArray(OFFER_RECORDS_STORAGE_KEY);
+  const candidateApplicationId = candidate.candidateApplicationId || candidate.applicationId || candidate.id;
+  const candidateEmail = String(candidate.email || candidate.candidateEmail || "").toLowerCase();
+  const existingIndex = current.findIndex((offer) =>
+    String(offer.candidateApplicationId || "") === String(candidateApplicationId || "") ||
+    String(offer.candidateEmail || "").toLowerCase() === candidateEmail
+  );
+  const existing = existingIndex >= 0 ? current[existingIndex] : null;
+  const nextId = existing?.id || current.reduce((max, offer) => Math.max(max, Number(offer.id) || 0), 0) + 1;
+  const offerDetails = candidate.offerDetails || {};
+  const basicPay = Number(offerDetails.basicPay || candidate.basicPay || 0);
+  const deminimisDailyRate = Number(offerDetails.deminimisDailyRate || candidate.deminimisDailyRate || 0);
+  const candidateResponse =
+    candidate.offerDecision === "Accepted"
+      ? "Accepted"
+      : candidate.offerDecision === "Rejected"
+        ? "Declined"
+        : candidate.offerDecision === "Negotiate"
+          ? "Negotiation"
+          : existing?.candidateResponse || "Pending";
+
+  const payload = {
+    ...(existing || {}),
+    id: nextId,
+    offerId: existing?.offerId || `OFF-${String(nextId).padStart(3, "0")}`,
+    candidateApplicationId,
+    candidateId: candidate.candidateId,
+    candidateName: candidate.name || candidate.candidateName,
+    candidateEmail: candidate.email || candidate.candidateEmail,
+    roleTitle: offerDetails.roleTitle || candidate.roleTitle || getRoleTitle(candidate.roleAccount),
+    account: offerDetails.account || candidate.account || getAccount(candidate.roleAccount),
+    hiringRequirementId: offerDetails.hiringRequirementId || candidate.hiringRequirementId || "—",
+    basicPay,
+    deminimisDailyRate,
+    dailyRate: basicPay + deminimisDailyRate,
+    owner: candidate.taOwner || candidate.owner || "Current User",
+    source: candidate.source || "Candidate Pipeline",
+    status: getOfferRecordStatusFromCandidate(candidate),
+    offerDate: existing?.offerDate || getCurrentDate(),
+    contractSent: Boolean(candidate.offerEmailSent),
+    contractSentAt: candidate.offerEmailSentAt || existing?.contractSentAt || null,
+    candidateResponse,
+    responseDate: candidate.offerDecisionAt || existing?.responseDate || null,
+    declineCategory: candidate.dropOffCategory || existing?.declineCategory || "",
+    declineReason: candidate.dropOffReason || existing?.declineReason || "",
+    remarks: candidate.reasonForMovement || existing?.remarks || "Offer received from Candidate Pipeline.",
+    approvals: candidate.offerApprovals || existing?.approvals || {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+  };
+
+  const next = existingIndex >= 0
+    ? current.map((offer, index) => index === existingIndex ? payload : offer)
+    : [payload, ...current];
+
+  safeWriteArray(OFFER_RECORDS_STORAGE_KEY, next);
+}
+
 function upsertOfferEligibleCandidate(candidate) {
   const current = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
 
@@ -1385,6 +1459,7 @@ function upsertOfferEligibleCandidate(candidate) {
     : [payload, ...current];
 
   safeWriteArray(OFFER_ELIGIBLE_STORAGE_KEY, next);
+  upsertOfferRecordFromPipeline(candidate);
 }
 
 function removeOfferEligibleCandidate(candidate) {
@@ -2871,54 +2946,62 @@ function CandidatePipelineModal({
                     </div>
                     {isOffered && (
                       <p className="mt-4 rounded-xl border border-blue-100 bg-white p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-                        Offer approval and contract sending are managed in the Offers page.
+                        Offer approval is managed in the Offers page. Once Raul Nadela and Haasanor approve, TA/user can send or manually open the offer email here.
                       </p>
                     )}
 
-                    {false && isOffered && (
+                    {isOffered && (
                       <div className="mt-4 space-y-4">
-                        {offerApprovers.map((approver) => {
-                          const approval = candidate.offerApprovals?.[approver] || {
-                            status: "For Review",
-                          };
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          {offerApprovers.map((approver) => {
+                            const approval = candidate.offerApprovals?.[approver] || {
+                              status: "For Review",
+                              updatedAt: null,
+                              remarks: "",
+                            };
 
-                          return (
-                            <div
-                              key={approver}
-                              className="rounded-xl border border-amber-100 bg-white p-4"
-                            >
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-sm font-bold text-[#101828]">
-                                  {approver}
-                                </p>
-                                <span
-                                  className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getOfferApprovalClass(
-                                    approval.status
-                                  )}`}
-                                >
-                                  {approval.status || "For Review"}
-                                </span>
-                              </div>
-
-                              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                {offerApprovalStatusOptions.map((status) => (
-                                  <button
-                                    key={`${approver}-${status}`}
-                                    type="button"
-                                    onClick={() =>
-                                      onUpdateOfferApproval(candidate, approver, status)
-                                    }
-                                    className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${getOfferApprovalClass(
-                                      status
+                            return (
+                              <div
+                                key={approver}
+                                className="rounded-xl border border-[#E6ECF2] bg-white p-4"
+                              >
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                  <p className="text-sm font-bold text-[#101828]">
+                                    {approver}
+                                  </p>
+                                  <span
+                                    className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getOfferApprovalClass(
+                                      approval.status
                                     )}`}
                                   >
-                                    {status}
-                                  </button>
-                                ))}
+                                    {approval.status || "For Review"}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                                  {approval.updatedAt || "Waiting for approval update from Offers page."}
+                                </p>
+                                {approval.remarks && (
+                                  <p className="mt-2 rounded-lg bg-[#F8FAFC] p-2 text-xs font-semibold leading-5 text-[#475467]">
+                                    {approval.remarks}
+                                  </p>
+                                )}
                               </div>
+                            );
+                          })}
+                        </div>
+
+                        {(candidate.offerApprovalStatus || getOfferApprovalSummary(candidate)) === "Rejected" && (
+                          <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
+                            Offer was not approved. Check the Offers page approval cards for the approver status.
+                          </div>
+                        )}
+
+                        {!isOfferApproved(candidate) &&
+                          (candidate.offerApprovalStatus || getOfferApprovalSummary(candidate)) !== "Rejected" && (
+                            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
+                              Offer is still for review. The email button will be enabled after Raul Nadela and Haasanor both approve the offer in the Offers page.
                             </div>
-                          );
-                        })}
+                          )}
 
                         {isOfferApproved(candidate) && !candidate.offerEmailSent && (
                           <button
@@ -2927,14 +3010,28 @@ function CandidatePipelineModal({
                             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
                           >
                             <Mail size={16} />
-                            Send Contract Email to Lead
+                            Send Offer Email to Candidate
+                          </button>
+                        )}
+
+                        {isOfferApproved(candidate) && (
+                          <button
+                            type="button"
+                            onClick={() => window.open(buildOfferContractLink(candidate), "_blank", "noopener,noreferrer")}
+                            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                          >
+                            <Eye size={16} />
+                            Open Candidate Offer Link Manually
                           </button>
                         )}
 
                         {candidate.offerEmailSent && (
                           <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
                             <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                              Candidate Contract Response
+                              Candidate Offer Response
+                            </p>
+                            <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                              Use these buttons only when the candidate cannot access the email link or TA needs to record the response manually.
                             </p>
                             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
                               {offerDecisionOptions.map((decision) => (
@@ -3024,6 +3121,7 @@ function CandidatePipelineModal({
               !isInitialScreening &&
               !isOnlineAssessment &&
               !isInterviewScheduled &&
+              !isOffered &&
               nextStage && (
                 <button
                   type="button"
@@ -3359,6 +3457,70 @@ export default function CandidatePipelinePage() {
 
       if (!event) return candidate;
       changed = true;
+
+      if (event.type === "offer_approval_update" || event.offerApprovals) {
+        const approvalStatus = event.offerApprovalStatus || getOfferApprovalSummary({
+          ...candidate,
+          offerApprovals: event.offerApprovals || candidate.offerApprovals,
+        });
+        return normalizeCandidate({
+          ...candidate,
+          offerApprovals: event.offerApprovals || candidate.offerApprovals,
+          offerApprovalStatus: approvalStatus,
+          reasonForMovement: event.reasonForMovement || `Offer approval status updated to ${approvalStatus}.`,
+          timeline: [
+            ...(candidate.timeline || []),
+            {
+              stage: "Offered",
+              owner: event.owner || currentUserName,
+              source: "Offers Page",
+              timestamp: event.timestamp || getCurrentTimestamp(),
+              reason: event.reasonForMovement || `Offer approval status updated to ${approvalStatus}.`,
+              remarks: event.remarks || "Approval update synced from Offers page.",
+            },
+          ],
+        });
+      }
+
+      if (event.type === "offer_contract_sent") {
+        return normalizeCandidate({
+          ...candidate,
+          offerEmailSent: true,
+          offerEmailSentAt: event.timestamp || getCurrentTimestamp(),
+          reasonForMovement: event.reasonForMovement || "Offer contract email was sent to the candidate.",
+          timeline: [
+            ...(candidate.timeline || []),
+            {
+              stage: "Offered",
+              owner: event.owner || currentUserName,
+              source: "Offer Contract",
+              timestamp: event.timestamp || getCurrentTimestamp(),
+              reason: event.reasonForMovement || "Offer contract email was sent to the candidate.",
+              remarks: event.remarks || "Contract sent from Candidate Pipeline.",
+            },
+          ],
+        });
+      }
+
+      if (event.status === "Negotiate" || event.status === "Negotiation") {
+        return normalizeCandidate({
+          ...candidate,
+          offerDecision: "Negotiate",
+          offerDecisionAt: event.timestamp || getCurrentTimestamp(),
+          reasonForMovement: event.reasonForMovement || "Candidate requested offer negotiation.",
+          timeline: [
+            ...(candidate.timeline || []),
+            {
+              stage: "Offered",
+              owner: event.owner || currentUserName,
+              source: "Offer Contract",
+              timestamp: event.timestamp || getCurrentTimestamp(),
+              reason: event.reasonForMovement || "Candidate requested offer negotiation.",
+              remarks: event.remarks || "Negotiation request synced from offer link.",
+            },
+          ],
+        });
+      }
 
       if (event.status === "Accepted" || event.toStage === "Accepted") {
         return normalizeCandidate({
@@ -4021,6 +4183,7 @@ export default function CandidatePipelinePage() {
       };
 
       updateCandidateRecord(updatedCandidate);
+      upsertOfferRecordFromPipeline(updatedCandidate);
       removeOfferEligibleCandidate(updatedCandidate);
       setSelectedCandidate(updatedCandidate);
       setActiveStage("Drop-off");
