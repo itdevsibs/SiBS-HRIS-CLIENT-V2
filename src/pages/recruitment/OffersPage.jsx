@@ -34,6 +34,7 @@ const statusOptions = [
   "Contract Sent",
   "Accepted",
   "Declined",
+  "Negotiation",
 ];
 const accountOptions = [
   "All Accounts",
@@ -334,6 +335,7 @@ function normalizeOffer(offer) {
 
   if (offer.candidateResponse === "Accepted") status = "Accepted";
   if (offer.candidateResponse === "Declined") status = "Declined";
+  if (offer.candidateResponse === "Negotiation") status = "Negotiation";
   if (offer.contractSent && offer.candidateResponse === "Pending") status = "Contract Sent";
   if (!offer.contractSent && approvalSummary === "Approved" && offer.candidateResponse === "Pending") status = "Approved";
   if (approvalSummary === "Rejected") status = "Rejected";
@@ -362,11 +364,71 @@ function getStatusClass(status) {
     case "Rejected":
       return "border-red-200 bg-red-50 text-red-700";
     case "Contract Sent":
+    case "Negotiation":
       return "border-blue-200 bg-blue-50 text-blue-700";
     case "For Review":
     default:
       return "border-amber-200 bg-amber-50 text-amber-700";
   }
+}
+
+
+function syncEligibleCandidateFromOffer(offer) {
+  if (!offer || typeof window === "undefined") return;
+
+  const current = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
+  const candidateEmail = String(offer.candidateEmail || "").toLowerCase();
+  const candidateApplicationId = offer.candidateApplicationId;
+  const payload = {
+    candidateApplicationId,
+    candidateId: offer.candidateId,
+    candidateName: offer.candidateName,
+    candidateEmail: offer.candidateEmail,
+    hiringRequirementId: offer.hiringRequirementId || "",
+    roleTitle: offer.roleTitle || "Not assigned yet",
+    account: offer.account || "Not assigned yet",
+    roleAccount: `${offer.roleTitle || "Not assigned yet"} - ${offer.account || "Not assigned yet"}`,
+    owner: offer.owner || "Current User",
+    currentStage: offer.status === "Accepted" ? "Accepted" : "Offered",
+    source: offer.source || "Offers Page",
+    offerDetails: {
+      hiringRequirementId: offer.hiringRequirementId || "",
+      roleTitle: offer.roleTitle || "Not assigned yet",
+      account: offer.account || "Not assigned yet",
+      basicPay: offer.basicPay || 0,
+      deminimisDailyRate: offer.deminimisDailyRate || 0,
+      preparedAt: offer.offerDate || null,
+      preparedBy: offer.owner || "Current User",
+    },
+    offerApprovals: offer.approvals || {},
+    offerApprovalStatus: getOfferApprovalSummary(offer),
+    offerEmailSent: Boolean(offer.contractSent),
+    offerEmailSentAt: offer.contractSentAt || null,
+    offerDecision:
+      offer.candidateResponse === "Accepted"
+        ? "Accepted"
+        : offer.candidateResponse === "Declined"
+          ? "Rejected"
+          : offer.candidateResponse === "Negotiation"
+            ? "Negotiate"
+            : "",
+  };
+
+  const exists = current.some((item) =>
+    String(item.candidateApplicationId || "") === String(candidateApplicationId || "") ||
+    String(item.candidateEmail || "").toLowerCase() === candidateEmail
+  );
+
+  const next = exists
+    ? current.map((item) =>
+        String(item.candidateApplicationId || "") === String(candidateApplicationId || "") ||
+        String(item.candidateEmail || "").toLowerCase() === candidateEmail
+          ? { ...item, ...payload }
+          : item
+      )
+    : [payload, ...current];
+
+  safeWriteArray(OFFER_ELIGIBLE_STORAGE_KEY, next);
 }
 
 function useConfirmDialog() {
@@ -645,6 +707,21 @@ export default function OffersPage() {
     });
 
     updateOffer(updatedOffer);
+    syncEligibleCandidateFromOffer(updatedOffer);
+    appendPipelineSyncEvent({
+      syncId: `SYNC-${Date.now()}-${offer.candidateApplicationId}-APPROVAL`,
+      type: "offer_approval_update",
+      candidateApplicationId: offer.candidateApplicationId,
+      candidateId: offer.candidateId,
+      candidateEmail: offer.candidateEmail,
+      offerApprovals: updatedOffer.approvals,
+      offerApprovalStatus: getOfferApprovalSummary(updatedOffer),
+      timestamp: getCurrentTimestamp(),
+      reasonForMovement: `${approver} marked the offer as ${status}. Overall offer approval status: ${getOfferApprovalSummary(updatedOffer)}.`,
+      owner: currentUserName,
+      source: "Offers Page",
+      remarks: `Updated by ${currentUserName}`,
+    });
   }
 
   async function handleSendContract(offer) {
@@ -809,7 +886,7 @@ export default function OffersPage() {
                 Offers
               </div>
               <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">Offers</h1>
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">Approve offered candidates, send contract emails, and record candidate acceptance or decline.</p>
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">Approve offered candidates from the Candidate Pipeline. Email sending and candidate response recording are handled in the Candidate Pipeline after both approvals.</p>
             </div>
           </div>
 
@@ -900,18 +977,29 @@ export default function OffersPage() {
                               <button type="button" onClick={() => setSelectedOffer(offer)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm" title="View"><Eye size={16} /></button>
                               {getOfferApprovalSummary(offer) === "For Review" && (
                                 <>
-                                  <button type="button" onClick={() => handleApproval(offer, "Raul Nadela", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Raul Approve</button>
-                                  <button type="button" onClick={() => handleApproval(offer, "Haasanor", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Haasanor Approve</button>
+                                  {(offer.approvals?.["Raul Nadela"]?.status || "For Review") === "For Review" && (
+                                    <>
+                                      <button type="button" onClick={() => handleApproval(offer, "Raul Nadela", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Raul Approve</button>
+                                      <button type="button" onClick={() => handleApproval(offer, "Raul Nadela", "Rejected")} className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm">Raul Reject</button>
+                                    </>
+                                  )}
+                                  {(offer.approvals?.Haasanor?.status || "For Review") === "For Review" && (
+                                    <>
+                                      <button type="button" onClick={() => handleApproval(offer, "Haasanor", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Haasanor Approve</button>
+                                      <button type="button" onClick={() => handleApproval(offer, "Haasanor", "Rejected")} className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm">Haasanor Reject</button>
+                                    </>
+                                  )}
                                 </>
                               )}
                               {getOfferApprovalSummary(offer) === "Approved" && !offer.contractSent && (
-                                <button type="button" onClick={() => handleSendContract(offer)} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><Mail size={14} /> Send</button>
+                                <span className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-blue-700">
+                                  Ready in Pipeline
+                                </span>
                               )}
                               {offer.contractSent && offer.candidateResponse === "Pending" && (
-                                <>
-                                  <button type="button" onClick={() => handleCandidateAccept(offer)} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Accepted</button>
-                                  <button type="button" onClick={() => openDeclineModal(offer)} className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm">Declined</button>
-                                </>
+                                <span className="inline-flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 px-3 text-xs font-bold text-blue-700">
+                                  Awaiting Candidate
+                                </span>
                               )}
                             </div>
                           </td>
@@ -958,7 +1046,7 @@ export default function OffersPage() {
 
           <section className="rounded-xl border border-blue-100 bg-blue-50 p-5">
             <h3 className="text-sm font-bold text-sibs-primary-1">Offer Process Rule</h3>
-            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">Candidate Pipeline moves qualified candidates to Offered. This page approves the offer, sends the contract email, and records the candidate response. Accepted responses move the candidate to Accepted; declined responses move the candidate to Drop-off with a reason.</p>
+            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">Candidate Pipeline moves qualified candidates to Offered. This page is for Raul Nadela and Haasanor approval only. Once both approvers approve, the Candidate Pipeline will show the approved status and TA/user can send or manually open the offer email there.</p>
           </section>
         </div>
       </main>
