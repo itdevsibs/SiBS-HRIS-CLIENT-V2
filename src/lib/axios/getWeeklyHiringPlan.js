@@ -22,6 +22,30 @@ export async function getWeeklyHiringPlanWeeks() {
   }
 }
 
+export async function getWeeklyHiringPlanFilterOptions() {
+  try {
+    const res = await api.get("/api/weekly-hiring-plan/filter-options", {
+      withCredentials: true,
+    });
+
+    return {
+      clusters: res.data?.clusters || [],
+      accounts: res.data?.accounts || [],
+    };
+  } catch (err) {
+    console.error(
+      "Axios getWeeklyHiringPlanFilterOptions API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message
+    );
+
+    return {
+      clusters: [],
+      accounts: [],
+    };
+  }
+}
+
 export async function getWeeklyHiringPlanAccounts(
   cluster,
   startDate,
@@ -51,5 +75,6 @@ export async function getWeeklyHiringPlanAccounts(
 
 export default {
   getWeeklyHiringPlanWeeks,
+  getWeeklyHiringPlanFilterOptions,
   getWeeklyHiringPlanAccounts,
 };

@@ -3237,7 +3237,7 @@ Moved to Pipeline (${today}): ${moveToPipelineForm.remarks.trim()}`
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 <UsersRound size={14} />
-                Talent Pool
+                Recruitment
               </div>
 
               <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">

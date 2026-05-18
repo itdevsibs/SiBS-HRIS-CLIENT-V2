@@ -158,6 +158,18 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
     },
     {
+      name: "TA Dashboard",
+      icon: LayoutDashboard,
+      path: "/recruitment/ta-dashboard",
+      allowedUsers: [1, 2, 3, 7],
+    },
+    {
+      name: "OM Dashboard",
+      icon: LayoutDashboard,
+      path: "/recruitment/om-dashboard",
+      allowedUsers: [1, 2, 3, 7],
+    },
+    {
       name: "Employees",
       icon: Users,
       path: "/employee",
@@ -185,28 +197,22 @@ export default function Sidebar() {
 
   const recruitmentMenu = [
     {
-      name: "TA Dashboard",
-      icon: LayoutDashboard,
-      path: "/recruitment/ta-dashboard",
-      allowedUsers: [1, 2, 3, 7],
-    },
-    {
       name: "Weekly Hiring Plan",
       icon: CalendarDays,
       path: "/recruitment/weekly-hiring-plan",
-      allowedUsers: [1, 2, 3, 5, 7],
+      allowedUsers: [1, 2, 3, 5, 6, 7],
     },
     {
       name: "Job Description",
       icon: ClipboardList,
       path: "/recruitment/job-description",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Hiring Needs Intake",
       icon: FileText,
       path: "/recruitment/hiring-needs",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 5, 6, 7],
     },
     {
       name: "Available Positions",
@@ -218,49 +224,49 @@ export default function Sidebar() {
       name: "Sourcing Analytics",
       icon: BarChart3,
       path: "/recruitment/sourcing-analytics",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Talent Pool",
       icon: Users,
       path: "/recruitment/talent-pool",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Candidate Pipeline",
       icon: Table2,
       path: "/recruitment/candidate-pipeline",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Offers",
       icon: Gift,
       path: "/recruitment/offers",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Onboarding",
       icon: ClipboardList,
       path: "/recruitment/onboarding",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Action Items",
       icon: Activity,
       path: "/recruitment/action-items",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
     {
       name: "Weekly Reports",
       icon: FileClock,
       path: "/recruitment/weekly-reports",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 5, 6, 7],
     },
     {
       name: "Candidate Experience",
       icon: BookOpen,
       path: "/recruitment/candidate-experience",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: [1, 2, 3, 6, 7],
     },
   ];
 

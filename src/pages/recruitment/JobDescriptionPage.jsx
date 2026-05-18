@@ -19,7 +19,6 @@ import JobDescriptionTable from "../../components/tables/jobDescription/JobDescr
 import AddDescriptionModal from "../../components/modals/jobDescription/AddJobDescription";
 import ViewJobDescriptionModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
-import SlidingTabs from "../../lib/utils/react-utils/SlidingTabs";
 
 const emptyRevisionForm = {
   revisedBySibsId: "",
@@ -159,14 +158,6 @@ export default function JobDescriptionPage() {
 
   const [revisionItem, setRevisionItem] = useState(null);
   const [revisionForm, setRevisionForm] = useState(emptyRevisionForm);
-  const [activeJdTab, setActiveJdTab] = useState("All JD");
-
-  const jdTabs = [
-    { label: "All JD", value: "All JD" },
-    { label: "For Approval", value: "For Approval" },
-    { label: "Active JD", value: "Active JD" },
-    { label: "Archived JD", value: "Archived JD" },
-  ];
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -426,36 +417,33 @@ export default function JobDescriptionPage() {
       <Header />
 
       <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <div className=" gap-3">
-            <div
-              className="flex items-center gap-1 bg-white/80 px-2 py-1 text-xs 
-              font-bold text-sibs-primary-1 w-fit rounded-full mb-1 shadow-2xs"
-            >
-              <ClipboardList
-                size={15}
-                className="shrink-0 text-sibs-primary-1"
-              />
-
-              <span className="text-xs">Personel Requisition</span>
+        <div className="min-w-0 mb-6 flex items-end justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ClipboardList size={14} />
+              Recruitment
             </div>
 
-            <div className="flex items-center gap-3">
-              <ClipboardList
-                size={30}
-                className="shrink-0 text-sibs-primary-1"
-              />
+            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              Job Description
+            </h1>
 
-              <h1 className="min-w-0 break-words text-3xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-4xl">
-                Job Description
-              </h1>
-            </div>
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              Manage JD readiness for Existing, For Revision, and New Job
+              Description requirements
+            </p>
           </div>
 
-          <p className="mt-2 text-sm font-medium text-sibs-primary-1/80">
-            Manage JD readiness for Existing, For Revision, and New Job
-            Description requirements
-          </p>
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
+            >
+              <Plus size={18} />
+              Add Job Description
+            </button>
+          </div>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -486,27 +474,6 @@ export default function JobDescriptionPage() {
             icon={FileText}
             description="New or unlinked JD"
           />
-        </div>
-
-        <div className="mb-4 grid grid-cols-1 gap-4 rounded-xl py-2 lg:grid-cols-[1fr_auto] lg:items-center">
-          <div className="flex flex-col items-start justify-center">
-            <div className="lg:col-span-2">
-              <SlidingTabs
-                tabs={jdTabs}
-                activeTab={activeJdTab}
-                onChange={setActiveJdTab}
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleOpenCreateModal}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
-          >
-            <Plus size={18} />
-            Add Job Description
-          </button>
         </div>
 
         <JobDescriptionTable

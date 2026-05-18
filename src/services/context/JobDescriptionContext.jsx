@@ -4,7 +4,6 @@ const JobDescriptionContext = createContext(null);
 
 export const jdStatusOptions = [
   { value: "Existing", label: "Existing" },
-  { value: "For Revision", label: "For Revision" },
   { value: "New Job Description", label: "New Job Description" },
 ];
 
@@ -63,7 +62,7 @@ export default function JobDescriptionProvider({ children }) {
     () => [
       {
         value: "",
-        label: "No linked hiring requirement — New Job Description",
+        label: "No Existing Job Description — New Job Description",
       },
     ],
     [],

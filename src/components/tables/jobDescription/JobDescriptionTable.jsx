@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { Eye, UserRound } from "lucide-react";
+import { Eye } from "lucide-react";
 import TableHeader from "../tableHeader/TableHeader";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
@@ -42,6 +42,10 @@ function getJdStatusClass(status) {
     case "Returned for Revision":
       return "bg-red-50 text-red-700";
 
+    case "Archived":
+    case "Archived JD":
+      return "bg-gray-100 text-gray-700";
+
     default:
       return "bg-gray-50 text-gray-600";
   }
@@ -58,6 +62,24 @@ function getJdStatusLabel(status) {
     default:
       return normalizeJdStatus(status);
   }
+}
+
+function getJdViewStatus(item) {
+  const status = normalizeJdStatus(item?.jdStatus);
+
+  if (status === "Existing" || status === "Active") {
+    return "Active JD";
+  }
+
+  if (status === "For Revision" || status === "For Approval") {
+    return "For Approval";
+  }
+
+  if (status === "Archived" || status === "Archived JD") {
+    return "Archived JD";
+  }
+
+  return "All JD";
 }
 
 function JdStatusBadge({ status }) {
@@ -170,6 +192,16 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
       searchPlaceholder: "Search JD, role, account, owner...",
       filters: [
         {
+          key: "jdView",
+          defaultValue: "All JD",
+          options: [
+            { label: "All JD", value: "All JD" },
+            { label: "For Approval", value: "For Approval" },
+            { label: "Active JD", value: "Active JD" },
+            { label: "Archived JD", value: "Archived JD" },
+          ],
+        },
+        {
           key: "status",
           defaultValue: "All Status",
           options: [
@@ -177,6 +209,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
             { label: "Existing", value: "Existing" },
             { label: "For Revision", value: "For Revision" },
             { label: "New Job Description", value: "New Job Description" },
+            { label: "Archived", value: "Archived" },
           ],
         },
       ],
@@ -192,9 +225,14 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
     const keyword = String(search || "")
       .trim()
       .toLowerCase();
+
+    const jdViewFilter = filterValues?.jdView || "All JD";
     const jdStatusFilter = filterValues?.status || "All Status";
 
     return jobDescriptionList.filter((item) => {
+      const normalizedStatus = normalizeJdStatus(item.jdStatus);
+      const jdViewStatus = getJdViewStatus(item);
+
       const matchesSearch =
         !keyword ||
         safeText(item.jdCode).includes(keyword) ||
@@ -204,11 +242,13 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
         safeText(item.owner).includes(keyword) ||
         safeText(item.linkedHiringRequirement).includes(keyword);
 
-      const matchesJdStatus =
-        jdStatusFilter === "All Status" ||
-        normalizeJdStatus(item.jdStatus) === jdStatusFilter;
+      const matchesJdView =
+        jdViewFilter === "All JD" || jdViewStatus === jdViewFilter;
 
-      return matchesSearch && matchesJdStatus;
+      const matchesJdStatus =
+        jdStatusFilter === "All Status" || normalizedStatus === jdStatusFilter;
+
+      return matchesSearch && matchesJdView && matchesJdStatus;
     });
   }, [jobDescriptionList, search, filterValues]);
 

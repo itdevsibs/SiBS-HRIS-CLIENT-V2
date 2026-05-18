@@ -28,6 +28,7 @@ import ActionItemsPage from "./pages/recruitment/ActionItemPage";
 import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
 import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 
+import OMDashboardPage from "./pages/dashboard/OMDashboardPage";
 
 const Router = () => {
   return (
@@ -48,6 +49,7 @@ const Router = () => {
       <Route path="/profile/user" element={<ProfileUserPage />} />
 
       <Route path="/recruitment/ta-dashboard" element={<TADashboardPage />} />
+      <Route path="/recruitment/om-dashboard" element={<OMDashboardPage />} />
       <Route path="/recruitment/hiring-needs" element={<HiringNeedsPage />} />
       <Route
         path="/recruitment/job-description"
