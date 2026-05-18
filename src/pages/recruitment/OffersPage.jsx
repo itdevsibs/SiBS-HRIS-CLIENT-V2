@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
+import { useUser } from "../../services/context/UserContext";
 import {
   Gift,
   Search,
   Eye,
-  Plus,
   X,
   CalendarDays,
-  DollarSign,
   CheckCircle2,
   Clock3,
   AlertTriangle,
@@ -17,222 +16,197 @@ import {
   ChevronRight,
   FileText,
   Timer,
-  Star,
+  Mail,
+  ShieldCheck,
+  Send,
 } from "lucide-react";
-import { saveCandidateExperienceRecord } from "@/lib/utils/candidateExperienceStore";
-import { CreateOfferModal } from "../../components/modals/offers/OffersModal.jsx";
 
 const OFFER_ELIGIBLE_STORAGE_KEY = "ta_offer_eligible_candidates";
+const OFFER_RECORDS_STORAGE_KEY = "ta_offer_records";
 const PIPELINE_SYNC_EVENTS_KEY = "ta_pipeline_sync_events";
 
-const offerRecords = [
-  {
-    id: 1,
-    offerId: "OFF-001",
-    candidateApplicationId: 1,
-    candidateId: "CAND-001",
-    candidateName: "Juan Dela Cruz",
-    candidateEmail: "juan.delacruz@email.com",
-    roleAccount: "CSR - SIBS Operations",
-    roleTitle: "Customer Service Representative",
-    account: "SIBS Operations",
-    offerDate: "2026-05-01",
-    basicPay: 22000,
-    deMinimis: 3000,
-    dailyRate: 25000,
-    offeredCompensation: 25000,
-    status: "Accepted",
-    acceptedDate: "2026-05-03",
-    declinedDate: null,
-    declineCategory: null,
-    declineReason: null,
-    candidateFeedback: null,
-    experienceRating: null,
-    feedbackTag: null,
-    turnaroundDays: 2,
-    owner: "Maria Reyes",
-    remarks: "Candidate accepted within target turnaround time.",
-  },
-  {
-    id: 2,
-    offerId: "OFF-002",
-    candidateApplicationId: 8,
-    candidateId: "CAND-008",
-    candidateName: "Maria Santos",
-    candidateEmail: "maria.santos@email.com",
-    roleAccount: "QA - SIBS Operations",
-    roleTitle: "QA Specialist",
-    account: "SIBS Operations",
-    offerDate: "2026-05-02",
-    basicPay: 27000,
-    deMinimis: 3000,
-    dailyRate: 30000,
-    offeredCompensation: 30000,
-    status: "Pending",
-    acceptedDate: null,
-    declinedDate: null,
-    declineCategory: null,
-    declineReason: null,
-    candidateFeedback: null,
-    experienceRating: null,
-    feedbackTag: null,
-    turnaroundDays: 3,
-    owner: "John Dela Cruz",
-    remarks: "Awaiting candidate response.",
-  },
-  {
-    id: 3,
-    offerId: "OFF-003",
-    candidateApplicationId: 2,
-    candidateId: "CAND-002",
-    candidateName: "Carlo Reyes",
-    candidateEmail: "carlo.reyes@email.com",
-    roleAccount: "System Developer - SIBS IT",
-    roleTitle: "System Developer",
-    account: "SIBS IT",
-    offerDate: "2026-04-28",
-    basicPay: 40000,
-    deMinimis: 5000,
-    dailyRate: 45000,
-    offeredCompensation: 45000,
-    status: "Declined",
-    acceptedDate: null,
-    declinedDate: "2026-04-30",
-    declineCategory: "Accepted Other Offer",
-    declineReason: "Accepted another offer with higher compensation.",
-    candidateFeedback:
-      "The process was good, but another company provided a faster and higher offer.",
-    experienceRating: 4,
-    feedbackTag: "Offer Competitiveness",
-    turnaroundDays: 2,
-    owner: "Kim Domingo",
-    remarks: "Compensation mismatch. Can be considered for future higher range.",
-  },
-  {
-    id: 4,
-    offerId: "OFF-004",
-    candidateApplicationId: 9,
-    candidateId: "CAND-009",
-    candidateName: "Angela Lim",
-    candidateEmail: "angela.lim@email.com",
-    roleAccount: "RCM Analyst - SIBS RCM",
-    roleTitle: "RCM Analyst",
-    account: "SIBS RCM",
-    offerDate: "2026-05-04",
-    basicPay: 29000,
-    deMinimis: 3000,
-    dailyRate: 32000,
-    offeredCompensation: 32000,
-    status: "Accepted",
-    acceptedDate: "2026-05-05",
-    declinedDate: null,
-    declineCategory: null,
-    declineReason: null,
-    candidateFeedback: null,
-    experienceRating: null,
-    feedbackTag: null,
-    turnaroundDays: 1,
-    owner: "Paul Garcia",
-    remarks: "Ready for onboarding transition.",
-  },
-  {
-    id: 5,
-    offerId: "OFF-005",
-    candidateApplicationId: 3,
-    candidateId: "CAND-003",
-    candidateName: "Mark Sy",
-    candidateEmail: "mark.sy@email.com",
-    roleAccount: "IT Support - SIBS IT",
-    roleTitle: "IT Support",
-    account: "SIBS IT",
-    offerDate: "2026-05-01",
-    basicPay: 25000,
-    deMinimis: 3000,
-    dailyRate: 28000,
-    offeredCompensation: 28000,
-    status: "Declined",
-    acceptedDate: null,
-    declinedDate: "2026-05-04",
-    declineCategory: "Schedule",
-    declineReason: "Schedule conflict with candidate availability.",
-    candidateFeedback: "The role was okay, but the shift schedule was not fit.",
-    experienceRating: 3,
-    feedbackTag: "Schedule Concern",
-    turnaroundDays: 3,
-    owner: "Maria Reyes",
-    remarks: "Candidate declined due to schedule concern.",
-  },
+const offerApprovers = ["Raul Nadela", "Haasanor"];
+const statusOptions = [
+  "All Status",
+  "For Review",
+  "Approved",
+  "Rejected",
+  "Contract Sent",
+  "Accepted",
+  "Declined",
 ];
-
-const statusOptions = ["All Status", "Pending", "Accepted", "Declined"];
-
-const ownerOptions = [
-  "All Owners",
-  "Maria Reyes",
-  "John Dela Cruz",
-  "Kim Domingo",
-  "Paul Garcia",
-];
-
 const accountOptions = [
   "All Accounts",
-  "SIBS",
-  "SIBS Operations",
+  "Collect IV",
+  "Collect AR",
+  "Connect",
+  "DentistRX",
+  "Reconciliation",
+  "TeleDentistry",
+  "Cash",
+  "US Visa",
+  "Channel Assist",
+  "Yomdel",
   "SIBS IT",
-  "SIBS RCM",
 ];
-
 const declineCategoryOptions = [
   "Compensation",
   "Schedule",
-  "Process Delay",
   "Accepted Other Offer",
   "Location Issue",
   "Personal Reason",
   "Incomplete Requirements",
+  "No Response",
   "Others",
 ];
 
-const defaultEligibleCandidates = [
+const sampleOfferRecords = [
   {
+    id: 1,
+    offerId: "OFF-001",
     candidateApplicationId: 4,
     candidateId: "CAND-004",
     candidateName: "Kim Cruz",
     candidateEmail: "kim.cruz@email.com",
-    roleTitle: "CSR",
-    account: "SIBS",
-    roleAccount: "CSR - SIBS",
+    roleTitle: "Customer Service Representative",
+    account: "Collect IV",
+    hiringRequirementId: "PRF-2026-001",
+    basicPay: 22000,
+    deminimisDailyRate: 3000,
+    dailyRate: 25000,
+    owner: "Maria Reyes",
+    source: "Employee Referral Program",
+    status: "For Review",
+    offerDate: "2026-05-06",
+    contractSent: false,
+    contractSentAt: null,
+    candidateResponse: "Pending",
+    responseDate: null,
+    declineCategory: "",
+    declineReason: "",
+    remarks: "Offer prepared from Candidate Pipeline and waiting for approval.",
+    approvals: {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+  },
+  {
+    id: 2,
+    offerId: "OFF-002",
+    candidateApplicationId: 5,
+    candidateId: "CAND-005",
+    candidateName: "Angela Lim",
+    candidateEmail: "angela.lim@email.com",
+    roleTitle: "RCM Analyst",
+    account: "US Visa",
+    hiringRequirementId: "PRF-2026-002",
+    basicPay: 28000,
+    deminimisDailyRate: 3000,
+    dailyRate: 31000,
+    owner: "John Dela Cruz",
+    source: "Online Job Portals",
+    status: "Approved",
+    offerDate: "2026-05-07",
+    contractSent: false,
+    contractSentAt: null,
+    candidateResponse: "Pending",
+    responseDate: null,
+    declineCategory: "",
+    declineReason: "",
+    remarks: "Approved and ready for contract sending.",
+    approvals: {
+      "Raul Nadela": { status: "Approved", updatedAt: "May 7, 2026, 10:10 AM", remarks: "" },
+      Haasanor: { status: "Approved", updatedAt: "May 7, 2026, 10:25 AM", remarks: "" },
+    },
+  },
+  {
+    id: 3,
+    offerId: "OFF-003",
+    candidateApplicationId: 6,
+    candidateId: "CAND-006",
+    candidateName: "Carlo Reyes",
+    candidateEmail: "carlo.reyes@email.com",
+    roleTitle: "System Developer",
+    account: "SIBS IT",
+    hiringRequirementId: "PRF-2026-003",
+    basicPay: 42000,
+    deminimisDailyRate: 5000,
+    dailyRate: 47000,
+    owner: "Kim Domingo",
+    source: "Social Media Ads",
+    status: "Contract Sent",
+    offerDate: "2026-05-08",
+    contractSent: true,
+    contractSentAt: "May 8, 2026, 2:15 PM",
+    candidateResponse: "Pending",
+    responseDate: null,
+    declineCategory: "",
+    declineReason: "",
+    remarks: "Contract sent to candidate. Awaiting response.",
+    approvals: {
+      "Raul Nadela": { status: "Approved", updatedAt: "May 8, 2026, 1:00 PM", remarks: "" },
+      Haasanor: { status: "Approved", updatedAt: "May 8, 2026, 1:30 PM", remarks: "" },
+    },
+  },
+  {
+    id: 4,
+    offerId: "OFF-004",
+    candidateApplicationId: 7,
+    candidateId: "CAND-007",
+    candidateName: "Mika Santos",
+    candidateEmail: "mika.santos@email.com",
+    roleTitle: "QA Specialist",
+    account: "Connect",
+    hiringRequirementId: "PRF-2026-004",
+    basicPay: 26000,
+    deminimisDailyRate: 3000,
+    dailyRate: 29000,
     owner: "Paul Garcia",
-    currentStage: "Offered",
-    source: "Referral",
+    source: "Walk In",
+    status: "Accepted",
+    offerDate: "2026-05-04",
+    contractSent: true,
+    contractSentAt: "May 4, 2026, 3:30 PM",
+    candidateResponse: "Accepted",
+    responseDate: "2026-05-05",
+    declineCategory: "",
+    declineReason: "",
+    remarks: "Candidate accepted the contract.",
+    approvals: {
+      "Raul Nadela": { status: "Approved", updatedAt: "May 4, 2026, 2:00 PM", remarks: "" },
+      Haasanor: { status: "Approved", updatedAt: "May 4, 2026, 2:45 PM", remarks: "" },
+    },
+  },
+  {
+    id: 5,
+    offerId: "OFF-005",
+    candidateApplicationId: 8,
+    candidateId: "CAND-008",
+    candidateName: "Ryan Tan",
+    candidateEmail: "ryan.tan@email.com",
+    roleTitle: "IT Support",
+    account: "SIBS IT",
+    hiringRequirementId: "PRF-2026-005",
+    basicPay: 24000,
+    deminimisDailyRate: 3000,
+    dailyRate: 27000,
+    owner: "Maria Reyes",
+    source: "Job Fairs",
+    status: "Declined",
+    offerDate: "2026-05-02",
+    contractSent: true,
+    contractSentAt: "May 2, 2026, 11:00 AM",
+    candidateResponse: "Declined",
+    responseDate: "2026-05-03",
+    declineCategory: "Schedule",
+    declineReason: "Candidate declined because the available shift conflicted with school schedule.",
+    remarks: "Declined after receiving contract.",
+    approvals: {
+      "Raul Nadela": { status: "Approved", updatedAt: "May 2, 2026, 9:30 AM", remarks: "" },
+      Haasanor: { status: "Approved", updatedAt: "May 2, 2026, 10:00 AM", remarks: "" },
+    },
   },
 ];
-
-const emptyOfferForm = {
-  candidateApplicationId: "",
-  candidateId: "",
-  candidateEmail: "",
-  candidateName: "",
-  roleTitle: "",
-  account: "",
-  roleAccount: "",
-  offerDate: new Date().toISOString().split("T")[0],
-  basicPay: "",
-  deMinimis: "",
-  dailyRate: 0,
-  offeredCompensation: "",
-  status: "Pending",
-  acceptedDate: "",
-  declinedDate: "",
-  declineCategory: "",
-  declineReason: "",
-  candidateFeedback: "",
-  experienceRating: 3,
-  feedbackTag: "",
-  owner: "",
-  remarks: "",
-  source: "",
-};
 
 function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
@@ -244,7 +218,6 @@ function textareaClass(extra = "") {
 
 function safeReadArray(key) {
   if (typeof window === "undefined") return [];
-
   try {
     const raw = window.localStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -256,45 +229,11 @@ function safeReadArray(key) {
 
 function safeWriteArray(key, value) {
   if (typeof window === "undefined") return;
-
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Local frontend storage only.
+    // local storage only
   }
-}
-
-function mergeUniqueCandidates(items) {
-  const map = new Map();
-
-  items.forEach((item) => {
-    const key =
-      item.candidateApplicationId || item.candidateId || item.candidateEmail;
-
-    if (!key) return;
-
-    map.set(String(key), item);
-  });
-
-  return Array.from(map.values());
-}
-
-function removeEligibleCandidate(candidate) {
-  const current = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
-
-  const next = current.filter(
-    (item) =>
-      String(item.candidateApplicationId) !==
-        String(candidate.candidateApplicationId) &&
-      item.candidateEmail !== candidate.candidateEmail
-  );
-
-  safeWriteArray(OFFER_ELIGIBLE_STORAGE_KEY, next);
-}
-
-function appendPipelineSyncEvent(event) {
-  const current = safeReadArray(PIPELINE_SYNC_EVENTS_KEY);
-  safeWriteArray(PIPELINE_SYNC_EVENTS_KEY, [event, ...current]);
 }
 
 function getTodayDate() {
@@ -311,27 +250,8 @@ function getCurrentTimestamp() {
   });
 }
 
-function generateOfferId(nextNumber) {
-  return `OFF-${String(nextNumber).padStart(3, "0")}`;
-}
-
-function calculateTurnaroundDays(offerDate, responseDate) {
-  if (!offerDate || !responseDate) return 0;
-
-  const start = new Date(offerDate);
-  const end = new Date(responseDate);
-
-  start.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-
-  const diff = end.getTime() - start.getTime();
-
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
-
 function formatDate(date) {
   if (!date) return "—";
-
   return new Date(date).toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
@@ -341,12 +261,11 @@ function formatDate(date) {
 
 function formatCurrency(amount) {
   if (!amount && amount !== 0) return "—";
-
   return new Intl.NumberFormat("en-PH", {
     style: "currency",
     currency: "PHP",
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(Number(amount || 0));
 }
 
 function toNumber(value) {
@@ -354,74 +273,168 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function calculateDailyRate(basicPay, deMinimis) {
-  return toNumber(basicPay) + toNumber(deMinimis);
+function calculateDailyRate(basicPay, deminimisDailyRate) {
+  return toNumber(basicPay) + toNumber(deminimisDailyRate);
 }
 
-function getOfferDailyRate(offer) {
-  return toNumber(
-    offer.dailyRate ||
-      offer.offeredCompensation ||
-      calculateDailyRate(offer.basicPay, offer.deMinimis)
-  );
+function generateOfferId(nextNumber) {
+  return `OFF-${String(nextNumber).padStart(3, "0")}`;
+}
+
+function getOfferApprovalSummary(offer) {
+  const approvals = offer?.approvals || {};
+  const statuses = offerApprovers.map((name) => approvals?.[name]?.status || "For Review");
+  if (statuses.includes("Rejected")) return "Rejected";
+  if (statuses.every((status) => status === "Approved")) return "Approved";
+  return "For Review";
+}
+
+function normalizeEligibleCandidate(candidate, index, existingCount) {
+  const offerDetails = candidate.offerDetails || {};
+  const id = existingCount + index + 1;
+  const basicPay = toNumber(offerDetails.basicPay || candidate.basicPay);
+  const deminimisDailyRate = toNumber(offerDetails.deminimisDailyRate || candidate.deminimisDailyRate || candidate.deMinimis);
+
+  return {
+    id,
+    offerId: generateOfferId(id),
+    candidateApplicationId: candidate.candidateApplicationId || candidate.id,
+    candidateId: candidate.candidateId,
+    candidateName: candidate.candidateName || candidate.name,
+    candidateEmail: candidate.candidateEmail || candidate.email,
+    roleTitle: offerDetails.roleTitle || candidate.roleTitle || "Not assigned yet",
+    account: offerDetails.account || candidate.account || "Not assigned yet",
+    hiringRequirementId: offerDetails.hiringRequirementId || candidate.hiringRequirementId || "—",
+    basicPay,
+    deminimisDailyRate,
+    dailyRate: calculateDailyRate(basicPay, deminimisDailyRate),
+    owner: candidate.owner || candidate.taOwner || "Current User",
+    source: candidate.source || "Candidate Pipeline",
+    status: candidate.offerApprovalStatus === "Rejected" ? "Rejected" : "For Review",
+    offerDate: getTodayDate(),
+    contractSent: Boolean(candidate.offerEmailSent),
+    contractSentAt: candidate.offerEmailSentAt || null,
+    candidateResponse: candidate.offerDecision || "Pending",
+    responseDate: candidate.offerDecisionAt || null,
+    declineCategory: candidate.dropOffCategory || "",
+    declineReason: candidate.dropOffReason || "",
+    remarks: "Offer received from Candidate Pipeline.",
+    approvals: candidate.offerApprovals || {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+  };
+}
+
+function normalizeOffer(offer) {
+  const basicPay = toNumber(offer.basicPay);
+  const deminimisDailyRate = toNumber(offer.deminimisDailyRate || offer.deMinimis);
+  const approvalSummary = getOfferApprovalSummary(offer);
+  let status = offer.status || approvalSummary;
+
+  if (offer.candidateResponse === "Accepted") status = "Accepted";
+  if (offer.candidateResponse === "Declined") status = "Declined";
+  if (offer.contractSent && offer.candidateResponse === "Pending") status = "Contract Sent";
+  if (!offer.contractSent && approvalSummary === "Approved" && offer.candidateResponse === "Pending") status = "Approved";
+  if (approvalSummary === "Rejected") status = "Rejected";
+
+  return {
+    ...offer,
+    basicPay,
+    deminimisDailyRate,
+    dailyRate: calculateDailyRate(basicPay, deminimisDailyRate),
+    approvals: offer.approvals || {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+    candidateResponse: offer.candidateResponse || "Pending",
+    contractSent: Boolean(offer.contractSent),
+    status,
+  };
 }
 
 function getStatusClass(status) {
   switch (status) {
     case "Accepted":
+    case "Approved":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
     case "Declined":
+    case "Rejected":
       return "border-red-200 bg-red-50 text-red-700";
-    case "Pending":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Contract Sent":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "For Review":
     default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
+      return "border-amber-200 bg-amber-50 text-amber-700";
   }
 }
 
-function getTurnaroundClass(days) {
-  if (days <= 2) return "border-emerald-200 bg-emerald-50 text-emerald-700";
-  if (days <= 4) return "border-amber-200 bg-amber-50 text-amber-700";
-  return "border-red-200 bg-red-50 text-red-700";
-}
+function useConfirmDialog() {
+  const [config, setConfig] = useState(null);
 
-function RatingStars({ rating }) {
-  const numericRating = Number(rating || 0);
+  function confirmAction(message, options = {}) {
+    return new Promise((resolve) => {
+      setConfig({
+        title: options.title || "Confirm Action",
+        message,
+        confirmText: options.confirmText || "Confirm",
+        cancelText: options.cancelText || "Cancel",
+        variant: options.variant || "default",
+        resolve,
+      });
+    });
+  }
 
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => {
-        const active = star <= numericRating;
+  function close(answer) {
+    if (config?.resolve) config.resolve(answer);
+    setConfig(null);
+  }
 
-        return (
-          <Star
-            key={star}
-            size={15}
-            className={active ? "text-amber-400" : "text-gray-300"}
-            fill={active ? "currentColor" : "none"}
-          />
-        );
-      })}
-    </div>
-  );
-}
+  function ConfirmationDialog() {
+    if (!config) return null;
 
-function StatCard({ title, value, icon: Icon, description }) {
-  return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
+    const isDanger = config.variant === "danger";
+
+    return (
+      <div className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-extrabold text-sibs-primary-1">{config.title}</h2>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#475467]">{config.message}</p>
+            </div>
+            <button type="button" onClick={() => close(false)} className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">
+              <X size={18} />
+            </button>
+          </div>
+          <div className="mt-6 flex justify-end gap-2">
+            <button type="button" onClick={() => close(false)} className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC]">
+              {config.cancelText}
+            </button>
+            <button type="button" onClick={() => close(true)} className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${isDanger ? "bg-red-600" : "bg-sibs-primary-1"}`}>
+              {config.confirmText}
+            </button>
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+  return { confirmAction, ConfirmationDialog };
+}
 
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
-          </p>
-        )}
+function StatCard({ title, value, icon: Icon, description, valueClassName = "text-sibs-primary-1" }) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">{title}</p>
+          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>{value}</p>
+          {description && <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">{description}</p>}
+        </div>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
@@ -430,127 +443,8 @@ function StatCard({ title, value, icon: Icon, description }) {
 function DetailRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
-        {value || "—"}
-      </div>
-    </div>
-  );
-}
-
-function ProgressBar({ label, value, total }) {
-  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
-          {label}
-        </p>
-        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
-          {percentage}%
-        </p>
-      </div>
-
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
-        <div
-          className="h-full rounded-full bg-sibs-primary-1"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function OfferMobileCard({ offer, onView, onUpdate }) {
-  return (
-    <div className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
-      <button type="button" onClick={onView} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-sibs-primary-1">
-              {offer.offerId}
-            </p>
-            <h3 className="mt-1 text-sm font-bold text-[#101828]">
-              {offer.candidateName}
-            </h3>
-            <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
-              {offer.roleTitle} / {offer.account}
-            </p>
-          </div>
-
-          <span
-            className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-              offer.status
-            )}`}
-          >
-            {offer.status}
-          </span>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="rounded-lg bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Daily Rate
-            </p>
-            <p className="mt-1 text-xs font-bold text-[#344054]">
-              {formatCurrency(getOfferDailyRate(offer))}
-            </p>
-          </div>
-
-          <div className="rounded-lg bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Turnaround
-            </p>
-            <p className="mt-1 text-xs font-bold text-[#344054]">
-              {offer.turnaroundDays} day/s
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
-          Offer Date:{" "}
-          <span className="font-bold text-[#344054]">
-            {formatDate(offer.offerDate)}
-          </span>
-        </div>
-
-        <div className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-          Owner:{" "}
-          <span className="font-bold text-[#344054]">{offer.owner}</span>
-        </div>
-
-        {offer.status === "Declined" && offer.declineReason && (
-          <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-semibold leading-5 text-red-700">
-            {offer.declineReason}
-          </div>
-        )}
-      </button>
-
-      <div className="mt-4 flex gap-2">
-        {offer.status === "Pending" && (
-          <button
-            type="button"
-            onClick={onUpdate}
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 py-2 text-xs font-bold text-white transition hover:opacity-90"
-          >
-            <CheckCircle2 size={15} />
-            Update
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={onView}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-        >
-          <Eye size={15} />
-          View
-        </button>
-      </div>
+      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">{label}</p>
+      <div className="max-w-[62%] break-words text-right text-sm font-bold text-[#344054]">{value || "—"}</div>
     </div>
   );
 }
@@ -559,269 +453,83 @@ function OfferDetailsModal({ open, offer, onClose }) {
   if (!open || !offer) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Offer Details
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Offer date, basic pay, de minimis, daily rate, response status,
-              and turnaround time.
-            </p>
+    <div className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4" onClick={onClose}>
+      <div className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
+          <div>
+            <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">Offer Details</h2>
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">Approval status, final assignment, contract sending, and candidate response.</p>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close modal"
-          >
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700">
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_340px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                  <div className="min-w-0">
-                    <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
-                      {offer.candidateName}
-                    </h3>
-                    <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
-                      {offer.candidateEmail}
-                    </p>
+              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div>
+                    <p className="text-xs font-bold text-sibs-primary-1">{offer.offerId}</p>
+                    <h3 className="mt-1 text-2xl font-extrabold text-[#101828]">{offer.candidateName}</h3>
+                    <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">{offer.roleTitle} / {offer.account}</p>
+                  </div>
+                  <span className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(offer.status)}`}>{offer.status}</span>
+                </div>
+              </section>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          offer.status
-                        )}`}
-                      >
-                        {offer.status}
+              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-extrabold text-[#101828]">Approval Details</h3>
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {offerApprovers.map((approver) => (
+                    <div key={approver} className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                      <p className="text-sm font-bold text-[#101828]">{approver}</p>
+                      <span className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(offer.approvals?.[approver]?.status || "For Review")}`}>
+                        {offer.approvals?.[approver]?.status || "For Review"}
                       </span>
-
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getTurnaroundClass(
-                          offer.turnaroundDays
-                        )}`}
-                      >
-                        {offer.turnaroundDays} day turnaround
-                      </span>
+                      <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">{offer.approvals?.[approver]?.updatedAt || "No update yet"}</p>
                     </div>
-                  </div>
-
-                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-center">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
-                      Daily Rate
-                    </p>
-                    <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
-                      {formatCurrency(getOfferDailyRate(offer))}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Offer Timeline
-                </h3>
-
-                <div className="space-y-4">
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-bold text-blue-700">
-                        1
-                      </div>
-                      <div className="my-1 h-full min-h-8 w-px bg-gray-200" />
-                    </div>
-
-                    <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                      <p className="text-sm font-bold text-[#101828]">
-                        Offer Created
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                        {formatDate(offer.offerDate)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold ${getStatusClass(
-                          offer.status
-                        )}`}
-                      >
-                        2
-                      </div>
-                    </div>
-
-                    <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                      <p className="text-sm font-bold text-[#101828]">
-                        Candidate Response
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                        {offer.status === "Accepted"
-                          ? formatDate(offer.acceptedDate)
-                          : offer.status === "Declined"
-                            ? formatDate(offer.declinedDate)
-                            : "Pending response"}
-                      </p>
-
-                      {offer.status === "Declined" && (
-                        <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold leading-6 text-red-700">
-                          Decline reason: {offer.declineReason}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {offer.status === "Declined" && (
-                <div className="rounded-xl border border-red-100 bg-red-50 p-5">
-                  <h3 className="text-sm font-bold text-red-700">
-                    Candidate Experience Captured
-                  </h3>
-
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border border-red-100 bg-white p-4">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
-                        Decline Category
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-red-700">
-                        {offer.declineCategory || "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-red-100 bg-white p-4">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
-                        Experience Rating
-                      </p>
-                      <div className="mt-2">
-                        {offer.experienceRating ? (
-                          <RatingStars rating={offer.experienceRating} />
-                        ) : (
-                          <p className="text-sm font-bold text-red-700">—</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {offer.candidateFeedback && (
-                    <p className="mt-4 rounded-xl border border-red-100 bg-white p-4 text-sm leading-6 text-red-700">
-                      Candidate Feedback: {offer.candidateFeedback}
-                    </p>
-                  )}
-
-                  {offer.feedbackTag && (
-                    <p className="mt-3 rounded-xl border border-red-100 bg-white p-4 text-sm leading-6 text-red-700">
-                      Feedback Tag: {offer.feedbackTag}
-                    </p>
-                  )}
-                </div>
+              {offer.status === "Declined" && offer.declineReason && (
+                <section className="rounded-2xl border border-red-100 bg-red-50 p-5">
+                  <h3 className="text-sm font-extrabold text-red-700">Decline Reason</h3>
+                  <p className="mt-3 text-sm font-semibold leading-6 text-red-700">{offer.declineReason}</p>
+                </section>
               )}
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-[#101828]">Remarks</h3>
-                <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                  {offer.remarks}
-                </p>
-              </div>
+              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-extrabold text-[#101828]">Remarks</h3>
+                <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-semibold leading-6 text-[#344054]">{offer.remarks || "—"}</p>
+              </section>
             </div>
 
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
-                  Offer Summary
-                </h3>
-
+            <aside className="space-y-5">
+              <section className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                <h3 className="text-sm font-extrabold text-[#101828]">Offer Summary</h3>
                 <div className="mt-4">
-                  <DetailRow label="Offer ID" value={offer.offerId} />
                   <DetailRow label="Candidate ID" value={offer.candidateId} />
-                  <DetailRow label="Role" value={offer.roleTitle} />
-                  <DetailRow label="Account" value={offer.account} />
-                  <DetailRow
-                    label="Offer Date"
-                    value={formatDate(offer.offerDate)}
-                  />
-                  <DetailRow
-                    label="Basic Pay"
-                    value={formatCurrency(offer.basicPay)}
-                  />
-                  <DetailRow
-                    label="De Minimis"
-                    value={formatCurrency(offer.deMinimis)}
-                  />
-                  <DetailRow
-                    label="Daily Rate"
-                    value={formatCurrency(getOfferDailyRate(offer))}
-                  />
-                  <DetailRow label="Status" value={offer.status} />
+                  <DetailRow label="Hiring Requirement" value={offer.hiringRequirementId} />
+                  <DetailRow label="Final Role" value={offer.roleTitle} />
+                  <DetailRow label="Final Account" value={offer.account} />
+                  <DetailRow label="Basic Pay" value={formatCurrency(offer.basicPay)} />
+                  <DetailRow label="Deminimis / Daily Rate" value={formatCurrency(offer.deminimisDailyRate)} />
+                  <DetailRow label="Total Daily Rate" value={formatCurrency(offer.dailyRate)} />
+                  <DetailRow label="Contract Sent" value={offer.contractSent ? "Yes" : "No"} />
+                  <DetailRow label="Candidate Response" value={offer.candidateResponse} />
                   <DetailRow label="Owner" value={offer.owner} />
-                  <DetailRow
-                    label="Turnaround Time"
-                    value={`${offer.turnaroundDays} day/s`}
-                  />
                 </div>
-              </div>
-
-              {offer.status === "Declined" && (
-                <div className="rounded-xl border border-red-100 bg-red-50 p-5">
-                  <h3 className="text-sm font-bold text-red-700">
-                    Mandatory Decline Reason
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-red-700/90">
-                    {offer.declineReason}
-                  </p>
-                </div>
-              )}
-
-              {offer.status === "Accepted" && (
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
-                  <h3 className="text-sm font-bold text-emerald-700">
-                    Onboarding Trigger
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-emerald-700/90">
-                    Accepted offers should trigger an onboarding transition
-                    record with expected start date and show/no-show tracking.
-                  </p>
-                </div>
-              )}
-
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
-                  Offer Management Rule
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  If an offer is accepted, the candidate moves to Accepted in
-                  Candidate Pipeline. If declined, the candidate moves to
-                  Drop-offs and Candidate Experience data is captured.
-                </p>
-              </div>
-            </div>
+              </section>
+            </aside>
           </div>
         </div>
 
         <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
           <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              Close
-            </button>
+            <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90">Close</button>
           </div>
         </div>
       </div>
@@ -829,245 +537,36 @@ function OfferDetailsModal({ open, offer, onClose }) {
   );
 }
 
-function UpdateOfferStatusModal({
-  open,
-  offer,
-  form,
-  setForm,
-  onClose,
-  onSubmit,
-}) {
+function DeclineResponseModal({ open, offer, form, setForm, onClose, onSubmit }) {
   if (!open || !offer) return null;
 
-  function handleStatusChange(status) {
-    setForm({
-      ...form,
-      status,
-      acceptedDate: status === "Accepted" ? getTodayDate() : "",
-      declinedDate: status === "Declined" ? getTodayDate() : "",
-      declineCategory: "",
-      declineReason: "",
-      candidateFeedback: "",
-      experienceRating: 3,
-      feedbackTag: "",
-    });
-  }
-
   return (
-    <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              Update Pending Offer
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Mark this pending offer as accepted or declined.
-            </p>
+    <div className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4" onClick={onClose}>
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+          <div>
+            <h2 className="text-lg font-extrabold text-red-700">Candidate Declined Contract</h2>
+            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">{offer.candidateName}</p>
           </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"><X size={20} /></button>
         </div>
-
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="space-y-5">
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-              <h3 className="text-lg font-bold text-sibs-primary-1">
-                {offer.candidateName}
-              </h3>
-              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
-                {offer.roleTitle} — {offer.account}
-              </p>
-              <p className="mt-2 text-sm font-bold text-sibs-primary-1">
-                Offer ID: {offer.offerId}
-              </p>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                New Status <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={form.status}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className={inputClass()}
-              >
-                <option value="Accepted">Accepted</option>
-                <option value="Declined">Declined</option>
-              </select>
-            </div>
-
-            {form.status === "Accepted" && (
-              <div>
-                <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                  Accepted Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  required
-                  type="date"
-                  value={form.acceptedDate}
-                  onChange={(e) =>
-                    setForm({ ...form, acceptedDate: e.target.value })
-                  }
-                  className={inputClass()}
-                />
-              </div>
-            )}
-
-            {form.status === "Declined" && (
-              <>
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Declined Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    required
-                    type="date"
-                    value={form.declinedDate}
-                    onChange={(e) =>
-                      setForm({ ...form, declinedDate: e.target.value })
-                    }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Decline Category <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={form.declineCategory}
-                    onChange={(e) =>
-                      setForm({ ...form, declineCategory: e.target.value })
-                    }
-                    className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                  >
-                    <option value="">Select decline category</option>
-                    {declineCategoryOptions.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Decline Reason <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    required
-                    value={form.declineReason}
-                    onChange={(e) =>
-                      setForm({ ...form, declineReason: e.target.value })
-                    }
-                    rows={3}
-                    placeholder="Example: Candidate accepted another offer."
-                    className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Candidate Feedback
-                  </label>
-                  <textarea
-                    value={form.candidateFeedback}
-                    onChange={(e) =>
-                      setForm({ ...form, candidateFeedback: e.target.value })
-                    }
-                    rows={3}
-                    placeholder="Optional candidate feedback."
-                    className={textareaClass()}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Experience Rating
-                  </label>
-                  <select
-                    value={form.experienceRating}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        experienceRating: Number(e.target.value),
-                      })
-                    }
-                    className={inputClass()}
-                  >
-                    <option value={5}>5 - Excellent</option>
-                    <option value={4}>4 - Good</option>
-                    <option value={3}>3 - Neutral</option>
-                    <option value={2}>2 - Poor</option>
-                    <option value={1}>1 - Very Poor</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Feedback Tag
-                  </label>
-                  <input
-                    value={form.feedbackTag}
-                    onChange={(e) =>
-                      setForm({ ...form, feedbackTag: e.target.value })
-                    }
-                    placeholder="Example: Offer Declined"
-                    className={inputClass()}
-                  />
-                </div>
-              </>
-            )}
-
-            <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Remarks
-              </label>
-              <textarea
-                value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                rows={3}
-                placeholder="Optional remarks."
-                className={textareaClass()}
-              />
-            </div>
+        <form onSubmit={onSubmit} className="space-y-4 p-5">
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">Decline Category *</label>
+            <select required value={form.declineCategory} onChange={(e) => setForm({ ...form, declineCategory: e.target.value })} className={inputClass()}>
+              <option value="">Select category</option>
+              {declineCategoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">Decline Reason *</label>
+            <textarea required rows={4} value={form.declineReason} onChange={(e) => setForm({ ...form, declineReason: e.target.value })} className={textareaClass()} placeholder="Reason from candidate" />
           </div>
         </form>
-
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              <CheckCircle2 size={16} />
-              Save Status
-            </button>
+        <div className="border-t border-gray-100 px-5 py-4">
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 hover:bg-[#F8FAFC]">Cancel</button>
+            <button type="button" onClick={onSubmit} className="inline-flex h-11 items-center justify-center rounded-xl bg-red-600 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Save Decline</button>
           </div>
         </div>
       </div>
@@ -1076,929 +575,397 @@ function UpdateOfferStatusModal({
 }
 
 export default function OffersPage() {
-  const [offerList, setOfferList] = useState(offerRecords);
-  const [eligibleCandidates, setEligibleCandidates] = useState(
-    defaultEligibleCandidates
-  );
+  const { user } = useUser();
+  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
+  const currentUserName =
+    user?.name ||
+    user?.fullName ||
+    user?.employeeName ||
+    user?.displayName ||
+    user?.username ||
+    "Current User";
+
+  const [offerList, setOfferList] = useState(sampleOfferRecords.map(normalizeOffer));
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [ownerFilter, setOwnerFilter] = useState("All Owners");
   const [accountFilter, setAccountFilter] = useState("All Accounts");
   const [selectedOffer, setSelectedOffer] = useState(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [offerForm, setOfferForm] = useState(emptyOfferForm);
-  const [statusOffer, setStatusOffer] = useState(null);
-  const [statusForm, setStatusForm] = useState({
-    status: "Accepted",
-    acceptedDate: getTodayDate(),
-    declinedDate: getTodayDate(),
-    declineCategory: "",
-    declineReason: "",
-    candidateFeedback: "",
-    experienceRating: 3,
-    feedbackTag: "",
-    remarks: "",
-  });
+  const [declineOffer, setDeclineOffer] = useState(null);
+  const [declineForm, setDeclineForm] = useState({ declineCategory: "", declineReason: "" });
 
   useEffect(() => {
-    const storedCandidates = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
+    const storedOffers = safeReadArray(OFFER_RECORDS_STORAGE_KEY);
+    const eligibleCandidates = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
+    const baseOffers = storedOffers.length ? storedOffers : sampleOfferRecords;
+    const existingKeys = new Set(baseOffers.map((offer) => String(offer.candidateApplicationId || offer.candidateEmail)));
+    const newFromPipeline = eligibleCandidates
+      .filter((candidate) => !existingKeys.has(String(candidate.candidateApplicationId || candidate.candidateEmail)))
+      .map((candidate, index) => normalizeEligibleCandidate(candidate, index, baseOffers.length));
+    const next = [...newFromPipeline, ...baseOffers].map(normalizeOffer);
+    setOfferList(next);
+    safeWriteArray(OFFER_RECORDS_STORAGE_KEY, next);
+  }, []);
 
-    const existingFinalEmails = new Set(
-      offerList
-        .filter(
-          (offer) =>
-            offer.status === "Accepted" ||
-            offer.status === "Declined" ||
-            offer.status === "Pending"
-        )
-        .map((offer) => offer.candidateEmail)
-    );
-
-    const merged = mergeUniqueCandidates([
-      ...defaultEligibleCandidates,
-      ...storedCandidates,
-    ]).filter((candidate) => !existingFinalEmails.has(candidate.candidateEmail));
-
-    setEligibleCandidates(merged);
+  useEffect(() => {
+    safeWriteArray(OFFER_RECORDS_STORAGE_KEY, offerList.map(normalizeOffer));
   }, [offerList]);
 
-  function handleResetOfferForm() {
-    setOfferForm(emptyOfferForm);
+  function updateOffer(updatedOffer) {
+    const normalized = normalizeOffer(updatedOffer);
+    setOfferList((prev) => prev.map((offer) => offer.id === normalized.id ? normalized : offer));
+    setSelectedOffer((prev) => prev?.id === normalized.id ? normalized : prev);
   }
 
-  function handleCloseCreateModal() {
-    setShowCreateModal(false);
-    setOfferForm(emptyOfferForm);
+  function appendPipelineSyncEvent(event) {
+    const current = safeReadArray(PIPELINE_SYNC_EVENTS_KEY);
+    safeWriteArray(PIPELINE_SYNC_EVENTS_KEY, [event, ...current]);
   }
 
-  function handleOpenStatusModal(offer) {
-    setStatusOffer(offer);
-    setStatusForm({
+  async function handleApproval(offer, approver, status) {
+    const action = status === "Approved" ? "approve" : "reject";
+    if (!(await confirmAction(`${approver} will ${action} the offer for ${offer.candidateName}. Continue?`, {
+      title: status === "Approved" ? "Approve Offer" : "Reject Offer",
+      confirmText: status === "Approved" ? "Approve" : "Reject",
+      variant: status === "Approved" ? "default" : "danger",
+    }))) return;
+
+    const updatedApprovals = {
+      ...(offer.approvals || {}),
+      [approver]: {
+        status,
+        updatedAt: getCurrentTimestamp(),
+        remarks: `Updated by ${currentUserName}`,
+      },
+    };
+
+    const updatedOffer = normalizeOffer({
+      ...offer,
+      approvals: updatedApprovals,
+      remarks: `${approver} marked the offer as ${status}.`,
+    });
+
+    updateOffer(updatedOffer);
+  }
+
+  async function handleSendContract(offer) {
+    if (getOfferApprovalSummary(offer) !== "Approved") {
+      await confirmAction("Offer must be approved by Raul Nadela and Haasanor before sending the contract.", {
+        title: "Approval Required",
+        confirmText: "OK",
+      });
+      return;
+    }
+
+    if (!(await confirmAction(`Send contract email to ${offer.candidateName}?`, {
+      title: "Send Contract Email",
+      confirmText: "Send Email",
+    }))) return;
+
+    const updatedOffer = normalizeOffer({
+      ...offer,
+      contractSent: true,
+      contractSentAt: getCurrentTimestamp(),
+      candidateResponse: "Pending",
+      remarks: "Contract email sent to candidate. Awaiting candidate response.",
+    });
+
+    updateOffer(updatedOffer);
+
+    const subject = encodeURIComponent(`Offer Contract - ${offer.roleTitle}`);
+    const body = encodeURIComponent(`Hi ${offer.candidateName},\n\nYour offer contract is ready for review.\n\nFinal Role: ${offer.roleTitle}\nFinal Account: ${offer.account}\nBasic Pay: ${formatCurrency(offer.basicPay)}\nDeminimis / Daily Rate: ${formatCurrency(offer.deminimisDailyRate)}\nTotal Daily Rate: ${formatCurrency(offer.dailyRate)}\n\nPlease review the contract and choose Accept or Decline.\n\nThank you,\nSIBS Talent Acquisition`);
+    if (typeof window !== "undefined") {
+      window.location.href = `mailto:${offer.candidateEmail}?subject=${subject}&body=${body}`;
+    }
+  }
+
+  async function handleCandidateAccept(offer) {
+    if (!offer.contractSent) {
+      await confirmAction("Send the contract email first before recording candidate acceptance.", { title: "Contract Not Sent", confirmText: "OK" });
+      return;
+    }
+
+    if (!(await confirmAction(`${offer.candidateName} accepted the contract. Move candidate to Accepted?`, {
+      title: "Candidate Accepted",
+      confirmText: "Mark Accepted",
+    }))) return;
+
+    const updatedOffer = normalizeOffer({
+      ...offer,
+      candidateResponse: "Accepted",
+      responseDate: getTodayDate(),
+      remarks: "Candidate accepted the contract.",
+    });
+
+    updateOffer(updatedOffer);
+    appendPipelineSyncEvent({
+      syncId: `SYNC-${Date.now()}-${offer.candidateApplicationId}`,
+      candidateApplicationId: offer.candidateApplicationId,
+      candidateId: offer.candidateId,
+      candidateEmail: offer.candidateEmail,
+      toStage: "Accepted",
       status: "Accepted",
-      acceptedDate: getTodayDate(),
-      declinedDate: getTodayDate(),
-      declineCategory: "",
-      declineReason: "",
-      candidateFeedback: "",
-      experienceRating: 3,
-      feedbackTag: "",
-      remarks: "",
+      dateMoved: getTodayDate(),
+      timestamp: getCurrentTimestamp(),
+      reasonForMovement: "Candidate accepted the offer contract.",
+      owner: currentUserName,
+      source: "Offers Page",
+      remarks: "Candidate clicked/confirmed Accept.",
     });
   }
 
-  function handleCloseStatusModal() {
-    setStatusOffer(null);
-    setStatusForm({
-      status: "Accepted",
-      acceptedDate: getTodayDate(),
-      declinedDate: getTodayDate(),
-      declineCategory: "",
-      declineReason: "",
-      candidateFeedback: "",
-      experienceRating: 3,
-      feedbackTag: "",
-      remarks: "",
+  function openDeclineModal(offer) {
+    setDeclineOffer(offer);
+    setDeclineForm({ declineCategory: "", declineReason: "" });
+  }
+
+  function closeDeclineModal() {
+    setDeclineOffer(null);
+    setDeclineForm({ declineCategory: "", declineReason: "" });
+  }
+
+  async function handleCandidateDecline(e) {
+    e.preventDefault();
+    if (!declineOffer) return;
+
+    if (!declineForm.declineCategory || !declineForm.declineReason.trim()) {
+      alert("Decline category and reason are required.");
+      return;
+    }
+
+    if (!(await confirmAction(`${declineOffer.candidateName} declined the contract. Move candidate to Drop-off?`, {
+      title: "Candidate Declined",
+      confirmText: "Mark Declined",
+      variant: "danger",
+    }))) return;
+
+    const updatedOffer = normalizeOffer({
+      ...declineOffer,
+      candidateResponse: "Declined",
+      responseDate: getTodayDate(),
+      declineCategory: declineForm.declineCategory,
+      declineReason: declineForm.declineReason.trim(),
+      remarks: "Candidate declined the contract.",
     });
-  }
 
-  function handleUpdatePendingOffer(e) {
-    e.preventDefault();
-
-    if (!statusOffer) return;
-
-    if (statusOffer.status !== "Pending") {
-      alert("Only pending offers can be updated.");
-      return;
-    }
-
-    if (statusForm.status === "Accepted" && !statusForm.acceptedDate) {
-      alert("Accepted date is required.");
-      return;
-    }
-
-    if (statusForm.status === "Declined") {
-      if (!statusForm.declinedDate) {
-        alert("Declined date is required.");
-        return;
-      }
-
-      if (!statusForm.declineCategory) {
-        alert("Decline category is required.");
-        return;
-      }
-
-      if (!statusForm.declineReason.trim()) {
-        alert("Decline reason is required.");
-        return;
-      }
-    }
-
-    const responseDate =
-      statusForm.status === "Accepted"
-        ? statusForm.acceptedDate
-        : statusForm.declinedDate;
-
-    const updatedOffer = {
-      ...statusOffer,
-      status: statusForm.status,
-      acceptedDate:
-        statusForm.status === "Accepted" ? statusForm.acceptedDate : null,
-      declinedDate:
-        statusForm.status === "Declined" ? statusForm.declinedDate : null,
-      declineCategory:
-        statusForm.status === "Declined" ? statusForm.declineCategory : null,
-      declineReason:
-        statusForm.status === "Declined"
-          ? statusForm.declineReason.trim()
-          : null,
-      candidateFeedback:
-        statusForm.status === "Declined"
-          ? statusForm.candidateFeedback.trim()
-          : null,
-      experienceRating:
-        statusForm.status === "Declined"
-          ? Number(statusForm.experienceRating || 3)
-          : null,
-      feedbackTag:
-        statusForm.status === "Declined"
-          ? statusForm.feedbackTag.trim() ||
-            statusForm.declineCategory ||
-            "Offer Declined"
-          : null,
-      turnaroundDays: calculateTurnaroundDays(statusOffer.offerDate, responseDate),
-      remarks:
-        statusForm.remarks ||
-        (statusForm.status === "Accepted"
-          ? "Offer accepted. Ready for onboarding transition."
-          : "Offer declined. Candidate experience record captured."),
-    };
-
-    setOfferList((prev) =>
-      prev.map((offer) => (offer.id === statusOffer.id ? updatedOffer : offer))
-    );
-
-    if (statusForm.status === "Accepted") {
-      appendPipelineSyncEvent({
-        syncId: `SYNC-${Date.now()}-${statusOffer.candidateApplicationId}`,
-        candidateApplicationId: statusOffer.candidateApplicationId,
-        candidateId: statusOffer.candidateId,
-        candidateEmail: statusOffer.candidateEmail,
-        toStage: "Accepted",
-        status: "Accepted",
-        dateMoved: statusForm.acceptedDate,
-        timestamp: getCurrentTimestamp(),
-        reasonForMovement: "Candidate accepted the offer.",
-        owner: statusOffer.owner,
-        source: "Offer Management",
-        remarks: statusForm.remarks,
-      });
-    }
-
-    if (statusForm.status === "Declined") {
-      appendPipelineSyncEvent({
-        syncId: `SYNC-${Date.now()}-${statusOffer.candidateApplicationId}`,
-        candidateApplicationId: statusOffer.candidateApplicationId,
-        candidateId: statusOffer.candidateId,
-        candidateEmail: statusOffer.candidateEmail,
-        toStage: "Drop-offs",
-        status: "Declined",
-        dateMoved: statusForm.declinedDate,
-        timestamp: getCurrentTimestamp(),
-        reasonForMovement: "Candidate declined the offer.",
-        dropOffStage: "Offered",
-        dropOffCategory: statusForm.declineCategory,
-        dropOffReason: statusForm.declineReason.trim(),
-        candidateFeedback: statusForm.candidateFeedback.trim(),
-        experienceRating: Number(statusForm.experienceRating || 3),
-        feedbackTag:
-          statusForm.feedbackTag.trim() ||
-          statusForm.declineCategory ||
-          "Offer Declined",
-        owner: statusOffer.owner,
-        source: "Offer Management",
-        remarks: statusForm.remarks,
-      });
-
-      saveCandidateExperienceRecord({
-        candidateId: statusOffer.candidateId || statusOffer.candidateEmail,
-        candidateName: statusOffer.candidateName,
-        candidateEmail: statusOffer.candidateEmail,
-        roleTitle: statusOffer.roleTitle,
-        account: statusOffer.account,
-        source: "Offer Management",
-        eventType: "Offer Declined",
-        currentStage: "Offered",
-        finalStatus: "Drop-off",
-        dropOffStage: "Offered",
-        dropOffCategory: statusForm.declineCategory,
-        dropOffReason: statusForm.declineReason.trim(),
-        feedback: statusForm.candidateFeedback.trim(),
-        experienceRating: Number(statusForm.experienceRating || 3),
-        feedbackTag:
-          statusForm.feedbackTag.trim() ||
-          statusForm.declineCategory ||
-          "Offer Declined",
-        owner: statusOffer.owner,
-        stageTimeline: [
-          {
-            stage: "Offered",
-            status: "Drop-off",
-            date: statusForm.declinedDate,
-          },
-        ],
-      });
-    }
-
-    setSelectedOffer(updatedOffer);
-    handleCloseStatusModal();
-  }
-
-  function handleCreateOffer(e) {
-    e.preventDefault();
-
-    if (!offerForm.candidateApplicationId || !offerForm.candidateEmail) {
-      alert("Candidate is required.");
-      return;
-    }
-
-    if (!offerForm.offerDate) {
-      alert("Offer date is required.");
-      return;
-    }
-
-    if (offerForm.basicPay === "" || offerForm.deMinimis === "") {
-      alert("Basic Pay and De Minimis are required.");
-      return;
-    }
-
-    const computedDailyRate = calculateDailyRate(
-      offerForm.basicPay,
-      offerForm.deMinimis
-    );
-
-    if (computedDailyRate <= 0) {
-      alert("Daily Rate must be greater than zero.");
-      return;
-    }
-
-    if (offerForm.status === "Accepted" && !offerForm.acceptedDate) {
-      alert("Accepted date is required.");
-      return;
-    }
-
-    if (offerForm.status === "Declined") {
-      if (!offerForm.declinedDate) {
-        alert("Declined date is required.");
-        return;
-      }
-
-      if (!offerForm.declineCategory) {
-        alert("Decline category is required.");
-        return;
-      }
-
-      if (!offerForm.declineReason.trim()) {
-        alert("Decline reason is required.");
-        return;
-      }
-    }
-
-    const nextId =
-      offerList.length > 0
-        ? Math.max(...offerList.map((offer) => offer.id)) + 1
-        : 1;
-
-    const responseDate =
-      offerForm.status === "Accepted"
-        ? offerForm.acceptedDate
-        : offerForm.status === "Declined"
-          ? offerForm.declinedDate
-          : getTodayDate();
-
-    const newOffer = {
-      id: nextId,
-      offerId: generateOfferId(nextId),
-      candidateApplicationId: offerForm.candidateApplicationId,
-      candidateId: offerForm.candidateId,
-      candidateName: offerForm.candidateName,
-      candidateEmail: offerForm.candidateEmail,
-      roleAccount: offerForm.roleAccount,
-      roleTitle: offerForm.roleTitle,
-      account: offerForm.account,
-      offerDate: offerForm.offerDate,
-      basicPay: Number(offerForm.basicPay),
-      deMinimis: Number(offerForm.deMinimis),
-      dailyRate: computedDailyRate,
-      offeredCompensation: computedDailyRate,
-      status: offerForm.status,
-      acceptedDate:
-        offerForm.status === "Accepted" ? offerForm.acceptedDate : null,
-      declinedDate:
-        offerForm.status === "Declined" ? offerForm.declinedDate : null,
-      declineCategory:
-        offerForm.status === "Declined" ? offerForm.declineCategory : null,
-      declineReason:
-        offerForm.status === "Declined"
-          ? offerForm.declineReason.trim()
-          : null,
-      candidateFeedback:
-        offerForm.status === "Declined"
-          ? offerForm.candidateFeedback.trim()
-          : null,
-      experienceRating:
-        offerForm.status === "Declined"
-          ? Number(offerForm.experienceRating || 3)
-          : null,
-      feedbackTag:
-        offerForm.status === "Declined"
-          ? offerForm.feedbackTag.trim() ||
-            offerForm.declineCategory ||
-            "Offer Declined"
-          : null,
-      turnaroundDays: calculateTurnaroundDays(
-        offerForm.offerDate,
-        responseDate
-      ),
-      owner: offerForm.owner,
-      remarks:
-        offerForm.remarks ||
-        (offerForm.status === "Pending"
-          ? "Offer created and awaiting candidate response."
-          : offerForm.status === "Accepted"
-            ? "Offer accepted. Ready for onboarding transition."
-            : "Offer declined. Candidate experience record captured."),
-    };
-
-    setOfferList((prev) => [newOffer, ...prev]);
-
-    removeEligibleCandidate(newOffer);
-
-    setEligibleCandidates((prev) =>
-      prev.filter(
-        (candidate) =>
-          String(candidate.candidateApplicationId) !==
-            String(newOffer.candidateApplicationId) &&
-          candidate.candidateEmail !== newOffer.candidateEmail
-      )
-    );
-
-    if (offerForm.status === "Accepted") {
-      appendPipelineSyncEvent({
-        syncId: `SYNC-${Date.now()}-${offerForm.candidateApplicationId}`,
-        candidateApplicationId: offerForm.candidateApplicationId,
-        candidateId: offerForm.candidateId,
-        candidateEmail: offerForm.candidateEmail,
-        toStage: "Accepted",
-        status: "Accepted",
-        dateMoved: offerForm.acceptedDate,
-        timestamp: getCurrentTimestamp(),
-        reasonForMovement: "Candidate accepted the offer.",
-        owner: offerForm.owner,
-        source: "Offer Management",
-        remarks: offerForm.remarks,
-      });
-    }
-
-    if (offerForm.status === "Declined") {
-      appendPipelineSyncEvent({
-        syncId: `SYNC-${Date.now()}-${offerForm.candidateApplicationId}`,
-        candidateApplicationId: offerForm.candidateApplicationId,
-        candidateId: offerForm.candidateId,
-        candidateEmail: offerForm.candidateEmail,
-        toStage: "Drop-offs",
-        status: "Declined",
-        dateMoved: offerForm.declinedDate,
-        timestamp: getCurrentTimestamp(),
-        reasonForMovement: "Candidate declined the offer.",
-        dropOffStage: "Offered",
-        dropOffCategory: offerForm.declineCategory,
-        dropOffReason: offerForm.declineReason.trim(),
-        candidateFeedback: offerForm.candidateFeedback.trim(),
-        experienceRating: Number(offerForm.experienceRating || 3),
-        feedbackTag:
-          offerForm.feedbackTag.trim() ||
-          offerForm.declineCategory ||
-          "Offer Declined",
-        owner: offerForm.owner,
-        source: "Offer Management",
-        remarks: offerForm.remarks,
-      });
-
-      saveCandidateExperienceRecord({
-        candidateId: offerForm.candidateId || offerForm.candidateEmail,
-        candidateName: offerForm.candidateName,
-        candidateEmail: offerForm.candidateEmail,
-        roleTitle: offerForm.roleTitle,
-        account: offerForm.account,
-        source: "Offer Management",
-        eventType: "Offer Declined",
-        currentStage: "Offered",
-        finalStatus: "Drop-off",
-        dropOffStage: "Offered",
-        dropOffCategory: offerForm.declineCategory,
-        dropOffReason: offerForm.declineReason.trim(),
-        feedback: offerForm.candidateFeedback.trim(),
-        experienceRating: Number(offerForm.experienceRating || 3),
-        feedbackTag:
-          offerForm.feedbackTag.trim() ||
-          offerForm.declineCategory ||
-          "Offer Declined",
-        owner: offerForm.owner,
-        stageTimeline: [
-          {
-            stage: "Offered",
-            status: "Drop-off",
-            date: offerForm.declinedDate,
-          },
-        ],
-      });
-    }
-
-    setSelectedOffer(newOffer);
-    handleCloseCreateModal();
+    updateOffer(updatedOffer);
+    appendPipelineSyncEvent({
+      syncId: `SYNC-${Date.now()}-${declineOffer.candidateApplicationId}`,
+      candidateApplicationId: declineOffer.candidateApplicationId,
+      candidateId: declineOffer.candidateId,
+      candidateEmail: declineOffer.candidateEmail,
+      toStage: "Drop-off",
+      status: "Declined",
+      dateMoved: getTodayDate(),
+      timestamp: getCurrentTimestamp(),
+      reasonForMovement: "Candidate declined the offer contract.",
+      dropOffStage: "Offered",
+      dropOffCategory: declineForm.declineCategory,
+      dropOffReason: declineForm.declineReason.trim(),
+      owner: currentUserName,
+      source: "Offers Page",
+      remarks: declineForm.declineReason.trim(),
+    });
+    closeDeclineModal();
   }
 
   const filteredOffers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-
-    return offerList.filter((offer) => {
+    return offerList.map(normalizeOffer).filter((offer) => {
       const matchesSearch =
         !keyword ||
-        offer.offerId.toLowerCase().includes(keyword) ||
-        offer.candidateName.toLowerCase().includes(keyword) ||
-        offer.candidateEmail.toLowerCase().includes(keyword) ||
-        offer.roleAccount.toLowerCase().includes(keyword) ||
-        offer.owner.toLowerCase().includes(keyword);
-
-      const matchesStatus =
-        statusFilter === "All Status" || offer.status === statusFilter;
-
-      const matchesOwner =
-        ownerFilter === "All Owners" || offer.owner === ownerFilter;
-
-      const matchesAccount =
-        accountFilter === "All Accounts" || offer.account === accountFilter;
-
-      return matchesSearch && matchesStatus && matchesOwner && matchesAccount;
+        String(offer.offerId || "").toLowerCase().includes(keyword) ||
+        String(offer.candidateName || "").toLowerCase().includes(keyword) ||
+        String(offer.roleTitle || "").toLowerCase().includes(keyword) ||
+        String(offer.account || "").toLowerCase().includes(keyword) ||
+        String(offer.hiringRequirementId || "").toLowerCase().includes(keyword) ||
+        String(offer.owner || "").toLowerCase().includes(keyword);
+      const matchesStatus = statusFilter === "All Status" || offer.status === statusFilter;
+      const matchesAccount = accountFilter === "All Accounts" || offer.account === accountFilter;
+      return matchesSearch && matchesStatus && matchesAccount;
     });
-  }, [offerList, search, statusFilter, ownerFilter, accountFilter]);
+  }, [accountFilter, offerList, search, statusFilter]);
 
   const stats = useMemo(() => {
-    const total = offerList.length;
-    const accepted = offerList.filter(
-      (offer) => offer.status === "Accepted"
-    ).length;
-    const declined = offerList.filter(
-      (offer) => offer.status === "Declined"
-    ).length;
-    const pending = offerList.filter(
-      (offer) => offer.status === "Pending"
-    ).length;
-
-    const acceptanceRate =
-      total > 0 ? Math.round((accepted / total) * 100) : 0;
-
-    const averageTurnaround =
-      total > 0
-        ? (
-            offerList.reduce((sum, offer) => sum + offer.turnaroundDays, 0) /
-            total
-          ).toFixed(1)
-        : "0.0";
-
-    return {
-      total,
-      accepted,
-      declined,
-      pending,
-      acceptanceRate,
-      averageTurnaround,
-    };
+    const normalized = offerList.map(normalizeOffer);
+    const total = normalized.length;
+    const forReview = normalized.filter((offer) => offer.status === "For Review").length;
+    const approved = normalized.filter((offer) => offer.status === "Approved").length;
+    const contractSent = normalized.filter((offer) => offer.status === "Contract Sent").length;
+    const accepted = normalized.filter((offer) => offer.status === "Accepted").length;
+    const declined = normalized.filter((offer) => offer.status === "Declined").length;
+    const acceptanceRate = total ? Math.round((accepted / total) * 100) : 0;
+    return { total, forReview, approved, contractSent, accepted, declined, acceptanceRate };
   }, [offerList]);
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
-
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <Gift size={28} className="shrink-0 text-sibs-primary-1" />
-
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Offers
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Create and manage candidate offers, acceptance, and decline reasons.
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard
-            title="Total Offers"
-            value={stats.total}
-            icon={FileText}
-            description="Offers created"
-          />
-
-          <StatCard
-            title="Accepted"
-            value={stats.accepted}
-            icon={UserCheck}
-            description={`${stats.acceptanceRate}% rate`}
-          />
-
-          <StatCard
-            title="Declined"
-            value={stats.declined}
-            icon={UserX}
-            description="Requires reason"
-          />
-
-          <StatCard
-            title="Pending"
-            value={stats.pending}
-            icon={Clock3}
-            description="Awaiting response"
-          />
-
-          <StatCard
-            title="Acceptance Rate"
-            value={`${stats.acceptanceRate}%`}
-            icon={CheckCircle2}
-            description="Offer KPI"
-          />
-
-          <StatCard
-            title="Avg Turnaround"
-            value={`${stats.averageTurnaround}d`}
-            icon={Timer}
-            description="Response time"
-          />
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Offer Acceptance Summary
-                </h2>
-                <p className="text-sm text-sibs-tertiary-5">
-                  Accepted, declined, and pending offer breakdown.
-                </p>
-              </div>
-
-              <DollarSign size={20} className="shrink-0 text-gray-400" />
-            </div>
-
-            <div className="space-y-5">
-              <ProgressBar
-                label="Accepted Offers"
-                value={stats.accepted}
-                total={stats.total}
-              />
-              <ProgressBar
-                label="Declined Offers"
-                value={stats.declined}
-                total={stats.total}
-              />
-              <ProgressBar
-                label="Pending Offers"
-                value={stats.pending}
-                total={stats.total}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
-                <AlertTriangle size={22} />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-sibs-primary-1">
-                  Offer Stage Requirement
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  Offer date, basic pay, de minimis, computed daily rate,
-                  accepted or declined status, offer turnaround time, and
-                  mandatory decline reason must be captured to support offer
-                  acceptance reporting.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h3 className="mb-2 font-semibold text-sibs-primary-1">
-                Offer Records
-              </h3>
-
-              <p className="text-sm text-sibs-tertiary-5">
-                Candidate offer tracking from offer date to final response.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
-            >
-              <Plus size={18} />
-              Create Offer
-            </button>
-          </div>
-        </div>
-
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px_160px_180px_180px] xl:items-center">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Offer List
-                </h2>
-                <p className="text-sm text-sibs-tertiary-5">
-                  Search and filter offer records.
-                </p>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <Gift size={14} />
+                Offers
               </div>
-
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search candidate, offer ID, role..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {ownerOptions.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={accountFilter}
-                onChange={(e) => setAccountFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {accountOptions.map((account) => (
-                  <option key={account} value={account}>
-                    {account}
-                  </option>
-                ))}
-              </select>
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">Offers</h1>
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">Approve offered candidates, send contract emails, and record candidate acceptance or decline.</p>
             </div>
           </div>
 
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 lg:hidden">
-              {filteredOffers.length > 0 ? (
-                filteredOffers.map((offer) => (
-                  <OfferMobileCard
-                    key={offer.id}
-                    offer={offer}
-                    onView={() => setSelectedOffer(offer)}
-                    onUpdate={() => handleOpenStatusModal(offer)}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No offer records found.
+          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-base font-bold text-[#101828]">Offer Summary</h2>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <StatCard title="Total Offers" value={stats.total} icon={FileText} description="Offer records" />
+              <StatCard title="For Review" value={stats.forReview} icon={Clock3} description="Needs approval" />
+              <StatCard title="Approved" value={stats.approved} icon={ShieldCheck} description="Ready to send" valueClassName="text-emerald-600" />
+              <StatCard title="Contract Sent" value={stats.contractSent} icon={Send} description="Awaiting response" />
+              <StatCard title="Accepted" value={stats.accepted} icon={UserCheck} description={`${stats.acceptanceRate}% rate`} valueClassName="text-emerald-600" />
+              <StatCard title="Declined" value={stats.declined} icon={UserX} description="With reasons" valueClassName="text-red-600" />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Search</label>
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search candidate, offer ID, role, account..." className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10" />
+                  </div>
                 </div>
-              )}
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Status</label>
+                  <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10">
+                    {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Account</label>
+                  <select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10">
+                    {accountOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </div>
+                <button type="button" onClick={() => { setSearch(""); setStatusFilter("All Status"); setAccountFilter("All Accounts"); }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]">
+                  Clear
+                </button>
+              </div>
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[1180px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Offer ID</th>
-                      <th className="px-5 py-4">Candidate</th>
-                      <th className="px-5 py-4">Role / Account</th>
-                      <th className="px-5 py-4">Offer Date</th>
-                      <th className="px-5 py-4 text-right">Daily Rate</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4 text-center">Turnaround</th>
-                      <th className="px-5 py-4">Owner</th>
-                      <th className="px-5 py-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {filteredOffers.length > 0 ? (
-                      filteredOffers.map((offer) => (
-                        <tr
-                          key={offer.id}
-                          className="transition hover:bg-[#F8FAFC]"
-                        >
-                          <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
-                            {offer.offerId}
+            <div className="p-4 sm:p-6">
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto p-0">
+                  <table className="w-full min-w-[1550px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                    <thead>
+                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                        <th className="px-5 py-4 first:rounded-tl-2xl">Candidate</th>
+                        <th className="px-5 py-4">Final Role / Account</th>
+                        <th className="px-5 py-4">Hiring Req.</th>
+                        <th className="px-5 py-4 text-right">Basic Pay</th>
+                        <th className="px-5 py-4 text-right">Deminimis / Daily Rate</th>
+                        <th className="px-5 py-4">Approval</th>
+                        <th className="px-5 py-4">Contract</th>
+                        <th className="px-5 py-4">Candidate Response</th>
+                        <th className="px-5 py-4">Owner</th>
+                        <th className="px-5 py-4 text-right last:rounded-tr-2xl">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOffers.length > 0 ? filteredOffers.map((offer) => (
+                        <tr key={offer.id} className="cursor-pointer transition hover:bg-[#FAFBFC]" onClick={() => setSelectedOffer(offer)}>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <p className="text-sm font-bold text-[#101828]">{offer.candidateName}</p>
+                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{offer.offerId} • {offer.candidateId}</p>
                           </td>
-
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-bold text-[#101828]">
-                              {offer.candidateName}
-                            </p>
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {offer.candidateEmail}
-                            </p>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <p className="text-sm font-bold text-[#344054]">{offer.roleTitle}</p>
+                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{offer.account}</p>
                           </td>
-
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-bold text-[#344054]">
-                              {offer.roleTitle}
-                            </p>
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {offer.account}
-                            </p>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">{offer.hiringRequirementId}</td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right text-sm font-bold text-[#344054]">{formatCurrency(offer.basicPay)}</td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right text-sm font-bold text-[#344054]">{formatCurrency(offer.deminimisDailyRate)}</td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(getOfferApprovalSummary(offer))}`}>{getOfferApprovalSummary(offer)}</span>
                           </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <div className="flex items-center gap-2">
-                              <CalendarDays
-                                size={15}
-                                className="text-gray-400"
-                              />
-                              {formatDate(offer.offerDate)}
-                            </div>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${offer.contractSent ? "border-blue-200 bg-blue-50 text-blue-700" : "border-gray-200 bg-gray-50 text-gray-600"}`}>{offer.contractSent ? "Sent" : "Not Sent"}</span>
                           </td>
-
-                          <td className="px-5 py-4 text-right text-sm font-bold text-[#344054]">
-                            {formatCurrency(getOfferDailyRate(offer))}
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(offer.status)}`}>{offer.candidateResponse}</span>
                           </td>
-
-                          <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                offer.status
-                              )}`}
-                            >
-                              {offer.status}
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 text-center">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getTurnaroundClass(
-                                offer.turnaroundDays
-                              )}`}
-                            >
-                              {offer.turnaroundDays}d
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {offer.owner}
-                          </td>
-
-                          <td className="px-5 py-4 text-right">
-                            <div className="inline-flex items-center gap-2">
-                              {offer.status === "Pending" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenStatusModal(offer)}
-                                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-2 text-xs font-bold text-white transition hover:opacity-90"
-                                >
-                                  <CheckCircle2 size={15} />
-                                  Update
-                                </button>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">{offer.owner}</td>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                            <div className="inline-flex flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                              <button type="button" onClick={() => setSelectedOffer(offer)} className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm" title="View"><Eye size={16} /></button>
+                              {getOfferApprovalSummary(offer) === "For Review" && (
+                                <>
+                                  <button type="button" onClick={() => handleApproval(offer, "Raul Nadela", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Raul Approve</button>
+                                  <button type="button" onClick={() => handleApproval(offer, "Haasanor", "Approved")} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Haasanor Approve</button>
+                                </>
                               )}
-
-                              <button
-                                type="button"
-                                onClick={() => setSelectedOffer(offer)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                              >
-                                <Eye size={15} />
-                                View
-                              </button>
+                              {getOfferApprovalSummary(offer) === "Approved" && !offer.contractSent && (
+                                <button type="button" onClick={() => handleSendContract(offer)} className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><Mail size={14} /> Send</button>
+                              )}
+                              {offer.contractSent && offer.candidateResponse === "Pending" && (
+                                <>
+                                  <button type="button" onClick={() => handleCandidateAccept(offer)} className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm">Accepted</button>
+                                  <button type="button" onClick={() => openDeclineModal(offer)} className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm">Declined</button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={9}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No offer records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )) : (
+                        <tr>
+                          <td colSpan={10} className="px-5 py-12 text-center text-sm font-bold text-gray-500">No offer records found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="space-y-3 lg:hidden">
+                {filteredOffers.length > 0 ? filteredOffers.map((offer) => (
+                  <button key={offer.id} type="button" onClick={() => setSelectedOffer(offer)} className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#FAFBFC]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-sibs-primary-1">{offer.offerId}</p>
+                        <h3 className="mt-1 text-sm font-bold text-[#101828]">{offer.candidateName}</h3>
+                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{offer.roleTitle} / {offer.account}</p>
+                      </div>
+                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(offer.status)}`}>{offer.status}</span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="rounded-xl bg-[#F8FAFC] p-3"><p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">Basic Pay</p><p className="mt-1 text-xs font-bold text-[#344054]">{formatCurrency(offer.basicPay)}</p></div>
+                      <div className="rounded-xl bg-[#F8FAFC] p-3"><p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">Deminimis</p><p className="mt-1 text-xs font-bold text-[#344054]">{formatCurrency(offer.deminimisDailyRate)}</p></div>
+                    </div>
+                  </button>
+                )) : <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">No offer records found.</div>}
+              </div>
+
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">Showing {filteredOffers.length} of {offerList.length} offer records</p>
+                <div className="flex items-center gap-2">
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"><ChevronLeft size={16} /></button>
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white">1</button>
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"><ChevronRight size={16} /></button>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredOffers.length} of {offerList.length} offer
-                records
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
-                >
-                  1
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-                >
-                  2
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <h3 className="text-sm font-bold text-sibs-primary-1">
-            Offer Management Rule
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            Offer Date, Basic Pay, De Minimis, Daily Rate, Accepted / Declined
-            status, Offer Turnaround Time, and Decline Reason must be captured.
-            If the offer is accepted, Candidate Pipeline moves to Accepted. If
-            declined, Candidate Pipeline moves to Drop-offs and Candidate
-            Experience data must also be captured.
-          </p>
-        </section>
+          <section className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+            <h3 className="text-sm font-bold text-sibs-primary-1">Offer Process Rule</h3>
+            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">Candidate Pipeline moves qualified candidates to Offered. This page approves the offer, sends the contract email, and records the candidate response. Accepted responses move the candidate to Accepted; declined responses move the candidate to Drop-off with a reason.</p>
+          </section>
+        </div>
       </main>
 
-      <CreateOfferModal
-        open={showCreateModal}
-        form={offerForm}
-        setForm={setOfferForm}
-        eligibleCandidates={eligibleCandidates}
-        onClose={handleCloseCreateModal}
-        onSubmit={handleCreateOffer}
-        onReset={handleResetOfferForm}
-      />
-
-      <OfferDetailsModal
-        open={!!selectedOffer}
-        offer={selectedOffer}
-        onClose={() => setSelectedOffer(null)}
-      />
-
-      <UpdateOfferStatusModal
-        open={!!statusOffer}
-        offer={statusOffer}
-        form={statusForm}
-        setForm={setStatusForm}
-        onClose={handleCloseStatusModal}
-        onSubmit={handleUpdatePendingOffer}
-      />
+      <OfferDetailsModal open={!!selectedOffer} offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
+      <DeclineResponseModal open={!!declineOffer} offer={declineOffer} form={declineForm} setForm={setDeclineForm} onClose={closeDeclineModal} onSubmit={handleCandidateDecline} />
+      <ConfirmationDialog />
     </div>
   );
 }

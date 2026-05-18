@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
+const AVAILABLE_POSITIONS_STORAGE_KEY = "ta_available_positions";
 
 const hearAboutUsOptions = [
   "Employee Referral Program",
@@ -33,14 +34,47 @@ const hearAboutUsOptions = [
   "Others",
 ];
 
-const openPositionOptions = [
-  "CSR",
-  "QA",
-  "RCM Analyst",
-  "IT Support",
-  "HR Assistant",
-  "System Developer",
-  "Accounting",
+const fallbackAvailablePositions = [
+  {
+    id: 1,
+    positionId: "POS-001",
+    positionTitle: "Customer Service Representative",
+    department: "Operations",
+    locationSite: "Davao Site",
+    status: "Active",
+  },
+  {
+    id: 2,
+    positionId: "POS-002",
+    positionTitle: "QA Specialist",
+    department: "Quality Assurance",
+    locationSite: "Davao Site",
+    status: "Active",
+  },
+  {
+    id: 3,
+    positionId: "POS-003",
+    positionTitle: "RCM Analyst",
+    department: "Operations",
+    locationSite: "Tagum Site",
+    status: "Active",
+  },
+  {
+    id: 4,
+    positionId: "POS-004",
+    positionTitle: "IT Support",
+    department: "Information Technology",
+    locationSite: "Any Site",
+    status: "Active",
+  },
+  {
+    id: 5,
+    positionId: "POS-005",
+    positionTitle: "Accounting Staff",
+    department: "Accounting",
+    locationSite: "Davao Site",
+    status: "Active",
+  },
 ];
 
 const locationOptions = ["Davao Site", "Tagum Site", "Mabini Site"];
@@ -216,6 +250,48 @@ function writeLocalStorage(key, value) {
   } catch {
     // temporary frontend-only storage
   }
+}
+
+function normalizeAvailablePosition(position) {
+  return {
+    ...position,
+    positionTitle:
+      position?.positionTitle ||
+      position?.title ||
+      position?.name ||
+      position?.roleTitle ||
+      "",
+    status: position?.status || "Active",
+  };
+}
+
+function getActiveAvailablePositions() {
+  const storedPositions = readLocalStorage(
+    AVAILABLE_POSITIONS_STORAGE_KEY,
+    fallbackAvailablePositions
+  );
+
+  const sourcePositions = Array.isArray(storedPositions) && storedPositions.length
+    ? storedPositions
+    : fallbackAvailablePositions;
+
+  return sourcePositions
+    .map(normalizeAvailablePosition)
+    .filter((position) => position.positionTitle && position.status === "Active");
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(file);
+  });
 }
 
 function inputClass(extra = "") {
@@ -532,6 +608,29 @@ export default function PublicTalentPoolApplicationPage() {
 
   const [form, setForm] = useState(emptyPublicForm);
   const [submittedRecord, setSubmittedRecord] = useState(null);
+  const [activePositionOptions, setActivePositionOptions] = useState([]);
+
+  useEffect(() => {
+    function loadActivePositions() {
+      setActivePositionOptions(getActiveAvailablePositions());
+    }
+
+    loadActivePositions();
+
+    function handleStorageChange(event) {
+      if (!event || event.key === AVAILABLE_POSITIONS_STORAGE_KEY) {
+        loadActivePositions();
+      }
+    }
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("focus", loadActivePositions);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("focus", loadActivePositions);
+    };
+  }, []);
 
   const age = calculateAge(form.dateOfBirth);
   const isMinor = age !== null && age < 18;
@@ -619,6 +718,11 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
+    if (!form.openPosition) {
+      alert("Please select an active open position.");
+      return false;
+    }
+
     if (isMinor) {
       alert("Applicant is below 18 years old as of date of application.");
       return false;
@@ -691,12 +795,15 @@ export default function PublicTalentPoolApplicationPage() {
     return true;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!validateBeforeSubmit()) return;
 
     const today = getTodayDate();
+    const audioFileDataUrl = await readFileAsDataUrl(form.audioFile);
+    const attachmentFileDataUrl = await readFileAsDataUrl(form.attachmentFile);
+    const applicationSource = form.hearAboutUs.join(", ");
 
     const newSubmission = {
       id: Date.now(),
@@ -809,11 +916,19 @@ export default function PublicTalentPoolApplicationPage() {
       audioFileName: form.audioFile?.name || "",
       audioFileType: form.audioFile?.type || "",
       audioFileSize: form.audioFile?.size || 0,
+      audioFileDataUrl,
+      audioFileUrl: audioFileDataUrl,
       attachmentFileName: form.attachmentFile?.name || "",
       attachmentFileType: form.attachmentFile?.type || "",
       attachmentFileSize: form.attachmentFile?.size || 0,
+      attachmentFileDataUrl,
+      attachmentFileUrl: attachmentFileDataUrl,
 
-      source: "Public Application",
+      source: applicationSource,
+      entryType: "Public Application",
+      createdBy: "Candidate",
+      createdBySibsId: "",
+      createdAt: today,
       status: "New Applicant",
       submittedAt: today,
       isPublicSubmission: true,
@@ -838,7 +953,7 @@ export default function PublicTalentPoolApplicationPage() {
       - candidate profile fields
       - audio file
       - attachment file
-      - source = Public Application
+      - source = selected answer/s from How did you first hear about us
       - status = New Applicant
       - is_public_submission = true
     */
@@ -948,12 +1063,18 @@ export default function PublicTalentPoolApplicationPage() {
                       className={inputClass()}
                     >
                       <option value="">Select open position</option>
-                      {openPositionOptions.map((position) => (
-                        <option key={position} value={position}>
-                          {position}
+                      {activePositionOptions.map((position) => (
+                        <option
+                          key={position.positionId || position.positionTitle}
+                          value={position.positionTitle}
+                        >
+                          {position.positionTitle}
                         </option>
                       ))}
                     </select>
+                    <p className="mt-2 text-xs font-semibold text-gray-500">
+                      Only positions marked Active in Available Positions are shown here.
+                    </p>
                   </div>
 
                   <div>

@@ -8,11 +8,13 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import {
   AlertTriangle,
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
   ExternalLink,
   Eye,
+  FileText,
   Lock,
   Paperclip,
   PieChart,
@@ -109,7 +111,6 @@ function getBackendNumber(record, keys, fallback = 0) {
 
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
 }
-
 function getClusterFilterLabel(selectedClusters = []) {
   if (!selectedClusters.length || selectedClusters.includes("All")) {
     return "All Clusters";
@@ -197,7 +198,7 @@ function getNextWeekRangeFromActiveWeek(activeWeek) {
     endDate: toDateKey(nextEnd),
     weekRange: `${formatWeekDate(nextStart)} - ${formatWeekDate(
       nextEnd,
-      true
+      true,
     )}`,
   };
 }
@@ -217,7 +218,7 @@ function getOverallStatus(records) {
   const completed =
     records.length > 0 &&
     records.every(
-      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount)
+      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount),
     );
 
   if (completed) return "COMPLETED";
@@ -409,7 +410,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   function scaleToDisplayPercent(actualPercent) {
     const safeActualPercent = Math.max(
       0,
-      Math.min(Number(actualPercent || 0), 100)
+      Math.min(Number(actualPercent || 0), 100),
     );
 
     return (safeActualPercent / maxActualPercent) * maxDisplayPercent;
@@ -435,7 +436,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   const graphData = percentageMetrics.map((metric) => {
     const totalCount = filteredPlans.reduce(
       (sum, item) => sum + Number(item[metric.countKey] || 0),
-      0
+      0,
     );
 
     let actualPercent = 0;
@@ -443,7 +444,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
     if (metric.denominatorKey) {
       const totalDenominator = filteredPlans.reduce(
         (sum, item) => sum + Number(item[metric.denominatorKey] || 0),
-        0
+        0,
       );
 
       actualPercent =
@@ -453,7 +454,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
         filteredPlans.length > 0
           ? filteredPlans.reduce(
               (sum, item) => sum + Number(item[metric.percentKey] || 0),
-              0
+              0,
             ) / filteredPlans.length
           : 0;
     }
@@ -513,7 +514,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
 
             const width = Math.min(
               (metric.actualPercent / maxActualPercent) * 100,
-              100
+              100,
             );
 
             return (
@@ -523,9 +524,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    setOpenMetric(isOpen ? "" : metric.percentKey)
-                  }
+                  onClick={() => setOpenMetric(isOpen ? "" : metric.percentKey)}
                   className="w-full p-4 text-left transition hover:bg-white"
                 >
                   <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -550,8 +549,8 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                                   (sum, item) =>
                                     sum +
                                     Number(item[metric.denominatorKey] || 0),
-                                  0
-                                )
+                                  0,
+                                ),
                               )}`
                             : ""}
                         </p>
@@ -572,7 +571,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                   <div className="h-3 overflow-hidden rounded-full bg-[#E6ECF2]">
                     <div
                       className={`h-full rounded-full ${getBarColor(
-                        metric.displayPercent
+                        metric.displayPercent,
                       )}`}
                       style={{ width: `${width}%` }}
                     />
@@ -605,7 +604,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                           {filteredPlans.map((item) => {
                             const rowActualPercent = getItemPercent(
                               item,
-                              metric
+                              metric,
                             );
                             const rowDisplayPercent =
                               scaleToDisplayPercent(rowActualPercent);
@@ -653,7 +652,6 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
     </section>
   );
 }
-
 
 function StatusModal({ open, type = "success", title, message, onClose }) {
   useLockBodyScroll(open);
@@ -815,9 +813,7 @@ function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
                 required
                 type="date"
                 value={form.deadline}
-                onChange={(e) =>
-                  setForm({ ...form, deadline: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
                 className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               />
             </div>
@@ -845,9 +841,7 @@ function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
               <textarea
                 rows={3}
                 value={form.remarks}
-                onChange={(e) =>
-                  setForm({ ...form, remarks: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
                 placeholder="Add notes or next steps."
                 className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               />
@@ -958,7 +952,7 @@ function ViewPlanModal({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          item.pipelineStatus
+                          item.pipelineStatus,
                         )}`}
                       >
                         {item.pipelineStatus}
@@ -1142,7 +1136,7 @@ function ViewPlanModal({
                 <InfoBox
                   label="Buffer"
                   value={`${item.bufferHeadcount} / ${formatPercent(
-                    item.bufferPercent
+                    item.bufferPercent,
                   )}`}
                 />
                 <InfoBox
@@ -1159,13 +1153,13 @@ function ViewPlanModal({
                 <InfoBox
                   label="Absenteeism"
                   value={`${item.absenteeismCount} / ${formatPercent(
-                    item.absenteeismPercent
+                    item.absenteeismPercent,
                   )}`}
                 />
                 <InfoBox
                   label="Attrition Past 6 Weeks"
                   value={`${item.attritionPastCount} / ${formatPercent(
-                    item.attritionPastPercent
+                    item.attritionPastPercent,
                   )}`}
                 />
                 <InfoBox label="OPS PRF" value={item.opsPrf} />
@@ -1176,19 +1170,19 @@ function ViewPlanModal({
                 <InfoBox
                   label="FST to PST"
                   value={`${item.attritionFstToPstCount} / ${formatPercent(
-                    item.attritionFstToPstPercent
+                    item.attritionFstToPstPercent,
                   )}`}
                 />
                 <InfoBox
                   label="NHO to FST-PST"
                   value={`${item.attritionNhoToFstPstCount} / ${formatPercent(
-                    item.attritionNhoToFstPstPercent
+                    item.attritionNhoToFstPstPercent,
                   )}`}
                 />
                 <InfoBox
                   label="Interview to NHO"
                   value={`${item.attritionInterviewToNhoCount} / ${formatPercent(
-                    item.attritionInterviewToNhoPercent
+                    item.attritionInterviewToNhoPercent,
                   )}`}
                 />
                 <InfoBox
@@ -1314,22 +1308,22 @@ function KpiSnapshotModal({ open, week, records, onClose }) {
 
   const required = records.reduce(
     (sum, item) => sum + Number(item.requiredHeadcount || 0),
-    0
+    0,
   );
 
   const actual = records.reduce(
     (sum, item) => sum + Number(item.actualHeadcount || 0),
-    0
+    0,
   );
 
   const opsPrf = records.reduce(
     (sum, item) => sum + Number(item.opsPrf || 0),
-    0
+    0,
   );
 
   const leads = records.reduce(
     (sum, item) => sum + Number(item.leadsToInterview || 0),
-    0
+    0,
   );
 
   return (
@@ -1586,65 +1580,11 @@ export default function WeeklyHiringPlanPage() {
     try {
       setAccountsLoading(true);
 
-      let accounts = [];
-
-      if (isAllClustersSelected()) {
-        accounts = await getWeeklyHiringPlanAccounts(
-          "All",
-          activeWeekStartDate,
-          activeWeekEndDate
-        );
-      } else {
-        const results = await Promise.all(
-          selectedClusters.map((cluster) =>
-            getWeeklyHiringPlanAccounts(
-              cluster,
-              activeWeekStartDate,
-              activeWeekEndDate
-            )
-          )
-        );
-
-        const mergedAccounts = results.flat();
-        const uniqueMap = new Map();
-
-        mergedAccounts.forEach((account) => {
-          const accountId = Number(account?.id || 0);
-          const accountName = String(account?.accountName || "").trim();
-          const clusterName = String(
-            account?.clusterName ||
-              account?.cluster ||
-              account?.ghlName ||
-              account?.gy_acc_ghl_name ||
-              ""
-          ).trim();
-
-          if (!accountId || !accountName) return;
-
-          const key = `${accountId}-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
-
-          if (!uniqueMap.has(key)) {
-            uniqueMap.set(key, account);
-          }
-        });
-
-        accounts = Array.from(uniqueMap.values());
-      }
-
-      const uniqueAccountOptionsMap = new Map();
-
-      (accounts || []).forEach((account) => {
-        const accountId = Number(account?.id || 0);
-        const accountName = String(account?.accountName || "").trim();
-
-        if (!accountId || !accountName) return;
-
-        const key = accountName.toLowerCase();
-
-        if (!uniqueAccountOptionsMap.has(key)) {
-          uniqueAccountOptionsMap.set(key, account);
-        }
-      });
+      const accounts = await getWeeklyHiringPlanAccounts(
+        clusterFilter,
+        activeWeekStartDate,
+        activeWeekEndDate
+      );
 
       setRemoteAccounts(accounts || []);
 
@@ -1799,17 +1739,17 @@ export default function WeeklyHiringPlanPage() {
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
 
         attritionNhoToFstPstCount: Number(
-          account.attritionNhoToFstPstCount || 0
+          account.attritionNhoToFstPstCount || 0,
         ),
         attritionNhoToFstPstPercent: Number(
-          account.attritionNhoToFstPstPercent || 0
+          account.attritionNhoToFstPstPercent || 0,
         ),
 
         attritionInterviewToNhoCount: Number(
-          account.attritionInterviewToNhoCount || 0
+          account.attritionInterviewToNhoCount || 0,
         ),
         attritionInterviewToNhoPercent: Number(
-          account.attritionInterviewToNhoPercent || 0
+          account.attritionInterviewToNhoPercent || 0,
         ),
 
         leadsToInterview: calculated.leadsToInterview,
@@ -1891,22 +1831,22 @@ export default function WeeklyHiringPlanPage() {
   const totals = useMemo(() => {
     const totalRequired = filteredPlans.reduce(
       (sum, item) => sum + Number(item.requiredHeadcount || 0),
-      0
+      0,
     );
 
     const actualHeadcount = filteredPlans.reduce(
       (sum, item) => sum + Number(item.actualHeadcount || 0),
-      0
+      0,
     );
 
     const opsPrf = filteredPlans.reduce(
       (sum, item) => sum + Number(item.opsPrf || 0),
-      0
+      0,
     );
 
     const leadsToInterview = filteredPlans.reduce(
       (sum, item) => sum + Number(item.leadsToInterview || 0),
-      0
+      0,
     );
 
     const overallStatus = getOverallStatus(filteredPlans);
@@ -1921,7 +1861,7 @@ export default function WeeklyHiringPlanPage() {
   }, [filteredPlans]);
 
   const activeWeekIndex = weeklyVersions.findIndex(
-    (week) => week.id === activeWeekId
+    (week) => week.id === activeWeekId,
   );
 
   const previousWeek = weeklyVersions[activeWeekIndex + 1];
@@ -1930,7 +1870,7 @@ export default function WeeklyHiringPlanPage() {
     ? previousWeek?.records?.find(
         (record) =>
           record.account === selectedPlan.account &&
-          record.cluster === selectedPlan.cluster
+          record.cluster === selectedPlan.cluster,
       )
     : null;
 
@@ -1964,7 +1904,8 @@ export default function WeeklyHiringPlanPage() {
 
 
     if (!activeWeekStartDate || !activeWeekEndDate) {
-      const message = "Missing weekly date range. Please select a valid weekly version.";
+      const message =
+        "Missing weekly date range. Please select a valid weekly version.";
       setRequiredSaveMessage(message);
       openStatusModal({
         type: "error",
@@ -2075,7 +2016,9 @@ export default function WeeklyHiringPlanPage() {
               refreshedAccount.absenteeismOpsCount !== null
                 ? Number(refreshedAccount.absenteeismOpsCount || 0)
                 : Number(refreshedAccount.absenteeismCount || 0),
-            attritionPastCount: Number(refreshedAccount.attritionPastCount || 0),
+            attritionPastCount: Number(
+              refreshedAccount.attritionPastCount || 0,
+            ),
             opsPrf: getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"]),
             projectedEmployeeNeeds: getBackendNumber(
               refreshedAccount,
@@ -2094,7 +2037,7 @@ export default function WeeklyHiringPlanPage() {
             hiringRate: getBackendNumber(
               refreshedAccount,
               ["hiringRate", "hiring_rate"],
-              5
+              5,
             ),
             pipelineStatus:
               refreshedAccount.pipelineStatus || current.pipelineStatus,
@@ -2407,7 +2350,12 @@ export default function WeeklyHiringPlanPage() {
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-sibs-primary-1 sm:text-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <CalendarDays size={14} />
+                Recruitment
+              </div>
+
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
                 Weekly Hiring Plan
               </h1>
 
@@ -2758,7 +2706,7 @@ export default function WeeklyHiringPlanPage() {
                 </span>
               )}
 
-              {(!isAllClustersSelected() || !isAllAccountsSelected() || search) && (
+              {(clusterFilter !== "All" || accountFilter !== "All" || search) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -2956,7 +2904,7 @@ export default function WeeklyHiringPlanPage() {
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
                             <span
                               className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                item.pipelineStatus
+                                item.pipelineStatus,
                               )}`}
                             >
                               {item.pipelineStatus}
@@ -3056,7 +3004,7 @@ export default function WeeklyHiringPlanPage() {
 
                         <span
                           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                            item.pipelineStatus
+                            item.pipelineStatus,
                           )}`}
                         >
                           {item.pipelineStatus}

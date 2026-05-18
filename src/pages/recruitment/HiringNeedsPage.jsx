@@ -24,17 +24,42 @@ function getTodayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatPersonName(value) {
+  const rawValue = String(value || "").trim();
+
+  if (!rawValue) return "";
+
+  if (rawValue.includes("@")) {
+    const localPart = rawValue.split("@")[0] || "";
+
+    return localPart
+      .replace(/[._-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  return rawValue;
+}
+
 function getUserDisplayName(user) {
-  return (
+  const possibleName =
     user?.fullName ||
     user?.fullname ||
     user?.name ||
     user?.employeeName ||
     user?.gy_emp_fullname ||
-    user?.sibsId ||
+    user?.displayName ||
+    user?.username ||
     user?.email ||
-    ""
-  );
+    user?.userEmail ||
+    user?.workEmail ||
+    "Alena Batacan";
+
+  return formatPersonName(possibleName) || "Alena Batacan";
 }
 
 const positionOptions = [
@@ -281,12 +306,13 @@ function normalizeItem(item) {
       item.requested_start_date ||
       "",
 
-    preparedBy:
+    preparedBy: formatPersonName(
       item.preparedBy ||
-      item.prepared_by ||
-      item.hiringManager ||
-      item.hiring_manager ||
-      "",
+        item.prepared_by ||
+        item.hiringManager ||
+        item.hiring_manager ||
+        ""
+    ),
 
     approvalStatus:
       item.approvalStatus ||
@@ -1322,7 +1348,7 @@ export default function HiringNeedsPage() {
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 <FileText size={14} />
-                Personnel Requisition
+                Recruitment
               </div>
 
               <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">

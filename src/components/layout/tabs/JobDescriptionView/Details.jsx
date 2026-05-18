@@ -3,6 +3,7 @@ import { PencilLine, SquarePen, X } from "lucide-react";
 import { normalizeJdStatus } from "../../../../lib/utils/NormalizeJDStatus";
 import { formatDate } from "../../FormatDateTime";
 import DesiredCompetenciesViewTable from "../../../tables/jobDescription/DesiredCompetenciesViewTable";
+import { useUser } from "../../../../services/context/UserContext";
 
 const Details = ({
   item,
@@ -14,6 +15,12 @@ const Details = ({
   editedChangeDetails = [],
   setEditedChangeDetails,
 }) => {
+  const { user } = useUser();
+
+  const canManageJdDetails = useMemo(() => {
+    return [6, 7].includes(Number(user?.adminAccess));
+  }, [user?.adminAccess]);
+
   const [commentModal, setCommentModal] = useState({
     open: false,
     sectionKey: "",
@@ -50,8 +57,9 @@ const Details = ({
   });
 
   const hasRevisionComments = revisionComments.length > 0;
-  const disableEditBecauseCommented = hasRevisionComments;
-  const disableCommentBecauseEdited = hasEditedChanges;
+  const disableEditBecauseCommented =
+    !canManageJdDetails || hasRevisionComments;
+  const disableCommentBecauseEdited = !canManageJdDetails || hasEditedChanges;
 
   useEffect(() => {
     setEditableContent({
@@ -295,6 +303,30 @@ const Details = ({
     setEditingRecordInfo(false);
   }
 
+  function getEditDisabledTitle(defaultTitle) {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can edit this JD.";
+    }
+
+    if (disableEditBecauseCommented) {
+      return "Editing is disabled because this JD has revision comments.";
+    }
+
+    return defaultTitle;
+  }
+
+  function getCommentDisabledTitle(defaultTitle) {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can add revision comments.";
+    }
+
+    if (disableCommentBecauseEdited) {
+      return "Commenting is disabled because this JD already has edited changes.";
+    }
+
+    return defaultTitle;
+  }
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-2xs">
@@ -320,77 +352,71 @@ const Details = ({
             </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            {!editingRecordInfo ? (
-              <>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    if (disableEditBecauseCommented) return;
-                    setEditingRecordInfo(true);
-                  }}
-                  disabled={disableEditBecauseCommented}
-                  title={
-                    disableEditBecauseCommented
-                      ? "Editing is disabled because this JD has revision comments."
-                      : "Edit record information."
-                  }
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                    disableEditBecauseCommented
-                      ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                      : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  <SquarePen size={14} />
-                  Edit
-                </button>
+          {!disableEditBecauseCommented && (
+            <div className="flex shrink-0 items-center gap-2">
+              {!editingRecordInfo ? (
+                <>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      if (disableEditBecauseCommented) return;
+                      setEditingRecordInfo(true);
+                    }}
+                    disabled={disableEditBecauseCommented}
+                    title={getEditDisabledTitle("Edit record information.")}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                      disableEditBecauseCommented
+                        ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                        : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <SquarePen size={14} />
+                    Edit
+                  </button>
 
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() =>
-                    openSectionComment(
-                      "recordInformation",
-                      "Record Information",
-                    )
-                  }
-                  disabled={disableCommentBecauseEdited}
-                  title={
-                    disableCommentBecauseEdited
-                      ? "Commenting is disabled because this JD already has edited changes."
-                      : "Add revision comment."
-                  }
-                  className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                    disableCommentBecauseEdited
-                      ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                      : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
-                  }`}
-                >
-                  <PencilLine size={14} />
-                  Add Comment
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={cancelRecordInfoEdit}
-                  className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                >
-                  Cancel
-                </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() =>
+                      openSectionComment(
+                        "recordInformation",
+                        "Record Information",
+                      )
+                    }
+                    disabled={disableCommentBecauseEdited}
+                    title={getCommentDisabledTitle("Add revision comment.")}
+                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                      disableCommentBecauseEdited
+                        ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                        : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
+                    }`}
+                  >
+                    <PencilLine size={14} />
+                    Add Comment
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={cancelRecordInfoEdit}
+                    className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                  >
+                    Cancel
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={saveRecordInfoEdit}
-                  className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90"
-                >
-                  Save
-                </button>
-              </>
-            )}
-          </div>
+                  <button
+                    type="button"
+                    onClick={saveRecordInfoEdit}
+                    className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90"
+                  >
+                    Save
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -546,6 +572,7 @@ const Details = ({
           onSaveEdit={saveEditSection}
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
+          canManageJdDetails={canManageJdDetails}
         />
 
         <DetailArticleSection
@@ -563,6 +590,7 @@ const Details = ({
           onSaveEdit={saveEditSection}
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
+          canManageJdDetails={canManageJdDetails}
         />
 
         <DetailArticleSection
@@ -580,6 +608,7 @@ const Details = ({
           onSaveEdit={saveEditSection}
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
+          canManageJdDetails={canManageJdDetails}
         />
 
         {String(editableContent.remarks || "").trim() && (
@@ -598,6 +627,7 @@ const Details = ({
             onSaveEdit={saveEditSection}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
+            canManageJdDetails={canManageJdDetails}
           />
         )}
 
@@ -608,6 +638,7 @@ const Details = ({
             onAddComment={openSectionComment}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
+            canManageActions={canManageJdDetails}
             onEditedChange={onEditedChange}
           />
 
@@ -768,7 +799,7 @@ function DocumentInfoInput({
       ) : (
         <p
           title={finalDisplayValue}
-          className="mt-1 truncate text-sm font-bold leading-5 text-[#344054] selection:bg-[#FFF3B8] selection:text-[#101828] hover:cursor-pointer"
+          className="mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 text-[#344054] selection:bg-[#FFF3B8] selection:text-[#101828] hover:cursor-pointer [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CBD5E1] [&::-webkit-scrollbar-track]:bg-transparent"
         >
           {finalDisplayValue}
         </p>
@@ -873,7 +904,32 @@ function DetailArticleSection({
   onSaveEdit,
   disableEdit = false,
   disableComment = false,
+  canManageJdDetails = false,
 }) {
+  function getEditTitle() {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can edit this JD.";
+    }
+
+    if (disableEdit) {
+      return "Editing is disabled because this JD has revision comments.";
+    }
+
+    return "Edit this section.";
+  }
+
+  function getCommentTitle() {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can add revision comments.";
+    }
+
+    if (disableComment) {
+      return "Commenting is disabled because this JD already has edited changes.";
+    }
+
+    return "Add revision comment.";
+  }
+
   return (
     <section>
       <div className="mb-2 flex items-center justify-between gap-3">
@@ -887,18 +943,14 @@ function DetailArticleSection({
           )}
         </div>
 
-        {!isEditing && (
+        {!isEditing && !disableEdit && (
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onStartEdit?.(sectionKey)}
               disabled={disableEdit}
-              title={
-                disableEdit
-                  ? "Editing is disabled because this JD has revision comments."
-                  : "Edit this section."
-              }
+              title={getEditTitle()}
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
@@ -914,11 +966,7 @@ function DetailArticleSection({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onAddComment?.(sectionKey, title)}
               disabled={disableComment}
-              title={
-                disableComment
-                  ? "Commenting is disabled because this JD already has edited changes."
-                  : "Add revision comment."
-              }
+              title={getCommentTitle()}
               className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
                 disableComment
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"

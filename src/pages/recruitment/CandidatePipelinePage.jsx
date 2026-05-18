@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
+import { useUser } from "../../services/context/UserContext";
 
 import {
   Search,
@@ -7,11 +8,15 @@ import {
   ArrowRight,
   X,
   UserX,
+  UsersRound,
+  UserCheck,
+  BriefcaseBusiness,
+  ShieldCheck,
+  Filter,
   CalendarDays,
   ClipboardCheck,
   Mail,
   RotateCcw,
-  Plus,
   SlidersHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -23,9 +28,9 @@ const PIPELINE_CANDIDATES_STORAGE_KEY = "ta_pipeline_candidates";
 const OFFER_ELIGIBLE_STORAGE_KEY = "ta_offer_eligible_candidates";
 const INTERNAL_CANDIDATES_STORAGE_KEY = "ta_internal_candidates";
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
+const PIPELINE_SYNC_EVENTS_KEY = "ta_pipeline_sync_events";
 
 const pipelineStages = [
-  "Lead / Sourced",
   "Initial Screening",
   "Online Assessment",
   "Interview Scheduled",
@@ -36,7 +41,6 @@ const pipelineStages = [
 ];
 
 const normalStageFlow = [
-  "Lead / Sourced",
   "Initial Screening",
   "Online Assessment",
   "Interview Scheduled",
@@ -45,14 +49,39 @@ const normalStageFlow = [
   "Accepted",
 ];
 
-const roleOptions = ["All Roles", "CSR", "QA", "RCM Analyst", "IT Support"];
+const roleOptions = [
+  "All Roles",
+  "Not assigned yet",
+  "Customer Service Representative",
+  "QA Specialist",
+  "RCM Analyst",
+  "IT Support",
+  "HR Assistant",
+  "System Developer",
+  "Accounting Staff",
+];
 
 const accountOptions = [
   "All Accounts",
-  "Client A",
-  "Client B",
-  "Client C",
-  "SIBS",
+  "Not assigned yet",
+  "Collect IV",
+  "Collect AR",
+  "Connect",
+  "DentistRX",
+  "Reconciliation",
+  "TeleDentistry",
+  "Cash",
+  "US Visa",
+  "Channel Assist",
+  "Yomdel",
+];
+
+const hiringRequirementOptions = [
+  { id: "HIR-001", label: "HIR-001 — Customer Service Representative / Collect IV", roleTitle: "Customer Service Representative", account: "Collect IV" },
+  { id: "HIR-002", label: "HIR-002 — QA Specialist / Connect", roleTitle: "QA Specialist", account: "Connect" },
+  { id: "HIR-003", label: "HIR-003 — RCM Analyst / Reconciliation", roleTitle: "RCM Analyst", account: "Reconciliation" },
+  { id: "HIR-004", label: "HIR-004 — IT Support / SIBS", roleTitle: "IT Support", account: "SIBS" },
+  { id: "HIR-005", label: "HIR-005 — Customer Service Representative / US Visa", roleTitle: "Customer Service Representative", account: "US Visa" },
 ];
 
 const interviewTypeOptions = ["Online", "Face-to-face"];
@@ -127,12 +156,86 @@ function getCurrentDate() {
   return new Date().toISOString().split("T")[0];
 }
 
+function ConfirmationModal({ open, title = "Confirm Action", message, confirmLabel = "Continue", cancelLabel = "Cancel", onCancel, onConfirm }) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-slate-950/40 px-4 py-4 backdrop-blur-[1px]"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-[#EEF2F6] px-5 py-4">
+          <h3 className="text-base font-extrabold text-sibs-primary-1">{title}</h3>
+          <p className="mt-1 text-sm font-semibold leading-6 text-[#667085]">{message}</p>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white px-5 text-sm font-bold text-[#344054] transition hover:border-[#B8C4D2] hover:bg-[#F8FAFC] focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10"
+          >
+            {cancelLabel}
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/20"
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useConfirmDialog() {
+  const [confirmState, setConfirmState] = useState(null);
+
+  function confirmAction(message, options = {}) {
+    return new Promise((resolve) => {
+      setConfirmState({
+        message,
+        title: options.title || "Confirm Action",
+        confirmLabel: options.confirmLabel || "Continue",
+        cancelLabel: options.cancelLabel || "Cancel",
+        resolve,
+      });
+    });
+  }
+
+  function closeConfirm(result) {
+    if (confirmState?.resolve) confirmState.resolve(result);
+    setConfirmState(null);
+  }
+
+  const ConfirmationDialog = (
+    <ConfirmationModal
+      open={Boolean(confirmState)}
+      title={confirmState?.title}
+      message={confirmState?.message}
+      confirmLabel={confirmState?.confirmLabel}
+      cancelLabel={confirmState?.cancelLabel}
+      onCancel={() => closeConfirm(false)}
+      onConfirm={() => closeConfirm(true)}
+    />
+  );
+
+  return { confirmAction, ConfirmationDialog };
+}
+
 function getRoleTitle(roleAccount = "") {
   return roleAccount.split(" - ")?.[0] || roleAccount || "";
 }
 
 function getAccount(roleAccount = "") {
-  return roleAccount.split(" - ")?.[1] || "SIBS";
+  return roleAccount.split(" - ")?.[1] || "Not assigned yet";
 }
 
 function formatDateTime(date) {
@@ -187,7 +290,7 @@ function hasInterviewSchedule(candidate) {
       candidate?.interviewType &&
       candidate?.interviewType !== "-" &&
       candidate?.interviewStatus !== "For Scheduling" &&
-      candidate?.interviewStatus !== "Not Screened"
+      candidate?.interviewStatus !== "For Assessment"
   );
 }
 
@@ -195,7 +298,7 @@ function isPrfReviewed(candidate) {
   return Boolean(
     candidate?.prfReviewed ||
       candidate?.prfReviewedAt ||
-      candidate?.currentStage !== "Lead / Sourced"
+      candidate?.currentStage !== "Initial Screening"
   );
 }
 
@@ -219,7 +322,7 @@ function getAssessmentResult(candidate) {
 function getDisplayInterviewStatus(candidate) {
   if (!candidate) return "—";
 
-  if (candidate.currentStage === "Lead / Sourced") return "Not Screened";
+  if (candidate.currentStage === "Initial Screening") return "For Assessment";
   if (candidate.currentStage === "Initial Screening") return "For Assessment";
 
   if (candidate.currentStage === "Online Assessment") {
@@ -233,7 +336,7 @@ function getDisplayInterviewType(candidate) {
   if (!candidate) return "—";
 
   if (
-    candidate.currentStage === "Lead / Sourced" ||
+    candidate.currentStage === "Initial Screening" ||
     candidate.currentStage === "Initial Screening" ||
     candidate.currentStage === "Online Assessment"
   ) {
@@ -268,7 +371,7 @@ function canUpdateInterviewSchedule(candidate) {
 
 function getStageClass(stage) {
   switch (stage) {
-    case "Lead / Sourced":
+    case "Initial Screening":
       return "border-blue-100 bg-blue-50 text-blue-700";
     case "Initial Screening":
       return "border-indigo-100 bg-indigo-50 text-indigo-700";
@@ -283,7 +386,7 @@ function getStageClass(stage) {
     case "Accepted":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "Drop-off":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
   }
@@ -294,7 +397,7 @@ function getPrfStatusClass(status) {
     case "Matched":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "Unmatched":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     case "Review":
     default:
       return "border-amber-100 bg-amber-50 text-amber-700";
@@ -310,12 +413,12 @@ function getInterviewStatusClass(status) {
     case "Completed":
       return "border-violet-100 bg-violet-50 text-violet-700";
     case "Cancelled":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     case "For Assessment":
       return "border-cyan-100 bg-cyan-50 text-cyan-700";
     case "For Scheduling":
       return "border-gray-100 bg-gray-50 text-gray-700";
-    case "Not Screened":
+    case "For Assessment":
       return "border-slate-100 bg-slate-50 text-slate-600";
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
@@ -337,7 +440,7 @@ function getAssessmentResultClass(result) {
     case "Assessment Fit":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "Assessment Not Fit":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
   }
@@ -348,7 +451,7 @@ function getOfferApprovalClass(status) {
     case "Approved":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "Rejected":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     case "For Review":
     default:
       return "border-amber-100 bg-amber-50 text-amber-700";
@@ -360,7 +463,7 @@ function getOfferDecisionClass(status) {
     case "Accepted":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
     case "Rejected":
-      return "border-red-100 bg-red-50 text-red-700";
+      return "border-red-100 bg-red-50 text-sibs-primary-1";
     case "Negotiate":
       return "border-blue-100 bg-blue-50 text-blue-700";
     default:
@@ -517,60 +620,28 @@ SIBS Talent Acquisition`
 }
 
 const defaultPipelineCandidates = [
-  {
+{
     id: 1,
-    candidateApplicationId: 1,
+    candidateApplicationId: "APP-001",
+    applicationId: "APP-001",
+    candidateMasterId: 1,
     candidateId: "CAND-001",
-    name: "Juan Dela Cruz",
+    name: "Juan Santos Dela Cruz",
+    candidateName: "Juan Santos Dela Cruz",
     email: "juan.delacruz@email.com",
-    roleAccount: "CSR - Client A",
-    source: "Referral",
+    contactNumber: "09123456789",
+    roleTitle: "Not assigned yet",
+    account: "Not assigned yet",
+    roleAccount: "Not assigned yet - Not assigned yet",
+    source: "Employee Referral Program",
     owner: "Maria Reyes",
-    currentStage: "Lead / Sourced",
+    taOwner: "Maria Reyes",
+    currentStage: "Initial Screening",
     previousStage: null,
+    applicationStatus: "Active",
     prfStatus: "Review",
     prfReviewed: false,
     prfReviewedAt: null,
-    interviewDate: null,
-    interviewType: "-",
-    interviewStatus: "Not Screened",
-    assessmentStatus: "Not Take",
-    assessmentResult: "",
-    assessmentEmailSent: false,
-    assessmentEmailSentAt: null,
-    assessmentTakenAt: null,
-    assessmentTaggedAt: null,
-    assessmentRemarks: "",
-    dateMoved: getCurrentDate(),
-    reasonForMovement: "Candidate was added to the talent pool.",
-    avatarColor: "bg-blue-600",
-    dropOffReason: null,
-    dropOffCategory: null,
-    dropOffRemarks: null,
-    timeline: [
-      {
-        stage: "Lead / Sourced",
-        owner: "Maria Reyes",
-        source: "Referral",
-        timestamp: getCurrentTimestamp(),
-        reason: "Candidate was added to the talent pool.",
-      },
-    ],
-  },
-  {
-    id: 2,
-    candidateApplicationId: 2,
-    candidateId: "CAND-002",
-    name: "Maria Santos",
-    email: "maria.santos@email.com",
-    roleAccount: "QA - Client B",
-    source: "JobStreet",
-    owner: "John Dela Cruz",
-    currentStage: "Initial Screening",
-    previousStage: "Lead / Sourced",
-    prfStatus: "Matched",
-    prfReviewed: true,
-    prfReviewedAt: getCurrentTimestamp(),
     interviewDate: null,
     interviewType: "-",
     interviewStatus: "For Assessment",
@@ -581,109 +652,627 @@ const defaultPipelineCandidates = [
     assessmentTakenAt: null,
     assessmentTaggedAt: null,
     assessmentRemarks: "",
-    dateMoved: getCurrentDate(),
-    reasonForMovement:
-      "PRF status changed to Matched. Candidate moved to Initial Screening.",
+    dateMoved: "2026-05-02",
+    updatedAt: "2026-05-02",
+    reasonForMovement: "Candidate moved from Talent Pool without final role, account, or hiring requirement assignment.",
+    avatarColor: "bg-blue-600",
+    dropOffReason: null,
+    dropOffCategory: null,
+    dropOffRemarks: null,
+    candidateSnapshot: {
+      id: 1,
+      candidateId: "CAND-001",
+      name: "Juan Santos Dela Cruz",
+      firstName: "Juan",
+      middleName: "Santos",
+      lastName: "Dela Cruz",
+      email: "juan.delacruz@email.com",
+      phoneNumber1: "09123456789",
+      openPosition: "Customer Service Representative",
+      applyingLocation: "Davao Site",
+      source: "Employee Referral Program",
+      skillsLanguage: "English, Chat Support, Customer Service",
+    },
+    timeline: [
+      {
+        stage: "Initial Screening",
+        owner: "Maria Reyes",
+        source: "Talent Pool",
+        timestamp: "May 2, 2026, 9:00 AM",
+        reason: "Candidate moved from Talent Pool. Final role/account assignment is pending until Offered stage.",
+      },
+    ],
+  },
+{
+    id: 2,
+    candidateApplicationId: "APP-002",
+    applicationId: "APP-002",
+    candidateMasterId: 2,
+    candidateId: "CAND-002",
+    name: "Maria Lopez Santos",
+    candidateName: "Maria Lopez Santos",
+    email: "maria.santos@email.com",
+    contactNumber: "09171234567",
+    roleTitle: "Not assigned yet",
+    account: "Not assigned yet",
+    roleAccount: "Not assigned yet - Not assigned yet",
+    source: "Social Media Ads",
+    owner: "John Dela Cruz",
+    taOwner: "John Dela Cruz",
+    currentStage: "Initial Screening",
+    previousStage: "Initial Screening",
+    applicationStatus: "Active",
+    prfStatus: "Matched",
+    prfReviewed: true,
+    prfReviewedAt: "May 4, 2026, 10:30 AM",
+    interviewDate: null,
+    interviewType: "-",
+    interviewStatus: "For Assessment",
+    assessmentStatus: "Not Take",
+    assessmentResult: "",
+    assessmentEmailSent: false,
+    assessmentEmailSentAt: null,
+    assessmentTakenAt: null,
+    assessmentTaggedAt: null,
+    assessmentRemarks: "",
+    dateMoved: "2026-05-04",
+    updatedAt: "2026-05-04",
+    reasonForMovement: "PRF status changed to Matched. Candidate moved from Initial Screening to Initial Screening.",
     avatarColor: "bg-cyan-600",
     dropOffReason: null,
     dropOffCategory: null,
     dropOffRemarks: null,
+    candidateSnapshot: {
+      id: 2,
+      candidateId: "CAND-002",
+      name: "Maria Lopez Santos",
+      firstName: "Maria",
+      middleName: "Lopez",
+      lastName: "Santos",
+      email: "maria.santos@email.com",
+      phoneNumber1: "09171234567",
+      openPosition: "QA Specialist",
+      applyingLocation: "Davao Site",
+      source: "Social Media Ads",
+      skillsLanguage: "QA, English, Documentation",
+    },
     timeline: [
       {
-        stage: "Lead / Sourced",
+        stage: "Initial Screening",
         owner: "John Dela Cruz",
-        source: "JobStreet",
-        timestamp: getCurrentTimestamp(),
-        reason: "Candidate was added to the talent pool.",
+        source: "Talent Pool",
+        timestamp: "May 4, 2026, 9:15 AM",
+        reason: "Candidate moved from Talent Pool without final assignment.",
       },
       {
         stage: "Initial Screening",
         owner: "John Dela Cruz",
         source: "PRF Review",
-        timestamp: getCurrentTimestamp(),
-        reason:
-          "PRF status changed to Matched. Candidate moved to Initial Screening.",
+        timestamp: "May 4, 2026, 10:30 AM",
+        reason: "PRF status changed to Matched. Candidate moved to Initial Screening.",
+        remarks: "PRF Status: Matched",
       },
     ],
   },
-  {
+{
     id: 3,
-    candidateApplicationId: 3,
+    candidateApplicationId: "APP-003",
+    applicationId: "APP-003",
+    candidateMasterId: 3,
     candidateId: "CAND-003",
-    name: "Mark Reyes",
+    name: "Mark Villanueva Reyes",
+    candidateName: "Mark Villanueva Reyes",
     email: "mark.reyes@email.com",
-    roleAccount: "RCM Analyst - Client C",
-    source: "LinkedIn",
+    contactNumber: "09281234567",
+    roleTitle: "Not assigned yet",
+    account: "Not assigned yet",
+    roleAccount: "Not assigned yet - Not assigned yet",
+    source: "Online Job Portals",
     owner: "Kim Domingo",
-    currentStage: "Interview Scheduled",
-    previousStage: "Online Assessment",
+    taOwner: "Kim Domingo",
+    currentStage: "Online Assessment",
+    previousStage: "Initial Screening",
+    applicationStatus: "Active",
     prfStatus: "Matched",
     prfReviewed: true,
-    prfReviewedAt: getCurrentTimestamp(),
-    interviewDate: "2025-04-29T11:00",
-    interviewType: "Online",
-    interviewStatus: "Scheduled",
+    prfReviewedAt: "May 6, 2026, 11:00 AM",
+    interviewDate: null,
+    interviewType: "-",
+    interviewStatus: "For Assessment",
     assessmentStatus: "Taken",
     assessmentResult: "Assessment Fit",
     assessmentEmailSent: true,
-    assessmentEmailSentAt: getCurrentTimestamp(),
-    assessmentTakenAt: getCurrentTimestamp(),
-    assessmentTaggedAt: getCurrentTimestamp(),
-    assessmentRemarks: "Candidate passed online assessment.",
-    dateMoved: getCurrentDate(),
-    reasonForMovement:
-      "Candidate passed online assessment. Interview schedule has been set.",
+    assessmentEmailSentAt: "May 6, 2026, 11:15 AM",
+    assessmentTakenAt: "May 6, 2026, 3:00 PM",
+    assessmentTaggedAt: "May 6, 2026, 4:00 PM",
+    assessmentRemarks: "Candidate passed online assessment and is ready for interview scheduling.",
+    dateMoved: "2026-05-06",
+    updatedAt: "2026-05-06",
+    reasonForMovement: "Assessment marked as Taken and tagged as Assessment Fit.",
     avatarColor: "bg-orange-600",
     dropOffReason: null,
     dropOffCategory: null,
     dropOffRemarks: null,
+    candidateSnapshot: {
+      id: 3,
+      candidateId: "CAND-003",
+      name: "Mark Villanueva Reyes",
+      firstName: "Mark",
+      middleName: "Villanueva",
+      lastName: "Reyes",
+      email: "mark.reyes@email.com",
+      phoneNumber1: "09281234567",
+      openPosition: "RCM Analyst",
+      applyingLocation: "Tagum Site",
+      source: "Online Job Portals",
+      skillsLanguage: "RCM, Healthcare, Documentation",
+    },
     timeline: [
       {
-        stage: "Lead / Sourced",
+        stage: "Initial Screening",
         owner: "Kim Domingo",
-        source: "LinkedIn",
-        timestamp: getCurrentTimestamp(),
-        reason: "Candidate was added to the talent pool.",
+        source: "Talent Pool",
+        timestamp: "May 6, 2026, 9:00 AM",
+        reason: "Candidate moved from Talent Pool without final assignment.",
       },
       {
         stage: "Initial Screening",
         owner: "Kim Domingo",
         source: "PRF Review",
-        timestamp: getCurrentTimestamp(),
-        reason:
-          "PRF status changed to Matched. Candidate moved to Initial Screening.",
+        timestamp: "May 6, 2026, 11:00 AM",
+        reason: "PRF status changed to Matched. Candidate moved to Initial Screening.",
       },
       {
         stage: "Online Assessment",
         owner: "Kim Domingo",
         source: "Online Assessment",
-        timestamp: getCurrentTimestamp(),
-        reason:
-          "Candidate moved from Initial Screening to Online Assessment. Assessment email sent.",
+        timestamp: "May 6, 2026, 11:15 AM",
+        reason: "Candidate moved to Online Assessment. Assessment email sent.",
       },
       {
-        stage: "Interview Scheduled",
+        stage: "Online Assessment",
         owner: "Kim Domingo",
-        source: "Interview Scheduling",
-        timestamp: getCurrentTimestamp(),
-        reason:
-          "Candidate passed online assessment. Interview schedule has been set.",
+        source: "Online Assessment",
+        timestamp: "May 6, 2026, 4:00 PM",
+        reason: "Assessment marked as Taken and tagged as Assessment Fit.",
       },
     ],
   },
+  {
+    id: 4,
+    candidateApplicationId: "APP-004",
+    applicationId: "APP-004",
+    candidateMasterId: 4,
+    candidateId: "CAND-004",
+    name: "Ana Garcia Lim",
+    candidateName: "Ana Garcia Lim",
+    email: "ana.lim@email.com",
+    contactNumber: "09351234567",
+    roleTitle: "IT Support",
+    account: "SIBS IT",
+    roleAccount: "IT Support - SIBS IT",
+    source: "Walk In",
+    owner: "Paul Garcia",
+    taOwner: "Paul Garcia",
+    currentStage: "Offered",
+    previousStage: "Interviewed",
+    applicationStatus: "Active",
+    prfStatus: "Matched",
+    prfReviewed: true,
+    prfReviewedAt: "May 8, 2026, 9:30 AM",
+    interviewDate: "2026-05-10T10:30",
+    interviewType: "Face-to-face",
+    interviewStatus: "Completed",
+    assessmentStatus: "Taken",
+    assessmentResult: "Assessment Fit",
+    assessmentEmailSent: true,
+    assessmentEmailSentAt: "May 8, 2026, 10:00 AM",
+    assessmentTakenAt: "May 8, 2026, 2:30 PM",
+    assessmentTaggedAt: "May 8, 2026, 3:00 PM",
+    assessmentRemarks: "Candidate passed the online assessment.",
+    dateMoved: "2026-05-10",
+    updatedAt: "2026-05-10",
+    reasonForMovement: "Offer details prepared. Final role and account were assigned during Offered stage.",
+    avatarColor: "bg-violet-600",
+    offerDetails: {
+      roleTitle: "IT Support",
+      account: "SIBS IT",
+      compensation: 27000,
+      basicPay: 24000,
+      deminimisDailyRate: 3000,
+      preparedAt: "May 10, 2026, 4:00 PM",
+      preparedBy: "Paul Garcia",
+    },
+    offerApprovals: {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+    offerApprovalStatus: "For Review",
+    offerEmailSent: false,
+    offerEmailSentAt: null,
+    offerDecision: "",
+    offerDecisionAt: null,
+    offerDecisionRemarks: "",
+    dropOffReason: null,
+    dropOffCategory: null,
+    dropOffRemarks: null,
+    candidateSnapshot: {
+      id: 4,
+      candidateId: "CAND-004",
+      name: "Ana Garcia Lim",
+      firstName: "Ana",
+      middleName: "Garcia",
+      lastName: "Lim",
+      email: "ana.lim@email.com",
+      phoneNumber1: "09351234567",
+      openPosition: "IT Support",
+      applyingLocation: "Mabini Site",
+      source: "Walk In",
+      skillsLanguage: "Tech, Troubleshooting, English",
+    },
+    timeline: [
+      {
+        stage: "Initial Screening",
+        owner: "Paul Garcia",
+        source: "Talent Pool",
+        timestamp: "May 8, 2026, 8:45 AM",
+        reason: "Candidate moved from Talent Pool without final role or account assignment.",
+      },
+      {
+        stage: "Initial Screening",
+        owner: "Paul Garcia",
+        source: "PRF Review",
+        timestamp: "May 8, 2026, 9:30 AM",
+        reason: "PRF status changed to Matched. Candidate moved to Initial Screening.",
+      },
+      {
+        stage: "Online Assessment",
+        owner: "Paul Garcia",
+        source: "Online Assessment",
+        timestamp: "May 8, 2026, 10:00 AM",
+        reason: "Candidate moved to Online Assessment and assessment email was sent.",
+      },
+      {
+        stage: "Online Assessment",
+        owner: "Paul Garcia",
+        source: "Online Assessment",
+        timestamp: "May 8, 2026, 3:00 PM",
+        reason: "Assessment marked as Taken and tagged as Assessment Fit.",
+      },
+      {
+        stage: "Interview Scheduled",
+        owner: "Paul Garcia",
+        source: "Interview Scheduling",
+        timestamp: "May 9, 2026, 2:00 PM",
+        reason: "Candidate passed assessment and interview schedule was set.",
+      },
+      {
+        stage: "Interviewed",
+        owner: "Paul Garcia",
+        source: "Interview",
+        timestamp: "May 10, 2026, 11:30 AM",
+        reason: "Interview completed. Candidate moved to Interviewed.",
+      },
+      {
+        stage: "Offered",
+        owner: "Paul Garcia",
+        source: "Offer Approval",
+        timestamp: "May 10, 2026, 4:00 PM",
+        reason: "Final role and account assigned during Offered stage.",
+        remarks: "Offer Role: IT Support, Offer Account: SIBS IT, Compensation: ₱27,000",
+      },
+    ],
+  },
+  {
+    id: 5,
+    candidateApplicationId: "APP-005",
+    applicationId: "APP-005",
+    candidateMasterId: 5,
+    candidateId: "CAND-005",
+    name: "Leonardo Ramos Cruz",
+    candidateName: "Leonardo Ramos Cruz",
+    email: "leo.cruz@email.com",
+    contactNumber: "09451234567",
+    roleTitle: "Not assigned yet",
+    account: "Not assigned yet",
+    roleAccount: "Not assigned yet - Not assigned yet",
+    source: "Institutional Partnership",
+    owner: "Maria Reyes",
+    taOwner: "Maria Reyes",
+    currentStage: "Drop-off",
+    previousStage: "Initial Screening",
+    applicationStatus: "Closed",
+    prfStatus: "Matched",
+    prfReviewed: true,
+    prfReviewedAt: "May 12, 2026, 10:00 AM",
+    interviewDate: null,
+    interviewType: "-",
+    interviewStatus: "For Assessment",
+    assessmentStatus: "Not Take",
+    assessmentResult: "",
+    assessmentEmailSent: false,
+    assessmentEmailSentAt: null,
+    assessmentTakenAt: null,
+    assessmentTaggedAt: null,
+    assessmentRemarks: "",
+    dateMoved: "2026-05-13",
+    updatedAt: "2026-05-13",
+    reasonForMovement: "Candidate moved from Initial Screening to Drop-off. Reason: No response after follow-up calls and messages.",
+    avatarColor: "bg-red-600",
+    offerDetails: null,
+    offerApprovals: {
+      "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
+      Haasanor: { status: "For Review", updatedAt: null, remarks: "" },
+    },
+    offerApprovalStatus: "For Review",
+    offerEmailSent: false,
+    offerEmailSentAt: null,
+    offerDecision: "",
+    offerDecisionAt: null,
+    offerDecisionRemarks: "",
+    dropOffReason: "No response after follow-up calls and messages.",
+    dropOffCategory: "No Response",
+    dropOffRemarks: "TA attempted to reach candidate on May 12 and May 13, but candidate did not respond.",
+    candidateSnapshot: {
+      id: 5,
+      candidateId: "CAND-005",
+      name: "Leonardo Ramos Cruz",
+      firstName: "Leonardo",
+      middleName: "Ramos",
+      lastName: "Cruz",
+      email: "leo.cruz@email.com",
+      phoneNumber1: "09451234567",
+      openPosition: "Accounting Staff",
+      applyingLocation: "Davao Site",
+      source: "Institutional Partnership",
+      skillsLanguage: "Accounting, Documentation, Excel",
+    },
+    timeline: [
+      {
+        stage: "Initial Screening",
+        owner: "Maria Reyes",
+        source: "Talent Pool",
+        timestamp: "May 12, 2026, 8:30 AM",
+        reason: "Candidate moved from Talent Pool without final role or account assignment.",
+      },
+      {
+        stage: "Initial Screening",
+        owner: "Maria Reyes",
+        source: "PRF Review",
+        timestamp: "May 12, 2026, 10:00 AM",
+        reason: "PRF status changed to Matched. Candidate moved to Initial Screening.",
+      },
+      {
+        stage: "Drop-off",
+        owner: "Maria Reyes",
+        source: "Candidate Follow-up",
+        timestamp: "May 13, 2026, 4:30 PM",
+        reason: "Candidate moved from Initial Screening to Drop-off. Reason: No response after follow-up calls and messages.",
+        dropOffCategory: "No Response",
+        dropOffReason: "No response after follow-up calls and messages.",
+        remarks: "TA attempted to reach candidate on May 12 and May 13, but candidate did not respond.",
+      },
+    ],
+  }
+
 ];
+
+function getPipelineApplicationRoleAccount(candidate) {
+  const offerRole = candidate?.offerDetails?.roleTitle || candidate?.offeredRoleTitle;
+  const offerAccount = candidate?.offerDetails?.account || candidate?.offeredAccount;
+
+  if (offerRole || offerAccount) {
+    return `${offerRole || "Not assigned yet"} - ${offerAccount || "Not assigned yet"}`;
+  }
+
+  if (candidate?.roleAccount) return candidate.roleAccount;
+
+  const roleTitle = candidate?.roleTitle || "Not assigned yet";
+  const account = candidate?.account || "Not assigned yet";
+
+  return `${roleTitle || "Not assigned yet"} - ${account || "Not assigned yet"}`;
+}
+
+function getCandidateMasterStatusFromPipeline(candidate) {
+  if (candidate?.currentStage === "Accepted" || candidate?.offerDecision === "Accepted") {
+    return "Hired / Active";
+  }
+
+  if (candidate?.currentStage === "Drop-off") {
+    if (
+      candidate?.dropOffCategory === "Failed Assessment" ||
+      candidate?.dropOffCategory === "Failed Interview" ||
+      candidate?.assessmentResult === "Assessment Not Fit"
+    ) {
+      return "Failed";
+    }
+
+    if (
+      candidate?.dropOffCategory === "No Response" ||
+      candidate?.dropOffCategory === "Personal Reason" ||
+      candidate?.dropOffCategory === "Accepted Other Offer"
+    ) {
+      return "Withdrawn";
+    }
+
+    return "Recyclable";
+  }
+
+  return null;
+}
+
+function buildPipelineSummaryForTalentPool(candidate) {
+  const roleAccount = getPipelineApplicationRoleAccount(candidate);
+
+  return {
+    pipelineStatus:
+      candidate?.currentStage === "Accepted" || candidate?.currentStage === "Drop-off"
+        ? "Closed"
+        : candidate?.applicationStatus || "Active",
+    currentApplicationId: candidate?.applicationId || candidate?.candidateApplicationId || candidate?.id || "",
+    currentHiringRequirementId: candidate?.hiringRequirementId || "",
+    currentPipelineStage: candidate?.currentStage || "Initial Screening",
+    currentApplicationStatus: candidate?.applicationStatus || "Active",
+    currentAppliedRole:
+      candidate?.currentStage === "Offered" || candidate?.currentStage === "Accepted"
+        ? candidate?.offerDetails?.roleTitle || candidate?.roleTitle || getRoleTitle(roleAccount) || "Not assigned yet"
+        : "Not assigned yet",
+    currentAppliedAccount:
+      candidate?.currentStage === "Offered" || candidate?.currentStage === "Accepted"
+        ? candidate?.offerDetails?.account || candidate?.account || getAccount(roleAccount) || "Not assigned yet"
+        : "Not assigned yet",
+    currentTaOwner: candidate?.taOwner || candidate?.owner || "—",
+    currentPrfStatus: candidate?.prfStatus || "Review",
+    currentAssessmentStatus: candidate?.assessmentStatus || "Not Take",
+    currentAssessmentResult: candidate?.assessmentResult || "",
+    currentInterviewStatus: candidate?.interviewStatus || "—",
+    currentOfferStatus: candidate?.offerApprovalStatus || getOfferApprovalSummary(candidate),
+    currentOfferDecision: candidate?.offerDecision || "",
+    currentInterviewDate: candidate?.interviewDate || "",
+    currentDropOffCategory: candidate?.dropOffCategory || "",
+    currentDropOffReason: candidate?.dropOffReason || "",
+    lastPipelineUpdate: candidate?.updatedAt || candidate?.dateMoved || getCurrentDate(),
+  };
+}
+
+
+function buildTalentPoolApplicationHistoryEntry(candidate, summary) {
+  const latestTimeline = Array.isArray(candidate?.timeline) && candidate.timeline.length
+    ? candidate.timeline[candidate.timeline.length - 1]
+    : null;
+
+  const isDropOff = candidate?.currentStage === "Drop-off";
+  const role = summary.currentAppliedRole || "Not assigned yet";
+  const account = summary.currentAppliedAccount || "Not assigned yet";
+  const date = summary.lastPipelineUpdate || getCurrentDate();
+
+  if (isDropOff) {
+    const reason = candidate?.dropOffReason || latestTimeline?.dropOffReason || "No drop-off reason provided.";
+    const category = candidate?.dropOffCategory || latestTimeline?.dropOffCategory || "Drop-off";
+
+    return {
+      role,
+      account,
+      outcome: `Drop-off - ${category}: ${reason}`,
+      date,
+    };
+  }
+
+  if (latestTimeline) {
+    return {
+      role,
+      account,
+      outcome: latestTimeline.reason || `Pipeline Update: ${summary.currentPipelineStage}`,
+      date,
+    };
+  }
+
+  return {
+    role,
+    account,
+    outcome: `Pipeline Update: ${summary.currentPipelineStage}`,
+    date,
+  };
+}
+
+function upsertTalentPoolApplicationHistory(existingHistory, candidate, summary) {
+  const history = Array.isArray(existingHistory) ? existingHistory : [];
+  const entry = buildTalentPoolApplicationHistoryEntry(candidate, summary);
+  const entryKey = `${entry.date}|${entry.outcome}`;
+  const alreadyExists = history.some((item) => `${item.date}|${item.outcome}` === entryKey);
+
+  return alreadyExists ? history : [...history, entry];
+}
+
+function syncTalentPoolFromPipelineApplication(candidate) {
+  if (!candidate || typeof window === "undefined") return;
+
+  const internalCandidates = safeReadArray(INTERNAL_CANDIDATES_STORAGE_KEY);
+  if (!internalCandidates.length) return;
+
+  const masterStatus = getCandidateMasterStatusFromPipeline(candidate);
+  const summary = buildPipelineSummaryForTalentPool(candidate);
+  const candidateEmail = String(candidate.email || candidate.candidateEmail || "").toLowerCase();
+
+  let didUpdate = false;
+
+  const nextCandidates = internalCandidates.map((item) => {
+    const isMatch =
+      String(item.id || "") === String(candidate.candidateMasterId || candidate.masterCandidateId || "") ||
+      String(item.candidateId || "") === String(candidate.candidateId || "") ||
+      String(item.email || "").toLowerCase() === candidateEmail;
+
+    if (!isMatch) return item;
+
+    didUpdate = true;
+
+    return {
+      ...item,
+      ...summary,
+      status: masterStatus || item.status || "New Applicant",
+      accountFit:
+        candidate.currentStage === "Offered" || candidate.currentStage === "Accepted"
+          ? summary.currentAppliedAccount || item.accountFit || "Not assigned yet"
+          : item.accountFit || "Not assigned yet",
+      lastActivity: getCurrentDate(),
+      applicationHistory: upsertTalentPoolApplicationHistory(item.applicationHistory, candidate, summary),
+    };
+  });
+
+  if (didUpdate) {
+    safeWriteArray(INTERNAL_CANDIDATES_STORAGE_KEY, nextCandidates);
+  }
+}
+
 
 function normalizeCandidate(candidate) {
   if (!candidate) return candidate;
 
+  const candidateSnapshot = candidate.candidateSnapshot || {};
   const currentStage =
     candidate.currentStage === "QA Certified"
       ? "Interviewed"
-      : candidate.currentStage;
+      : candidate.currentStage || "Initial Screening";
+
+  const roleAccount = getPipelineApplicationRoleAccount(candidate);
+  const candidateName =
+    candidate.name ||
+    candidate.candidateName ||
+    candidateSnapshot.name ||
+    "Unnamed Candidate";
 
   const normalized = {
+    ...candidateSnapshot,
     ...candidate,
+    id: candidate.id || candidate.candidateApplicationId || candidate.applicationId || Date.now(),
+    candidateApplicationId:
+      candidate.candidateApplicationId || candidate.applicationId || candidate.id,
+    candidateMasterId:
+      candidate.candidateMasterId || candidate.masterCandidateId || candidateSnapshot.id,
+    name: candidateName,
+    candidateName,
+    email: candidate.email || candidate.candidateEmail || candidateSnapshot.email || "",
+    contactNumber:
+      candidate.contactNumber ||
+      candidateSnapshot.phoneNumber1 ||
+      candidateSnapshot.contactNumber ||
+      "",
+    roleAccount,
+    roleTitle:
+      candidate.offerDetails?.roleTitle ||
+      candidate.roleTitle ||
+      getRoleTitle(roleAccount) ||
+      "Not assigned yet",
+    account:
+      candidate.offerDetails?.account ||
+      candidate.account ||
+      getAccount(roleAccount) ||
+      "Not assigned yet",
+    owner: candidate.owner || candidate.taOwner || candidateSnapshot.taOwner || candidateSnapshot.createdBy || "Current User",
+    taOwner: candidate.taOwner || candidate.owner || candidateSnapshot.taOwner || candidateSnapshot.createdBy || "Current User",
+    source: candidate.source || candidateSnapshot.source || "Talent Pool",
     currentStage,
+    applicationStatus: candidate.applicationStatus || "Active",
     assessmentStatus: candidate.assessmentStatus || "Not Take",
     assessmentResult: candidate.assessmentResult || "",
     assessmentEmailSent: Boolean(candidate.assessmentEmailSent),
@@ -705,12 +1294,12 @@ function normalizeCandidate(candidate) {
     timeline: Array.isArray(candidate.timeline) ? candidate.timeline : [],
   };
 
-  if (currentStage === "Lead / Sourced") {
+  if (false && currentStage === "Initial Screening") {
     return {
       ...normalized,
       interviewDate: null,
       interviewType: "-",
-      interviewStatus: "Not Screened",
+      interviewStatus: "For Assessment",
     };
   }
 
@@ -734,6 +1323,7 @@ function normalizeCandidate(candidate) {
 
   return normalized;
 }
+
 
 function loadPipelineCandidateData() {
   const applicationCandidates = safeReadArray(
@@ -762,6 +1352,7 @@ function upsertOfferEligibleCandidate(candidate) {
     candidateId: candidate.candidateId,
     candidateName: candidate.name,
     candidateEmail: candidate.email,
+    hiringRequirementId: candidate.hiringRequirementId || candidate.offerDetails?.hiringRequirementId || "",
     roleTitle: getRoleTitle(candidate.roleAccount),
     account: getAccount(candidate.roleAccount),
     roleAccount: candidate.roleAccount,
@@ -828,13 +1419,21 @@ function CandidateAvatar({ candidate }) {
   );
 }
 
-function DashboardMetric({ label, value }) {
+function DashboardMetric({ label, value, icon: Icon, description, valueClassName = "text-sibs-primary-1" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white px-4 py-5 text-center shadow-sm">
-      <p className="text-xs font-bold text-[#475467]">{label}</p>
-      <p className="mt-3 text-3xl font-extrabold text-sibs-primary-1">
-        {value}
-      </p>
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wide text-[#475467]">{label}</p>
+          <p className={`mt-3 text-3xl font-extrabold ${valueClassName}`}>{value}</p>
+          {description && <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{description}</p>}
+        </div>
+        {Icon && (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+            <Icon size={22} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -937,7 +1536,7 @@ function CandidateTalentPoolDetailsPanel({ candidate }) {
       ].filter(Boolean);
 
   return (
-    <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 shadow-sm">
       <div className="mb-4 flex flex-col gap-1">
         <h3 className="text-sm font-extrabold text-sibs-primary-1">
           Talent Pool Submitted Details
@@ -1060,7 +1659,7 @@ function MoveStageModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -1084,7 +1683,7 @@ function MoveStageModal({
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-5">
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
               <h3 className="text-lg font-bold text-sibs-primary-1">
                 {candidate.name}
               </h3>
@@ -1114,7 +1713,7 @@ function MoveStageModal({
             </div>
 
             {nextStage === "Online Assessment" && (
-              <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-cyan-800">
+              <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
                 After confirming, the candidate will move to Online Assessment,
                 assessment status will be set to Not Take, and the assessment
                 email will be triggered.
@@ -1122,7 +1721,7 @@ function MoveStageModal({
             )}
 
             {nextStage === "Offered" && (
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
                 Candidate will move from Interviewed to Offered.
               </div>
             )}
@@ -1199,7 +1798,7 @@ function ScheduleInterviewModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -1225,7 +1824,7 @@ function ScheduleInterviewModal({
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-5">
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
               <h3 className="text-lg font-bold text-sibs-primary-1">
                 {candidate.name}
               </h3>
@@ -1255,7 +1854,7 @@ function ScheduleInterviewModal({
             </div>
 
             {!isUpdatingSchedule && !canScheduleInterview(candidate) && (
-              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-red-700">
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
                 This candidate cannot be scheduled yet. Assessment must be Taken
                 and tagged as Assessment Fit.
               </div>
@@ -1365,7 +1964,7 @@ function AssessmentModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -1389,11 +1988,11 @@ function AssessmentModal({
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-5">
-            <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-5">
-              <h3 className="text-lg font-bold text-cyan-800">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <h3 className="text-lg font-bold text-sibs-primary-1">
                 {candidate.name}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-cyan-800/80">
+              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
                 {candidate.email}
               </p>
 
@@ -1549,12 +2148,12 @@ function DropOffModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div>
-            <h2 className="text-lg font-bold text-red-700 sm:text-xl">
+            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Mark Candidate as Drop-off
             </h2>
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
@@ -1573,11 +2172,11 @@ function DropOffModal({
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-5">
-            <div className="rounded-xl border border-red-100 bg-red-50 p-5">
-              <h3 className="text-lg font-bold text-red-700">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <h3 className="text-lg font-bold text-sibs-primary-1">
                 {candidate.name}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-red-700/80">
+              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
                 {candidate.roleAccount}
               </p>
             </div>
@@ -1674,7 +2273,7 @@ function OfferDetailsModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -1683,7 +2282,7 @@ function OfferDetailsModal({
               Offer Details for Approval
             </h2>
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Add the account and compensation before sending the offer to Raul Nadela and Haasanor for approval.
+              Add the final assignment and pay details. Approval will be managed in the Offers page.
             </p>
           </div>
 
@@ -1698,53 +2297,80 @@ function OfferDetailsModal({
 
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="space-y-5">
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
-              <h3 className="text-lg font-bold text-amber-800">
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <h3 className="text-lg font-bold text-sibs-primary-1">
                 {candidate.name}
               </h3>
-              <p className="mt-1 text-sm font-semibold text-amber-800/80">
+              <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
                 {candidate.roleAccount}
               </p>
             </div>
 
             <div>
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                Offer Account <span className="text-red-500">*</span>
+                Hiring Requirement / PRF <span className="text-red-500">*</span>
               </label>
               <select
                 required
-                value={form.account}
-                onChange={(e) => setForm({ ...form, account: e.target.value })}
+                value={form.hiringRequirementId}
+                onChange={(e) => {
+                  const selectedRequirement = hiringRequirementOptions.find((item) => item.id === e.target.value);
+                  setForm({
+                    ...form,
+                    hiringRequirementId: e.target.value,
+                    roleTitle: selectedRequirement?.roleTitle || form.roleTitle,
+                    account: selectedRequirement?.account || form.account,
+                  });
+                }}
                 className={inputClass()}
               >
-                <option value="">Select account</option>
-                {accountOptions
-                  .filter((account) => account !== "All Accounts")
-                  .map((account) => (
-                    <option key={account} value={account}>
-                      {account}
-                    </option>
-                  ))}
+                <option value="">Select hiring requirement / PRF</option>
+                {hiringRequirementOptions.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
               </select>
+              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                Final role and final account are assigned here, not when the candidate enters the pipeline.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                  Compensation <span className="text-red-500">*</span>
+                  Final Role Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   required
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.compensation}
-                  onChange={(e) => setForm({ ...form, compensation: e.target.value })}
+                  value={form.roleTitle}
+                  onChange={(e) => setForm({ ...form, roleTitle: e.target.value })}
                   className={inputClass()}
-                  placeholder="0.00"
+                  placeholder="Example: Customer Service Representative"
                 />
               </div>
 
+              <div>
+                <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                  Final Account <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={form.account}
+                  onChange={(e) => setForm({ ...form, account: e.target.value })}
+                  className={inputClass()}
+                >
+                  <option value="">Select account</option>
+                  {accountOptions
+                    .filter((account) => account !== "All Accounts" && account !== "Not assigned yet")
+                    .map((account) => (
+                      <option key={account} value={account}>
+                        {account}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Basic Pay <span className="text-red-500">*</span>
@@ -1793,8 +2419,8 @@ function OfferDetailsModal({
               />
             </div>
 
-            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-800">
-              After proceeding, the offer will move to Offered with Raul Nadela and Haasanor marked as For Review.
+            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
+              After proceeding, the candidate will move to Offered and will be available in the Offers page for approval and contract sending.
             </div>
           </div>
         </form>
@@ -1849,11 +2475,11 @@ function LeadPrfReviewCard({ candidate, onUpdatePrfStatus }) {
             key={status}
             type="button"
             onClick={() => onUpdatePrfStatus(candidate, status)}
-            className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-bold transition ${getPrfStatusClass(
+            className={`group inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border px-4 text-sm font-extrabold shadow-sm transition duration-150 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10 ${getPrfStatusClass(
               status
             )}`}
           >
-            Set as {status}
+            <span className="transition group-hover:tracking-wide">Set as {status}</span>
           </button>
         ))}
       </div>
@@ -1876,18 +2502,21 @@ function CandidatePipelineModal({
   onUpdateOfferApproval,
   onSendOfferEmail,
   onOfferDecision,
+  onSaveInterviewNotes,
 }) {
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
+  const [interviewNotesDraft, setInterviewNotesDraft] = useState("");
 
   useEffect(() => {
     setShowTalentPoolDetails(false);
+    setInterviewNotesDraft(candidate?.interviewNotes || "");
   }, [candidate?.id, open]);
 
   if (!open || !candidate) return null;
 
   const nextStage = getNextStage(candidate.currentStage);
 
-  const isLeadStage = candidate.currentStage === "Lead / Sourced";
+  const isLeadStage = false;
   const isInitialScreening = candidate.currentStage === "Initial Screening";
   const isOnlineAssessment = candidate.currentStage === "Online Assessment";
   const isInterviewScheduled = candidate.currentStage === "Interview Scheduled";
@@ -1902,7 +2531,7 @@ function CandidatePipelineModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -2006,7 +2635,7 @@ function CandidatePipelineModal({
                 <CandidateTalentPoolDetailsPanel candidate={candidate} />
               )}
 
-              {(isLeadStage || isInitialScreening) && (
+              {isInitialScreening && (
                 <LeadPrfReviewCard
                   candidate={candidate}
                   onUpdatePrfStatus={onUpdatePrfStatus}
@@ -2075,8 +2704,8 @@ function CandidatePipelineModal({
 
             {!isLeadStage && !isInitialScreening && (
               <div className="space-y-5">
-                <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-5">
-                  <h3 className="text-sm font-bold text-cyan-800">
+                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <h3 className="text-sm font-bold text-sibs-primary-1">
                     Online Assessment
                   </h3>
 
@@ -2144,6 +2773,13 @@ function CandidatePipelineModal({
                       label="Interview Status"
                       value={getDisplayInterviewStatus(candidate) || "—"}
                     />
+
+                    {candidate.interviewStatus === "Cancelled" && (
+                      <DetailRow
+                        label="Cancellation Reason"
+                        value={candidate.cancellationReason || "—"}
+                      />
+                    )}
                   </div>
 
                   {isOnlineAssessment && canScheduleInterview(candidate) && (
@@ -2171,7 +2807,7 @@ function CandidatePipelineModal({
                       <button
                         type="button"
                         onClick={() => onCancelInterview(candidate)}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                        className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100"
                       >
                         Cancel Interview
                       </button>
@@ -2190,19 +2826,27 @@ function CandidatePipelineModal({
                 </div>
 
                 {(isOffered || isAccepted) && (
-                  <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
-                    <h3 className="text-sm font-bold text-amber-800">
+                  <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                    <h3 className="text-sm font-bold text-sibs-primary-1">
                       Offer and Approval
                     </h3>
 
                     <div className="mt-4 rounded-xl bg-white p-4">
                       <DetailRow
-                        label="Offer Account"
-                        value={candidate.offerDetails?.account}
+                        label="Offer Role"
+                        value={candidate.offerDetails?.roleTitle || candidate.roleTitle}
                       />
                       <DetailRow
-                        label="Compensation"
-                        value={formatCurrency(candidate.offerDetails?.compensation)}
+                        label="Hiring Requirement"
+                        value={candidate.offerDetails?.hiringRequirementId || candidate.hiringRequirementId}
+                      />
+                      <DetailRow
+                        label="Final Role"
+                        value={candidate.offerDetails?.roleTitle || candidate.roleTitle}
+                      />
+                      <DetailRow
+                        label="Final Account"
+                        value={candidate.offerDetails?.account}
                       />
                       <DetailRow
                         label="Basic Pay"
@@ -2225,8 +2869,13 @@ function CandidatePipelineModal({
                         value={candidate.offerDecision || "—"}
                       />
                     </div>
-
                     {isOffered && (
+                      <p className="mt-4 rounded-xl border border-blue-100 bg-white p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
+                        Offer approval and contract sending are managed in the Offers page.
+                      </p>
+                    )}
+
+                    {false && isOffered && (
                       <div className="mt-4 space-y-4">
                         {offerApprovers.map((approver) => {
                           const approval = candidate.offerApprovals?.[approver] || {
@@ -2331,7 +2980,7 @@ function CandidatePipelineModal({
                 <button
                   type="button"
                   onClick={() => onOpenDropOffModal(candidate)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:bg-red-100"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100"
                 >
                   <UserX size={16} />
                   Mark Drop-off
@@ -2581,7 +3230,7 @@ function InterviewCalendar({ candidates, onViewCandidate }) {
                         key={candidate.id}
                         type="button"
                         onClick={() => onViewCandidate(candidate)}
-                        className="w-full rounded-lg border border-cyan-100 bg-cyan-50 px-2 py-2 text-left text-xs font-semibold text-cyan-800 transition hover:bg-cyan-100"
+                        className="w-full rounded-lg border border-cyan-100 bg-cyan-50 px-2 py-2 text-left text-xs font-semibold text-sibs-primary-1 transition hover:bg-cyan-100"
                       >
                         <p className="truncate font-bold">{candidate.name}</p>
                         <p>{formatTime(candidate.interviewDate)}</p>
@@ -2610,13 +3259,22 @@ function InterviewCalendar({ candidates, onViewCandidate }) {
 }
 
 export default function CandidatePipelinePage() {
+  const { user } = useUser();
+  const { confirmAction, ConfirmationDialog } = useConfirmDialog();
+  const currentUserName =
+    user?.name ||
+    user?.fullName ||
+    user?.employeeName ||
+    user?.displayName ||
+    user?.username ||
+    "Current User";
   const [candidateList, setCandidateList] = useState(defaultPipelineCandidates);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [accountFilter, setAccountFilter] = useState("All Accounts");
-  const [activeStage, setActiveStage] = useState("Lead / Sourced");
+  const [activeStage, setActiveStage] = useState("Initial Screening");
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
@@ -2649,15 +3307,15 @@ export default function CandidatePipelinePage() {
 
   const [offerCandidate, setOfferCandidate] = useState(null);
   const [offerForm, setOfferForm] = useState({
+    hiringRequirementId: "",
+    roleTitle: "",
     account: "",
-    compensation: "",
     basicPay: "",
     deminimisDailyRate: "",
     remarks: "",
   });
 
   const hideInterviewColumns =
-    activeStage === "Lead / Sourced" ||
     activeStage === "Initial Screening" ||
     activeStage === "Online Assessment";
 
@@ -2684,6 +3342,85 @@ export default function CandidatePipelinePage() {
     if (!hasLoadedStorage) return;
     savePipelineCandidateData(candidateList);
   }, [candidateList, hasLoadedStorage]);
+
+  useEffect(() => {
+    if (!hasLoadedStorage) return;
+
+    const syncEvents = safeReadArray(PIPELINE_SYNC_EVENTS_KEY);
+    if (!syncEvents.length) return;
+
+    let changed = false;
+    const nextCandidates = candidateList.map((candidate) => {
+      const event = syncEvents.find((item) =>
+        String(item.candidateApplicationId) === String(candidate.candidateApplicationId || candidate.id) ||
+        String(item.candidateId || "") === String(candidate.candidateId || "") ||
+        String(item.candidateEmail || "").toLowerCase() === String(candidate.email || "").toLowerCase()
+      );
+
+      if (!event) return candidate;
+      changed = true;
+
+      if (event.status === "Accepted" || event.toStage === "Accepted") {
+        return normalizeCandidate({
+          ...candidate,
+          previousStage: candidate.currentStage,
+          currentStage: "Accepted",
+          offerApprovalStatus: "Approved",
+          offerEmailSent: true,
+          offerDecision: "Accepted",
+          offerDecisionAt: event.timestamp,
+          dateMoved: event.dateMoved || getCurrentDate(),
+          reasonForMovement: event.reasonForMovement || "Candidate accepted the offer.",
+          timeline: [
+            ...(candidate.timeline || []),
+            {
+              stage: "Accepted",
+              owner: event.owner || currentUserName,
+              source: "Offers Page",
+              timestamp: event.timestamp || getCurrentTimestamp(),
+              reason: event.reasonForMovement || "Candidate accepted the offer.",
+              remarks: event.remarks || "Accepted from candidate contract response.",
+            },
+          ],
+        });
+      }
+
+      if (event.status === "Declined" || event.toStage === "Drop-off" || event.toStage === "Drop-offs") {
+        return normalizeCandidate({
+          ...candidate,
+          previousStage: candidate.currentStage,
+          currentStage: "Drop-off",
+          offerDecision: "Rejected",
+          offerDecisionAt: event.timestamp,
+          dropOffCategory: event.dropOffCategory || "Offer Declined",
+          dropOffReason: event.dropOffReason || event.reasonForMovement || "Candidate declined the offer.",
+          dropOffRemarks: event.remarks || "Declined from candidate contract response.",
+          dateMoved: event.dateMoved || getCurrentDate(),
+          reasonForMovement: event.reasonForMovement || "Candidate declined the offer.",
+          timeline: [
+            ...(candidate.timeline || []),
+            {
+              stage: "Drop-off",
+              owner: event.owner || currentUserName,
+              source: "Offers Page",
+              timestamp: event.timestamp || getCurrentTimestamp(),
+              reason: event.reasonForMovement || "Candidate declined the offer.",
+              remarks: event.dropOffReason || event.remarks || "Candidate declined the contract.",
+            },
+          ],
+        });
+      }
+
+      return candidate;
+    });
+
+    if (changed) {
+      setCandidateList(nextCandidates);
+      savePipelineCandidateData(nextCandidates);
+      safeWriteArray(PIPELINE_SYNC_EVENTS_KEY, []);
+    }
+  }, [candidateList, currentUserName, hasLoadedStorage]);
+
 
   function syncSelectedCandidate(updatedCandidate) {
     setSelectedCandidate((prev) =>
@@ -2720,58 +3457,46 @@ export default function CandidatePipelinePage() {
     });
 
     syncSelectedCandidate(normalizedCandidate);
+    syncTalentPoolFromPipelineApplication(normalizedCandidate);
   }
 
-  function handleUpdatePrfStatus(candidate, nextPrfStatus) {
-    const shouldMoveToInitialScreening =
-      candidate.currentStage === "Lead / Sourced";
+  async function handleUpdatePrfStatus(candidate, nextPrfStatus) {
+    if (!(await confirmAction(`Set PRF status of ${candidate.name} to ${nextPrfStatus}?`))) {
+      return;
+    }
 
-    const movementReason = shouldMoveToInitialScreening
-      ? `PRF status changed to ${nextPrfStatus}. Candidate moved from Lead / Sourced to Initial Screening.`
-      : `PRF status changed to ${nextPrfStatus}.`;
+    const movementReason = `PRF status set to ${nextPrfStatus}.`;
 
     const updatedCandidate = {
       ...candidate,
       prfStatus: nextPrfStatus,
       prfReviewed: true,
       prfReviewedAt: getCurrentTimestamp(),
-      previousStage: shouldMoveToInitialScreening
-        ? candidate.currentStage
-        : candidate.previousStage,
-      currentStage: shouldMoveToInitialScreening
-        ? "Initial Screening"
-        : candidate.currentStage,
-      interviewDate: shouldMoveToInitialScreening ? null : candidate.interviewDate,
-      interviewType: shouldMoveToInitialScreening ? "-" : candidate.interviewType,
-      interviewStatus: shouldMoveToInitialScreening
-        ? "For Assessment"
-        : candidate.interviewStatus,
+      currentStage: "Initial Screening",
+      interviewDate: null,
+      interviewType: "-",
+      interviewStatus: "For Assessment",
       dateMoved: getCurrentDate(),
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: shouldMoveToInitialScreening
-            ? "Initial Screening"
-            : candidate.currentStage,
-          owner: candidate.owner,
+          stage: "Initial Screening",
+          owner: currentUserName,
           source: "PRF Review",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
-          remarks: `PRF Status: ${nextPrfStatus}`,
+          remarks: `Match Type: ${nextPrfStatus}`,
         },
       ],
     };
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
-
-    if (shouldMoveToInitialScreening) {
-      setActiveStage("Initial Screening");
-    }
+    setActiveStage("Initial Screening");
   }
 
-  function handleOpenScheduleInterview(candidate) {
+  async function handleOpenScheduleInterview(candidate) {
     const isUpdatingSchedule = candidate.currentStage === "Interview Scheduled";
 
     if (!isUpdatingSchedule && !canScheduleInterview(candidate)) {
@@ -2797,7 +3522,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleCloseScheduleInterview() {
+  async function handleCloseScheduleInterview() {
     setScheduleCandidate(null);
     setScheduleForm({
       interviewDate: "",
@@ -2806,7 +3531,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleSubmitScheduleInterview(e) {
+  async function handleSubmitScheduleInterview(e) {
     e.preventDefault();
 
     if (!scheduleCandidate) return;
@@ -2831,6 +3556,10 @@ export default function CandidatePipelinePage() {
       return;
     }
 
+    if (!(await confirmAction(`${isUpdatingSchedule ? "Update" : "Save"} interview schedule for ${scheduleCandidate.name}?`))) {
+      return;
+    }
+
     if (isUpdatingSchedule) {
       const previousSchedule = formatDateTime(scheduleCandidate.interviewDate);
       const previousType = scheduleCandidate.interviewType || "—";
@@ -2852,7 +3581,7 @@ export default function CandidatePipelinePage() {
           ...(scheduleCandidate.timeline || []),
           {
             stage: "Interview Scheduled",
-            owner: scheduleCandidate.owner,
+            owner: currentUserName,
             source: "Interview Scheduling",
             timestamp: getCurrentTimestamp(),
             reason: movementReason,
@@ -2884,7 +3613,7 @@ export default function CandidatePipelinePage() {
         ...(scheduleCandidate.timeline || []),
         {
           stage: "Interview Scheduled",
-          owner: scheduleCandidate.owner,
+          owner: currentUserName,
           source: "Interview Scheduling",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -2903,51 +3632,66 @@ export default function CandidatePipelinePage() {
     handleCloseScheduleInterview();
   }
 
-  function handleCancelInterview(candidate) {
+  async function handleCancelInterview(candidate) {
     if (candidate.currentStage !== "Interview Scheduled") {
       alert("Only scheduled interviews can be cancelled.");
       return;
     }
 
-    const confirmed = window.confirm(
-      `Cancel interview schedule for ${candidate.name}?`
+    if (!(await confirmAction(`Cancel interview for ${candidate.name}?`))) {
+      return;
+    }
+
+    const cancellationReason = window.prompt(
+      `Enter cancellation reason for ${candidate.name}:`,
+      candidate.cancellationReason || "Candidate requested to cancel the interview."
     );
 
-    if (!confirmed) return;
+    if (cancellationReason === null) return;
 
-    const movementReason =
-      "Interview was cancelled. Candidate returned to Online Assessment for re-scheduling.";
+    const cleanedReason = cancellationReason.trim();
+
+    if (!cleanedReason) {
+      alert("Cancellation reason is required.");
+      return;
+    }
+
+    const movementReason = `Interview was cancelled. Reason: ${cleanedReason}`;
 
     const updatedCandidate = {
       ...candidate,
-      previousStage: "Interview Scheduled",
-      currentStage: "Online Assessment",
+      currentStage: "Interview Scheduled",
+      previousStage: candidate.previousStage || "Online Assessment",
       dateMoved: getCurrentDate(),
-      interviewDate: null,
-      interviewType: "-",
-      interviewStatus: "For Assessment",
+      updatedAt: getCurrentDate(),
+      interviewStatus: "Cancelled",
+      cancellationReason: cleanedReason,
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: "Online Assessment",
+          stage: "Interview Scheduled",
           owner: candidate.owner,
-          source: "Interview Scheduling",
+          source: "Interview Cancellation",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
-          remarks: "Previous interview schedule was cancelled.",
+          remarks: cleanedReason,
         },
       ],
     };
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
-    setActiveStage("Online Assessment");
+    setActiveStage("Interview Scheduled");
   }
 
-  function handleCompleteInterview(candidate) {
+  async function handleCompleteInterview(candidate) {
     if (!hasInterviewSchedule(candidate)) {
       alert("Create the interview schedule first.");
+      return;
+    }
+
+    if (!(await confirmAction(`Mark interview as completed for ${candidate.name}?`))) {
       return;
     }
 
@@ -2973,7 +3717,7 @@ export default function CandidatePipelinePage() {
         ...(candidate.timeline || []),
         {
           stage: shouldMoveToInterviewed ? "Interviewed" : candidate.currentStage,
-          owner: candidate.owner,
+          owner: currentUserName,
           source: "Interview",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -2989,7 +3733,35 @@ export default function CandidatePipelinePage() {
     }
   }
 
-  function handleOpenOfferModal(candidate) {
+
+  async function handleSaveInterviewNotes(candidate, notes) {
+    if (!(await confirmAction(`Save interview notes for ${candidate.name}?`))) {
+      return;
+    }
+
+    const updatedCandidate = {
+      ...candidate,
+      interviewNotes: String(notes || "").trim(),
+      interviewNotesUpdatedAt: getCurrentTimestamp(),
+      interviewNotesUpdatedBy: currentUserName,
+      timeline: [
+        ...(candidate.timeline || []),
+        {
+          stage: candidate.currentStage,
+          owner: currentUserName,
+          source: "Interview Notes",
+          timestamp: getCurrentTimestamp(),
+          reason: "TA interview notes were updated.",
+          remarks: String(notes || "").trim(),
+        },
+      ],
+    };
+
+    updateCandidateRecord(updatedCandidate);
+    setSelectedCandidate(updatedCandidate);
+  }
+
+  async function handleOpenOfferModal(candidate) {
     if (candidate.currentStage !== "Interviewed") {
       alert("Offer details can only be prepared after the interview is completed.");
       return;
@@ -2998,38 +3770,52 @@ export default function CandidatePipelinePage() {
     const offerDetails = candidate.offerDetails || {};
 
     setOfferCandidate(candidate);
+    const currentRoleTitle = getRoleTitle(candidate.roleAccount);
+    const currentAccount = getAccount(candidate.roleAccount);
+
     setOfferForm({
-      account: offerDetails.account || getAccount(candidate.roleAccount),
-      compensation: offerDetails.compensation || "",
+      hiringRequirementId: offerDetails.hiringRequirementId || candidate.hiringRequirementId || "",
+      roleTitle:
+        offerDetails.roleTitle ||
+        (currentRoleTitle === "Not assigned yet" ? "" : currentRoleTitle),
+      account:
+        offerDetails.account ||
+        (currentAccount === "Not assigned yet" ? "" : currentAccount),
       basicPay: offerDetails.basicPay || "",
       deminimisDailyRate: offerDetails.deminimisDailyRate || "",
       remarks: "",
     });
   }
 
-  function handleCloseOfferModal() {
+  async function handleCloseOfferModal() {
     setOfferCandidate(null);
     setOfferForm({
+      hiringRequirementId: "",
+      roleTitle: "",
       account: "",
-      compensation: "",
-      basicPay: "",
+        basicPay: "",
       deminimisDailyRate: "",
       remarks: "",
     });
   }
 
-  function handleSubmitOfferDetails(e) {
+  async function handleSubmitOfferDetails(e) {
     e.preventDefault();
 
     if (!offerCandidate) return;
 
     if (
+      !offerForm.hiringRequirementId ||
+      !offerForm.roleTitle ||
       !offerForm.account ||
-      !offerForm.compensation ||
       !offerForm.basicPay ||
       !offerForm.deminimisDailyRate
     ) {
-      alert("Account, compensation, basic pay, and deminimis / daily rate are required.");
+      alert("Hiring requirement, final role, final account, basic pay, and deminimis / daily rate are required.");
+      return;
+    }
+
+    if (!(await confirmAction(`Proceed with offer assignment for ${offerCandidate.name}?`))) {
       return;
     }
 
@@ -3041,13 +3827,18 @@ export default function CandidatePipelinePage() {
       previousStage: offerCandidate.currentStage,
       currentStage: "Offered",
       dateMoved: getCurrentDate(),
+      hiringRequirementId: offerForm.hiringRequirementId,
+      roleTitle: offerForm.roleTitle,
+      account: offerForm.account,
+      roleAccount: `${offerForm.roleTitle} - ${offerForm.account}`,
       offerDetails: {
+        hiringRequirementId: offerForm.hiringRequirementId,
+        roleTitle: offerForm.roleTitle,
         account: offerForm.account,
-        compensation: Number(offerForm.compensation),
         basicPay: Number(offerForm.basicPay),
         deminimisDailyRate: Number(offerForm.deminimisDailyRate),
         preparedAt: getCurrentTimestamp(),
-        preparedBy: offerCandidate.owner,
+        preparedBy: currentUserName,
       },
       offerApprovals: {
         "Raul Nadela": { status: "For Review", updatedAt: null, remarks: "" },
@@ -3064,19 +3855,13 @@ export default function CandidatePipelinePage() {
         ...(offerCandidate.timeline || []),
         {
           stage: "Offered",
-          owner: offerCandidate.owner,
+          owner: currentUserName,
           source: "Offer Approval",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
           remarks:
             offerForm.remarks.trim() ||
-            `Offer Account: ${offerForm.account}, Compensation: ${formatCurrency(
-              offerForm.compensation
-            )}, Basic Pay: ${formatCurrency(
-              offerForm.basicPay
-            )}, Deminimis / Daily Rate: ${formatCurrency(
-              offerForm.deminimisDailyRate
-            )}`,
+            `Hiring Requirement: ${offerForm.hiringRequirementId}, Final Role: ${offerForm.roleTitle}, Final Account: ${offerForm.account}, Basic Pay: ${formatCurrency(offerForm.basicPay)}, Deminimis / Daily Rate: ${formatCurrency(offerForm.deminimisDailyRate)}`,
         },
       ],
     };
@@ -3088,8 +3873,12 @@ export default function CandidatePipelinePage() {
     handleCloseOfferModal();
   }
 
-  function handleUpdateOfferApproval(candidate, approver, status) {
+  async function handleUpdateOfferApproval(candidate, approver, status) {
     if (candidate.currentStage !== "Offered") return;
+
+    if (!(await confirmAction(`Set ${approver} offer approval to ${status} for ${candidate.name}?`))) {
+      return;
+    }
 
     const nextApprovals = {
       ...(candidate.offerApprovals || {}),
@@ -3135,6 +3924,10 @@ export default function CandidatePipelinePage() {
       return;
     }
 
+    if (!(await confirmAction(`Send offer contract email for ${candidate.name}?`))) {
+      return;
+    }
+
     const movementReason =
       "Offer contract email was sent to the lead for contract review and response.";
 
@@ -3147,7 +3940,7 @@ export default function CandidatePipelinePage() {
         ...(candidate.timeline || []),
         {
           stage: "Offered",
-          owner: candidate.owner,
+          owner: currentUserName,
           source: "Offer Contract",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -3162,9 +3955,13 @@ export default function CandidatePipelinePage() {
     await triggerOfferEmail(updatedCandidate);
   }
 
-  function handleOfferDecision(candidate, decision) {
+  async function handleOfferDecision(candidate, decision) {
     if (!candidate.offerEmailSent) {
       alert("Send the approved contract email first before recording the lead response.");
+      return;
+    }
+
+    if (!(await confirmAction(`Record candidate response as ${decision} for ${candidate.name}?`))) {
       return;
     }
 
@@ -3240,7 +4037,7 @@ export default function CandidatePipelinePage() {
         ...(candidate.timeline || []),
         {
           stage: "Offered",
-          owner: candidate.owner,
+          owner: currentUserName,
           source: "Offer Contract",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -3253,7 +4050,7 @@ export default function CandidatePipelinePage() {
     setSelectedCandidate(updatedCandidate);
   }
 
-  function handleOpenMoveModal(candidate) {
+  async function handleOpenMoveModal(candidate) {
     const nextStage = getNextStage(candidate.currentStage);
 
     if (!nextStage) return;
@@ -3285,7 +4082,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleCloseMoveModal() {
+  async function handleCloseMoveModal() {
     setMoveCandidate(null);
     setMoveForm({
       reason: "",
@@ -3314,6 +4111,10 @@ export default function CandidatePipelinePage() {
 
     if (!moveForm.reason.trim()) {
       alert("Movement reason is required.");
+      return;
+    }
+
+    if (!(await confirmAction(`Move ${moveCandidate.name} from ${moveCandidate.currentStage} to ${nextStage}?`))) {
       return;
     }
 
@@ -3348,7 +4149,7 @@ export default function CandidatePipelinePage() {
         ...(moveCandidate.timeline || []),
         {
           stage: nextStage,
-          owner: moveCandidate.owner,
+          owner: currentUserName,
           source: movingToOnlineAssessment
             ? "Online Assessment"
             : moveCandidate.source,
@@ -3379,7 +4180,7 @@ export default function CandidatePipelinePage() {
     handleCloseMoveModal();
   }
 
-  function handleOpenAssessmentModal(candidate) {
+  async function handleOpenAssessmentModal(candidate) {
     if (candidate.currentStage !== "Online Assessment") {
       alert("Assessment update is only available in Online Assessment stage.");
       return;
@@ -3393,7 +4194,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleCloseAssessmentModal() {
+  async function handleCloseAssessmentModal() {
     setAssessmentCandidate(null);
     setAssessmentForm({
       assessmentStatus: "Not Take",
@@ -3403,6 +4204,10 @@ export default function CandidatePipelinePage() {
   }
 
   async function handleSendAssessmentEmail(candidate) {
+    if (!(await confirmAction(`Send assessment email to ${candidate.name}?`))) {
+      return;
+    }
+
     const updatedCandidate = {
       ...candidate,
       assessmentEmailSent: true,
@@ -3411,7 +4216,7 @@ export default function CandidatePipelinePage() {
         ...(candidate.timeline || []),
         {
           stage: candidate.currentStage,
-          owner: candidate.owner,
+          owner: currentUserName,
           source: "Online Assessment",
           timestamp: getCurrentTimestamp(),
           reason: "Assessment email was sent to the candidate.",
@@ -3426,7 +4231,7 @@ export default function CandidatePipelinePage() {
     await triggerAssessmentEmail(updatedCandidate);
   }
 
-  function handleSubmitAssessment(e) {
+  async function handleSubmitAssessment(e) {
     e.preventDefault();
 
     if (!assessmentCandidate) return;
@@ -3441,6 +4246,10 @@ export default function CandidatePipelinePage() {
       !assessmentForm.assessmentResult
     ) {
       alert("Assessment result is required when assessment status is Taken.");
+      return;
+    }
+
+    if (!(await confirmAction(`Save assessment update for ${assessmentCandidate.name}?`))) {
       return;
     }
 
@@ -3462,7 +4271,7 @@ export default function CandidatePipelinePage() {
         ...(assessmentCandidate.timeline || []),
         {
           stage: "Online Assessment",
-          owner: assessmentCandidate.owner,
+          owner: currentUserName,
           source: "Online Assessment",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -3476,7 +4285,7 @@ export default function CandidatePipelinePage() {
     handleCloseAssessmentModal();
   }
 
-  function handleOpenDropOffModal(candidate) {
+  async function handleOpenDropOffModal(candidate) {
     setDropOffCandidate(candidate);
     setDropOffForm({
       category:
@@ -3491,7 +4300,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleCloseDropOffModal() {
+  async function handleCloseDropOffModal() {
     setDropOffCandidate(null);
     setDropOffForm({
       category: "",
@@ -3500,7 +4309,7 @@ export default function CandidatePipelinePage() {
     });
   }
 
-  function handleSubmitDropOff(e) {
+  async function handleSubmitDropOff(e) {
     e.preventDefault();
 
     if (!dropOffCandidate) return;
@@ -3515,7 +4324,11 @@ export default function CandidatePipelinePage() {
       return;
     }
 
-    const movementReason = `Candidate moved from ${dropOffCandidate.currentStage} to Drop-off.`;
+    if (!(await confirmAction(`Move ${dropOffCandidate.name} to Drop-off?`))) {
+      return;
+    }
+
+    const movementReason = `Candidate moved from ${dropOffCandidate.currentStage} to Drop-off. Reason: ${dropOffForm.reason.trim()}`;
 
     const updatedCandidate = {
       ...dropOffCandidate,
@@ -3530,7 +4343,7 @@ export default function CandidatePipelinePage() {
         ...(dropOffCandidate.timeline || []),
         {
           stage: "Drop-off",
-          owner: dropOffCandidate.owner,
+          owner: currentUserName,
           source: dropOffCandidate.source,
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
@@ -3588,9 +4401,6 @@ export default function CandidatePipelinePage() {
 
   const stageVisibleCandidates = useMemo(() => {
     return filteredCandidates.filter((candidate) => {
-      if (candidate.currentStage === "Lead / Sourced") {
-        return candidate.prfStatus === "Review";
-      }
 
       if (candidate.currentStage === "Initial Screening") {
         return isPrfReviewed(candidate);
@@ -3605,8 +4415,7 @@ export default function CandidatePipelinePage() {
           candidate.assessmentStatus === "Taken" &&
           candidate.assessmentResult === "Assessment Fit" &&
           hasInterviewSchedule(candidate) &&
-          candidate.interviewStatus !== "Completed" &&
-          candidate.interviewStatus !== "Cancelled"
+          candidate.interviewStatus !== "Completed"
         );
       }
 
@@ -3626,7 +4435,6 @@ export default function CandidatePipelinePage() {
 
   const metrics = useMemo(() => {
     return {
-      leads: stageCounts["Lead / Sourced"] || 0,
       initialScreening: stageCounts["Initial Screening"] || 0,
       onlineAssessment: stageCounts["Online Assessment"] || 0,
       interviewScheduled: stageCounts["Interview Scheduled"] || 0,
@@ -3656,15 +4464,12 @@ export default function CandidatePipelinePage() {
 
     setCandidateList(normalizedCandidates);
     savePipelineCandidateData(normalizedCandidates);
-    setActiveStage("Lead / Sourced");
+    setActiveStage("Initial Screening");
     setSelectedCandidate(null);
 
-    alert("Sample candidate pipeline data has been reset.");
+    confirmAction("Sample candidate pipeline data has been reset.", { title: "Reset Complete", confirmText: "OK", variant: "default" });
   }
 
-  function handleAddCandidate() {
-    alert("Connect this button to your Add Candidate modal.");
-  }
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
@@ -3673,48 +4478,48 @@ export default function CandidatePipelinePage() {
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-sibs-primary-1 sm:text-3xl">
-                Talent Pool / Candidate Pipeline
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <ClipboardCheck size={14} />
+                Candidate Pipeline
+              </div>
+
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Candidate Pipeline
               </h1>
 
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                New flow: Initial Screening → Online Assessment → Interview
-                Scheduled → Interviewed → Offered.
+                Track candidates from Initial Screening to Accepted. Final role, hiring requirement, and account are assigned during the offer stage.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleResetSampleData}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-            >
-              <RotateCcw size={16} />
-              Reset Sample Data
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleResetSampleData}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                <RotateCcw size={18} />
+                Reset Sample Data
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            <DashboardMetric label="Leads" value={metrics.leads} />
-            <DashboardMetric
-              label="Initial Screening"
-              value={metrics.initialScreening}
-            />
-            <DashboardMetric
-              label="Online Assessment"
-              value={metrics.onlineAssessment}
-            />
-            <DashboardMetric
-              label="Interview Scheduled"
-              value={metrics.interviewScheduled}
-            />
-            <DashboardMetric label="Interviewed" value={metrics.interviewed} />
-            <DashboardMetric label="Offered" value={metrics.offered} />
-            <DashboardMetric label="Accepted" value={metrics.accepted} />
-          </div>
+          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-base font-bold text-[#101828]">Pipeline Summary</h2>
 
-          <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
-            <div className="overflow-x-auto border-b border-[#E6ECF2]">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <DashboardMetric label="Initial Screening" value={metrics.initialScreening} icon={UserCheck} description="PRF reviewed" />
+              <DashboardMetric label="Online Assessment" value={metrics.onlineAssessment} icon={ClipboardCheck} description="Assessment stage" />
+              <DashboardMetric label="Interview Scheduled" value={metrics.interviewScheduled} icon={CalendarDays} description="Calendar booked" />
+              <DashboardMetric label="Interviewed" value={metrics.interviewed} icon={ShieldCheck} description="Interview done" />
+              <DashboardMetric label="Offered" value={metrics.offered} icon={BriefcaseBusiness} description="Offer processing" />
+              <DashboardMetric label="Accepted" value={metrics.accepted} icon={UserCheck} description="Converted" valueClassName="text-emerald-600" />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="overflow-x-auto border-b border-[#E6ECF2] bg-white">
               <div className="flex min-w-[1180px] items-center">
                 {pipelineStages.map((stage) => (
                   <button
@@ -3736,108 +4541,109 @@ export default function CandidatePipelinePage() {
               </div>
             </div>
 
-            <div className="border-b border-[#E6ECF2] p-4">
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_180px_180px_auto_auto] xl:items-center">
-                <div className="relative">
-                  <Search
-                    size={17}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search candidate, PRF, assessment, role, account..."
-                    className={inputClass("pl-11 pr-4")}
-                  />
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Search</label>
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search candidate, PRF, assessment, role, account..."
+                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+                  </div>
                 </div>
 
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className={inputClass()}
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Role</label>
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  >
+                    {roleOptions.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                <select
-                  value={accountFilter}
-                  onChange={(e) => setAccountFilter(e.target.value)}
-                  className={inputClass()}
-                >
-                  {accountOptions.map((account) => (
-                    <option key={account} value={account}>
-                      {account}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  type="button"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                >
-                  <SlidersHorizontal size={16} />
-                  Filter
-                </button>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">Account</label>
+                  <select
+                    value={accountFilter}
+                    onChange={(e) => setAccountFilter(e.target.value)}
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  >
+                    {accountOptions.map((account) => (
+                      <option key={account} value={account}>
+                        {account}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <button
                   type="button"
-                  onClick={handleAddCandidate}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+                  onClick={() => {
+                    setSearch("");
+                    setRoleFilter("All Roles");
+                    setAccountFilter("All Accounts");
+                  }}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
                 >
-                  <Plus size={17} />
-                  Add Candidate
+                  <Filter size={17} />
+                  Clear
                 </button>
               </div>
             </div>
 
-            <div className="hidden lg:block">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1500px] border-collapse text-left">
-                  <thead>
-                    <tr className="bg-[#F8FAFC] text-xs font-bold text-[#174A7C]">
-                      <th className="px-4 py-3">Candidate</th>
-                      <th className="px-4 py-3">Role / Position</th>
-                      <th className="px-4 py-3">Account</th>
-                      <th className="px-4 py-3">PRF Status</th>
+            <div className="p-4 sm:p-6">
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto p-0">
+                  <table className="w-full min-w-[1500px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                    <thead>
+                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 first:rounded-tl-2xl">Candidate</th>
+                      <th className="px-5 py-4">Role / Position</th>
+                      <th className="px-5 py-4">Account</th>
+                      <th className="px-5 py-4">PRF Status</th>
 
                       {showAssessmentStatusColumn && (
-                        <th className="px-4 py-3">Assessment</th>
+                        <th className="px-5 py-4">Assessment</th>
                       )}
 
                       {showAssessmentResultColumn && (
-                        <th className="px-4 py-3">Assessment Result</th>
+                        <th className="px-5 py-4">Assessment Result</th>
                       )}
 
                       {!hideInterviewColumns && (
                         <>
-                          <th className="px-4 py-3">Interview Date</th>
-                          <th className="px-4 py-3">Interview Type</th>
+                          <th className="px-5 py-4">Interview Date</th>
+                          <th className="px-5 py-4">Interview Type</th>
                         </>
                       )}
 
                       {showStatusColumn && (
-                        <th className="px-4 py-3">Status</th>
+                        <th className="px-5 py-4">Status</th>
                       )}
 
                       {(activeStage === "Offered" || activeStage === "Accepted") && (
                         <>
-                          <th className="px-4 py-3">Offer Account</th>
-                          <th className="px-4 py-3">Compensation</th>
-                          <th className="px-4 py-3">Approval</th>
-                          <th className="px-4 py-3">Lead Response</th>
+                          <th className="px-5 py-4">Offer Account</th>
+                          <th className="px-5 py-4">Approval</th>
+                          <th className="px-5 py-4">Lead Response</th>
                         </>
                       )}
 
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">Actions</th>
                     </tr>
                   </thead>
 
-                  <tbody className="divide-y divide-[#E6ECF2] bg-white">
+                    <tbody>
                     {stageFilteredCandidates.length > 0 ? (
                       stageFilteredCandidates.map((candidate) => {
                         const rowStatus = getDisplayInterviewStatus(candidate);
@@ -3848,7 +4654,7 @@ export default function CandidatePipelinePage() {
                             className="cursor-pointer transition hover:bg-[#FAFBFC]"
                             onClick={() => setSelectedCandidate(candidate)}
                           >
-                            <td className="px-4 py-3">
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
                               <div className="flex items-center gap-3">
                                 <CandidateAvatar candidate={candidate} />
 
@@ -3863,15 +4669,15 @@ export default function CandidatePipelinePage() {
                               </div>
                             </td>
 
-                            <td className="px-4 py-3 text-sm font-bold text-[#344054]">
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#344054]">
                               {getRoleTitle(candidate.roleAccount)}
                             </td>
 
-                            <td className="px-4 py-3 text-sm font-semibold text-[#344054]">
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                               {getAccount(candidate.roleAccount)}
                             </td>
 
-                            <td className="px-4 py-3">
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
                               <span
                                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
                                   candidate.prfStatus || "Review"
@@ -3882,7 +4688,7 @@ export default function CandidatePipelinePage() {
                             </td>
 
                             {showAssessmentStatusColumn && (
-                              <td className="px-4 py-3">
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
                                 {!candidate.assessmentResult ? (
                                   <span
                                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentStatusClass(
@@ -3900,7 +4706,7 @@ export default function CandidatePipelinePage() {
                             )}
 
                             {showAssessmentResultColumn && (
-                              <td className="px-4 py-3">
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
                                 <span
                                   className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
                                     getAssessmentResult(candidate)
@@ -3913,18 +4719,18 @@ export default function CandidatePipelinePage() {
 
                             {!hideInterviewColumns && (
                               <>
-                                <td className="px-4 py-3 text-sm font-semibold text-[#344054]">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                                   {formatDateTime(candidate.interviewDate)}
                                 </td>
 
-                                <td className="px-4 py-3 text-sm font-semibold text-[#344054]">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                                   {getDisplayInterviewType(candidate)}
                                 </td>
                               </>
                             )}
 
                             {showStatusColumn && (
-                              <td className="px-4 py-3">
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
                                 {rowStatus ? (
                                   <span
                                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
@@ -3943,13 +4749,10 @@ export default function CandidatePipelinePage() {
 
                             {(activeStage === "Offered" || activeStage === "Accepted") && (
                               <>
-                                <td className="px-4 py-3 text-sm font-semibold text-[#344054]">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
                                   {candidate.offerDetails?.account || "—"}
                                 </td>
-                                <td className="px-4 py-3 text-sm font-semibold text-[#344054]">
-                                  {formatCurrency(candidate.offerDetails?.compensation)}
-                                </td>
-                                <td className="px-4 py-3">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5">
                                   <span
                                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOfferApprovalClass(
                                       candidate.offerApprovalStatus ||
@@ -3960,7 +4763,7 @@ export default function CandidatePipelinePage() {
                                       getOfferApprovalSummary(candidate)}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5">
                                   <span
                                     className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOfferDecisionClass(
                                       candidate.offerDecision
@@ -3972,7 +4775,7 @@ export default function CandidatePipelinePage() {
                               </>
                             )}
 
-                            <td className="px-4 py-3 text-right">
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
                               <div className="inline-flex items-center gap-2">
                                 <button
                                   type="button"
@@ -4038,7 +4841,7 @@ export default function CandidatePipelinePage() {
                                         e.stopPropagation();
                                         handleCancelInterview(candidate);
                                       }}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100"
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:bg-red-100"
                                       title="Cancel Interview"
                                     >
                                       <X size={16} />
@@ -4046,7 +4849,7 @@ export default function CandidatePipelinePage() {
                                   </>
                                 )}
 
-                                {candidate.currentStage !== "Lead / Sourced" &&
+                                {candidate.currentStage !== "Initial Screening" &&
                                   candidate.currentStage !==
                                     "Initial Screening" &&
                                   candidate.currentStage !==
@@ -4097,11 +4900,11 @@ export default function CandidatePipelinePage() {
                       </tr>
                     )}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-3 p-4 lg:hidden">
+              <div className="space-y-3 lg:hidden">
               {stageFilteredCandidates.length > 0 ? (
                 stageFilteredCandidates.map((candidate) => (
                   <button
@@ -4168,6 +4971,25 @@ export default function CandidatePipelinePage() {
                   No candidate records found.
                 </div>
               )}
+              </div>
+
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {stageFilteredCandidates.length} of {stageVisibleCandidates.length} candidate applications
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white">
+                    1
+                  </button>
+                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
 
@@ -4193,6 +5015,7 @@ export default function CandidatePipelinePage() {
         onUpdateOfferApproval={handleUpdateOfferApproval}
         onSendOfferEmail={handleSendOfferEmail}
         onOfferDecision={handleOfferDecision}
+        onSaveInterviewNotes={handleSaveInterviewNotes}
       />
 
       <MoveStageModal
@@ -4240,6 +5063,7 @@ export default function CandidatePipelinePage() {
         onClose={handleCloseDropOffModal}
         onSubmit={handleSubmitDropOff}
       />
+      {ConfirmationDialog}
     </div>
   );
 }
