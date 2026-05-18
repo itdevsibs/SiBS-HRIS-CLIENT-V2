@@ -8,23 +8,24 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import {
   AlertTriangle,
-  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  ExternalLink,
   Eye,
-  FileText,
   Lock,
+  Paperclip,
   PieChart,
   Plus,
   Save,
   Search,
   Unlock,
+  Upload,
   UserRound,
   X,
 } from "lucide-react";
 
-const CLUSTER_OPTIONS = ["All", "Coast Dental", "US Visa", "SME", "Yomdel"];
+const CLUSTER_OPTIONS = ["Coast Dental", "US Visa", "SME", "Yomdel", "Corporate"];
 
 const initialActionItemForm = {
   actionItem: "",
@@ -33,6 +34,23 @@ const initialActionItemForm = {
   status: "Pending",
   remarks: "",
 };
+
+function useLockBodyScroll(open) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [open]);
+}
 
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
@@ -92,6 +110,81 @@ function getBackendNumber(record, keys, fallback = 0) {
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
 }
 
+function getClusterFilterLabel(selectedClusters = []) {
+  if (!selectedClusters.length || selectedClusters.includes("All")) {
+    return "All Clusters";
+  }
+
+  if (selectedClusters.length === 1) {
+    return selectedClusters[0];
+  }
+
+  return `${selectedClusters.length} Clusters Selected`;
+}
+
+function getAccountFilterLabel(selectedAccounts = []) {
+  if (!selectedAccounts.length || selectedAccounts.includes("All")) {
+    return "All Accounts";
+  }
+
+  if (selectedAccounts.length === 1) {
+    return selectedAccounts[0];
+  }
+
+  return `${selectedAccounts.length} Accounts Selected`;
+}
+
+function getFileExtension(filename) {
+  return String(filename || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function getFileTypeLabel(filename) {
+  const ext = getFileExtension(filename);
+
+  if (["doc", "docx"].includes(ext)) return "WORD";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "EXCEL";
+  if (ext === "pdf") return "PDF";
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg", "heic", "heif"].includes(ext)) {
+    return "IMAGE";
+  }
+
+  return "FILE";
+}
+
+function getFileTypeIconClass(filename) {
+  const ext = getFileExtension(filename);
+
+  if (["doc", "docx"].includes(ext)) return "bg-blue-600";
+  if (["xls", "xlsx", "csv"].includes(ext)) return "bg-green-600";
+  if (ext === "pdf") return "bg-red-600";
+  if (["jpg", "jpeg", "png", "gif", "webp", "svg", "heic", "heif"].includes(ext)) {
+    return "bg-purple-600";
+  }
+
+  return "bg-gray-600";
+}
+
+function FileTypeIcon({ filename }) {
+  const label = getFileTypeLabel(filename);
+
+  return (
+    <div className="relative h-12 w-10 shrink-0">
+      <div className="absolute inset-0 rounded-md border-2 border-gray-300 bg-white" />
+      <div className="absolute right-0 top-0 h-3 w-3 border-b-2 border-l-2 border-gray-300 bg-gray-100" />
+      <div className="absolute left-1 top-1/2 h-[2px] w-6 -translate-y-1/2 bg-gray-300" />
+      <div className="absolute left-1 top-[60%] h-[2px] w-5 bg-gray-300" />
+
+      <div
+        className={`absolute -left-2 bottom-1 rounded-md px-2 py-1 text-[9px] font-bold text-white shadow ${getFileTypeIconClass(
+          filename
+        )}`}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function getNextWeekRangeFromActiveWeek(activeWeek) {
   const nextStart = new Date(activeWeek?.endDate || getTodayDate());
   nextStart.setDate(nextStart.getDate() + 1);
@@ -104,7 +197,7 @@ function getNextWeekRangeFromActiveWeek(activeWeek) {
     endDate: toDateKey(nextEnd),
     weekRange: `${formatWeekDate(nextStart)} - ${formatWeekDate(
       nextEnd,
-      true,
+      true
     )}`,
   };
 }
@@ -124,7 +217,7 @@ function getOverallStatus(records) {
   const completed =
     records.length > 0 &&
     records.every(
-      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount),
+      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount)
     );
 
   if (completed) return "COMPLETED";
@@ -189,6 +282,54 @@ async function saveRequiredHeadcount(payload) {
   });
 
   return res.data;
+}
+
+async function updateWeeklyHiringPlanFile(payload) {
+  const formData = new FormData();
+
+  Object.entries(payload || {}).forEach(([key, value]) => {
+    if (key === "uploadedFile") return;
+
+    if (value !== undefined && value !== null) {
+      formData.append(key, value);
+    }
+  });
+
+  if (payload?.uploadedFile) {
+    formData.append("uploadedFile", payload.uploadedFile);
+  }
+
+  const res = await api.post("/api/weekly-hiring-plan/headcount/file", formData, {
+    withCredentials: true,
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+}
+
+async function openWeeklyHiringPlanFile({ sibsId, filename }) {
+  if (!sibsId || !filename) {
+    throw new Error("Missing file information.");
+  }
+
+  const res = await api.get(
+    `/api/weekly-hiring-plan/file/${encodeURIComponent(
+      sibsId
+    )}/${encodeURIComponent(filename)}`,
+    {
+      responseType: "blob",
+      withCredentials: true,
+    }
+  );
+
+  const blobUrl = window.URL.createObjectURL(res.data);
+  window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+  setTimeout(() => {
+    window.URL.revokeObjectURL(blobUrl);
+  }, 60_000);
 }
 
 function MetricCard({
@@ -268,7 +409,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   function scaleToDisplayPercent(actualPercent) {
     const safeActualPercent = Math.max(
       0,
-      Math.min(Number(actualPercent || 0), 100),
+      Math.min(Number(actualPercent || 0), 100)
     );
 
     return (safeActualPercent / maxActualPercent) * maxDisplayPercent;
@@ -294,7 +435,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   const graphData = percentageMetrics.map((metric) => {
     const totalCount = filteredPlans.reduce(
       (sum, item) => sum + Number(item[metric.countKey] || 0),
-      0,
+      0
     );
 
     let actualPercent = 0;
@@ -302,7 +443,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
     if (metric.denominatorKey) {
       const totalDenominator = filteredPlans.reduce(
         (sum, item) => sum + Number(item[metric.denominatorKey] || 0),
-        0,
+        0
       );
 
       actualPercent =
@@ -312,7 +453,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
         filteredPlans.length > 0
           ? filteredPlans.reduce(
               (sum, item) => sum + Number(item[metric.percentKey] || 0),
-              0,
+              0
             ) / filteredPlans.length
           : 0;
     }
@@ -372,7 +513,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
 
             const width = Math.min(
               (metric.actualPercent / maxActualPercent) * 100,
-              100,
+              100
             );
 
             return (
@@ -382,7 +523,9 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
               >
                 <button
                   type="button"
-                  onClick={() => setOpenMetric(isOpen ? "" : metric.percentKey)}
+                  onClick={() =>
+                    setOpenMetric(isOpen ? "" : metric.percentKey)
+                  }
                   className="w-full p-4 text-left transition hover:bg-white"
                 >
                   <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -407,8 +550,8 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                                   (sum, item) =>
                                     sum +
                                     Number(item[metric.denominatorKey] || 0),
-                                  0,
-                                ),
+                                  0
+                                )
                               )}`
                             : ""}
                         </p>
@@ -429,7 +572,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                   <div className="h-3 overflow-hidden rounded-full bg-[#E6ECF2]">
                     <div
                       className={`h-full rounded-full ${getBarColor(
-                        metric.displayPercent,
+                        metric.displayPercent
                       )}`}
                       style={{ width: `${width}%` }}
                     />
@@ -462,7 +605,7 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
                           {filteredPlans.map((item) => {
                             const rowActualPercent = getItemPercent(
                               item,
-                              metric,
+                              metric
                             );
                             const rowDisplayPercent =
                               scaleToDisplayPercent(rowActualPercent);
@@ -511,7 +654,10 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   );
 }
 
+
 function StatusModal({ open, type = "success", title, message, onClose }) {
+  useLockBodyScroll(open);
+
   if (!open) return null;
 
   const isSuccess = type === "success";
@@ -520,7 +666,6 @@ function StatusModal({ open, type = "success", title, message, onClose }) {
   return (
     <div
       className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
-      onClick={onClose}
     >
       <div
         className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -590,12 +735,13 @@ function StatusModal({ open, type = "success", title, message, onClose }) {
 }
 
 function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
+  useLockBodyScroll(open);
+
   if (!open || !item) return null;
 
   return (
     <div
       className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
     >
       <div
         className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -669,7 +815,9 @@ function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
                 required
                 type="date"
                 value={form.deadline}
-                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, deadline: e.target.value })
+                }
                 className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               />
             </div>
@@ -697,7 +845,9 @@ function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
               <textarea
                 rows={3}
                 value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, remarks: e.target.value })
+                }
                 placeholder="Add notes or next steps."
                 className="w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
               />
@@ -735,11 +885,21 @@ function ViewPlanModal({
   previousWeekItem,
   requiredInputValue,
   savingRequiredId,
+  savingFileId,
+  weeklyPlanFile,
+  existingUploadedFile,
+  uploadedBySibsId,
+  openingFile,
   onRequiredInputChange,
+  onWeeklyPlanFileChange,
   onSaveRequiredHeadcount,
+  onUpdateWeeklyPlanFile,
+  onOpenUploadedFile,
   onClose,
   onOpenActionItem,
 }) {
+  useLockBodyScroll(open);
+
   if (!open || !item) return null;
 
   const previousLeadsNeeded = Number(previousWeekItem?.leadsToInterview || 0);
@@ -747,12 +907,15 @@ function ViewPlanModal({
   const remaining = Math.max(currentLeadsNeeded - previousLeadsNeeded, 0);
 
   const requiredHeadcountDisabled =
-    locked || !canEditRequiredHeadcount || savingRequiredId === item.id;
+    !canEditRequiredHeadcount || savingRequiredId === item.id;
+
+  const selectedUploadName = weeklyPlanFile?.name || "";
+  const existingUploadName = existingUploadedFile || item.uploadedFile || "";
+  const hasExistingUpload = !!existingUploadName;
 
   return (
     <div
       className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
     >
       <div
         className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -795,7 +958,7 @@ function ViewPlanModal({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          item.pipelineStatus,
+                          item.pipelineStatus
                         )}`}
                       >
                         {item.pipelineStatus}
@@ -868,12 +1031,110 @@ function ViewPlanModal({
                     </p>
                   )}
 
-                  {locked && (
+                  {locked && !canEditRequiredHeadcount && (
                     <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
                       This historical weekly version is locked.
                     </p>
                   )}
+
+                  {locked && canEditRequiredHeadcount && (
+                    <p className="mt-2 text-xs font-semibold text-emerald-700">
+                      Historical week. Required Headcount is editable for authorized managers.
+                    </p>
+                  )}
                 </div>
+
+                <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 md:col-span-2">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Upload File
+                      </p>
+                      <p className="text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                        Upload weekly hiring plan support file. Accepted file types: PDF, Word, Excel, CSV, and images.
+                      </p>
+                    </div>
+
+                    {hasExistingUpload && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onOpenUploadedFile({
+                            sibsId: uploadedBySibsId,
+                            filename: existingUploadName,
+                          })
+                        }
+                        disabled={openingFile}
+                        className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <ExternalLink size={15} />
+                        {openingFile ? "Opening..." : "View File"}
+                      </button>
+                    )}
+                  </div>
+
+                  <label
+                    className={`mt-3 flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
+                      canEditRequiredHeadcount
+                        ? "cursor-pointer border-[#D7DEE8] bg-white hover:border-sibs-primary-1 hover:bg-[#F8FAFC]"
+                        : "cursor-not-allowed border-[#E6ECF2] bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      {selectedUploadName || existingUploadName ? (
+                        <FileTypeIcon filename={selectedUploadName || existingUploadName} />
+                      ) : (
+                        <Paperclip size={18} className="shrink-0 text-sibs-tertiary-5" />
+                      )}
+
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-[#344054]">
+                          {selectedUploadName || existingUploadName || "Choose weekly hiring plan file"}
+                        </p>
+                        {selectedUploadName && (
+                          <p className="mt-1 text-xs font-semibold text-emerald-700">
+                            New file selected. Click Update File to upload.
+                          </p>
+                        )}
+                        {!selectedUploadName && existingUploadName && (
+                          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                            Existing uploaded file
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="ml-4 inline-flex shrink-0 items-center gap-2 rounded-lg bg-sibs-tertiary-9 px-3 py-1.5 text-xs font-bold text-sibs-primary-1">
+                      <Upload size={14} />
+                      Browse
+                    </span>
+
+                    <input
+                      type="file"
+                      disabled={!canEditRequiredHeadcount}
+                      onChange={(e) => onWeeklyPlanFileChange(item.id, e.target.files?.[0] || null)}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,image/heic,image/heif"
+                    />
+                  </label>
+
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => onUpdateWeeklyPlanFile(item)}
+                      disabled={
+                        !canEditRequiredHeadcount ||
+                        !weeklyPlanFile ||
+                        savingFileId === item.id
+                      }
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Upload size={15} />
+                      {savingFileId === item.id ? "Uploading..." : "Update File"}
+                    </button>
+                  </div>
+                </div>
+
                 <InfoBox
                   label="Actual Headcount"
                   value={item.actualHeadcount}
@@ -881,7 +1142,7 @@ function ViewPlanModal({
                 <InfoBox
                   label="Buffer"
                   value={`${item.bufferHeadcount} / ${formatPercent(
-                    item.bufferPercent,
+                    item.bufferPercent
                   )}`}
                 />
                 <InfoBox
@@ -898,32 +1159,36 @@ function ViewPlanModal({
                 <InfoBox
                   label="Absenteeism"
                   value={`${item.absenteeismCount} / ${formatPercent(
-                    item.absenteeismPercent,
+                    item.absenteeismPercent
                   )}`}
                 />
                 <InfoBox
                   label="Attrition Past 6 Weeks"
                   value={`${item.attritionPastCount} / ${formatPercent(
-                    item.attritionPastPercent,
+                    item.attritionPastPercent
                   )}`}
                 />
                 <InfoBox label="OPS PRF" value={item.opsPrf} />
                 <InfoBox
+                  label="Projected Employee Needs"
+                  value={item.projectedEmployeeNeeds}
+                />
+                <InfoBox
                   label="FST to PST"
                   value={`${item.attritionFstToPstCount} / ${formatPercent(
-                    item.attritionFstToPstPercent,
+                    item.attritionFstToPstPercent
                   )}`}
                 />
                 <InfoBox
                   label="NHO to FST-PST"
                   value={`${item.attritionNhoToFstPstCount} / ${formatPercent(
-                    item.attritionNhoToFstPstPercent,
+                    item.attritionNhoToFstPstPercent
                   )}`}
                 />
                 <InfoBox
                   label="Interview to NHO"
                   value={`${item.attritionInterviewToNhoCount} / ${formatPercent(
-                    item.attritionInterviewToNhoPercent,
+                    item.attritionInterviewToNhoPercent
                   )}`}
                 />
                 <InfoBox
@@ -974,6 +1239,38 @@ function ViewPlanModal({
                 </div>
               </div>
 
+              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-[#101828]">
+                  Last Required Headcount Edit
+                </h3>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      SIBS ID
+                    </p>
+                    <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+                      {item.lastEditSibsId || "—"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Name
+                    </p>
+                    <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                      {item.lastEditName || "—"}
+                    </p>
+                  </div>
+
+                  {!item.lastEditSibsId && !item.lastEditName && (
+                    <p className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-xs font-semibold text-sibs-tertiary-5">
+                      No required headcount edit record yet.
+                    </p>
+                  )}
+                </div>
+              </div>
+
               {!locked && (
                 <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                   <h3 className="text-sm font-bold text-[#101828]">Actions</h3>
@@ -1011,32 +1308,33 @@ function ViewPlanModal({
 }
 
 function KpiSnapshotModal({ open, week, records, onClose }) {
+  useLockBodyScroll(open);
+
   if (!open || !week) return null;
 
   const required = records.reduce(
     (sum, item) => sum + Number(item.requiredHeadcount || 0),
-    0,
+    0
   );
 
   const actual = records.reduce(
     (sum, item) => sum + Number(item.actualHeadcount || 0),
-    0,
+    0
   );
 
   const opsPrf = records.reduce(
     (sum, item) => sum + Number(item.opsPrf || 0),
-    0,
+    0
   );
 
   const leads = records.reduce(
     (sum, item) => sum + Number(item.leadsToInterview || 0),
-    0,
+    0
   );
 
   return (
     <div
       className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
     >
       <div
         className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -1092,6 +1390,8 @@ export default function WeeklyHiringPlanPage() {
 
   const mainScrollRef = useRef(null);
   const weekDropdownRef = useRef(null);
+  const clusterDropdownRef = useRef(null);
+  const accountDropdownRef = useRef(null);
 
   const canEditRequiredHeadcount = [5, 7].includes(Number(user?.adminAccess));
 
@@ -1103,8 +1403,12 @@ export default function WeeklyHiringPlanPage() {
   const [weekSearch, setWeekSearch] = useState("");
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
 
-  const [clusterFilter, setClusterFilter] = useState("All");
-  const [accountFilter, setAccountFilter] = useState("All");
+  const [selectedClusters, setSelectedClusters] = useState(["All"]);
+  const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+
+  const [selectedAccounts, setSelectedAccounts] = useState(["All"]);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [accountSearch, setAccountSearch] = useState("");
 
   const [accountOptions, setAccountOptions] = useState([
     {
@@ -1125,6 +1429,9 @@ export default function WeeklyHiringPlanPage() {
   const [requiredInputs, setRequiredInputs] = useState({});
   const [savingRequiredId, setSavingRequiredId] = useState("");
   const [requiredSaveMessage, setRequiredSaveMessage] = useState("");
+  const [weeklyPlanFiles, setWeeklyPlanFiles] = useState({});
+  const [savingFileId, setSavingFileId] = useState("");
+  const [openingFile, setOpeningFile] = useState(false);
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -1167,6 +1474,20 @@ export default function WeeklyHiringPlanPage() {
         !weekDropdownRef.current.contains(e.target)
       ) {
         setShowWeekDropdown(false);
+      }
+
+      if (
+        clusterDropdownRef.current &&
+        !clusterDropdownRef.current.contains(e.target)
+      ) {
+        setShowClusterDropdown(false);
+      }
+
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(e.target)
+      ) {
+        setShowAccountDropdown(false);
       }
     }
 
@@ -1216,15 +1537,114 @@ export default function WeeklyHiringPlanPage() {
     };
   }, []);
 
+  function isAllClustersSelected() {
+    return selectedClusters.includes("All") || selectedClusters.length === 0;
+  }
+
+  function isAllAccountsSelected() {
+    return selectedAccounts.includes("All") || selectedAccounts.length === 0;
+  }
+
+  function handleToggleCluster(cluster) {
+    setSelectedClusters((prev) => {
+      if (cluster === "All") {
+        return ["All"];
+      }
+
+      const current = prev.includes("All") ? [] : prev;
+      const alreadySelected = current.includes(cluster);
+
+      const next = alreadySelected
+        ? current.filter((item) => item !== cluster)
+        : [...current, cluster];
+
+      return next.length > 0 ? next : ["All"];
+    });
+
+    setSelectedAccounts(["All"]);
+    setAccountSearch("");
+  }
+
+  function handleToggleAccount(accountName) {
+    setSelectedAccounts((prev) => {
+      if (accountName === "All") {
+        return ["All"];
+      }
+
+      const current = prev.includes("All") ? [] : prev;
+      const alreadySelected = current.includes(accountName);
+
+      const next = alreadySelected
+        ? current.filter((item) => item !== accountName)
+        : [...current, accountName];
+
+      return next.length > 0 ? next : ["All"];
+    });
+  }
+
   async function fetchAccountsByCluster({ resetAccountFilter = true } = {}) {
     try {
       setAccountsLoading(true);
 
-      const accounts = await getWeeklyHiringPlanAccounts(
-        clusterFilter,
-        activeWeekStartDate,
-        activeWeekEndDate,
-      );
+      let accounts = [];
+
+      if (isAllClustersSelected()) {
+        accounts = await getWeeklyHiringPlanAccounts(
+          "All",
+          activeWeekStartDate,
+          activeWeekEndDate
+        );
+      } else {
+        const results = await Promise.all(
+          selectedClusters.map((cluster) =>
+            getWeeklyHiringPlanAccounts(
+              cluster,
+              activeWeekStartDate,
+              activeWeekEndDate
+            )
+          )
+        );
+
+        const mergedAccounts = results.flat();
+        const uniqueMap = new Map();
+
+        mergedAccounts.forEach((account) => {
+          const accountId = Number(account?.id || 0);
+          const accountName = String(account?.accountName || "").trim();
+          const clusterName = String(
+            account?.clusterName ||
+              account?.cluster ||
+              account?.ghlName ||
+              account?.gy_acc_ghl_name ||
+              ""
+          ).trim();
+
+          if (!accountId || !accountName) return;
+
+          const key = `${accountId}-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
+
+          if (!uniqueMap.has(key)) {
+            uniqueMap.set(key, account);
+          }
+        });
+
+        accounts = Array.from(uniqueMap.values());
+      }
+
+      const uniqueAccountOptionsMap = new Map();
+
+      (accounts || []).forEach((account) => {
+        const accountId = Number(account?.id || 0);
+        const accountName = String(account?.accountName || "").trim();
+
+        if (!accountId || !accountName) return;
+
+        const key = accountName.toLowerCase();
+
+        if (!uniqueAccountOptionsMap.has(key)) {
+          uniqueAccountOptionsMap.set(key, account);
+        }
+      });
 
       setRemoteAccounts(accounts || []);
 
@@ -1234,11 +1654,11 @@ export default function WeeklyHiringPlanPage() {
           accountName: "All Accounts",
           ghlName: "",
         },
-        ...(accounts || []),
+        ...Array.from(uniqueAccountOptionsMap.values()),
       ]);
 
       if (resetAccountFilter) {
-        setAccountFilter("All");
+        setSelectedAccounts(["All"]);
       }
 
       return accounts || [];
@@ -1255,7 +1675,7 @@ export default function WeeklyHiringPlanPage() {
       ]);
 
       if (resetAccountFilter) {
-        setAccountFilter("All");
+        setSelectedAccounts(["All"]);
       }
 
       return [];
@@ -1269,7 +1689,7 @@ export default function WeeklyHiringPlanPage() {
       fetchAccountsByCluster();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clusterFilter, activeWeekStartDate, activeWeekEndDate]);
+  }, [selectedClusters, activeWeekStartDate, activeWeekEndDate]);
 
   const displayData = useMemo(() => {
     return (remoteAccounts || []).map((account, index) => {
@@ -1278,7 +1698,13 @@ export default function WeeklyHiringPlanPage() {
       const accountCluster =
         account.clusterName ||
         account.cluster ||
-        (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+        account.ghlName ||
+        account.gy_acc_ghl_name ||
+        (isAllClustersSelected()
+          ? "Unassigned"
+          : selectedClusters.length === 1
+            ? selectedClusters[0]
+            : "Unassigned");
 
       const requiredHeadcount = getBackendNumber(account, [
         "requiredHeadcount",
@@ -1293,7 +1719,8 @@ export default function WeeklyHiringPlanPage() {
       /*
         Backend-owned values:
         Buffer Count, Buffer %, Missing Headcount, OPS PRF,
-        Leads to Interview, and Hiring Rate are calculated by weeklyHiringPlan.js.
+        Projected Employee Needs, Leads to Interview, and Hiring Rate
+        are calculated by weeklyHiringPlan.js.
         Frontend only displays the backend response.
       */
       const bufferHeadcount = getBackendNumber(account, [
@@ -1330,6 +1757,17 @@ export default function WeeklyHiringPlanPage() {
         attritionPastCount: Number(account.attritionPastCount || 0),
       };
 
+      const projectedEmployeeNeeds = getBackendNumber(
+        account,
+        [
+          "projectedEmployeeNeeds",
+          "projected_employee_needs",
+          "projectedNeeds",
+          "projected_needs",
+        ],
+        calculated.opsPrf
+      );
+
       const row = {
         id: `db-${accountCluster}-${account.id || index}`,
         backendAccountId: account.id,
@@ -1355,22 +1793,23 @@ export default function WeeklyHiringPlanPage() {
         attritionPastPercent: Number(account.attritionPastPercent || 0),
 
         opsPrf: calculated.opsPrf,
+        projectedEmployeeNeeds,
 
         attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
 
         attritionNhoToFstPstCount: Number(
-          account.attritionNhoToFstPstCount || 0,
+          account.attritionNhoToFstPstCount || 0
         ),
         attritionNhoToFstPstPercent: Number(
-          account.attritionNhoToFstPstPercent || 0,
+          account.attritionNhoToFstPstPercent || 0
         ),
 
         attritionInterviewToNhoCount: Number(
-          account.attritionInterviewToNhoCount || 0,
+          account.attritionInterviewToNhoCount || 0
         ),
         attritionInterviewToNhoPercent: Number(
-          account.attritionInterviewToNhoPercent || 0,
+          account.attritionInterviewToNhoPercent || 0
         ),
 
         leadsToInterview: calculated.leadsToInterview,
@@ -1383,6 +1822,13 @@ export default function WeeklyHiringPlanPage() {
         departmentName: account.departmentName || "",
         priorityLevel: account.priorityLevel || "",
         headcountRemarks: account.headcountRemarks || "",
+        uploadedFile: account.uploadedFile || account.uploaded_file || "",
+        uploadedBySibsId:
+          account.uploadedBySibsId || account.uploaded_by_sibs_id || "",
+        lastEditSibsId:
+          account.lastEditSibsId || account.last_edit_sibs_id || "",
+        lastEditName:
+          account.lastEditName || account.last_edit_name || "",
       };
 
       return {
@@ -1390,7 +1836,7 @@ export default function WeeklyHiringPlanPage() {
         pipelineStatus: account.pipelineStatus || calculatePipelineStatus(row),
       };
     });
-  }, [activeWeek?.label, clusterFilter, remoteAccounts]);
+  }, [activeWeek?.label, selectedClusters, remoteAccounts]);
 
   useEffect(() => {
     const nextInputs = {};
@@ -1410,10 +1856,10 @@ export default function WeeklyHiringPlanPage() {
       const account = item.account || "Unassigned Account";
 
       const matchesCluster =
-        clusterFilter === "All" || cluster === clusterFilter;
+        isAllClustersSelected() || selectedClusters.includes(cluster);
 
       const matchesAccount =
-        accountFilter === "All" || account === accountFilter;
+        isAllAccountsSelected() || selectedAccounts.includes(account);
 
       const matchesKeyword =
         !keyword ||
@@ -1434,27 +1880,33 @@ export default function WeeklyHiringPlanPage() {
 
       return matchesCluster && matchesAccount && matchesKeyword;
     });
-  }, [displayData, activeWeek?.label, search, clusterFilter, accountFilter]);
+  }, [
+    displayData,
+    activeWeek?.label,
+    search,
+    selectedClusters,
+    selectedAccounts,
+  ]);
 
   const totals = useMemo(() => {
     const totalRequired = filteredPlans.reduce(
       (sum, item) => sum + Number(item.requiredHeadcount || 0),
-      0,
+      0
     );
 
     const actualHeadcount = filteredPlans.reduce(
       (sum, item) => sum + Number(item.actualHeadcount || 0),
-      0,
+      0
     );
 
     const opsPrf = filteredPlans.reduce(
       (sum, item) => sum + Number(item.opsPrf || 0),
-      0,
+      0
     );
 
     const leadsToInterview = filteredPlans.reduce(
       (sum, item) => sum + Number(item.leadsToInterview || 0),
-      0,
+      0
     );
 
     const overallStatus = getOverallStatus(filteredPlans);
@@ -1469,7 +1921,7 @@ export default function WeeklyHiringPlanPage() {
   }, [filteredPlans]);
 
   const activeWeekIndex = weeklyVersions.findIndex(
-    (week) => week.id === activeWeekId,
+    (week) => week.id === activeWeekId
   );
 
   const previousWeek = weeklyVersions[activeWeekIndex + 1];
@@ -1478,7 +1930,7 @@ export default function WeeklyHiringPlanPage() {
     ? previousWeek?.records?.find(
         (record) =>
           record.account === selectedPlan.account &&
-          record.cluster === selectedPlan.cluster,
+          record.cluster === selectedPlan.cluster
       )
     : null;
 
@@ -1510,20 +1962,9 @@ export default function WeeklyHiringPlanPage() {
       return;
     }
 
-    if (isLocked) {
-      const message = "This weekly version is locked.";
-      setRequiredSaveMessage(message);
-      openStatusModal({
-        type: "error",
-        title: "Locked Weekly Version",
-        message,
-      });
-      return;
-    }
 
     if (!activeWeekStartDate || !activeWeekEndDate) {
-      const message =
-        "Missing weekly date range. Please select a valid weekly version.";
+      const message = "Missing weekly date range. Please select a valid weekly version.";
       setRequiredSaveMessage(message);
       openStatusModal({
         type: "error",
@@ -1577,7 +2018,13 @@ export default function WeeklyHiringPlanPage() {
         const accountCluster =
           account.clusterName ||
           account.cluster ||
-          (clusterFilter === "All" ? "Unassigned" : clusterFilter);
+          account.ghlName ||
+          account.gy_acc_ghl_name ||
+          (isAllClustersSelected()
+            ? "Unassigned"
+            : selectedClusters.length === 1
+              ? selectedClusters[0]
+              : "Unassigned");
 
         return (
           String(accountName).toLowerCase() ===
@@ -1628,10 +2075,18 @@ export default function WeeklyHiringPlanPage() {
               refreshedAccount.absenteeismOpsCount !== null
                 ? Number(refreshedAccount.absenteeismOpsCount || 0)
                 : Number(refreshedAccount.absenteeismCount || 0),
-            attritionPastCount: Number(
-              refreshedAccount.attritionPastCount || 0,
-            ),
+            attritionPastCount: Number(refreshedAccount.attritionPastCount || 0),
             opsPrf: getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"]),
+            projectedEmployeeNeeds: getBackendNumber(
+              refreshedAccount,
+              [
+                "projectedEmployeeNeeds",
+                "projected_employee_needs",
+                "projectedNeeds",
+                "projected_needs",
+              ],
+              getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"])
+            ),
             leadsToInterview: getBackendNumber(refreshedAccount, [
               "leadsToInterview",
               "leads_to_interview",
@@ -1639,12 +2094,29 @@ export default function WeeklyHiringPlanPage() {
             hiringRate: getBackendNumber(
               refreshedAccount,
               ["hiringRate", "hiring_rate"],
-              5,
+              5
             ),
             pipelineStatus:
               refreshedAccount.pipelineStatus || current.pipelineStatus,
             priorityLevel: refreshedAccount.priorityLevel || null,
             headcountRemarks: refreshedAccount.headcountRemarks || null,
+            uploadedFile:
+              refreshedAccount.uploadedFile || refreshedAccount.uploaded_file || current.uploadedFile || "",
+            uploadedBySibsId:
+              refreshedAccount.uploadedBySibsId ||
+              refreshedAccount.uploaded_by_sibs_id ||
+              current.uploadedBySibsId ||
+              "",
+            lastEditSibsId:
+              refreshedAccount.lastEditSibsId ||
+              refreshedAccount.last_edit_sibs_id ||
+              current.lastEditSibsId ||
+              "",
+            lastEditName:
+              refreshedAccount.lastEditName ||
+              refreshedAccount.last_edit_name ||
+              current.lastEditName ||
+              "",
             statusNote:
               refreshedAccount.headcountRemarks ||
               refreshedAccount.departmentName ||
@@ -1653,6 +2125,12 @@ export default function WeeklyHiringPlanPage() {
           };
         });
       }
+
+      setWeeklyPlanFiles((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
 
       const message = `Required headcount for ${item.account} was saved successfully.`;
       setRequiredSaveMessage("Required headcount saved.");
@@ -1685,6 +2163,178 @@ export default function WeeklyHiringPlanPage() {
       ...prev,
       [itemId]: value,
     }));
+  }
+
+  function handleWeeklyPlanFileChange(itemId, file) {
+    setWeeklyPlanFiles((prev) => ({
+      ...prev,
+      [itemId]: file,
+    }));
+  }
+
+  async function handleUpdateWeeklyPlanFile(item) {
+    if (!canEditRequiredHeadcount) {
+      openStatusModal({
+        type: "error",
+        title: "Permission Denied",
+        message: "You do not have permission to update the weekly hiring plan file.",
+      });
+      return;
+    }
+
+    if (!activeWeekStartDate || !activeWeekEndDate) {
+      openStatusModal({
+        type: "error",
+        title: "Unable to Upload",
+        message: "Missing weekly date range. Please select a valid weekly version.",
+      });
+      return;
+    }
+
+    const selectedFile = weeklyPlanFiles[item.id];
+
+    if (!selectedFile) {
+      openStatusModal({
+        type: "error",
+        title: "No File Selected",
+        message: "Please choose a file before clicking Update File.",
+      });
+      return;
+    }
+
+    const rawValue = requiredInputs[item.id];
+    const requiredHeadcount =
+      rawValue === "" || rawValue === null || rawValue === undefined
+        ? null
+        : Number(rawValue);
+
+    if (requiredHeadcount !== null && !Number.isFinite(requiredHeadcount)) {
+      openStatusModal({
+        type: "error",
+        title: "Invalid Input",
+        message: "Invalid required headcount.",
+      });
+      return;
+    }
+
+    try {
+      setSavingFileId(item.id);
+
+      await updateWeeklyHiringPlanFile({
+        weekNumber: activeWeek?.weekNumber || null,
+        weekLabel: activeWeek?.label || null,
+        weekStart: activeWeekStartDate,
+        weekEnd: activeWeekEndDate,
+        clusterName: item.cluster,
+        accountName: item.account,
+        requiredHeadcount,
+        actualHeadcount: Number(item.actualHeadcount || 0),
+        priorityLevel: item.priorityLevel || null,
+        remarks: item.headcountRemarks || null,
+        uploadedFile: selectedFile,
+      });
+
+      const refreshedAccounts = await fetchAccountsByCluster({
+        resetAccountFilter: false,
+      });
+
+      const refreshedAccount = (refreshedAccounts || []).find((account) => {
+        const accountName = account.accountName || "Unassigned Account";
+        const accountCluster =
+          account.clusterName ||
+          account.cluster ||
+          account.ghlName ||
+          account.gy_acc_ghl_name ||
+          (isAllClustersSelected()
+            ? "Unassigned"
+            : selectedClusters.length === 1
+              ? selectedClusters[0]
+              : "Unassigned");
+
+        return (
+          String(accountName).toLowerCase() === String(item.account).toLowerCase() &&
+          String(accountCluster).toLowerCase() === String(item.cluster).toLowerCase()
+        );
+      });
+
+      if (refreshedAccount) {
+        setSelectedPlan((current) => {
+          if (!current) return current;
+
+          const sameSelectedPlan =
+            String(current.account).toLowerCase() === String(item.account).toLowerCase() &&
+            String(current.cluster).toLowerCase() === String(item.cluster).toLowerCase();
+
+          if (!sameSelectedPlan) return current;
+
+          return {
+            ...current,
+            uploadedFile:
+              refreshedAccount.uploadedFile || refreshedAccount.uploaded_file || "",
+            uploadedBySibsId:
+              refreshedAccount.uploadedBySibsId ||
+              refreshedAccount.uploaded_by_sibs_id ||
+              current.uploadedBySibsId ||
+              "",
+            lastEditSibsId:
+              refreshedAccount.lastEditSibsId ||
+              refreshedAccount.last_edit_sibs_id ||
+              current.lastEditSibsId ||
+              "",
+            lastEditName:
+              refreshedAccount.lastEditName ||
+              refreshedAccount.last_edit_name ||
+              current.lastEditName ||
+              "",
+          };
+        });
+      }
+
+      setWeeklyPlanFiles((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+
+      openStatusModal({
+        type: "success",
+        title: "File Updated",
+        message: `Weekly hiring plan file for ${item.account} was updated successfully.`,
+      });
+    } catch (error) {
+      console.error("UPDATE WEEKLY HIRING PLAN FILE ERROR:", error);
+
+      openStatusModal({
+        type: "error",
+        title: "Upload Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to update weekly hiring plan file.",
+      });
+    } finally {
+      setSavingFileId("");
+    }
+  }
+
+  async function handleOpenUploadedFile({ sibsId, filename }) {
+    try {
+      setOpeningFile(true);
+      await openWeeklyHiringPlanFile({ sibsId, filename });
+    } catch (error) {
+      console.error("OPEN WEEKLY HIRING PLAN FILE ERROR:", error);
+      openStatusModal({
+        type: "error",
+        title: "Unable to Open File",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to open uploaded weekly hiring plan file.",
+      });
+    } finally {
+      setOpeningFile(false);
+    }
   }
 
   function handleOpenActionItemModal(item) {
@@ -1724,6 +2374,28 @@ export default function WeeklyHiringPlanPage() {
     handleCloseActionItemModal();
   }
 
+  const filteredAccountOptions = useMemo(() => {
+    const keyword = accountSearch.trim().toLowerCase();
+
+    return (accountOptions || [])
+      .filter((account) => account.id !== "All")
+      .filter((account) => {
+        if (!keyword) return true;
+
+        const searchableText = [
+          account.accountName,
+          account.gy_acc_name,
+          account.ghlName,
+          account.gy_acc_ghl_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(keyword);
+      });
+  }, [accountOptions, accountSearch]);
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -1735,12 +2407,7 @@ export default function WeeklyHiringPlanPage() {
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <CalendarDays size={14} />
-                Recruitment
-              </div>
-
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              <h1 className="text-2xl font-bold text-sibs-primary-1 sm:text-3xl">
                 Weekly Hiring Plan
               </h1>
 
@@ -1814,8 +2481,8 @@ export default function WeeklyHiringPlanPage() {
                                 type="button"
                                 onClick={() => {
                                   setActiveWeekId(week.id);
-                                  setClusterFilter("All");
-                                  setAccountFilter("All");
+                                  setSelectedClusters(["All"]);
+                                  setSelectedAccounts(["All"]);
                                   setSearch("");
                                   setWeekSearch("");
                                   setShowWeekDropdown(false);
@@ -1865,66 +2532,189 @@ export default function WeeklyHiringPlanPage() {
                 </div>
               </div>
 
-              <div>
+              <div ref={clusterDropdownRef} className="relative z-30">
                 <label className="mb-1 block text-sm font-bold text-[#101828]">
                   Cluster
                 </label>
 
-                <div className="relative">
-                  <select
-                    value={clusterFilter}
-                    onChange={(e) => {
-                      setClusterFilter(e.target.value);
-                      setAccountFilter("All");
-                    }}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    {CLUSTER_OPTIONS.map((cluster) => (
-                      <option key={cluster} value={cluster}>
-                        {cluster === "All" ? "All Clusters" : cluster}
-                      </option>
-                    ))}
-                  </select>
+                <button
+                  type="button"
+                  onClick={() => setShowClusterDropdown((prev) => !prev)}
+                  className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                >
+                  <span className="truncate">
+                    {getClusterFilterLabel(selectedClusters)}
+                  </span>
 
                   <ChevronDown
                     size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+                      showClusterDropdown ? "rotate-180" : ""
+                    }`}
                   />
-                </div>
+                </button>
+
+                {showClusterDropdown && (
+                  <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+                    <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleCluster("All")}
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                          isAllClustersSelected()
+                            ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                            : "text-[#344054] hover:bg-[#F8FAFC]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isAllClustersSelected()}
+                          readOnly
+                          className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                        />
+                        <span>All Clusters</span>
+                      </button>
+
+                      {CLUSTER_OPTIONS.map((cluster) => {
+                        const checked =
+                          !isAllClustersSelected() &&
+                          selectedClusters.includes(cluster);
+
+                        return (
+                          <button
+                            key={cluster}
+                            type="button"
+                            onClick={() => handleToggleCluster(cluster)}
+                            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                              checked
+                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                                : "text-[#344054] hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              readOnly
+                              className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                            />
+                            <span className="truncate">{cluster}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div>
+              <div ref={accountDropdownRef} className="relative z-20">
                 <label className="mb-1 block text-sm font-bold text-[#101828]">
                   Account
                 </label>
 
                 <div className="relative">
-                  <select
-                    value={accountFilter}
-                    onChange={(e) => setAccountFilter(e.target.value)}
+                  <input
+                    type="text"
+                    value={
+                      showAccountDropdown
+                        ? accountSearch
+                        : accountsLoading
+                          ? "Loading accounts..."
+                          : getAccountFilterLabel(selectedAccounts)
+                    }
+                    onChange={(e) => {
+                      setAccountSearch(e.target.value);
+                      setShowAccountDropdown(true);
+                    }}
+                    onFocus={() => {
+                      if (!accountsLoading) {
+                        setShowAccountDropdown(true);
+                        setAccountSearch("");
+                      }
+                    }}
                     disabled={accountsLoading}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    {accountOptions.map((account, index) => (
-                      <option
-                        key={`${account.id || account.accountName}-${index}`}
-                        value={
-                          account.id === "All" ? "All" : account.accountName
-                        }
-                      >
-                        {account.id === "All"
-                          ? accountsLoading
-                            ? "Loading accounts..."
-                            : "All Accounts"
-                          : account.accountName}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Search accounts..."
+                    autoComplete="off"
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
+                  />
 
                   <ChevronDown
                     size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    onClick={() => {
+                      if (!accountsLoading) {
+                        setShowAccountDropdown((prev) => !prev);
+                        setAccountSearch("");
+                      }
+                    }}
+                    className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                      showAccountDropdown ? "rotate-180" : ""
+                    }`}
                   />
+
+                  {showAccountDropdown && !accountsLoading && (
+                    <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+                      <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleToggleAccount("All");
+                            setAccountSearch("");
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                            isAllAccountsSelected()
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isAllAccountsSelected()}
+                            readOnly
+                            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                          />
+
+                          <span>All Accounts</span>
+                        </button>
+
+                        {filteredAccountOptions.length > 0 ? (
+                          filteredAccountOptions.map((account, index) => {
+                            const accountName = account.accountName;
+                            const checked =
+                              !isAllAccountsSelected() &&
+                              selectedAccounts.includes(accountName);
+
+                            return (
+                              <button
+                                key={`${account.id || accountName}-${index}`}
+                                type="button"
+                                onClick={() => {
+                                  handleToggleAccount(accountName);
+                                  setAccountSearch("");
+                                }}
+                                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                                  checked
+                                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  readOnly
+                                  className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                                />
+
+                                <span className="truncate">{accountName}</span>
+                              </button>
+                            );
+                          })
+                        ) : (
+                          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                            No accounts found.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1968,14 +2758,13 @@ export default function WeeklyHiringPlanPage() {
                 </span>
               )}
 
-              {(clusterFilter !== "All" ||
-                accountFilter !== "All" ||
-                search) && (
+              {(!isAllClustersSelected() || !isAllAccountsSelected() || search) && (
                 <button
                   type="button"
                   onClick={() => {
-                    setClusterFilter("All");
-                    setAccountFilter("All");
+                    setSelectedClusters(["All"]);
+                    setSelectedAccounts(["All"]);
+                    setAccountSearch("");
                     setSearch("");
                   }}
                   className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
@@ -2044,7 +2833,7 @@ export default function WeeklyHiringPlanPage() {
           <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <div className="hidden lg:block">
               <div className="overflow-x-auto p-6">
-                <table className="w-full min-w-[1450px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                <table className="w-full min-w-[1580px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                       <th className="px-5 py-4 first:rounded-tl-2xl">
@@ -2079,6 +2868,11 @@ export default function WeeklyHiringPlanPage() {
                       </th>
                       <th className="px-5 py-4 text-center">OPS PRF</th>
                       <th className="px-5 py-4 text-center">
+                        Projected
+                        <br />
+                        Employee Needs
+                      </th>
+                      <th className="px-5 py-4 text-center">
                         Leads to
                         <br />
                         Interview
@@ -2100,7 +2894,7 @@ export default function WeeklyHiringPlanPage() {
                     {accountsLoading ? (
                       <tr>
                         <td
-                          colSpan={12}
+                          colSpan={13}
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           Loading weekly hiring plan records...
@@ -2147,6 +2941,10 @@ export default function WeeklyHiringPlanPage() {
                             {formatNumber(item.opsPrf)}
                           </td>
 
+                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-violet-700">
+                            {formatNumber(item.projectedEmployeeNeeds)}
+                          </td>
+
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-semibold text-[#1E293B]">
                             {formatNumber(item.leadsToInterview)}
                           </td>
@@ -2158,7 +2956,7 @@ export default function WeeklyHiringPlanPage() {
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
                             <span
                               className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                item.pipelineStatus,
+                                item.pipelineStatus
                               )}`}
                             >
                               {item.pipelineStatus}
@@ -2186,7 +2984,7 @@ export default function WeeklyHiringPlanPage() {
                     ) : (
                       <tr>
                         <td
-                          colSpan={12}
+                          colSpan={13}
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           No weekly hiring plan records found.
@@ -2258,7 +3056,7 @@ export default function WeeklyHiringPlanPage() {
 
                         <span
                           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                            item.pipelineStatus,
+                            item.pipelineStatus
                           )}`}
                         >
                           {item.pipelineStatus}
@@ -2294,6 +3092,24 @@ export default function WeeklyHiringPlanPage() {
                         </p>
                         <p className="mt-1 text-sm font-bold text-cyan-700">
                           {formatNumber(item.missingHeadcount)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          OPS PRF
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                          {formatNumber(item.opsPrf)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+                          Projected Needs
+                        </p>
+                        <p className="mt-1 text-sm font-bold text-violet-700">
+                          {formatNumber(item.projectedEmployeeNeeds)}
                         </p>
                       </div>
 
@@ -2347,8 +3163,16 @@ export default function WeeklyHiringPlanPage() {
         previousWeekItem={previousSelectedPlan}
         requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}
         savingRequiredId={savingRequiredId}
+        savingFileId={savingFileId}
+        weeklyPlanFile={selectedPlan ? weeklyPlanFiles[selectedPlan.id] : null}
+        existingUploadedFile={selectedPlan?.uploadedFile || ""}
+        uploadedBySibsId={selectedPlan?.uploadedBySibsId || user?.username || user?.sibsId || ""}
+        openingFile={openingFile}
         onRequiredInputChange={handleRequiredInputChange}
+        onWeeklyPlanFileChange={handleWeeklyPlanFileChange}
         onSaveRequiredHeadcount={handleSaveRequiredHeadcount}
+        onUpdateWeeklyPlanFile={handleUpdateWeeklyPlanFile}
+        onOpenUploadedFile={handleOpenUploadedFile}
         onClose={() => setSelectedPlan(null)}
         onOpenActionItem={handleOpenActionItemModal}
       />
