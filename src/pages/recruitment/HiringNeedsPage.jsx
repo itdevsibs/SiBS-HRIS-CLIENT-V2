@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import Header from "../../components/layout/Header";
+import StatusModal from "@/components/modals/StatusModal";
+import {
+  createHiringNeed,
+  getHiringNeedJobDescriptions,
+  getHiringNeeds,
+} from "@/lib/axios/getHiringNeeds";
 
-import { getHiringNeeds, createHiringNeed } from "@/lib/axios/hiringNeeds";
 import { useUser } from "@/services/context/UserContext";
 
 import {
@@ -62,70 +67,6 @@ function getUserDisplayName(user) {
   return formatPersonName(possibleName) || "Alena Batacan";
 }
 
-const positionOptions = [
-  {
-    id: "CSR",
-    positionTitle: "Customer Service Representative",
-    departmentAccount: "Operations / Customer Support",
-    jobDescriptionId: "CSR",
-    jobDescriptionTitle: "Customer Service Representative",
-  },
-  {
-    id: "TSR",
-    positionTitle: "Technical Support Representative",
-    departmentAccount: "Operations / Technical Support",
-    jobDescriptionId: "TSR",
-    jobDescriptionTitle: "Technical Support Representative",
-  },
-  {
-    id: "SALES_ASSOCIATE",
-    positionTitle: "Sales Associate",
-    departmentAccount: "Sales / Business Development",
-    jobDescriptionId: "SALES_ASSOCIATE",
-    jobDescriptionTitle: "Sales Associate",
-  },
-  {
-    id: "TEAM_LEADER",
-    positionTitle: "Team Leader",
-    departmentAccount: "Operations / Leadership",
-    jobDescriptionId: "TEAM_LEADER",
-    jobDescriptionTitle: "Team Leader",
-  },
-  {
-    id: "QA_SPECIALIST",
-    positionTitle: "Quality Assurance Specialist",
-    departmentAccount: "Quality Assurance",
-    jobDescriptionId: "QA_SPECIALIST",
-    jobDescriptionTitle: "Quality Assurance Specialist",
-  },
-  {
-    id: "TRAINER",
-    positionTitle: "Trainer",
-    departmentAccount: "Learning and Development",
-    jobDescriptionId: "TRAINER",
-    jobDescriptionTitle: "Trainer",
-  },
-  {
-    id: "RECRUITMENT_SPECIALIST",
-    positionTitle: "Recruitment Specialist",
-    departmentAccount: "Talent Acquisition",
-    jobDescriptionId: "RECRUITMENT_SPECIALIST",
-    jobDescriptionTitle: "Recruitment Specialist",
-  },
-  {
-    id: "HR_GENERALIST",
-    positionTitle: "HR Generalist",
-    departmentAccount: "Human Resources",
-    jobDescriptionId: "HR_GENERALIST",
-    jobDescriptionTitle: "HR Generalist",
-  },
-];
-
-const jobDescriptionOptions = positionOptions.map((item) => ({
-  id: item.jobDescriptionId,
-  title: item.jobDescriptionTitle,
-}));
-
 const reasonForHiringOptions = [
   "New Position",
   "Ramp-up",
@@ -133,10 +74,13 @@ const reasonForHiringOptions = [
 ];
 
 const initialForm = {
-  positionOptionId: "",
+  jobDescriptionDbId: "",
   positionTitle: "",
   departmentAccount: "",
+  accountId: "",
+  departmentId: "",
   jobDescriptionId: "",
+  jobDescriptionCode: "",
   jobDescriptionTitle: "",
   headcount: "",
   reasonForHiring: "",
@@ -154,7 +98,7 @@ const fallbackPersonnelRequisitions = [
     id: "PRF-2026-001",
     positionTitle: "Customer Service Representative",
     departmentAccount: "Operations / Customer Support",
-    jobDescriptionId: "CSR",
+    jobDescriptionId: "",
     jobDescriptionTitle: "Customer Service Representative",
     headcount: 10,
     reasonForHiring: "Ramp-up",
@@ -229,14 +173,23 @@ function normalizeItem(item) {
   const jobDescriptionTitle =
     item.jobDescriptionTitle ||
     item.job_description_title ||
+    item.jdRoleTitle ||
+    item.jd_role_title ||
     item.jdTitle ||
     item.jd_title ||
     item.jobDescriptionName ||
     item.job_description_name ||
     (jd && typeof jd === "object"
-      ? jd.role_title || jd.roleTitle || jd.title || jd.jd_title
+      ? jd.roleTitle || jd.role_title || jd.title || jd.jd_title
       : "") ||
     "";
+
+  const jobDescriptionText =
+    typeof jd === "string"
+      ? jd
+      : item.jdCode && jobDescriptionTitle
+      ? `${item.jdCode} — ${jobDescriptionTitle}`
+      : jobDescriptionTitle;
 
   return {
     ...item,
@@ -252,9 +205,13 @@ function normalizeItem(item) {
     departmentAccount:
       item.departmentAccount ||
       item.department_account ||
-      item.account ||
-      item.department ||
+      (item.department && item.account
+        ? `${item.department} / ${item.account}`
+        : item.department || item.account || "") ||
       "",
+
+    accountId: item.accountId || item.account_id || "",
+    departmentId: item.departmentId || item.department_id || "",
 
     jobDescriptionId:
       item.jobDescriptionId ||
@@ -264,6 +221,7 @@ function normalizeItem(item) {
       "",
 
     jobDescriptionTitle,
+    jobDescriptionText,
 
     headcount:
       item.headcount ||
@@ -358,7 +316,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
     />
   );
 }
@@ -368,7 +326,7 @@ function SelectInput({ children, className = "", ...props }) {
     <div className="relative">
       <select
         {...props}
-        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
       >
         {children}
       </select>
@@ -559,6 +517,8 @@ function CreatePersonnelRequisitionModal({
   open,
   form,
   setForm,
+  jobDescriptions,
+  jobDescriptionLoading,
   reasonForHiringOptions,
   onClose,
   onSubmit,
@@ -573,18 +533,21 @@ function CreatePersonnelRequisitionModal({
     }));
   }
 
-  function handlePositionChange(positionId) {
-    const selectedPosition = positionOptions.find((item) => {
-      return String(item.id) === String(positionId);
+  function handleJobDescriptionChange(jobDescriptionDbId) {
+    const selectedJd = jobDescriptions.find((item) => {
+      return String(item.id) === String(jobDescriptionDbId);
     });
 
-    if (!selectedPosition) {
+    if (!selectedJd) {
       setForm((prev) => ({
         ...prev,
-        positionOptionId: "",
+        jobDescriptionDbId: "",
         positionTitle: "",
         departmentAccount: "",
+        accountId: "",
+        departmentId: "",
         jobDescriptionId: "",
+        jobDescriptionCode: "",
         jobDescriptionTitle: "",
       }));
       return;
@@ -592,11 +555,18 @@ function CreatePersonnelRequisitionModal({
 
     setForm((prev) => ({
       ...prev,
-      positionOptionId: selectedPosition.id,
-      positionTitle: selectedPosition.positionTitle,
-      departmentAccount: selectedPosition.departmentAccount,
-      jobDescriptionId: selectedPosition.jobDescriptionId,
-      jobDescriptionTitle: selectedPosition.jobDescriptionTitle,
+      jobDescriptionDbId: selectedJd.id || "",
+      positionTitle: selectedJd.roleTitle || "",
+      departmentAccount:
+        selectedJd.departmentAccount ||
+        (selectedJd.department && selectedJd.account
+          ? `${selectedJd.department} / ${selectedJd.account}`
+          : selectedJd.department || selectedJd.account || ""),
+      accountId: selectedJd.accountId || "",
+      departmentId: selectedJd.departmentId || "",
+      jobDescriptionId: selectedJd.id || "",
+      jobDescriptionCode: selectedJd.jdCode || "",
+      jobDescriptionTitle: selectedJd.roleTitle || "",
     }));
   }
 
@@ -631,9 +601,8 @@ function CreatePersonnelRequisitionModal({
               </h2>
 
               <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                Select a position title to automatically fill the Department /
-                Account and Job Description. Review the remaining details before
-                submitting for approval.
+                Select a position title from Job Description. Department /
+                Account and Job Description will auto-populate from your backend.
               </p>
             </div>
 
@@ -664,13 +633,20 @@ function CreatePersonnelRequisitionModal({
               <div className="lg:col-span-2">
                 <FieldLabel required>Position Title</FieldLabel>
                 <SelectInput
-                  value={form.positionOptionId || ""}
-                  onChange={(e) => handlePositionChange(e.target.value)}
+                  value={form.jobDescriptionDbId || ""}
+                  onChange={(e) => handleJobDescriptionChange(e.target.value)}
+                  disabled={jobDescriptionLoading}
                 >
-                  <option value="">Select Position Title</option>
-                  {positionOptions.map((item) => (
+                  <option value="">
+                    {jobDescriptionLoading
+                      ? "Loading job descriptions..."
+                      : "Select Position Title"}
+                  </option>
+
+                  {jobDescriptions.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.positionTitle}
+                      {item.roleTitle || "Untitled Job Description"}
+                      {item.jdCode ? ` (${item.jdCode})` : ""}
                     </option>
                   ))}
                 </SelectInput>
@@ -681,7 +657,7 @@ function CreatePersonnelRequisitionModal({
                 <TextInput
                   value={form.departmentAccount || ""}
                   readOnly
-                  className="cursor-not-allowed bg-[#F8FAFC]"
+                  disabled
                   placeholder="Auto-populated after selecting position"
                 />
               </div>
@@ -689,9 +665,13 @@ function CreatePersonnelRequisitionModal({
               <div>
                 <FieldLabel>Job Description</FieldLabel>
                 <TextInput
-                  value={form.jobDescriptionTitle || ""}
+                  value={
+                    form.jobDescriptionCode
+                      ? `${form.jobDescriptionCode} — ${form.jobDescriptionTitle}`
+                      : form.jobDescriptionTitle || ""
+                  }
                   readOnly
-                  className="cursor-not-allowed bg-[#F8FAFC]"
+                  disabled
                   placeholder="Auto-populated after selecting position"
                 />
               </div>
@@ -776,7 +756,7 @@ function CreatePersonnelRequisitionModal({
                 <TextInput
                   value={form.preparedBy || ""}
                   readOnly
-                  className="cursor-not-allowed bg-[#F8FAFC]"
+                  disabled
                   placeholder="Logged-in user"
                 />
               </div>
@@ -966,6 +946,7 @@ function ViewHiringNeedModal({ open, item, onClose }) {
                 <InfoBox
                   label="Job Description"
                   value={
+                    item.jobDescriptionText ||
                     item.jobDescriptionTitle ||
                     item.jobDescriptionId ||
                     "Not selected"
@@ -1071,10 +1052,9 @@ export default function HiringNeedsPage() {
   const preparedByName = getUserDisplayName(user);
 
   const [list, setList] = useState([]);
-  const [jobDescriptions] = useState(jobDescriptionOptions);
+  const [jobDescriptions, setJobDescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const jobDescriptionLoading = false;
+  const [jobDescriptionLoading, setJobDescriptionLoading] = useState(false);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -1092,6 +1072,7 @@ export default function HiringNeedsPage() {
 
   useEffect(() => {
     fetchList();
+    fetchJobDescriptions();
   }, []);
 
   useEffect(() => {
@@ -1101,6 +1082,13 @@ export default function HiringNeedsPage() {
       preparedById: user?.id || user?.userId || user?.gy_user_id || "",
     }));
   }, [preparedByName, user]);
+
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
 
   async function fetchList() {
     setLoading(true);
@@ -1120,6 +1108,27 @@ export default function HiringNeedsPage() {
       setList(fallbackPersonnelRequisitions);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchJobDescriptions() {
+    setJobDescriptionLoading(true);
+
+    try {
+      const res = await getHiringNeedJobDescriptions();
+
+      if (res?.success && Array.isArray(res.data)) {
+        setJobDescriptions(res.data);
+      } else if (Array.isArray(res)) {
+        setJobDescriptions(res);
+      } else {
+        setJobDescriptions([]);
+      }
+    } catch (err) {
+      console.error("GET JOB DESCRIPTIONS ERROR:", err);
+      setJobDescriptions([]);
+    } finally {
+      setJobDescriptionLoading(false);
     }
   }
 
@@ -1145,75 +1154,150 @@ export default function HiringNeedsPage() {
     resetForm();
   }
 
+  function showStatusModal(type, title, message) {
+  setStatusModal({
+    open: true,
+    type,
+    title,
+    message,
+  });
+}
+
+function closeStatusModal() {
+  setStatusModal((prev) => ({
+    ...prev,
+    open: false,
+  }));
+}
+
   async function handleCreate(e) {
     e.preventDefault();
 
+    if (!form.jobDescriptionDbId) {
+      showStatusModal(
+        "error",
+        "Position Title Required",
+        "Please select a Position Title from Job Description."
+      );
+      return;
+    }
+
     if (!form.positionTitle.trim()) {
-      alert("Position Title is required.");
+      showStatusModal(
+        "error",
+        "Position Title Required",
+        "Position Title is required."
+      );
       return;
     }
 
     if (!form.departmentAccount.trim()) {
-      alert("Department / Account is required.");
+      showStatusModal(
+        "error",
+        "Department / Account Required",
+        "Department / Account is required."
+      );
       return;
     }
 
     if (!form.headcount || Number(form.headcount) <= 0) {
-      alert("Headcount must be greater than 0.");
+      showStatusModal(
+        "error",
+        "Invalid Headcount",
+        "Headcount must be greater than 0."
+      );
       return;
     }
 
     if (!form.reasonForHiring) {
-      alert("Reason for Hiring is required.");
+      showStatusModal(
+        "error",
+        "Reason Required",
+        "Reason for Hiring is required."
+      );
       return;
     }
 
     if (!reasonForHiringOptions.includes(form.reasonForHiring)) {
-      alert("Invalid Reason for Hiring selected.");
+      showStatusModal(
+        "error",
+        "Invalid Reason",
+        "Invalid Reason for Hiring selected."
+      );
       return;
     }
 
     if (!form.assignment) {
-      alert("Assignment is required.");
+      showStatusModal(
+        "error",
+        "Assignment Required",
+        "Assignment is required."
+      );
       return;
     }
 
     if (form.assignment === "Other" && !form.assignmentOther.trim()) {
-      alert("Please enter Other assignment information.");
+      showStatusModal(
+        "error",
+        "Other Assignment Required",
+        "Please enter Other assignment information."
+      );
       return;
     }
 
     if (!form.locationSite) {
-      alert("Location / Site is required.");
+      showStatusModal(
+        "error",
+        "Location Required",
+        "Location / Site is required."
+      );
       return;
     }
 
     if (!form.dateNeeded) {
-      alert("Date Needed is required.");
+      showStatusModal(
+        "error",
+        "Date Needed Required",
+        "Date Needed is required."
+      );
       return;
     }
 
     try {
       const selectedJd = jobDescriptions.find((jd) => {
-        return String(jd.id) === String(form.jobDescriptionId);
+        return String(jd.id) === String(form.jobDescriptionDbId);
       });
 
       const payload = {
-        positionOptionId: form.positionOptionId || null,
-        position_option_id: form.positionOptionId || null,
+        jobDescriptionDbId: form.jobDescriptionDbId || null,
+        job_description_db_id: form.jobDescriptionDbId || null,
+
+        jobDescriptionId: form.jobDescriptionDbId || null,
+        job_description_id: form.jobDescriptionDbId || null,
+
+        jdCode: form.jobDescriptionCode || selectedJd?.jdCode || "",
+        jd_code: form.jobDescriptionCode || selectedJd?.jdCode || "",
 
         positionTitle: form.positionTitle,
         position_title: form.positionTitle,
         roleTitle: form.positionTitle,
+        role_title: form.positionTitle,
 
         departmentAccount: form.departmentAccount,
         department_account: form.departmentAccount,
 
-        jobDescriptionId: form.jobDescriptionId || null,
-        job_description_id: form.jobDescriptionId || null,
-        jobDescriptionTitle: form.jobDescriptionTitle || selectedJd?.title || "",
+        accountId: form.accountId || selectedJd?.accountId || null,
+        account_id: form.accountId || selectedJd?.accountId || null,
+        account: form.accountId || selectedJd?.accountId || null,
+
+        departmentId: form.departmentId || selectedJd?.departmentId || null,
+        department_id: form.departmentId || selectedJd?.departmentId || null,
+        department: form.departmentId || selectedJd?.departmentId || null,
+
+        jobDescriptionTitle:
+          form.jobDescriptionTitle || selectedJd?.roleTitle || "",
         job_description_title:
-          form.jobDescriptionTitle || selectedJd?.title || "",
+          form.jobDescriptionTitle || selectedJd?.roleTitle || "",
 
         headcount: Number(form.headcount),
         approvedRequirement: Number(form.headcount),
@@ -1225,14 +1309,15 @@ export default function HiringNeedsPage() {
 
         assignment: form.assignment,
         assignmentOther: form.assignment === "Other" ? form.assignmentOther : "",
-        assignment_other:
-          form.assignment === "Other" ? form.assignmentOther : "",
+        assignment_other: form.assignment === "Other" ? form.assignmentOther : "",
 
         locationSite: form.locationSite,
         location_site: form.locationSite,
 
         dateNeeded: form.dateNeeded,
         date_needed: form.dateNeeded,
+        requestedStartDate: form.dateNeeded,
+        requested_start_date: form.dateNeeded,
         dueDate: form.dateNeeded,
         due_date: form.dateNeeded,
 
@@ -1240,9 +1325,13 @@ export default function HiringNeedsPage() {
         prepared_by: form.preparedBy,
         preparedById: form.preparedById,
         prepared_by_id: form.preparedById,
+        hiringManager: form.preparedBy,
+        hiring_manager: form.preparedBy,
 
-        approvalStatus: "For Approval",
-        approval_status: "For Approval",
+        priority: "Medium",
+
+        approvalStatus: "Pending",
+        approval_status: "Pending",
       };
 
       const res = await createHiringNeed(payload);
@@ -1251,12 +1340,27 @@ export default function HiringNeedsPage() {
         resetForm();
         setShowCreateModal(false);
         fetchList();
+
+        showStatusModal(
+          "success",
+          "Personnel Requisition Created",
+          "The hiring need was submitted successfully and is now for approval."
+        );
       } else {
-        alert(res?.message || "Failed to create personnel requisition.");
+        showStatusModal(
+          "error",
+          "Submission Failed",
+          res?.message || "Failed to create personnel requisition."
+        );
       }
     } catch (err) {
       console.error("CREATE PERSONNEL REQUISITION ERROR:", err);
-      alert("Failed to create personnel requisition.");
+
+      showStatusModal(
+        "error",
+        "Submission Failed",
+        err?.response?.data?.message || "Failed to create personnel requisition."
+      );
     }
   }
 
@@ -1278,6 +1382,7 @@ export default function HiringNeedsPage() {
         String(item.positionTitle || "").toLowerCase().includes(keyword) ||
         String(item.departmentAccount || "").toLowerCase().includes(keyword) ||
         String(item.jobDescriptionTitle || "").toLowerCase().includes(keyword) ||
+        String(item.jobDescriptionText || "").toLowerCase().includes(keyword) ||
         String(item.reasonForHiring || "").toLowerCase().includes(keyword) ||
         String(item.locationSite || "").toLowerCase().includes(keyword) ||
         String(item.preparedBy || "").toLowerCase().includes(keyword);
@@ -1600,7 +1705,8 @@ export default function HiringNeedsPage() {
                             </td>
 
                             <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.jobDescriptionTitle ||
+                              {item.jobDescriptionText ||
+                                item.jobDescriptionTitle ||
                                 item.jobDescriptionId ||
                                 "Not selected"}
                             </td>
@@ -1731,6 +1837,8 @@ export default function HiringNeedsPage() {
         open={showCreateModal}
         form={form}
         setForm={setForm}
+        jobDescriptions={jobDescriptions}
+        jobDescriptionLoading={jobDescriptionLoading}
         reasonForHiringOptions={reasonForHiringOptions}
         onClose={handleCloseCreateModal}
         onSubmit={handleCreate}
@@ -1741,6 +1849,14 @@ export default function HiringNeedsPage() {
         open={!!selectedItem}
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
+      />
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
       />
     </div>
   );

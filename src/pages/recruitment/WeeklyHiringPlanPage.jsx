@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import api from "../../lib/axios/api-template";
+import StatusModal from "../../components/modals/StatusModal";
 import {
   getWeeklyHiringPlanAccounts,
   getWeeklyHiringPlanWeeks,
@@ -17,7 +18,6 @@ import {
   Paperclip,
   PieChart,
   Plus,
-  Save,
   Search,
   Unlock,
   Upload,
@@ -654,86 +654,6 @@ function PercentageGraphSection({ filteredPlans, overallStatus }) {
   );
 }
 
-
-function StatusModal({ open, type = "success", title, message, onClose }) {
-  useLockBodyScroll(open);
-
-  if (!open) return null;
-
-  const isSuccess = type === "success";
-  const Icon = isSuccess ? CheckCircle2 : AlertTriangle;
-
-  return (
-    <div
-      className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
-    >
-      <div
-        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div
-          className={`border-b px-6 py-5 ${
-            isSuccess
-              ? "border-emerald-100 bg-emerald-50"
-              : "border-red-100 bg-red-50"
-          }`}
-        >
-          <div className="flex items-start gap-4">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
-                isSuccess
-                  ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
-              }`}
-            >
-              <Icon size={24} />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <h2
-                className={`text-lg font-bold ${
-                  isSuccess ? "text-emerald-900" : "text-red-900"
-                }`}
-              >
-                {title || (isSuccess ? "Success" : "Failed")}
-              </h2>
-
-              <p
-                className={`mt-1 text-sm font-medium leading-6 ${
-                  isSuccess ? "text-emerald-800" : "text-red-800"
-                }`}
-              >
-                {message}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="shrink-0 rounded-full p-1.5 text-gray-400 transition hover:bg-white/80 hover:text-gray-700"
-              aria-label="Close status modal"
-            >
-              <X size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex justify-end px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className={`inline-flex h-10 items-center justify-center rounded-xl px-5 text-sm font-bold text-white transition hover:opacity-90 ${
-              isSuccess ? "bg-emerald-600" : "bg-red-600"
-            }`}
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ActionItemModal({ open, item, form, setForm, onClose, onSubmit }) {
   useLockBodyScroll(open);
 
@@ -913,6 +833,22 @@ function ViewPlanModal({
   const existingUploadName = existingUploadedFile || item.uploadedFile || "";
   const hasExistingUpload = !!existingUploadName;
 
+  const submittingViewModal =
+    savingRequiredId === item.id || savingFileId === item.id;
+
+  const submitDisabled = !canEditRequiredHeadcount || submittingViewModal;
+
+  async function handleSubmitViewModal() {
+    if (submitDisabled) return;
+
+    if (weeklyPlanFile) {
+      await onUpdateWeeklyPlanFile(item);
+      return;
+    }
+
+    await onSaveRequiredHeadcount(item);
+  }
+
   return (
     <div
       className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
@@ -1013,16 +949,6 @@ function ViewPlanModal({
                       }}
                       className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#1E293B] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
-
-                    <button
-                      type="button"
-                      onClick={() => onSaveRequiredHeadcount(item)}
-                      disabled={requiredHeadcountDisabled}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-                      title="Save required headcount"
-                    >
-                      <Save size={15} />
-                    </button>
                   </div>
 
                   {!canEditRequiredHeadcount && (
@@ -1117,22 +1043,6 @@ function ViewPlanModal({
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,image/heic,image/heif"
                     />
                   </label>
-
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => onUpdateWeeklyPlanFile(item)}
-                      disabled={
-                        !canEditRequiredHeadcount ||
-                        !weeklyPlanFile ||
-                        savingFileId === item.id
-                      }
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <Upload size={15} />
-                      {savingFileId === item.id ? "Uploading..." : "Update File"}
-                    </button>
-                  </div>
                 </div>
 
                 <InfoBox
@@ -1292,11 +1202,31 @@ function ViewPlanModal({
         </div>
 
         <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleSubmitViewModal}
+              disabled={submitDisabled}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {submittingViewModal ? (
+                weeklyPlanFile ? (
+                  "Uploading..."
+                ) : (
+                  "Saving..."
+                )
+              ) : (
+                <>
+                  <Upload size={16} />
+                  Submit
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl border border-[#D6DEE8] bg-white px-5 py-2.5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
             >
               Close
             </button>
@@ -1934,13 +1864,22 @@ export default function WeeklyHiringPlanPage() {
       )
     : null;
 
-  function openStatusModal({ type = "success", title = "", message = "" }) {
+  function openStatusModal({
+    type = "success",
+    title = "",
+    message = "",
+    closeViewModalOnSuccess = false,
+  }) {
     setStatusModal({
       open: true,
       type,
       title,
       message,
     });
+
+    if (type === "success" && closeViewModalOnSuccess) {
+      setSelectedPlan(null);
+    }
   }
 
   function closeStatusModal() {
@@ -2133,11 +2072,11 @@ export default function WeeklyHiringPlanPage() {
       });
 
       const message = `Required headcount for ${item.account} was saved successfully.`;
-      setRequiredSaveMessage("Required headcount saved.");
       openStatusModal({
         type: "success",
         title: "Required Headcount Saved",
         message,
+        closeViewModalOnSuccess: true,
       });
     } catch (error) {
       console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
@@ -2300,6 +2239,7 @@ export default function WeeklyHiringPlanPage() {
         type: "success",
         title: "File Updated",
         message: `Weekly hiring plan file for ${item.account} was updated successfully.`,
+        closeViewModalOnSuccess: true,
       });
     } catch (error) {
       console.error("UPDATE WEEKLY HIRING PLAN FILE ERROR:", error);
@@ -2772,12 +2712,6 @@ export default function WeeklyHiringPlanPage() {
                   Clear Filters
                 </button>
               )}
-
-              {requiredSaveMessage && (
-                <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                  {requiredSaveMessage}
-                </span>
-              )}
             </div>
           </div>
 
@@ -3152,6 +3086,7 @@ export default function WeeklyHiringPlanPage() {
         type={statusModal.type}
         title={statusModal.title}
         message={statusModal.message}
+        variant="center"
         onClose={closeStatusModal}
       />
 
