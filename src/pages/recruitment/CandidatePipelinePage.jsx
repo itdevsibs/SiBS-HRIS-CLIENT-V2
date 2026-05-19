@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  List,
 } from "lucide-react";
 
 const CANDIDATE_APPLICATIONS_STORAGE_KEY = "ta_candidate_applications";
@@ -1496,13 +1497,22 @@ function CandidateAvatar({ candidate }) {
 
 function DashboardMetric({ label, value, icon: Icon, description, valueClassName = "text-sibs-primary-1" }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wide text-[#475467]">{label}</p>
-          <p className={`mt-3 text-3xl font-extrabold ${valueClassName}`}>{value}</p>
-          {description && <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">{description}</p>}
+    <div className="h-[126px] rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="flex h-full items-center justify-between gap-4">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <p className="truncate whitespace-nowrap text-xs font-bold uppercase leading-none tracking-wide text-sibs-tertiary-5">
+            {label}
+          </p>
+          <p className={`mt-4 truncate text-3xl font-extrabold leading-none ${valueClassName}`}>
+            {value}
+          </p>
+          {description && (
+            <p className="mt-2 truncate whitespace-nowrap text-xs font-semibold leading-none text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
         </div>
+
         {Icon && (
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
             <Icon size={22} />
@@ -3158,7 +3168,630 @@ function CandidatePipelineModal({
   );
 }
 
+
+function PipelineInfoTile({ label, value, children }) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+      {children || (
+        <p className="mt-2 break-words text-sm font-extrabold leading-5 text-[#344054]">
+          {value || "—"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function PipelineCandidateCard({
+  candidate,
+  onViewCandidate,
+  onOpenMoveModal,
+  onOpenAssessmentModal,
+  onOpenScheduleModal,
+  onCancelInterview,
+  onCompleteInterview,
+}) {
+  const nextStage = getNextStage(candidate.currentStage);
+  const latestTimeline = Array.isArray(candidate.timeline) && candidate.timeline.length
+    ? candidate.timeline[candidate.timeline.length - 1]
+    : null;
+  const assessmentLabel = candidate.assessmentResult || candidate.assessmentStatus || "Not Take";
+  const interviewStatus = getDisplayInterviewStatus(candidate);
+  const showScheduleButton =
+    candidate.currentStage === "Online Assessment" && canScheduleInterview(candidate);
+  const showAssessmentButton = candidate.currentStage === "Online Assessment";
+  const showUpdateSchedule = candidate.currentStage === "Interview Scheduled";
+  const showMoveButton =
+    candidate.currentStage !== "Drop-off" &&
+    candidate.currentStage !== "Accepted" &&
+    candidate.currentStage !== "Online Assessment" &&
+    candidate.currentStage !== "Interview Scheduled" &&
+    candidate.currentStage !== "Offered" &&
+    Boolean(nextStage);
+
+  return (
+    <article
+      className="group overflow-hidden rounded-md border border-[#D6DEE8] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-sibs-primary-1/30 hover:shadow-md"
+      onClick={() => onViewCandidate(candidate)}
+    >
+      <div className="px-3 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-[13px] font-extrabold leading-5 text-[#102A43]">
+              {candidate.name}
+            </h3>
+            <p className="mt-1 truncate text-[11px] font-semibold text-[#667085]">
+              {candidate.email || "No email saved"}
+            </p>
+          </div>
+
+          <CandidateAvatar candidate={candidate} />
+        </div>
+
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="inline-flex rounded-[4px] bg-blue-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-blue-700">
+            {candidate.source || "Pipeline"}
+          </span>
+          <span className={`inline-flex rounded-[4px] border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${getPrfStatusClass(candidate.prfStatus || "Review")}`}>
+            {candidate.prfStatus || "Review"}
+          </span>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="rounded-md bg-[#F8FAFC] px-2 py-2">
+            <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              Position
+            </p>
+            <p className="mt-1 line-clamp-1 text-[11px] font-bold text-[#344054]">
+              {getRoleTitle(candidate.roleAccount) || "Not assigned yet"}
+            </p>
+          </div>
+
+          <div className="rounded-md bg-[#F8FAFC] px-2 py-2">
+            <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+              Account
+            </p>
+            <p className="mt-1 line-clamp-1 text-[11px] font-bold text-[#344054]">
+              {getAccount(candidate.roleAccount) || "Not assigned yet"}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-2 space-y-1.5">
+          <div className="flex items-center justify-between gap-2 text-[11px]">
+            <span className="font-bold text-[#667085]">Assessment</span>
+            <span className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 text-[10px] font-bold ${candidate.assessmentResult ? getAssessmentResultClass(candidate.assessmentResult) : getAssessmentStatusClass(candidate.assessmentStatus || "Not Take")}`}>
+              {assessmentLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 text-[11px]">
+            <span className="font-bold text-[#667085]">Interview</span>
+            <span className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 text-[10px] font-bold ${getInterviewStatusClass(interviewStatus)}`}>
+              {interviewStatus || "—"}
+            </span>
+          </div>
+        </div>
+
+        {candidate.interviewDate && (
+          <div className="mt-3 rounded-md border border-sky-100 bg-sky-50 px-2 py-2">
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold text-sibs-primary-1">
+              <CalendarDays size={13} />
+              {formatDateTime(candidate.interviewDate)}
+            </p>
+            <p className="mt-1 text-[10px] font-bold text-[#667085]">
+              {getDisplayInterviewType(candidate)}
+            </p>
+          </div>
+        )}
+
+        {latestTimeline?.reason && (
+          <p className="mt-3 line-clamp-2 rounded-md bg-[#F8FAFC] px-2 py-2 text-[11px] font-semibold leading-5 text-[#667085]">
+            {latestTimeline.reason}
+          </p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#EEF2F6] pt-3">
+          <p className="truncate text-[10px] font-bold text-[#98A2B3]">
+            {candidate.candidateId || candidate.candidateApplicationId || "—"}
+          </p>
+
+          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onViewCandidate(candidate)}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              title="View Details"
+            >
+              <Eye size={14} />
+            </button>
+
+            {showAssessmentButton && (
+              <button
+                type="button"
+                onClick={() => onOpenAssessmentModal(candidate)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100"
+                title="Update Assessment"
+              >
+                <ClipboardCheck size={14} />
+              </button>
+            )}
+
+            {showScheduleButton && (
+              <button
+                type="button"
+                onClick={() => onOpenScheduleModal(candidate)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                title="Schedule Interview"
+              >
+                <CalendarDays size={14} />
+              </button>
+            )}
+
+            {showUpdateSchedule && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onOpenScheduleModal(candidate)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                  title="Update Interview Schedule"
+                >
+                  <CalendarDays size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onCancelInterview(candidate)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:bg-red-100"
+                  title="Cancel Interview"
+                >
+                  <X size={14} />
+                </button>
+                {candidate.interviewStatus !== "Completed" && (
+                  <button
+                    type="button"
+                    onClick={() => onCompleteInterview(candidate)}
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
+                    title="Mark Interview Completed"
+                  >
+                    <UserCheck size={14} />
+                  </button>
+                )}
+              </>
+            )}
+
+            {showMoveButton && (
+              <button
+                type="button"
+                onClick={() => onOpenMoveModal(candidate)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                title={`Move to ${nextStage}`}
+              >
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function PipelineListView({
+  candidates,
+  activeStage,
+  onViewCandidate,
+  onOpenMoveModal,
+  onOpenAssessmentModal,
+  onOpenScheduleModal,
+  onCancelInterview,
+  onCompleteInterview,
+}) {
+  const visibleCandidates = useMemo(() => {
+    if (activeStage === "All") return candidates;
+    return candidates.filter((candidate) => candidate.currentStage === activeStage);
+  }, [candidates, activeStage]);
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+      <div className="overflow-x-auto">
+        <table className="min-w-[1180px] w-full border-collapse">
+          <thead>
+            <tr className="border-b border-[#E6ECF2] bg-[#F8FAFC]">
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Candidate
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Stage
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Position / Account
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                PRF
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Assessment
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Interview
+              </th>
+              <th className="px-4 py-3 text-left text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Owner
+              </th>
+              <th className="px-4 py-3 text-right text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Actions
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {visibleCandidates.length > 0 ? (
+              visibleCandidates.map((candidate) => {
+                const nextStage = getNextStage(candidate.currentStage);
+                const interviewStatus = getDisplayInterviewStatus(candidate);
+                const showAssessmentButton = candidate.currentStage === "Online Assessment";
+                const showScheduleButton =
+                  candidate.currentStage === "Online Assessment" &&
+                  canScheduleInterview(candidate);
+                const showUpdateSchedule = candidate.currentStage === "Interview Scheduled";
+                const showMoveButton =
+                  candidate.currentStage !== "Drop-off" &&
+                  candidate.currentStage !== "Accepted" &&
+                  candidate.currentStage !== "Online Assessment" &&
+                  candidate.currentStage !== "Interview Scheduled" &&
+                  candidate.currentStage !== "Offered" &&
+                  Boolean(nextStage);
+
+                return (
+                  <tr
+                    key={candidate.id}
+                    className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
+                  >
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <CandidateAvatar candidate={candidate} />
+                        <div className="min-w-0">
+                          <button
+                            type="button"
+                            onClick={() => onViewCandidate(candidate)}
+                            className="block max-w-[230px] truncate text-left text-sm font-extrabold text-[#101828] transition hover:text-sibs-primary-1 hover:underline"
+                          >
+                            {candidate.name}
+                          </button>
+                          <p className="mt-0.5 max-w-[230px] truncate text-xs font-semibold text-[#667085]">
+                            {candidate.email || "No email saved"}
+                          </p>
+                          <p className="mt-0.5 text-[11px] font-bold text-[#98A2B3]">
+                            {candidate.candidateId || candidate.candidateApplicationId || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
+                          candidate.currentStage
+                        )}`}
+                      >
+                        {candidate.currentStage}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+                        {getRoleTitle(candidate.roleAccount) || "Not assigned yet"}
+                      </p>
+                      <p className="mt-0.5 max-w-[220px] truncate text-xs font-semibold text-[#667085]">
+                        {getAccount(candidate.roleAccount) || "Not assigned yet"}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
+                          candidate.prfStatus || "Review"
+                        )}`}
+                      >
+                        {candidate.prfStatus || "Review"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${
+                          candidate.assessmentResult
+                            ? getAssessmentResultClass(candidate.assessmentResult)
+                            : getAssessmentStatusClass(candidate.assessmentStatus || "Not Take")
+                        }`}
+                      >
+                        {candidate.assessmentResult ||
+                          candidate.assessmentStatus ||
+                          "Not Take"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <p className="text-sm font-bold text-[#344054]">
+                        {formatDateTime(candidate.interviewDate)}
+                      </p>
+                      <span
+                        className={`mt-1 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
+                          interviewStatus
+                        )}`}
+                      >
+                        {interviewStatus || "—"}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <p className="max-w-[160px] truncate text-sm font-bold text-[#344054]">
+                        {candidate.taOwner || candidate.owner || "—"}
+                      </p>
+                      <p className="mt-0.5 text-xs font-semibold text-[#98A2B3]">
+                        {candidate.dateMoved || candidate.updatedAt || "—"}
+                      </p>
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onViewCandidate(candidate)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm"
+                          title="View Details"
+                        >
+                          <Eye size={15} />
+                        </button>
+
+                        {showAssessmentButton && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenAssessmentModal(candidate)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-sm"
+                            title="Update Assessment"
+                          >
+                            <ClipboardCheck size={15} />
+                          </button>
+                        )}
+
+                        {showScheduleButton && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenScheduleModal(candidate)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
+                            title="Schedule Interview"
+                          >
+                            <CalendarDays size={15} />
+                          </button>
+                        )}
+
+                        {showUpdateSchedule && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => onOpenScheduleModal(candidate)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-700 transition hover:-translate-y-0.5 hover:bg-blue-100 hover:shadow-sm"
+                              title="Update Interview Schedule"
+                            >
+                              <CalendarDays size={15} />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => onCancelInterview(candidate)}
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm"
+                              title="Cancel Interview"
+                            >
+                              <X size={15} />
+                            </button>
+
+                            {candidate.interviewStatus !== "Completed" && (
+                              <button
+                                type="button"
+                                onClick={() => onCompleteInterview(candidate)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm"
+                                title="Mark Interview Completed"
+                              >
+                                <UserCheck size={15} />
+                              </button>
+                            )}
+                          </>
+                        )}
+
+                        {showMoveButton && (
+                          <button
+                            type="button"
+                            onClick={() => onOpenMoveModal(candidate)}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm"
+                            title={`Move to ${nextStage}`}
+                          >
+                            <ArrowRight size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={8} className="px-5 py-14 text-center">
+                  <p className="text-sm font-extrabold text-[#98A2B3]">
+                    No candidates found.
+                  </p>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PipelineCardsBoard({
+  candidates,
+  stageCounts,
+  activeStage,
+  setActiveStage,
+  onViewCandidate,
+  onOpenMoveModal,
+  onOpenAssessmentModal,
+  onOpenScheduleModal,
+  onCancelInterview,
+  onCompleteInterview,
+}) {
+  const [boardViewMode, setBoardViewMode] = useState("board");
+
+  const candidatesByStage = useMemo(() => {
+    return pipelineStages.reduce((acc, stage) => {
+      acc[stage] = candidates.filter((candidate) => candidate.currentStage === stage);
+      return acc;
+    }, {});
+  }, [candidates]);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] bg-white px-4 py-3 sm:px-5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-base font-extrabold text-[#101828]">Board</h2>
+            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+              Switch between compact board cards and a detailed list view.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] p-1">
+              <button
+                type="button"
+                onClick={() => setBoardViewMode("board")}
+                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold transition ${
+                  boardViewMode === "board"
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "text-sibs-primary-1 hover:bg-white"
+                }`}
+              >
+                <SlidersHorizontal size={15} />
+                Board
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBoardViewMode("list")}
+                className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg px-4 text-xs font-extrabold transition ${
+                  boardViewMode === "list"
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "text-sibs-primary-1 hover:bg-white"
+                }`}
+              >
+                <List size={15} />
+                List
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {boardViewMode === "list" ? (
+        <div className="bg-[#F5F7FA] p-4">
+          <PipelineListView
+            candidates={candidates}
+            activeStage={activeStage}
+            onViewCandidate={onViewCandidate}
+            onOpenMoveModal={onOpenMoveModal}
+            onOpenAssessmentModal={onOpenAssessmentModal}
+            onOpenScheduleModal={onOpenScheduleModal}
+            onCancelInterview={onCancelInterview}
+            onCompleteInterview={onCompleteInterview}
+          />
+        </div>
+      ) : (
+        <div className="overflow-x-auto bg-[#F5F7FA] p-4">
+          <div className="flex min-w-max gap-4">
+            {pipelineStages.map((stage) => {
+              const stageCandidates = candidatesByStage[stage] || [];
+              const isActive = activeStage === stage;
+
+              return (
+                <div
+                  key={stage}
+                  className={`flex max-h-[calc(100vh-360px)] min-h-[520px] w-[292px] shrink-0 flex-col rounded-md border transition ${
+                    isActive
+                      ? "border-sibs-primary-1 bg-white shadow-md"
+                      : "border-[#E6ECF2] bg-[#F8FAFC]"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setActiveStage(stage)}
+                    className="flex h-[54px] items-center justify-between gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left transition hover:bg-white"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-[11px] font-extrabold uppercase tracking-wide text-[#344054]">
+                        {stage}
+                      </p>
+                      <p className="mt-0.5 text-[10px] font-bold text-[#98A2B3]">
+                        {stage === "Initial Screening"
+                          ? "PRF review"
+                          : stage === "Online Assessment"
+                            ? "Assessment"
+                            : stage === "Interview Scheduled"
+                              ? "Calendar"
+                              : stage === "Interviewed"
+                                ? "Interview done"
+                                : stage === "Offered"
+                                  ? "Offer approval"
+                                  : stage === "Accepted"
+                                    ? "Converted"
+                                    : "Closed"}
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-extrabold text-[#475467] shadow-sm">
+                      {stageCounts[stage] || stageCandidates.length}
+                    </span>
+                  </button>
+
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+                    {stageCandidates.length > 0 ? (
+                      stageCandidates.map((candidate) => (
+                        <PipelineCandidateCard
+                          key={candidate.id}
+                          candidate={candidate}
+                          onViewCandidate={onViewCandidate}
+                          onOpenMoveModal={onOpenMoveModal}
+                          onOpenAssessmentModal={onOpenAssessmentModal}
+                          onOpenScheduleModal={onOpenScheduleModal}
+                          onCancelInterview={onCancelInterview}
+                          onCompleteInterview={onCompleteInterview}
+                        />
+                      ))
+                    ) : (
+                      <div className="rounded-md border border-dashed border-[#D6DEE8] bg-white px-3 py-8 text-center">
+                        <p className="text-xs font-extrabold text-[#98A2B3]">
+                          No cards
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function InterviewCalendar({ candidates, onViewCandidate }) {
+  const [calendarViewType, setCalendarViewType] = useState("Month");
+
   const scheduledCandidates = useMemo(() => {
     return candidates
       .filter((candidate) => {
@@ -3186,12 +3819,22 @@ function InterviewCalendar({ candidates, onViewCandidate }) {
   const [visibleMonth, setVisibleMonth] = useState(
     new Date(initialCalendarDate.getFullYear(), initialCalendarDate.getMonth(), 1)
   );
+  const [visibleWeekDate, setVisibleWeekDate] = useState(initialCalendarDate);
 
   useEffect(() => {
     setVisibleMonth(
       new Date(initialCalendarDate.getFullYear(), initialCalendarDate.getMonth(), 1)
     );
+    setVisibleWeekDate(initialCalendarDate);
   }, [initialCalendarDate]);
+
+  const candidatesByDate = useMemo(() => {
+    return scheduledCandidates.reduce((acc, candidate) => {
+      const key = String(candidate.interviewDate).slice(0, 10);
+      acc[key] = acc[key] ? [...acc[key], candidate] : [candidate];
+      return acc;
+    }, {});
+  }, [scheduledCandidates]);
 
   const monthDays = useMemo(() => {
     const year = visibleMonth.getFullYear();
@@ -3208,141 +3851,264 @@ function InterviewCalendar({ candidates, onViewCandidate }) {
     });
   }, [visibleMonth]);
 
-  const candidatesByDate = useMemo(() => {
+  const weekDays = useMemo(() => {
+    const start = new Date(visibleWeekDate);
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - start.getDay());
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(start);
+      date.setDate(start.getDate() + index);
+      return date;
+    });
+  }, [visibleWeekDate]);
+
+  const listGroups = useMemo(() => {
     return scheduledCandidates.reduce((acc, candidate) => {
       const key = String(candidate.interviewDate).slice(0, 10);
-      acc[key] = acc[key] ? [...acc[key], candidate] : [candidate];
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(candidate);
       return acc;
     }, {});
   }, [scheduledCandidates]);
 
-  function handlePreviousMonth() {
+  const activeRangeTitle = useMemo(() => {
+    if (calendarViewType === "Week") {
+      const firstDay = weekDays[0];
+      const lastDay = weekDays[weekDays.length - 1];
+      return `${firstDay.toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+      })} - ${lastDay.toLocaleDateString("en-PH", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })}`;
+    }
+
+    if (calendarViewType === "List") return "Upcoming Scheduled Interviews";
+
+    return formatMonthYear(visibleMonth);
+  }, [calendarViewType, visibleMonth, weekDays]);
+
+  function handlePreviousCalendarRange() {
+    if (calendarViewType === "Week") {
+      setVisibleWeekDate((prev) => {
+        const next = new Date(prev);
+        next.setDate(next.getDate() - 7);
+        return next;
+      });
+      return;
+    }
+
     setVisibleMonth(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
     );
   }
 
-  function handleNextMonth() {
+  function handleNextCalendarRange() {
+    if (calendarViewType === "Week") {
+      setVisibleWeekDate((prev) => {
+        const next = new Date(prev);
+        next.setDate(next.getDate() + 7);
+        return next;
+      });
+      return;
+    }
+
     setVisibleMonth(
       (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
     );
   }
 
-  function handleTodayMonth() {
+  function handleTodayCalendarRange() {
     const today = new Date();
     setVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setVisibleWeekDate(today);
+  }
+
+  function renderCandidateEvent(candidate, compact = false) {
+    return (
+      <button
+        key={candidate.id}
+        type="button"
+        onClick={() => onViewCandidate(candidate)}
+        className="w-full rounded-lg border border-cyan-100 bg-cyan-50 px-2 py-2 text-left text-xs font-semibold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-cyan-100 hover:shadow-sm"
+      >
+        <p className="truncate font-bold">{candidate.name}</p>
+        <p>{formatTime(candidate.interviewDate)}</p>
+        {!compact && (
+          <p>
+            {candidate.interviewType === "Online"
+              ? "Online"
+              : "Face-to-face"}
+          </p>
+        )}
+      </button>
+    );
   }
 
   return (
-    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarDays size={17} className="text-sibs-primary-1" />
-
-          <h2 className="text-sm font-bold text-[#101828]">
-            Interview Calendar - {formatMonthYear(visibleMonth)}
-          </h2>
+    <section className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <CalendarDays size={18} className="text-sibs-primary-1" />
+            <h2 className="text-base font-extrabold text-[#101828]">
+              Interview Calendar
+            </h2>
+          </div>
+          <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+            {activeRangeTitle} · {scheduledCandidates.length} scheduled interview{scheduledCandidates.length === 1 ? "" : "s"}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={handlePreviousMonth}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-            title="Previous Month"
-          >
-            <ChevronLeft size={17} />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTodayMonth}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-          >
-            Today
-          </button>
-
-          <button
-            type="button"
-            onClick={handleNextMonth}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-            title="Next Month"
-          >
-            <ChevronRight size={17} />
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <div className="min-w-[1120px] overflow-hidden rounded-xl border border-[#E6ECF2]">
-          <div className="grid grid-cols-7 border-b border-[#E6ECF2] bg-[#F8FAFC]">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="border-r border-[#E6ECF2] px-3 py-3 text-center text-xs font-bold text-[#174A7C] last:border-r-0"
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="inline-flex rounded-xl border border-[#D6DEE8] bg-[#F8FAFC] p-1">
+            {["Month", "Week", "List"].map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setCalendarViewType(type)}
+                className={`inline-flex h-9 items-center justify-center rounded-lg px-4 text-xs font-extrabold transition ${
+                  calendarViewType === type
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "text-sibs-primary-1 hover:bg-white"
+                }`}
               >
-                {day}
-              </div>
+                {type}
+              </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-7">
-            {monthDays.map((date) => {
+          {calendarViewType !== "List" && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePreviousCalendarRange}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                title={calendarViewType === "Week" ? "Previous Week" : "Previous Month"}
+              >
+                <ChevronLeft size={17} />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTodayCalendarRange}
+                className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                Today
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNextCalendarRange}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                title={calendarViewType === "Week" ? "Next Week" : "Next Month"}
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {calendarViewType === "Month" && (
+        <div className="overflow-x-auto">
+          <div className="min-w-[1120px] overflow-hidden rounded-xl border border-[#E6ECF2]">
+            <div className="grid grid-cols-7 border-b border-[#E6ECF2] bg-[#F8FAFC]">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div
+                  key={day}
+                  className="border-r border-[#E6ECF2] px-3 py-3 text-center text-xs font-bold text-[#174A7C] last:border-r-0"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7">
+              {monthDays.map((date) => {
+                const dateKey = getDateKey(date);
+                const dayCandidates = candidatesByDate[dateKey] || [];
+                const isCurrentMonth =
+                  date.getMonth() === visibleMonth.getMonth() &&
+                  date.getFullYear() === visibleMonth.getFullYear();
+                const isToday = dateKey === getDateKey(new Date());
+
+                return (
+                  <div
+                    key={dateKey}
+                    className={`min-h-[150px] border-r border-b border-[#E6ECF2] p-3 ${
+                      isCurrentMonth ? "bg-white" : "bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span
+                        className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                          isToday
+                            ? "bg-sibs-primary-1 text-white"
+                            : isCurrentMonth
+                              ? "text-[#101828]"
+                              : "text-[#98A2B3]"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </span>
+
+                      {dayCandidates.length > 0 && (
+                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                          {dayCandidates.length}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {dayCandidates.slice(0, 3).map((candidate) => renderCandidateEvent(candidate))}
+
+                      {dayCandidates.length > 3 && (
+                        <div className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-2 text-center text-xs font-bold text-gray-600">
+                          +{dayCandidates.length - 3} more
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {calendarViewType === "Week" && (
+        <div className="overflow-x-auto">
+          <div className="grid min-w-[980px] grid-cols-7 overflow-hidden rounded-xl border border-[#E6ECF2]">
+            {weekDays.map((date) => {
               const dateKey = getDateKey(date);
               const dayCandidates = candidatesByDate[dateKey] || [];
-              const isCurrentMonth =
-                date.getMonth() === visibleMonth.getMonth() &&
-                date.getFullYear() === visibleMonth.getFullYear();
               const isToday = dateKey === getDateKey(new Date());
 
               return (
-                <div
-                  key={dateKey}
-                  className={`min-h-[150px] border-r border-b border-[#E6ECF2] p-3 ${
-                    isCurrentMonth ? "bg-white" : "bg-[#F8FAFC]"
-                  }`}
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <span
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                        isToday
-                          ? "bg-sibs-primary-1 text-white"
-                          : isCurrentMonth
-                            ? "text-[#101828]"
-                            : "text-[#98A2B3]"
+                <div key={dateKey} className="min-h-[360px] border-r border-[#E6ECF2] bg-white p-3 last:border-r-0">
+                  <div className="mb-3 rounded-xl bg-[#F8FAFC] px-3 py-3 text-center">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                      {date.toLocaleDateString("en-PH", { weekday: "short" })}
+                    </p>
+                    <p
+                      className={`mx-auto mt-1 flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${
+                        isToday ? "bg-sibs-primary-1 text-white" : "text-[#101828]"
                       }`}
                     >
                       {date.getDate()}
-                    </span>
-
-                    {dayCandidates.length > 0 && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                        {dayCandidates.length}
-                      </span>
-                    )}
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    {dayCandidates.slice(0, 3).map((candidate) => (
-                      <button
-                        key={candidate.id}
-                        type="button"
-                        onClick={() => onViewCandidate(candidate)}
-                        className="w-full rounded-lg border border-cyan-100 bg-cyan-50 px-2 py-2 text-left text-xs font-semibold text-sibs-primary-1 transition hover:bg-cyan-100"
-                      >
-                        <p className="truncate font-bold">{candidate.name}</p>
-                        <p>{formatTime(candidate.interviewDate)}</p>
-                        <p>
-                          {candidate.interviewType === "Online"
-                            ? "Online"
-                            : "Face-to-face"}
-                        </p>
-                      </button>
-                    ))}
-
-                    {dayCandidates.length > 3 && (
-                      <div className="rounded-lg border border-gray-100 bg-gray-50 px-2 py-2 text-center text-xs font-bold text-gray-600">
-                        +{dayCandidates.length - 3} more
+                    {dayCandidates.length > 0 ? (
+                      dayCandidates.map((candidate) => renderCandidateEvent(candidate))
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-3 py-6 text-center text-xs font-bold text-sibs-tertiary-5">
+                        No interview
                       </div>
                     )}
                   </div>
@@ -3351,7 +4117,57 @@ function InterviewCalendar({ candidates, onViewCandidate }) {
             })}
           </div>
         </div>
-      </div>
+      )}
+
+      {calendarViewType === "List" && (
+        <div className="space-y-3">
+          {Object.keys(listGroups).length > 0 ? (
+            Object.keys(listGroups).map((dateKey) => (
+              <div key={dateKey} className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h3 className="text-sm font-extrabold text-sibs-primary-1">
+                    {new Date(dateKey).toLocaleDateString("en-PH", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </h3>
+                  <span className="w-fit rounded-full bg-white px-3 py-1 text-xs font-bold text-[#475467]">
+                    {listGroups[dateKey].length} interview{listGroups[dateKey].length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+                  {listGroups[dateKey].map((candidate) => (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => onViewCandidate(candidate)}
+                      className="flex items-center justify-between gap-4 rounded-xl border border-[#E6ECF2] bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-100 hover:bg-cyan-50 hover:shadow-sm"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-extrabold text-[#101828]">{candidate.name}</p>
+                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                          {getRoleTitle(candidate.roleAccount)} / {getAccount(candidate.roleAccount)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-extrabold text-sibs-primary-1">{formatTime(candidate.interviewDate)}</p>
+                        <p className="text-xs font-bold text-sibs-tertiary-5">{candidate.interviewType}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500">
+              No scheduled interviews found.
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -3373,6 +4189,7 @@ export default function CandidatePipelinePage() {
   const [roleFilter, setRoleFilter] = useState("All Roles");
   const [accountFilter, setAccountFilter] = useState("All Accounts");
   const [activeStage, setActiveStage] = useState("Initial Screening");
+  const [pageView, setPageView] = useState("pipeline");
 
   const [selectedCandidate, setSelectedCandidate] = useState(null);
 
@@ -4628,6 +5445,7 @@ export default function CandidatePipelinePage() {
     setCandidateList(normalizedCandidates);
     savePipelineCandidateData(normalizedCandidates);
     setActiveStage("Initial Screening");
+    setPageView("pipeline");
     setSelectedCandidate(null);
 
     confirmAction("Sample candidate pipeline data has been reset.", { title: "Reset Complete", confirmText: "OK", variant: "default" });
@@ -4644,7 +5462,7 @@ export default function CandidatePipelinePage() {
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 <ClipboardCheck size={14} />
-                Candidate Pipeline
+                Recruitment
               </div>
 
               <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
@@ -4659,8 +5477,34 @@ export default function CandidatePipelinePage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
+                onClick={() => setPageView("pipeline")}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 ${
+                  pageView === "pipeline"
+                    ? "bg-[var(--sibs-primary-1)] text-white"
+                    : "border border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <SlidersHorizontal size={18} />
+                Pipeline View
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPageView("calendar")}
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 ${
+                  pageView === "calendar"
+                    ? "bg-[var(--sibs-primary-1)] text-white"
+                    : "border border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <CalendarDays size={18} />
+                Calendar View
+              </button>
+
+              <button
+                type="button"
                 onClick={handleResetSampleData}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md"
               >
                 <RotateCcw size={18} />
                 Reset Sample Data
@@ -4681,485 +5525,91 @@ export default function CandidatePipelinePage() {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-            <div className="overflow-x-auto border-b border-[#E6ECF2] bg-white">
-              <div className="flex min-w-[1180px] items-center">
-                {pipelineStages.map((stage) => (
-                  <button
-                    key={stage}
-                    type="button"
-                    onClick={() => setActiveStage(stage)}
-                    className={`h-12 flex-1 whitespace-nowrap border-b-2 px-4 text-sm font-bold transition ${
-                      activeStage === stage
-                        ? "border-[#1473E6] text-[#1473E6]"
-                        : "border-transparent text-[#344054] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    {stage}
-                    <span className="ml-2 rounded-full bg-[#F2F4F7] px-2 py-0.5 text-xs text-[#475467]">
-                      {stageCounts[stage] || 0}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+          {pageView === "pipeline" && (
+            <div className="space-y-5">
+              <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+                <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+                  <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
+                    <div>
+                      <label className="mb-1 block text-sm font-bold text-[#101828]">Search</label>
+                      <div className="relative">
+                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
+                        <input
+                          value={search}
+                          onChange={(e) => setSearch(e.target.value)}
+                          placeholder="Search candidate, PRF, assessment, role, account..."
+                          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        />
+                      </div>
+                    </div>
 
-            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
-                <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">Search</label>
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5" />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search candidate, PRF, assessment, role, account..."
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    />
+                    <div>
+                      <label className="mb-1 block text-sm font-bold text-[#101828]">Role</label>
+                      <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      >
+                        {roleOptions.map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-sm font-bold text-[#101828]">Account</label>
+                      <select
+                        value={accountFilter}
+                        onChange={(e) => setAccountFilter(e.target.value)}
+                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      >
+                        {accountOptions.map((account) => (
+                          <option key={account} value={account}>
+                            {account}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearch("");
+                        setRoleFilter("All Roles");
+                        setAccountFilter("All Accounts");
+                      }}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                    >
+                      <Filter size={17} />
+                      Clear
+                    </button>
                   </div>
                 </div>
+              </section>
 
-                <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">Role</label>
-                  <select
-                    value={roleFilter}
-                    onChange={(e) => setRoleFilter(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    {roleOptions.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">Account</label>
-                  <select
-                    value={accountFilter}
-                    onChange={(e) => setAccountFilter(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    {accountOptions.map((account) => (
-                      <option key={account} value={account}>
-                        {account}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setRoleFilter("All Roles");
-                    setAccountFilter("All Accounts");
-                  }}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                >
-                  <Filter size={17} />
-                  Clear
-                </button>
-              </div>
+              <PipelineCardsBoard
+                candidates={stageVisibleCandidates}
+                stageCounts={stageCounts}
+                activeStage={activeStage}
+                setActiveStage={setActiveStage}
+                onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                onOpenMoveModal={handleOpenMoveModal}
+                onOpenAssessmentModal={handleOpenAssessmentModal}
+                onOpenScheduleModal={handleOpenScheduleInterview}
+                onCancelInterview={handleCancelInterview}
+                onCompleteInterview={handleCompleteInterview}
+              />
             </div>
+          )}
 
-            <div className="p-4 sm:p-6">
-              <div className="hidden lg:block">
-                <div className="overflow-x-auto p-0">
-                  <table className="w-full min-w-[1500px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-                    <thead>
-                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                      <th className="px-5 py-4 first:rounded-tl-2xl">Candidate</th>
-                      <th className="px-5 py-4">Role / Position</th>
-                      <th className="px-5 py-4">Account</th>
-                      <th className="px-5 py-4">PRF Status</th>
-
-                      {showAssessmentStatusColumn && (
-                        <th className="px-5 py-4">Assessment</th>
-                      )}
-
-                      {showAssessmentResultColumn && (
-                        <th className="px-5 py-4">Assessment Result</th>
-                      )}
-
-                      {!hideInterviewColumns && (
-                        <>
-                          <th className="px-5 py-4">Interview Date</th>
-                          <th className="px-5 py-4">Interview Type</th>
-                        </>
-                      )}
-
-                      {showStatusColumn && (
-                        <th className="px-5 py-4">Status</th>
-                      )}
-
-                      {(activeStage === "Offered" || activeStage === "Accepted") && (
-                        <>
-                          <th className="px-5 py-4">Offer Account</th>
-                          <th className="px-5 py-4">Approval</th>
-                          <th className="px-5 py-4">Lead Response</th>
-                        </>
-                      )}
-
-                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">Actions</th>
-                    </tr>
-                  </thead>
-
-                    <tbody>
-                    {stageFilteredCandidates.length > 0 ? (
-                      stageFilteredCandidates.map((candidate) => {
-                        const rowStatus = getDisplayInterviewStatus(candidate);
-
-                        return (
-                          <tr
-                            key={candidate.id}
-                            className="cursor-pointer transition hover:bg-[#FAFBFC]"
-                            onClick={() => setSelectedCandidate(candidate)}
-                          >
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <div className="flex items-center gap-3">
-                                <CandidateAvatar candidate={candidate} />
-
-                                <div>
-                                  <p className="text-sm font-bold text-[#101828]">
-                                    {candidate.name}
-                                  </p>
-                                  <p className="text-xs font-semibold text-sibs-tertiary-5">
-                                    {candidate.email}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#344054]">
-                              {getRoleTitle(candidate.roleAccount)}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              {getAccount(candidate.roleAccount)}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
-                                  candidate.prfStatus || "Review"
-                                )}`}
-                              >
-                                {candidate.prfStatus || "Review"}
-                              </span>
-                            </td>
-
-                            {showAssessmentStatusColumn && (
-                              <td className="border-b border-[#E6ECF2] px-5 py-5">
-                                {!candidate.assessmentResult ? (
-                                  <span
-                                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentStatusClass(
-                                      getAssessmentStatus(candidate)
-                                    )}`}
-                                  >
-                                    {getAssessmentStatus(candidate)}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm font-bold text-[#98A2B3]">
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                            )}
-
-                            {showAssessmentResultColumn && (
-                              <td className="border-b border-[#E6ECF2] px-5 py-5">
-                                <span
-                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
-                                    getAssessmentResult(candidate)
-                                  )}`}
-                                >
-                                  {getAssessmentResult(candidate) || "—"}
-                                </span>
-                              </td>
-                            )}
-
-                            {!hideInterviewColumns && (
-                              <>
-                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                                  {formatDateTime(candidate.interviewDate)}
-                                </td>
-
-                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                                  {getDisplayInterviewType(candidate)}
-                                </td>
-                              </>
-                            )}
-
-                            {showStatusColumn && (
-                              <td className="border-b border-[#E6ECF2] px-5 py-5">
-                                {rowStatus ? (
-                                  <span
-                                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
-                                      rowStatus
-                                    )}`}
-                                  >
-                                    {rowStatus}
-                                  </span>
-                                ) : (
-                                  <span className="text-sm font-bold text-[#98A2B3]">
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                            )}
-
-                            {(activeStage === "Offered" || activeStage === "Accepted") && (
-                              <>
-                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                                  {candidate.offerDetails?.account || "—"}
-                                </td>
-                                <td className="border-b border-[#E6ECF2] px-5 py-5">
-                                  <span
-                                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOfferApprovalClass(
-                                      candidate.offerApprovalStatus ||
-                                        getOfferApprovalSummary(candidate)
-                                    )}`}
-                                  >
-                                    {candidate.offerApprovalStatus ||
-                                      getOfferApprovalSummary(candidate)}
-                                  </span>
-                                </td>
-                                <td className="border-b border-[#E6ECF2] px-5 py-5">
-                                  <span
-                                    className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOfferDecisionClass(
-                                      candidate.offerDecision
-                                    )}`}
-                                  >
-                                    {candidate.offerDecision || "—"}
-                                  </span>
-                                </td>
-                              </>
-                            )}
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                                  title="View"
-                                >
-                                  <Eye size={16} />
-                                </button>
-
-                                {candidate.currentStage ===
-                                  "Online Assessment" && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenAssessmentModal(candidate);
-                                    }}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100"
-                                    title="Update Assessment"
-                                  >
-                                    <ClipboardCheck size={16} />
-                                  </button>
-                                )}
-
-                                {candidate.currentStage ===
-                                  "Online Assessment" &&
-                                  canScheduleInterview(candidate) && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenScheduleInterview(candidate);
-                                      }}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
-                                      title="Schedule Interview"
-                                    >
-                                      <CalendarDays size={16} />
-                                    </button>
-                                  )}
-
-                                {candidate.currentStage ===
-                                  "Interview Scheduled" && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenScheduleInterview(candidate);
-                                      }}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
-                                      title="Update Interview Schedule"
-                                    >
-                                      <CalendarDays size={16} />
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleCancelInterview(candidate);
-                                      }}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:bg-red-100"
-                                      title="Cancel Interview"
-                                    >
-                                      <X size={16} />
-                                    </button>
-                                  </>
-                                )}
-
-                                {candidate.currentStage !== "Initial Screening" &&
-                                  candidate.currentStage !==
-                                    "Initial Screening" &&
-                                  candidate.currentStage !==
-                                    "Online Assessment" &&
-                                  candidate.currentStage !==
-                                    "Interview Scheduled" &&
-                                  getNextStage(candidate.currentStage) && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenMoveModal(candidate);
-                                      }}
-                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                                      title="Move Next"
-                                    >
-                                      <ArrowRight size={16} />
-                                    </button>
-                                  )}
-
-                                {candidate.currentStage ===
-                                  "Initial Screening" && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleOpenMoveModal(candidate);
-                                    }}
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                                    title="Move to Online Assessment"
-                                  >
-                                    <ArrowRight size={16} />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No candidate records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="space-y-3 lg:hidden">
-              {stageFilteredCandidates.length > 0 ? (
-                stageFilteredCandidates.map((candidate) => (
-                  <button
-                    key={candidate.id}
-                    type="button"
-                    onClick={() => setSelectedCandidate(candidate)}
-                    className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <CandidateAvatar candidate={candidate} />
-
-                        <div>
-                          <h3 className="text-sm font-bold text-[#0F172A]">
-                            {candidate.name}
-                          </h3>
-                          <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                            {getRoleTitle(candidate.roleAccount)} /{" "}
-                            {getAccount(candidate.roleAccount)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStageClass(
-                          candidate.currentStage
-                        )}`}
-                      >
-                        {candidate.currentStage}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <div className="rounded-xl bg-[#F8FAFC] p-3">
-                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-                          PRF
-                        </p>
-                        <span
-                          className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${getPrfStatusClass(
-                            candidate.prfStatus || "Review"
-                          )}`}
-                        >
-                          {candidate.prfStatus || "Review"}
-                        </span>
-                      </div>
-
-                      <div className="rounded-xl bg-[#F8FAFC] p-3">
-                        <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-                          Assessment Result
-                        </p>
-                        <span
-                          className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${getAssessmentResultClass(
-                            getAssessmentResult(candidate)
-                          )}`}
-                        >
-                          {candidate.assessmentResult || "—"}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No candidate records found.
-                </div>
-              )}
-              </div>
-
-              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <p className="text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {stageFilteredCandidates.length} of {stageVisibleCandidates.length} candidate applications
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
-                    <ChevronLeft size={16} />
-                  </button>
-                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white">
-                    1
-                  </button>
-                  <button type="button" className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50">
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <InterviewCalendar
-            candidates={filteredCandidates}
-            onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-          />
+          {pageView === "calendar" && (
+            <InterviewCalendar
+              candidates={filteredCandidates}
+              onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+            />
+          )}
         </div>
       </main>
 
