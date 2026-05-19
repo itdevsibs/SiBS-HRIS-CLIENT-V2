@@ -14,6 +14,7 @@ import {
   Clock,
   DollarSign,
   FileClock,
+  FileCog,
   FileText,
   Gift,
   LayoutDashboard,
@@ -44,7 +45,7 @@ export default function Sidebar() {
       "executive",
       "super_admin",
     ],
-    []
+    [],
   );
 
   const [mounted, setMounted] = useState(false);
@@ -88,7 +89,7 @@ export default function Sidebar() {
       ];
 
       const ok = allowed.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`)
+        (path) => pathname === path || pathname.startsWith(`${path}/`),
       );
 
       if (!ok) {
@@ -270,6 +271,15 @@ export default function Sidebar() {
     },
   ];
 
+  const settingsMenu = [
+    {
+      name: "Recruitment Settings",
+      icon: FileCog,
+      path: "/settings/recruitment-settings",
+      allowedUsers: [1, 2, 3, 6, 7],
+    },
+  ];
+
   const communicationMenu = [
     {
       name: "Email Logs",
@@ -334,7 +344,7 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true
+      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true,
     );
 
   const handleLinkClick = () => {
@@ -542,6 +552,16 @@ export default function Sidebar() {
                     collapsed={!isMobile && collapsed}
                   >
                     {renderMenu(administrationMenu)}
+                  </Section>
+                )}
+
+                {getVisibleItems(settingsMenu).length > 0 && (
+                  <Section
+                    title="SETTINGS"
+                    short="SET"
+                    collapsed={!isMobile && collapsed}
+                  >
+                    {renderMenu(settingsMenu)}
                   </Section>
                 )}
               </>
