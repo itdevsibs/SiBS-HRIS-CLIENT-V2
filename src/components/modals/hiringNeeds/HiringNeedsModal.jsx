@@ -1,5 +1,16 @@
 import React from "react";
-import { Plus, RotateCcw, X } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarDays,
+  ChevronDown,
+  FileText,
+  Info,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  UserRound,
+  X,
+} from "lucide-react";
 
 const NEW_JOB_DESCRIPTION_VALUE = "__NEW_JOB_DESCRIPTION__";
 
@@ -52,21 +63,74 @@ function getJdStatus(item) {
 }
 
 function getHiringManager(item) {
-  return item?.hiringManager || item?.owner || item?.ownerName || item?.ownerSibsId || "";
+  return (
+    item?.hiringManager ||
+    item?.owner ||
+    item?.ownerName ||
+    item?.ownerSibsId ||
+    ""
+  );
 }
 
 function getRequestedDate(item) {
   return item?.requestedDate || item?.dateRequested || item?.date_requested || "";
 }
 
-function InfoBox({ label, value }) {
+function FieldLabel({ children, required = false }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
-      <div className="break-words text-sm font-bold text-[#344054]">
-        {value || "—"}
+    <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+      {children}
+      {required && <span className="text-red-500"> *</span>}
+    </label>
+  );
+}
+
+function TextInput({ className = "", ...props }) {
+  return (
+    <input
+      {...props}
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+    />
+  );
+}
+
+function SelectInput({ children, className = "", ...props }) {
+  return (
+    <div className="relative">
+      <select
+        {...props}
+        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      >
+        {children}
+      </select>
+
+      <ChevronDown
+        size={18}
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+      />
+    </div>
+  );
+}
+
+function InfoBox({ label, value, icon: Icon }) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+            <Icon size={17} />
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {label}
+          </p>
+
+          <div className="break-words text-sm font-bold text-[#344054]">
+            {value || "—"}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -84,6 +148,13 @@ export default function HiringNeedsModal({
 }) {
   if (!open) return null;
 
+  function updateField(field, value) {
+    setForm({
+      ...form,
+      [field]: value,
+    });
+  }
+
   function handleJobDescriptionChange(jobDescriptionId) {
     if (jobDescriptionId === NEW_JOB_DESCRIPTION_VALUE) {
       onCreateNewJobDescription?.();
@@ -91,7 +162,7 @@ export default function HiringNeedsModal({
     }
 
     const selectedJobDescription = jobDescriptionOptions.find(
-      (item) => String(item.id) === String(jobDescriptionId)
+      (item) => String(item.id) === String(jobDescriptionId),
     );
 
     if (!selectedJobDescription) {
@@ -131,264 +202,321 @@ export default function HiringNeedsModal({
   }
 
   const selectedJobDescription = jobDescriptionOptions.find(
-    (item) => String(item.id) === String(form.jobDescriptionId)
+    (item) => String(item.id) === String(form.jobDescriptionId),
   );
+
+  const selectedJdStatus = selectedJobDescription
+    ? getJdStatus(selectedJobDescription)
+    : form.jdStatus || "";
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
-              New Hiring Requirement
-            </h2>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              This replaces active PRF submission. Use Approved Hiring
-              Requirement as the single source of truth.
-            </p>
-          </div>
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-5 py-5 sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <BriefcaseBusiness size={14} />
+                Hiring Requirement
+              </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-sibs-primary-1">
+                New Hiring Requirement
+              </h2>
+
+              <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-sibs-tertiary-5">
+                Select a job description, confirm the required headcount, and
+                submit the hiring requirement for planning and approval.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_340px]">
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Hiring Requirement Details
-                </h3>
+        <form onSubmit={onSubmit} className="min-h-0 flex-1 overflow-y-auto">
+          <div className="bg-[#F8FAFC] p-4 sm:p-6">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
+              <div className="space-y-5">
+                <section className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+                  <div className="mb-5 flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-sibs-primary-1">
+                      <FileText size={21} />
+                    </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Job Description <span className="text-red-500">*</span>
-                    </label>
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#101828]">
+                        Hiring Requirement Details
+                      </h3>
 
-                    <select
-                      required
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none"
-                      value={form.jobDescriptionId}
-                      onChange={(e) =>
-                        handleJobDescriptionChange(e.target.value)
-                      }
-                    >
-                      <option value="">Select Job Description</option>
-                      <option value={NEW_JOB_DESCRIPTION_VALUE}>
-                        + New Job Description
-                      </option>
-
-                      {jobDescriptionOptions.map((item) => {
-                        const jdCode = getJdCode(item);
-                        const roleTitle = getRoleTitle(item);
-                        const account = getAccount(item);
-                        const department = getDepartment(item);
-                        const jdStatus = getJdStatus(item);
-
-                        return (
-                          <option key={item.id} value={item.id}>
-                            {jdCode} — {roleTitle || "—"} / {account || "—"} /{" "}
-                            {department || "—"} ({jdStatus || "—"})
-                          </option>
-                        );
-                      })}
-                    </select>
+                      <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                        Job Description selection will auto-fill account,
+                        department, role title, hiring manager, and requested
+                        date.
+                      </p>
+                    </div>
                   </div>
 
-                  {[
-                    ["Account", "account", "Account"],
-                    ["Department", "department", "Department"],
-                    ["Role Title", "roleTitle", "Role Title"],
-                    [
-                      "Hiring Manager / Requestor",
-                      "hiringManager",
-                      "Hiring Manager",
-                    ],
-                  ].map(([label, key, placeholder]) => (
-                    <div key={key}>
-                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        {label} <span className="text-red-500">*</span>
-                      </label>
-                      <input
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <div className="lg:col-span-2">
+                      <FieldLabel required>Job Description</FieldLabel>
+
+                      <SelectInput
+                        required
+                        value={form.jobDescriptionId || ""}
+                        onChange={(e) =>
+                          handleJobDescriptionChange(e.target.value)
+                        }
+                      >
+                        <option value="">Select Job Description</option>
+                        <option value={NEW_JOB_DESCRIPTION_VALUE}>
+                          + New Job Description
+                        </option>
+
+                        {jobDescriptionOptions.map((item) => {
+                          const jdCode = getJdCode(item);
+                          const roleTitle = getRoleTitle(item);
+                          const account = getAccount(item);
+                          const department = getDepartment(item);
+                          const jdStatus = getJdStatus(item);
+
+                          return (
+                            <option key={item.id} value={item.id}>
+                              {jdCode} — {roleTitle || "—"} / {account || "—"} /{" "}
+                              {department || "—"} ({jdStatus || "—"})
+                            </option>
+                          );
+                        })}
+                      </SelectInput>
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Position / Role Title</FieldLabel>
+                      <TextInput
                         required
                         readOnly
-                        className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#344054] outline-none"
-                        placeholder={placeholder}
-                        value={form[key] || ""}
+                        disabled
+                        placeholder="Auto-filled from selected JD"
+                        value={form.roleTitle || ""}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Hiring Manager / Requestor</FieldLabel>
+                      <TextInput
+                        required
+                        readOnly
+                        disabled
+                        placeholder="Auto-filled from selected JD"
+                        value={form.hiringManager || ""}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Account</FieldLabel>
+                      <TextInput
+                        required
+                        readOnly
+                        disabled
+                        placeholder="Auto-filled from selected JD"
+                        value={form.account || ""}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Department</FieldLabel>
+                      <TextInput
+                        required
+                        readOnly
+                        disabled
+                        placeholder="Auto-filled from selected JD"
+                        value={form.department || ""}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+                  <div className="mb-5 flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                      <Sparkles size={21} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#101828]">
+                        Requirement Information
+                      </h3>
+
+                      <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                        Complete the planning fields below before submitting.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <div>
+                      <FieldLabel required>Approved Hiring Requirement</FieldLabel>
+                      <TextInput
+                        required
+                        type="number"
+                        min="1"
+                        placeholder="Enter required headcount"
+                        value={form.approvedRequirement || ""}
                         onChange={(e) =>
-                          setForm({ ...form, [key]: e.target.value })
+                          updateField("approvedRequirement", e.target.value)
                         }
                       />
                     </div>
-                  ))}
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Approved Hiring Requirement{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      required
-                      type="number"
-                      min="1"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none"
-                      value={form.approvedRequirement}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          approvedRequirement: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Reason for Hiring <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none"
-                      value={form.reason}
-                      onChange={(e) =>
-                        setForm({ ...form, reason: e.target.value })
-                      }
-                    >
-                      <option value="">Select reason</option>
-                      <option value="Replacement">Replacement</option>
-                      <option value="Expansion">Expansion</option>
-                      <option value="New Role">New Role</option>
-                      <option value="Client Request">Client Request</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Requested Date
-                    </label>
-                    <input
-                      type="date"
-                      readOnly
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-semibold text-[#344054] outline-none"
-                      value={form.requestedStartDate || ""}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          requestedStartDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Due Date <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      required
-                      type="date"
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none"
-                      value={form.dueDate}
-                      onChange={(e) =>
-                        setForm({ ...form, dueDate: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Priority Level
-                    </label>
-                    <select
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none"
-                      value={form.priority}
-                      onChange={(e) =>
-                        setForm({ ...form, priority: e.target.value })
-                      }
-                    >
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
-                  Job Description Link
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  This hiring request links directly to a Job Description
-                  record. Selecting a JD will automatically fill the account,
-                  department, role title, hiring manager, and requested date.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
-                  Selected Job Description
-                </h3>
-
-                <div className="mt-4 space-y-3">
-                  <InfoBox
-                    label="Job Description"
-                    value={form.jobDescription || "No Job Description selected"}
-                  />
-
-                  <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-                    <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      JD Status
-                    </p>
-
-                    {selectedJobDescription ? (
-                      <span
-                        className={`mt-1 inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
-                          getJdStatus(selectedJobDescription)
-                        )}`}
+                    <div>
+                      <FieldLabel required>Reason for Hiring</FieldLabel>
+                      <SelectInput
+                        required
+                        value={form.reason || ""}
+                        onChange={(e) => updateField("reason", e.target.value)}
                       >
-                        {getJdStatus(selectedJobDescription) || "—"}
-                      </span>
-                    ) : (
-                      <p className="mt-1 text-sm font-bold text-gray-400">—</p>
-                    )}
+                        <option value="">Select reason</option>
+                        <option value="Replacement">Replacement</option>
+                        <option value="Expansion">Expansion</option>
+                        <option value="New Role">New Role</option>
+                        <option value="Client Request">Client Request</option>
+                      </SelectInput>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Requested Date</FieldLabel>
+                      <TextInput
+                        type="date"
+                        readOnly
+                        disabled
+                        value={form.requestedStartDate || ""}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Due Date</FieldLabel>
+                      <TextInput
+                        required
+                        type="date"
+                        value={form.dueDate || ""}
+                        onChange={(e) => updateField("dueDate", e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Priority Level</FieldLabel>
+                      <SelectInput
+                        value={form.priority || "Medium"}
+                        onChange={(e) => updateField("priority", e.target.value)}
+                      >
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                      </SelectInput>
+                    </div>
                   </div>
-
-                  <InfoBox
-                    label="Hiring Manager"
-                    value={form.hiringManager || "—"}
-                  />
-
-                  <InfoBox
-                    label="Requested Date"
-                    value={form.requestedStartDate || "—"}
-                  />
-                </div>
+                </section>
               </div>
+
+              <aside className="space-y-5">
+                <section className="rounded-3xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-sibs-primary-1">
+                      <Info size={20} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-extrabold text-sibs-primary-1">
+                        Job Description Link
+                      </h3>
+
+                      <p className="mt-2 text-sm font-semibold leading-6 text-sibs-primary-1/80">
+                        This request is linked to a Job Description record.
+                        Selecting a JD keeps the role, account, and department
+                        aligned with your approved JD library.
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <h3 className="text-sm font-extrabold text-[#101828]">
+                    Selected Job Description
+                  </h3>
+
+                  <div className="mt-4 space-y-3">
+                    <InfoBox
+                      icon={FileText}
+                      label="Job Description"
+                      value={form.jobDescription || "No Job Description selected"}
+                    />
+
+                    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+                      <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        JD Status
+                      </p>
+
+                      {selectedJobDescription || selectedJdStatus ? (
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
+                            selectedJdStatus,
+                          )}`}
+                        >
+                          {selectedJdStatus || "—"}
+                        </span>
+                      ) : (
+                        <p className="text-sm font-bold text-gray-400">—</p>
+                      )}
+                    </div>
+
+                    <InfoBox
+                      icon={UserRound}
+                      label="Hiring Manager"
+                      value={form.hiringManager || "—"}
+                    />
+
+                    <InfoBox
+                      icon={CalendarDays}
+                      label="Requested Date"
+                      value={form.requestedStartDate || "—"}
+                    />
+                  </div>
+                </section>
+
+                <section className="rounded-3xl border border-amber-100 bg-amber-50 p-5">
+                  <h3 className="text-sm font-extrabold text-amber-700">
+                    Submission Reminder
+                  </h3>
+
+                  <p className="mt-2 text-sm font-semibold leading-6 text-amber-700/80">
+                    Review the required headcount, due date, and priority before
+                    creating the requirement.
+                  </p>
+                </section>
+              </aside>
             </div>
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col justify-end gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
             >
               <RotateCcw size={17} />
               Reset
@@ -397,7 +525,7 @@ export default function HiringNeedsModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
             >
               Cancel
             </button>
@@ -405,7 +533,7 @@ export default function HiringNeedsModal({
             <button
               type="submit"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={17} />
               Create Requirement

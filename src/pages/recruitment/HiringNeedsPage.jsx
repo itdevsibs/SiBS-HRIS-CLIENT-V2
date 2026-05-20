@@ -7,20 +7,19 @@ import {
   getHiringNeedJobDescriptions,
   getHiringNeeds,
 } from "@/lib/axios/getHiringNeeds";
+import HiringSearchTable from "@/components/tables/HiringNeeds/HiringSearchTable";
+import PRSummaryTable from "@/components/tables/HiringNeeds/PRSummaryTable";
+import ReasonForHiringTable from "@/components/tables/HiringNeeds/ReasonForHiringTable";
+import HiringNeedsDataTable from "@/components/tables/HiringNeeds/HiringNeedsDataTable";
 
 import { useUser } from "@/services/context/UserContext";
 
 import {
-  CalendarDays,
   CheckCircle2,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock,
-  Eye,
   FileText,
   Plus,
-  Search,
   X,
   XCircle,
 } from "lucide-react";
@@ -350,166 +349,6 @@ function InfoBox({ label, value }) {
         {value || "—"}
       </div>
     </div>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  icon,
-  valueClassName = "text-sibs-primary-1",
-}) {
-  return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
-          </p>
-
-          <p className={`mt-3 text-3xl font-extrabold ${valueClassName}`}>
-            {value}
-          </p>
-        </div>
-
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DonutChart({ data }) {
-  const total = data.reduce((sum, item) => sum + Number(item.value || 0), 0);
-  let current = 0;
-
-  const gradient =
-    total > 0
-      ? data
-          .map((item) => {
-            const start = current;
-            const size = (Number(item.value || 0) / total) * 100;
-            current += size;
-            return `${item.color} ${start}% ${current}%`;
-          })
-          .join(", ")
-      : "#E6ECF2 0% 100%";
-
-  return (
-    <div className="flex flex-col items-center gap-6 md:flex-row md:items-center md:justify-center">
-      <div
-        className="relative h-32 w-32 shrink-0 rounded-full"
-        style={{ background: `conic-gradient(${gradient})` }}
-      >
-        <div className="absolute inset-7 rounded-full bg-white" />
-      </div>
-
-      <div className="w-full max-w-md space-y-3">
-        {data.length > 0 ? (
-          data.map((item) => {
-            const percent =
-              total > 0
-                ? Math.round((Number(item.value || 0) / total) * 100)
-                : 0;
-
-            return (
-              <div
-                key={item.label}
-                className="flex items-center justify-between gap-4 text-sm"
-              >
-                <div className="flex min-w-0 items-center gap-2">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  />
-
-                  <span className="truncate font-semibold text-[#344054]">
-                    {item.label}
-                  </span>
-                </div>
-
-                <span className="shrink-0 font-bold text-[#101828]">
-                  {item.value} ({percent}%)
-                </span>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-center text-sm font-bold text-gray-500">
-            No reason data available.
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HiringNeedMobileCard({ item, onView }) {
-  const status = normalizeStatus(item.approvalStatus);
-
-  return (
-    <button
-      type="button"
-      onClick={onView}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-sibs-primary-1">
-            {item.id || "—"}
-          </p>
-
-          <h3 className="mt-1 text-sm font-bold text-[#0F172A]">
-            {item.positionTitle || "—"}
-          </h3>
-
-          <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-            {item.departmentAccount || "—"}
-          </p>
-        </div>
-
-        <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            status
-          )}`}
-        >
-          {status}
-        </span>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Headcount
-          </p>
-
-          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {item.headcount || "—"}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Reason
-          </p>
-
-          <p className="mt-1 text-sm font-bold text-[#1E293B]">
-            {item.reasonForHiring || "—"}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#F8FAFC] p-3 sm:col-span-2">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Date Needed
-          </p>
-
-          <p className="mt-1 text-sm font-bold text-[#1E293B]">
-            {formatDate(item.dateNeeded)}
-          </p>
-        </div>
-      </div>
-    </button>
   );
 }
 
@@ -1476,360 +1315,30 @@ function closeStatusModal() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px_260px] xl:items-end">
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Search
-                </label>
+          <HiringSearchTable
+            search={search}
+            setSearch={setSearch}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+            siteFilter={siteFilter}
+            setSiteFilter={setSiteFilter}
+            reasonFilter={reasonFilter}
+            setReasonFilter={setReasonFilter}
+            reasonForHiringOptions={reasonForHiringOptions}
+          />
 
-                <div className="relative">
-                  <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]">  
+            <PRSummaryTable stats={stats} />
 
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search PRF, position, department/account, JD, reason, site, prepared by..."
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Approval Status
-                </label>
-
-                <div className="relative">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="For Approval">For Approval</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Not Approved">Not Approved</option>
-                  </select>
-
-                  <ChevronDown
-                    size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Location / Site
-                </label>
-
-                <div className="relative">
-                  <select
-                    value={siteFilter}
-                    onChange={(e) => setSiteFilter(e.target.value)}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    <option value="All">All Sites</option>
-                    <option value="Davao Site">Davao Site</option>
-                    <option value="Tagum Site">Tagum Site</option>
-                    <option value="Mabini Site">Mabini Site</option>
-                  </select>
-
-                  <ChevronDown
-                    size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Reason for Hiring
-                </label>
-
-                <div className="relative">
-                  <select
-                    value={reasonFilter}
-                    onChange={(e) => setReasonFilter(e.target.value)}
-                    className="h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10"
-                  >
-                    <option value="All">All Reasons</option>
-                    {reasonForHiringOptions.map((reason) => (
-                      <option key={reason} value={reason}>
-                        {reason}
-                      </option>
-                    ))}
-                  </select>
-
-                  <ChevronDown
-                    size={18}
-                    className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {(search ||
-              statusFilter !== "All" ||
-              siteFilter !== "All" ||
-              reasonFilter !== "All") && (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearch("");
-                    setStatusFilter("All");
-                    setSiteFilter("All");
-                    setReasonFilter("All");
-                  }}
-                  className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            )}
+            <ReasonForHiringTable data={requisitionByReason} />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]">
-            <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <h2 className="text-base font-bold text-[#101828]">
-                Personnel Requisition Summary
-              </h2>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <SummaryCard
-                  title="Total PRF"
-                  value={stats.total}
-                  icon={<FileText size={22} />}
-                />
-
-                <SummaryCard
-                  title="Total Headcount"
-                  value={stats.totalHeadcount}
-                  icon={<CalendarDays size={22} />}
-                />
-
-                <SummaryCard
-                  title="For Approval"
-                  value={stats.forApproval}
-                  valueClassName="text-amber-500"
-                  icon={<Clock size={22} />}
-                />
-
-                <SummaryCard
-                  title="Approved"
-                  value={stats.approved}
-                  valueClassName="text-emerald-600"
-                  icon={<CheckCircle2 size={22} />}
-                />
-
-                <SummaryCard
-                  title="Not Approved"
-                  value={stats.notApproved}
-                  valueClassName="text-red-600"
-                  icon={<XCircle size={22} />}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <h2 className="text-base font-bold text-[#101828]">
-                Requisition by Reason for Hiring
-              </h2>
-
-              <div className="mt-4 rounded-xl bg-white">
-                <DonutChart data={requisitionByReason} />
-              </div>
-            </section>
-          </div>
-
-          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-            <div className="hidden lg:block">
-              <div className="overflow-x-auto p-6">
-                <table className="w-full min-w-[1450px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-                  <thead>
-                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                      <th className="px-5 py-4 first:rounded-tl-2xl">
-                        PRF ID
-                      </th>
-                      <th className="px-5 py-4">Position Title</th>
-                      <th className="px-5 py-4">Department / Account</th>
-                      <th className="px-5 py-4">Job Description</th>
-                      <th className="px-5 py-4 text-center">Headcount</th>
-                      <th className="px-5 py-4">Reason for Hiring</th>
-                      <th className="px-5 py-4">Assignment</th>
-                      <th className="px-5 py-4">Location / Site</th>
-                      <th className="px-5 py-4">Date Needed</th>
-                      <th className="px-5 py-4">Prepared By</th>
-                      <th className="px-5 py-4 text-center">Approval</th>
-                      <th className="px-5 py-4">Approval Date</th>
-                      <th className="px-5 py-4 text-right last:rounded-tr-2xl">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan={13}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          Loading personnel requisitions...
-                        </td>
-                      </tr>
-                    ) : filteredList.length > 0 ? (
-                      filteredList.map((item) => {
-                        const status = normalizeStatus(item.approvalStatus);
-
-                        return (
-                          <tr
-                            key={item.id}
-                            className="transition hover:bg-[#FAFBFC]"
-                          >
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#1473E6]">
-                              {item.id || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#0F172A]">
-                              {item.positionTitle || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.departmentAccount || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.jobDescriptionText ||
-                                item.jobDescriptionTitle ||
-                                item.jobDescriptionId ||
-                                "Not selected"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                              {item.headcount || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.reasonForHiring || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.assignment === "Other"
-                                ? item.assignmentOther || "Other"
-                                : item.assignment || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.locationSite || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {formatDate(item.dateNeeded)}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {item.preparedBy || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                              <span
-                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                  status
-                                )}`}
-                              >
-                                {getApprovalIcon(status)}
-                                {status}
-                              </span>
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#1E293B]">
-                              {formatDate(item.approvalDate)}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedItem(item)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
-                              >
-                                <Eye size={16} />
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={13}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No personnel requisition found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-6 py-4">
-                <p className="text-sm font-medium text-sibs-primary-1">
-                  Showing 1 to {filteredList.length} of {normalizedList.length}{" "}
-                  personnel requisitions
-                </p>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
-                  >
-                    1
-                  </button>
-
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 p-4 lg:hidden">
-              {loading ? (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  Loading personnel requisitions...
-                </div>
-              ) : filteredList.length > 0 ? (
-                filteredList.map((item) => (
-                  <HiringNeedMobileCard
-                    key={item.id}
-                    item={item}
-                    onView={() => setSelectedItem(item)}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No personnel requisition found.
-                </div>
-              )}
-            </div>
-          </section>
+          <HiringNeedsDataTable
+            loading={loading}
+            filteredList={filteredList}
+            normalizedList={normalizedList}
+            onView={setSelectedItem}
+          />
         </div>
       </main>
 
