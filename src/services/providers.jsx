@@ -6,6 +6,7 @@ import { AdminProvider } from "./context/AdminContext";
 import { PaginationProvider } from "./context/PaginationContext";
 import { ResignationListProvider } from "./context/ResignationListContext";
 import JobDescriptionProvider from "./context/JobDescriptionContext";
+import { CandidatePipelineProvider } from "./context/CandidatePipelineContext";
 
 export default function Providers({ children }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -17,7 +18,9 @@ export default function Providers({ children }) {
           <UserProvider>
             <AdminProvider>
               <JobDescriptionProvider>
-                <ResignationListProvider>{children}</ResignationListProvider>
+                <CandidatePipelineProvider>
+                  <ResignationListProvider>{children}</ResignationListProvider>
+                </CandidatePipelineProvider>
               </JobDescriptionProvider>
             </AdminProvider>
           </UserProvider>
