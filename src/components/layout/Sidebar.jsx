@@ -14,6 +14,7 @@ import {
   Clock,
   DollarSign,
   FileClock,
+  FileCog,
   FileText,
   Gift,
   LayoutDashboard,
@@ -266,6 +267,15 @@ export default function Sidebar() {
       name: "Candidate Experience",
       icon: BookOpen,
       path: "/recruitment/candidate-experience",
+      allowedUsers: [1, 2, 3, 6, 7],
+    },
+  ];
+
+  const settingsMenu = [
+    {
+      name: "Recruitment Settings",
+      icon: FileCog,
+      path: "/settings/recruitment-settings",
       allowedUsers: [1, 2, 3, 6, 7],
     },
   ];
@@ -549,6 +559,16 @@ export default function Sidebar() {
                     collapsed={!isMobile && collapsed}
                   >
                     {renderMenu(administrationMenu)}
+                  </Section>
+                )}
+
+                {getVisibleItems(settingsMenu).length > 0 && (
+                  <Section
+                    title="SETTINGS"
+                    short="SET"
+                    collapsed={!isMobile && collapsed}
+                  >
+                    {renderMenu(settingsMenu)}
                   </Section>
                 )}
               </>
