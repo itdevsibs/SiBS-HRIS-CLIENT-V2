@@ -13,6 +13,7 @@ import {
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { formatDateTime } from "../../../lib/axios/dateFormatter";
 import { ArrowRight, CalendarDays, ClipboardCheck, Eye } from "lucide-react";
+import CandidateAvatar from "./CandidateAvatar";
 
 const PipelineListView = ({
   candidates,

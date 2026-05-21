@@ -177,35 +177,30 @@ export default function CandidatePipelinePage() {
                 icon={UserCheck}
                 description="PRF reviewed"
               />
-
               <DashboardMetric
                 label="Online Assessment"
                 value={metrics.onlineAssessment}
                 icon={ClipboardCheck}
                 description="Assessment stage"
               />
-
               <DashboardMetric
                 label="Interview Scheduled"
                 value={metrics.interviewScheduled}
                 icon={CalendarDays}
                 description="Calendar booked"
               />
-
               <DashboardMetric
                 label="Interviewed"
                 value={metrics.interviewed}
                 icon={ShieldCheck}
                 description="Interview done"
               />
-
               <DashboardMetric
                 label="Offered"
                 value={metrics.offered}
                 icon={BriefcaseBusiness}
                 description="Offer processing"
               />
-
               <DashboardMetric
                 label="Accepted"
                 value={metrics.accepted}
