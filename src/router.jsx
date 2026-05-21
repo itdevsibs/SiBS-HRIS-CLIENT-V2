@@ -29,8 +29,8 @@ import WeeklyReportsPage from "./pages/recruitment/WeeklyReportsPage";
 import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 
 import OMDashboardPage from "./pages/dashboard/OMDashboardPage";
-import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
 import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewForms";
+import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
 
 const Router = () => {
   return (
@@ -89,6 +89,7 @@ const Router = () => {
         path="/recruitment/available-positions"
         element={<AvailablePositionsPage />}
       />
+
       <Route
         path="/recruitment/final-interview-form"
         element={<FinalInterviewForms />}
