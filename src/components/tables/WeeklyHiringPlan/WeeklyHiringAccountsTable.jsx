@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { Eye } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Eye, ListChecks } from "lucide-react";
 
 function formatPercent(value) {
   const numberValue = Number(value || 0);
@@ -38,6 +38,19 @@ function getStatusClass(status) {
   }
 }
 
+function MobileMetric({ label, value, valueClassName = "text-sibs-primary-1" }) {
+  return (
+    <div className="rounded-xl bg-[#F8FAFC] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+      <p className={`mt-1 text-sm font-extrabold ${valueClassName}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function WeeklyHiringAccountsTable({
   accountsLoading = false,
   filteredPlans = [],
@@ -45,6 +58,15 @@ export default function WeeklyHiringAccountsTable({
 }) {
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
+
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
+
+  const [isDraggingTable, setIsDraggingTable] = useState(false);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -56,279 +78,362 @@ export default function WeeklyHiringAccountsTable({
     }
   }, [filteredPlans.length]);
 
+  function handleDragStart(e) {
+    if (e.button !== 0) return;
+
+    const target = e.target;
+    const isInteractiveElement = target.closest(
+      "button, a, input, select, textarea"
+    );
+
+    if (isInteractiveElement) return;
+
+    const container = tableScrollRef.current;
+    if (!container) return;
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: e.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+      moved: false,
+    };
+
+    setIsDraggingTable(true);
+  }
+
+  function handleDragMove(e) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!dragState.isDown || !container) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
+    }
+
+    container.scrollLeft = dragState.scrollLeft - walk;
+  }
+
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
+
+    window.setTimeout(() => {
+      setIsDraggingTable(false);
+      dragStateRef.current.moved = false;
+    }, 0);
+  }
+
+  function handleViewClick(item) {
+    if (dragStateRef.current.moved) return;
+    onViewPlan?.(item);
+  }
+
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
-      <div className="hidden lg:block">
-        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-          <table className="w-full min-w-[1580px] border-collapse bg-white text-sm text-sibs-primary-1">
-            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
-              <tr>
-                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
-                  Account
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Required
-                  <br />
-                  Headcount
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Actual
-                  <br />
-                  Headcount
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Buffer
-                  <br />
-                  Count
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Buffer
-                  <br />%
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Missing
-                  <br />
-                  Headcount
-                  <div className="mt-0.5 text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
-                    Required + Buffer Count - Actual Headcount
-                  </div>
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  OPS
-                  <br />
-                  PRF
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Projected
-                  <br />
-                  Employee Needs
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Leads to
-                  <br />
-                  Interview
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Hiring
-                  <br />
-                  Rate
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Status
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
-                  Status Note
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Actions
-                </th>
-              </tr>
-            </thead>
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ListChecks size={14} />
+              Account Plan
+            </div>
 
-            <tbody>
-              {accountsLoading ? (
-                <tr>
-                  <td
-                    className="p-6 text-center text-sm text-sibs-tertiary-5"
-                    colSpan={13}
-                  >
-                    Loading weekly hiring plan records...
-                  </td>
-                </tr>
-              ) : filteredPlans.length === 0 ? (
-                <tr>
-                  <td
-                    className="p-6 text-center text-sm text-sibs-tertiary-5"
-                    colSpan={13}
-                  >
-                    No weekly hiring plan records found.
-                  </td>
-                </tr>
-              ) : (
-                filteredPlans.map((item) => (
-                  <tr key={item.id} className="transition hover:bg-slate-50">
-                    <td className="h-[54px] min-w-[210px] border-t border-[#e6ecf2] px-3 text-left align-middle text-sm font-medium text-sibs-primary-1">
-                      <div className="min-w-0">
-                        <p className="m-0 max-w-[190px] truncate text-sm font-semibold text-sibs-primary-1">
-                          {item.account || "--"}
-                        </p>
-                        <p className="mt-1 max-w-[190px] truncate text-xs font-medium text-sibs-tertiary-5">
-                          {item.cluster || "--"}
-                        </p>
-                      </div>
-                    </td>
+            <h2 className="mt-3 text-base font-extrabold text-[#101828]">
+              Weekly Hiring Accounts
+            </h2>
 
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatNumber(item.requiredHeadcount)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatNumber(item.actualHeadcount)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatNumber(item.bufferHeadcount)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatPercent(item.bufferPercent)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-semibold text-cyan-700">
-                      {formatNumber(item.missingHeadcount)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatNumber(item.opsPrf)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-semibold text-violet-700">
-                      {formatNumber(item.projectedEmployeeNeeds)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatNumber(item.leadsToInterview)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm font-medium text-sibs-primary-1">
-                      {formatPercent(item.hiringRate)}
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                      <span
-                        className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusClass(
-                          item.pipelineStatus
-                        )}`}
-                      >
-                        {item.pipelineStatus || "--"}
-                      </span>
-                    </td>
-                    <td className="h-[54px] min-w-[210px] border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
-                      <span className="line-clamp-2 max-w-[220px] leading-5">
-                        {item.statusNote || "--"}
-                      </span>
-                    </td>
-                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => onViewPlan?.(item)}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                      >
-                        <Eye size={16} />
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              Review required headcount, actual headcount, OPS PRF, projected
+              needs, and hiring pipeline status per account.
+            </p>
+          </div>
+
+          <div className="inline-flex w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+            Records: {filteredPlans.length}
+          </div>
         </div>
       </div>
 
-      <div className="block lg:hidden">
-        <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto p-3">
-          {accountsLoading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              Loading weekly hiring plan records...
-            </div>
-          ) : filteredPlans.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              No weekly hiring plan records found.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {filteredPlans.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => onViewPlan?.(item)}
-                      className="min-w-0 text-left"
-                    >
-                      <h3 className="m-0 text-sm font-semibold leading-tight text-sibs-primary-1">
-                        {item.account || "--"}
-                      </h3>
-                      <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                        {item.cluster || "--"}
-                      </p>
-                    </button>
+      <div className="p-4 sm:p-5">
+        <div className="hidden lg:block">
+          <div
+            ref={tableScrollRef}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            className={`max-h-[670px] overflow-auto select-none ${
+              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
+            <table className="w-full min-w-[1580px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="px-5 py-4 first:rounded-tl-2xl">Account</th>
+                  <th className="px-5 py-4 text-center">
+                    Required
+                    <br />
+                    Headcount
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Actual
+                    <br />
+                    Headcount
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Buffer
+                    <br />
+                    Count
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Buffer
+                    <br />%
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Missing
+                    <br />
+                    Headcount
+                    <div className="mt-1 text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
+                      Required + Buffer Count - Actual Headcount
+                    </div>
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    OPS
+                    <br />
+                    PRF
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Projected
+                    <br />
+                    Employee Needs
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Leads to
+                    <br />
+                    Interview
+                  </th>
+                  <th className="px-5 py-4 text-center">
+                    Hiring
+                    <br />
+                    Rate
+                  </th>
+                  <th className="px-5 py-4 text-center">Status</th>
+                  <th className="px-5 py-4">Status Note</th>
+                  <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
 
-                    <div className="shrink-0">
+              <tbody>
+                {accountsLoading ? (
+                  <tr>
+                    <td
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      colSpan={13}
+                    >
+                      Loading weekly hiring plan records...
+                    </td>
+                  </tr>
+                ) : filteredPlans.length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      colSpan={13}
+                    >
+                      No weekly hiring plan records found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPlans.map((item) => (
+                    <tr key={item.id} className="transition hover:bg-[#FAFBFC]">
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+                          {item.account || "--"}
+                        </p>
+                        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                          {item.cluster || "--"}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatNumber(item.requiredHeadcount)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatNumber(item.actualHeadcount)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatNumber(item.bufferHeadcount)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatPercent(item.bufferPercent)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-cyan-700">
+                        {formatNumber(item.missingHeadcount)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
+                        {formatNumber(item.opsPrf)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+                        {formatNumber(item.projectedEmployeeNeeds)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatNumber(item.leadsToInterview)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatPercent(item.hiringRate)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                        <span
+                          className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                            item.pipelineStatus
+                          )}`}
+                        >
+                          {item.pipelineStatus || "--"}
+                        </span>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
+                          {item.statusNote || "--"}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleViewClick(item)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm"
+                        >
+                          <Eye size={16} />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+            Hold left click and drag left or right to scroll the table.
+          </p>
+        </div>
+
+        <div className="block lg:hidden">
+          <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto">
+            {accountsLoading ? (
+              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+                Loading weekly hiring plan records...
+              </div>
+            ) : filteredPlans.length === 0 ? (
+              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+                No weekly hiring plan records found.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredPlans.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onViewPlan?.(item)}
+                    className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+                          {item.account || "--"}
+                        </h3>
+                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                          {item.cluster || "--"}
+                        </p>
+                      </div>
+
                       <span
-                        className={`inline-flex items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getStatusClass(
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
                           item.pipelineStatus
                         )}`}
                       >
                         {item.pipelineStatus || "--"}
                       </span>
                     </div>
-                  </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <MobileMetric
-                      label="Required"
-                      value={formatNumber(item.requiredHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Actual"
-                      value={formatNumber(item.actualHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Buffer Count"
-                      value={formatNumber(item.bufferHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Buffer %"
-                      value={formatPercent(item.bufferPercent)}
-                    />
-                    <MobileMetric
-                      label="Missing Headcount"
-                      value={formatNumber(item.missingHeadcount)}
-                      valueClassName="text-cyan-700"
-                    />
-                    <MobileMetric label="OPS PRF" value={formatNumber(item.opsPrf)} />
-                    <MobileMetric
-                      label="Projected Needs"
-                      value={formatNumber(item.projectedEmployeeNeeds)}
-                      valueClassName="text-violet-700"
-                    />
-                    <MobileMetric
-                      label="Leads"
-                      value={formatNumber(item.leadsToInterview)}
-                    />
-                    <MobileMetric
-                      label="Hiring Rate"
-                      value={formatPercent(item.hiringRate)}
-                    />
-                  </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <MobileMetric
+                        label="Required"
+                        value={formatNumber(item.requiredHeadcount)}
+                      />
+                      <MobileMetric
+                        label="Actual"
+                        value={formatNumber(item.actualHeadcount)}
+                      />
+                      <MobileMetric
+                        label="Buffer Count"
+                        value={formatNumber(item.bufferHeadcount)}
+                      />
+                      <MobileMetric
+                        label="Buffer %"
+                        value={formatPercent(item.bufferPercent)}
+                      />
+                      <MobileMetric
+                        label="Missing Headcount"
+                        value={formatNumber(item.missingHeadcount)}
+                        valueClassName="text-cyan-700"
+                      />
+                      <MobileMetric
+                        label="OPS PRF"
+                        value={formatNumber(item.opsPrf)}
+                      />
+                      <MobileMetric
+                        label="Projected Needs"
+                        value={formatNumber(item.projectedEmployeeNeeds)}
+                        valueClassName="text-violet-700"
+                      />
+                      <MobileMetric
+                        label="Leads"
+                        value={formatNumber(item.leadsToInterview)}
+                      />
+                      <MobileMetric
+                        label="Hiring Rate"
+                        value={formatPercent(item.hiringRate)}
+                      />
+                    </div>
 
-                  <p className="mt-3 text-xs font-medium text-sibs-tertiary-5">
-                    Status Note
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-                    {item.statusNote || "--"}
-                  </p>
+                    <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Status Note
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-[#344054]">
+                        {item.statusNote || "--"}
+                      </p>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onViewPlan?.(item)}
-                    className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-                  >
-                    <Eye size={16} />
-                    View
+                    <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+                      <Eye size={16} />
+                      View Details
+                    </div>
                   </button>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MobileMetric({ label, value, valueClassName = "text-sibs-primary-1" }) {
-  return (
-    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
-      <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
-      <strong className={`mt-1 block text-sm font-medium ${valueClassName}`}>
-        {value}
-      </strong>
-    </div>
+    </section>
   );
 }

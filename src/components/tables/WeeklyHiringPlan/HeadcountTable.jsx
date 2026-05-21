@@ -22,7 +22,9 @@ function getOverallStatus(records = []) {
   const completed =
     records.length > 0 &&
     records.every(
-      (item) => Number(item.actualHeadcount) >= Number(item.requiredHeadcount)
+      (item) =>
+        Number(item.actualHeadcount || 0) >=
+        Number(item.requiredHeadcount || 0)
     );
 
   if (completed) return "COMPLETED";
@@ -30,28 +32,55 @@ function getOverallStatus(records = []) {
   return "ON TRACK";
 }
 
-function MetricCard({
+function getOverallStatusDescription(status) {
+  if (status === "AT RISK") return "Needs immediate attention";
+  if (status === "COMPLETED") return "Requirement fulfilled";
+  return "Within hiring target";
+}
+
+function getOverallStatusClass(status) {
+  if (status === "AT RISK") return "text-orange-500";
+  if (status === "COMPLETED") return "text-blue-600";
+  return "text-emerald-600";
+}
+
+function getOverallStatusIconClass(status) {
+  if (status === "AT RISK") return "bg-orange-50 text-orange-500";
+  if (status === "COMPLETED") return "bg-blue-50 text-blue-600";
+  return "bg-emerald-50 text-emerald-600";
+}
+
+function StatCard({
   title,
   value,
   icon: Icon,
-  iconClassName = "bg-blue-50 text-sibs-primary-1",
+  description,
   valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
 }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-4">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
-        >
-          <Icon size={22} />
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
+          </p>
+
+          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
         </div>
 
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[#101828]">{title}</p>
-
-          <h3 className={`mt-1 truncate text-3xl font-bold ${valueClassName}`}>
-            {value}
-          </h3>
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
         </div>
       </div>
     </div>
@@ -80,58 +109,72 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       0
     );
 
+    const overallStatus = getOverallStatus(filteredPlans);
+
     return {
       totalRequired,
       actualHeadcount,
       opsPrf,
       leadsToInterview,
-      overallStatus: getOverallStatus(filteredPlans),
+      overallStatus,
     };
   }, [filteredPlans]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      <MetricCard
-        title="Required Headcount"
-        value={formatNumber(totals.totalRequired)}
-        icon={ClipboardList}
-      />
+    <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-base font-bold text-[#101828]">
+            Weekly Hiring Headcount Summary
+          </h2>
+          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            Overview of manpower requirements, current headcount, OPS PRF, and
+            leads needed.
+          </p>
+        </div>
+      </div>
 
-      <MetricCard
-        title="Actual Headcount"
-        value={formatNumber(totals.actualHeadcount)}
-        icon={UserRound}
-        iconClassName="bg-indigo-50 text-sibs-primary-1"
-      />
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard
+          title="Required Headcount"
+          value={formatNumber(totals.totalRequired)}
+          icon={ClipboardList}
+          description="Weekly requirement"
+        />
 
-      <MetricCard
-        title="OPS PRF"
-        value={formatNumber(totals.opsPrf)}
-        icon={CheckCircle2}
-        iconClassName="bg-emerald-50 text-emerald-600"
-        valueClassName="text-emerald-600"
-      />
+        <StatCard
+          title="Actual Headcount"
+          value={formatNumber(totals.actualHeadcount)}
+          icon={UserRound}
+          description="Current active HC"
+        />
 
-      <MetricCard
-        title="Leads Needed"
-        value={formatNumber(totals.leadsToInterview)}
-        icon={PieChart}
-        iconClassName="bg-violet-50 text-sibs-primary-1"
-      />
+        <StatCard
+          title="OPS PRF"
+          value={formatNumber(totals.opsPrf)}
+          icon={CheckCircle2}
+          description="Projected PRF need"
+          iconClassName="bg-emerald-50 text-emerald-600"
+          valueClassName="text-emerald-600"
+        />
 
-      <MetricCard
-        title="Overall Status"
-        value={totals.overallStatus}
-        icon={AlertTriangle}
-        iconClassName="bg-orange-50 text-orange-500"
-        valueClassName={
-          totals.overallStatus === "AT RISK"
-            ? "text-orange-500"
-            : totals.overallStatus === "COMPLETED"
-              ? "text-blue-600"
-              : "text-emerald-600"
-        }
-      />
-    </div>
+        <StatCard
+          title="Leads Needed"
+          value={formatNumber(totals.leadsToInterview)}
+          icon={PieChart}
+          description="For interview pipeline"
+          iconClassName="bg-violet-50 text-sibs-primary-1"
+        />
+
+        <StatCard
+          title="Overall Status"
+          value={totals.overallStatus}
+          icon={AlertTriangle}
+          description={getOverallStatusDescription(totals.overallStatus)}
+          iconClassName={getOverallStatusIconClass(totals.overallStatus)}
+          valueClassName={getOverallStatusClass(totals.overallStatus)}
+        />
+      </div>
+    </section>
   );
 }

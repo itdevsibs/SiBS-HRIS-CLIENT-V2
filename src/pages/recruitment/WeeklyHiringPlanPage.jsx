@@ -6,15 +6,15 @@ import PercentageRiskGraphTable from "../../components/tables/WeeklyHiringPlan/P
 import WeeklyHiringAccountsTable from "../../components/tables/WeeklyHiringPlan/WeeklyHiringAccountsTable";
 import WeeklyVersionTable from "../../components/tables/WeeklyHiringPlan/WeeklyVersionTable";
 import HeadcountTable from "../../components/tables/WeeklyHiringPlan/HeadcountTable";
-import {
-  ActionItemModal,
-  KpiSnapshotModal,
-  ViewPlanModal,
-} from "../../components/modals/weeklyHiringPlan/WeeklyHiringPlanModal";
+import ViewPlanModal from "../../components/modals/weeklyHiringPlan/ViewPlanModal";
+import KPISnapshotModal from "../../components/modals/weeklyHiringPlan/KPISnapshotModal";
+import ActionItemModal from "../../components/modals/weeklyHiringPlan/ActionItemModal";
+
 import {
   getWeeklyHiringPlanAccounts,
   getWeeklyHiringPlanWeeks,
 } from "../../lib/axios/getWeeklyHiringPlan";
+
 import { useUser } from "../../services/context/UserContext";
 
 const initialActionItemForm = {
@@ -51,11 +51,6 @@ function calculatePipelineStatus(item) {
 
   if (requiredHeadcount <= 0) return "Pending";
 
-  /*
-    Excel logic:
-    Even if Actual HC is equal to or higher than Required HC,
-    the account is still At Risk when OPS PRF / Leads Needed exists.
-  */
   if (opsPrf > 0 || leadsToInterview > 0) {
     return "At Risk";
   }
@@ -176,6 +171,7 @@ export default function WeeklyHiringPlanPage() {
   const [weeklyPlanFiles, setWeeklyPlanFiles] = useState({});
   const [savingFileId, setSavingFileId] = useState("");
   const [openingFile, setOpeningFile] = useState(false);
+
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
@@ -460,13 +456,6 @@ export default function WeeklyHiringPlanPage() {
         "actual_headcount",
       ]);
 
-      /*
-        Backend-owned values:
-        Buffer Count, Buffer %, Missing Headcount, OPS PRF,
-        Projected Employee Needs, Leads to Interview, and Hiring Rate
-        are calculated by weeklyHiringPlan.js.
-        Frontend only displays the backend response.
-      */
       const bufferHeadcount = getBackendNumber(account, [
         "bufferHeadcount",
         "buffer_headcount",
@@ -476,12 +465,6 @@ export default function WeeklyHiringPlanPage() {
       const bufferPercent = getBackendNumber(account, [
         "bufferPercent",
         "buffer_percent",
-      ]);
-
-      const missingHeadcount = getBackendNumber(account, [
-        "missingHeadcount",
-        "missing_headcount",
-        "missing_head_count",
       ]);
 
       const calculated = {
@@ -524,7 +507,6 @@ export default function WeeklyHiringPlanPage() {
 
         bufferHeadcount,
         bufferPercent,
-        missingHeadcount,
         missingHeadcount: requiredHeadcount + bufferHeadcount - actualHeadcount,
 
         scheduledCount: Number(account.scheduledCount || 0),
@@ -571,8 +553,7 @@ export default function WeeklyHiringPlanPage() {
           account.uploadedBySibsId || account.uploaded_by_sibs_id || "",
         lastEditSibsId:
           account.lastEditSibsId || account.last_edit_sibs_id || "",
-        lastEditName:
-          account.lastEditName || account.last_edit_name || "",
+        lastEditName: account.lastEditName || account.last_edit_name || "",
       };
 
       return {
@@ -683,9 +664,9 @@ export default function WeeklyHiringPlanPage() {
       return;
     }
 
-
     if (!activeWeekStartDate || !activeWeekEndDate) {
-      const message = "Missing weekly date range. Please select a valid weekly version.";
+      const message =
+        "Missing weekly date range. Please select a valid weekly version.";
       setRequiredSaveMessage(message);
       openStatusModal({
         type: "error",
@@ -822,7 +803,10 @@ export default function WeeklyHiringPlanPage() {
             priorityLevel: refreshedAccount.priorityLevel || null,
             headcountRemarks: refreshedAccount.headcountRemarks || null,
             uploadedFile:
-              refreshedAccount.uploadedFile || refreshedAccount.uploaded_file || current.uploadedFile || "",
+              refreshedAccount.uploadedFile ||
+              refreshedAccount.uploaded_file ||
+              current.uploadedFile ||
+              "",
             uploadedBySibsId:
               refreshedAccount.uploadedBySibsId ||
               refreshedAccount.uploaded_by_sibs_id ||
@@ -854,6 +838,7 @@ export default function WeeklyHiringPlanPage() {
       });
 
       const message = `Required headcount for ${item.account} was saved successfully.`;
+
       openStatusModal({
         type: "success",
         title: "Required Headcount Saved",
@@ -869,6 +854,7 @@ export default function WeeklyHiringPlanPage() {
         "Failed to save required headcount.";
 
       setRequiredSaveMessage(message);
+
       openStatusModal({
         type: "error",
         title: "Save Failed",
@@ -898,7 +884,8 @@ export default function WeeklyHiringPlanPage() {
       openStatusModal({
         type: "error",
         title: "Permission Denied",
-        message: "You do not have permission to update the weekly hiring plan file.",
+        message:
+          "You do not have permission to update the weekly hiring plan file.",
       });
       return;
     }
@@ -924,6 +911,7 @@ export default function WeeklyHiringPlanPage() {
     }
 
     const rawValue = requiredInputs[item.id];
+
     const requiredHeadcount =
       rawValue === "" || rawValue === null || rawValue === undefined
         ? null
@@ -973,8 +961,10 @@ export default function WeeklyHiringPlanPage() {
               : "Unassigned");
 
         return (
-          String(accountName).toLowerCase() === String(item.account).toLowerCase() &&
-          String(accountCluster).toLowerCase() === String(item.cluster).toLowerCase()
+          String(accountName).toLowerCase() ===
+            String(item.account).toLowerCase() &&
+          String(accountCluster).toLowerCase() ===
+            String(item.cluster).toLowerCase()
         );
       });
 
@@ -983,15 +973,19 @@ export default function WeeklyHiringPlanPage() {
           if (!current) return current;
 
           const sameSelectedPlan =
-            String(current.account).toLowerCase() === String(item.account).toLowerCase() &&
-            String(current.cluster).toLowerCase() === String(item.cluster).toLowerCase();
+            String(current.account).toLowerCase() ===
+              String(item.account).toLowerCase() &&
+            String(current.cluster).toLowerCase() ===
+              String(item.cluster).toLowerCase();
 
           if (!sameSelectedPlan) return current;
 
           return {
             ...current,
             uploadedFile:
-              refreshedAccount.uploadedFile || refreshedAccount.uploaded_file || "",
+              refreshedAccount.uploadedFile ||
+              refreshedAccount.uploaded_file ||
+              "",
             uploadedBySibsId:
               refreshedAccount.uploadedBySibsId ||
               refreshedAccount.uploaded_by_sibs_id ||
@@ -1046,6 +1040,7 @@ export default function WeeklyHiringPlanPage() {
       await openWeeklyHiringPlanFile({ sibsId, filename });
     } catch (error) {
       console.error("OPEN WEEKLY HIRING PLAN FILE ERROR:", error);
+
       openStatusModal({
         type: "error",
         title: "Unable to Open File",
@@ -1140,6 +1135,8 @@ export default function WeeklyHiringPlanPage() {
             </div>
           </div>
 
+          <HeadcountTable filteredPlans={filteredPlans} />
+
           <WeeklyVersionTable
             weekDropdownRef={weekDropdownRef}
             clusterDropdownRef={clusterDropdownRef}
@@ -1175,8 +1172,6 @@ export default function WeeklyHiringPlanPage() {
             handleToggleAccount={handleToggleAccount}
           />
 
-          <HeadcountTable filteredPlans={filteredPlans} />
-
           <PercentageRiskGraphTable filteredPlans={filteredPlans} />
 
           <WeeklyHiringAccountsTable
@@ -1184,7 +1179,6 @@ export default function WeeklyHiringPlanPage() {
             filteredPlans={filteredPlans}
             onViewPlan={setSelectedPlan}
           />
-
         </div>
       </main>
 
@@ -1208,7 +1202,9 @@ export default function WeeklyHiringPlanPage() {
         savingFileId={savingFileId}
         weeklyPlanFile={selectedPlan ? weeklyPlanFiles[selectedPlan.id] : null}
         existingUploadedFile={selectedPlan?.uploadedFile || ""}
-        uploadedBySibsId={selectedPlan?.uploadedBySibsId || user?.username || user?.sibsId || ""}
+        uploadedBySibsId={
+          selectedPlan?.uploadedBySibsId || user?.username || user?.sibsId || ""
+        }
         openingFile={openingFile}
         onRequiredInputChange={handleRequiredInputChange}
         onWeeklyPlanFileChange={handleWeeklyPlanFileChange}
@@ -1228,7 +1224,7 @@ export default function WeeklyHiringPlanPage() {
         onSubmit={handleSubmitActionItem}
       />
 
-      <KpiSnapshotModal
+      <KPISnapshotModal
         open={showKpiSnapshot}
         week={activeWeek}
         records={filteredPlans}
