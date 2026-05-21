@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+
 import {
   formatDate,
   formatDateTime,
 } from "@/components/layout/FormatDateTime";
 import { useUser } from "../../../services/context/UserContext";
 import StatusModal from "../../modals/StatusModal";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 function mapAssignedLocation(value) {
   if (value === null || value === undefined || value === "") return "N/A";
@@ -30,42 +33,60 @@ function mapAssignedLocation(value) {
 function getUploadedFileUrl(item) {
   if (!item?.uploadedFile || !item?.sibsId) return "#";
 
-  return `${process.env.NEXT_PUBLIC_API_URL}/api/resignation/file/${encodeURIComponent(
-    item.sibsId,
+  return `${API_URL}/api/resignation/file/${encodeURIComponent(
+    item.sibsId
   )}/${encodeURIComponent(item.uploadedFile)}`;
 }
 
 function FileTypeIcon({ filename }) {
   const ext = filename?.split(".").pop()?.toLowerCase() || "";
 
-  const config = {
-    doc: { label: "W", color: "bg-blue-600" },
-    docx: { label: "W", color: "bg-blue-600" },
-    xls: { label: "X", color: "bg-green-600" },
-    xlsx: { label: "X", color: "bg-green-600" },
-    csv: { label: "X", color: "bg-green-600" },
-    pdf: { label: "PDF", color: "bg-red-600" },
-    jpg: { label: "IMG", color: "bg-purple-600" },
-    jpeg: { label: "IMG", color: "bg-purple-600" },
-    png: { label: "IMG", color: "bg-purple-600" },
-    gif: { label: "IMG", color: "bg-purple-600" },
-    webp: { label: "IMG", color: "bg-purple-600" },
-    svg: { label: "IMG", color: "bg-purple-600" },
+  const typeMap = {
+    doc: "word",
+    docx: "word",
+    xls: "excel",
+    xlsx: "excel",
+    csv: "excel",
+    pdf: "pdf",
+    jpg: "image",
+    jpeg: "image",
+    png: "image",
+    gif: "image",
+    webp: "image",
+    svg: "image",
   };
 
-  const file = config[ext] || { label: "FILE", color: "bg-gray-600" };
+  const type = typeMap[ext] || "file";
+
+  const labelMap = {
+    word: "W",
+    excel: "X",
+    pdf: "PDF",
+    image: "IMG",
+    file: "FILE",
+  };
+
+  const badgeClassMap = {
+    word: "bg-blue-600",
+    excel: "bg-green-600",
+    pdf: "bg-red-600",
+    image: "bg-purple-600",
+    file: "bg-gray-600",
+  };
 
   return (
     <div className="relative h-12 w-10 shrink-0">
       <div className="absolute inset-0 rounded-md border-2 border-gray-300 bg-white" />
-      <div className="absolute right-0 top-0 h-3 w-3 border-l-2 border-b-2 border-gray-300 bg-gray-100" />
-      <div className="absolute left-1 top-1/2 h-[2px] w-6 -translate-y-1/2 bg-gray-300" />
-      <div className="absolute left-1 top-[60%] h-[2px] w-5 bg-gray-300" />
+      <div className="absolute right-0 top-0 h-3 w-3 border-b-2 border-l-2 border-gray-300 bg-gray-100" />
+      <div className="absolute left-1 top-1/2 h-0.5 w-6 -translate-y-1/2 bg-gray-300" />
+      <div className="absolute left-1 top-[60%] h-0.5 w-5 bg-gray-300" />
 
       <div
-        className={`absolute -left-2 bottom-1 rounded-md px-2 py-1 text-[10px] font-bold text-white shadow ${file.color}`}
+        className={`absolute bottom-1 left-[-8px] rounded-md px-2 py-1 text-[10px] font-bold leading-none text-white shadow-sm ${
+          badgeClassMap[type] || badgeClassMap.file
+        }`}
       >
-        {file.label}
+        {labelMap[type]}
       </div>
     </div>
   );
@@ -82,12 +103,12 @@ function UploadedFileCell({ item, className = "" }) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
-      className={`flex w-full min-w-0 items-center gap-3 rounded-lg p-1 text-left transition hover:bg-gray-50 ${className}`}
+      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm text-gray-700 no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
       title={`Open ${item.uploadedFile}`}
     >
       <FileTypeIcon filename={item.uploadedFile} />
 
-      <span className="min-w-0 truncate text-sm text-gray-700 hover:text-[var(--sibs-primary-1)]">
+      <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
         {item.uploadedFile}
       </span>
     </a>
@@ -100,8 +121,20 @@ function Field({ label, children, className = "" }) {
       <label className="mb-2 block text-sm font-medium text-sibs-primary-1">
         {label}
       </label>
+
       {children}
     </div>
+  );
+}
+
+function ReadOnlyInput({ value, className = "" }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      readOnly
+      className={`w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-sibs-primary-1 outline-none ${className}`}
+    />
   );
 }
 
@@ -127,10 +160,10 @@ function EditResignationModal({
 
     const handleClickOutside = (e) => {
       const commentSpokenDropdown = document.getElementById(
-        "comment-spoken-dropdown-wrapper",
+        "comment-spoken-dropdown-wrapper"
       );
       const retainedDropdown = document.getElementById(
-        "employee-retained-dropdown-wrapper",
+        "employee-retained-dropdown-wrapper"
       );
 
       if (commentSpokenDropdown && !commentSpokenDropdown.contains(e.target)) {
@@ -158,10 +191,10 @@ function EditResignationModal({
   if (!open || !selectedItem) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl">
-        <div className="shrink-0 border-b px-6 py-4">
-          <h2 className="text-xl font-semibold text-sibs-primary-1">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4 py-6">
+      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="shrink-0 border-b border-[#e6ecf2] px-6 py-4">
+          <h2 className="m-0 text-xl font-semibold text-sibs-primary-1">
             {readOnly
               ? "View Resignation Request"
               : "Update Resignation Request"}
@@ -176,177 +209,109 @@ function EditResignationModal({
 
         <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Request ID">
-                <input
-                  type="text"
-                  value={selectedItem.id || ""}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.id || ""} />
               </Field>
 
               <Field label="SiBS ID">
-                <input
-                  type="text"
-                  value={selectedItem.sibsId || ""}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.sibsId || ""} />
               </Field>
 
               <Field label="Resignation Type">
-                <input
-                  type="text"
-                  value={selectedItem.resignationType || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.resignationType || "N/A"} />
               </Field>
 
               <Field label="Employee Name">
-                <input
-                  type="text"
+                <ReadOnlyInput
                   value={selectedItem.fullName || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm uppercase outline-none"
+                  className="uppercase"
                 />
               </Field>
 
               <Field label="Assigned Location">
-                <input
-                  type="text"
-                  value={mapAssignedLocation(selectedItem.location)}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={mapAssignedLocation(selectedItem.location)} />
               </Field>
 
               <Field label="Resignation Date">
-                <input
-                  type="text"
-                  value={formatDate(selectedItem.resignationDate)}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={formatDate(selectedItem.resignationDate)} />
               </Field>
 
               <Field label="Last Working Date">
-                <input
-                  type="text"
-                  value={formatDate(selectedItem.lastWorkingDate)}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={formatDate(selectedItem.lastWorkingDate)} />
               </Field>
 
               <Field label="Submitted At">
-                <input
-                  type="text"
-                  value={formatDateTime(selectedItem.createdAt)}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={formatDateTime(selectedItem.createdAt)} />
               </Field>
 
               <Field label="Supervisor SiBS ID">
-                <input
-                  type="text"
-                  value={selectedItem.supervisorSibsId || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.supervisorSibsId || "N/A"} />
               </Field>
 
               <Field label="Supervisor Name">
-                <input
-                  type="text"
+                <ReadOnlyInput
                   value={selectedItem.supervisorName || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm uppercase outline-none"
+                  className="uppercase"
                 />
               </Field>
 
               <Field label="Reason">
-                <input
-                  type="text"
-                  value={selectedItem.reason || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.reason || "N/A"} />
               </Field>
 
               <Field label="Specify Others">
-                <input
-                  type="text"
-                  value={selectedItem.specifyOthers || "N/A"}
-                  readOnly
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                />
+                <ReadOnlyInput value={selectedItem.specifyOthers || "N/A"} />
               </Field>
 
               <Field label="Have you personally spoken to the resigning employee?">
                 {readOnly ? (
-                  <input
-                    type="text"
-                    value={form.commentSpoken || "N/A"}
-                    readOnly
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                  />
+                  <ReadOnlyInput value={form.commentSpoken || "N/A"} />
                 ) : (
-                  <div
-                    id="comment-spoken-dropdown-wrapper"
-                    className="relative"
-                  >
+                  <div id="comment-spoken-dropdown-wrapper" className="relative">
                     <button
                       type="button"
                       onClick={() => setCommentSpokenOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-left text-sm text-sibs-primary-1"
                     >
                       <span
-                        className={
-                          form.commentSpoken
-                            ? "text-sibs-primary-1"
-                            : "text-gray-400"
-                        }
+                        className={form.commentSpoken ? "" : "text-gray-400"}
                       >
                         {form.commentSpoken || "Select answer"}
                       </span>
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition ${
                           commentSpokenOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {commentSpokenOpen && (
-                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="py-2">
-                          {["Yes", "No"].map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => {
-                                setForm((prev) => ({
-                                  ...prev,
-                                  commentSpoken: item,
-                                  commentRetain:
-                                    item === "No" ? "" : prev.commentRetain,
-                                }));
-                                setCommentSpokenOpen(false);
-                              }}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.commentSpoken === item
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="absolute top-[calc(100%+8px)] z-20 w-full overflow-hidden rounded-xl border border-[#d7dee8] bg-white shadow-xl">
+                        {["Yes", "No"].map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => {
+                              setForm((prev) => ({
+                                ...prev,
+                                commentSpoken: item,
+                                commentRetain:
+                                  item === "No" ? "" : prev.commentRetain,
+                              }));
+                              setCommentSpokenOpen(false);
+                            }}
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 hover:bg-slate-50 ${
+                              form.commentSpoken === item
+                                ? "bg-[#eaf2fb] font-medium"
+                                : ""
+                            }`}
+                          >
+                            {item}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -355,8 +320,7 @@ function EditResignationModal({
 
               <Field label="Was the employee retained (Y/N)?">
                 {readOnly ? (
-                  <input
-                    type="text"
+                  <ReadOnlyInput
                     value={
                       form.employeeRetained === "1"
                         ? "Yes"
@@ -364,8 +328,6 @@ function EditResignationModal({
                           ? "No"
                           : "N/A"
                     }
-                    readOnly
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
                   />
                 ) : (
                   <div
@@ -375,13 +337,11 @@ function EditResignationModal({
                     <button
                       type="button"
                       onClick={() => setEmployeeRetainedOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-[var(--sibs-primary-1)]"
+                      className="flex w-full items-center justify-between rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-left text-sm text-sibs-primary-1"
                     >
                       <span
                         className={
-                          form.employeeRetained !== ""
-                            ? "text-sibs-primary-1"
-                            : "text-gray-400"
+                          form.employeeRetained !== "" ? "" : "text-gray-400"
                         }
                       >
                         {form.employeeRetained === "1"
@@ -393,49 +353,47 @@ function EditResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition ${
                           employeeRetainedOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
                     {employeeRetainedOpen && (
-                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="py-2">
-                          {[
-                            { label: "Yes", value: "1" },
-                            { label: "No", value: "0" },
-                          ].map((item) => (
-                            <button
-                              key={item.value}
-                              type="button"
-                              onClick={() => {
-                                setForm((prev) => ({
-                                  ...prev,
-                                  employeeRetained: item.value,
-                                }));
-                                setEmployeeRetainedOpen(false);
-                              }}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.employeeRetained === item.value
-                                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item.label}
-                            </button>
-                          ))}
-                        </div>
+                      <div className="absolute top-[calc(100%+8px)] z-20 w-full overflow-hidden rounded-xl border border-[#d7dee8] bg-white shadow-xl">
+                        {[
+                          { label: "Yes", value: "1" },
+                          { label: "No", value: "0" },
+                        ].map((item) => (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() => {
+                              setForm((prev) => ({
+                                ...prev,
+                                employeeRetained: item.value,
+                              }));
+                              setEmployeeRetainedOpen(false);
+                            }}
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 hover:bg-slate-50 ${
+                              form.employeeRetained === item.value
+                                ? "bg-[#eaf2fb] font-medium"
+                                : ""
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
                 )}
               </Field>
 
-              {form.commentSpoken === "Yes" ? (
+              {form.commentSpoken === "Yes" && (
                 <Field
                   label="What have you done/offered to retain the employee (retention efforts)?"
-                  className="md:col-span-2"
+                  className="sm:col-span-2"
                 >
                   <textarea
                     value={form.commentRetain}
@@ -448,56 +406,61 @@ function EditResignationModal({
                     rows={5}
                     readOnly={readOnly}
                     placeholder="Enter your comments here"
-                    className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
-                      readOnly
-                        ? "border-gray-200 bg-gray-50"
-                        : "border-[#D7DEE8] bg-white focus:border-[var(--sibs-primary-1)]"
-                    }`}
+                    className="w-full resize-none rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </Field>
-              ) : null}
+              )}
 
-              <Field label="Uploaded File" className="md:col-span-2">
+              <Field label="Uploaded File" className="sm:col-span-2">
                 {selectedItem.uploadedFile ? (
                   <UploadedFileCell
                     item={selectedItem}
-                    className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 hover:bg-[#F8FAFC]"
+                    className="rounded-xl border border-[#d7dee8] bg-white px-4 py-3"
                   />
                 ) : (
-                  <input
-                    type="text"
-                    value="N/A"
-                    readOnly
-                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none"
-                  />
+                  <ReadOnlyInput value="N/A" />
                 )}
               </Field>
             </div>
           </div>
 
-          <div className="shrink-0 border-t px-6 py-4">
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
-              >
-                {readOnly ? "Close" : "Cancel"}
-              </button>
+          <div className="flex shrink-0 justify-end gap-3 border-t border-[#e6ecf2] px-6 py-4 max-sm:flex-col-reverse">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 max-sm:w-full"
+            >
+              {readOnly ? "Close" : "Cancel"}
+            </button>
 
-              {!readOnly && (
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="rounded-xl bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? "Saving..." : "Submit"}
-                </button>
-              )}
-            </div>
+            {!readOnly && (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-xl border border-sibs-primary-1 bg-sibs-primary-1 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 max-sm:w-full"
+              >
+                {submitting ? "Saving..." : "Submit"}
+              </button>
+            )}
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+function MobileField({ label, value, full = false }) {
+  return (
+    <div
+      className={`rounded-[10px] bg-sibs-tertiary-10 p-3 ${
+        full ? "sm:col-span-2" : ""
+      }`}
+    >
+      <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
+
+      <strong className="mt-1 block text-sm font-medium text-sibs-primary-1">
+        {value || "N/A"}
+      </strong>
     </div>
   );
 }
@@ -516,61 +479,54 @@ function MobileResignationCard({ item, onOpen, canOpen }) {
           onOpen(item);
         }
       }}
-      className={`w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition ${
-        canOpen ? "cursor-pointer hover:bg-gray-50" : "cursor-default"
+      className={`rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition ${
+        canOpen
+          ? "cursor-pointer hover:bg-slate-50 hover:shadow-md"
+          : "cursor-not-allowed opacity-80"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs font-medium text-sibs-tertiary-5">
-            {item.sibsId || "N/A"}
-          </p>
+      <div className="min-w-0">
+        <p className="m-0 text-xs font-medium text-sibs-tertiary-5">
+          {item.sibsId || "N/A"}
+        </p>
 
-          <h3 className="mt-1 text-sm font-semibold text-sibs-primary-1">
-            {(item.fullName || "N/A").toUpperCase()}
-          </h3>
+        <h3 className="mt-1 text-sm font-semibold leading-tight text-sibs-primary-1">
+          {(item.fullName || "N/A").toUpperCase()}
+        </h3>
 
-          <p className="mt-1 text-xs text-sibs-tertiary-5">
-            {item.resignationType || "N/A"}
-          </p>
-        </div>
+        <span className="mt-1 block text-xs text-sibs-tertiary-5">
+          {item.resignationType || "N/A"}
+        </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-          <p className="text-xs text-sibs-tertiary-5">Location</p>
-          <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-            {mapAssignedLocation(item.location)}
-          </p>
-        </div>
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <MobileField label="Location" value={mapAssignedLocation(item.location)} />
 
-        <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-          <p className="text-xs text-sibs-tertiary-5">Uploaded File</p>
+        <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
+          <p className="m-0 text-xs font-normal text-sibs-tertiary-5">
+            Uploaded File
+          </p>
+
           <div className="mt-2">
-            <UploadedFileCell item={item} className="w-full" />
+            <UploadedFileCell item={item} />
           </div>
         </div>
 
-        <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-          <p className="text-xs text-sibs-tertiary-5">Resignation Date</p>
-          <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-            {formatDate(item.resignationDate)}
-          </p>
-        </div>
+        <MobileField
+          label="Resignation Date"
+          value={formatDate(item.resignationDate)}
+        />
 
-        <div className="rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-          <p className="text-xs text-sibs-tertiary-5">Last Working Date</p>
-          <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-            {formatDate(item.lastWorkingDate)}
-          </p>
-        </div>
+        <MobileField
+          label="Last Working Date"
+          value={formatDate(item.lastWorkingDate)}
+        />
 
-        <div className="col-span-2 rounded-lg bg-[var(--sibs-tertiary-10)] p-3">
-          <p className="text-xs text-sibs-tertiary-5">Submitted At</p>
-          <p className="mt-1 text-sm font-medium text-sibs-primary-1">
-            {formatDateTime(item.createdAt)}
-          </p>
-        </div>
+        <MobileField
+          label="Submitted At"
+          value={formatDateTime(item.createdAt)}
+          full
+        />
       </div>
     </div>
   );
@@ -586,6 +542,7 @@ export default function ResignationTable({
   const [openEditModal, setOpenEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     commentSpoken: "",
     commentRetain: "",
@@ -602,7 +559,7 @@ export default function ResignationTable({
   const tableScrollRef = useRef(null);
 
   const loggedInSibsId = String(
-    user?.username || user?.sibs_id || user?.sibsId || "",
+    user?.username || user?.sibs_id || user?.sibsId || ""
   ).trim();
 
   const handleOpenEdit = (item) => {
@@ -612,7 +569,7 @@ export default function ResignationTable({
     if (!isAssignedSupervisor) return;
 
     const normalizedCommentSpoken = String(
-      item.comment_spoken ?? item.commentSpoken ?? "",
+      item.comment_spoken ?? item.commentSpoken ?? ""
     )
       .trim()
       .toLowerCase();
@@ -633,6 +590,7 @@ export default function ResignationTable({
             ? String(item.employeeRetained)
             : "",
     });
+
     setOpenEditModal(true);
   };
 
@@ -714,7 +672,7 @@ export default function ResignationTable({
     } catch (error) {
       console.error(
         "Failed to update resignation:",
-        error?.response?.data || error,
+        error?.response?.data || error
       );
 
       setStatusModal({
@@ -731,43 +689,47 @@ export default function ResignationTable({
 
   return (
     <>
-      <div className="hidden min-w-0 max-w-full lg:block">
+      <div className="hidden min-w-0 lg:block">
         <div
           ref={tableScrollRef}
-          className="max-h-[620px] max-w-full overflow-auto"
+          className="max-h-[620px] overflow-auto rounded-xl bg-white"
         >
-          <table className="w-full table-fixed text-sm">
-            <thead className="sticky top-0 z-10 bg-gray-100">
+          <table className="w-full min-w-[1280px] table-fixed border-collapse bg-white text-sm text-sibs-primary-1">
+            <colgroup>
+              <col className="w-[110px]" />
+              <col className="w-[170px]" />
+              <col className="w-[220px]" />
+              <col className="w-[180px]" />
+              <col className="w-[260px]" />
+              <col className="w-[170px]" />
+              <col className="w-[190px]" />
+              <col className="w-[170px]" />
+            </colgroup>
+
+            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
               <tr>
-                <th className="w-[7%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   SiBS ID
                 </th>
-
-                <th className="w-[10%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Resignation Type
                 </th>
-
-                <th className="w-[18%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Employee Name
                 </th>
-
-                <th className="w-[11%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Assigned Location
                 </th>
-
-                <th className="w-[24%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Uploaded File
                 </th>
-
-                <th className="w-[10%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Resignation Date
                 </th>
-
-                <th className="w-[10%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Last Working Date
                 </th>
-
-                <th className="w-[10%] whitespace-nowrap p-4 text-left">
+                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
                   Submitted At
                 </th>
               </tr>
@@ -776,13 +738,19 @@ export default function ResignationTable({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="p-6 text-center">
+                  <td
+                    colSpan="8"
+                    className="h-24 text-center text-sibs-tertiary-5"
+                  >
                     Loading...
                   </td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-6 text-center">
+                  <td
+                    colSpan="8"
+                    className="h-24 text-center text-sibs-tertiary-5"
+                  >
                     No resignation records found
                   </td>
                 </tr>
@@ -796,43 +764,43 @@ export default function ResignationTable({
                     <tr
                       key={item.id}
                       onClick={() => handleOpenEdit(item)}
-                      className={`border-t transition hover:bg-gray-50 ${
+                      className={`transition hover:bg-slate-50 ${
                         isAssignedSupervisor
                           ? "cursor-pointer"
                           : "cursor-not-allowed"
                       }`}
                     >
-                      <td className="w-[7%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {item.sibsId || "N/A"}
                       </td>
 
-                      <td className="w-[10%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {item.resignationType || "N/A"}
                       </td>
 
-                      <td className="w-[18%] p-4 font-medium">
-                        <p className="truncate uppercase">
+                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
+                        <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-medium uppercase">
                           {item.fullName || "N/A"}
                         </p>
                       </td>
 
-                      <td className="w-[11%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {mapAssignedLocation(item.location)}
                       </td>
 
-                      <td className="w-[24%] min-w-0 px-4 py-3">
+                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         <UploadedFileCell item={item} />
                       </td>
 
-                      <td className="w-[10%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDate(item.resignationDate)}
                       </td>
 
-                      <td className="w-[10%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDate(item.lastWorkingDate)}
                       </td>
 
-                      <td className="w-[10%] whitespace-nowrap p-4">
+                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
                         {formatDateTime(item.createdAt)}
                       </td>
                     </tr>
@@ -844,18 +812,18 @@ export default function ResignationTable({
         </div>
       </div>
 
-      <div className="min-w-0 max-w-full lg:hidden">
+      <div className="block min-w-0 lg:hidden">
         <div className="max-h-[620px] overflow-y-auto p-3">
           {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               Loading...
             </div>
           ) : data.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm">
+            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               No resignation records found
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3">
               {data.map((item) => {
                 const canOpen =
                   String(item.supervisorSibsId || "").trim() ===

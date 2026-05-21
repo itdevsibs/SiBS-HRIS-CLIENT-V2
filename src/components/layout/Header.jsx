@@ -1,13 +1,15 @@
 import { Bell } from "lucide-react";
-import { useRouter, usePathname } from "@/lib/router";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useUser } from "../../services/context/UserContext";
-import UserDropdown from "./UserDropdown";
+import UserDropdown from "./dropdown/UserDropdown";
 
 export default function Header() {
   const { user, loading } = useUser();
-  const router = useRouter();
-  const pathname = usePathname();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
 
   const [mounted, setMounted] = useState(false);
 
@@ -17,16 +19,16 @@ export default function Header() {
 
   useEffect(() => {
     if (mounted && !loading && !user && pathname !== "/login") {
-      router.replace("/login");
+      navigate("/login", { replace: true });
     }
-  }, [mounted, loading, user, pathname, router]);
+  }, [mounted, loading, user, pathname, navigate]);
 
   if (!mounted) {
     return (
-      <header className="min-h-[73px] border-b bg-white px-4 py-3 shadow-sm sm:px-6">
-        <div className="flex items-center justify-end gap-3 pl-12 sm:pl-0">
+      <header className="h-[73px] shrink-0 border-b border-[#C9D6E4] bg-sibs-tertiary-10 px-4 shadow-[2px] sm:px-6">
+        <div className="flex h-full items-center justify-end gap-3 pl-12 sm:pl-0">
           <div className="h-5 w-5 animate-pulse rounded bg-gray-200" />
-          <div className="hidden h-6 w-px bg-gray-300 sm:block" />
+          <div className="hidden h-6 w-px bg-[#C9D6E4] sm:block" />
           <div className="h-10 w-10 animate-pulse rounded-full bg-gray-200 sm:hidden" />
           <div className="hidden h-10 w-52 animate-pulse rounded bg-gray-200 sm:block" />
         </div>
@@ -43,25 +45,25 @@ export default function Header() {
       .toUpperCase() || "U";
 
   const formattedName = (
-    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${user?.firstName || ""}${
-      user?.middleName ? " " + user.middleName : ""
-    }`.trim() || "User"
+    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${
+      user?.firstName || ""
+    }${user?.middleName ? " " + user.middleName : ""}`.trim() || "User"
   ).toUpperCase();
 
   return (
-    <header className="min-h-[73px] border-b bg-[var(--sibs-tertiary-10)] px-4 py-3 shadow-sm sm:px-6">
-      <div className="flex min-w-0 items-center justify-end gap-3 pl-12 sm:gap-4 sm:pl-0">
+    <header className="relative z-[999] flex h-[73px] shrink-0 items-center border-b border-gray-300 bg-sibs-tertiary-10 px-4 sm:px-6">
+      <div className="flex min-w-0 flex-1 items-center justify-end gap-4 pl-12 sm:pl-0">
         <button
           type="button"
-          className="shrink-0 rounded-lg p-1 text-gray-500 transition hover:bg-white/70 hover:text-sibs-primary-1"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sibs-tertiary-6 transition hover:bg-white/70 hover:text-sibs-primary-1"
           aria-label="Notifications"
         >
-          <Bell className="h-5 w-5" />
+          <Bell className="h-5 w-5" strokeWidth={1.8} />
         </button>
 
-        <div className="hidden h-6 w-px bg-gray-300 sm:block" />
+        <div className="hidden h-6 w-px bg-[#C9D6E4] sm:block" />
 
-        <div className="min-w-0 shrink-0">
+        <div className="relative z-[9999] min-w-0 shrink-0">
           {loading || !user ? (
             <>
               <div className="h-10 w-10 animate-pulse rounded-full bg-gray-200 sm:hidden" />

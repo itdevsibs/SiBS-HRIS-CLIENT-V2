@@ -21,7 +21,7 @@ const TableHeader = ({ tableEntity }) => {
   } = header || {};
 
   return (
-    <div className="border-b px-3 py-4 sm:px-4 bg-white">
+    <div className="border-b border-[#DDE6F0] bg-white px-3 py-4 sm:px-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {title && (

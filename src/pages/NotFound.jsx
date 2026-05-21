@@ -1,4 +1,4 @@
-import { useRouter } from "@/lib/router";
+import { useNavigate } from "react-router-dom";
 
 const LAST_ROUTE_KEY = "lastRoute";
 
@@ -13,17 +13,17 @@ const allowedRoutes = [
 ];
 
 export default function NotFound() {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const handleGoBack = () => {
     const lastRoute = sessionStorage.getItem(LAST_ROUTE_KEY);
 
     if (lastRoute && allowedRoutes.includes(lastRoute)) {
-      router.push(lastRoute);
+      navigate(lastRoute);
       return;
     }
 
-    router.push("/dashboard/employee");
+    navigate("/dashboard/employee");
   };
 
   return (
