@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from "react";
 import { pipelineStages } from "../../../lib/utils/candidatePipeline/candidatePipelineConstants";
 import { List, SlidersHorizontal } from "lucide-react";
 import PipelineCandidateCard from "./PipelineCandidateCard";
-import PipelineListView from "./PipelineListView";
 
 const PipelineCardsBoard = ({
   candidates,

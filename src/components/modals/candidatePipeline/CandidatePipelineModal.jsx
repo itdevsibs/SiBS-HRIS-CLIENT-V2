@@ -13,7 +13,7 @@ import {
 
 import DetailRow from "../../layout/common/DetailRow";
 import CandidateAvatar from "../../recruitment/candidatePipeline/CandidateAvatar";
-import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/CandidateTalentPoolDetailsPanel";
+import CandidateTalentPoolDetailsPanel from "../../recruitment/candidatePipeline/candidateTalentPoolDetailsPanel";
 import LeadPrfReviewCard from "../../recruitment/candidatePipeline/LeadPrfReviewCard";
 
 import {
