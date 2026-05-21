@@ -14,14 +14,20 @@ function formatNumber(value) {
 }
 
 function getOverallStatus(records = []) {
-  const delayed = records.some((item) => item.pipelineStatus === "Delayed");
-  const atRisk = records.some((item) => item.pipelineStatus === "At Risk");
+  const validRecords = records.filter((item) => !item.isAssignedEmptyRow);
+
+  const delayed = validRecords.some((item) => item.pipelineStatus === "Delayed");
+  const atRisk = validRecords.some((item) => item.pipelineStatus === "At Risk");
 
   if (delayed || atRisk) return "AT RISK";
 
+  const hasRequirement = validRecords.some(
+    (item) => Number(item.requiredHeadcount || 0) > 0
+  );
+
   const completed =
-    records.length > 0 &&
-    records.every(
+    hasRequirement &&
+    validRecords.every(
       (item) =>
         Number(item.actualHeadcount || 0) >=
         Number(item.requiredHeadcount || 0)

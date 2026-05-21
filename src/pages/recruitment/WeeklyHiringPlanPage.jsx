@@ -17,6 +17,8 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 
+const FULL_WEEKLY_ACCESS_ROLES = ["ta", "hr", "hr_admin", "super_admin"];
+
 const initialActionItemForm = {
   actionItem: "",
   owner: "",
@@ -24,6 +26,74 @@ const initialActionItemForm = {
   status: "Pending",
   remarks: "",
 };
+
+function getText(value) {
+  return String(value || "").trim();
+}
+
+function getAccountIdFromAny(item) {
+  return getText(
+    item?.backendAccountId ||
+      item?.accountId ||
+      item?.account_id ||
+      item?.gy_acc_id ||
+      item?.id ||
+      ""
+  );
+}
+
+function getAccountNameFromAny(item) {
+  return getText(
+    item?.accountName ||
+      item?.account ||
+      item?.gy_acc_name ||
+      item?.account_name ||
+      ""
+  );
+}
+
+function getGhlNameFromAny(item) {
+  return getText(
+    item?.ghlName || item?.gy_acc_ghl_name || item?.ghl_name || ""
+  );
+}
+
+function getClusterFromAny(item) {
+  const accountName = getAccountNameFromAny(item);
+  const ghlName = getGhlNameFromAny(item);
+  const text = `${accountName} ${ghlName}`.toLowerCase();
+
+  if (
+    text.includes("cd -") ||
+    text.includes("cd-") ||
+    text.includes("coast dental")
+  ) {
+    return "Coast Dental";
+  }
+
+  if (text.includes("us visa")) {
+    return "US Visa";
+  }
+
+  if (
+    text.includes("sme-") ||
+    text.includes("sme -") ||
+    text.includes("frontsteps") ||
+    text.includes("front steps")
+  ) {
+    return "SME";
+  }
+
+  if (text.includes("yomdel")) {
+    return "Yomdel";
+  }
+
+  const explicitCluster = getText(item?.clusterName || item?.cluster);
+
+  if (explicitCluster) return explicitCluster;
+
+  return "Corporate";
+}
 
 function getBackendNumber(record, keys, fallback = 0) {
   for (const key of keys) {
@@ -124,6 +194,42 @@ async function openWeeklyHiringPlanFile({ sibsId, filename }) {
   }, 60_000);
 }
 
+function buildWeeklyAccess(user) {
+  const role = String(user?.role || "").toLowerCase();
+  const hasFullAccess = FULL_WEEKLY_ACCESS_ROLES.includes(role);
+
+  const assignedAccounts = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts
+    : [];
+
+  const assignedAccountIds = new Set(
+    assignedAccounts
+      .map((account) => getAccountIdFromAny(account))
+      .filter(Boolean)
+  );
+
+  const assignedAccountNames = new Set(
+    assignedAccounts
+      .map((account) => getAccountNameFromAny(account))
+      .filter(Boolean)
+  );
+
+  const assignedClusterNames = new Set(
+    assignedAccounts
+      .map((account) => getClusterFromAny(account))
+      .filter(Boolean)
+  );
+
+  return {
+    role,
+    hasFullAccess,
+    assignedAccounts,
+    assignedAccountIds,
+    assignedAccountNames,
+    assignedClusterNames,
+  };
+}
+
 export default function WeeklyHiringPlanPage() {
   const { user } = useUser();
 
@@ -148,6 +254,9 @@ export default function WeeklyHiringPlanPage() {
   const [selectedAccounts, setSelectedAccounts] = useState(["All"]);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [accountSearch, setAccountSearch] = useState("");
+
+  const [selectedHiringPlanPercent, setSelectedHiringPlanPercent] =
+    useState(5);
 
   const [accountOptions, setAccountOptions] = useState([
     {
@@ -186,6 +295,20 @@ export default function WeeklyHiringPlanPage() {
   const isLocked = !!activeWeek?.locked;
   const activeWeekStartDate = activeWeek?.startDate || "";
   const activeWeekEndDate = activeWeek?.endDate || "";
+
+  const weeklyAccess = useMemo(() => buildWeeklyAccess(user), [user]);
+
+  const userAccessReady = useMemo(() => {
+    if (!user) return false;
+
+    const role = String(user?.role || "").toLowerCase();
+
+    if (FULL_WEEKLY_ACCESS_ROLES.includes(role)) {
+      return true;
+    }
+
+    return Array.isArray(user?.assignedAccounts);
+  }, [user]);
 
   const filteredWeeklyVersions = useMemo(() => {
     const keyword = weekSearch.trim().toLowerCase();
@@ -323,6 +446,14 @@ export default function WeeklyHiringPlanPage() {
   }
 
   async function fetchAccountsByCluster({ resetAccountFilter = true } = {}) {
+    if (!activeWeekStartDate || !activeWeekEndDate) {
+      return [];
+    }
+
+    if (!userAccessReady) {
+      return [];
+    }
+
     try {
       setAccountsLoading(true);
 
@@ -345,44 +476,64 @@ export default function WeeklyHiringPlanPage() {
           )
         );
 
-        const mergedAccounts = results.flat();
-        const uniqueMap = new Map();
-
-        mergedAccounts.forEach((account) => {
-          const accountId = Number(account?.id || 0);
-          const accountName = String(account?.accountName || "").trim();
-          const clusterName = String(
-            account?.clusterName ||
-              account?.cluster ||
-              account?.ghlName ||
-              account?.gy_acc_ghl_name ||
-              ""
-          ).trim();
-
-          if (!accountId || !accountName) return;
-
-          const key = `${accountId}-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
-
-          if (!uniqueMap.has(key)) {
-            uniqueMap.set(key, account);
-          }
-        });
-
-        accounts = Array.from(uniqueMap.values());
+        accounts = results.flat();
       }
+
+      if (!weeklyAccess.hasFullAccess) {
+        const assignedAccountIds = weeklyAccess.assignedAccountIds;
+        const assignedAccountNames = weeklyAccess.assignedAccountNames;
+
+        accounts = (accounts || []).filter((account) => {
+          const accountId = getAccountIdFromAny(account);
+          const accountName = getAccountNameFromAny(account);
+
+          return (
+            assignedAccountIds.has(accountId) ||
+            assignedAccountNames.has(accountName)
+          );
+        });
+      }
+
+      const uniqueAccountsMap = new Map();
+
+      (accounts || []).forEach((account) => {
+        const accountId = Number(account?.id || account?.accountId || 0);
+        const accountName = String(
+          account?.accountName || account?.account || ""
+        ).trim();
+        const clusterName = getClusterFromAny(account);
+
+        if (!accountId || !accountName) return;
+
+        const key = `${accountId}-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
+
+        if (!uniqueAccountsMap.has(key)) {
+          uniqueAccountsMap.set(key, {
+            ...account,
+            clusterName,
+          });
+        }
+      });
+
+      accounts = Array.from(uniqueAccountsMap.values());
 
       const uniqueAccountOptionsMap = new Map();
 
-      (accounts || []).forEach((account) => {
-        const accountId = Number(account?.id || 0);
-        const accountName = String(account?.accountName || "").trim();
+      accounts.forEach((account) => {
+        const accountId = Number(account?.id || account?.accountId || 0);
+        const accountName = String(
+          account?.accountName || account?.account || ""
+        ).trim();
 
         if (!accountId || !accountName) return;
 
         const key = accountName.toLowerCase();
 
         if (!uniqueAccountOptionsMap.has(key)) {
-          uniqueAccountOptionsMap.set(key, account);
+          uniqueAccountOptionsMap.set(key, {
+            ...account,
+            clusterName: getClusterFromAny(account),
+          });
         }
       });
 
@@ -425,21 +576,30 @@ export default function WeeklyHiringPlanPage() {
   }
 
   useEffect(() => {
-    if (activeWeekStartDate && activeWeekEndDate) {
+    if (activeWeekStartDate && activeWeekEndDate && userAccessReady) {
       fetchAccountsByCluster();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClusters, activeWeekStartDate, activeWeekEndDate]);
+  }, [
+    selectedClusters,
+    activeWeekStartDate,
+    activeWeekEndDate,
+    userAccessReady,
+    user?.role,
+    user?.adminAccess,
+    user?.assignedAccounts,
+  ]);
 
   const displayData = useMemo(() => {
     return (remoteAccounts || []).map((account, index) => {
-      const accountName = account.accountName || "Unassigned Account";
+      const accountName =
+        account.accountName ||
+        account.account ||
+        account.gy_acc_name ||
+        "Unassigned Account";
 
       const accountCluster =
-        account.clusterName ||
-        account.cluster ||
-        account.ghlName ||
-        account.gy_acc_ghl_name ||
+        getClusterFromAny(account) ||
         (isAllClustersSelected()
           ? "Unassigned"
           : selectedClusters.length === 1
@@ -467,22 +627,7 @@ export default function WeeklyHiringPlanPage() {
         "buffer_percent",
       ]);
 
-      const calculated = {
-        opsPrf: getBackendNumber(account, ["opsPrf", "ops_prf"]),
-        leadsToInterview: getBackendNumber(account, [
-          "leadsToInterview",
-          "leads_to_interview",
-        ]),
-        hiringRate: getBackendNumber(account, ["hiringRate", "hiring_rate"], 5),
-
-        absenteeismCount:
-          account.absenteeismOpsCount !== undefined &&
-          account.absenteeismOpsCount !== null
-            ? Number(account.absenteeismOpsCount || 0)
-            : Number(account.absenteeismCount || 0),
-
-        attritionPastCount: Number(account.attritionPastCount || 0),
-      };
+      const opsPrf = getBackendNumber(account, ["opsPrf", "ops_prf"]);
 
       const projectedEmployeeNeeds = getBackendNumber(
         account,
@@ -492,12 +637,13 @@ export default function WeeklyHiringPlanPage() {
           "projectedNeeds",
           "projected_needs",
         ],
-        calculated.opsPrf
+        opsPrf
       );
 
       const row = {
-        id: `db-${accountCluster}-${account.id || index}`,
-        backendAccountId: account.id,
+        id: `db-${accountCluster}-${account.id || account.accountId || index}`,
+        backendAccountId: account.id || account.accountId || account.gy_acc_id,
+        accountId: account.id || account.accountId || account.gy_acc_id,
         week: activeWeek?.label || "Current Week",
         cluster: accountCluster,
         account: accountName,
@@ -512,14 +658,20 @@ export default function WeeklyHiringPlanPage() {
         scheduledCount: Number(account.scheduledCount || 0),
         presentCount: Number(account.presentCount || 0),
 
-        absenteeismCount: calculated.absenteeismCount,
+        absenteeismCount:
+          account.absenteeismOpsCount !== undefined &&
+          account.absenteeismOpsCount !== null
+            ? Number(account.absenteeismOpsCount || 0)
+            : Number(account.absenteeismCount || 0),
+
         absenteeismPercent: Number(account.absenteeismPercent || 0),
 
-        attritionPastCount: calculated.attritionPastCount,
+        attritionPastCount: Number(account.attritionPastCount || 0),
         attritionPastPercent: Number(account.attritionPastPercent || 0),
 
-        opsPrf: calculated.opsPrf,
+        opsPrf,
         projectedEmployeeNeeds,
+        projected_employee_needs: projectedEmployeeNeeds,
 
         attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
@@ -538,8 +690,21 @@ export default function WeeklyHiringPlanPage() {
           account.attritionInterviewToNhoPercent || 0
         ),
 
-        leadsToInterview: calculated.leadsToInterview,
-        hiringRate: calculated.hiringRate,
+        leadsToInterview: getBackendNumber(account, [
+          "leadsToInterview",
+          "leads_to_interview",
+        ]),
+        leads_to_interview: getBackendNumber(account, [
+          "leadsToInterview",
+          "leads_to_interview",
+        ]),
+
+        hiringRate: getBackendNumber(account, ["hiringRate", "hiring_rate"], 5),
+        hiring_rate: getBackendNumber(
+          account,
+          ["hiringRate", "hiring_rate"],
+          5
+        ),
 
         pipelineStatus: account.pipelineStatus || "Pending",
         statusNote: account.headcountRemarks || account.departmentName || "-",
@@ -551,8 +716,7 @@ export default function WeeklyHiringPlanPage() {
         uploadedFile: account.uploadedFile || account.uploaded_file || "",
         uploadedBySibsId:
           account.uploadedBySibsId || account.uploaded_by_sibs_id || "",
-        lastEditSibsId:
-          account.lastEditSibsId || account.last_edit_sibs_id || "",
+        lastEditSibsId: account.lastEditSibsId || account.last_edit_sibs_id || "",
         lastEditName: account.lastEditName || account.last_edit_name || "",
       };
 
@@ -561,24 +725,191 @@ export default function WeeklyHiringPlanPage() {
         pipelineStatus: account.pipelineStatus || calculatePipelineStatus(row),
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWeek?.label, selectedClusters, remoteAccounts]);
+
+  const hiringPlanAdjustedData = useMemo(() => {
+    const percent = Number(selectedHiringPlanPercent || 5);
+    const decimalPercent = percent > 0 ? percent / 100 : 0.05;
+
+    return displayData.map((item) => {
+      const projectedEmployeeNeeds = Number(
+        item.projectedEmployeeNeeds ??
+          item.projected_employee_needs ??
+          item.opsPrf ??
+          item.ops_prf ??
+          0
+      );
+
+      const leadsToInterview =
+        decimalPercent > 0
+          ? Math.round(projectedEmployeeNeeds / decimalPercent)
+          : 0;
+
+      return {
+        ...item,
+
+        hiringPlanPercent: percent,
+        hiring_plan_percent: percent,
+
+        projectedEmployeeNeeds,
+        projected_employee_needs: projectedEmployeeNeeds,
+
+        leadsToInterview,
+        leads_to_interview: leadsToInterview,
+
+        hiringRate: percent,
+        hiring_rate: percent,
+
+        pipelineStatus: calculatePipelineStatus({
+          ...item,
+          projectedEmployeeNeeds,
+          leadsToInterview,
+          hiringRate: percent,
+        }),
+      };
+    });
+  }, [displayData, selectedHiringPlanPercent]);
+
+  const managerDisplayData = useMemo(() => {
+    if (weeklyAccess.hasFullAccess) {
+      return hiringPlanAdjustedData;
+    }
+
+    const assignedAccounts = weeklyAccess.assignedAccounts || [];
+
+    if (!assignedAccounts.length) {
+      return [];
+    }
+
+    const existingAccountKeys = new Set(
+      hiringPlanAdjustedData
+        .map((item) =>
+          String(getAccountIdFromAny(item) || item.account || "")
+            .trim()
+            .toLowerCase()
+        )
+        .filter(Boolean)
+    );
+
+    const emptyAssignedRows = assignedAccounts
+      .map((account) => {
+        const accountId = getAccountIdFromAny(account);
+        const accountName = getAccountNameFromAny(account);
+        const ghlName = getGhlNameFromAny(account);
+        const cluster = getClusterFromAny(account);
+
+        const accountKey = String(accountId || accountName)
+          .trim()
+          .toLowerCase();
+
+        if (!accountName || existingAccountKeys.has(accountKey)) {
+          return null;
+        }
+
+        return {
+          id: `assigned-empty-${accountId || accountName}`,
+          backendAccountId: accountId,
+          accountId,
+          isAssignedEmptyRow: true,
+
+          week: activeWeek?.label || "Current Week",
+          weekId: activeWeek?.id || activeWeekId || "",
+
+          cluster,
+          account: accountName,
+
+          requiredHeadcount: 0,
+          actualHeadcount: 0,
+          bufferHeadcount: 0,
+          bufferPercent: 0,
+          missingHeadcount: 0,
+
+          scheduledCount: 0,
+          presentCount: 0,
+
+          absenteeismCount: 0,
+          absenteeismPercent: 0,
+
+          attritionPastCount: 0,
+          attritionPastPercent: 0,
+
+          opsPrf: 0,
+          projectedEmployeeNeeds: 0,
+          projected_employee_needs: 0,
+
+          attritionFstToPstCount: 0,
+          attritionFstToPstPercent: 0,
+
+          attritionNhoToFstPstCount: 0,
+          attritionNhoToFstPstPercent: 0,
+
+          attritionInterviewToNhoCount: 0,
+          attritionInterviewToNhoPercent: 0,
+
+          leadsToInterview: 0,
+          leads_to_interview: 0,
+
+          hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
+          hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
+          hiringRate: Number(selectedHiringPlanPercent || 5),
+          hiring_rate: Number(selectedHiringPlanPercent || 5),
+
+          pipelineStatus: "Pending",
+          statusNote: ghlName || "No weekly hiring plan record yet.",
+          owner: "-",
+          actionItems: [],
+          departmentName: account.departmentName || account.department || "",
+          priorityLevel: "",
+          headcountRemarks: "",
+          uploadedFile: "",
+          uploadedBySibsId: "",
+          lastEditSibsId: "",
+          lastEditName: "",
+        };
+      })
+      .filter(Boolean);
+
+    return [...hiringPlanAdjustedData, ...emptyAssignedRows];
+  }, [
+    hiringPlanAdjustedData,
+    weeklyAccess,
+    activeWeek?.label,
+    activeWeek?.id,
+    activeWeekId,
+    selectedHiringPlanPercent,
+  ]);
 
   useEffect(() => {
     const nextInputs = {};
 
-    displayData.forEach((item) => {
+    managerDisplayData.forEach((item) => {
       nextInputs[item.id] = String(item.requiredHeadcount ?? 0);
     });
 
     setRequiredInputs(nextInputs);
-  }, [displayData]);
+  }, [managerDisplayData]);
 
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return displayData.filter((item) => {
+    return managerDisplayData.filter((item) => {
       const cluster = item.cluster || "Unassigned Cluster";
       const account = item.account || "Unassigned Account";
+      const accountId = getAccountIdFromAny(item);
+
+      const matchesAssignedAccount =
+        weeklyAccess.hasFullAccess ||
+        weeklyAccess.assignedAccountNames.has(account) ||
+        (accountId && weeklyAccess.assignedAccountIds.has(accountId));
+
+      const matchesAssignedCluster =
+        weeklyAccess.hasFullAccess ||
+        weeklyAccess.assignedClusterNames.has(cluster);
+
+      const matchesUserAccess =
+        weeklyAccess.hasFullAccess ||
+        (matchesAssignedAccount && matchesAssignedCluster);
 
       const matchesCluster =
         isAllClustersSelected() || selectedClusters.includes(cluster);
@@ -593,24 +924,24 @@ export default function WeeklyHiringPlanPage() {
           .includes(keyword) ||
         cluster.toLowerCase().includes(keyword) ||
         account.toLowerCase().includes(keyword) ||
-        String(item.pipelineStatus || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.statusNote || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(item.owner || "")
-          .toLowerCase()
-          .includes(keyword);
+        String(item.pipelineStatus || "").toLowerCase().includes(keyword) ||
+        String(item.statusNote || "").toLowerCase().includes(keyword) ||
+        String(item.owner || "").toLowerCase().includes(keyword);
 
-      return matchesCluster && matchesAccount && matchesKeyword;
+      return (
+        matchesUserAccess &&
+        matchesCluster &&
+        matchesAccount &&
+        matchesKeyword
+      );
     });
   }, [
-    displayData,
+    managerDisplayData,
     activeWeek?.label,
     search,
     selectedClusters,
     selectedAccounts,
+    weeklyAccess,
   ]);
 
   const activeWeekIndex = weeklyVersions.findIndex(
@@ -652,219 +983,6 @@ export default function WeeklyHiringPlanPage() {
     }));
   }
 
-  async function handleSaveRequiredHeadcount(item) {
-    if (!canEditRequiredHeadcount) {
-      const message = "You do not have permission to edit required headcount.";
-      setRequiredSaveMessage(message);
-      openStatusModal({
-        type: "error",
-        title: "Permission Denied",
-        message,
-      });
-      return;
-    }
-
-    if (!activeWeekStartDate || !activeWeekEndDate) {
-      const message =
-        "Missing weekly date range. Please select a valid weekly version.";
-      setRequiredSaveMessage(message);
-      openStatusModal({
-        type: "error",
-        title: "Unable to Save",
-        message,
-      });
-      return;
-    }
-
-    const rawValue = requiredInputs[item.id];
-
-    const requiredHeadcount =
-      rawValue === "" || rawValue === null || rawValue === undefined
-        ? null
-        : Number(rawValue);
-
-    if (requiredHeadcount !== null && !Number.isFinite(requiredHeadcount)) {
-      const message = "Invalid required headcount.";
-      setRequiredSaveMessage(message);
-      openStatusModal({
-        type: "error",
-        title: "Invalid Input",
-        message,
-      });
-      return;
-    }
-
-    try {
-      setSavingRequiredId(item.id);
-      setRequiredSaveMessage("");
-
-      await saveRequiredHeadcount({
-        weekNumber: activeWeek?.weekNumber || null,
-        weekLabel: activeWeek?.label || null,
-        weekStart: activeWeekStartDate,
-        weekEnd: activeWeekEndDate,
-        clusterName: item.cluster,
-        accountName: item.account,
-        requiredHeadcount,
-        actualHeadcount: Number(item.actualHeadcount || 0),
-        priorityLevel: item.priorityLevel || null,
-        remarks: item.headcountRemarks || null,
-      });
-
-      const refreshedAccounts = await fetchAccountsByCluster({
-        resetAccountFilter: false,
-      });
-
-      const refreshedAccount = (refreshedAccounts || []).find((account) => {
-        const accountName = account.accountName || "Unassigned Account";
-        const accountCluster =
-          account.clusterName ||
-          account.cluster ||
-          account.ghlName ||
-          account.gy_acc_ghl_name ||
-          (isAllClustersSelected()
-            ? "Unassigned"
-            : selectedClusters.length === 1
-              ? selectedClusters[0]
-              : "Unassigned");
-
-        return (
-          String(accountName).toLowerCase() ===
-            String(item.account).toLowerCase() &&
-          String(accountCluster).toLowerCase() ===
-            String(item.cluster).toLowerCase()
-        );
-      });
-
-      if (refreshedAccount) {
-        setSelectedPlan((current) => {
-          if (!current) return current;
-
-          const sameSelectedPlan =
-            String(current.account).toLowerCase() ===
-              String(item.account).toLowerCase() &&
-            String(current.cluster).toLowerCase() ===
-              String(item.cluster).toLowerCase();
-
-          if (!sameSelectedPlan) return current;
-
-          return {
-            ...current,
-            requiredHeadcount: getBackendNumber(refreshedAccount, [
-              "requiredHeadcount",
-              "required_headcount",
-            ]),
-            actualHeadcount: getBackendNumber(refreshedAccount, [
-              "actualHeadcount",
-              "actual_headcount",
-            ]),
-            bufferHeadcount: getBackendNumber(refreshedAccount, [
-              "bufferHeadcount",
-              "buffer_headcount",
-              "buffer_head_count",
-            ]),
-            bufferPercent: getBackendNumber(refreshedAccount, [
-              "bufferPercent",
-              "buffer_percent",
-            ]),
-            missingHeadcount: getBackendNumber(refreshedAccount, [
-              "missingHeadcount",
-              "missing_headcount",
-              "missing_head_count",
-            ]),
-            absenteeismCount:
-              refreshedAccount.absenteeismOpsCount !== undefined &&
-              refreshedAccount.absenteeismOpsCount !== null
-                ? Number(refreshedAccount.absenteeismOpsCount || 0)
-                : Number(refreshedAccount.absenteeismCount || 0),
-            attritionPastCount: Number(refreshedAccount.attritionPastCount || 0),
-            opsPrf: getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"]),
-            projectedEmployeeNeeds: getBackendNumber(
-              refreshedAccount,
-              [
-                "projectedEmployeeNeeds",
-                "projected_employee_needs",
-                "projectedNeeds",
-                "projected_needs",
-              ],
-              getBackendNumber(refreshedAccount, ["opsPrf", "ops_prf"])
-            ),
-            leadsToInterview: getBackendNumber(refreshedAccount, [
-              "leadsToInterview",
-              "leads_to_interview",
-            ]),
-            hiringRate: getBackendNumber(
-              refreshedAccount,
-              ["hiringRate", "hiring_rate"],
-              5
-            ),
-            pipelineStatus:
-              refreshedAccount.pipelineStatus || current.pipelineStatus,
-            priorityLevel: refreshedAccount.priorityLevel || null,
-            headcountRemarks: refreshedAccount.headcountRemarks || null,
-            uploadedFile:
-              refreshedAccount.uploadedFile ||
-              refreshedAccount.uploaded_file ||
-              current.uploadedFile ||
-              "",
-            uploadedBySibsId:
-              refreshedAccount.uploadedBySibsId ||
-              refreshedAccount.uploaded_by_sibs_id ||
-              current.uploadedBySibsId ||
-              "",
-            lastEditSibsId:
-              refreshedAccount.lastEditSibsId ||
-              refreshedAccount.last_edit_sibs_id ||
-              current.lastEditSibsId ||
-              "",
-            lastEditName:
-              refreshedAccount.lastEditName ||
-              refreshedAccount.last_edit_name ||
-              current.lastEditName ||
-              "",
-            statusNote:
-              refreshedAccount.headcountRemarks ||
-              refreshedAccount.departmentName ||
-              current.statusNote ||
-              "-",
-          };
-        });
-      }
-
-      setWeeklyPlanFiles((prev) => {
-        const next = { ...prev };
-        delete next[item.id];
-        return next;
-      });
-
-      const message = `Required headcount for ${item.account} was saved successfully.`;
-
-      openStatusModal({
-        type: "success",
-        title: "Required Headcount Saved",
-        message,
-        closeViewModalOnSuccess: true,
-      });
-    } catch (error) {
-      console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
-
-      const message =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        "Failed to save required headcount.";
-
-      setRequiredSaveMessage(message);
-
-      openStatusModal({
-        type: "error",
-        title: "Save Failed",
-        message,
-      });
-    } finally {
-      setSavingRequiredId("");
-    }
-  }
-
   function handleRequiredInputChange(itemId, value) {
     setRequiredInputs((prev) => ({
       ...prev,
@@ -879,13 +997,12 @@ export default function WeeklyHiringPlanPage() {
     }));
   }
 
-  async function handleUpdateWeeklyPlanFile(item) {
+  async function handleSaveRequiredHeadcount(item) {
     if (!canEditRequiredHeadcount) {
       openStatusModal({
         type: "error",
         title: "Permission Denied",
-        message:
-          "You do not have permission to update the weekly hiring plan file.",
+        message: "You do not have permission to edit required headcount.",
       });
       return;
     }
@@ -893,19 +1010,8 @@ export default function WeeklyHiringPlanPage() {
     if (!activeWeekStartDate || !activeWeekEndDate) {
       openStatusModal({
         type: "error",
-        title: "Unable to Upload",
+        title: "Unable to Save",
         message: "Missing weekly date range. Please select a valid weekly version.",
-      });
-      return;
-    }
-
-    const selectedFile = weeklyPlanFiles[item.id];
-
-    if (!selectedFile) {
-      openStatusModal({
-        type: "error",
-        title: "No File Selected",
-        message: "Please choose a file before clicking Update File.",
       });
       return;
     }
@@ -927,9 +1033,10 @@ export default function WeeklyHiringPlanPage() {
     }
 
     try {
-      setSavingFileId(item.id);
+      setSavingRequiredId(item.id);
+      setRequiredSaveMessage("");
 
-      await updateWeeklyHiringPlanFile({
+      await saveRequiredHeadcount({
         weekNumber: activeWeek?.weekNumber || null,
         weekLabel: activeWeek?.label || null,
         weekStart: activeWeekStartDate,
@@ -940,70 +1047,77 @@ export default function WeeklyHiringPlanPage() {
         actualHeadcount: Number(item.actualHeadcount || 0),
         priorityLevel: item.priorityLevel || null,
         remarks: item.headcountRemarks || null,
-        uploadedFile: selectedFile,
       });
 
-      const refreshedAccounts = await fetchAccountsByCluster({
-        resetAccountFilter: false,
+      await fetchAccountsByCluster({ resetAccountFilter: false });
+
+      openStatusModal({
+        type: "success",
+        title: "Required Headcount Saved",
+        message: `Required headcount for ${item.account} was saved successfully.`,
+        closeViewModalOnSuccess: true,
+      });
+    } catch (error) {
+      console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
+
+      openStatusModal({
+        type: "error",
+        title: "Save Failed",
+        message:
+          error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          "Failed to save required headcount.",
+      });
+    } finally {
+      setSavingRequiredId("");
+    }
+  }
+
+  async function handleUpdateWeeklyPlanFile(item) {
+    if (!canEditRequiredHeadcount) {
+      openStatusModal({
+        type: "error",
+        title: "Permission Denied",
+        message:
+          "You do not have permission to update the weekly hiring plan file.",
+      });
+      return;
+    }
+
+    const file = weeklyPlanFiles[item.id];
+
+    if (!file) {
+      openStatusModal({
+        type: "error",
+        title: "No File Selected",
+        message: "Please select a file before uploading.",
+      });
+      return;
+    }
+
+    if (!activeWeekStartDate || !activeWeekEndDate) {
+      openStatusModal({
+        type: "error",
+        title: "Unable to Upload",
+        message: "Missing weekly date range. Please select a valid weekly version.",
+      });
+      return;
+    }
+
+    try {
+      setSavingFileId(item.id);
+
+      await updateWeeklyHiringPlanFile({
+        weekNumber: activeWeek?.weekNumber || null,
+        weekLabel: activeWeek?.label || null,
+        weekStart: activeWeekStartDate,
+        weekEnd: activeWeekEndDate,
+        clusterName: item.cluster,
+        accountName: item.account,
+        uploadedFile: file,
       });
 
-      const refreshedAccount = (refreshedAccounts || []).find((account) => {
-        const accountName = account.accountName || "Unassigned Account";
-        const accountCluster =
-          account.clusterName ||
-          account.cluster ||
-          account.ghlName ||
-          account.gy_acc_ghl_name ||
-          (isAllClustersSelected()
-            ? "Unassigned"
-            : selectedClusters.length === 1
-              ? selectedClusters[0]
-              : "Unassigned");
-
-        return (
-          String(accountName).toLowerCase() ===
-            String(item.account).toLowerCase() &&
-          String(accountCluster).toLowerCase() ===
-            String(item.cluster).toLowerCase()
-        );
-      });
-
-      if (refreshedAccount) {
-        setSelectedPlan((current) => {
-          if (!current) return current;
-
-          const sameSelectedPlan =
-            String(current.account).toLowerCase() ===
-              String(item.account).toLowerCase() &&
-            String(current.cluster).toLowerCase() ===
-              String(item.cluster).toLowerCase();
-
-          if (!sameSelectedPlan) return current;
-
-          return {
-            ...current,
-            uploadedFile:
-              refreshedAccount.uploadedFile ||
-              refreshedAccount.uploaded_file ||
-              "",
-            uploadedBySibsId:
-              refreshedAccount.uploadedBySibsId ||
-              refreshedAccount.uploaded_by_sibs_id ||
-              current.uploadedBySibsId ||
-              "",
-            lastEditSibsId:
-              refreshedAccount.lastEditSibsId ||
-              refreshedAccount.last_edit_sibs_id ||
-              current.lastEditSibsId ||
-              "",
-            lastEditName:
-              refreshedAccount.lastEditName ||
-              refreshedAccount.last_edit_name ||
-              current.lastEditName ||
-              "",
-          };
-        });
-      }
+      await fetchAccountsByCluster({ resetAccountFilter: false });
 
       setWeeklyPlanFiles((prev) => {
         const next = { ...prev };
@@ -1013,21 +1127,20 @@ export default function WeeklyHiringPlanPage() {
 
       openStatusModal({
         type: "success",
-        title: "File Updated",
-        message: `Weekly hiring plan file for ${item.account} was updated successfully.`,
+        title: "File Uploaded",
+        message: `Weekly hiring plan file for ${item.account} was uploaded successfully.`,
         closeViewModalOnSuccess: true,
       });
     } catch (error) {
-      console.error("UPDATE WEEKLY HIRING PLAN FILE ERROR:", error);
+      console.error("UPDATE WEEKLY PLAN FILE ERROR:", error);
 
       openStatusModal({
         type: "error",
         title: "Upload Failed",
         message:
-          error?.response?.data?.message ||
           error?.response?.data?.error ||
-          error?.message ||
-          "Failed to update weekly hiring plan file.",
+          error?.response?.data?.message ||
+          "Failed to upload weekly hiring plan file.",
       });
     } finally {
       setSavingFileId("");
@@ -1037,17 +1150,22 @@ export default function WeeklyHiringPlanPage() {
   async function handleOpenUploadedFile({ sibsId, filename }) {
     try {
       setOpeningFile(true);
-      await openWeeklyHiringPlanFile({ sibsId, filename });
+
+      await openWeeklyHiringPlanFile({
+        sibsId,
+        filename,
+      });
     } catch (error) {
-      console.error("OPEN WEEKLY HIRING PLAN FILE ERROR:", error);
+      console.error("OPEN WEEKLY PLAN FILE ERROR:", error);
 
       openStatusModal({
         type: "error",
         title: "Unable to Open File",
         message:
+          error?.response?.data?.error ||
           error?.response?.data?.message ||
           error?.message ||
-          "Failed to open uploaded weekly hiring plan file.",
+          "Failed to open file.",
       });
     } finally {
       setOpeningFile(false);
@@ -1104,6 +1222,7 @@ export default function WeeklyHiringPlanPage() {
           account.gy_acc_name,
           account.ghlName,
           account.gy_acc_ghl_name,
+          account.clusterName,
         ]
           .filter(Boolean)
           .join(" ")
@@ -1129,13 +1248,17 @@ export default function WeeklyHiringPlanPage() {
               </h1>
 
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Manage weekly manpower requirement, OPS PRF, leads needed, and
-                action items.
+                Manage weekly manpower requirement, OPS PRF, hiring plan
+                percentage, leads needed, and action items.
               </p>
+
+              {!weeklyAccess.hasFullAccess && (
+                <p className="mt-2 inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                  Manager View: showing assigned accounts only.
+                </p>
+              )}
             </div>
           </div>
-
-          <HeadcountTable filteredPlans={filteredPlans} />
 
           <WeeklyVersionTable
             weekDropdownRef={weekDropdownRef}
@@ -1162,6 +1285,8 @@ export default function WeeklyHiringPlanPage() {
             setAccountSearch={setAccountSearch}
             accountsLoading={accountsLoading}
             filteredAccountOptions={filteredAccountOptions}
+            selectedHiringPlanPercent={selectedHiringPlanPercent}
+            setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
             search={search}
             setSearch={setSearch}
             isLocked={isLocked}
@@ -1170,7 +1295,11 @@ export default function WeeklyHiringPlanPage() {
             isAllAccountsSelected={isAllAccountsSelected}
             handleToggleCluster={handleToggleCluster}
             handleToggleAccount={handleToggleAccount}
+            user={user}
+            assignedAccounts={user?.assignedAccounts || []}
           />
+
+          <HeadcountTable filteredPlans={filteredPlans} />
 
           <PercentageRiskGraphTable filteredPlans={filteredPlans} />
 

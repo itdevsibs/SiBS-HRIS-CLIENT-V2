@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -11,11 +11,13 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+
 import Header from "../../components/layout/Header";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import UserModal from "../../components/modals/users/UserModal";
 import StatusModal from "../../components/modals/StatusModal";
 import { useUser } from "../../services/context/UserContext";
+
 import {
   getUserAccess,
   searchUserAccessEmployees,
@@ -86,12 +88,162 @@ function getSingleAdminAccess(adminAccess) {
   return String(adminAccess || "");
 }
 
+function getFullName(item) {
+  return (
+    `${item?.lastName || ""}${item?.lastName ? ", " : ""}${
+      item?.firstName || ""
+    }${item?.middleName ? " " + item.middleName : ""}`.trim() || "-"
+  );
+}
+
+function getAccountId(account) {
+  return String(
+    account?.gy_acc_id ||
+      account?.accountId ||
+      account?.account_id ||
+      account?.id ||
+      ""
+  ).trim();
+}
+
+function getAccountName(account) {
+  return String(
+    account?.gy_acc_name ||
+      account?.accountName ||
+      account?.account ||
+      account?.account_name ||
+      account?.name ||
+      ""
+  ).trim();
+}
+
+function getGhlName(account) {
+  return String(
+    account?.gy_acc_ghl_name ||
+      account?.ghlName ||
+      account?.ghl_name ||
+      ""
+  ).trim();
+}
+
+function normalizeAccountOption(account) {
+  const accountId = getAccountId(account);
+  const accountName = getAccountName(account);
+  const ghlName = getGhlName(account);
+
+  if (!accountId || !accountName) return null;
+
+  return {
+    accountId,
+    account_id: accountId,
+    gy_acc_id: accountId,
+
+    accountName,
+    account: accountName,
+    gy_acc_name: accountName,
+
+    ghlName,
+    gy_acc_ghl_name: ghlName,
+
+    departmentId:
+      account?.departmentId ||
+      account?.department_id ||
+      account?.gy_dept_id ||
+      "",
+    departmentName:
+      account?.departmentName ||
+      account?.department ||
+      account?.name_department ||
+      "",
+    clusterName: account?.clusterName || "",
+  };
+}
+
+function normalizeAccountOptions(accounts = []) {
+  const map = new Map();
+
+  accounts.forEach((account) => {
+    const normalized = normalizeAccountOption(account);
+
+    if (!normalized) return;
+
+    if (!map.has(normalized.accountId)) {
+      map.set(normalized.accountId, normalized);
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) =>
+    a.gy_acc_name.localeCompare(b.gy_acc_name)
+  );
+}
+
+function getAssignedAccountIds(item) {
+  if (Array.isArray(item?.assignedAccounts) && item.assignedAccounts.length) {
+    return item.assignedAccounts
+      .map((account) => getAccountId(account))
+      .filter(Boolean);
+  }
+
+  if (item?.accountId) {
+    return [String(item.accountId)];
+  }
+
+  if (item?.gy_acc_id) {
+    return [String(item.gy_acc_id)];
+  }
+
+  return [];
+}
+
+function formatAssignedAccounts(item) {
+  if (Array.isArray(item?.assignedAccounts) && item.assignedAccounts.length) {
+    const names = item.assignedAccounts
+      .map((account) => getAccountName(account))
+      .filter(Boolean);
+
+    return names.length ? names.join(", ") : getAccountName(item) || "-";
+  }
+
+  return getAccountName(item) || "-";
+}
+
+function buildFallbackAccountOptions(users = [], selectedUser = null) {
+  const allAccounts = [];
+
+  users.forEach((userItem) => {
+    allAccounts.push(userItem);
+
+    if (Array.isArray(userItem.assignedAccounts)) {
+      allAccounts.push(...userItem.assignedAccounts);
+    }
+
+    if (Array.isArray(userItem.availableAccounts)) {
+      allAccounts.push(...userItem.availableAccounts);
+    }
+  });
+
+  if (selectedUser) {
+    allAccounts.push(selectedUser);
+
+    if (Array.isArray(selectedUser.assignedAccounts)) {
+      allAccounts.push(...selectedUser.assignedAccounts);
+    }
+
+    if (Array.isArray(selectedUser.availableAccounts)) {
+      allAccounts.push(...selectedUser.availableAccounts);
+    }
+  }
+
+  return normalizeAccountOptions(allAccounts);
+}
+
 export default function UserManagementPage() {
   const navigate = useNavigate();
   const { user, loading } = useUser();
 
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState([]);
+  const [accountOptions, setAccountOptions] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
 
   const [page, setPage] = useState(1);
@@ -104,9 +256,11 @@ export default function UserManagementPage() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
   const [editForm, setEditForm] = useState({
     adminAccess: "",
     status: "active",
+    accountIds: [],
   });
 
   const [saving, setSaving] = useState(false);
@@ -154,6 +308,14 @@ export default function UserManagementPage() {
   });
 
   const isSuperAdmin = user?.role === SUPER_ADMIN_ROLE;
+
+  const editAccountOptions = useMemo(() => {
+    if (accountOptions.length > 0) {
+      return accountOptions;
+    }
+
+    return buildFallbackAccountOptions(users, selectedUser);
+  }, [accountOptions, users, selectedUser]);
 
   const showStatusModal = (type, title, message) => {
     setStatusModal({
@@ -233,7 +395,7 @@ export default function UserManagementPage() {
 
   const fetchManagementUsers = async (
     currentPage = page,
-    currentSearch = search,
+    currentSearch = search
   ) => {
     if (!user || user.role !== SUPER_ADMIN_ROLE) {
       setPageLoading(false);
@@ -247,6 +409,7 @@ export default function UserManagementPage() {
 
       if (!result?.success) {
         setUsers([]);
+        setAccountOptions([]);
         setPagination({
           page: 1,
           limit: 15,
@@ -257,17 +420,28 @@ export default function UserManagementPage() {
       }
 
       setUsers(result.data || []);
+
+      const accountsFromApi =
+        result.accountOptions ||
+        result.accounts ||
+        result.availableAccounts ||
+        result.data?.[0]?.availableAccounts ||
+        [];
+
+      setAccountOptions(normalizeAccountOptions(accountsFromApi));
+
       setPagination(
         result.pagination || {
           page: currentPage,
           limit: 15,
           total: (result.data || []).length,
           totalPages: 1,
-        },
+        }
       );
     } catch (error) {
       console.error("Fetch management users error:", error);
       setUsers([]);
+      setAccountOptions([]);
     } finally {
       setPageLoading(false);
     }
@@ -277,6 +451,7 @@ export default function UserManagementPage() {
     if (user?.role === SUPER_ADMIN_ROLE) {
       fetchManagementUsers(page, search);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role, page, search]);
 
   const handleSearchChange = (e) => {
@@ -304,7 +479,7 @@ export default function UserManagementPage() {
     const pages = [];
 
     if (totalPages <= 5) {
-      for (let i = 1; i <= totalPages; i++) {
+      for (let i = 1; i <= totalPages; i += 1) {
         pages.push(createPage(i));
       }
     } else {
@@ -314,14 +489,14 @@ export default function UserManagementPage() {
         pages.push(
           <span key="start-ellipsis" className="px-2 text-sibs-tertiary-5">
             ...
-          </span>,
+          </span>
         );
       }
 
       const start = Math.max(2, page - 1);
       const end = Math.min(totalPages - 1, page + 1);
 
-      for (let i = start; i <= end; i++) {
+      for (let i = start; i <= end; i += 1) {
         pages.push(createPage(i));
       }
 
@@ -329,7 +504,7 @@ export default function UserManagementPage() {
         pages.push(
           <span key="end-ellipsis" className="px-2 text-sibs-tertiary-5">
             ...
-          </span>,
+          </span>
         );
       }
 
@@ -370,6 +545,7 @@ export default function UserManagementPage() {
     setEditForm({
       adminAccess: getSingleAdminAccess(item.adminAccess),
       status: item.status || "active",
+      accountIds: getAssignedAccountIds(item),
     });
 
     setShowDeleteModal(false);
@@ -385,6 +561,7 @@ export default function UserManagementPage() {
     setEditForm({
       adminAccess: "",
       status: "active",
+      accountIds: [],
     });
   };
 
@@ -397,6 +574,27 @@ export default function UserManagementPage() {
     }));
   };
 
+  const handleToggleEditAccount = (accountId) => {
+    const stringAccountId = String(accountId || "");
+
+    if (!stringAccountId) return;
+
+    setEditForm((prev) => {
+      const currentAccountIds = Array.isArray(prev.accountIds)
+        ? prev.accountIds.map(String)
+        : [];
+
+      const alreadySelected = currentAccountIds.includes(stringAccountId);
+
+      return {
+        ...prev,
+        accountIds: alreadySelected
+          ? currentAccountIds.filter((id) => id !== stringAccountId)
+          : [...currentAccountIds, stringAccountId],
+      };
+    });
+  };
+
   const handleSaveUser = async (e) => {
     e.preventDefault();
 
@@ -407,13 +605,22 @@ export default function UserManagementPage() {
       return;
     }
 
+    if (!editForm.accountIds || editForm.accountIds.length === 0) {
+      showStatusModal(
+        "error",
+        "Missing Account",
+        "Please assign at least one account."
+      );
+      return;
+    }
+
     try {
       setSaving(true);
 
       const result = await updateUserAccess(selectedUser.id, {
         adminAccess: Number(editForm.adminAccess),
         status: editForm.status,
-        accountId: selectedUser.accountId,
+        accountIds: editForm.accountIds,
         departmentId: selectedUser.departmentId,
       });
 
@@ -421,7 +628,7 @@ export default function UserManagementPage() {
         showStatusModal(
           "error",
           "Update Failed",
-          result?.message || "Failed to update user.",
+          result?.message || "Failed to update user."
         );
         return;
       }
@@ -432,7 +639,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "success",
         "User Updated",
-        result?.message || "User updated successfully.",
+        result?.message || "User updated successfully."
       );
     } catch (error) {
       console.error("Save user error:", error);
@@ -440,7 +647,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "error",
         "Update Failed",
-        error.response?.data?.message || "Failed to update user.",
+        error.response?.data?.message || "Failed to update user."
       );
     } finally {
       setSaving(false);
@@ -459,7 +666,7 @@ export default function UserManagementPage() {
         showStatusModal(
           "error",
           "Delete Failed",
-          result?.message || "Failed to delete user.",
+          result?.message || "Failed to delete user."
         );
         return;
       }
@@ -470,7 +677,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "success",
         "User Deleted",
-        result?.message || "User deleted successfully.",
+        result?.message || "User deleted successfully."
       );
     } catch (error) {
       console.error("Delete user error:", error);
@@ -478,7 +685,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "error",
         "Delete Failed",
-        error.response?.data?.message || "Failed to delete user.",
+        error.response?.data?.message || "Failed to delete user."
       );
     } finally {
       setDeleting(false);
@@ -576,10 +783,10 @@ export default function UserManagementPage() {
       middleName: employee.middleName || "",
       lastName: employee.lastName || "",
       email: employee.email || "",
-      accountId: employee.accountId || "",
-      account: employee.account || "",
-      departmentId: employee.departmentId || "",
-      department: employee.department || "",
+      accountId: getAccountId(employee),
+      account: getAccountName(employee),
+      departmentId: employee.departmentId || employee.department_id || "",
+      department: employee.department || employee.departmentName || "",
     }));
   };
 
@@ -595,17 +802,23 @@ export default function UserManagementPage() {
   const handleAddUser = async (e) => {
     e.preventDefault();
 
+    const selectedAccountIds =
+      Array.isArray(addForm.accountIds) && addForm.accountIds.length > 0
+        ? addForm.accountIds
+        : addForm.accountId
+          ? [addForm.accountId]
+          : [];
+
     if (
       !addForm.gyEmpId ||
       !addForm.sibsId ||
-      !addForm.accountId ||
-      !addForm.departmentId ||
+      selectedAccountIds.length === 0 ||
       !addForm.adminAccess
     ) {
       showStatusModal(
         "error",
         "Missing Fields",
-        "Please complete all required fields.",
+        "Please complete all required fields and select at least one account."
       );
       return;
     }
@@ -616,7 +829,8 @@ export default function UserManagementPage() {
       const result = await addUserAccess({
         gyEmpId: addForm.gyEmpId,
         sibsId: addForm.sibsId,
-        accountId: addForm.accountId,
+        accountId: selectedAccountIds[0],
+        accountIds: selectedAccountIds,
         departmentId: addForm.departmentId,
         adminAccess: Number(addForm.adminAccess),
       });
@@ -625,7 +839,7 @@ export default function UserManagementPage() {
         showStatusModal(
           "error",
           "Add User Failed",
-          result?.message || "Failed to add user.",
+          result?.message || "Failed to add user."
         );
         return;
       }
@@ -636,7 +850,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "success",
         "User Added",
-        result?.message || "User added successfully.",
+        result?.message || "User added successfully."
       );
     } catch (error) {
       console.error("Add user error:", error);
@@ -644,7 +858,7 @@ export default function UserManagementPage() {
       showStatusModal(
         "error",
         "Add User Failed",
-        error.response?.data?.message || "Failed to add user.",
+        error.response?.data?.message || "Failed to add user."
       );
     } finally {
       setAddSaving(false);
@@ -662,7 +876,8 @@ export default function UserManagementPage() {
       item.middleName,
       item.lastName,
       item.email,
-      item.account,
+      getAccountName(item),
+      formatAssignedAccounts(item),
       item.department,
       formatRole(item.role),
       formatAdminAccess(item.adminAccess),
@@ -730,7 +945,7 @@ export default function UserManagementPage() {
               title="Super Admin"
               value={
                 users.filter(
-                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 7,
+                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 7
                 ).length
               }
             />
@@ -739,7 +954,7 @@ export default function UserManagementPage() {
               title="HR Admin"
               value={
                 users.filter(
-                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 3,
+                  (u) => Number(getSingleAdminAccess(u.adminAccess)) === 3
                 ).length
               }
             />
@@ -773,7 +988,7 @@ export default function UserManagementPage() {
                       <th className="p-3 text-left">Email</th>
                       <th className="p-3 text-left">Role</th>
                       <th className="p-3 text-left">Admin Access</th>
-                      <th className="p-3 text-left">Account</th>
+                      <th className="p-3 text-left">Assigned Accounts</th>
                       <th className="p-3 text-left">Department</th>
                       <th className="p-3 text-left">Status</th>
                       <th className="p-3 text-left">Actions</th>
@@ -868,7 +1083,7 @@ export default function UserManagementPage() {
                   type="button"
                   onClick={() =>
                     setPage((prev) =>
-                      Math.min(prev + 1, pagination.totalPages || 1),
+                      Math.min(prev + 1, pagination.totalPages || 1)
                     )
                   }
                   disabled={page === pagination.totalPages || pageLoading}
@@ -899,7 +1114,7 @@ export default function UserManagementPage() {
               type="button"
               onClick={() => {
                 const selectedItem = users.find(
-                  (userItem) => userItem.id === actionDropdown.userId,
+                  (userItem) => userItem.id === actionDropdown.userId
                 );
 
                 if (selectedItem) {
@@ -916,7 +1131,7 @@ export default function UserManagementPage() {
               type="button"
               onClick={() => {
                 const selectedItem = users.find(
-                  (userItem) => userItem.id === actionDropdown.userId,
+                  (userItem) => userItem.id === actionDropdown.userId
                 );
 
                 if (selectedItem) {
@@ -930,7 +1145,7 @@ export default function UserManagementPage() {
               Delete User
             </button>
           </div>,
-          document.body,
+          document.body
         )}
 
       <UserModal
@@ -947,6 +1162,7 @@ export default function UserManagementPage() {
         onSelectEmployee={handleSelectEmployee}
         form={addForm}
         onChange={handleAddChange}
+        accountOptions={editAccountOptions}
         saving={addSaving}
       />
 
@@ -958,6 +1174,8 @@ export default function UserManagementPage() {
         selectedUser={selectedUser}
         form={editForm}
         onChange={handleEditChange}
+        onToggleAccount={handleToggleEditAccount}
+        accountOptions={editAccountOptions}
         saving={saving}
         formatAdminAccess={formatAdminAccess}
       />
@@ -968,6 +1186,7 @@ export default function UserManagementPage() {
         onClose={closeDeleteModal}
         onConfirmDelete={handleDeleteUser}
         selectedUser={selectedUser}
+        accountOptions={editAccountOptions}
         deleting={deleting}
       />
 
@@ -992,11 +1211,7 @@ function UserTableRow({
     <tr className="border-t border-sibs-tertiary-9">
       <td className="p-3">{item.sibsId}</td>
 
-      <td className="p-3 font-medium">
-        {`${item.lastName || ""}${item.lastName ? ", " : ""}${
-          item.firstName || ""
-        }${item.middleName ? " " + item.middleName : ""}`.trim() || "-"}
-      </td>
+      <td className="p-3 font-medium">{getFullName(item)}</td>
 
       <td className="p-3">{item.email || "-"}</td>
 
@@ -1008,7 +1223,11 @@ function UserTableRow({
         </span>
       </td>
 
-      <td className="p-3">{item.account || "-"}</td>
+      <td className="p-3">
+        <span className="line-clamp-2 max-w-[280px]">
+          {formatAssignedAccounts(item)}
+        </span>
+      </td>
 
       <td className="p-3">{item.department || "-"}</td>
 
@@ -1040,11 +1259,6 @@ function UserMobileCard({
   actionRef,
   handleToggleActionDropdown,
 }) {
-  const fullName =
-    `${item.lastName || ""}${item.lastName ? ", " : ""}${
-      item.firstName || ""
-    }${item.middleName ? " " + item.middleName : ""}`.trim() || "-";
-
   return (
     <div className="bg-white p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -1054,7 +1268,7 @@ function UserMobileCard({
           </p>
 
           <h3 className="mt-1 break-words text-base font-bold text-sibs-primary-1">
-            {fullName}
+            {getFullName(item)}
           </h3>
 
           <p className="mt-1 break-words text-xs text-sibs-tertiary-5">
@@ -1087,7 +1301,8 @@ function UserMobileCard({
           </span>
         </div>
 
-        <InfoRow label="Account" value={item.account || "-"} />
+        <InfoRow label="Accounts" value={formatAssignedAccounts(item)} />
+
         <InfoRow label="Department" value={item.department || "-"} />
 
         <div className="flex items-center justify-between gap-3">
@@ -1103,6 +1318,7 @@ function InfoRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="shrink-0 text-xs text-sibs-tertiary-5">{label}</span>
+
       <span className="break-words text-right text-sm font-medium text-sibs-primary-1">
         {value}
       </span>

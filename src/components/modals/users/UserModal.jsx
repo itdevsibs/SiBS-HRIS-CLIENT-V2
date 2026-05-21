@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   UserPlus,
   Shield,
   ChevronDown,
   AlertTriangle,
+  Check,
+  Search,
 } from "lucide-react";
 
 const adminAccessOptions = [
@@ -21,8 +23,200 @@ const statusOptions = [
   { value: "inactive", label: "Inactive" },
 ];
 
+const CLUSTER_OPTIONS = [
+  "Coast Dental",
+  "US Visa",
+  "SME",
+  "Yomdel",
+  "Corporate",
+];
+
+function getAccountId(account) {
+  return String(
+    account?.gy_acc_id ||
+      account?.accountId ||
+      account?.account_id ||
+      account?.id ||
+      ""
+  ).trim();
+}
+
+function getAccountName(account) {
+  return String(
+    account?.gy_acc_name ||
+      account?.accountName ||
+      account?.account ||
+      account?.account_name ||
+      ""
+  ).trim();
+}
+
+function getGhlName(account) {
+  return String(
+    account?.gy_acc_ghl_name ||
+      account?.ghlName ||
+      account?.ghl_name ||
+      ""
+  ).trim();
+}
+
+function getDepartmentId(account) {
+  return String(
+    account?.gy_dept_id ||
+      account?.departmentId ||
+      account?.department_id ||
+      ""
+  ).trim();
+}
+
+function getDepartmentName(account) {
+  return String(
+    account?.departmentName ||
+      account?.department ||
+      account?.name_department ||
+      ""
+  ).trim();
+}
+
+function getClusterName(account) {
+  const explicitCluster = String(account?.clusterName || "").trim();
+
+  if (explicitCluster) return explicitCluster;
+
+  const accountName = getAccountName(account);
+  const ghlName = getGhlName(account);
+  const text = `${accountName} ${ghlName}`.toLowerCase();
+
+  if (
+    text.includes("cd -") ||
+    text.includes("cd-") ||
+    text.includes("coast dental")
+  ) {
+    return "Coast Dental";
+  }
+
+  if (text.includes("us visa")) {
+    return "US Visa";
+  }
+
+  if (text.includes("sme-") || text.includes("sme -")) {
+    return "SME";
+  }
+
+  if (text.includes("yomdel")) {
+    return "Yomdel";
+  }
+
+  return "Corporate";
+}
+
+function normalizeAccount(account) {
+  const accountId = getAccountId(account);
+  const accountName = getAccountName(account);
+  const ghlName = getGhlName(account);
+
+  if (!accountId || !accountName) return null;
+
+  return {
+    accountId,
+    account_id: accountId,
+    gy_acc_id: accountId,
+
+    accountName,
+    account: accountName,
+    gy_acc_name: accountName,
+
+    ghlName,
+    gy_acc_ghl_name: ghlName,
+
+    departmentId: getDepartmentId(account),
+    departmentName: getDepartmentName(account),
+
+    clusterName: getClusterName(account),
+  };
+}
+
+function getFullName(user) {
+  return `${user?.lastName || ""}${user?.lastName ? ", " : ""}${
+    user?.firstName || ""
+  }${user?.middleName ? " " + user.middleName : ""}`.trim();
+}
+
+function getClusterFilterLabel(selectedClusters = []) {
+  if (!selectedClusters.length || selectedClusters.includes("All")) {
+    return "All Clusters";
+  }
+
+  if (selectedClusters.length === 1) {
+    return selectedClusters[0];
+  }
+
+  return `${selectedClusters.length} Clusters Selected`;
+}
+
+function getAccountSelectLabel(accountOptions = [], selectedAccountIds = []) {
+  const selectedSet = new Set(selectedAccountIds.map(String));
+
+  const selectedAccounts = accountOptions
+    .map(normalizeAccount)
+    .filter(Boolean)
+    .filter((account) => selectedSet.has(String(account.accountId)));
+
+  if (selectedAccounts.length === 0) return "Select assigned accounts";
+  if (selectedAccounts.length === 1) return selectedAccounts[0].gy_acc_name;
+
+  return `${selectedAccounts.length} Accounts Selected`;
+}
+
+function getAssignedAccountsDisplay(
+  selectedUser,
+  accountOptions = [],
+  selectedAccountIds = []
+) {
+  const selectedSet = new Set(selectedAccountIds.map(String));
+
+  const selectedNames = accountOptions
+    .map(normalizeAccount)
+    .filter(Boolean)
+    .filter((account) => selectedSet.has(String(account.accountId)))
+    .map((account) => account.gy_acc_name)
+    .filter(Boolean);
+
+  if (selectedNames.length > 0) {
+    return selectedNames.join(", ");
+  }
+
+  if (Array.isArray(selectedUser?.assignedAccounts)) {
+    const assignedNames = selectedUser.assignedAccounts
+      .map((account) => getAccountName(account))
+      .filter(Boolean);
+
+    if (assignedNames.length > 0) {
+      return assignedNames.join(", ");
+    }
+  }
+
+  return getAccountName(selectedUser) || "-";
+}
+
+function getAssignedClustersFromSelectedAccounts(
+  accountOptions = [],
+  selectedAccountIds = []
+) {
+  const selectedSet = new Set(selectedAccountIds.map(String));
+
+  const clusters = accountOptions
+    .map(normalizeAccount)
+    .filter(Boolean)
+    .filter((account) => selectedSet.has(String(account.accountId)))
+    .map((account) => account.clusterName)
+    .filter(Boolean);
+
+  return [...new Set(clusters)];
+}
+
 export default function UserModal({
-  mode = "add", // add | edit | delete
+  mode = "add",
   open,
   onClose,
   onSubmit,
@@ -38,6 +232,10 @@ export default function UserModal({
 
   form,
   onChange,
+
+  onToggleAccount,
+  accountOptions = [],
+
   saving = false,
   deleting = false,
 
@@ -51,18 +249,108 @@ export default function UserModal({
   const employeeSearchRef = useRef(null);
   const adminAccessRef = useRef(null);
   const statusRef = useRef(null);
+  const clusterDropdownRef = useRef(null);
+  const accountDropdownRef = useRef(null);
 
   const [adminAccessOpen, setAdminAccessOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
 
+  const [selectedClusters, setSelectedClusters] = useState(["All"]);
+  const [showClusterDropdown, setShowClusterDropdown] = useState(false);
+
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [accountSearch, setAccountSearch] = useState("");
+
+  const normalizedAccountOptions = useMemo(() => {
+    const map = new Map();
+
+    (accountOptions || []).forEach((account) => {
+      const normalized = normalizeAccount(account);
+
+      if (!normalized) return;
+
+      if (!map.has(normalized.accountId)) {
+        map.set(normalized.accountId, normalized);
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.gy_acc_name.localeCompare(b.gy_acc_name)
+    );
+  }, [accountOptions]);
+
+  const selectedAccountIds = useMemo(() => {
+    if (Array.isArray(form?.accountIds)) {
+      return form.accountIds.map(String);
+    }
+
+    if (form?.accountId) {
+      return [String(form.accountId)];
+    }
+
+    return [];
+  }, [form?.accountIds, form?.accountId]);
+
+  const assignedAccountsDisplay = useMemo(() => {
+    return getAssignedAccountsDisplay(
+      selectedUser,
+      normalizedAccountOptions,
+      selectedAccountIds
+    );
+  }, [selectedUser, normalizedAccountOptions, selectedAccountIds]);
+
+  const filteredAccountOptions = useMemo(() => {
+    const keyword = accountSearch.trim().toLowerCase();
+    const selectedSet = new Set(selectedAccountIds.map(String));
+
+    return normalizedAccountOptions
+      .filter((account) => {
+        const matchesCluster =
+          selectedClusters.includes("All") ||
+          selectedClusters.length === 0 ||
+          selectedClusters.includes(account.clusterName);
+
+        const searchableText = [
+          account.gy_acc_id,
+          account.gy_acc_name,
+          account.gy_acc_ghl_name,
+          account.departmentName,
+          account.clusterName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        const matchesKeyword = !keyword || searchableText.includes(keyword);
+
+        return matchesCluster && matchesKeyword;
+      })
+      .sort((a, b) => {
+        const aSelected = selectedSet.has(String(a.accountId));
+        const bSelected = selectedSet.has(String(b.accountId));
+
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+
+        return a.gy_acc_name.localeCompare(b.gy_acc_name);
+      });
+  }, [
+    normalizedAccountOptions,
+    selectedClusters,
+    selectedAccountIds,
+    accountSearch,
+  ]);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setAdminAccessOpen(false);
         setStatusOpen(false);
-        onClose();
+        setShowClusterDropdown(false);
+        setShowAccountDropdown(false);
+        onClose?.();
       }
     };
 
@@ -84,18 +372,50 @@ export default function UserModal({
       if (statusRef.current && !statusRef.current.contains(event.target)) {
         setStatusOpen(false);
       }
+
+      if (
+        clusterDropdownRef.current &&
+        !clusterDropdownRef.current.contains(event.target)
+      ) {
+        setShowClusterDropdown(false);
+      }
+
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(event.target)
+      ) {
+        setShowAccountDropdown(false);
+      }
     };
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
 
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mousedown", handleClickOutside);
+
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "";
+
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [open, onClose, setShowEmployeeDropdown]);
+
+  useEffect(() => {
+    if (!open) {
+      setAdminAccessOpen(false);
+      setStatusOpen(false);
+      setShowClusterDropdown(false);
+      setShowAccountDropdown(false);
+      setAccountSearch("");
+      setSelectedClusters(["All"]);
+    }
+  }, [open]);
 
   if (!open) return null;
   if ((isEdit || isDelete) && !selectedUser) return null;
@@ -106,28 +426,21 @@ export default function UserModal({
 
   const selectedAdminAccess =
     adminAccessOptions.find(
-      (option) => option.value === selectedAdminAccessValue,
+      (option) => option.value === selectedAdminAccessValue
     )?.label || "";
 
   const selectedStatus =
     statusOptions.find((option) => option.value === String(form?.status || ""))
       ?.label || "";
 
-  const fullName =
-    isEdit || isDelete
-      ? `${selectedUser?.lastName || ""}${selectedUser?.lastName ? ", " : ""}${
-          selectedUser?.firstName || ""
-        }${
-          selectedUser?.middleName ? " " + selectedUser.middleName : ""
-        }`.trim()
-      : "";
+  const fullName = isEdit || isDelete ? getFullName(selectedUser) : "";
 
   const title = isDelete ? "Delete User" : isEdit ? "Edit User" : "Add User";
 
   const subtitle = isDelete
     ? "This action cannot be undone"
     : isEdit
-      ? "Update user access and permissions"
+      ? "Update user access, permissions, and assigned accounts"
       : "Search employee and assign admin access";
 
   const Icon = isDelete ? AlertTriangle : isEdit ? Shield : UserPlus;
@@ -140,15 +453,325 @@ export default function UserModal({
     ? "text-2xl font-bold text-red-600"
     : "text-2xl font-bold text-sibs-primary-1";
 
-  const isBusy = saving || deleting;
+  function closeNonEmployeeDropdowns() {
+    setAdminAccessOpen(false);
+    setStatusOpen(false);
+    setShowClusterDropdown(false);
+    setShowAccountDropdown(false);
+  }
+
+  function closeAllDropdowns() {
+    closeNonEmployeeDropdowns();
+    setShowEmployeeDropdown?.(false);
+  }
+
+  function isAllClustersSelected() {
+    return selectedClusters.includes("All") || selectedClusters.length === 0;
+  }
+
+  function handleToggleCluster(cluster) {
+    setSelectedClusters((prev) => {
+      if (cluster === "All") {
+        return ["All"];
+      }
+
+      const current = prev.includes("All") ? [] : prev;
+      const alreadySelected = current.includes(cluster);
+
+      const next = alreadySelected
+        ? current.filter((item) => item !== cluster)
+        : [...current, cluster];
+
+      return next.length > 0 ? next : ["All"];
+    });
+
+    setAccountSearch("");
+  }
+
+  function handleToggleAccountLocal(account) {
+    const accountId = String(account?.accountId || "");
+
+    if (!accountId) return;
+
+    if (onToggleAccount) {
+      onToggleAccount(accountId);
+      return;
+    }
+
+    const current = selectedAccountIds.map(String);
+    const alreadySelected = current.includes(accountId);
+
+    const nextAccountIds = alreadySelected
+      ? current.filter((id) => id !== accountId)
+      : [...current, accountId];
+
+    const primaryAccount = normalizedAccountOptions.find(
+      (item) => String(item.accountId) === String(nextAccountIds[0] || "")
+    );
+
+    onChange?.({
+      target: {
+        name: "accountIds",
+        value: nextAccountIds,
+      },
+    });
+
+    onChange?.({
+      target: {
+        name: "accountId",
+        value: nextAccountIds[0] || "",
+      },
+    });
+
+    onChange?.({
+      target: {
+        name: "account",
+        value: primaryAccount?.gy_acc_name || "",
+      },
+    });
+
+    onChange?.({
+      target: {
+        name: "departmentId",
+        value: primaryAccount?.departmentId || form?.departmentId || "",
+      },
+    });
+
+    onChange?.({
+      target: {
+        name: "department",
+        value: primaryAccount?.departmentName || form?.department || "",
+      },
+    });
+  }
+
+  function renderClusterAndAccountSelectors() {
+    if (!isAdd && !isEdit) return null;
+
+    return (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div ref={clusterDropdownRef} className="relative z-30">
+          <label className="mb-1 block text-sm font-bold text-[#101828]">
+            Cluster
+          </label>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (saving) return;
+
+              setShowClusterDropdown((prev) => !prev);
+              setShowAccountDropdown(false);
+              setAdminAccessOpen(false);
+              setStatusOpen(false);
+              setShowEmployeeDropdown?.(false);
+            }}
+            disabled={saving}
+            className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="truncate">
+              {getClusterFilterLabel(selectedClusters)}
+            </span>
+
+            <ChevronDown
+              size={18}
+              className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+                showClusterDropdown ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          {showClusterDropdown && (
+            <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+              <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => handleToggleCluster("All")}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                    isAllClustersSelected()
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isAllClustersSelected()}
+                    readOnly
+                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  />
+
+                  <span>All Clusters</span>
+                </button>
+
+                {CLUSTER_OPTIONS.map((cluster) => {
+                  const checked =
+                    !isAllClustersSelected() &&
+                    selectedClusters.includes(cluster);
+
+                  return (
+                    <button
+                      key={cluster}
+                      type="button"
+                      onClick={() => handleToggleCluster(cluster)}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                        checked
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        readOnly
+                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                      />
+
+                      <span className="truncate">{cluster}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div ref={accountDropdownRef} className="relative z-20">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <label className="block text-sm font-bold text-[#101828]">
+              Assigned Accounts
+            </label>
+
+            <span className="text-xs font-bold text-sibs-primary-1">
+              Selected: {selectedAccountIds.length}
+            </span>
+          </div>
+
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+            />
+
+            <input
+              type="text"
+              value={
+                showAccountDropdown
+                  ? accountSearch
+                  : getAccountSelectLabel(
+                      normalizedAccountOptions,
+                      selectedAccountIds
+                    )
+              }
+              onChange={(e) => {
+                setAccountSearch(e.target.value);
+                setShowAccountDropdown(true);
+              }}
+              onFocus={() => {
+                if (saving) return;
+
+                setShowAccountDropdown(true);
+                setAccountSearch("");
+                setShowClusterDropdown(false);
+                setAdminAccessOpen(false);
+                setStatusOpen(false);
+                setShowEmployeeDropdown?.(false);
+              }}
+              disabled={saving}
+              placeholder="Search accounts..."
+              autoComplete="off"
+              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            />
+
+            <ChevronDown
+              size={18}
+              onClick={() => {
+                if (saving) return;
+
+                setShowAccountDropdown((prev) => !prev);
+                setAccountSearch("");
+                setShowClusterDropdown(false);
+                setAdminAccessOpen(false);
+                setStatusOpen(false);
+                setShowEmployeeDropdown?.(false);
+              }}
+              className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                showAccountDropdown ? "rotate-180" : ""
+              }`}
+            />
+
+            {showAccountDropdown && (
+              <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  {filteredAccountOptions.length > 0 ? (
+                    filteredAccountOptions.map((account) => {
+                      const checked = selectedAccountIds.includes(
+                        String(account.accountId)
+                      );
+
+                      return (
+                        <button
+                          key={account.accountId}
+                          type="button"
+                          onClick={() => {
+                            handleToggleAccountLocal(account);
+                            setAccountSearch("");
+                          }}
+                          disabled={saving}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            checked
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              checked
+                                ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                                : "border-[#D0D5DD] bg-white"
+                            }`}
+                          >
+                            {checked && <Check size={12} />}
+                          </span>
+
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold">
+                              {account.gy_acc_name}
+                            </p>
+
+                            <p className="mt-0.5 truncate text-xs font-medium text-sibs-tertiary-5">
+                              {[account.clusterName, account.gy_acc_ghl_name]
+                                .filter(Boolean)
+                                .join(" / ") || "No GHL name"}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                      No accounts found for the selected cluster.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4">
+    <div
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#0F172A]/45 px-4 py-4 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-modal-title"
-        className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        className="relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
       >
         <div className="shrink-0 border-b border-sibs-tertiary-9 px-6 py-5">
           <div className="flex items-center gap-3">
@@ -158,7 +781,7 @@ export default function UserModal({
               <Icon size={22} />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <h2 id="user-modal-title" className={titleClass}>
                 {title}
               </h2>
@@ -173,7 +796,7 @@ export default function UserModal({
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-5">
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-sm text-red-700">
+                  <p className="text-sm font-semibold text-red-700">
                     Are you sure you want to delete this user account?
                   </p>
                 </div>
@@ -186,7 +809,10 @@ export default function UserModal({
                   />
                   <ReadOnlyField label="Full Name" value={fullName} />
                   <ReadOnlyField label="Email" value={selectedUser.email} />
-                  <ReadOnlyField label="Account" value={selectedUser.account} />
+                  <ReadOnlyField
+                    label="Assigned Accounts"
+                    value={assignedAccountsDisplay}
+                  />
                   <ReadOnlyField
                     label="Department"
                     value={selectedUser.department}
@@ -233,8 +859,7 @@ export default function UserModal({
                       onChange={onEmployeeSearchChange}
                       onFocus={() => {
                         setShowEmployeeDropdown?.(true);
-                        setAdminAccessOpen(false);
-                        setStatusOpen(false);
+                        closeNonEmployeeDropdowns();
                       }}
                       placeholder="Search SiBS ID or employee name"
                       disabled={saving}
@@ -264,9 +889,7 @@ export default function UserModal({
                                 {`${item.lastName || ""}${
                                   item.lastName ? ", " : ""
                                 }${item.firstName || ""}${
-                                  item.middleName
-                                    ? " " + item.middleName
-                                    : ""
+                                  item.middleName ? " " + item.middleName : ""
                                 }`.trim()}
                               </div>
                             </button>
@@ -292,24 +915,16 @@ export default function UserModal({
                         label="SiBS ID"
                         value={selectedUser.sibsId}
                       />
-
                       <ReadOnlyField
                         label="Employee ID"
                         value={selectedUser.gyEmpId}
                       />
-
                       <ReadOnlyField label="Full Name" value={fullName} />
-
+                      <ReadOnlyField label="Email" value={selectedUser.email} />
                       <ReadOnlyField
-                        label="Email"
-                        value={selectedUser.email}
+                        label="Default Account"
+                        value={getAccountName(selectedUser)}
                       />
-
-                      <ReadOnlyField
-                        label="Account"
-                        value={selectedUser.account}
-                      />
-
                       <ReadOnlyField
                         label="Department"
                         value={selectedUser.department}
@@ -318,21 +933,19 @@ export default function UserModal({
                   ) : (
                     <>
                       <ReadOnlyField label="Last Name" value={form?.lastName} />
-
                       <ReadOnlyField
                         label="First Name"
                         value={form?.firstName}
                       />
-
                       <ReadOnlyField
                         label="Middle Name"
                         value={form?.middleName}
                       />
-
                       <ReadOnlyField label="Email" value={form?.email} />
-
-                      <ReadOnlyField label="Account" value={form?.account} />
-
+                      <ReadOnlyField
+                        label="Default Account"
+                        value={getAccountName(form)}
+                      />
                       <ReadOnlyField
                         label="Department"
                         value={form?.department}
@@ -355,6 +968,8 @@ export default function UserModal({
                     zIndex="z-40"
                     onBeforeOpen={() => {
                       setStatusOpen(false);
+                      setShowClusterDropdown(false);
+                      setShowAccountDropdown(false);
                       setShowEmployeeDropdown?.(false);
                     }}
                     onSelect={(value) => {
@@ -366,9 +981,7 @@ export default function UserModal({
                         },
                       });
 
-                      setAdminAccessOpen(false);
-                      setStatusOpen(false);
-                      setShowEmployeeDropdown?.(false);
+                      closeAllDropdowns();
                     }}
                   />
 
@@ -386,6 +999,8 @@ export default function UserModal({
                       zIndex="z-30"
                       onBeforeOpen={() => {
                         setAdminAccessOpen(false);
+                        setShowClusterDropdown(false);
+                        setShowAccountDropdown(false);
                         setShowEmployeeDropdown?.(false);
                       }}
                       onSelect={(value) => {
@@ -397,13 +1012,25 @@ export default function UserModal({
                           },
                         });
 
-                        setStatusOpen(false);
-                        setAdminAccessOpen(false);
-                        setShowEmployeeDropdown?.(false);
+                        closeAllDropdowns();
                       }}
                     />
                   )}
                 </div>
+
+                {renderClusterAndAccountSelectors()}
+
+                {(isAdd || isEdit) && (
+                  <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 p-3">
+                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Current Assigned Accounts
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-sibs-primary-1">
+                      {assignedAccountsDisplay}
+                    </p>
+                  </div>
+                )}
 
                 {isEdit && (
                   <div className="rounded-xl border border-sibs-tertiary-9 bg-sibs-tertiary-10 p-4">
