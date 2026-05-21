@@ -44,7 +44,7 @@ export default function Sidebar() {
       "executive",
       "super_admin",
     ],
-    []
+    [],
   );
 
   const [mounted, setMounted] = useState(false);
@@ -88,7 +88,7 @@ export default function Sidebar() {
       ];
 
       const ok = allowed.some(
-        (path) => pathname === path || pathname.startsWith(`${path}/`)
+        (path) => pathname === path || pathname.startsWith(`${path}/`),
       );
 
       if (!ok) {
@@ -334,7 +334,7 @@ export default function Sidebar() {
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true
+      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true,
     );
 
   const handleLinkClick = () => {
@@ -354,10 +354,12 @@ export default function Sidebar() {
         <Link
           key={`${item.name}-${index}`}
           to={item.path}
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
           onClick={handleLinkClick}
           title={!isMobile && collapsed ? item.name : ""}
           className={[
-            "group flex min-w-0 items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-normal transition",
+            "group flex min-w-0 select-none items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-normal transition",
             "text-sibs-tertiary-5 hover:bg-sibs-tertiary-9 hover:text-sibs-primary-1",
             isActive ? "bg-sibs-tertiary-9 text-sibs-primary-1" : "",
             !isMobile && collapsed ? "justify-center px-2" : "",
@@ -366,8 +368,9 @@ export default function Sidebar() {
           <Icon
             size={18}
             strokeWidth={1.9}
+            draggable={false}
             className={[
-              "shrink-0 transition",
+              "pointer-events-none shrink-0 transition",
               isActive
                 ? "text-sibs-primary-1"
                 : "text-sibs-tertiary-5 group-hover:text-sibs-primary-1",
@@ -375,7 +378,9 @@ export default function Sidebar() {
           />
 
           {(!collapsed || isMobile) && (
-            <span className="min-w-0 truncate">{item.name}</span>
+            <span draggable={false} className="pointer-events-none min-w-0 truncate">
+              {item.name}
+            </span>
           )}
         </Link>
       );
@@ -406,8 +411,10 @@ export default function Sidebar() {
       )}
 
       <aside
+        draggable={false}
+        onDragStart={(e) => e.preventDefault()}
         className={[
-          "fixed left-0 top-0 z-[1000] flex h-dvh shrink-0 flex-col border-r border-[#C9D6E4] bg-sibs-tertiary-10 transition-all duration-300",
+          "fixed left-0 top-0 z-[1000] flex h-dvh shrink-0 select-none flex-col border-r border-[#C9D6E4] bg-sibs-tertiary-10 transition-all duration-300",
           !isMobile && collapsed ? "w-20" : "w-[260px]",
           isMobile
             ? mobileOpen
@@ -423,14 +430,14 @@ export default function Sidebar() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
             whileHover={{ scale: 1.04 }}
-            className="flex min-w-0 items-center gap-2"
+            className="flex min-w-0 select-none items-center gap-2"
           >
             <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-800 text-[11px] font-semibold text-white">
               S
             </div>
 
             {(!collapsed || isMobile) && (
-              <span className="inline-flex min-w-0 whitespace-nowrap text-xl font-bold tracking-tight">
+              <span className="inline-flex min-w-0 select-none whitespace-nowrap text-xl font-bold tracking-tight">
                 <motion.span
                   animate={{
                     color: ["#003366", "#ff6b00", "#003366"],
@@ -555,7 +562,7 @@ export default function Sidebar() {
 
 function Section({ title, short, collapsed, children }) {
   return (
-    <section className="mb-4">
+    <section className="mb-4 select-none">
       <p
         className={[
           "mb-2 text-[12px] font-semibold uppercase text-sibs-tertiary-6",
