@@ -65,6 +65,13 @@ function safeWriteStorage(key, value) {
 
 const RecruitmentSettingsContext = createContext(null);
 
+const emptyFieldForm = {
+  section: "",
+  label: "",
+  type: "Rating",
+  required: true,
+};
+
 export function RecruitmentSettingsProvider({ children }) {
   const [hasLoadedStorage, setHasLoadedStorage] = useState(false);
 
@@ -79,12 +86,8 @@ export function RecruitmentSettingsProvider({ children }) {
   const [positionSearch, setPositionSearch] = useState("");
   const [saveStatus, setSaveStatus] = useState("");
 
-  const [newField, setNewField] = useState({
-    label: "",
-    type: "Short Text",
-    section: "Interview Assessment",
-    required: false,
-  });
+  const [editingFieldId, setEditingFieldId] = useState(null);
+  const [newField, setNewField] = useState(emptyFieldForm);
 
   useEffect(() => {
     const storedPositions = safeReadArray(
@@ -228,12 +231,8 @@ export function RecruitmentSettingsProvider({ children }) {
     });
 
     setSearch("");
-    setNewField({
-      label: "",
-      type: "Short Text",
-      section: "Interview Assessment",
-      required: false,
-    });
+    setEditingFieldId(null);
+    setNewField(emptyFieldForm);
   }
 
   function updateActiveForm(patch) {
@@ -287,26 +286,56 @@ export function RecruitmentSettingsProvider({ children }) {
   }
 
   function handleAddField() {
-    if (!newField.label.trim()) return;
+    if (!newField.section.trim() || !newField.label.trim()) return;
+
+    if (editingFieldId) {
+      setFields(
+        fields.map((field) =>
+          field.id === editingFieldId
+            ? {
+                ...field,
+                section: newField.section.trim(),
+                label: newField.label.trim(),
+                type: newField.type,
+                required: newField.required,
+              }
+            : field,
+        ),
+      );
+
+      setEditingFieldId(null);
+      setNewField(emptyFieldForm);
+      return;
+    }
 
     setFields([
       ...fields,
       {
         id: `${activePosition.id}-${Date.now()}`,
+        section: newField.section.trim(),
         label: newField.label.trim(),
         type: newField.type,
-        section: newField.section,
         required: newField.required,
         enabled: true,
       },
     ]);
 
+    setNewField(emptyFieldForm);
+  }
+
+  function handleEditField(field) {
+    setEditingFieldId(field.id);
     setNewField({
-      label: "",
-      type: "Short Text",
-      section: "Interview Assessment",
-      required: false,
+      section: field.section || "",
+      label: field.label || "",
+      type: field.type || "Rating",
+      required: Boolean(field.required),
     });
+  }
+
+  function handleCancelFieldEdit() {
+    setEditingFieldId(null);
+    setNewField(emptyFieldForm);
   }
 
   function handleToggleField(id, key) {
@@ -324,6 +353,11 @@ export function RecruitmentSettingsProvider({ children }) {
 
   function handleDeleteField(id) {
     setFields(fields.filter((field) => field.id !== id));
+
+    if (editingFieldId === id) {
+      setEditingFieldId(null);
+      setNewField(emptyFieldForm);
+    }
   }
 
   function handleResetFields() {
@@ -332,12 +366,8 @@ export function RecruitmentSettingsProvider({ children }) {
     updateActiveForm(resetForm);
 
     setSearch("");
-    setNewField({
-      label: "",
-      type: "Short Text",
-      section: "Interview Assessment",
-      required: false,
-    });
+    setEditingFieldId(null);
+    setNewField(emptyFieldForm);
 
     setSaveStatus("Reset complete");
   }
@@ -374,6 +404,106 @@ export function RecruitmentSettingsProvider({ children }) {
     }
 
     return activeForm;
+  }
+
+  function handleAddFieldGroup(sectionTitle, questions = []) {
+    const cleanSection = String(sectionTitle || "").trim();
+
+    const validQuestions = questions
+      .map((question) => ({
+        label: String(question.label || "").trim(),
+        type: question.type || "Rating",
+        required: Boolean(question.required),
+      }))
+      .filter((question) => question.label);
+
+    if (!cleanSection || !validQuestions.length) {
+      return false;
+    }
+
+    const timestamp = Date.now();
+
+    const nextFields = validQuestions.map((question, index) => ({
+      id: `${activePosition.id}-${timestamp}-${index}`,
+      section: cleanSection,
+      label: question.label,
+      type: question.type,
+      required: question.required,
+      enabled: true,
+    }));
+
+    setFields([...fields, ...nextFields]);
+
+    setSearch("");
+    setNewField(emptyFieldForm);
+    setEditingFieldId(null);
+
+    return true;
+  }
+
+  function handleUpdateFieldFromModal(fieldId, payload) {
+    const cleanSection = String(payload?.section || "").trim();
+    const cleanLabel = String(payload?.label || "").trim();
+
+    if (!fieldId || !cleanSection || !cleanLabel) {
+      return false;
+    }
+
+    setFields(
+      fields.map((field) =>
+        field.id === fieldId
+          ? {
+              ...field,
+              section: cleanSection,
+              label: cleanLabel,
+              type: payload.type || "Rating",
+              required: Boolean(payload.required),
+            }
+          : field,
+      ),
+    );
+
+    setSearch("");
+    setEditingFieldId(null);
+    setNewField(emptyFieldForm);
+
+    return true;
+  }
+
+  function handleToggleFieldGroup(section, key) {
+    const cleanSection = String(section || "").trim();
+
+    if (!cleanSection) return;
+
+    const sectionFields = fields.filter(
+      (field) => field.section === cleanSection,
+    );
+
+    const shouldEnable = sectionFields.some((field) => !field[key]);
+
+    setFields(
+      fields.map((field) =>
+        field.section === cleanSection
+          ? {
+              ...field,
+              [key]: shouldEnable,
+            }
+          : field,
+      ),
+    );
+  }
+
+  function handleDeleteFieldGroup(section) {
+    const cleanSection = String(section || "").trim();
+
+    if (!cleanSection) return;
+
+    setFields(fields.filter((field) => field.section !== cleanSection));
+
+    if (newField.section === cleanSection) {
+      setEditingFieldId(null);
+      setNewField(emptyFieldForm);
+    }
   }
 
   return (
@@ -417,10 +547,13 @@ export function RecruitmentSettingsProvider({ children }) {
 
         newField,
         setNewField,
+        editingFieldId,
 
         saveStatus,
 
         handleAddField,
+        handleEditField,
+        handleCancelFieldEdit,
         handleToggleField,
         handleDeleteField,
         handleResetFields,
@@ -431,6 +564,10 @@ export function RecruitmentSettingsProvider({ children }) {
         recruitmentTabs,
         fieldTypes,
         pipelineStages,
+        handleAddFieldGroup,
+        handleUpdateFieldFromModal,
+        handleToggleFieldGroup,
+        handleDeleteFieldGroup,
       }}
     >
       {children}
