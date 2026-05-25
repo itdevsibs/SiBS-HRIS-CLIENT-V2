@@ -118,6 +118,11 @@ export default function AttritionPage() {
     },
   ];
 
+  const activeTabIndex = Math.max(
+    0,
+    tabs.findIndex((tab) => tab.label === activeTab)
+  );
+
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
 
@@ -397,10 +402,13 @@ export default function AttritionPage() {
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
         <div className="flex min-w-0 flex-col gap-6">
-          <section className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
-                <FileText size={24} />
+              <div className="group flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+                <FileText
+                  size={24}
+                  className="transition-transform duration-300 group-hover:scale-110"
+                />
               </div>
 
               <div className="min-w-0">
@@ -415,11 +423,11 @@ export default function AttritionPage() {
             </div>
 
             {activeTab === "Attrition" && (
-              <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+              <div className="sibs-profile-tab-panel flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
                 <div className="relative w-full shrink-0 lg:w-80">
                   <Search
                     size={18}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5 transition-transform duration-200"
                   />
 
                   <input
@@ -428,14 +436,14 @@ export default function AttritionPage() {
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
-                    className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </div>
 
                 <button
                   type="button"
                   onClick={handleOpenAdd}
-                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
                 >
                   <Plus size={17} />
                   Submit Attrition
@@ -478,12 +486,14 @@ export default function AttritionPage() {
             }
           />
 
-          <section className="min-w-0">
-            <div className="relative grid w-full max-w-[420px] grid-cols-2 overflow-hidden rounded-full bg-[#f2f4f7] shadow-sm">
+          <section className="sibs-profile-tab-panel relative z-[5] min-w-0">
+            <div className="relative grid w-full max-w-[420px] grid-cols-2 overflow-hidden rounded-full bg-[#f2f4f7] p-1 shadow-sm">
               <div
-                className={`absolute bottom-0 top-0 w-1/2 rounded-full bg-sibs-primary-1 shadow-sm transition-all duration-300 ${
-                  activeTab === "Attrition" ? "left-1/2" : "left-0"
-                }`}
+                className="absolute bottom-1 top-1 rounded-full bg-sibs-primary-1 shadow-sm transition-all duration-300 ease-out"
+                style={{
+                  width: "calc((100% - 8px) / 2)",
+                  left: `calc(4px + ${activeTabIndex} * ((100% - 8px) / 2))`,
+                }}
               />
 
               {tabs.map(({ label, count }) => {
@@ -494,14 +504,22 @@ export default function AttritionPage() {
                     key={label}
                     type="button"
                     onClick={() => setActiveTab(label)}
-                    className={`relative z-[1] flex min-h-11 min-w-0 items-center justify-center gap-2 px-4 text-sm font-medium transition ${
-                      isActive ? "text-white" : "text-[#344054]"
+                    className={`relative z-[1] flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition-all duration-300 ease-out active:scale-[0.97] ${
+                      isActive
+                        ? "text-white"
+                        : "text-[#344054] hover:bg-white/70 hover:text-sibs-primary-1"
                     }`}
                   >
                     <span className="truncate">{label}</span>
 
                     {count > 0 && (
-                      <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                      <span
+                        className={`inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow-sm transition-all duration-300 ${
+                          isActive
+                            ? "bg-white text-sibs-primary-1"
+                            : "bg-red-500 text-white"
+                        }`}
+                      >
                         {count}
                       </span>
                     )}
@@ -512,7 +530,11 @@ export default function AttritionPage() {
           </section>
 
           {activeTab === "Attrition" && (
-            <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
+            <section
+              key="Attrition"
+              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
+              style={{ animationDelay: "80ms" }}
+            >
               <AttritionTable
                 reloadKey={reloadKey}
                 onView={handleOpenView}
@@ -522,7 +544,11 @@ export default function AttritionPage() {
           )}
 
           {activeTab === "Resignation" && (
-            <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
+            <section
+              key="Resignation"
+              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
+              style={{ animationDelay: "80ms" }}
+            >
               <ResignationTable
                 data={resignations}
                 loading={resignationLoading}
@@ -532,7 +558,11 @@ export default function AttritionPage() {
           )}
 
           {activeTab === "Attrition List" && (
-            <section className="min-w-0 overflow-hidden rounded-xl bg-white shadow-sm">
+            <section
+              key="Attrition List"
+              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
+              style={{ animationDelay: "80ms" }}
+            >
               <EmployeeAttritionTable
                 data={attritions}
                 loading={attritionLoading}

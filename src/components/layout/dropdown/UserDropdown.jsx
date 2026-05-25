@@ -73,13 +73,13 @@ export default function UserDropdown({
         {},
         {
           withCredentials: true,
-        },
+        }
       );
 
       if (response.data?.expiresAt) {
         sessionStorage.setItem(
           "accessTokenExpiresAt",
-          String(res.data.expiresAt),
+          String(response.data.expiresAt)
         );
       }
 
@@ -124,6 +124,28 @@ export default function UserDropdown({
 
   return (
     <div className="user-dropdown" ref={ref}>
+      <style>
+        {`
+          @keyframes sibsUserDropdownOpen {
+            from {
+              opacity: 0;
+              transform: translateY(-8px) scale(0.97);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          .user-dropdown-menu-animated {
+            transform-origin: top right;
+            animation: sibsUserDropdownOpen 180ms ease-out both;
+            will-change: opacity, transform;
+          }
+        `}
+      </style>
+
       <button
         type="button"
         onClick={(event) => {
@@ -152,7 +174,7 @@ export default function UserDropdown({
       </button>
 
       {open && (
-        <div className="user-dropdown-menu">
+        <div className="user-dropdown-menu user-dropdown-menu-animated">
           {!isAdminSide && canSwitchToAdmin && (
             <DropdownItem
               icon={UserKey}

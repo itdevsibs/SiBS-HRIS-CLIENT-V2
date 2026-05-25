@@ -157,6 +157,28 @@ function formatWeeklyVersionDisplay(week) {
   return weekRange ? `${label} | ${weekRange}` : label;
 }
 
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WeeklyVersionTable({
   weekDropdownRef,
   clusterDropdownRef,
@@ -453,65 +475,63 @@ export default function WeeklyVersionTable({
                   setWeekSearch("");
                   setShowHiringPlanDropdown(false);
                 }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
                   showWeekDropdown ? "rotate-180" : ""
                 }`}
               />
 
-              {showWeekDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-2 max-h-72 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
-                    {filteredWeeklyVersions.length > 0 ? (
-                      filteredWeeklyVersions.map((week) => {
-                        const isSelected = week.id === activeWeekId;
+              <AnimatedDropdown open={showWeekDropdown}>
+                <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
+                  {filteredWeeklyVersions.length > 0 ? (
+                    filteredWeeklyVersions.map((week) => {
+                      const isSelected = week.id === activeWeekId;
 
-                        return (
-                          <button
-                            key={week.id}
-                            type="button"
-                            onClick={() => handleWeeklyVersionChange(week)}
-                            className={`block w-full px-4 py-3 text-left text-sm transition ${
-                              isSelected
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate font-bold">
-                                  {formatWeekLabel(week)}
-                                </p>
+                      return (
+                        <button
+                          key={week.id}
+                          type="button"
+                          onClick={() => handleWeeklyVersionChange(week)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            isSelected
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-bold">
+                                {formatWeekLabel(week)}
+                              </p>
 
-                                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                                  {week.weekRange || "—"}
-                                </p>
-                              </div>
-
-                              <span
-                                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                                  week.locked
-                                    ? "border-gray-200 bg-gray-50 text-gray-600"
-                                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                }`}
-                              >
-                                {week.locked ? "Locked" : "Editable"}
-                              </span>
+                              <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                                {week.weekRange || "—"}
+                              </p>
                             </div>
-                          </button>
-                        );
-                      })
-                    ) : weekSearch.trim() ? (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly version found.
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly versions available.
-                      </div>
-                    )}
-                  </div>
+
+                            <span
+                              className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                                week.locked
+                                  ? "border-gray-200 bg-gray-50 text-gray-600"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              }`}
+                            >
+                              {week.locked ? "Locked" : "Editable"}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : weekSearch.trim() ? (
+                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                      No weekly version found.
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                      No weekly versions available.
+                    </div>
+                  )}
                 </div>
-              )}
+              </AnimatedDropdown>
             </div>
           </div>
 
@@ -534,74 +554,72 @@ export default function WeeklyVersionTable({
 
               <ChevronDown
                 size={18}
-                className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showClusterDropdown ? "rotate-180" : ""
                 }`}
               />
             </button>
 
-            {showClusterDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => handleClusterClick("All")}
-                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                      safeIsAllClustersSelected()
-                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                        : "text-[#344054] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={safeIsAllClustersSelected()}
-                      readOnly
-                      className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                    />
+            <AnimatedDropdown open={showClusterDropdown}>
+              <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => handleClusterClick("All")}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                    safeIsAllClustersSelected()
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={safeIsAllClustersSelected()}
+                    readOnly
+                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  />
 
-                    <span>
-                      {isRestrictedManager
-                        ? "All Assigned Clusters"
-                        : "All Clusters"}
-                    </span>
-                  </button>
+                  <span>
+                    {isRestrictedManager
+                      ? "All Assigned Clusters"
+                      : "All Clusters"}
+                  </span>
+                </button>
 
-                  {visibleClusterOptions.length > 0 ? (
-                    visibleClusterOptions.map((cluster) => {
-                      const checked =
-                        !safeIsAllClustersSelected() &&
-                        selectedClusters.includes(cluster);
+                {visibleClusterOptions.length > 0 ? (
+                  visibleClusterOptions.map((cluster) => {
+                    const checked =
+                      !safeIsAllClustersSelected() &&
+                      selectedClusters.includes(cluster);
 
-                      return (
-                        <button
-                          key={cluster}
-                          type="button"
-                          onClick={() => handleClusterClick(cluster)}
-                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                            checked
-                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                              : "text-[#344054] hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            readOnly
-                            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                          />
+                    return (
+                      <button
+                        key={cluster}
+                        type="button"
+                        onClick={() => handleClusterClick(cluster)}
+                        className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                          checked
+                            ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                            : "text-[#344054] hover:bg-[#F8FAFC]"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          readOnly
+                          className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                        />
 
-                          <span className="truncate">{cluster}</span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                      No assigned clusters found.
-                    </div>
-                  )}
-                </div>
+                        <span className="truncate">{cluster}</span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                    No assigned clusters found.
+                  </div>
+                )}
               </div>
-            )}
+            </AnimatedDropdown>
           </div>
 
           <div ref={accountDropdownRef} className="relative z-30">
@@ -648,76 +666,74 @@ export default function WeeklyVersionTable({
                     setShowHiringPlanDropdown(false);
                   }
                 }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
                   showAccountDropdown ? "rotate-180" : ""
                 }`}
               />
 
-              {showAccountDropdown && !accountsLoading && (
-                <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => handleAccountClick("All")}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                        safeIsAllAccountsSelected()
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={safeIsAllAccountsSelected()}
-                        readOnly
-                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                      />
+              <AnimatedDropdown open={showAccountDropdown && !accountsLoading}>
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => handleAccountClick("All")}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                      safeIsAllAccountsSelected()
+                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                        : "text-[#344054] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={safeIsAllAccountsSelected()}
+                      readOnly
+                      className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                    />
 
-                      <span>
-                        {isRestrictedManager
-                          ? "All Assigned Accounts"
-                          : "All Accounts"}
-                      </span>
-                    </button>
+                    <span>
+                      {isRestrictedManager
+                        ? "All Assigned Accounts"
+                        : "All Accounts"}
+                    </span>
+                  </button>
 
-                    {visibleAccountOptions.length > 0 ? (
-                      visibleAccountOptions.map((account, index) => {
-                        const accountName = getAccountName(account);
-                        const checked =
-                          !safeIsAllAccountsSelected() &&
-                          selectedAccounts.includes(accountName);
+                  {visibleAccountOptions.length > 0 ? (
+                    visibleAccountOptions.map((account, index) => {
+                      const accountName = getAccountName(account);
+                      const checked =
+                        !safeIsAllAccountsSelected() &&
+                        selectedAccounts.includes(accountName);
 
-                        return (
-                          <button
-                            key={`${account.id || accountName}-${index}`}
-                            type="button"
-                            onClick={() => handleAccountClick(accountName)}
-                            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                              checked
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              readOnly
-                              className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                            />
+                      return (
+                        <button
+                          key={`${account.id || accountName}-${index}`}
+                          type="button"
+                          onClick={() => handleAccountClick(accountName)}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                            checked
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            readOnly
+                            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                          />
 
-                            <span className="truncate">{accountName}</span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                        {isRestrictedManager
-                          ? "No assigned accounts found."
-                          : "No accounts found."}
-                      </div>
-                    )}
-                  </div>
+                          <span className="truncate">{accountName}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                      {isRestrictedManager
+                        ? "No assigned accounts found."
+                        : "No accounts found."}
+                    </div>
+                  )}
                 </div>
-              )}
+              </AnimatedDropdown>
             </div>
           </div>
 
@@ -759,53 +775,51 @@ export default function WeeklyVersionTable({
                   setShowClusterDropdown(false);
                   setShowAccountDropdown(false);
                 }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
                   showHiringPlanDropdown ? "rotate-180" : ""
                 }`}
               />
 
-              {showHiringPlanDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                    {filteredHiringPlanOptions.length > 0 ? (
-                      filteredHiringPlanOptions.map((percent) => {
-                        const checked =
-                          Number(selectedHiringPlanPercent) === Number(percent);
+              <AnimatedDropdown open={showHiringPlanDropdown}>
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  {filteredHiringPlanOptions.length > 0 ? (
+                    filteredHiringPlanOptions.map((percent) => {
+                      const checked =
+                        Number(selectedHiringPlanPercent) === Number(percent);
 
-                        return (
-                          <button
-                            key={percent}
-                            type="button"
-                            onClick={() => {
-                              setSelectedHiringPlanPercent?.(percent);
-                              setHiringPlanSearch("");
-                              setShowHiringPlanDropdown(false);
-                            }}
-                            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                              checked
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              checked={checked}
-                              readOnly
-                              className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
-                            />
+                      return (
+                        <button
+                          key={percent}
+                          type="button"
+                          onClick={() => {
+                            setSelectedHiringPlanPercent?.(percent);
+                            setHiringPlanSearch("");
+                            setShowHiringPlanDropdown(false);
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                            checked
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            checked={checked}
+                            readOnly
+                            className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
+                          />
 
-                            <span>{percent}%</span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                        No hiring plan found.
-                      </div>
-                    )}
-                  </div>
+                          <span>{percent}%</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                      No hiring plan found.
+                    </div>
+                  )}
                 </div>
-              )}
+              </AnimatedDropdown>
             </div>
           </div>
 

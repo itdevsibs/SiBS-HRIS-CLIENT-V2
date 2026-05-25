@@ -117,6 +117,106 @@
 /* =========================
    ANIMATIONS
 ========================= */
+@keyframes sibsModalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sibsModalBackdropOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sibsModalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sibsModalPopOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+@keyframes sibsInnerModalPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sibsInnerModalPopOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+}
+
+@keyframes sibsProfileTabPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sibsProfileTabIndicatorIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0.35);
+  }
+
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes sibsProfileDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes slide-in {
   from {
     transform: translateX(100%);
@@ -181,6 +281,146 @@
   .thin-scroll::-webkit-scrollbar-thumb {
     border-radius: 9999px;
     background: #94a9c1;
+  }
+  .sibs-profile-tab-panel {
+    animation: sibsProfileTabPanelIn 240ms ease-out both;
+    will-change: opacity, transform;
+  }
+
+  .sibs-profile-tab-indicator {
+    animation: sibsProfileTabIndicatorIn 220ms ease-out both;
+    transform-origin: center;
+  }
+
+  .sibs-profile-dropdown-panel {
+    animation: sibsProfileDropdownIn 180ms ease-out both;
+    transform-origin: top right;
+    will-change: opacity, transform;
+  }
+  .sibs-modal-backdrop-in {
+    animation: sibsModalBackdropIn 180ms ease-out both;
+  }
+
+  .sibs-modal-backdrop-out {
+    animation: sibsModalBackdropOut 220ms ease-in both;
+  }
+
+  .sibs-modal-pop-in {
+    animation: sibsModalPopIn 240ms ease-out both;
+  }
+
+  .sibs-modal-pop-out {
+    animation: sibsModalPopOut 220ms ease-in both;
+  }
+
+  .sibs-animated-dropdown {
+    display: grid;
+    transition:
+      grid-template-rows 200ms ease-out,
+      opacity 200ms ease-out;
+  }
+
+  .sibs-animated-dropdown.open {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sibs-animated-dropdown.closed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sibs-animated-dropdown-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sibs-animated-dropdown-box {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid #d7dee8;
+    background: #ffffff;
+    box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.12),
+      0 8px 10px -6px rgba(15, 23, 42, 0.12);
+    transition:
+      transform 200ms ease-out,
+      opacity 200ms ease-out;
+    transform-origin: top;
+  }
+
+  .sibs-animated-dropdown.open .sibs-animated-dropdown-box {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+
+  .sibs-animated-dropdown.closed .sibs-animated-dropdown-box {
+    transform: translateY(-8px) scale(0.98);
+    opacity: 0;
+  }
+  .sibs-inner-modal-backdrop-in {
+    animation: sibsModalBackdropIn 180ms ease-out both;
+  }
+
+  .sibs-inner-modal-backdrop-out {
+    animation: sibsModalBackdropOut 180ms ease-in both;
+  }
+
+  .sibs-inner-modal-pop-in {
+    animation: sibsInnerModalPopIn 220ms ease-out both;
+  }
+
+  .sibs-inner-modal-pop-out {
+    animation: sibsInnerModalPopOut 180ms ease-in both;
+  }
+  .sibs-action-backdrop-in {
+    animation: sibsModalBackdropIn 180ms ease-out both;
+  }
+
+  .sibs-action-backdrop-out {
+    animation: sibsModalBackdropOut 220ms ease-in both;
+  }
+
+  @keyframes sibsActionDrawerIn {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes sibsActionDrawerOut {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+
+  .sibs-action-drawer-in {
+    animation: sibsActionDrawerIn 240ms ease-out both;
+  }
+
+  .sibs-action-drawer-out {
+    animation: sibsActionDrawerOut 220ms ease-in both;
+  }
+  .sibs-page-header-in {
+    animation: sibsProfileTabPanelIn 220ms ease-out both;
+    will-change: opacity, transform;
+  }
+
+  .sibs-page-card-in {
+    animation: sibsProfileTabPanelIn 260ms ease-out both;
+    will-change: opacity, transform;
   }
 }
 

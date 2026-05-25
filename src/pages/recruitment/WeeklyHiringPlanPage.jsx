@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
+import { ClipboardList } from "lucide-react";
 import api from "../../lib/axios/api-template";
 import StatusModal from "../../components/modals/StatusModal";
 import PercentageRiskGraphTable from "../../components/tables/WeeklyHiringPlan/PercentageRiskGraphTable";
@@ -8,11 +9,11 @@ import WeeklyVersionTable from "../../components/tables/WeeklyHiringPlan/WeeklyV
 import HeadcountTable from "../../components/tables/WeeklyHiringPlan/HeadcountTable";
 import ViewPlanModal from "../../components/modals/weeklyHiringPlan/ViewPlanModal";
 import KPISnapshotModal from "../../components/modals/weeklyHiringPlan/KPISnapshotModal";
-import ActionItemModal from "../../components/modals/weeklyHiringPlan/ActionItemModal";
 
 import {
   getWeeklyHiringPlanAccounts,
   getWeeklyHiringPlanWeeks,
+  saveWeeklyHiringPlanActionItem,
 } from "../../lib/axios/getWeeklyHiringPlan";
 
 import { useUser } from "../../services/context/UserContext";
@@ -24,7 +25,7 @@ const initialActionItemForm = {
   owner: "",
   deadline: "",
   status: "Pending",
-  remarks: "",
+  actionItemRemarks: "",
 };
 
 function getText(value) {
@@ -111,6 +112,39 @@ function getBackendNumber(record, keys, fallback = 0) {
   const fallbackNumber = Number(fallback || 0);
 
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
+}
+
+function getLoggedInOwnerDisplay(user) {
+  const sibsId = String(
+    user?.username ||
+      user?.sibsId ||
+      user?.sibs_id ||
+      user?.gy_user_code ||
+      ""
+  ).trim();
+
+  const lastName = String(
+    user?.gy_emp_lname || user?.lastName || user?.last_name || ""
+  ).trim();
+
+  const firstName = String(
+    user?.gy_emp_fname || user?.firstName || user?.first_name || ""
+  ).trim();
+
+  const middleName = String(
+    user?.gy_emp_mname || user?.middleName || user?.middle_name || ""
+  ).trim();
+
+  const fullName = `${lastName}, ${firstName}${
+    middleName ? ` ${middleName}` : ""
+  }`
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!sibsId && !fullName) return "-";
+  if (!fullName) return sibsId.toUpperCase();
+
+  return `${sibsId} - ${fullName}`.toUpperCase();
 }
 
 function calculatePipelineStatus(item) {
@@ -237,8 +271,44 @@ export default function WeeklyHiringPlanPage() {
   const weekDropdownRef = useRef(null);
   const clusterDropdownRef = useRef(null);
   const accountDropdownRef = useRef(null);
+  const editedRequiredInputsRef = useRef(new Set());
 
-  const canEditRequiredHeadcount = [5, 7].includes(Number(user?.adminAccess));
+  const adminAccessValue = Number(
+    user?.adminAccess ??
+      user?.admin_access ??
+      user?.gy_user_access ??
+      user?.access ??
+      0
+  );
+
+  const assignedAccountAccessValues = Array.isArray(user?.assignedAccounts)
+    ? user.assignedAccounts.map((account) =>
+        Number(
+          account?.adminAccess ?? account?.admin_access ?? account?.access ?? 0
+        )
+      )
+    : [];
+
+  const hasManagerAssignedAccess = assignedAccountAccessValues.includes(5);
+
+  const userRoleValue = String(
+    user?.role ||
+      user?.userRole ||
+      user?.adminRole ||
+      user?.position ||
+      user?.jobTitle ||
+      ""
+  ).toLowerCase();
+
+  const canEditRequiredHeadcount =
+    [5, 7].includes(adminAccessValue) ||
+    hasManagerAssignedAccess ||
+    userRoleValue.includes("manager") ||
+    userRoleValue === "om" ||
+    userRoleValue === "som" ||
+    userRoleValue === "operation_manager" ||
+    userRoleValue === "operations_manager" ||
+    userRoleValue === "senior_operations_manager";
 
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
@@ -272,11 +342,11 @@ export default function WeeklyHiringPlanPage() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [actionItemTarget, setActionItemTarget] = useState(null);
   const [actionItemForm, setActionItemForm] = useState(initialActionItemForm);
+  const [actionItemSubmitting, setActionItemSubmitting] = useState(false);
   const [showKpiSnapshot, setShowKpiSnapshot] = useState(false);
 
   const [requiredInputs, setRequiredInputs] = useState({});
   const [savingRequiredId, setSavingRequiredId] = useState("");
-  const [requiredSaveMessage, setRequiredSaveMessage] = useState("");
   const [weeklyPlanFiles, setWeeklyPlanFiles] = useState({});
   const [savingFileId, setSavingFileId] = useState("");
   const [openingFile, setOpeningFile] = useState(false);
@@ -496,21 +566,53 @@ export default function WeeklyHiringPlanPage() {
 
       const uniqueAccountsMap = new Map();
 
-      (accounts || []).forEach((account) => {
-        const accountId = Number(account?.id || account?.accountId || 0);
-        const accountName = String(
-          account?.accountName || account?.account || ""
+      (accounts || []).forEach((account, index) => {
+        const rawAccountId = String(
+          account?.id ||
+            account?.accountId ||
+            account?.account_id ||
+            account?.backendAccountId ||
+            account?.gy_acc_id ||
+            ""
         ).trim();
+
+        const accountName = String(
+          account?.accountName ||
+            account?.account ||
+            account?.account_name ||
+            account?.gy_acc_name ||
+            ""
+        ).trim();
+
         const clusterName = getClusterFromAny(account);
 
-        if (!accountId || !accountName) return;
+        if (!accountName) return;
 
-        const key = `${accountId}-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
+        const key = `${
+          rawAccountId || `manual-${index}`
+        }-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
 
         if (!uniqueAccountsMap.has(key)) {
+          const requiredHeadcount = getBackendNumber(account, [
+            "requiredHeadcount",
+            "required_headcount",
+          ]);
+
           uniqueAccountsMap.set(key, {
             ...account,
+            id: rawAccountId || account?.id || `manual-${index}`,
+            accountId: rawAccountId || account?.accountId || "",
+            backendAccountId:
+              account?.backendAccountId ||
+              account?.backend_account_id ||
+              rawAccountId ||
+              "",
+            accountName,
+            account: accountName,
             clusterName,
+            cluster: clusterName,
+            requiredHeadcount,
+            required_headcount: requiredHeadcount,
           });
         }
       });
@@ -519,19 +621,34 @@ export default function WeeklyHiringPlanPage() {
 
       const uniqueAccountOptionsMap = new Map();
 
-      accounts.forEach((account) => {
-        const accountId = Number(account?.id || account?.accountId || 0);
-        const accountName = String(
-          account?.accountName || account?.account || ""
+      accounts.forEach((account, index) => {
+        const rawAccountId = String(
+          account?.id ||
+            account?.accountId ||
+            account?.account_id ||
+            account?.backendAccountId ||
+            account?.gy_acc_id ||
+            ""
         ).trim();
 
-        if (!accountId || !accountName) return;
+        const accountName = String(
+          account?.accountName ||
+            account?.account ||
+            account?.account_name ||
+            account?.gy_acc_name ||
+            ""
+        ).trim();
+
+        if (!accountName) return;
 
         const key = accountName.toLowerCase();
 
         if (!uniqueAccountOptionsMap.has(key)) {
           uniqueAccountOptionsMap.set(key, {
             ...account,
+            id: rawAccountId || `manual-option-${index}`,
+            accountName,
+            account: accountName,
             clusterName: getClusterFromAny(account),
           });
         }
@@ -627,6 +744,39 @@ export default function WeeklyHiringPlanPage() {
         "buffer_percent",
       ]);
 
+      const absenteeismCount =
+        account.absenteeismOpsCount !== undefined &&
+        account.absenteeismOpsCount !== null
+          ? Number(account.absenteeismOpsCount || 0)
+          : Number(account.absenteeismCount || 0);
+
+      const absenteeismPastSixWeeksAverage = getBackendNumber(
+        account,
+        [
+          "absenteeismPastSixWeeksAverage",
+          "absenteeism_past_six_weeks_average",
+          "absenteeismOpsCount",
+          "absenteeism_ops_count",
+        ],
+        Math.round(Number(account.absenteeismCount || 0) / 6)
+      );
+
+      const attritionPastCount = Number(account.attritionPastCount || 0);
+
+      const attritionPastSixWeeksAverage = getBackendNumber(
+        account,
+        [
+          "attritionPastSixWeeksAverage",
+          "attrition_past_six_weeks_average",
+        ],
+        Math.round(attritionPastCount / 6)
+      );
+
+      const actualHeadcountNeeds = getBackendNumber(account, [
+        "actualHeadcountNeeds",
+        "actual_headcount_needs",
+      ]);
+
       const opsPrf = getBackendNumber(account, ["opsPrf", "ops_prf"]);
 
       const projectedEmployeeNeeds = getBackendNumber(
@@ -637,11 +787,58 @@ export default function WeeklyHiringPlanPage() {
           "projectedNeeds",
           "projected_needs",
         ],
-        opsPrf
+        actualHeadcountNeeds || opsPrf
       );
 
+      const actionItem = account.actionItem || account.action_item || "";
+      const actionItemOwner =
+        account.actionItemOwner || account.action_item_owner || "";
+      const actionItemOwnerSibsId =
+        account.actionItemOwnerSibsId ||
+        account.action_item_owner_sibs_id ||
+        "";
+      const actionItemDeadline =
+        account.actionItemDeadline || account.action_item_deadline || "";
+      const actionItemStatus =
+        account.actionItemStatus || account.action_item_status || "Pending";
+      const actionItemRemarks =
+        account.actionItemRemarks || account.action_item_remarks || "";
+
+      const actionItems =
+        Array.isArray(account.actionItems) && account.actionItems.length
+          ? account.actionItems
+          : actionItem
+            ? [
+                {
+                  actionItem,
+                  action_item: actionItem,
+                  owner: actionItemOwner,
+                  actionItemOwner,
+                  action_item_owner: actionItemOwner,
+                  ownerSibsId: actionItemOwnerSibsId,
+                  actionItemOwnerSibsId,
+                  action_item_owner_sibs_id: actionItemOwnerSibsId,
+                  deadline: actionItemDeadline,
+                  actionItemDeadline,
+                  action_item_deadline: actionItemDeadline,
+                  status: actionItemStatus,
+                  actionItemStatus,
+                  action_item_status: actionItemStatus,
+                  actionItemRemarks,
+                  action_item_remarks: actionItemRemarks,
+                },
+              ]
+            : [];
+
       const row = {
-        id: `db-${accountCluster}-${account.id || account.accountId || index}`,
+        id: String(
+          account.id ||
+            account.accountId ||
+            account.account_id ||
+            account.requiredHeadcountId ||
+            account.required_headcount_id ||
+            `db-${accountCluster}-${accountName}-${index}`
+        ),
         backendAccountId: account.id || account.accountId || account.gy_acc_id,
         accountId: account.id || account.accountId || account.gy_acc_id,
         week: activeWeek?.label || "Current Week",
@@ -658,20 +855,22 @@ export default function WeeklyHiringPlanPage() {
         scheduledCount: Number(account.scheduledCount || 0),
         presentCount: Number(account.presentCount || 0),
 
-        absenteeismCount:
-          account.absenteeismOpsCount !== undefined &&
-          account.absenteeismOpsCount !== null
-            ? Number(account.absenteeismOpsCount || 0)
-            : Number(account.absenteeismCount || 0),
-
+        absenteeismCount,
         absenteeismPercent: Number(account.absenteeismPercent || 0),
+        absenteeismPastSixWeeksAverage,
+        absenteeism_past_six_weeks_average: absenteeismPastSixWeeksAverage,
 
-        attritionPastCount: Number(account.attritionPastCount || 0),
+        attritionPastCount,
         attritionPastPercent: Number(account.attritionPastPercent || 0),
+        attritionPastSixWeeksAverage,
+        attrition_past_six_weeks_average: attritionPastSixWeeksAverage,
 
         opsPrf,
         projectedEmployeeNeeds,
         projected_employee_needs: projectedEmployeeNeeds,
+
+        actualHeadcountNeeds,
+        actual_headcount_needs: actualHeadcountNeeds,
 
         attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
@@ -708,8 +907,29 @@ export default function WeeklyHiringPlanPage() {
 
         pipelineStatus: account.pipelineStatus || "Pending",
         statusNote: account.headcountRemarks || account.departmentName || "-",
-        owner: account.owner || "-",
-        actionItems: account.actionItems || [],
+
+        owner: actionItemOwner || account.owner || "-",
+
+        actionItem,
+        action_item: actionItem,
+
+        actionItemOwner,
+        action_item_owner: actionItemOwner,
+
+        actionItemOwnerSibsId,
+        action_item_owner_sibs_id: actionItemOwnerSibsId,
+
+        actionItemDeadline,
+        action_item_deadline: actionItemDeadline,
+
+        actionItemStatus,
+        action_item_status: actionItemStatus,
+
+        actionItemRemarks,
+        action_item_remarks: actionItemRemarks,
+
+        actionItems,
+
         departmentName: account.departmentName || "",
         priorityLevel: account.priorityLevel || "",
         headcountRemarks: account.headcountRemarks || "",
@@ -733,8 +953,10 @@ export default function WeeklyHiringPlanPage() {
     const decimalPercent = percent > 0 ? percent / 100 : 0.05;
 
     return displayData.map((item) => {
-      const projectedEmployeeNeeds = Number(
-        item.projectedEmployeeNeeds ??
+      const actualHeadcountNeeds = Number(
+        item.actualHeadcountNeeds ??
+          item.actual_headcount_needs ??
+          item.projectedEmployeeNeeds ??
           item.projected_employee_needs ??
           item.opsPrf ??
           item.ops_prf ??
@@ -743,7 +965,7 @@ export default function WeeklyHiringPlanPage() {
 
       const leadsToInterview =
         decimalPercent > 0
-          ? Math.round(projectedEmployeeNeeds / decimalPercent)
+          ? Math.round(actualHeadcountNeeds / decimalPercent)
           : 0;
 
       return {
@@ -752,8 +974,11 @@ export default function WeeklyHiringPlanPage() {
         hiringPlanPercent: percent,
         hiring_plan_percent: percent,
 
-        projectedEmployeeNeeds,
-        projected_employee_needs: projectedEmployeeNeeds,
+        actualHeadcountNeeds,
+        actual_headcount_needs: actualHeadcountNeeds,
+
+        projectedEmployeeNeeds: actualHeadcountNeeds,
+        projected_employee_needs: actualHeadcountNeeds,
 
         leadsToInterview,
         leads_to_interview: leadsToInterview,
@@ -763,7 +988,8 @@ export default function WeeklyHiringPlanPage() {
 
         pipelineStatus: calculatePipelineStatus({
           ...item,
-          projectedEmployeeNeeds,
+          actualHeadcountNeeds,
+          projectedEmployeeNeeds: actualHeadcountNeeds,
           leadsToInterview,
           hiringRate: percent,
         }),
@@ -820,7 +1046,9 @@ export default function WeeklyHiringPlanPage() {
           account: accountName,
 
           requiredHeadcount: 0,
+          required_headcount: 0,
           actualHeadcount: 0,
+          actual_headcount: 0,
           bufferHeadcount: 0,
           bufferPercent: 0,
           missingHeadcount: 0,
@@ -830,13 +1058,20 @@ export default function WeeklyHiringPlanPage() {
 
           absenteeismCount: 0,
           absenteeismPercent: 0,
+          absenteeismPastSixWeeksAverage: 0,
+          absenteeism_past_six_weeks_average: 0,
 
           attritionPastCount: 0,
           attritionPastPercent: 0,
+          attritionPastSixWeeksAverage: 0,
+          attrition_past_six_weeks_average: 0,
 
           opsPrf: 0,
           projectedEmployeeNeeds: 0,
           projected_employee_needs: 0,
+
+          actualHeadcountNeeds: 0,
+          actual_headcount_needs: 0,
 
           attritionFstToPstCount: 0,
           attritionFstToPstPercent: 0,
@@ -858,7 +1093,21 @@ export default function WeeklyHiringPlanPage() {
           pipelineStatus: "Pending",
           statusNote: ghlName || "No weekly hiring plan record yet.",
           owner: "-",
+
+          actionItem: "",
+          action_item: "",
+          actionItemOwner: "",
+          action_item_owner: "",
+          actionItemOwnerSibsId: "",
+          action_item_owner_sibs_id: "",
+          actionItemDeadline: "",
+          action_item_deadline: "",
+          actionItemStatus: "Pending",
+          action_item_status: "Pending",
+          actionItemRemarks: "",
+          action_item_remarks: "",
           actionItems: [],
+
           departmentName: account.departmentName || account.department || "",
           priorityLevel: "",
           headcountRemarks: "",
@@ -881,13 +1130,23 @@ export default function WeeklyHiringPlanPage() {
   ]);
 
   useEffect(() => {
-    const nextInputs = {};
+    setRequiredInputs((prev) => {
+      const nextInputs = {};
 
-    managerDisplayData.forEach((item) => {
-      nextInputs[item.id] = String(item.requiredHeadcount ?? 0);
+      managerDisplayData.forEach((item) => {
+        const hasUserTypedValue =
+          editedRequiredInputsRef.current.has(item.id) &&
+          prev[item.id] !== undefined &&
+          prev[item.id] !== null &&
+          prev[item.id] !== "";
+
+        nextInputs[item.id] = hasUserTypedValue
+          ? prev[item.id]
+          : String(item.requiredHeadcount ?? item.required_headcount ?? 0);
+      });
+
+      return nextInputs;
     });
-
-    setRequiredInputs(nextInputs);
   }, [managerDisplayData]);
 
   const filteredPlans = useMemo(() => {
@@ -926,7 +1185,10 @@ export default function WeeklyHiringPlanPage() {
         account.toLowerCase().includes(keyword) ||
         String(item.pipelineStatus || "").toLowerCase().includes(keyword) ||
         String(item.statusNote || "").toLowerCase().includes(keyword) ||
-        String(item.owner || "").toLowerCase().includes(keyword);
+        String(item.owner || "").toLowerCase().includes(keyword) ||
+        String(item.actionItem || "").toLowerCase().includes(keyword) ||
+        String(item.actionItemOwner || "").toLowerCase().includes(keyword) ||
+        String(item.actionItemStatus || "").toLowerCase().includes(keyword);
 
       return (
         matchesUserAccess &&
@@ -984,6 +1246,8 @@ export default function WeeklyHiringPlanPage() {
   }
 
   function handleRequiredInputChange(itemId, value) {
+    editedRequiredInputsRef.current.add(itemId);
+
     setRequiredInputs((prev) => ({
       ...prev,
       [itemId]: value,
@@ -997,26 +1261,106 @@ export default function WeeklyHiringPlanPage() {
     }));
   }
 
-  async function handleSaveRequiredHeadcount(item) {
+  function patchRequiredHeadcountLocally(item, requiredHeadcount) {
+    const targetAccountName = String(
+      item.account || item.accountName || item.account_name || ""
+    )
+      .trim()
+      .toLowerCase();
+
+    const targetAccountId = String(
+      item.backendAccountId ||
+        item.accountId ||
+        item.account_id ||
+        item.gy_acc_id ||
+        item.id ||
+        ""
+    )
+      .trim()
+      .toLowerCase();
+
+    setRemoteAccounts((prev) =>
+      (prev || []).map((account) => {
+        const accountName = String(
+          account.accountName ||
+            account.account ||
+            account.account_name ||
+            account.gy_acc_name ||
+            ""
+        )
+          .trim()
+          .toLowerCase();
+
+        const accountId = String(
+          account.backendAccountId ||
+            account.accountId ||
+            account.account_id ||
+            account.gy_acc_id ||
+            account.id ||
+            ""
+        )
+          .trim()
+          .toLowerCase();
+
+        const sameAccount =
+          (targetAccountId && accountId && targetAccountId === accountId) ||
+          (targetAccountName &&
+            accountName &&
+            targetAccountName === accountName);
+
+        if (!sameAccount) return account;
+
+        return {
+          ...account,
+          requiredHeadcount,
+          required_headcount: requiredHeadcount,
+        };
+      })
+    );
+
+    setSelectedPlan((prev) => {
+      if (!prev || prev.id !== item.id) return prev;
+
+      return {
+        ...prev,
+        requiredHeadcount,
+        required_headcount: requiredHeadcount,
+      };
+    });
+  }
+
+  async function handleSaveRequiredHeadcount(item, options = {}) {
+    const { silent = false, overrideRequiredHeadcount } = options;
+
     if (!canEditRequiredHeadcount) {
-      openStatusModal({
-        type: "error",
-        title: "Permission Denied",
-        message: "You do not have permission to edit required headcount.",
-      });
+      if (!silent) {
+        openStatusModal({
+          type: "error",
+          title: "Permission Denied",
+          message: "You do not have permission to edit required headcount.",
+        });
+      }
       return;
     }
 
     if (!activeWeekStartDate || !activeWeekEndDate) {
-      openStatusModal({
-        type: "error",
-        title: "Unable to Save",
-        message: "Missing weekly date range. Please select a valid weekly version.",
-      });
+      if (!silent) {
+        openStatusModal({
+          type: "error",
+          title: "Unable to Save",
+          message:
+            "Missing weekly date range. Please select a valid weekly version.",
+        });
+      }
       return;
     }
 
-    const rawValue = requiredInputs[item.id];
+    const rawValue =
+      overrideRequiredHeadcount !== undefined &&
+      overrideRequiredHeadcount !== null &&
+      overrideRequiredHeadcount !== ""
+        ? overrideRequiredHeadcount
+        : requiredInputs[item.id];
 
     const requiredHeadcount =
       rawValue === "" || rawValue === null || rawValue === undefined
@@ -1024,56 +1368,74 @@ export default function WeeklyHiringPlanPage() {
         : Number(rawValue);
 
     if (requiredHeadcount !== null && !Number.isFinite(requiredHeadcount)) {
-      openStatusModal({
-        type: "error",
-        title: "Invalid Input",
-        message: "Invalid required headcount.",
-      });
+      if (!silent) {
+        openStatusModal({
+          type: "error",
+          title: "Invalid Input",
+          message: "Invalid required headcount.",
+        });
+      }
       return;
     }
 
     try {
       setSavingRequiredId(item.id);
-      setRequiredSaveMessage("");
 
       await saveRequiredHeadcount({
         weekNumber: activeWeek?.weekNumber || null,
         weekLabel: activeWeek?.label || null,
         weekStart: activeWeekStartDate,
         weekEnd: activeWeekEndDate,
-        clusterName: item.cluster,
-        accountName: item.account,
+        clusterName: item.cluster || item.clusterName || item.cluster_name,
+        accountName: item.account || item.accountName || item.account_name,
         requiredHeadcount,
-        actualHeadcount: Number(item.actualHeadcount || 0),
-        priorityLevel: item.priorityLevel || null,
-        remarks: item.headcountRemarks || null,
+        actualHeadcount: Number(
+          item.actualHeadcount || item.actual_headcount || 0
+        ),
+        opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+        priorityLevel: item.priorityLevel || item.priority_level || null,
+        remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
       });
 
-      await fetchAccountsByCluster({ resetAccountFilter: false });
+      setRequiredInputs((prev) => ({
+        ...prev,
+        [item.id]: String(requiredHeadcount ?? 0),
+      }));
 
-      openStatusModal({
-        type: "success",
-        title: "Required Headcount Saved",
-        message: `Required headcount for ${item.account} was saved successfully.`,
-        closeViewModalOnSuccess: true,
-      });
+      patchRequiredHeadcountLocally(item, requiredHeadcount ?? 0);
+      editedRequiredInputsRef.current.delete(item.id);
+
+      if (!silent) {
+        await fetchAccountsByCluster({ resetAccountFilter: false });
+
+        openStatusModal({
+          type: "success",
+          title: "Required Headcount Saved",
+          message: `Required headcount for ${item.account} was saved successfully.`,
+          closeViewModalOnSuccess: true,
+        });
+      }
     } catch (error) {
       console.error("SAVE REQUIRED HEADCOUNT ERROR:", error);
 
-      openStatusModal({
-        type: "error",
-        title: "Save Failed",
-        message:
-          error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          "Failed to save required headcount.",
-      });
+      if (!silent) {
+        openStatusModal({
+          type: "error",
+          title: "Save Failed",
+          message:
+            error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            "Failed to save required headcount.",
+        });
+      }
+
+      throw error;
     } finally {
       setSavingRequiredId("");
     }
   }
 
-  async function handleUpdateWeeklyPlanFile(item) {
+  async function handleUpdateWeeklyPlanFile(item, overrideRequiredHeadcount) {
     if (!canEditRequiredHeadcount) {
       openStatusModal({
         type: "error",
@@ -1099,7 +1461,30 @@ export default function WeeklyHiringPlanPage() {
       openStatusModal({
         type: "error",
         title: "Unable to Upload",
-        message: "Missing weekly date range. Please select a valid weekly version.",
+        message:
+          "Missing weekly date range. Please select a valid weekly version.",
+      });
+      return;
+    }
+
+    const rawRequiredValue =
+      overrideRequiredHeadcount !== undefined &&
+      overrideRequiredHeadcount !== null &&
+      overrideRequiredHeadcount !== ""
+        ? overrideRequiredHeadcount
+        : requiredInputs[item.id] !== undefined &&
+            requiredInputs[item.id] !== null &&
+            requiredInputs[item.id] !== ""
+          ? requiredInputs[item.id]
+          : item.requiredHeadcount ?? item.required_headcount ?? 0;
+
+    const requiredHeadcount = Number(rawRequiredValue);
+
+    if (!Number.isFinite(requiredHeadcount)) {
+      openStatusModal({
+        type: "error",
+        title: "Invalid Input",
+        message: "Invalid required headcount.",
       });
       return;
     }
@@ -1112,10 +1497,25 @@ export default function WeeklyHiringPlanPage() {
         weekLabel: activeWeek?.label || null,
         weekStart: activeWeekStartDate,
         weekEnd: activeWeekEndDate,
-        clusterName: item.cluster,
-        accountName: item.account,
+        clusterName: item.cluster || item.clusterName || item.cluster_name,
+        accountName: item.account || item.accountName || item.account_name,
+        requiredHeadcount,
+        actualHeadcount: Number(
+          item.actualHeadcount || item.actual_headcount || 0
+        ),
+        opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+        priorityLevel: item.priorityLevel || item.priority_level || null,
+        remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
         uploadedFile: file,
       });
+
+      setRequiredInputs((prev) => ({
+        ...prev,
+        [item.id]: String(requiredHeadcount),
+      }));
+
+      patchRequiredHeadcountLocally(item, requiredHeadcount);
+      editedRequiredInputsRef.current.delete(item.id);
 
       await fetchAccountsByCluster({ resetAccountFilter: false });
 
@@ -1142,6 +1542,8 @@ export default function WeeklyHiringPlanPage() {
           error?.response?.data?.message ||
           "Failed to upload weekly hiring plan file.",
       });
+
+      throw error;
     } finally {
       setSavingFileId("");
     }
@@ -1174,39 +1576,227 @@ export default function WeeklyHiringPlanPage() {
 
   function handleOpenActionItemModal(item) {
     setActionItemTarget(item);
+
     setActionItemForm({
       ...initialActionItemForm,
-      owner: item.owner || "",
+      owner:
+        item.actionItemOwner ||
+        item.action_item_owner ||
+        getLoggedInOwnerDisplay(user),
     });
   }
 
   function handleCloseActionItemModal() {
     setActionItemTarget(null);
     setActionItemForm(initialActionItemForm);
+    setActionItemSubmitting(false);
   }
 
-  function handleSubmitActionItem(e) {
+  async function handleSubmitActionItem(e) {
     e.preventDefault();
 
-    if (!actionItemTarget) return;
+    if (!actionItemTarget || actionItemSubmitting) return;
 
-    const newActionItem = {
-      id: Date.now(),
-      actionItem: actionItemForm.actionItem.trim(),
-      roleAccount: `${actionItemTarget.account} / ${actionItemTarget.cluster}`,
-      owner: actionItemForm.owner.trim(),
-      deadline: actionItemForm.deadline,
-      status: actionItemForm.status,
-      remarks: actionItemForm.remarks.trim(),
-    };
+    if (!actionItemForm.actionItem?.trim()) {
+      openStatusModal({
+        type: "error",
+        title: "Missing Action Item",
+        message: "Please enter an action item.",
+      });
+      return;
+    }
 
-    const updatedItem = {
-      ...actionItemTarget,
-      actionItems: [...(actionItemTarget.actionItems || []), newActionItem],
-    };
+    if (!actionItemForm.deadline) {
+      openStatusModal({
+        type: "error",
+        title: "Missing Deadline",
+        message: "Please select a deadline.",
+      });
+      return;
+    }
 
-    setSelectedPlan(updatedItem);
-    handleCloseActionItemModal();
+    if (!activeWeekStartDate || !activeWeekEndDate) {
+      openStatusModal({
+        type: "error",
+        title: "Missing Weekly Date",
+        message: "Please select a valid weekly version.",
+      });
+      return;
+    }
+
+    try {
+      setActionItemSubmitting(true);
+
+      const result = await saveWeeklyHiringPlanActionItem({
+        weekStart: activeWeekStartDate,
+        weekEnd: activeWeekEndDate,
+        clusterName: actionItemTarget.cluster || actionItemTarget.clusterName,
+        accountName: actionItemTarget.account || actionItemTarget.accountName,
+        actionItem: actionItemForm.actionItem,
+        deadline: actionItemForm.deadline,
+        status: actionItemForm.status || "Pending",
+        actionItemRemarks: actionItemForm.actionItemRemarks || "",
+      });
+
+      if (!result?.success) {
+        openStatusModal({
+          type: "error",
+          title: "Save Failed",
+          message: result?.message || "Failed to save action item.",
+        });
+        return;
+      }
+
+      const savedActionItem = {
+        actionItem: result.data?.actionItem || actionItemForm.actionItem,
+        action_item: result.data?.action_item || actionItemForm.actionItem,
+
+        owner:
+          result.data?.owner ||
+          result.data?.actionItemOwner ||
+          result.data?.action_item_owner ||
+          actionItemForm.owner,
+        actionItemOwner:
+          result.data?.actionItemOwner ||
+          result.data?.action_item_owner ||
+          actionItemForm.owner,
+        action_item_owner:
+          result.data?.action_item_owner ||
+          result.data?.actionItemOwner ||
+          actionItemForm.owner,
+
+        ownerSibsId:
+          result.data?.actionItemOwnerSibsId ||
+          result.data?.action_item_owner_sibs_id ||
+          "",
+        actionItemOwnerSibsId:
+          result.data?.actionItemOwnerSibsId ||
+          result.data?.action_item_owner_sibs_id ||
+          "",
+        action_item_owner_sibs_id:
+          result.data?.action_item_owner_sibs_id ||
+          result.data?.actionItemOwnerSibsId ||
+          "",
+
+        deadline:
+          result.data?.deadline ||
+          result.data?.actionItemDeadline ||
+          result.data?.action_item_deadline ||
+          actionItemForm.deadline,
+        actionItemDeadline:
+          result.data?.actionItemDeadline ||
+          result.data?.action_item_deadline ||
+          actionItemForm.deadline,
+        action_item_deadline:
+          result.data?.action_item_deadline ||
+          result.data?.actionItemDeadline ||
+          actionItemForm.deadline,
+
+        status:
+          result.data?.status ||
+          result.data?.actionItemStatus ||
+          result.data?.action_item_status ||
+          actionItemForm.status,
+        actionItemStatus:
+          result.data?.actionItemStatus ||
+          result.data?.action_item_status ||
+          actionItemForm.status,
+        action_item_status:
+          result.data?.action_item_status ||
+          result.data?.actionItemStatus ||
+          actionItemForm.status,
+
+        actionItemRemarks:
+          result.data?.actionItemRemarks ||
+          result.data?.action_item_remarks ||
+          actionItemForm.actionItemRemarks,
+        action_item_remarks:
+          result.data?.action_item_remarks ||
+          result.data?.actionItemRemarks ||
+          actionItemForm.actionItemRemarks,
+      };
+
+      const updatedItem = {
+        ...actionItemTarget,
+
+        actionItem: savedActionItem.actionItem,
+        action_item: savedActionItem.action_item,
+
+        actionItemOwner: savedActionItem.actionItemOwner,
+        action_item_owner: savedActionItem.action_item_owner,
+        owner: savedActionItem.owner,
+
+        actionItemOwnerSibsId: savedActionItem.actionItemOwnerSibsId,
+        action_item_owner_sibs_id: savedActionItem.action_item_owner_sibs_id,
+
+        actionItemDeadline: savedActionItem.actionItemDeadline,
+        action_item_deadline: savedActionItem.action_item_deadline,
+
+        actionItemStatus: savedActionItem.actionItemStatus,
+        action_item_status: savedActionItem.action_item_status,
+
+        actionItemRemarks: savedActionItem.actionItemRemarks,
+        action_item_remarks: savedActionItem.action_item_remarks,
+
+        actionItems: [savedActionItem],
+      };
+
+      setSelectedPlan((prev) => {
+        if (!prev) return prev;
+
+        const sameAccount =
+          String(prev.account || "").trim().toLowerCase() ===
+          String(actionItemTarget.account || "").trim().toLowerCase();
+
+        if (!sameAccount) return prev;
+
+        return {
+          ...prev,
+          ...updatedItem,
+        };
+      });
+
+      setRemoteAccounts((prev) =>
+        (prev || []).map((account) => {
+          const sameAccount =
+            String(account.accountName || account.account || "")
+              .trim()
+              .toLowerCase() ===
+            String(actionItemTarget.account || "")
+              .trim()
+              .toLowerCase();
+
+          if (!sameAccount) return account;
+
+          return {
+            ...account,
+            ...updatedItem,
+          };
+        })
+      );
+
+      handleCloseActionItemModal();
+
+      openStatusModal({
+        type: "success",
+        title: "Action Item Saved",
+        message: "The action item was saved successfully.",
+      });
+    } catch (error) {
+      console.error("SAVE ACTION ITEM ERROR:", error);
+
+      openStatusModal({
+        type: "error",
+        title: "Save Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to save action item.",
+      });
+    } finally {
+      setActionItemSubmitting(false);
+    }
   }
 
   const filteredAccountOptions = useMemo(() => {
@@ -1233,81 +1823,106 @@ export default function WeeklyHiringPlanPage() {
   }, [accountOptions, accountSearch]);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-bold text-sibs-primary-1 sm:text-3xl">
-                Weekly Hiring Plan
-              </h1>
-
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Manage weekly manpower requirement, OPS PRF, hiring plan
-                percentage, leads needed, and action items.
-              </p>
-
-              {!weeklyAccess.hasFullAccess && (
-                <p className="mt-2 inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                  Manager View: showing assigned accounts only.
-                </p>
-              )}
+        <div className="sibs-page-header-in min-w-0 mb-6 flex items-end justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ClipboardList size={14} />
+              Recruitment
             </div>
+
+            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              Weekly Hiring Plan
+            </h1>
+
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              Manage weekly manpower requirement, OPS PRF, hiring plan
+              percentage, leads needed, and action items.
+            </p>
+
+            {!weeklyAccess.hasFullAccess && (
+              <p className="mt-2 inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                Manager View: showing assigned accounts only.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="relative z-[80] sibs-profile-tab-panel">
+            <WeeklyVersionTable
+              weekDropdownRef={weekDropdownRef}
+              clusterDropdownRef={clusterDropdownRef}
+              accountDropdownRef={accountDropdownRef}
+              activeWeek={activeWeek}
+              activeWeekId={activeWeekId}
+              setActiveWeekId={setActiveWeekId}
+              weeksLoading={weeksLoading}
+              weekSearch={weekSearch}
+              setWeekSearch={setWeekSearch}
+              showWeekDropdown={showWeekDropdown}
+              setShowWeekDropdown={setShowWeekDropdown}
+              filteredWeeklyVersions={filteredWeeklyVersions}
+              selectedClusters={selectedClusters}
+              setSelectedClusters={setSelectedClusters}
+              showClusterDropdown={showClusterDropdown}
+              setShowClusterDropdown={setShowClusterDropdown}
+              selectedAccounts={selectedAccounts}
+              setSelectedAccounts={setSelectedAccounts}
+              showAccountDropdown={showAccountDropdown}
+              setShowAccountDropdown={setShowAccountDropdown}
+              accountSearch={accountSearch}
+              setAccountSearch={setAccountSearch}
+              accountsLoading={accountsLoading}
+              filteredAccountOptions={filteredAccountOptions}
+              selectedHiringPlanPercent={selectedHiringPlanPercent}
+              setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
+              search={search}
+              setSearch={setSearch}
+              isLocked={isLocked}
+              canEditRequiredHeadcount={canEditRequiredHeadcount}
+              isAllClustersSelected={isAllClustersSelected}
+              isAllAccountsSelected={isAllAccountsSelected}
+              handleToggleCluster={handleToggleCluster}
+              handleToggleAccount={handleToggleAccount}
+              user={user}
+              assignedAccounts={user?.assignedAccounts || []}
+            />
           </div>
 
-          <WeeklyVersionTable
-            weekDropdownRef={weekDropdownRef}
-            clusterDropdownRef={clusterDropdownRef}
-            accountDropdownRef={accountDropdownRef}
-            activeWeek={activeWeek}
-            activeWeekId={activeWeekId}
-            setActiveWeekId={setActiveWeekId}
-            weeksLoading={weeksLoading}
-            weekSearch={weekSearch}
-            setWeekSearch={setWeekSearch}
-            showWeekDropdown={showWeekDropdown}
-            setShowWeekDropdown={setShowWeekDropdown}
-            filteredWeeklyVersions={filteredWeeklyVersions}
-            selectedClusters={selectedClusters}
-            setSelectedClusters={setSelectedClusters}
-            showClusterDropdown={showClusterDropdown}
-            setShowClusterDropdown={setShowClusterDropdown}
-            selectedAccounts={selectedAccounts}
-            setSelectedAccounts={setSelectedAccounts}
-            showAccountDropdown={showAccountDropdown}
-            setShowAccountDropdown={setShowAccountDropdown}
-            accountSearch={accountSearch}
-            setAccountSearch={setAccountSearch}
-            accountsLoading={accountsLoading}
-            filteredAccountOptions={filteredAccountOptions}
-            selectedHiringPlanPercent={selectedHiringPlanPercent}
-            setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
-            search={search}
-            setSearch={setSearch}
-            isLocked={isLocked}
-            canEditRequiredHeadcount={canEditRequiredHeadcount}
-            isAllClustersSelected={isAllClustersSelected}
-            isAllAccountsSelected={isAllAccountsSelected}
-            handleToggleCluster={handleToggleCluster}
-            handleToggleAccount={handleToggleAccount}
-            user={user}
-            assignedAccounts={user?.assignedAccounts || []}
-          />
+          <div
+            className="relative z-[20] sibs-profile-tab-panel"
+            style={{ animationDelay: "60ms" }}
+          >
+            <HeadcountTable filteredPlans={filteredPlans} />
+          </div>
 
-          <HeadcountTable filteredPlans={filteredPlans} />
+          <div
+            className="relative z-[10] sibs-profile-tab-panel"
+            style={{ animationDelay: "120ms" }}
+          >
+            <PercentageRiskGraphTable filteredPlans={filteredPlans} />
+          </div>
 
-          <PercentageRiskGraphTable filteredPlans={filteredPlans} />
-
-          <WeeklyHiringAccountsTable
-            accountsLoading={accountsLoading}
-            filteredPlans={filteredPlans}
-            onViewPlan={setSelectedPlan}
-          />
+          <div
+            key={`${activeWeekId}-${selectedClusters.join("-")}-${selectedAccounts.join(
+              "-"
+            )}-${search}-${selectedHiringPlanPercent}`}
+            className="relative z-[0] sibs-profile-tab-panel"
+            style={{ animationDelay: "180ms" }}
+          >
+            <WeeklyHiringAccountsTable
+              accountsLoading={accountsLoading}
+              filteredPlans={filteredPlans}
+              onViewPlan={setSelectedPlan}
+            />
+          </div>
         </div>
       </main>
 
@@ -1342,15 +1957,13 @@ export default function WeeklyHiringPlanPage() {
         onOpenUploadedFile={handleOpenUploadedFile}
         onClose={() => setSelectedPlan(null)}
         onOpenActionItem={handleOpenActionItemModal}
-      />
-
-      <ActionItemModal
-        open={!!actionItemTarget}
-        item={actionItemTarget}
-        form={actionItemForm}
-        setForm={setActionItemForm}
-        onClose={handleCloseActionItemModal}
-        onSubmit={handleSubmitActionItem}
+        actionItemOpen={!!actionItemTarget}
+        actionItemTarget={actionItemTarget}
+        actionItemForm={actionItemForm}
+        setActionItemForm={setActionItemForm}
+        onCloseActionItem={handleCloseActionItemModal}
+        onSubmitActionItem={handleSubmitActionItem}
+        actionItemSubmitting={actionItemSubmitting}
       />
 
       <KPISnapshotModal

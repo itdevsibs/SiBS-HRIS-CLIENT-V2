@@ -91,6 +91,22 @@ export default function UserProfilePage() {
         .join(" ")
     : "";
 
+  function renderActiveTabContent() {
+    if (activeTab === "Personal") {
+      return <PersonalTab />;
+    }
+
+    if (activeTab === "Resignation") {
+      return <ResignationTab maxHeight={asideHeight} />;
+    }
+
+    return (
+      <div className="rounded-2xl border border-[#E6ECF2] bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+        {activeTab} content can be added here.
+      </div>
+    );
+  }
+
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
@@ -100,18 +116,21 @@ export default function UserProfilePage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         {!user ? (
-          <div className="rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
+          <div className="sibs-profile-tab-panel rounded-2xl bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
             Loading...
           </div>
         ) : (
           <div className="space-y-6">
-            <section className="overflow-visible rounded-3xl bg-white">
+            <section className="sibs-page-header-in overflow-visible rounded-3xl bg-white">
               <div className="relative z-10 overflow-visible rounded-3xl bg-sibs-primary-1 px-4 pb-0 pt-5 text-white sm:px-6">
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
                     <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 sm:h-[110px] sm:w-[110px]">
-                        <User size={36} className="text-white" />
+                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg sm:h-[110px] sm:w-[110px]">
+                        <User
+                          size={36}
+                          className="text-white transition-transform duration-300 hover:scale-110"
+                        />
                       </div>
 
                       <div className="min-w-0 pt-1">
@@ -132,7 +151,7 @@ export default function UserProfilePage() {
                       <button
                         type="button"
                         onClick={() => setOpenProfileDropdown((prev) => !prev)}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-sibs-primary-1 transition hover:opacity-90"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
                       >
                         <UserRoundPen size={16} className="shrink-0" />
 
@@ -149,13 +168,13 @@ export default function UserProfilePage() {
                           onClick={() =>
                             setOpenProfileDropdown((prev) => !prev)
                           }
-                          className={`cursor-pointer shrink-0 text-white transition-transform ${
+                          className={`cursor-pointer shrink-0 text-white transition-transform duration-300 ${
                             openProfileDropdown ? "" : "rotate-180"
                           }`}
                         />
 
                         {openProfileDropdown && (
-                          <div className="absolute right-0 top-full z-[70] mt-2">
+                          <div className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2">
                             <ProfileDropdown
                               openModal={setOpenAddResignation}
                               openDropdown={setOpenProfileDropdown}
@@ -176,13 +195,21 @@ export default function UserProfilePage() {
                             key={tab}
                             type="button"
                             onClick={() => setActiveTab(tab)}
-                            className={`whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition ${
+                            className={`group relative whitespace-nowrap rounded-t-lg px-4 py-2 text-sm font-medium transition-all duration-300 ease-out active:scale-[0.97] ${
                               isActive
-                                ? "bg-sibs-tertiary-10 text-sibs-primary-1"
-                                : "text-white/90 hover:bg-white/10"
+                                ? "translate-y-0 bg-sibs-tertiary-10 text-sibs-primary-1 shadow-sm"
+                                : "text-white/90 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white"
                             }`}
                           >
-                            {tab}
+                            <span className="relative z-10">{tab}</span>
+
+                            {isActive && (
+                              <span className="sibs-profile-tab-indicator absolute inset-x-2 bottom-0 h-[3px] rounded-full bg-sibs-primary-1/70" />
+                            )}
+
+                            {!isActive && (
+                              <span className="absolute inset-x-2 bottom-0 h-[3px] scale-x-0 rounded-full bg-white/40 transition-transform duration-300 group-hover:scale-x-100" />
+                            )}
                           </button>
                         );
                       })}
@@ -194,7 +221,10 @@ export default function UserProfilePage() {
 
             <div className="grid min-h-0 grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
               <aside ref={asideRef} className="min-w-0 space-y-4">
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <div
+                  className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ animationDelay: "60ms" }}
+                >
                   <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
                     Vitals
                   </h2>
@@ -221,7 +251,10 @@ export default function UserProfilePage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <div
+                  className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ animationDelay: "120ms" }}
+                >
                   <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
                     Hire Date
                   </h2>
@@ -232,7 +265,10 @@ export default function UserProfilePage() {
                   />
                 </div>
 
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                <div
+                  className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ animationDelay: "180ms" }}
+                >
                   <h2 className="mb-4 text-sm font-semibold text-sibs-primary-1">
                     Benefits
                   </h2>
@@ -247,17 +283,9 @@ export default function UserProfilePage() {
               </aside>
 
               <section className="min-w-0 space-y-6">
-                {activeTab === "Personal" && <PersonalTab />}
-
-                {activeTab === "Resignation" && (
-                  <ResignationTab maxHeight={asideHeight} />
-                )}
-
-                {activeTab !== "Personal" && activeTab !== "Resignation" && (
-                  <div className="rounded-2xl border border-[#E6ECF2] bg-white p-6 text-sm font-medium text-sibs-tertiary-5 shadow-sm">
-                    {activeTab} content can be added here.
-                  </div>
-                )}
+                <div key={activeTab} className="sibs-profile-tab-panel">
+                  {renderActiveTabContent()}
+                </div>
               </section>
             </div>
           </div>
@@ -291,8 +319,11 @@ export default function UserProfilePage() {
 
 function InfoRow({ icon: Icon, value, breakText = false }) {
   return (
-    <div className="flex min-w-0 items-start gap-3 text-sm text-sibs-tertiary-5">
-      <Icon size={16} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
+    <div className="flex min-w-0 items-start gap-3 text-sm text-sibs-tertiary-5 transition-all duration-200 hover:translate-x-1 hover:text-sibs-primary-1">
+      <Icon
+        size={16}
+        className="mt-0.5 shrink-0 text-sibs-tertiary-5 transition-colors duration-200"
+      />
 
       <span
         className={`min-w-0 leading-5 ${
@@ -307,9 +338,9 @@ function InfoRow({ icon: Icon, value, breakText = false }) {
 
 function SidebarField({ label, value }) {
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 transition-all duration-200 hover:translate-x-1">
       <p className="mb-1 font-medium text-sibs-primary-1">{label}</p>
-      <p className="break-all leading-5">{value || "N/A"}</p>
+      <p className="break-all leading-5 text-sibs-tertiary-5">{value || "N/A"}</p>
     </div>
   );
 }

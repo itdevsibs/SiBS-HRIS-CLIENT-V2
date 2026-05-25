@@ -1,19 +1,33 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Eye, ListChecks } from "lucide-react";
 
+function getNumberValue(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== "") {
+      const numberValue = Number(value);
+
+      if (Number.isFinite(numberValue)) {
+        return numberValue;
+      }
+    }
+  }
+
+  return 0;
+}
+
 function formatPercent(value) {
   const numberValue = Number(value || 0);
 
-  if (numberValue > 0 && numberValue <= 1) {
+  if (Math.abs(numberValue) > 0 && Math.abs(numberValue) <= 1) {
     return `${(numberValue * 100).toFixed(2)}%`;
   }
 
   return `${numberValue.toFixed(2)}%`;
 }
 
-function formatNumber(value) {
+function formatNumber(value, maximumFractionDigits = 0) {
   return Number(value || 0).toLocaleString("en-PH", {
-    maximumFractionDigits: 0,
+    maximumFractionDigits,
   });
 }
 
@@ -38,16 +52,129 @@ function getStatusClass(status) {
   }
 }
 
-function MobileMetric({ label, value, valueClassName = "text-sibs-primary-1" }) {
+function getRowMetrics(item) {
+  const requiredHeadcount = getNumberValue(
+    item.requiredHeadcount,
+    item.required_headcount
+  );
+
+  const actualHeadcount = getNumberValue(
+    item.actualHeadcount,
+    item.actual_headcount
+  );
+
+  const requiredBufferHeadcount = getNumberValue(
+    item.requiredBufferHeadcount,
+    item.required_buffer_headcount,
+    item.bufferHeadcount,
+    item.buffer_headcount
+  );
+
+  const requiredBufferPercent = getNumberValue(
+    item.requiredBufferPercent,
+    item.required_buffer_percent,
+    item.bufferPercent,
+    item.buffer_percent
+  );
+
+  const actualBufferCount = getNumberValue(
+    item.actualBufferCount,
+    item.actual_buffer_count,
+    item.missingHeadcount,
+    item.missing_headcount
+  );
+
+  const actualBufferPercent = getNumberValue(
+    item.actualBufferPercent,
+    item.actual_buffer_percent
+  );
+
+  const requiredActualHeadcountWithBuffer = getNumberValue(
+    item.requiredActualHeadcountWithBuffer,
+    item.required_actual_headcount_with_buffer,
+    requiredHeadcount + requiredBufferHeadcount
+  );
+
+  const absenteeismPastSixWeeksAverage = getNumberValue(
+    item.absenteeismPastSixWeeksAverage,
+    item.absenteeism_past_six_weeks_average,
+    item.absenteeismOpsCount,
+    item.absenteeism_ops_count,
+    item.absenteeismCount,
+    item.absenteeism_count
+  );
+
+  const attritionPastSixWeeksAverage = getNumberValue(
+    item.attritionPastSixWeeksAverage,
+    item.attrition_past_six_weeks_average,
+    item.attritionPastCount,
+    item.attrition_past_count
+  );
+
+  const opsPrf = getNumberValue(item.opsPrf, item.ops_prf);
+
+  const actualHeadcountNeeds = getNumberValue(
+    item.actualHeadcountNeeds,
+    item.actual_headcount_needs,
+    requiredBufferHeadcount +
+      absenteeismPastSixWeeksAverage +
+      attritionPastSixWeeksAverage +
+      opsPrf
+  );
+
+  const leadsToInterview = getNumberValue(
+    item.leadsToInterview,
+    item.leads_to_interview
+  );
+
+  const hiringRate = getNumberValue(item.hiringRate, item.hiring_rate, 5);
+
+  return {
+    requiredHeadcount,
+    actualHeadcount,
+    requiredBufferHeadcount,
+    requiredBufferPercent,
+    actualBufferCount,
+    actualBufferPercent,
+    requiredActualHeadcountWithBuffer,
+    absenteeismPastSixWeeksAverage,
+    attritionPastSixWeeksAverage,
+    opsPrf,
+    actualHeadcountNeeds,
+    leadsToInterview,
+    hiringRate,
+  };
+}
+
+function MobileMetric({
+  label,
+  value,
+  valueClassName = "text-sibs-primary-1",
+}) {
   return (
     <div className="rounded-xl bg-[#F8FAFC] p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
+
       <p className={`mt-1 text-sm font-extrabold ${valueClassName}`}>
         {value}
       </p>
     </div>
+  );
+}
+
+function HeaderCell({ children, note, className = "" }) {
+  return (
+    <th className={`px-5 py-4 text-center align-top ${className}`}>
+      <div className="leading-tight">{children}</div>
+
+      {note && (
+        <div className="mt-1 max-w-[170px] text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
+          ({note})
+        </div>
+      )}
+    </th>
   );
 }
 
@@ -148,8 +275,8 @@ export default function WeeklyHiringAccountsTable({
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review required headcount, actual headcount, OPS PRF, projected
-              needs, and hiring pipeline status per account.
+              Review Excel-based hiring plan computation per account, including
+              buffer, actual buffer, headcount needs, OPS PRF, and leads.
             </p>
           </div>
 
@@ -171,60 +298,58 @@ export default function WeeklyHiringAccountsTable({
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <table className="w-full min-w-[1580px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+            <table className="w-full min-w-[2200px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="px-5 py-4 first:rounded-tl-2xl">Account</th>
-                  <th className="px-5 py-4 text-center">
-                    Required
-                    <br />
-                    Headcount
+                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                    Account
                   </th>
-                  <th className="px-5 py-4 text-center">
-                    Actual
-                    <br />
-                    Headcount
+
+                  <HeaderCell>Required Headcount</HeaderCell>
+
+                  <HeaderCell>Actual Headcount</HeaderCell>
+
+                  <HeaderCell note="Required Headcount × 10%">
+                    Required Buffer Headcount
+                  </HeaderCell>
+
+                  <HeaderCell note="Required Buffer Headcount ÷ Required Headcount">
+                    Required Buffer %
+                  </HeaderCell>
+
+                  <HeaderCell note="Actual Headcount - Required Headcount">
+                    Actual Buffer Count
+                  </HeaderCell>
+
+                  <HeaderCell note="Actual Buffer Count ÷ Required Headcount">
+                    Actual Buffer %
+                  </HeaderCell>
+
+                  <HeaderCell note="Required Headcount + Required Buffer Headcount">
+                    Required Actual HC with Buffer
+                  </HeaderCell>
+
+                  <HeaderCell>Absenteeism Past 6 Weeks Average</HeaderCell>
+
+                  <HeaderCell>Attrition Past 6 Weeks Average</HeaderCell>
+
+                  <HeaderCell>OPS PRF</HeaderCell>
+
+                  <HeaderCell note="Required Buffer + Absenteeism Avg + Attrition Avg + OPS PRF">
+                    Actual Headcount Needs
+                  </HeaderCell>
+
+                  <HeaderCell>Leads to Interview</HeaderCell>
+
+                  <HeaderCell>Hiring Rate</HeaderCell>
+
+                  <HeaderCell>Status</HeaderCell>
+
+                  <th className="px-5 py-4 text-left align-top">
+                    Status Note
                   </th>
-                  <th className="px-5 py-4 text-center">
-                    Buffer
-                    <br />
-                    Count
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    Buffer
-                    <br />%
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    Missing
-                    <br />
-                    Headcount
-                    <div className="mt-1 text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
-                      Required + Buffer Count - Actual Headcount
-                    </div>
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    OPS
-                    <br />
-                    PRF
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    Projected
-                    <br />
-                    Employee Needs
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    Leads to
-                    <br />
-                    Interview
-                  </th>
-                  <th className="px-5 py-4 text-center">
-                    Hiring
-                    <br />
-                    Rate
-                  </th>
-                  <th className="px-5 py-4 text-center">Status</th>
-                  <th className="px-5 py-4">Status Note</th>
-                  <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+
+                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
                     Actions
                   </th>
                 </tr>
@@ -235,7 +360,7 @@ export default function WeeklyHiringAccountsTable({
                   <tr>
                     <td
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={13}
+                      colSpan={17}
                     >
                       Loading weekly hiring plan records...
                     </td>
@@ -244,87 +369,128 @@ export default function WeeklyHiringAccountsTable({
                   <tr>
                     <td
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={13}
+                      colSpan={17}
                     >
                       No weekly hiring plan records found.
                     </td>
                   </tr>
                 ) : (
-                  filteredPlans.map((item) => (
-                    <tr key={item.id} className="transition hover:bg-[#FAFBFC]">
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
-                          {item.account || "--"}
-                        </p>
-                        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-                          {item.cluster || "--"}
-                        </p>
-                      </td>
+                  filteredPlans.map((item) => {
+                    const metrics = getRowMetrics(item);
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatNumber(item.requiredHeadcount)}
-                      </td>
+                    return (
+                      <tr
+                        key={item.id}
+                        className="transition hover:bg-[#FAFBFC]"
+                      >
+                        <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+                            {item.account || "--"}
+                          </p>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatNumber(item.actualHeadcount)}
-                      </td>
+                          <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                            {item.cluster || "--"}
+                          </p>
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatNumber(item.bufferHeadcount)}
-                      </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.requiredHeadcount)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatPercent(item.bufferPercent)}
-                      </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.actualHeadcount)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-cyan-700">
-                        {formatNumber(item.missingHeadcount)}
-                      </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                          {formatNumber(metrics.requiredBufferHeadcount, 2)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
-                        {formatNumber(item.opsPrf)}
-                      </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.requiredBufferPercent)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
-                        {formatNumber(item.projectedEmployeeNeeds)}
-                      </td>
-
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatNumber(item.leadsToInterview)}
-                      </td>
-
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                        {formatPercent(item.hiringRate)}
-                      </td>
-
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                        <span
-                          className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                            item.pipelineStatus
-                          )}`}
+                        <td
+                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${
+                            metrics.actualBufferCount < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }`}
                         >
-                          {item.pipelineStatus || "--"}
-                        </span>
-                      </td>
+                          {formatNumber(metrics.actualBufferCount)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
-                          {item.statusNote || "--"}
-                        </p>
-                      </td>
-
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleViewClick(item)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm"
+                        <td
+                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${
+                            metrics.actualBufferPercent < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }`}
                         >
-                          <Eye size={16} />
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                          {formatPercent(metrics.actualBufferPercent)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                          {formatNumber(
+                            metrics.requiredActualHeadcountWithBuffer,
+                            2
+                          )}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(
+                            metrics.absenteeismPastSixWeeksAverage
+                          )}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.attritionPastSixWeeksAverage)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
+                          {formatNumber(metrics.opsPrf)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+                          {formatNumber(metrics.actualHeadcountNeeds, 2)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.leadsToInterview)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.hiringRate)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                              item.pipelineStatus
+                            )}`}
+                          >
+                            {item.pipelineStatus || "--"}
+                          </span>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
+                            {item.statusNote || "--"}
+                          </p>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleViewClick(item)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                          >
+                            <Eye size={16} />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -347,88 +513,144 @@ export default function WeeklyHiringAccountsTable({
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredPlans.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onViewPlan?.(item)}
-                    className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
-                          {item.account || "--"}
-                        </h3>
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          {item.cluster || "--"}
+                {filteredPlans.map((item) => {
+                  const metrics = getRowMetrics(item);
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onViewPlan?.(item)}
+                      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+                            {item.account || "--"}
+                          </h3>
+
+                          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                            {item.cluster || "--"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+                            item.pipelineStatus
+                          )}`}
+                        >
+                          {item.pipelineStatus || "--"}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <MobileMetric
+                          label="Required HC"
+                          value={formatNumber(metrics.requiredHeadcount)}
+                        />
+
+                        <MobileMetric
+                          label="Actual HC"
+                          value={formatNumber(metrics.actualHeadcount)}
+                        />
+
+                        <MobileMetric
+                          label="Required Buffer HC"
+                          value={formatNumber(
+                            metrics.requiredBufferHeadcount,
+                            2
+                          )}
+                        />
+
+                        <MobileMetric
+                          label="Required Buffer %"
+                          value={formatPercent(metrics.requiredBufferPercent)}
+                        />
+
+                        <MobileMetric
+                          label="Actual Buffer Count"
+                          value={formatNumber(metrics.actualBufferCount)}
+                          valueClassName={
+                            metrics.actualBufferCount < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }
+                        />
+
+                        <MobileMetric
+                          label="Actual Buffer %"
+                          value={formatPercent(metrics.actualBufferPercent)}
+                          valueClassName={
+                            metrics.actualBufferPercent < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }
+                        />
+
+                        <MobileMetric
+                          label="Required Actual HC + Buffer"
+                          value={formatNumber(
+                            metrics.requiredActualHeadcountWithBuffer,
+                            2
+                          )}
+                        />
+
+                        <MobileMetric
+                          label="Absenteeism Avg"
+                          value={formatNumber(
+                            metrics.absenteeismPastSixWeeksAverage
+                          )}
+                        />
+
+                        <MobileMetric
+                          label="Attrition Avg"
+                          value={formatNumber(
+                            metrics.attritionPastSixWeeksAverage
+                          )}
+                        />
+
+                        <MobileMetric
+                          label="OPS PRF"
+                          value={formatNumber(metrics.opsPrf)}
+                        />
+
+                        <MobileMetric
+                          label="Actual HC Needs"
+                          value={formatNumber(
+                            metrics.actualHeadcountNeeds,
+                            2
+                          )}
+                          valueClassName="text-violet-700"
+                        />
+
+                        <MobileMetric
+                          label="Leads"
+                          value={formatNumber(metrics.leadsToInterview)}
+                        />
+
+                        <MobileMetric
+                          label="Hiring Rate"
+                          value={formatPercent(metrics.hiringRate)}
+                        />
+                      </div>
+
+                      <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                          Status Note
+                        </p>
+
+                        <p className="mt-1 text-sm font-bold text-[#344054]">
+                          {item.statusNote || "--"}
                         </p>
                       </div>
 
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                          item.pipelineStatus
-                        )}`}
-                      >
-                        {item.pipelineStatus || "--"}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      <MobileMetric
-                        label="Required"
-                        value={formatNumber(item.requiredHeadcount)}
-                      />
-                      <MobileMetric
-                        label="Actual"
-                        value={formatNumber(item.actualHeadcount)}
-                      />
-                      <MobileMetric
-                        label="Buffer Count"
-                        value={formatNumber(item.bufferHeadcount)}
-                      />
-                      <MobileMetric
-                        label="Buffer %"
-                        value={formatPercent(item.bufferPercent)}
-                      />
-                      <MobileMetric
-                        label="Missing Headcount"
-                        value={formatNumber(item.missingHeadcount)}
-                        valueClassName="text-cyan-700"
-                      />
-                      <MobileMetric
-                        label="OPS PRF"
-                        value={formatNumber(item.opsPrf)}
-                      />
-                      <MobileMetric
-                        label="Projected Needs"
-                        value={formatNumber(item.projectedEmployeeNeeds)}
-                        valueClassName="text-violet-700"
-                      />
-                      <MobileMetric
-                        label="Leads"
-                        value={formatNumber(item.leadsToInterview)}
-                      />
-                      <MobileMetric
-                        label="Hiring Rate"
-                        value={formatPercent(item.hiringRate)}
-                      />
-                    </div>
-
-                    <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        Status Note
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-[#344054]">
-                        {item.statusNote || "--"}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
-                      <Eye size={16} />
-                      View Details
-                    </div>
-                  </button>
-                ))}
+                      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+                        <Eye size={16} />
+                        View Details
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>

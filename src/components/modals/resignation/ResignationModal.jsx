@@ -107,6 +107,24 @@ function getInitialForm() {
   };
 }
 
+function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
+  return (
+    <div
+      className={`sibs-animated-dropdown absolute z-20 mt-2 w-full ${
+        open ? "open" : "closed"
+      } ${className}`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box">
+          <div className={`${maxHeight} overflow-y-auto py-2 sibs-scrollbar`}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResignationModal({
   open,
   onClose,
@@ -116,6 +134,7 @@ export default function ResignationModal({
   const [reasonOpen, setReasonOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [form, setForm] = useState(getInitialForm());
 
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
@@ -158,9 +177,19 @@ export default function ResignationModal({
   };
 
   const handleClose = () => {
-    resetForm();
-    setOpenEditResignationModal(false);
-    onClose?.();
+    if (isClosing || submitting) return;
+
+    setReasonOpen(false);
+    setTypeOpen(false);
+    setPolicyModalOpen(false);
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      resetForm();
+      setOpenEditResignationModal(false);
+      setIsClosing(false);
+      onClose?.();
+    }, 220);
   };
 
   useEffect(() => {
@@ -184,10 +213,12 @@ export default function ResignationModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "";
     };
-  }, [open, policyModalOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, policyModalOpen, isClosing, submitting]);
 
   useEffect(() => {
     if (open) {
+      setIsClosing(false);
       setForm(getInitialForm());
       setReasonOpen(false);
       setTypeOpen(false);
@@ -510,7 +541,7 @@ export default function ResignationModal({
 
   const hierarchyGridClass = (() => {
     const count = [form.tlSibsId, form.omSibsId, form.somSibsId].filter(
-      Boolean,
+      Boolean
     ).length;
 
     if (count <= 1) return "grid-cols-1";
@@ -520,8 +551,16 @@ export default function ResignationModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6">
-        <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div
+        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6 ${
+          isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
+        }`}
+      >
+        <div
+          className={`flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ${
+            isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
+          }`}
+        >
           <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-5 sm:px-6">
             <div className="min-w-0">
               <h2 className="text-xl font-bold text-sibs-primary-1 sm:text-2xl">
@@ -536,7 +575,7 @@ export default function ResignationModal({
             <button
               type="button"
               onClick={handleClose}
-              disabled={submitting}
+              disabled={submitting || isClosing}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Close modal"
             >
@@ -569,32 +608,28 @@ export default function ResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
                           typeOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
-                    {typeOpen && (
-                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="py-2">
-                          {resignationTypes.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => handleTypeSelect(item)}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.resignationType === item
-                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <AnimatedDropdown open={typeOpen}>
+                      {resignationTypes.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleTypeSelect(item)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            form.resignationType === item
+                              ? "bg-blue-50 font-medium text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </AnimatedDropdown>
                   </div>
                 </Field>
               </div>
@@ -782,32 +817,28 @@ export default function ResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
                           reasonOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
-                    {reasonOpen && (
-                      <div className="absolute z-20 mt-2 max-h-60 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="max-h-60 overflow-y-auto py-2">
-                          {resignationReasons.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => handleReasonSelect(item)}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.reason === item
-                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <AnimatedDropdown open={reasonOpen} maxHeight="max-h-60">
+                      {resignationReasons.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleReasonSelect(item)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            form.reason === item
+                              ? "bg-blue-50 font-medium text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </AnimatedDropdown>
                   </div>
                 </Field>
               </div>
@@ -919,7 +950,7 @@ export default function ResignationModal({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={submitting}
+                disabled={submitting || isClosing}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-4 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-9 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
@@ -927,7 +958,7 @@ export default function ResignationModal({
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || isClosing}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting
@@ -944,8 +975,8 @@ export default function ResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6 sibs-modal-backdrop-in">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl sibs-modal-pop-in">
             <div className="px-6 pb-6 pt-6 text-center">
               <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">
                 Important Notice Regarding Company Policy:
@@ -1039,12 +1070,16 @@ function ActionPanel({ title, description, checked, onToggle, children }) {
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          checked ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          checked
+            ? "mt-3 grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div
           className={`overflow-hidden transition-all duration-500 ease-in-out ${
-            checked ? "mt-2 translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+            checked
+              ? "mt-2 translate-y-0 opacity-100"
+              : "-translate-y-2 opacity-0"
           }`}
           onClick={(e) => e.stopPropagation()}
         >

@@ -199,20 +199,76 @@ function getAssignedAccountsDisplay(
   return getAccountName(selectedUser) || "-";
 }
 
-function getAssignedClustersFromSelectedAccounts(
-  accountOptions = [],
-  selectedAccountIds = []
-) {
-  const selectedSet = new Set(selectedAccountIds.map(String));
+function ModalAnimationStyles() {
+  return (
+    <style>
+      {`
+        @keyframes sibsUserModalBackdropIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
 
-  const clusters = accountOptions
-    .map(normalizeAccount)
-    .filter(Boolean)
-    .filter((account) => selectedSet.has(String(account.accountId)))
-    .map((account) => account.clusterName)
-    .filter(Boolean);
+        @keyframes sibsUserModalBackdropOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
 
-  return [...new Set(clusters)];
+        @keyframes sibsUserModalIn {
+          from {
+            opacity: 0;
+            transform: translateY(18px) scale(0.96);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes sibsUserModalOut {
+          from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(14px) scale(0.96);
+          }
+        }
+      `}
+    </style>
+  );
+}
+
+function AnimatedDropdown({ open, children, maxHeight = "max-h-64" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-200 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      }`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-200 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          <div className={`${maxHeight} overflow-y-auto py-2 sibs-scrollbar`}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function UserModal({
@@ -251,6 +307,10 @@ export default function UserModal({
   const statusRef = useRef(null);
   const clusterDropdownRef = useRef(null);
   const accountDropdownRef = useRef(null);
+  const closeTimerRef = useRef(null);
+
+  const [shouldRender, setShouldRender] = useState(open);
+  const [isClosing, setIsClosing] = useState(false);
 
   const [adminAccessOpen, setAdminAccessOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -342,15 +402,38 @@ export default function UserModal({
   ]);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (open) {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+
+      setShouldRender(true);
+      setIsClosing(false);
+      return;
+    }
+
+    if (shouldRender) {
+      setIsClosing(true);
+
+      closeTimerRef.current = window.setTimeout(() => {
+        setIsClosing(false);
+        setShouldRender(false);
+      }, 220);
+    }
+
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, [open, shouldRender]);
+
+  useEffect(() => {
+    if (!shouldRender) return undefined;
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
-        setAdminAccessOpen(false);
-        setStatusOpen(false);
-        setShowClusterDropdown(false);
-        setShowAccountDropdown(false);
-        onClose?.();
+        handleAnimatedClose();
       }
     };
 
@@ -404,10 +487,11 @@ export default function UserModal({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [open, onClose, setShowEmployeeDropdown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldRender, isClosing, saving, deleting, setShowEmployeeDropdown]);
 
   useEffect(() => {
-    if (!open) {
+    if (!shouldRender) {
       setAdminAccessOpen(false);
       setStatusOpen(false);
       setShowClusterDropdown(false);
@@ -415,9 +499,25 @@ export default function UserModal({
       setAccountSearch("");
       setSelectedClusters(["All"]);
     }
-  }, [open]);
+  }, [shouldRender]);
 
-  if (!open) return null;
+  function handleAnimatedClose() {
+    if (isClosing || saving || deleting) return;
+
+    setAdminAccessOpen(false);
+    setStatusOpen(false);
+    setShowClusterDropdown(false);
+    setShowAccountDropdown(false);
+    setShowEmployeeDropdown?.(false);
+
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      onClose?.();
+    }, 220);
+  }
+
+  if (!shouldRender) return null;
   if ((isEdit || isDelete) && !selectedUser) return null;
 
   const selectedAdminAccessValue = Array.isArray(form?.adminAccess)
@@ -575,64 +675,59 @@ export default function UserModal({
 
             <ChevronDown
               size={18}
-              className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+              className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
                 showClusterDropdown ? "rotate-180" : ""
               }`}
             />
           </button>
 
-          {showClusterDropdown && (
-            <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-              <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          <AnimatedDropdown open={showClusterDropdown}>
+            <button
+              type="button"
+              onClick={() => handleToggleCluster("All")}
+              className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                isAllClustersSelected()
+                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                  : "text-[#344054] hover:bg-[#F8FAFC]"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={isAllClustersSelected()}
+                readOnly
+                className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+              />
+
+              <span>All Clusters</span>
+            </button>
+
+            {CLUSTER_OPTIONS.map((cluster) => {
+              const checked =
+                !isAllClustersSelected() && selectedClusters.includes(cluster);
+
+              return (
                 <button
+                  key={cluster}
                   type="button"
-                  onClick={() => handleToggleCluster("All")}
+                  onClick={() => handleToggleCluster(cluster)}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                    isAllClustersSelected()
+                    checked
                       ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                       : "text-[#344054] hover:bg-[#F8FAFC]"
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={isAllClustersSelected()}
+                    checked={checked}
                     readOnly
                     className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
                   />
 
-                  <span>All Clusters</span>
+                  <span className="truncate">{cluster}</span>
                 </button>
-
-                {CLUSTER_OPTIONS.map((cluster) => {
-                  const checked =
-                    !isAllClustersSelected() &&
-                    selectedClusters.includes(cluster);
-
-                  return (
-                    <button
-                      key={cluster}
-                      type="button"
-                      onClick={() => handleToggleCluster(cluster)}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                        checked
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        readOnly
-                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                      />
-
-                      <span className="truncate">{cluster}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+              );
+            })}
+          </AnimatedDropdown>
         </div>
 
         <div ref={accountDropdownRef} className="relative z-20">
@@ -694,67 +789,63 @@ export default function UserModal({
                 setStatusOpen(false);
                 setShowEmployeeDropdown?.(false);
               }}
-              className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+              className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-200 ${
                 showAccountDropdown ? "rotate-180" : ""
               }`}
             />
 
-            {showAccountDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                  {filteredAccountOptions.length > 0 ? (
-                    filteredAccountOptions.map((account) => {
-                      const checked = selectedAccountIds.includes(
-                        String(account.accountId)
-                      );
+            <AnimatedDropdown open={showAccountDropdown}>
+              {filteredAccountOptions.length > 0 ? (
+                filteredAccountOptions.map((account) => {
+                  const checked = selectedAccountIds.includes(
+                    String(account.accountId)
+                  );
 
-                      return (
-                        <button
-                          key={account.accountId}
-                          type="button"
-                          onClick={() => {
-                            handleToggleAccountLocal(account);
-                            setAccountSearch("");
-                          }}
-                          disabled={saving}
-                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                            checked
-                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                              : "text-[#344054] hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          <span
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                              checked
-                                ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                                : "border-[#D0D5DD] bg-white"
-                            }`}
-                          >
-                            {checked && <Check size={12} />}
-                          </span>
+                  return (
+                    <button
+                      key={account.accountId}
+                      type="button"
+                      onClick={() => {
+                        handleToggleAccountLocal(account);
+                        setAccountSearch("");
+                      }}
+                      disabled={saving}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                        checked
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                          checked
+                            ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                            : "border-[#D0D5DD] bg-white"
+                        }`}
+                      >
+                        {checked && <Check size={12} />}
+                      </span>
 
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold">
-                              {account.gy_acc_name}
-                            </p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">
+                          {account.gy_acc_name}
+                        </p>
 
-                            <p className="mt-0.5 truncate text-xs font-medium text-sibs-tertiary-5">
-                              {[account.clusterName, account.gy_acc_ghl_name]
-                                .filter(Boolean)
-                                .join(" / ") || "No GHL name"}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                      No accounts found for the selected cluster.
-                    </div>
-                  )}
+                        <p className="mt-0.5 truncate text-xs font-medium text-sibs-tertiary-5">
+                          {[account.clusterName, account.gy_acc_ghl_name]
+                            .filter(Boolean)
+                            .join(" / ") || "No GHL name"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                  No accounts found for the selected cluster.
                 </div>
-              </div>
-            )}
+              )}
+            </AnimatedDropdown>
           </div>
         </div>
       </div>
@@ -764,14 +855,26 @@ export default function UserModal({
   return (
     <div
       className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#0F172A]/45 px-4 py-4 backdrop-blur-[2px]"
-      onClick={onClose}
+      onClick={handleAnimatedClose}
+      style={{
+        animation: isClosing
+          ? "sibsUserModalBackdropOut 220ms ease-in both"
+          : "sibsUserModalBackdropIn 180ms ease-out both",
+      }}
     >
+      <ModalAnimationStyles />
+
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-modal-title"
         onClick={(e) => e.stopPropagation()}
         className="relative z-[10000] flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
+        style={{
+          animation: isClosing
+            ? "sibsUserModalOut 220ms ease-in both"
+            : "sibsUserModalIn 240ms ease-out both",
+        }}
       >
         <div className="shrink-0 border-b border-sibs-tertiary-9 px-6 py-5">
           <div className="flex items-center gap-3">
@@ -825,8 +928,8 @@ export default function UserModal({
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={onClose}
-                  disabled={deleting}
+                  onClick={handleAnimatedClose}
+                  disabled={deleting || isClosing}
                   className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
                 >
                   Cancel
@@ -835,7 +938,7 @@ export default function UserModal({
                 <button
                   type="button"
                   onClick={onConfirmDelete}
-                  disabled={deleting}
+                  disabled={deleting || isClosing}
                   className="w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
                 >
                   {deleting ? "Deleting..." : "Delete User"}
@@ -867,44 +970,42 @@ export default function UserModal({
                       className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
                     />
 
-                    {showEmployeeDropdown && (
-                      <div className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-y-auto rounded-xl border border-sibs-tertiary-9 bg-white shadow-2xl">
-                        {searchingEmployees ? (
-                          <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                            Searching...
-                          </div>
-                        ) : employeeResults.length > 0 ? (
-                          employeeResults.map((item) => (
-                            <button
-                              key={item.gyEmpId}
-                              type="button"
-                              onClick={() => onSelectEmployee?.(item)}
-                              className="block w-full border-b border-sibs-tertiary-9 px-4 py-3 text-left transition last:border-b-0 hover:bg-sibs-tertiary-10"
-                            >
-                              <div className="text-sm font-semibold text-sibs-primary-1">
-                                {item.sibsId}
-                              </div>
+                    <AnimatedDropdown open={showEmployeeDropdown} maxHeight="max-h-60">
+                      {searchingEmployees ? (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          Searching...
+                        </div>
+                      ) : employeeResults.length > 0 ? (
+                        employeeResults.map((item) => (
+                          <button
+                            key={item.gyEmpId}
+                            type="button"
+                            onClick={() => onSelectEmployee?.(item)}
+                            className="block w-full border-b border-sibs-tertiary-9 px-4 py-3 text-left transition last:border-b-0 hover:bg-sibs-tertiary-10"
+                          >
+                            <div className="text-sm font-semibold text-sibs-primary-1">
+                              {item.sibsId}
+                            </div>
 
-                              <div className="text-xs text-sibs-tertiary-5">
-                                {`${item.lastName || ""}${
-                                  item.lastName ? ", " : ""
-                                }${item.firstName || ""}${
-                                  item.middleName ? " " + item.middleName : ""
-                                }`.trim()}
-                              </div>
-                            </button>
-                          ))
-                        ) : employeeSearch.trim() ? (
-                          <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                            No employees found
-                          </div>
-                        ) : (
-                          <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
-                            Type to search
-                          </div>
-                        )}
-                      </div>
-                    )}
+                            <div className="text-xs text-sibs-tertiary-5">
+                              {`${item.lastName || ""}${
+                                item.lastName ? ", " : ""
+                              }${item.firstName || ""}${
+                                item.middleName ? " " + item.middleName : ""
+                              }`.trim()}
+                            </div>
+                          </button>
+                        ))
+                      ) : employeeSearch.trim() ? (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          No employees found
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-sibs-tertiary-5">
+                          Type to search
+                        </div>
+                      )}
+                    </AnimatedDropdown>
                   </div>
                 )}
 
@@ -1051,8 +1152,8 @@ export default function UserModal({
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={onClose}
-                  disabled={saving}
+                  onClick={handleAnimatedClose}
+                  disabled={saving || isClosing}
                   className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10 disabled:opacity-50"
                 >
                   Cancel
@@ -1060,7 +1161,7 @@ export default function UserModal({
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || isClosing}
                   className="w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                 >
                   {saving ? "Saving..." : isEdit ? "Save Changes" : "Add User"}
@@ -1115,32 +1216,28 @@ function SingleSelect({
 
           <ChevronDown
             size={18}
-            className={`text-sibs-tertiary-5 transition-transform ${
+            className={`text-sibs-tertiary-5 transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
         </button>
 
-        {open && (
-          <div className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-            <div className="max-h-60 overflow-y-auto py-2">
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => onSelect(option.value)}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                    String(selectedValue || "") === option.value
-                      ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                      : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatedDropdown open={open} maxHeight="max-h-60">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onSelect(option.value)}
+              className={`block w-full px-4 py-3 text-left text-sm transition ${
+                String(selectedValue || "") === option.value
+                  ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </AnimatedDropdown>
       </div>
     </div>
   );
