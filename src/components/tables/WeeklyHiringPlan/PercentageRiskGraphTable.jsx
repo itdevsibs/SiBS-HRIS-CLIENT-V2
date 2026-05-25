@@ -84,7 +84,8 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
       displayKeys: [
         "absenteeismPastSixWeeksAverage",
         "absenteeism_past_six_weeks_average",
-        "absenteeismCount",
+        "absenteeismOpsCount",
+        "absenteeism_ops_count",
       ],
       percentKey: "absenteeismPercent",
       denominatorKey: "scheduledCount",
@@ -145,10 +146,12 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
       const fallback =
         metric.countKey === "attritionPastCount"
           ? Math.round(Number(item?.attritionPastCount || 0) / 6)
-          : Number(item?.[metric.countKey] || 0);
+          : metric.countKey === "absenteeismCount"
+            ? Math.round(Number(item?.absenteeismCount || 0) / 6)
+            : Number(item?.[metric.countKey] || 0);
 
-      return getNumberValue(item, metric.displayKeys, fallback);
-    }
+            return getNumberValue(item, metric.displayKeys, fallback);
+          }
 
     return Number(item?.[metric.countKey] || 0);
   }

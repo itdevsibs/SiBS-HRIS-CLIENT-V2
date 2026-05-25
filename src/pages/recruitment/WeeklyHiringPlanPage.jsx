@@ -744,11 +744,9 @@ export default function WeeklyHiringPlanPage() {
         "buffer_percent",
       ]);
 
-      const absenteeismCount =
-        account.absenteeismOpsCount !== undefined &&
-        account.absenteeismOpsCount !== null
-          ? Number(account.absenteeismOpsCount || 0)
-          : Number(account.absenteeismCount || 0);
+      const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
+
+      const absenteeismCount = rawAbsenteeismCount;
 
       const absenteeismPastSixWeeksAverage = getBackendNumber(
         account,
@@ -758,7 +756,7 @@ export default function WeeklyHiringPlanPage() {
           "absenteeismOpsCount",
           "absenteeism_ops_count",
         ],
-        Math.round(Number(account.absenteeismCount || 0) / 6)
+        Math.round(rawAbsenteeismCount / 6)
       );
 
       const attritionPastCount = Number(account.attritionPastCount || 0);
