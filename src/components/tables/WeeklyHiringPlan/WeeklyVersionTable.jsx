@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   Filter,
@@ -16,9 +16,97 @@ const CLUSTER_OPTIONS = [
   "Corporate",
 ];
 
-function getClusterFilterLabel(selectedClusters = []) {
+const FULL_ACCESS_ROLES = new Set(["ta", "hr", "hr_admin", "super_admin"]);
+
+const HIRING_PLAN_PERCENT_OPTIONS = Array.from(
+  { length: 20 },
+  (_, index) => (index + 1) * 5
+);
+
+function getText(value) {
+  return String(value || "").trim();
+}
+
+function getAccountName(account) {
+  return getText(
+    account?.accountName ||
+      account?.account ||
+      account?.gy_acc_name ||
+      account?.account_name ||
+      account?.name
+  );
+}
+
+function getGhlName(account) {
+  return getText(
+    account?.ghlName || account?.gy_acc_ghl_name || account?.ghl_name
+  );
+}
+
+function getClusterNameFromAccount(account) {
+  const accountName = getAccountName(account);
+  const ghlName = getGhlName(account);
+  const text = `${accountName} ${ghlName}`.toLowerCase();
+
+  if (
+    text.includes("cd -") ||
+    text.includes("cd-") ||
+    text.includes("coast dental")
+  ) {
+    return "Coast Dental";
+  }
+
+  if (text.includes("us visa")) {
+    return "US Visa";
+  }
+
+  if (
+    text.includes("sme-") ||
+    text.includes("sme -") ||
+    text.includes("frontsteps") ||
+    text.includes("front steps")
+  ) {
+    return "SME";
+  }
+
+  if (text.includes("yomdel")) {
+    return "Yomdel";
+  }
+
+  const explicitCluster = getText(account?.clusterName || account?.cluster);
+
+  if (explicitCluster) return explicitCluster;
+
+  return "Corporate";
+}
+
+function getRoleValue(user) {
+  return getText(user?.role || user?.userRole || user?.adminRole).toLowerCase();
+}
+
+function canViewAllWeeklyAccounts(user) {
+  return FULL_ACCESS_ROLES.has(getRoleValue(user));
+}
+
+function normalizeAssignedAccounts(user, assignedAccounts = []) {
+  if (Array.isArray(assignedAccounts) && assignedAccounts.length > 0) {
+    return assignedAccounts;
+  }
+
+  if (Array.isArray(user?.assignedAccounts) && user.assignedAccounts.length > 0) {
+    return user.assignedAccounts;
+  }
+
+  if (user?.account || user?.accountName || user?.gy_acc_name) {
+    return [user];
+  }
+
+  return [];
+}
+
+function getClusterFilterLabel(selectedClusters = [], restricted = false) {
   if (!selectedClusters.length || selectedClusters.includes("All")) {
-    return "All Clusters";
+    return restricted ? "All Assigned Clusters" : "All Clusters";
   }
 
   if (selectedClusters.length === 1) {
@@ -28,9 +116,9 @@ function getClusterFilterLabel(selectedClusters = []) {
   return `${selectedClusters.length} Clusters Selected`;
 }
 
-function getAccountFilterLabel(selectedAccounts = []) {
+function getAccountFilterLabel(selectedAccounts = [], restricted = false) {
   if (!selectedAccounts.length || selectedAccounts.includes("All")) {
-    return "All Accounts";
+    return restricted ? "All Assigned Accounts" : "All Accounts";
   }
 
   if (selectedAccounts.length === 1) {
@@ -69,6 +157,28 @@ function formatWeeklyVersionDisplay(week) {
   return weekRange ? `${label} | ${weekRange}` : label;
 }
 
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WeeklyVersionTable({
   weekDropdownRef,
   clusterDropdownRef,
@@ -100,6 +210,9 @@ export default function WeeklyVersionTable({
   accountsLoading = false,
   filteredAccountOptions = [],
 
+  selectedHiringPlanPercent = 5,
+  setSelectedHiringPlanPercent,
+
   search,
   setSearch,
 
@@ -110,15 +223,164 @@ export default function WeeklyVersionTable({
   isAllAccountsSelected,
   handleToggleCluster,
   handleToggleAccount,
+
+  user = null,
+  assignedAccounts = [],
 }) {
+  const [showHiringPlanDropdown, setShowHiringPlanDropdown] = useState(false);
+  const [hiringPlanSearch, setHiringPlanSearch] = useState("");
+
+  const canViewAllAccounts = canViewAllWeeklyAccounts(user);
+  const isRestrictedManager = !canViewAllAccounts;
+
+  const normalizedAssignedAccounts = useMemo(
+    () => normalizeAssignedAccounts(user, assignedAccounts),
+    [user, assignedAccounts]
+  );
+
+  const assignedAccountNames = useMemo(() => {
+    return new Set(
+      normalizedAssignedAccounts
+        .map((account) => getAccountName(account))
+        .filter(Boolean)
+    );
+  }, [normalizedAssignedAccounts]);
+
+  const assignedClusterNames = useMemo(() => {
+    return new Set(
+      normalizedAssignedAccounts
+        .map((account) => getClusterNameFromAccount(account))
+        .filter(Boolean)
+    );
+  }, [normalizedAssignedAccounts]);
+
+  const visibleClusterOptions = useMemo(() => {
+    if (canViewAllAccounts) return CLUSTER_OPTIONS;
+
+    return CLUSTER_OPTIONS.filter((cluster) =>
+      assignedClusterNames.has(cluster)
+    );
+  }, [canViewAllAccounts, assignedClusterNames]);
+
+  const visibleAccountOptions = useMemo(() => {
+    if (canViewAllAccounts) return filteredAccountOptions;
+
+    return filteredAccountOptions.filter((account) => {
+      const accountName = getAccountName(account);
+      return assignedAccountNames.has(accountName);
+    });
+  }, [canViewAllAccounts, filteredAccountOptions, assignedAccountNames]);
+
+  const filteredHiringPlanOptions = useMemo(() => {
+    const keyword = hiringPlanSearch.trim().toLowerCase();
+
+    if (!keyword) return HIRING_PLAN_PERCENT_OPTIONS;
+
+    return HIRING_PLAN_PERCENT_OPTIONS.filter((percent) =>
+      `${percent}%`.toLowerCase().includes(keyword)
+    );
+  }, [hiringPlanSearch]);
+
+  const safeIsAllClustersSelected = () => {
+    if (typeof isAllClustersSelected === "function") {
+      return isAllClustersSelected();
+    }
+
+    return selectedClusters.includes("All") || selectedClusters.length === 0;
+  };
+
+  const safeIsAllAccountsSelected = () => {
+    if (typeof isAllAccountsSelected === "function") {
+      return isAllAccountsSelected();
+    }
+
+    return selectedAccounts.includes("All") || selectedAccounts.length === 0;
+  };
+
   const hasActiveFilters =
-    !isAllClustersSelected() || !isAllAccountsSelected() || search;
+    !safeIsAllClustersSelected() ||
+    !safeIsAllAccountsSelected() ||
+    search ||
+    Number(selectedHiringPlanPercent) !== 5;
+
+  useEffect(() => {
+    if (canViewAllAccounts) return;
+
+    const selectedRealClusters = selectedClusters.filter(
+      (cluster) => cluster !== "All"
+    );
+
+    const hasInvalidCluster = selectedRealClusters.some(
+      (cluster) => !assignedClusterNames.has(cluster)
+    );
+
+    if (hasInvalidCluster) {
+      setSelectedClusters(["All"]);
+    }
+
+    const selectedRealAccounts = selectedAccounts.filter(
+      (account) => account !== "All"
+    );
+
+    const hasInvalidAccount = selectedRealAccounts.some(
+      (account) => !assignedAccountNames.has(account)
+    );
+
+    if (hasInvalidAccount) {
+      setSelectedAccounts(["All"]);
+    }
+  }, [
+    canViewAllAccounts,
+    selectedClusters,
+    selectedAccounts,
+    assignedClusterNames,
+    assignedAccountNames,
+    setSelectedClusters,
+    setSelectedAccounts,
+  ]);
 
   function handleClearFilters() {
     setSelectedClusters(["All"]);
     setSelectedAccounts(["All"]);
     setAccountSearch("");
     setSearch("");
+    setSelectedHiringPlanPercent?.(5);
+    setHiringPlanSearch("");
+    setShowHiringPlanDropdown(false);
+  }
+
+  function handleWeeklyVersionChange(week) {
+    setActiveWeekId(week.id);
+    setSelectedClusters(["All"]);
+    setSelectedAccounts(["All"]);
+    setSearch("");
+    setWeekSearch("");
+    setShowWeekDropdown(false);
+  }
+
+  function handleClusterClick(cluster) {
+    if (
+      cluster !== "All" &&
+      isRestrictedManager &&
+      !assignedClusterNames.has(cluster)
+    ) {
+      return;
+    }
+
+    handleToggleCluster(cluster);
+  }
+
+  function handleAccountClick(accountName) {
+    if (
+      accountName !== "All" &&
+      isRestrictedManager &&
+      !assignedAccountNames.has(accountName)
+    ) {
+      return;
+    }
+
+    handleToggleAccount(accountName);
+    setAccountSearch("");
   }
 
   return (
@@ -136,8 +398,8 @@ export default function WeeklyVersionTable({
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Select weekly version, cluster, account, and keyword to refine the
-              hiring plan.
+              Select weekly version, cluster, account, hiring plan percentage,
+              and keyword to refine the hiring plan.
             </p>
           </div>
 
@@ -153,6 +415,12 @@ export default function WeeklyVersionTable({
               {isLocked ? "Locked" : "Editable"}
             </span>
 
+            {isRestrictedManager && (
+              <span className="inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                Manager View: Assigned Accounts Only
+              </span>
+            )}
+
             {!canEditRequiredHeadcount && (
               <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                 View only: Required Headcount
@@ -163,8 +431,8 @@ export default function WeeklyVersionTable({
       </div>
 
       <div className="p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr_auto] xl:items-end">
-          <div ref={weekDropdownRef} className="relative z-40">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr_1fr_auto] xl:items-end">
+          <div ref={weekDropdownRef} className="relative z-50">
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Weekly Version
             </label>
@@ -189,6 +457,7 @@ export default function WeeklyVersionTable({
                 onFocus={() => {
                   setShowWeekDropdown(true);
                   setWeekSearch("");
+                  setShowHiringPlanDropdown(false);
                 }}
                 placeholder={
                   weeksLoading
@@ -204,129 +473,129 @@ export default function WeeklyVersionTable({
                 onClick={() => {
                   setShowWeekDropdown((prev) => !prev);
                   setWeekSearch("");
+                  setShowHiringPlanDropdown(false);
                 }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
                   showWeekDropdown ? "rotate-180" : ""
                 }`}
               />
 
-              {showWeekDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-2 max-h-72 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
-                    {filteredWeeklyVersions.length > 0 ? (
-                      filteredWeeklyVersions.map((week) => {
-                        const isSelected = week.id === activeWeekId;
+              <AnimatedDropdown open={showWeekDropdown}>
+                <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
+                  {filteredWeeklyVersions.length > 0 ? (
+                    filteredWeeklyVersions.map((week) => {
+                      const isSelected = week.id === activeWeekId;
 
-                        return (
-                          <button
-                            key={week.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveWeekId(week.id);
-                              setSelectedClusters(["All"]);
-                              setSelectedAccounts(["All"]);
-                              setSearch("");
-                              setWeekSearch("");
-                              setShowWeekDropdown(false);
-                            }}
-                            className={`block w-full px-4 py-3 text-left text-sm transition ${
-                              isSelected
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate font-bold">
-                                  {formatWeekLabel(week)}
-                                </p>
+                      return (
+                        <button
+                          key={week.id}
+                          type="button"
+                          onClick={() => handleWeeklyVersionChange(week)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            isSelected
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-bold">
+                                {formatWeekLabel(week)}
+                              </p>
 
-                                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                                  {week.weekRange || "—"}
-                                </p>
-                              </div>
-
-                              <span
-                                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                                  week.locked
-                                    ? "border-gray-200 bg-gray-50 text-gray-600"
-                                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                }`}
-                              >
-                                {week.locked ? "Locked" : "Editable"}
-                              </span>
+                              <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                                {week.weekRange || "—"}
+                              </p>
                             </div>
-                          </button>
-                        );
-                      })
-                    ) : weekSearch.trim() ? (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly version found.
-                      </div>
-                    ) : (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly versions available.
-                      </div>
-                    )}
-                  </div>
+
+                            <span
+                              className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                                week.locked
+                                  ? "border-gray-200 bg-gray-50 text-gray-600"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              }`}
+                            >
+                              {week.locked ? "Locked" : "Editable"}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : weekSearch.trim() ? (
+                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                      No weekly version found.
+                    </div>
+                  ) : (
+                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                      No weekly versions available.
+                    </div>
+                  )}
                 </div>
-              )}
+              </AnimatedDropdown>
             </div>
           </div>
 
-          <div ref={clusterDropdownRef} className="relative z-30">
+          <div ref={clusterDropdownRef} className="relative z-40">
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Cluster
             </label>
 
             <button
               type="button"
-              onClick={() => setShowClusterDropdown((prev) => !prev)}
+              onClick={() => {
+                setShowClusterDropdown((prev) => !prev);
+                setShowHiringPlanDropdown(false);
+              }}
               className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             >
               <span className="truncate">
-                {getClusterFilterLabel(selectedClusters)}
+                {getClusterFilterLabel(selectedClusters, isRestrictedManager)}
               </span>
 
               <ChevronDown
                 size={18}
-                className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showClusterDropdown ? "rotate-180" : ""
                 }`}
               />
             </button>
 
-            {showClusterDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleCluster("All")}
-                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                      isAllClustersSelected()
-                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                        : "text-[#344054] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isAllClustersSelected()}
-                      readOnly
-                      className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                    />
-                    <span>All Clusters</span>
-                  </button>
+            <AnimatedDropdown open={showClusterDropdown}>
+              <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => handleClusterClick("All")}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                    safeIsAllClustersSelected()
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={safeIsAllClustersSelected()}
+                    readOnly
+                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  />
 
-                  {CLUSTER_OPTIONS.map((cluster) => {
+                  <span>
+                    {isRestrictedManager
+                      ? "All Assigned Clusters"
+                      : "All Clusters"}
+                  </span>
+                </button>
+
+                {visibleClusterOptions.length > 0 ? (
+                  visibleClusterOptions.map((cluster) => {
                     const checked =
-                      !isAllClustersSelected() &&
+                      !safeIsAllClustersSelected() &&
                       selectedClusters.includes(cluster);
 
                     return (
                       <button
                         key={cluster}
                         type="button"
-                        onClick={() => handleToggleCluster(cluster)}
+                        onClick={() => handleClusterClick(cluster)}
                         className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                           checked
                             ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
@@ -339,16 +608,21 @@ export default function WeeklyVersionTable({
                           readOnly
                           className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
                         />
+
                         <span className="truncate">{cluster}</span>
                       </button>
                     );
-                  })}
-                </div>
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                    No assigned clusters found.
+                  </div>
+                )}
               </div>
-            )}
+            </AnimatedDropdown>
           </div>
 
-          <div ref={accountDropdownRef} className="relative z-20">
+          <div ref={accountDropdownRef} className="relative z-30">
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Account
             </label>
@@ -361,7 +635,10 @@ export default function WeeklyVersionTable({
                     ? accountSearch
                     : accountsLoading
                       ? "Loading accounts..."
-                      : getAccountFilterLabel(selectedAccounts)
+                      : getAccountFilterLabel(
+                          selectedAccounts,
+                          isRestrictedManager
+                        )
                 }
                 onChange={(e) => {
                   setAccountSearch(e.target.value);
@@ -371,6 +648,7 @@ export default function WeeklyVersionTable({
                   if (!accountsLoading) {
                     setShowAccountDropdown(true);
                     setAccountSearch("");
+                    setShowHiringPlanDropdown(false);
                   }
                 }}
                 disabled={accountsLoading}
@@ -385,78 +663,163 @@ export default function WeeklyVersionTable({
                   if (!accountsLoading) {
                     setShowAccountDropdown((prev) => !prev);
                     setAccountSearch("");
+                    setShowHiringPlanDropdown(false);
                   }
                 }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
                   showAccountDropdown ? "rotate-180" : ""
                 }`}
               />
 
-              {showAccountDropdown && !accountsLoading && (
-                <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleToggleAccount("All");
-                        setAccountSearch("");
-                      }}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                        isAllAccountsSelected()
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isAllAccountsSelected()}
-                        readOnly
-                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                      />
+              <AnimatedDropdown open={showAccountDropdown && !accountsLoading}>
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => handleAccountClick("All")}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                      safeIsAllAccountsSelected()
+                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                        : "text-[#344054] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={safeIsAllAccountsSelected()}
+                      readOnly
+                      className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                    />
 
-                      <span>All Accounts</span>
-                    </button>
+                    <span>
+                      {isRestrictedManager
+                        ? "All Assigned Accounts"
+                        : "All Accounts"}
+                    </span>
+                  </button>
 
-                    {filteredAccountOptions.length > 0 ? (
-                      filteredAccountOptions.map((account, index) => {
-                        const accountName = account.accountName;
-                        const checked =
-                          !isAllAccountsSelected() &&
-                          selectedAccounts.includes(accountName);
+                  {visibleAccountOptions.length > 0 ? (
+                    visibleAccountOptions.map((account, index) => {
+                      const accountName = getAccountName(account);
+                      const checked =
+                        !safeIsAllAccountsSelected() &&
+                        selectedAccounts.includes(accountName);
 
-                        return (
-                          <button
-                            key={`${account.id || accountName}-${index}`}
-                            type="button"
-                            onClick={() => {
-                              handleToggleAccount(accountName);
-                              setAccountSearch("");
-                            }}
-                            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                              checked
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              readOnly
-                              className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                            />
+                      return (
+                        <button
+                          key={`${account.id || accountName}-${index}`}
+                          type="button"
+                          onClick={() => handleAccountClick(accountName)}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                            checked
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            readOnly
+                            className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                          />
 
-                            <span className="truncate">{accountName}</span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                        No accounts found.
-                      </div>
-                    )}
-                  </div>
+                          <span className="truncate">{accountName}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                      {isRestrictedManager
+                        ? "No assigned accounts found."
+                        : "No accounts found."}
+                    </div>
+                  )}
                 </div>
-              )}
+              </AnimatedDropdown>
+            </div>
+          </div>
+
+          <div className="relative z-20">
+            <label className="mb-1 block text-sm font-bold text-[#101828]">
+              Hiring Plan (%)
+            </label>
+
+            <div className="relative">
+              <input
+                type="text"
+                value={
+                  showHiringPlanDropdown
+                    ? hiringPlanSearch
+                    : `${selectedHiringPlanPercent}%`
+                }
+                onChange={(e) => {
+                  setHiringPlanSearch(e.target.value);
+                  setShowHiringPlanDropdown(true);
+                }}
+                onFocus={() => {
+                  setShowHiringPlanDropdown(true);
+                  setHiringPlanSearch("");
+                  setShowWeekDropdown(false);
+                  setShowClusterDropdown(false);
+                  setShowAccountDropdown(false);
+                }}
+                placeholder="Search hiring plan..."
+                autoComplete="off"
+                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+
+              <ChevronDown
+                size={18}
+                onClick={() => {
+                  setShowHiringPlanDropdown((prev) => !prev);
+                  setHiringPlanSearch("");
+                  setShowWeekDropdown(false);
+                  setShowClusterDropdown(false);
+                  setShowAccountDropdown(false);
+                }}
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                  showHiringPlanDropdown ? "rotate-180" : ""
+                }`}
+              />
+
+              <AnimatedDropdown open={showHiringPlanDropdown}>
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  {filteredHiringPlanOptions.length > 0 ? (
+                    filteredHiringPlanOptions.map((percent) => {
+                      const checked =
+                        Number(selectedHiringPlanPercent) === Number(percent);
+
+                      return (
+                        <button
+                          key={percent}
+                          type="button"
+                          onClick={() => {
+                            setSelectedHiringPlanPercent?.(percent);
+                            setHiringPlanSearch("");
+                            setShowHiringPlanDropdown(false);
+                          }}
+                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                            checked
+                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            checked={checked}
+                            readOnly
+                            className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
+                          />
+
+                          <span>{percent}%</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                      No hiring plan found.
+                    </div>
+                  )}
+                </div>
+              </AnimatedDropdown>
             </div>
           </div>
 

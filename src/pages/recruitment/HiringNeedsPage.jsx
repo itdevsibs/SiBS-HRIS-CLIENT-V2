@@ -140,8 +140,8 @@ function normalizeItem(item) {
     typeof jd === "string"
       ? jd
       : item.jdCode && jobDescriptionTitle
-      ? `${item.jdCode} — ${jobDescriptionTitle}`
-      : jobDescriptionTitle;
+        ? `${item.jdCode} — ${jobDescriptionTitle}`
+        : jobDescriptionTitle;
 
   return {
     ...item,
@@ -363,20 +363,20 @@ export default function HiringNeedsPage() {
   }
 
   function showStatusModal(type, title, message) {
-  setStatusModal({
-    open: true,
-    type,
-    title,
-    message,
-  });
-}
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  }
 
-function closeStatusModal() {
-  setStatusModal((prev) => ({
-    ...prev,
-    open: false,
-  }));
-}
+  function closeStatusModal() {
+    setStatusModal((prev) => ({
+      ...prev,
+      open: false,
+    }));
+  }
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -657,9 +657,9 @@ function closeStatusModal() {
 
       <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                 <FileText size={14} />
                 Recruitment
               </div>
@@ -677,37 +677,57 @@ function closeStatusModal() {
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />
               New Personnel Requisition
             </button>
           </div>
 
-          <HiringSearchTable
-            search={search}
-            setSearch={setSearch}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            siteFilter={siteFilter}
-            setSiteFilter={setSiteFilter}
-            reasonFilter={reasonFilter}
-            setReasonFilter={setReasonFilter}
-            reasonForHiringOptions={reasonForHiringOptions}
-          />
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]">  
-            <PRSummaryTable stats={stats} />
-
-            <ReasonForHiringTable data={requisitionByReason} />
+          <div className="sibs-profile-tab-panel" style={{ animationDelay: "60ms" }}>
+            <HiringSearchTable
+              search={search}
+              setSearch={setSearch}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              siteFilter={siteFilter}
+              setSiteFilter={setSiteFilter}
+              reasonFilter={reasonFilter}
+              setReasonFilter={setReasonFilter}
+              reasonForHiringOptions={reasonForHiringOptions}
+            />
           </div>
 
-          <HiringNeedsDataTable
-            loading={loading}
-            filteredList={filteredList}
-            normalizedList={normalizedList}
-            onView={setSelectedItem}
-          />
+          <div
+            className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]"
+          >
+            <div
+              className="sibs-profile-tab-panel"
+              style={{ animationDelay: "120ms" }}
+            >
+              <PRSummaryTable stats={stats} />
+            </div>
+
+            <div
+              className="sibs-profile-tab-panel"
+              style={{ animationDelay: "180ms" }}
+            >
+              <ReasonForHiringTable data={requisitionByReason} />
+            </div>
+          </div>
+
+          <div
+            key={`${search}-${statusFilter}-${siteFilter}-${reasonFilter}-${loading}`}
+            className="sibs-profile-tab-panel"
+            style={{ animationDelay: "240ms" }}
+          >
+            <HiringNeedsDataTable
+              loading={loading}
+              filteredList={filteredList}
+              normalizedList={normalizedList}
+              onView={setSelectedItem}
+            />
+          </div>
         </div>
       </main>
 

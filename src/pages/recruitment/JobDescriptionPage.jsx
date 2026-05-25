@@ -41,19 +41,19 @@ function formatLoggedInOwner(user) {
       user?.gy_user_code ||
       user?.gy_emp_code ||
       user?.sibsId ||
-      "",
+      ""
   ).trim();
 
   const lastName = String(
-    user?.gy_emp_lname || user?.lastName || user?.last_name || "",
+    user?.gy_emp_lname || user?.lastName || user?.last_name || ""
   ).trim();
 
   const firstName = String(
-    user?.gy_emp_fname || user?.firstName || user?.first_name || "",
+    user?.gy_emp_fname || user?.firstName || user?.first_name || ""
   ).trim();
 
   const middleName = String(
-    user?.gy_emp_mname || user?.middleName || user?.middle_name || "",
+    user?.gy_emp_mname || user?.middleName || user?.middle_name || ""
   ).trim();
 
   const fallbackName = String(
@@ -61,7 +61,7 @@ function formatLoggedInOwner(user) {
       user?.fullName ||
       user?.employee_name ||
       user?.name ||
-      "",
+      ""
   ).trim();
 
   const formattedName =
@@ -77,7 +77,7 @@ function formatLoggedInOwner(user) {
   };
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
+function StatCard({ title, value, icon: Icon, description, delay = 0 }) {
   const cardTheme = {
     "Total JD": {
       iconBg: "bg-[#F3F7FB]",
@@ -113,9 +113,12 @@ function StatCard({ title, value, icon: Icon, description }) {
   };
 
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div
+      className="sibs-page-card-in flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${theme.iconBg} ${theme.iconText}`}
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-105 ${theme.iconBg} ${theme.iconText}`}
       >
         <Icon size={20} />
       </div>
@@ -239,7 +242,7 @@ export default function JobDescriptionPage() {
 
       if (listResult.success) {
         setJobDescriptionList(
-          (listResult.data || []).map(normalizeJobDescriptionItem),
+          (listResult.data || []).map(normalizeJobDescriptionItem)
         );
       } else {
         setJobDescriptionList([]);
@@ -375,7 +378,7 @@ export default function JobDescriptionPage() {
     const updatedItem = normalizeJobDescriptionItem(result.data);
 
     setJobDescriptionList((prev) =>
-      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
+      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
     );
 
     setSelectedItem(updatedItem);
@@ -393,15 +396,15 @@ export default function JobDescriptionPage() {
     const total = jobDescriptionList.length;
 
     const existing = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "Existing",
+      (item) => normalizeJdStatus(item.jdStatus) === "Existing"
     ).length;
 
     const revision = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "For Revision",
+      (item) => normalizeJdStatus(item.jdStatus) === "For Revision"
     ).length;
 
     const newJd = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "New Job Description",
+      (item) => normalizeJdStatus(item.jdStatus) === "New Job Description"
     ).length;
 
     return {
@@ -417,7 +420,7 @@ export default function JobDescriptionPage() {
       <Header />
 
       <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-        <div className="min-w-0 mb-6 flex items-end justify-between">
+        <div className="sibs-page-header-in min-w-0 mb-6 flex items-end justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <ClipboardList size={14} />
@@ -438,7 +441,7 @@ export default function JobDescriptionPage() {
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />
               Add Job Description
@@ -452,6 +455,7 @@ export default function JobDescriptionPage() {
             value={stats.total}
             icon={ClipboardList}
             description="All job descriptions"
+            delay={0}
           />
 
           <StatCard
@@ -459,6 +463,7 @@ export default function JobDescriptionPage() {
             value={stats.existing}
             icon={CheckCircle2}
             description="Ready or already available"
+            delay={60}
           />
 
           <StatCard
@@ -466,6 +471,7 @@ export default function JobDescriptionPage() {
             value={stats.revision}
             icon={AlertTriangle}
             description="Needs update"
+            delay={120}
           />
 
           <StatCard
@@ -473,13 +479,19 @@ export default function JobDescriptionPage() {
             value={stats.newJd}
             icon={FileText}
             description="New or unlinked JD"
+            delay={180}
           />
         </div>
 
-        <JobDescriptionTable
-          jobDescriptionList={jobDescriptionList}
-          onView={setSelectedItem}
-        />
+        <div
+          key={jobDescriptionList.length}
+          className="sibs-profile-tab-panel"
+        >
+          <JobDescriptionTable
+            jobDescriptionList={jobDescriptionList}
+            onView={setSelectedItem}
+          />
+        </div>
       </main>
 
       <AddDescriptionModal

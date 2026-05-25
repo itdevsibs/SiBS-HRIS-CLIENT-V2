@@ -52,8 +52,27 @@ export default function EmployeeDashboardPage() {
         <Header />
 
         <main className="employee-dashboard-main">
-          <div className="mb-4 h-10 w-64 animate-pulse rounded bg-gray-200" />
-          <div className="h-5 w-80 animate-pulse rounded bg-gray-200" />
+          <div className="employee-dashboard-loading-card sibs-page-header-in">
+            <div className="mb-4 h-10 w-64 animate-pulse rounded bg-gray-200" />
+            <div className="h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
+          </div>
+
+          <div className="employee-summary-grid">
+            {[1, 2, 3, 4, 5].map((item, index) => (
+              <div
+                key={item}
+                className="employee-summary-card employee-animated-card"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-gray-200" />
+
+                <div className="min-w-0">
+                  <div className="mb-2 h-3 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-5 w-12 animate-pulse rounded bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </div>
         </main>
 
         <AdminLoginModal />
@@ -118,32 +137,34 @@ export default function EmployeeDashboardPage() {
 
       <main className="employee-dashboard-main">
         {/* TITLE */}
-        <section className="employee-dashboard-title-section">
+        <section className="employee-dashboard-title-section sibs-page-header-in">
           <div className="employee-dashboard-title-row">
-            <LayoutDashboard size={30} className="employee-dashboard-title-icon" />
+            <LayoutDashboard
+              size={30}
+              className="employee-dashboard-title-icon"
+            />
 
-            <h1 className="employee-dashboard-title">
-              My Dashboard
-            </h1>
+            <h1 className="employee-dashboard-title">My Dashboard</h1>
           </div>
 
           <p className="employee-dashboard-welcome">
-            Welcome back,{" "}
-            <span>
-              {displayName}
-            </span>
+            Welcome back, <span>{displayName}</span>
           </p>
         </section>
 
         {/* SUMMARY CARDS */}
         <section className="employee-summary-grid">
           {summaryCards.map((item, index) => (
-            <div key={index} className="employee-summary-card">
+            <div
+              key={item.label}
+              className="employee-summary-card employee-animated-card"
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
               <div className="employee-card-icon">
                 <item.icon size={18} />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <p className="employee-card-label">{item.label}</p>
                 <h2 className="employee-card-value">{item.value}</h2>
               </div>
@@ -153,37 +174,46 @@ export default function EmployeeDashboardPage() {
 
         {/* ACTIVITY + NOTIFICATIONS */}
         <section className="employee-info-grid">
-          <div className="employee-info-card">
+          <div
+            className="employee-info-card employee-panel-animated"
+            style={{ animationDelay: "90ms" }}
+          >
             <h3>Recent Activity</h3>
             <p>No activity yet</p>
 
-            <button type="button">
-              View all activity
-            </button>
+            <button type="button">View all activity</button>
           </div>
 
-          <div className="employee-info-card">
+          <div
+            className="employee-info-card employee-panel-animated"
+            style={{ animationDelay: "150ms" }}
+          >
             <h3>Notifications</h3>
             <p>No notifications</p>
 
-            <button type="button">
-              View all notifications
-            </button>
+            <button type="button">View all notifications</button>
           </div>
         </section>
 
         {/* QUICK ACTIONS */}
-        <section className="employee-quick-section">
+        <section
+          className="employee-quick-section employee-panel-animated"
+          style={{ animationDelay: "210ms" }}
+        >
           <h3 className="employee-quick-title">Quick Actions</h3>
 
           <div className="employee-quick-grid">
             {quickActions.map((item, index) => (
-              <div key={index} className="employee-quick-card">
+              <div
+                key={item.title}
+                className="employee-quick-card employee-animated-card"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
                 <div className="employee-card-icon">
                   <item.icon size={18} />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <p className="employee-quick-name">{item.title}</p>
                   <p className="employee-quick-desc">{item.desc}</p>
                 </div>
@@ -212,6 +242,14 @@ export default function EmployeeDashboardPage() {
           background: var(--sibs-tertiary-10);
         }
 
+        .employee-dashboard-loading-card {
+          margin-bottom: 24px;
+          border-radius: 12px;
+          background: #ffffff;
+          padding: 20px;
+          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
         .employee-dashboard-title-section {
           margin-bottom: 24px;
         }
@@ -224,6 +262,11 @@ export default function EmployeeDashboardPage() {
 
         .employee-dashboard-title-icon {
           color: var(--sibs-primary-1);
+          transition: transform 0.25s ease;
+        }
+
+        .employee-dashboard-title-row:hover .employee-dashboard-title-icon {
+          transform: scale(1.08);
         }
 
         .employee-dashboard-title {
@@ -263,6 +306,15 @@ export default function EmployeeDashboardPage() {
           align-items: center;
           gap: 16px;
           box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            background 0.2s ease;
+        }
+
+        .employee-summary-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
 
         .employee-card-icon {
@@ -275,6 +327,12 @@ export default function EmployeeDashboardPage() {
           justify-content: center;
           background: var(--sibs-primary-1);
           color: #ffffff;
+          transition: transform 0.2s ease;
+        }
+
+        .employee-summary-card:hover .employee-card-icon,
+        .employee-quick-card:hover .employee-card-icon {
+          transform: scale(1.06);
         }
 
         .employee-card-label {
@@ -305,6 +363,14 @@ export default function EmployeeDashboardPage() {
           border-radius: 12px;
           padding: 16px;
           box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .employee-info-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
 
         .employee-info-card h3 {
@@ -331,14 +397,27 @@ export default function EmployeeDashboardPage() {
           font-size: 14px;
           font-weight: 500;
           cursor: pointer;
+          transition:
+            transform 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
         .employee-info-card button:hover {
-          background: var(--sibs-tertiary-10);
+          border-color: var(--sibs-primary-1);
+          background: rgba(4, 44, 81, 0.05);
+          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+          transform: translateY(-1px);
+        }
+
+        .employee-info-card button:active {
+          transform: scale(0.98);
         }
 
         .employee-quick-section {
           margin-top: 4px;
+          border-radius: 12px;
         }
 
         .employee-quick-title {
@@ -364,12 +443,23 @@ export default function EmployeeDashboardPage() {
           gap: 16px;
           cursor: pointer;
           box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-          transition: box-shadow 0.2s ease, transform 0.2s ease;
+          transition:
+            box-shadow 0.2s ease,
+            transform 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease;
+          border: 1px solid transparent;
         }
 
         .employee-quick-card:hover {
+          border-color: rgba(4, 44, 81, 0.25);
+          background: #f8fafc;
           box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-          transform: translateY(-1px);
+          transform: translateY(-2px);
+        }
+
+        .employee-quick-card:active {
+          transform: scale(0.99);
         }
 
         .employee-quick-name {
@@ -386,6 +476,16 @@ export default function EmployeeDashboardPage() {
           font-size: 12px;
           line-height: 1.2;
           font-weight: 400;
+        }
+
+        .employee-animated-card {
+          animation: sibsProfileTabPanelIn 260ms ease-out both;
+          will-change: opacity, transform;
+        }
+
+        .employee-panel-animated {
+          animation: sibsProfileTabPanelIn 240ms ease-out both;
+          will-change: opacity, transform;
         }
 
         @media (max-width: 1280px) {

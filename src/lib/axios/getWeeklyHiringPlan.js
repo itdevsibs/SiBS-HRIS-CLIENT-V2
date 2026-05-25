@@ -46,11 +46,7 @@ export async function getWeeklyHiringPlanFilterOptions() {
   }
 }
 
-export async function getWeeklyHiringPlanAccounts(
-  cluster,
-  startDate,
-  endDate
-) {
+export async function getWeeklyHiringPlanAccounts(cluster, startDate, endDate) {
   try {
     const res = await api.get("/api/weekly-hiring-plan/accounts", {
       params: {
@@ -73,8 +69,43 @@ export async function getWeeklyHiringPlanAccounts(
   }
 }
 
+/* =========================================
+   SAVE ACTION ITEM
+   Saves action item fields into weekly_hiring_plan_headcount
+========================================= */
+
+export async function saveWeeklyHiringPlanActionItem(payload) {
+  try {
+    const res = await api.post(
+      "/api/weekly-hiring-plan/headcount/action-item",
+      payload,
+      {
+        withCredentials: true,
+      }
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveWeeklyHiringPlanActionItem API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message
+    );
+
+    return {
+      success: false,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to save action item.",
+    };
+  }
+}
+
 export default {
   getWeeklyHiringPlanWeeks,
   getWeeklyHiringPlanFilterOptions,
   getWeeklyHiringPlanAccounts,
+  saveWeeklyHiringPlanActionItem,
 };

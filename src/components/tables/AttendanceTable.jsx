@@ -171,7 +171,7 @@ const AttendanceTable = () => {
 
     return (
       <div
-        className={`inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold ${
+        className={`inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
           approved ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
         }`}
       >
@@ -235,14 +235,16 @@ const AttendanceTable = () => {
               </tr>
             </thead>
 
-            <tbody>
+            <tbody key={`${page}-${search}`} className="sibs-profile-tab-panel">
               {loading ? (
                 <tr>
                   <td
                     className="p-6 text-center text-sm text-sibs-tertiary-5"
                     colSpan={adminView ? 12 : 10}
                   >
-                    Loading...
+                    <div className="sibs-profile-tab-panel inline-flex items-center justify-center rounded-xl bg-sibs-tertiary-10 px-5 py-3 font-semibold">
+                      Loading...
+                    </div>
                   </td>
                 </tr>
               ) : attendance.length === 0 ? (
@@ -251,7 +253,9 @@ const AttendanceTable = () => {
                     className="p-6 text-center text-sm text-sibs-tertiary-5"
                     colSpan={adminView ? 12 : 10}
                   >
-                    No records found
+                    <div className="sibs-profile-tab-panel inline-flex items-center justify-center rounded-xl bg-sibs-tertiary-10 px-5 py-3 font-semibold">
+                      No records found
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -264,7 +268,10 @@ const AttendanceTable = () => {
                   return (
                     <tr
                       key={`${item.gy_tracker_date || "row"}-${index}`}
-                      className="transition hover:bg-slate-50"
+                      className="transition-all duration-200 hover:bg-slate-50"
+                      style={{
+                        animationDelay: `${Math.min(index * 25, 250)}ms`,
+                      }}
                     >
                       {adminView && (
                         <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
@@ -291,48 +298,44 @@ const AttendanceTable = () => {
                       </td>
 
                       <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <div
-                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                        <TimeBadge
+                          value={loginTime}
+                          className={getTimeBadgeClass(
                             loginTime,
                             item.login_status
-                          )}`}
-                        >
-                          {loginTime}
-                        </div>
+                          )}
+                        />
                       </td>
 
                       <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <div
-                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${
+                        <TimeBadge
+                          value={breakoutTime}
+                          className={
                             breakoutTime === "--"
                               ? "text-sibs-primary-1"
                               : "bg-green-100 text-green-700"
-                          }`}
-                        >
-                          {breakoutTime}
-                        </div>
+                          }
+                        />
                       </td>
 
                       <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <div
-                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                        <TimeBadge
+                          value={breakinTime}
+                          className={getTimeBadgeClass(
                             breakinTime,
                             item.breakin_status
-                          )}`}
-                        >
-                          {breakinTime}
-                        </div>
+                          )}
+                        />
                       </td>
 
                       <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <div
-                          className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${getTimeBadgeClass(
+                        <TimeBadge
+                          value={logoutTime}
+                          className={getTimeBadgeClass(
                             logoutTime,
                             item.logout_status
-                          )}`}
-                        >
-                          {logoutTime}
-                        </div>
+                          )}
+                        />
                       </td>
 
                       <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
@@ -366,15 +369,15 @@ const AttendanceTable = () => {
       <div className="block lg:hidden">
         <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto p-3">
           {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
+            <div className="sibs-profile-tab-panel rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               Loading...
             </div>
           ) : attendance.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
+            <div className="sibs-profile-tab-panel rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
               No records found
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div key={`${page}-${search}`} className="flex flex-col gap-3">
               {attendance.map((item, index) => {
                 const employeeName = [
                   item.gy_emp_fname,
@@ -394,7 +397,10 @@ const AttendanceTable = () => {
                 return (
                   <div
                     key={`${item.gy_tracker_date || "mobile"}-${index}`}
-                    className="rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm"
+                    className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
+                    style={{
+                      animationDelay: `${Math.min(index * 40, 300)}ms`,
+                    }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -490,14 +496,24 @@ const AttendanceTable = () => {
   );
 };
 
+function TimeBadge({ value, className = "" }) {
+  return (
+    <div
+      className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+    >
+      {value}
+    </div>
+  );
+}
+
 function MobileMetric({ label, value, className = "" }) {
   return (
-    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
+    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
       <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
 
       {className ? (
         <div
-          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}
+          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
         >
           {value}
         </div>

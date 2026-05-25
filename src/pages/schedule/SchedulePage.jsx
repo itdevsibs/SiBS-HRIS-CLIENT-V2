@@ -59,7 +59,7 @@ export default function SchedulePage() {
       JSON.stringify({
         search,
         page,
-      }),
+      })
     );
   }, [search, page]);
 
@@ -92,7 +92,7 @@ export default function SchedulePage() {
           totalPages: 1,
           totalRecords: 0,
           limit: 15,
-        },
+        }
       );
     } catch (err) {
       console.error("Schedule fetch error:", err);
@@ -111,6 +111,7 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!restoredRef.current) return;
     fetchSchedule(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   useEffect(() => {
@@ -120,6 +121,7 @@ export default function SchedulePage() {
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   useEffect(() => {
@@ -248,7 +250,7 @@ export default function SchedulePage() {
       ];
 
       return values.some((value) =>
-        String(value).toLowerCase().includes(keyword),
+        String(value).toLowerCase().includes(keyword)
       );
     });
   }, [schedule, search]);
@@ -259,7 +261,7 @@ export default function SchedulePage() {
 
       <main ref={mainScrollRef} className="schedule-main">
         <div className="schedule-wrapper">
-          <div className="schedule-header">
+          <div className="schedule-header sibs-page-header-in">
             <div className="schedule-title-block">
               <div className="schedule-title-row">
                 <CalendarDays size={40} className="schedule-title-icon" />
@@ -270,7 +272,7 @@ export default function SchedulePage() {
               <p>View your work schedule</p>
             </div>
 
-            <div className="schedule-search">
+            <div className="schedule-search sibs-profile-tab-panel">
               <Search size={18} className="schedule-search-icon" />
 
               <input
@@ -282,7 +284,7 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          <section className="schedule-card">
+          <section className="schedule-card sibs-profile-tab-panel">
             <div className="schedule-table-wrap" ref={tableScrollRef}>
               <table className="schedule-table">
                 <thead>
@@ -297,22 +299,30 @@ export default function SchedulePage() {
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody key={`${page}-${search}`}>
                   {loading ? (
                     <tr>
                       <td colSpan="7" className="schedule-empty">
-                        Loading...
+                        <div className="schedule-empty-box">Loading...</div>
                       </td>
                     </tr>
                   ) : filteredSchedule.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="schedule-empty">
-                        No schedule found
+                        <div className="schedule-empty-box">
+                          No schedule found
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     filteredSchedule.map((item, index) => (
-                      <tr key={item.gy_sched_id || index}>
+                      <tr
+                        key={item.gy_sched_id || index}
+                        className="schedule-row-animated"
+                        style={{
+                          animationDelay: `${Math.min(index * 30, 300)}ms`,
+                        }}
+                      >
                         <td>{formatDate(item.gy_sched_day)}</td>
 
                         <td
@@ -415,6 +425,11 @@ export default function SchedulePage() {
         .schedule-title-icon {
           flex-shrink: 0;
           color: var(--sibs-primary-1);
+          transition: transform 0.25s ease;
+        }
+
+        .schedule-title-row:hover .schedule-title-icon {
+          transform: scale(1.08);
         }
 
         .schedule-title-row h1 {
@@ -446,6 +461,11 @@ export default function SchedulePage() {
           transform: translateY(-50%);
           color: var(--sibs-primary-1);
           pointer-events: none;
+          transition: transform 0.2s ease;
+        }
+
+        .schedule-search:focus-within .schedule-search-icon {
+          transform: translateY(-50%) scale(1.08);
         }
 
         .schedule-search input {
@@ -460,15 +480,25 @@ export default function SchedulePage() {
           font-weight: 500;
           outline: none;
           font-family: 'Plus Jakarta Sans', sans-serif;
+          transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
         }
 
         .schedule-search input::placeholder {
           color: #9ca3af;
         }
 
+        .schedule-search input:hover {
+          border-color: rgba(4, 44, 81, 0.35);
+          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
+        }
+
         .schedule-search input:focus {
           border-color: var(--sibs-primary-1);
           box-shadow: 0 0 0 4px rgba(4, 44, 81, 0.08);
+          transform: translateY(-1px);
         }
 
         .schedule-card {
@@ -476,6 +506,13 @@ export default function SchedulePage() {
           border-radius: 12px;
           background: #ffffff;
           box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+          transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+        }
+
+        .schedule-card:hover {
+          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
         }
 
         .schedule-table-wrap {
@@ -515,19 +552,38 @@ export default function SchedulePage() {
           white-space: nowrap;
         }
 
+        .schedule-table tbody tr {
+          transition:
+            background 0.2s ease,
+            transform 0.2s ease;
+        }
+
         .schedule-table tbody tr:hover {
           background: #f9fafb;
         }
 
         .schedule-table .day-off {
           color: #ef4444;
-          font-weight: 500;
+          font-weight: 600;
         }
 
         .schedule-empty {
           padding: 32px !important;
           text-align: center;
           color: #6b7280 !important;
+        }
+
+        .schedule-empty-box {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 12px;
+          background: var(--sibs-tertiary-10);
+          padding: 12px 20px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #6b7280;
+          animation: sibsProfileTabPanelIn 240ms ease-out both;
         }
 
         .schedule-footer {
@@ -566,6 +622,11 @@ export default function SchedulePage() {
           font-weight: 500;
           cursor: pointer;
           font-family: 'Plus Jakarta Sans', sans-serif;
+          transition:
+            transform 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease,
+            box-shadow 0.2s ease;
         }
 
         .schedule-nav-btn:disabled {
@@ -577,17 +638,31 @@ export default function SchedulePage() {
           background: var(--sibs-primary-1);
           border-color: var(--sibs-primary-1);
           color: #ffffff;
+          box-shadow: 0 6px 14px rgba(4, 44, 81, 0.18);
         }
 
         .schedule-page-btn:hover:not(.active),
         .schedule-nav-btn:hover:not(:disabled) {
           background: #f9fafb;
+          border-color: rgba(4, 44, 81, 0.25);
+          transform: translateY(-1px);
+          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+        }
+
+        .schedule-page-btn:active,
+        .schedule-nav-btn:active:not(:disabled) {
+          transform: scale(0.97);
         }
 
         .schedule-pagination-dots {
           color: #9ca3af;
           padding: 0 4px;
           font-size: 14px;
+        }
+
+        .schedule-row-animated {
+          animation: sibsProfileTabPanelIn 240ms ease-out both;
+          will-change: opacity, transform;
         }
 
         @media (max-width: 1024px) {

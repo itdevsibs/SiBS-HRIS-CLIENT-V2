@@ -109,16 +109,17 @@ export default function AdminDashboardPage() {
 
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
           <div className="flex min-w-0 flex-col gap-6">
-            <div className="rounded-xl bg-white p-5 shadow-sm">
+            <div className="sibs-page-header-in rounded-xl bg-white p-5 shadow-sm">
               <div className="mb-4 h-8 w-56 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
               <div className="h-4 w-72 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-              {[1, 2, 3, 4, 5].map((item) => (
+              {[1, 2, 3, 4, 5].map((item, index) => (
                 <div
                   key={item}
-                  className="flex min-h-20 min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm"
+                  className="sibs-page-card-in flex min-h-20 min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
                   <div className="h-10 w-10 shrink-0 animate-sibs-pulse rounded-[10px] bg-gray-300" />
 
@@ -146,11 +147,11 @@ export default function AdminDashboardPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="flex min-w-0 flex-col gap-6">
-          <section className="min-w-0">
+          <section className="sibs-page-header-in min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <LayoutDashboard
                 size={28}
-                className="shrink-0 text-sibs-primary-1"
+                className="shrink-0 text-sibs-primary-1 transition-transform duration-300 hover:scale-110"
               />
 
               <h1 className="min-w-0 break-words text-[26px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
@@ -167,13 +168,14 @@ export default function AdminDashboardPage() {
           </section>
 
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {summaryCards.map((item) => (
+            {summaryCards.map((item, index) => (
               <DashboardStatCard
                 key={item.label}
                 label={item.label}
                 value={item.value}
                 description={item.description}
                 icon={item.icon}
+                delay={index * 60}
               />
             ))}
           </section>
@@ -185,6 +187,7 @@ export default function AdminDashboardPage() {
               icon={Activity}
               emptyText="No activity yet"
               buttonText="View all activity"
+              delay={90}
             />
 
             <DashboardPanel
@@ -193,10 +196,14 @@ export default function AdminDashboardPage() {
               icon={Bell}
               emptyText="No notifications"
               buttonText="View all notifications"
+              delay={150}
             />
           </section>
 
-          <section className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+          <section
+            className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            style={{ animationDelay: "210ms" }}
+          >
             <div className="mb-5">
               <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
                 Quick Actions
@@ -208,13 +215,14 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {quickActions.map((item) => (
+              {quickActions.map((item, index) => (
                 <button
                   key={item.title}
                   type="button"
-                  className="flex min-h-[72px] min-w-0 items-center gap-4 rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-slate-50 hover:shadow-md"
+                  className="group sibs-page-card-in flex min-h-[72px] min-w-0 items-center gap-4 rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
                     <item.icon size={18} />
                   </div>
 
@@ -230,7 +238,7 @@ export default function AdminDashboardPage() {
 
                   <ArrowRight
                     size={16}
-                    className="shrink-0 text-sibs-tertiary-5 transition group-hover:translate-x-1 group-hover:text-sibs-primary-1"
+                    className="shrink-0 text-sibs-tertiary-5 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-sibs-primary-1"
                   />
                 </button>
               ))}
@@ -242,10 +250,19 @@ export default function AdminDashboardPage() {
   );
 }
 
-function DashboardStatCard({ label, value, description, icon: Icon }) {
+function DashboardStatCard({
+  label,
+  value,
+  description,
+  icon: Icon,
+  delay = 0,
+}) {
   return (
-    <div className="flex min-h-20 min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
+    <div
+      className="sibs-page-card-in group flex min-h-20 min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
         <Icon size={18} />
       </div>
 
@@ -272,9 +289,13 @@ function DashboardPanel({
   icon: Icon,
   emptyText,
   buttonText,
+  delay = 0,
 }) {
   return (
-    <section className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+    <section
+      className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
@@ -286,12 +307,12 @@ function DashboardPanel({
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 hover:scale-105">
           <Icon size={18} />
         </div>
       </div>
 
-      <div className="rounded-xl border border-dashed border-[#e6ecf2] bg-slate-50 p-5 text-center">
+      <div className="rounded-xl border border-dashed border-[#e6ecf2] bg-slate-50 p-5 text-center transition-all duration-200 hover:bg-white hover:shadow-sm">
         <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
           {emptyText}
         </p>
@@ -299,7 +320,7 @@ function DashboardPanel({
 
       <button
         type="button"
-        className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#e6ecf2] bg-white text-sm font-semibold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+        className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl border border-[#e6ecf2] bg-white text-sm font-semibold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
       >
         {buttonText}
       </button>
