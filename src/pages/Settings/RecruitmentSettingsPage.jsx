@@ -12,7 +12,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-
 import FormBuilderCard from "../../components/recruitment/settings/FormBuilderCard";
 import FormLaunchRulesCard from "../../components/recruitment/settings/FormLaunchRulesCard";
 import PlaceholderSettingsPanel from "../../components/recruitment/settings/PlaceholderSettingsPanel";
@@ -20,6 +19,7 @@ import RelatedRecruitmentSettingsCard from "../../components/recruitment/setting
 import SettingsInfoCards from "../../components/recruitment/settings/SettingsInfoCards";
 
 import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
+import Header from "../../components/layout/Header";
 
 const tabIconMap = {
   "Final Interview Form": ClipboardCheck,
@@ -38,10 +38,12 @@ export default function RecruitmentSettingsPage() {
     handleResetFields,
     handleSaveSettings,
   } = useRecruitmentSettings();
+  
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+      <Header />
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-scroll bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
