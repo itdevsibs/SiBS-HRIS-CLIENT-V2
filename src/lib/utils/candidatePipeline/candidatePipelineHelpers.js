@@ -33,18 +33,18 @@ export function getAccount(roleAccount = "") {
 export function hasInterviewSchedule(candidate) {
   return Boolean(
     candidate?.interviewDate &&
-      candidate?.interviewType &&
-      candidate?.interviewType !== "-" &&
-      candidate?.interviewStatus !== "For Scheduling" &&
-      candidate?.interviewStatus !== "For Assessment",
+    candidate?.interviewType &&
+    candidate?.interviewType !== "-" &&
+    candidate?.interviewStatus !== "For Scheduling" &&
+    candidate?.interviewStatus !== "For Assessment",
   );
 }
 
 export function isPrfReviewed(candidate) {
   return Boolean(
     candidate?.prfReviewed ||
-      candidate?.prfReviewedAt ||
-      candidate?.currentStage !== "Initial Screening",
+    candidate?.prfReviewedAt ||
+    candidate?.currentStage !== "Initial Screening",
   );
 }
 
@@ -150,16 +150,25 @@ export function getInterviewStatusClass(status) {
   switch (status) {
     case "Scheduled":
       return "border-blue-100 bg-blue-50 text-blue-700";
+
+    case "Interview in Progress":
+      return "border-amber-100 bg-amber-50 text-amber-700";
+
     case "Rescheduled":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
+
     case "Completed":
       return "border-violet-100 bg-violet-50 text-violet-700";
+
     case "Cancelled":
       return "border-red-100 bg-red-50 text-sibs-primary-1";
+
     case "For Assessment":
       return "border-cyan-100 bg-cyan-50 text-cyan-700";
+
     case "For Scheduling":
       return "border-gray-100 bg-gray-50 text-gray-700";
+
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
   }
@@ -788,10 +797,12 @@ export function upsertOfferRecordFromPipeline(candidate) {
     status: getOfferRecordStatusFromCandidate(candidate),
     offerDate: existing?.offerDate || getCurrentDate(),
     contractSent: Boolean(candidate.offerEmailSent),
-    contractSentAt: candidate.offerEmailSentAt || existing?.contractSentAt || null,
+    contractSentAt:
+      candidate.offerEmailSentAt || existing?.contractSentAt || null,
     candidateResponse,
     responseDate: candidate.offerDecisionAt || existing?.responseDate || null,
-    declineCategory: candidate.dropOffCategory || existing?.declineCategory || "",
+    declineCategory:
+      candidate.dropOffCategory || existing?.declineCategory || "",
     declineReason: candidate.dropOffReason || existing?.declineReason || "",
     remarks:
       candidate.reasonForMovement ||
