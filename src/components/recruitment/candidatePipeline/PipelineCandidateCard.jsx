@@ -12,8 +12,17 @@ import {
   getRoleTitle,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import CandidateAvatar from "./CandidateAvatar";
-import { ArrowRight, CalendarDays, ClipboardCheck, Eye, UserCheck, X } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  CirclePlay,
+  ClipboardCheck,
+  Eye,
+  X,
+} from "lucide-react";
 import { formatDateTime } from "../../../lib/axios/dateFormatter";
+import { useNavigate } from "react-router-dom";
+import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 
 const PipelineCandidateCard = ({
   candidate,
@@ -22,21 +31,31 @@ const PipelineCandidateCard = ({
   onOpenAssessmentModal,
   onOpenScheduleModal,
   onCancelInterview,
-  onCompleteInterview,
 }) => {
+  const { handleStartInterview } = useCandidatePipeline();
+
   const nextStage = getNextStage(candidate.currentStage);
+
+  const navigate = useNavigate();
+
   const latestTimeline =
     Array.isArray(candidate.timeline) && candidate.timeline.length
       ? candidate.timeline[candidate.timeline.length - 1]
       : null;
+
   const assessmentLabel =
     candidate.assessmentResult || candidate.assessmentStatus || "Not Take";
+
   const interviewStatus = getDisplayInterviewStatus(candidate);
+
   const showScheduleButton =
     candidate.currentStage === "Online Assessment" &&
     canScheduleInterview(candidate);
+
   const showAssessmentButton = candidate.currentStage === "Online Assessment";
+
   const showUpdateSchedule = candidate.currentStage === "Interview Scheduled";
+
   const showMoveButton =
     candidate.currentStage !== "Drop-off" &&
     candidate.currentStage !== "Accepted" &&
@@ -44,6 +63,13 @@ const PipelineCandidateCard = ({
     candidate.currentStage !== "Interview Scheduled" &&
     candidate.currentStage !== "Offered" &&
     Boolean(nextStage);
+
+  const isInterviewInProgress =
+    candidate.currentStage === "Interview Scheduled" &&
+    interviewStatus === "Interview in Progress";
+
+  const disabledActionClass =
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none";
 
   return (
     <article
@@ -56,6 +82,7 @@ const PipelineCandidateCard = ({
             <h3 className="line-clamp-2 text-[13px] font-extrabold leading-5 text-[#102A43]">
               {candidate.name}
             </h3>
+
             <p className="mt-1 truncate text-[11px] font-semibold text-[#667085]">
               {candidate.email || "No email saved"}
             </p>
@@ -68,8 +95,11 @@ const PipelineCandidateCard = ({
           <span className="inline-flex rounded-[4px] bg-blue-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-blue-700">
             {candidate.source || "Pipeline"}
           </span>
+
           <span
-            className={`inline-flex rounded-[4px] border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${getPrfStatusClass(candidate.prfStatus || "Review")}`}
+            className={`inline-flex rounded-[4px] border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide ${getPrfStatusClass(
+              candidate.prfStatus || "Review",
+            )}`}
           >
             {candidate.prfStatus || "Review"}
           </span>
@@ -80,6 +110,7 @@ const PipelineCandidateCard = ({
             <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
               Position
             </p>
+
             <p className="mt-1 line-clamp-1 text-[11px] font-bold text-[#344054]">
               {getRoleTitle(candidate.roleAccount) || "Not assigned yet"}
             </p>
@@ -89,6 +120,7 @@ const PipelineCandidateCard = ({
             <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
               Account
             </p>
+
             <p className="mt-1 line-clamp-1 text-[11px] font-bold text-[#344054]">
               {getAccount(candidate.roleAccount) || "Not assigned yet"}
             </p>
@@ -98,16 +130,15 @@ const PipelineCandidateCard = ({
         <div className="mt-2 space-y-1.5">
           <div className="flex items-center justify-between gap-2 text-[11px]">
             <span className="font-bold text-[#667085]">Assessment</span>
+
             <span
-              className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 
-                    text-[10px] font-bold
-                    ${
-                      candidate.assessmentResult
-                        ? getAssessmentResultClass(candidate.assessmentResult)
-                        : getAssessmentStatusClass(
-                            candidate.assessmentStatus || "Not Take",
-                          )
-                    }`}
+              className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                candidate.assessmentResult
+                  ? getAssessmentResultClass(candidate.assessmentResult)
+                  : getAssessmentStatusClass(
+                      candidate.assessmentStatus || "Not Take",
+                    )
+              }`}
             >
               {assessmentLabel}
             </span>
@@ -115,9 +146,11 @@ const PipelineCandidateCard = ({
 
           <div className="flex items-center justify-between gap-2 text-[11px]">
             <span className="font-bold text-[#667085]">Interview</span>
+
             <span
-              className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 
-                text-[10px] font-bold ${getInterviewStatusClass(interviewStatus)}`}
+              className={`max-w-[140px] truncate rounded-full border px-2 py-0.5 text-[10px] font-bold ${getInterviewStatusClass(
+                interviewStatus,
+              )}`}
             >
               {interviewStatus || "—"}
             </span>
@@ -130,6 +163,7 @@ const PipelineCandidateCard = ({
               <CalendarDays size={13} />
               {formatDateTime(candidate.interviewDate)}
             </p>
+
             <p className="mt-1 text-[10px] font-bold text-[#667085]">
               {getDisplayInterviewType(candidate)}
             </p>
@@ -163,8 +197,12 @@ const PipelineCandidateCard = ({
             {showAssessmentButton && (
               <button
                 type="button"
-                onClick={() => onOpenAssessmentModal(candidate)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100"
+                disabled={isInterviewInProgress}
+                onClick={() => {
+                  if (isInterviewInProgress) return;
+                  onOpenAssessmentModal(candidate);
+                }}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-cyan-100 bg-cyan-50 text-cyan-700 transition hover:bg-cyan-100 ${disabledActionClass}`}
                 title="Update Assessment"
               >
                 <ClipboardCheck size={14} />
@@ -174,8 +212,12 @@ const PipelineCandidateCard = ({
             {showScheduleButton && (
               <button
                 type="button"
-                onClick={() => onOpenScheduleModal(candidate)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                disabled={isInterviewInProgress}
+                onClick={() => {
+                  if (isInterviewInProgress) return;
+                  onOpenScheduleModal(candidate);
+                }}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100 ${disabledActionClass}`}
                 title="Schedule Interview"
               >
                 <CalendarDays size={14} />
@@ -186,28 +228,79 @@ const PipelineCandidateCard = ({
               <>
                 <button
                   type="button"
-                  onClick={() => onOpenScheduleModal(candidate)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                  disabled={isInterviewInProgress}
+                  onClick={() => {
+                    if (isInterviewInProgress) return;
+                    onOpenScheduleModal(candidate);
+                  }}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-700 transition hover:bg-blue-100 ${disabledActionClass}`}
                   title="Update Interview Schedule"
                 >
                   <CalendarDays size={14} />
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => onCancelInterview(candidate)}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:bg-red-100"
+                  disabled={isInterviewInProgress}
+                  onClick={() => {
+                    if (isInterviewInProgress) return;
+                    onCancelInterview(candidate);
+                  }}
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-100 bg-red-50 text-sibs-primary-1 transition hover:bg-red-100 ${disabledActionClass}`}
                   title="Cancel Interview"
                 >
                   <X size={14} />
                 </button>
+
                 {candidate.interviewStatus !== "Completed" && (
                   <button
                     type="button"
-                    onClick={() => onCompleteInterview(candidate)}
-                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-emerald-100 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100"
-                    title="Mark Interview Completed"
+                    disabled={isInterviewInProgress}
+                    onClick={() => {
+                      if (isInterviewInProgress) return;
+
+                      handleStartInterview(candidate);
+
+                      if (candidate.onlineInterviewLink) {
+                        window.open(
+                          candidate.onlineInterviewLink,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+
+                      const positionId =
+                        candidate.positionId ||
+                        candidate.finalInterviewPositionId ||
+                        candidate.offerDetails?.positionId ||
+                        candidate.hiringRequirementId ||
+                        "";
+
+                      const formId =
+                        candidate.finalInterviewFormId ||
+                        (positionId ? `final-interview-${positionId}` : "");
+
+                      navigate(
+                        `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
+                          candidate.candidateId || "",
+                        )}&candidateApplicationId=${encodeURIComponent(
+                          candidate.candidateApplicationId ||
+                            candidate.id ||
+                            "",
+                        )}&positionId=${encodeURIComponent(positionId)}&formId=${encodeURIComponent(
+                          formId,
+                        )}`,
+                        {
+                          state: {
+                            candidate,
+                          },
+                        },
+                      );
+                    }}
+                    className={`inline-flex h-7 w-7 items-center justify-center rounded-md bg-sibs-primary-1 text-white transition hover:bg-sibs-tertiary-4 hover:cursor-pointer ${disabledActionClass}`}
+                    title="Start Interview"
                   >
-                    <UserCheck size={14} />
+                    <CirclePlay size={14} />
                   </button>
                 )}
               </>
@@ -216,8 +309,12 @@ const PipelineCandidateCard = ({
             {showMoveButton && (
               <button
                 type="button"
-                onClick={() => onOpenMoveModal(candidate)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                disabled={isInterviewInProgress}
+                onClick={() => {
+                  if (isInterviewInProgress) return;
+                  onOpenMoveModal(candidate);
+                }}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${disabledActionClass}`}
                 title={`Move to ${nextStage}`}
               >
                 <ArrowRight size={14} />
