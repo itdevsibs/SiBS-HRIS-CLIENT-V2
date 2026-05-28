@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search, Clock } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -9,6 +9,9 @@ import { usePagination } from "../../services/context/PaginationContext";
 export default function AttendancePage() {
   const { user } = useUser();
   const mainScrollRef = useRef(null);
+  const didResetPageOnMountRef = useRef(false);
+
+  const [tableReady, setTableReady] = useState(false);
 
   const {
     page,
@@ -16,10 +19,31 @@ export default function AttendancePage() {
     searchInput,
     setSearchInput,
     handleSearchKeyDown,
+    setPage,
+    setCurrentPage,
+    handlePageChange,
   } = usePagination("attendance");
 
   const isEmployee = user?.role === "employee";
   const pageTitle = isEmployee ? "My Attendance" : "Attendance";
+
+  function goToPage(nextPage) {
+    const cleanPage = Math.max(Number(nextPage) || 1, 1);
+
+    if (typeof setPage === "function") {
+      setPage(cleanPage);
+      return;
+    }
+
+    if (typeof setCurrentPage === "function") {
+      setCurrentPage(cleanPage);
+      return;
+    }
+
+    if (typeof handlePageChange === "function") {
+      handlePageChange(cleanPage);
+    }
+  }
 
   function scrollPageToTop() {
     requestAnimationFrame(() => {
@@ -48,8 +72,29 @@ export default function AttendancePage() {
   }
 
   useEffect(() => {
+    if (didResetPageOnMountRef.current) return;
+
+    didResetPageOnMountRef.current = true;
+
+    if (Number(page || 1) !== 1) {
+      goToPage(1);
+      return;
+    }
+
+    setTableReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!didResetPageOnMountRef.current) return;
+
+    if (Number(page || 1) === 1) {
+      setTableReady(true);
+    }
+  }, [page]);
+
+  useEffect(() => {
     scrollPageToTop();
-  }, [page, search]);
+  }, [search]);
 
   return (
     <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
@@ -104,7 +149,15 @@ export default function AttendancePage() {
             className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
             style={{ animationDelay: "80ms" }}
           >
-            <AttendanceTable />
+            {tableReady ? (
+              <AttendanceTable />
+            ) : (
+              <div className="p-5">
+                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-sibs-tertiary-5">
+                  Loading...
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </main>

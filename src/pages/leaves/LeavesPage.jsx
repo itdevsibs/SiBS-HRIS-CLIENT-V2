@@ -491,6 +491,7 @@ function LeaveDetailsModal({ open, item, onClose }) {
 export default function LeavesPage() {
   const { user } = useUser();
   const mainScrollRef = useRef(null);
+  const tableScrollRef = useRef(null);
   const accountDropdownRef = useRef(null);
 
   const [leaves, setLeaves] = useState([]);
@@ -538,39 +539,6 @@ export default function LeavesPage() {
     return accountFilter;
   }
 
-  function handleAccountSelect(accountName) {
-    setAccountFilter(accountName);
-    setAccountSearch("");
-    setShowAccountDropdown(false);
-    setCurrentPage(1);
-
-    fetchLeaves({
-      pageValue: 1,
-      searchValue: searchKeyword,
-      statusValue: statusFilter,
-      accountValue: accountName,
-      shouldScrollTop: true,
-    });
-  }
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        accountDropdownRef.current &&
-        !accountDropdownRef.current.contains(e.target)
-      ) {
-        setShowAccountDropdown(false);
-        setAccountSearch("");
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   function scrollPageToTop() {
     requestAnimationFrame(() => {
       if (mainScrollRef.current) {
@@ -586,6 +554,18 @@ export default function LeavesPage() {
         left: 0,
         behavior: "auto",
       });
+    });
+  }
+
+  function scrollTableToTop() {
+    requestAnimationFrame(() => {
+      if (tableScrollRef.current) {
+        tableScrollRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "smooth",
+        });
+      }
     });
   }
 
@@ -658,6 +638,21 @@ export default function LeavesPage() {
     }
   }
 
+  function handleAccountSelect(accountName) {
+    setAccountFilter(accountName);
+    setAccountSearch("");
+    setShowAccountDropdown(false);
+    setCurrentPage(1);
+
+    fetchLeaves({
+      pageValue: 1,
+      searchValue: searchKeyword,
+      statusValue: statusFilter,
+      accountValue: accountName,
+      shouldScrollTop: true,
+    });
+  }
+
   function runSearch() {
     const keyword = searchInput.trim();
 
@@ -706,8 +701,10 @@ export default function LeavesPage() {
       searchValue: searchKeyword,
       statusValue: statusFilter,
       accountValue: accountFilter,
-      shouldScrollTop: true,
+      shouldScrollTop: false,
     });
+
+    scrollTableToTop();
   }
 
   function handleNextPage() {
@@ -722,9 +719,29 @@ export default function LeavesPage() {
       searchValue: searchKeyword,
       statusValue: statusFilter,
       accountValue: accountFilter,
-      shouldScrollTop: true,
+      shouldScrollTop: false,
     });
+
+    scrollTableToTop();
   }
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(e.target)
+      ) {
+        setShowAccountDropdown(false);
+        setAccountSearch("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     fetchLeaves({
@@ -738,7 +755,7 @@ export default function LeavesPage() {
 
   useEffect(() => {
     scrollPageToTop();
-  }, [currentPage, searchKeyword, statusFilter, accountFilter]);
+  }, [searchKeyword, statusFilter, accountFilter]);
 
   const paginatedLeaves = useMemo(() => {
     return leaves.map((item) => {
@@ -1049,7 +1066,7 @@ export default function LeavesPage() {
               </div>
 
               <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
-                <div className="max-h-[580px] overflow-auto">
+                <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
                   <table className="w-full min-w-[1280px] border-collapse bg-white">
                     <thead className="sticky top-0 z-10 bg-slate-50">
                       <tr>

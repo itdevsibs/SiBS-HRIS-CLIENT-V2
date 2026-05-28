@@ -14,7 +14,6 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
-import socket from "@/lib/axios/socket";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
 const PAGE_LIMIT = 15;
@@ -141,6 +140,7 @@ function getScheduleStart(item) {
     item?.shiftStart ||
     item?.schedStart ||
     item?.sched_start ||
+    item?.gy_sched_login ||
     null
   );
 }
@@ -157,6 +157,7 @@ function getScheduleEnd(item) {
     item?.shiftEnd ||
     item?.schedEnd ||
     item?.sched_end ||
+    item?.gy_sched_logout ||
     null
   );
 }
@@ -423,6 +424,7 @@ export default function AttendanceTable() {
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
   const accountDropdownRef = useRef(null);
+  const latestRequestIdRef = useRef(0);
 
   const dragStateRef = useRef({
     isDown: false,
@@ -478,12 +480,18 @@ export default function AttendanceTable() {
   const safePagination = pagination || {
     currentPage: page || 1,
     totalPages: 1,
-    total: 0,
+    total: null,
     limit: PAGE_LIMIT,
+    hasPreviousPage: false,
+    hasNextPage: false,
   };
 
   const currentPage = Number(safePagination.currentPage || page || 1);
-  const totalPages = Number(safePagination.totalPages || 1);
+  const totalPages = Number(safePagination.totalPages || currentPage || 1);
+  const hasPreviousPage =
+    Boolean(safePagination.hasPreviousPage) || currentPage > 1;
+  const hasNextPage =
+    Boolean(safePagination.hasNextPage) || currentPage < totalPages;
 
   function goToPage(nextPage) {
     const cleanPage = Math.max(Number(nextPage) || 1, 1);
@@ -509,12 +517,12 @@ export default function AttendanceTable() {
   }
 
   function goPreviousPage() {
-    if (loading || currentPage <= 1) return;
+    if (loading || !hasPreviousPage) return;
     goToPage(currentPage - 1);
   }
 
   function goNextPage() {
-    if (loading || currentPage >= totalPages) return;
+    if (loading || !hasNextPage) return;
     goToPage(currentPage + 1);
   }
 
@@ -592,18 +600,28 @@ export default function AttendanceTable() {
 
   useEffect(() => {
     let cancelled = false;
+    const requestId = latestRequestIdRef.current + 1;
+
+    latestRequestIdRef.current = requestId;
 
     const fetchAttendance = async () => {
       try {
         setLoadingRef.current?.(true);
 
+        const shouldLoadAccountOptions = hrAdminView && accountOptions.length === 0;
+
+        /*
+          If you updated getAttendance to support includeAccounts, this sends it.
+          If your helper still only accepts 3 params, the extra object is ignored by JS.
+        */
         const result = await getAttendance(
           page,
           search,
           hrAdminView ? accountFilter : "All",
+          { includeAccounts: shouldLoadAccountOptions },
         );
 
-        if (cancelled) return;
+        if (cancelled || latestRequestIdRef.current !== requestId) return;
 
         if (!result?.success) {
           if (result?.status === 401) {
@@ -614,10 +632,12 @@ export default function AttendanceTable() {
           setAttendance([]);
 
           setPaginationRef.current?.({
-            totalPages: 1,
             currentPage: 1,
-            total: 0,
+            totalPages: 1,
+            total: null,
             limit: PAGE_LIMIT,
+            hasPreviousPage: false,
+            hasNextPage: false,
           });
 
           return;
@@ -625,33 +645,37 @@ export default function AttendanceTable() {
 
         setAttendance(result.data || []);
 
-        if (Array.isArray(result.accountOptions)) {
+        if (Array.isArray(result.accountOptions) && result.accountOptions.length > 0) {
           setAccountOptions(result.accountOptions);
         }
 
         setPaginationRef.current?.(
           result.pagination || {
-            totalPages: 1,
             currentPage: page,
-            total: result.data?.length || 0,
+            totalPages: page,
+            total: null,
             limit: PAGE_LIMIT,
+            hasPreviousPage: page > 1,
+            hasNextPage: false,
           },
         );
       } catch (err) {
-        if (cancelled) return;
+        if (cancelled || latestRequestIdRef.current !== requestId) return;
 
         console.error("Fetch attendance error:", err);
 
         setAttendance([]);
 
         setPaginationRef.current?.({
-          totalPages: 1,
           currentPage: 1,
-          total: 0,
+          totalPages: 1,
+          total: null,
           limit: PAGE_LIMIT,
+          hasPreviousPage: false,
+          hasNextPage: false,
         });
       } finally {
-        if (!cancelled) {
+        if (!cancelled && latestRequestIdRef.current === requestId) {
           setLoadingRef.current?.(false);
         }
       }
@@ -662,52 +686,7 @@ export default function AttendanceTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, accountFilter, hrAdminView]);
-
-  useEffect(() => {
-    socket.connect();
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleAttendanceUpdated = async () => {
-      try {
-        const result = await getAttendance(
-          page,
-          search,
-          hrAdminView ? accountFilter : "All",
-        );
-
-        if (!result?.success) return;
-
-        setAttendance(result.data || []);
-
-        if (Array.isArray(result.accountOptions)) {
-          setAccountOptions(result.accountOptions);
-        }
-
-        setPaginationRef.current?.(
-          result.pagination || {
-            totalPages: 1,
-            currentPage: page,
-            total: result.data?.length || 0,
-            limit: PAGE_LIMIT,
-          },
-        );
-      } catch (err) {
-        console.error("Live attendance refresh error:", err);
-      }
-    };
-
-    socket.on("attendance-updated", handleAttendanceUpdated);
-
-    return () => {
-      socket.off("attendance-updated", handleAttendanceUpdated);
-    };
-  }, [page, search, accountFilter, hrAdminView]);
+  }, [page, search, accountFilter, hrAdminView, accountOptions.length]);
 
   function formatTime(time) {
     if (!time) return "—";
@@ -739,7 +718,11 @@ export default function AttendanceTable() {
       return "border-emerald-200 bg-emerald-50 text-emerald-600";
     }
 
-    if (cleanStatus === "late") {
+    if (
+      cleanStatus === "late" ||
+      cleanStatus === "over-break" ||
+      cleanStatus === "early-out"
+    ) {
       return "border-red-200 bg-red-50 text-red-600";
     }
 
@@ -766,14 +749,6 @@ export default function AttendanceTable() {
       return "border-emerald-200 bg-emerald-50 text-emerald-600";
     }
 
-    /*
-      Fallback when API has no schedule_start:
-      - If backend says late but displayed login minute is 00, show green.
-      - If displayed login minute is 01 or above, show red.
-      This matches:
-      01:00:00 PM to 01:00:59 PM = not late
-      01:01:00 PM and above = late
-    */
     const cleanStatus = normalizeStatus(statusKey);
 
     if (cleanStatus === "late" && actualLogin) {
@@ -1351,7 +1326,7 @@ export default function AttendanceTable() {
           <div className="flex items-center gap-2 max-sm:justify-center">
             <button
               type="button"
-              disabled={currentPage <= 1 || loading}
+              disabled={loading || !hasPreviousPage}
               onClick={goPreviousPage}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -1365,7 +1340,7 @@ export default function AttendanceTable() {
 
             <button
               type="button"
-              disabled={currentPage >= totalPages || loading}
+              disabled={loading || !hasNextPage}
               onClick={goNextPage}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
