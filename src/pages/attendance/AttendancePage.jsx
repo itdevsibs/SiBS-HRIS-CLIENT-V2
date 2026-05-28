@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Search, Clock } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -7,18 +8,57 @@ import { usePagination } from "../../services/context/PaginationContext";
 
 export default function AttendancePage() {
   const { user } = useUser();
+  const mainScrollRef = useRef(null);
 
-  const { searchInput, setSearchInput, handleSearchKeyDown } =
-    usePagination("attendance");
+  const {
+    page,
+    search,
+    searchInput,
+    setSearchInput,
+    handleSearchKeyDown,
+  } = usePagination("attendance");
 
   const isEmployee = user?.role === "employee";
   const pageTitle = isEmployee ? "My Attendance" : "Attendance";
 
+  function scrollPageToTop() {
+    requestAnimationFrame(() => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "auto",
+        });
+      }
+
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+    });
+  }
+
+  function handleAttendanceSearchKeyDown(e) {
+    handleSearchKeyDown(e);
+
+    if (e.key === "Enter") {
+      scrollPageToTop();
+    }
+  }
+
+  useEffect(() => {
+    scrollPageToTop();
+  }, [page, search]);
+
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+      <main
+        ref={mainScrollRef}
+        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden bg-sibs-tertiary-10 px-4 py-6 sm:px-6 lg:px-8"
+      >
         <div className="flex min-w-0 flex-col gap-6">
           <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
@@ -54,7 +94,7 @@ export default function AttendancePage() {
                 }
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
+                onKeyDown={handleAttendanceSearchKeyDown}
                 className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>

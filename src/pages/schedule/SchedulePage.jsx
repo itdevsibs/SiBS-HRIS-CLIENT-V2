@@ -1,25 +1,142 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, CalendarDays } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Search,
+} from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { getSchedule } from "../../lib/axios/getSchedule";
 import { formatDate } from "../../components/layout/FormatDateTime";
 
 const SCHEDULE_STATE_KEY = "schedulePageState";
+const PAGE_LIMIT = 15;
+
+function formatTime(timeString) {
+  if (!timeString || timeString === "00:00:00") return "—";
+
+  const parts = String(timeString).split(":");
+  if (parts.length < 2) return String(timeString);
+
+  const hour = Number(parts[0]);
+  const minutes = parts[1];
+
+  if (Number.isNaN(hour)) return String(timeString);
+
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 || 12;
+
+  return `${formattedHour}:${minutes} ${suffix}`;
+}
+
+function formatMode(mode) {
+  if (mode === null || mode === undefined || mode === "") return "—";
+
+  switch (String(mode)) {
+    case "0":
+      return "Day Off";
+    case "1":
+      return "Regular";
+    case "2":
+      return "Rest Day";
+    case "3":
+      return "Holiday";
+    default:
+      return String(mode);
+  }
+}
+
+function normalizeMode(mode) {
+  const value = String(mode ?? "").trim();
+
+  if (value === "0") return "Day Off";
+  if (value === "1") return "Regular";
+  if (value === "2") return "Rest Day";
+  if (value === "3") return "Holiday";
+
+  return value || "—";
+}
+
+function getModeBadgeClass(mode) {
+  const normalized = normalizeMode(mode);
+
+  if (normalized === "Day Off") {
+    return "border-red-200 bg-red-50 text-red-600";
+  }
+
+  if (normalized === "Rest Day") {
+    return "border-amber-200 bg-amber-50 text-amber-600";
+  }
+
+  if (normalized === "Holiday") {
+    return "border-blue-200 bg-blue-50 text-sibs-primary-1";
+  }
+
+  return "border-emerald-200 bg-emerald-50 text-emerald-600";
+}
+
+function Badge({ children, className = "" }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
+  return (
+    <div
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+            {title}
+          </p>
+
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
+          >
+            {value}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SchedulePage() {
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [page, setPage] = useState(1);
 
   const [pagination, setPagination] = useState({
     totalPages: 1,
     currentPage: 1,
     totalRecords: 0,
-    limit: 15,
+    limit: PAGE_LIMIT,
   });
 
   const navigate = useNavigate();
@@ -37,7 +154,8 @@ export default function SchedulePage() {
         const parsed = JSON.parse(savedState);
 
         if (typeof parsed.search === "string") {
-          setSearch(parsed.search);
+          setSearchInput(parsed.search);
+          setSearchKeyword(parsed.search);
         }
 
         if (typeof parsed.page === "number" && parsed.page > 0) {
@@ -57,13 +175,13 @@ export default function SchedulePage() {
     sessionStorage.setItem(
       SCHEDULE_STATE_KEY,
       JSON.stringify({
-        search,
+        search: searchKeyword,
         page,
-      })
+      }),
     );
-  }, [search, page]);
+  }, [searchKeyword, page]);
 
-  const fetchSchedule = async (showLoading = true) => {
+  async function fetchSchedule(showLoading = true) {
     if (showLoading) setLoading(true);
 
     try {
@@ -80,7 +198,7 @@ export default function SchedulePage() {
           currentPage: 1,
           totalPages: 1,
           totalRecords: 0,
-          limit: 15,
+          limit: PAGE_LIMIT,
         });
         return;
       }
@@ -88,28 +206,30 @@ export default function SchedulePage() {
       setSchedule(result.data || []);
       setPagination(
         result.pagination || {
-          currentPage: 1,
+          currentPage: page,
           totalPages: 1,
-          totalRecords: 0,
-          limit: 15,
-        }
+          totalRecords: result.data?.length || 0,
+          limit: PAGE_LIMIT,
+        },
       );
     } catch (err) {
       console.error("Schedule fetch error:", err);
+
       setSchedule([]);
       setPagination({
         currentPage: 1,
         totalPages: 1,
         totalRecords: 0,
-        limit: 15,
+        limit: PAGE_LIMIT,
       });
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     if (!restoredRef.current) return;
+
     fetchSchedule(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
@@ -142,99 +262,29 @@ export default function SchedulePage() {
     }
   }, [page]);
 
-  const handleSearch = (e) => {
-    setSearch(e.target.value);
-  };
+  function runSearch() {
+    setSearchKeyword(searchInput.trim());
+    setPage(1);
+  }
 
-  const renderPagination = () => {
-    const pages = [];
-    const total = pagination.totalPages;
-    const current = page;
-
-    const createPage = (p) => (
-      <button
-        key={p}
-        type="button"
-        onClick={() => setPage(p)}
-        className={`schedule-page-btn ${current === p ? "active" : ""}`}
-      >
-        {p}
-      </button>
-    );
-
-    const createDots = (key) => (
-      <span key={key} className="schedule-pagination-dots">
-        ...
-      </span>
-    );
-
-    if (total <= 1) return null;
-
-    if (current <= 3) {
-      for (let i = 1; i <= Math.min(3, total); i += 1) {
-        pages.push(createPage(i));
-      }
-
-      if (total > 3) {
-        pages.push(createDots("right"));
-        pages.push(createPage(total));
-      }
-    } else if (current >= total - 2) {
-      pages.push(createPage(1));
-      pages.push(createDots("left"));
-
-      for (let i = total - 2; i <= total; i += 1) {
-        if (i > 0) pages.push(createPage(i));
-      }
-    } else {
-      pages.push(createPage(1));
-      pages.push(createDots("left"));
-      pages.push(createPage(current - 1));
-      pages.push(createPage(current));
-      pages.push(createPage(current + 1));
-      pages.push(createDots("right"));
-      pages.push(createPage(total));
+  function handleSearchKeyDown(e) {
+    if (e.key === "Enter") {
+      runSearch();
     }
+  }
 
-    return pages;
-  };
+  function handlePreviousPage() {
+    if (loading || page <= 1) return;
+    setPage((prev) => Math.max(prev - 1, 1));
+  }
 
-  const formatTime = (timeString) => {
-    if (!timeString || timeString === "00:00:00") return "-";
-
-    const parts = String(timeString).split(":");
-    if (parts.length < 2) return String(timeString);
-
-    const hour = Number(parts[0]);
-    const minutes = parts[1];
-
-    if (Number.isNaN(hour)) return String(timeString);
-
-    const suffix = hour >= 12 ? "PM" : "AM";
-    const formattedHour = hour % 12 || 12;
-
-    return `${formattedHour}:${minutes} ${suffix}`;
-  };
-
-  const formatMode = (mode) => {
-    if (mode === null || mode === undefined || mode === "") return "-";
-
-    switch (String(mode)) {
-      case "0":
-        return "Day Off";
-      case "1":
-        return "Regular";
-      case "2":
-        return "Rest Day";
-      case "3":
-        return "Holiday";
-      default:
-        return String(mode);
-    }
-  };
+  function handleNextPage() {
+    if (loading || page >= pagination.totalPages) return;
+    setPage((prev) => Math.min(prev + 1, pagination.totalPages));
+  }
 
   const filteredSchedule = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = searchKeyword.trim().toLowerCase();
 
     if (!keyword) return schedule;
 
@@ -250,460 +300,283 @@ export default function SchedulePage() {
       ];
 
       return values.some((value) =>
-        String(value).toLowerCase().includes(keyword)
+        String(value).toLowerCase().includes(keyword),
       );
     });
-  }, [schedule, search]);
+  }, [schedule, searchKeyword]);
+
+  const pageStats = useMemo(() => {
+    const totalLoaded = filteredSchedule.length;
+
+    const regularCount = filteredSchedule.filter(
+      (item) => normalizeMode(item.gy_sched_mode) === "Regular",
+    ).length;
+
+    const dayOffCount = filteredSchedule.filter(
+      (item) => normalizeMode(item.gy_sched_mode) === "Day Off",
+    ).length;
+
+    const restDayCount = filteredSchedule.filter(
+      (item) => normalizeMode(item.gy_sched_mode) === "Rest Day",
+    ).length;
+
+    return {
+      totalLoaded,
+      regularCount,
+      dayOffCount,
+      restDayCount,
+    };
+  }, [filteredSchedule]);
 
   return (
-    <div className="schedule-page">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main ref={mainScrollRef} className="schedule-main">
-        <div className="schedule-wrapper">
-          <div className="schedule-header sibs-page-header-in">
-            <div className="schedule-title-block">
-              <div className="schedule-title-row">
-                <CalendarDays size={40} className="schedule-title-icon" />
+      <main
+        ref={mainScrollRef}
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+      >
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <CalendarDays
+                  size={34}
+                  strokeWidth={2.2}
+                  className="shrink-0 text-sibs-primary-1 transition-transform duration-300 group-hover:scale-105"
+                />
 
-                <h1>My Schedule</h1>
+                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                  My Schedule
+                </h1>
               </div>
 
-              <p>View your work schedule</p>
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                View your work schedule and assigned shift details.
+              </p>
             </div>
 
-            <div className="schedule-search sibs-profile-tab-panel">
-              <Search size={18} className="schedule-search-icon" />
+            <div className="sibs-profile-tab-panel relative w-full shrink-0 lg:w-80">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+              />
 
               <input
                 type="text"
-                placeholder="Search schedule..."
-                value={search}
-                onChange={handleSearch}
+                placeholder="Search schedule then press Enter"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               />
             </div>
-          </div>
+          </section>
 
-          <section className="schedule-card sibs-profile-tab-panel">
-            <div className="schedule-table-wrap" ref={tableScrollRef}>
-              <table className="schedule-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Mode</th>
-                    <th>Login</th>
-                    <th>Break Out</th>
-                    <th>Break In</th>
-                    <th>Logout</th>
-                    <th>Registered</th>
-                  </tr>
-                </thead>
+          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-[#101828]">
+                  Current Page Summary
+                </h2>
 
-                <tbody key={`${page}-${search}`}>
-                  {loading ? (
-                    <tr>
-                      <td colSpan="7" className="schedule-empty">
-                        <div className="schedule-empty-box">Loading...</div>
-                      </td>
-                    </tr>
-                  ) : filteredSchedule.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="schedule-empty">
-                        <div className="schedule-empty-box">
-                          No schedule found
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredSchedule.map((item, index) => (
-                      <tr
-                        key={item.gy_sched_id || index}
-                        className="schedule-row-animated"
-                        style={{
-                          animationDelay: `${Math.min(index * 30, 300)}ms`,
-                        }}
-                      >
-                        <td>{formatDate(item.gy_sched_day)}</td>
-
-                        <td
-                          className={
-                            String(item.gy_sched_mode) === "0" ? "day-off" : ""
-                          }
-                        >
-                          {formatMode(item.gy_sched_mode)}
-                        </td>
-
-                        <td>{formatTime(item.gy_sched_login)}</td>
-                        <td>{formatTime(item.gy_sched_breakout)}</td>
-                        <td>{formatTime(item.gy_sched_breakin)}</td>
-                        <td>{formatTime(item.gy_sched_logout)}</td>
-                        <td>{formatDate(item.gy_sched_reg)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="schedule-footer">
-              <div className="schedule-page-info">
-                Page {pagination.currentPage} of {pagination.totalPages}
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  These totals are based only on the current schedule records
+                  loaded for this page.
+                </p>
               </div>
 
-              <div className="schedule-pagination">
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  disabled={page === 1}
-                  className="schedule-nav-btn"
-                >
-                  Prev
-                </button>
+              <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </Badge>
+            </div>
 
-                {renderPagination()}
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard
+                title="Loaded Schedules"
+                value={loading ? "..." : pageStats.totalLoaded}
+                icon={CalendarDays}
+                delay={0}
+              />
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPage((p) => Math.min(p + 1, pagination.totalPages))
-                  }
-                  disabled={page === pagination.totalPages}
-                  className="schedule-nav-btn"
-                >
-                  Next
-                </button>
+              <StatCard
+                title="Regular"
+                value={loading ? "..." : pageStats.regularCount}
+                icon={Clock}
+                valueClassName="text-emerald-600"
+                iconClassName="bg-emerald-50 text-emerald-600"
+                delay={60}
+              />
+
+              <StatCard
+                title="Day Off"
+                value={loading ? "..." : pageStats.dayOffCount}
+                icon={Clock}
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={120}
+              />
+
+              <StatCard
+                title="Rest Day"
+                value={loading ? "..." : pageStats.restDayCount}
+                icon={Clock}
+                valueClassName="text-amber-500"
+                iconClassName="bg-amber-50 text-amber-600"
+                delay={180}
+              />
+            </div>
+          </section>
+
+          <section
+            className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
+            style={{ animationDelay: "80ms" }}
+          >
+            <div className="p-4 sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Schedule Records
+                  </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    View your current page of schedule records.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
+                <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
+                  <table className="w-full min-w-[980px] border-collapse bg-white">
+                    <thead className="sticky top-0 z-10 bg-slate-50">
+                      <tr>
+                        <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Date
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Mode
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Login
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Break Out
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Break In
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Logout
+                        </th>
+                        <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                          Registered
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody key={`${page}-${searchKeyword}-${loading}`}>
+                      {loading ? (
+                        Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                          <tr key={index}>
+                            <td
+                              colSpan={7}
+                              className="border-t border-[#f3f4f6] px-5 py-4"
+                            >
+                              <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                            </td>
+                          </tr>
+                        ))
+                      ) : filteredSchedule.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                          >
+                            No schedule found.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredSchedule.map((item, index) => (
+                          <tr
+                            key={item.gy_sched_id || index}
+                            className="transition-all duration-200 hover:bg-slate-50"
+                          >
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                              {formatDate(item.gy_sched_day)}
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm">
+                              <Badge
+                                className={getModeBadgeClass(
+                                  item.gy_sched_mode,
+                                )}
+                              >
+                                {formatMode(item.gy_sched_mode)}
+                              </Badge>
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-[#344054]">
+                              {formatTime(item.gy_sched_login)}
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                              {formatTime(item.gy_sched_breakout)}
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                              {formatTime(item.gy_sched_breakin)}
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
+                              {formatTime(item.gy_sched_logout)}
+                            </td>
+
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                              {formatDate(item.gy_sched_reg)}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
+                <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {filteredSchedule.length} loaded schedule records
+                </p>
+
+                <div className="flex items-center gap-2 max-sm:justify-center">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || loading}
+                    onClick={handlePreviousPage}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </button>
+
+                  <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
+                    Page {pagination.currentPage}
+                  </span>
+
+                  <button
+                    type="button"
+                    disabled={page >= pagination.totalPages || loading}
+                    onClick={handleNextPage}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </section>
         </div>
       </main>
-
-      <style>{`
-        .schedule-page {
-          flex: 1;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          background: var(--sibs-tertiary-10);
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .schedule-main {
-          min-width: 0;
-          flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 24px;
-          background: var(--sibs-tertiary-10);
-        }
-
-        .schedule-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-          min-width: 0;
-        }
-
-        .schedule-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 24px;
-        }
-
-        .schedule-title-block {
-          min-width: 0;
-        }
-
-        .schedule-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .schedule-title-icon {
-          flex-shrink: 0;
-          color: var(--sibs-primary-1);
-          transition: transform 0.25s ease;
-        }
-
-        .schedule-title-row:hover .schedule-title-icon {
-          transform: scale(1.08);
-        }
-
-        .schedule-title-row h1 {
-          margin: 0;
-          color: var(--sibs-primary-1);
-          font-size: 40px;
-          line-height: 1;
-          font-weight: 800;
-          letter-spacing: -1px;
-        }
-
-        .schedule-title-block p {
-          margin: 4px 0 0;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 400;
-        }
-
-        .schedule-search {
-          position: relative;
-          width: 290px;
-          flex-shrink: 0;
-        }
-
-        .schedule-search-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--sibs-primary-1);
-          pointer-events: none;
-          transition: transform 0.2s ease;
-        }
-
-        .schedule-search:focus-within .schedule-search-icon {
-          transform: translateY(-50%) scale(1.08);
-        }
-
-        .schedule-search input {
-          width: 100%;
-          height: 48px;
-          border-radius: 999px;
-          border: 1px solid var(--sibs-tertiary-8);
-          background: #ffffff;
-          padding: 0 18px 0 46px;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 500;
-          outline: none;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          transition:
-            border-color 0.2s ease,
-            box-shadow 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .schedule-search input::placeholder {
-          color: #9ca3af;
-        }
-
-        .schedule-search input:hover {
-          border-color: rgba(4, 44, 81, 0.35);
-          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.06);
-        }
-
-        .schedule-search input:focus {
-          border-color: var(--sibs-primary-1);
-          box-shadow: 0 0 0 4px rgba(4, 44, 81, 0.08);
-          transform: translateY(-1px);
-        }
-
-        .schedule-card {
-          overflow: hidden;
-          border-radius: 12px;
-          background: #ffffff;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .schedule-card:hover {
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        .schedule-table-wrap {
-          max-height: 620px;
-          overflow: auto;
-        }
-
-        .schedule-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 14px;
-          color: var(--sibs-primary-1);
-        }
-
-        .schedule-table thead {
-          position: sticky;
-          top: 0;
-          z-index: 10;
-          background: #f3f4f6;
-        }
-
-        .schedule-table th {
-          padding: 14px 12px;
-          text-align: left;
-          font-size: 14px;
-          font-weight: 700;
-          color: #111827;
-          white-space: nowrap;
-        }
-
-        .schedule-table td {
-          padding: 13px 12px;
-          border-top: 1px solid #e5e7eb;
-          font-size: 14px;
-          font-weight: 400;
-          color: var(--sibs-primary-1);
-          white-space: nowrap;
-        }
-
-        .schedule-table tbody tr {
-          transition:
-            background 0.2s ease,
-            transform 0.2s ease;
-        }
-
-        .schedule-table tbody tr:hover {
-          background: #f9fafb;
-        }
-
-        .schedule-table .day-off {
-          color: #ef4444;
-          font-weight: 600;
-        }
-
-        .schedule-empty {
-          padding: 32px !important;
-          text-align: center;
-          color: #6b7280 !important;
-        }
-
-        .schedule-empty-box {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 12px;
-          background: var(--sibs-tertiary-10);
-          padding: 12px 20px;
-          font-size: 14px;
-          font-weight: 600;
-          color: #6b7280;
-          animation: sibsProfileTabPanelIn 240ms ease-out both;
-        }
-
-        .schedule-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-          border-top: 1px solid #e5e7eb;
-          padding: 16px;
-          background: #ffffff;
-        }
-
-        .schedule-page-info {
-          color: #6b7280;
-          font-size: 14px;
-          font-weight: 400;
-        }
-
-        .schedule-pagination {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .schedule-nav-btn,
-        .schedule-page-btn {
-          min-width: 34px;
-          height: 32px;
-          border-radius: 6px;
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
-          color: var(--sibs-primary-1);
-          padding: 0 10px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          transition:
-            transform 0.2s ease,
-            border-color 0.2s ease,
-            background 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .schedule-nav-btn:disabled {
-          cursor: not-allowed;
-          opacity: 0.5;
-        }
-
-        .schedule-page-btn.active {
-          background: var(--sibs-primary-1);
-          border-color: var(--sibs-primary-1);
-          color: #ffffff;
-          box-shadow: 0 6px 14px rgba(4, 44, 81, 0.18);
-        }
-
-        .schedule-page-btn:hover:not(.active),
-        .schedule-nav-btn:hover:not(:disabled) {
-          background: #f9fafb;
-          border-color: rgba(4, 44, 81, 0.25);
-          transform: translateY(-1px);
-          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-        }
-
-        .schedule-page-btn:active,
-        .schedule-nav-btn:active:not(:disabled) {
-          transform: scale(0.97);
-        }
-
-        .schedule-pagination-dots {
-          color: #9ca3af;
-          padding: 0 4px;
-          font-size: 14px;
-        }
-
-        .schedule-row-animated {
-          animation: sibsProfileTabPanelIn 240ms ease-out both;
-          will-change: opacity, transform;
-        }
-
-        @media (max-width: 1024px) {
-          .schedule-header {
-            align-items: stretch;
-            flex-direction: column;
-          }
-
-          .schedule-search {
-            width: 100%;
-          }
-
-          .schedule-table-wrap {
-            overflow-x: auto;
-          }
-
-          .schedule-table {
-            min-width: 900px;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .schedule-main {
-            padding: 16px;
-          }
-
-          .schedule-title-row h1 {
-            font-size: 32px;
-          }
-
-          .schedule-title-icon {
-            width: 32px;
-            height: 32px;
-          }
-
-          .schedule-footer {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 }

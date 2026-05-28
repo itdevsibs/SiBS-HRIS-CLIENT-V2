@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   Filter,
@@ -228,7 +228,7 @@ export default function WeeklyVersionTable({
   assignedAccounts = [],
 }) {
   const [showHiringPlanDropdown, setShowHiringPlanDropdown] = useState(false);
-  const [hiringPlanSearch, setHiringPlanSearch] = useState("");
+  const hiringPlanDropdownRef = useRef(null);
 
   const canViewAllAccounts = canViewAllWeeklyAccounts(user);
   const isRestrictedManager = !canViewAllAccounts;
@@ -270,16 +270,6 @@ export default function WeeklyVersionTable({
       return assignedAccountNames.has(accountName);
     });
   }, [canViewAllAccounts, filteredAccountOptions, assignedAccountNames]);
-
-  const filteredHiringPlanOptions = useMemo(() => {
-    const keyword = hiringPlanSearch.trim().toLowerCase();
-
-    if (!keyword) return HIRING_PLAN_PERCENT_OPTIONS;
-
-    return HIRING_PLAN_PERCENT_OPTIONS.filter((percent) =>
-      `${percent}%`.toLowerCase().includes(keyword)
-    );
-  }, [hiringPlanSearch]);
 
   const safeIsAllClustersSelected = () => {
     if (typeof isAllClustersSelected === "function") {
@@ -339,13 +329,29 @@ export default function WeeklyVersionTable({
     setSelectedAccounts,
   ]);
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        hiringPlanDropdownRef.current &&
+        !hiringPlanDropdownRef.current.contains(e.target)
+      ) {
+        setShowHiringPlanDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   function handleClearFilters() {
     setSelectedClusters(["All"]);
     setSelectedAccounts(["All"]);
     setAccountSearch("");
     setSearch("");
     setSelectedHiringPlanPercent?.(5);
-    setHiringPlanSearch("");
     setShowHiringPlanDropdown(false);
   }
 
@@ -356,6 +362,7 @@ export default function WeeklyVersionTable({
     setSearch("");
     setWeekSearch("");
     setShowWeekDropdown(false);
+    setShowHiringPlanDropdown(false);
   }
 
   function handleClusterClick(cluster) {
@@ -737,90 +744,64 @@ export default function WeeklyVersionTable({
             </div>
           </div>
 
-          <div className="relative z-20">
+          <div ref={hiringPlanDropdownRef} className="relative z-20">
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Hiring Plan (%)
             </label>
 
-            <div className="relative">
-              <input
-                type="text"
-                value={
-                  showHiringPlanDropdown
-                    ? hiringPlanSearch
-                    : `${selectedHiringPlanPercent}%`
-                }
-                onChange={(e) => {
-                  setHiringPlanSearch(e.target.value);
-                  setShowHiringPlanDropdown(true);
-                }}
-                onFocus={() => {
-                  setShowHiringPlanDropdown(true);
-                  setHiringPlanSearch("");
-                  setShowWeekDropdown(false);
-                  setShowClusterDropdown(false);
-                  setShowAccountDropdown(false);
-                }}
-                placeholder="Search hiring plan..."
-                autoComplete="off"
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
+            <button
+              type="button"
+              onClick={() => {
+                setShowHiringPlanDropdown((prev) => !prev);
+                setShowWeekDropdown(false);
+                setShowClusterDropdown(false);
+                setShowAccountDropdown(false);
+              }}
+              className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            >
+              <span className="truncate">{selectedHiringPlanPercent}%</span>
 
               <ChevronDown
                 size={18}
-                onClick={() => {
-                  setShowHiringPlanDropdown((prev) => !prev);
-                  setHiringPlanSearch("");
-                  setShowWeekDropdown(false);
-                  setShowClusterDropdown(false);
-                  setShowAccountDropdown(false);
-                }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showHiringPlanDropdown ? "rotate-180" : ""
                 }`}
               />
+            </button>
 
-              <AnimatedDropdown open={showHiringPlanDropdown}>
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                  {filteredHiringPlanOptions.length > 0 ? (
-                    filteredHiringPlanOptions.map((percent) => {
-                      const checked =
-                        Number(selectedHiringPlanPercent) === Number(percent);
+            <AnimatedDropdown open={showHiringPlanDropdown}>
+              <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                {HIRING_PLAN_PERCENT_OPTIONS.map((percent) => {
+                  const checked =
+                    Number(selectedHiringPlanPercent) === Number(percent);
 
-                      return (
-                        <button
-                          key={percent}
-                          type="button"
-                          onClick={() => {
-                            setSelectedHiringPlanPercent?.(percent);
-                            setHiringPlanSearch("");
-                            setShowHiringPlanDropdown(false);
-                          }}
-                          className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                            checked
-                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                              : "text-[#344054] hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            checked={checked}
-                            readOnly
-                            className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
-                          />
+                  return (
+                    <button
+                      key={percent}
+                      type="button"
+                      onClick={() => {
+                        setSelectedHiringPlanPercent?.(percent);
+                        setShowHiringPlanDropdown(false);
+                      }}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                        checked
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        checked={checked}
+                        readOnly
+                        className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
+                      />
 
-                          <span>{percent}%</span>
-                        </button>
-                      );
-                    })
-                  ) : (
-                    <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                      No hiring plan found.
-                    </div>
-                  )}
-                </div>
-              </AnimatedDropdown>
-            </div>
+                      <span>{percent}%</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </AnimatedDropdown>
           </div>
 
           <div>
