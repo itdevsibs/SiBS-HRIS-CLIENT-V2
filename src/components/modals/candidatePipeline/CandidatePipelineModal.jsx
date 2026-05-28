@@ -3,12 +3,12 @@ import {
   ArrowRight,
   X,
   UserX,
-  UserCheck,
   Eye,
   CalendarDays,
   ClipboardCheck,
   Mail,
   ChevronDown,
+  CirclePlay,
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
@@ -45,6 +45,7 @@ import {
   buildOfferContractLink,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { useNavigate } from "react-router-dom";
+import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 
 const CandidatePipelineModal = ({
   open,
@@ -61,10 +62,11 @@ const CandidatePipelineModal = ({
   onUpdateOfferApproval,
   onSendOfferEmail,
   onOfferDecision,
-  onSaveInterviewNotes,
 }) => {
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
   const [interviewNotesDraft, setInterviewNotesDraft] = useState("");
+
+  const { handleStartInterview } = useCandidatePipeline();
 
   const navigate = useNavigate();
 
@@ -85,6 +87,11 @@ const CandidatePipelineModal = ({
   const isAccepted = candidate.currentStage === "Accepted";
   const candidateHasSchedule = hasInterviewSchedule(candidate);
   const modalStatus = getDisplayInterviewStatus(candidate);
+  const isInterviewInProgress =
+    isInterviewScheduled && modalStatus === "Interview in Progress";
+
+  const disabledActionClass =
+    "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50";
 
   return (
     <div
@@ -122,7 +129,7 @@ const CandidatePipelineModal = ({
                 : "xl:grid-cols-[1fr_360px]"
             }`}
           >
-            <div className="space-y-5">
+            <div className="min-w-0 space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex items-start gap-4">
                   <CandidateAvatar candidate={candidate} />
@@ -213,44 +220,80 @@ const CandidatePipelineModal = ({
                 </h3>
 
                 <div className="mt-5 space-y-4">
-                  {(candidate.timeline || []).map((item, index) => (
-                    <div key={`${item.stage}-${index}`} className="flex gap-4">
+                  {(candidate.timeline || []).map((item, index) => {
+                    const savedFormFullLink = item.savedFormLink
+                      ? `${window.location.origin}${item.savedFormLink}`
+                      : "";
+
+                    return (
                       <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${getStageClass(
-                          item.stage,
-                        )}`}
+                        key={`${item.stage}-${index}`}
+                        className="flex min-w-0 gap-4"
                       >
-                        {index + 1}
-                      </div>
-
-                      <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                          <div>
-                            <p className="text-sm font-bold text-[#101828]">
-                              {item.stage}
-                            </p>
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {item.timestamp}
-                            </p>
-                          </div>
-
-                          <span className="w-fit rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-600">
-                            {item.owner}
-                          </span>
+                        <div
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${getStageClass(
+                            item.stage,
+                          )}`}
+                        >
+                          {index + 1}
                         </div>
 
-                        <p className="mt-3 text-sm leading-6 text-[#344054]">
-                          {item.reason}
-                        </p>
+                        <div className="min-w-0 flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-[#101828]">
+                                {item.stage}
+                              </p>
+                              <p className="truncate text-xs font-semibold text-sibs-tertiary-5">
+                                {item.timestamp}
+                              </p>
+                            </div>
 
-                        {item.remarks && (
-                          <p className="mt-3 rounded-lg bg-white p-3 text-xs font-semibold leading-5 text-[#475467]">
-                            {item.remarks}
+                            <span className="w-fit shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-bold text-gray-600">
+                              {item.owner}
+                            </span>
+                          </div>
+
+                          <p className="mt-3 text-sm leading-6 text-[#344054]">
+                            {item.reason}
                           </p>
-                        )}
+
+                          {item.remarks && (
+                            <p className="mt-3 rounded-lg bg-white p-3 text-xs font-semibold leading-5 text-[#475467]">
+                              {item.remarks}
+                            </p>
+                          )}
+
+                          {item.savedFormLink && (
+                            <div className="mt-3">
+                              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                Job Evaluation Link
+                              </p>
+
+                              <div
+                                type="button"
+                                title={savedFormFullLink}
+                                onClick={() => {
+                                  window.open(
+                                    item.savedFormLink,
+                                    "_blank",
+                                    "noopener,noreferrer",
+                                  );
+                                }}
+                                className="mt-2 block w-full min-w-0 truncate rounded-lg border
+                                  border-blue-100 bg-white px-3 py-2 text-left text-xs
+                                  font-semibold text-blue-600 underline transition
+                                  hover:border-blue-200 hover:bg-blue-50
+                                  hover:text-blue-700 hover:cursor-pointer"
+                              >
+                                {savedFormFullLink}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -387,8 +430,9 @@ const CandidatePipelineModal = ({
                     <div className="mt-4 grid grid-cols-1 gap-2">
                       <button
                         type="button"
+                        disabled={isInterviewInProgress}
                         onClick={() => onOpenScheduleModal(candidate)}
-                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                        className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 ${disabledActionClass}`}
                       >
                         <CalendarDays size={16} />
                         Update Interview Schedule
@@ -396,8 +440,9 @@ const CandidatePipelineModal = ({
 
                       <button
                         type="button"
+                        disabled={isInterviewInProgress}
                         onClick={() => onCancelInterview(candidate)}
-                        className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100"
+                        className={`inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100 ${disabledActionClass}`}
                       >
                         Cancel Interview
                       </button>
@@ -405,8 +450,9 @@ const CandidatePipelineModal = ({
                       {candidate.interviewStatus !== "Completed" && (
                         <button
                           type="button"
+                          disabled={isInterviewInProgress}
                           onClick={() => onCompleteInterview(candidate)}
-                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100"
+                          className={`inline-flex h-10 w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 ${disabledActionClass}`}
                         >
                           Mark Interview Completed
                         </button>
@@ -626,8 +672,9 @@ const CandidatePipelineModal = ({
               candidate.currentStage !== "Accepted" && (
                 <button
                   type="button"
+                  disabled={isInterviewInProgress}
                   onClick={() => onOpenDropOffModal(candidate)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-500 transition hover:bg-red-100"
+                  className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-500 transition hover:bg-red-100 ${disabledActionClass}`}
                 >
                   <UserX size={16} />
                   Mark Drop-off
@@ -659,18 +706,51 @@ const CandidatePipelineModal = ({
             {isInterviewScheduled && canUpdateInterviewSchedule(candidate) && (
               <button
                 type="button"
+                disabled={isInterviewInProgress}
                 onClick={() => {
-                  const url = `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
-                    candidate.candidateId || "",
-                  )}&candidateApplicationId=${encodeURIComponent(
-                    candidate.candidateApplicationId || "",
-                  )}`;
+                  if (isInterviewInProgress) return;
 
-                  window.open(url, "_blank", "noopener,noreferrer");
+                  handleStartInterview(candidate);
+
+                  if (candidate.onlineInterviewLink) {
+                    window.open(
+                      candidate.onlineInterviewLink,
+                      "_blank",
+                      "noopener,noreferrer",
+                    );
+                  }
+
+                  onClose?.();
+
+                  const positionId =
+                    candidate.positionId ||
+                    candidate.finalInterviewPositionId ||
+                    candidate.offerDetails?.positionId ||
+                    candidate.hiringRequirementId ||
+                    "";
+
+                  const formId =
+                    candidate.finalInterviewFormId ||
+                    (positionId ? `final-interview-${positionId}` : "");
+
+                  navigate(
+                    `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
+                      candidate.candidateId || "",
+                    )}&candidateApplicationId=${encodeURIComponent(
+                      candidate.candidateApplicationId || candidate.id || "",
+                    )}&positionId=${encodeURIComponent(positionId)}&formId=${encodeURIComponent(
+                      formId,
+                    )}`,
+                    {
+                      state: {
+                        candidate,
+                      },
+                    },
+                  );
                 }}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 ${disabledActionClass}`}
               >
-                <CalendarDays size={16} />
+                <CirclePlay size={16} />
                 Start Interview
               </button>
             )}
@@ -701,14 +781,6 @@ const CandidatePipelineModal = ({
                 Move to Online Assessment
               </button>
             )}
-
-            {/* <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-            >
-              Close
-            </button> */}
           </div>
         </div>
       </div>

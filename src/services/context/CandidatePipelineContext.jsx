@@ -1472,6 +1472,154 @@ export function CandidatePipelineProvider({ children }) {
     return true;
   }, [activeStage]);
 
+  function handleStartInterview(candidate) {
+    if (!candidate?.id) return;
+
+    const movementReason =
+      "Final interview has been started and is currently in progress.";
+
+    const updatedCandidate = {
+      ...candidate,
+      interviewStatus: "Interview in Progress",
+      reasonForMovement: movementReason,
+      timeline: [
+        ...(candidate.timeline || []),
+        {
+          stage: candidate.currentStage || "Interview Scheduled",
+          owner: currentUserName,
+          source: "Final Interview",
+          timestamp: getCurrentTimestamp(),
+          reason: movementReason,
+        },
+      ],
+    };
+
+    updateCandidateRecord(updatedCandidate);
+    setSelectedCandidate(updatedCandidate);
+  }
+
+  function handleSubmitFinalInterview({
+    candidateId,
+    candidateApplicationId,
+    positionId,
+    formId,
+    formName = "",
+    answers = {},
+    fieldsSnapshot = [],
+  }) {
+    const matchedCandidate = candidateList.find((candidate) => {
+      return (
+        String(candidate.candidateId || "") === String(candidateId || "") ||
+        String(candidate.candidateApplicationId || "") ===
+          String(candidateApplicationId || "") ||
+        String(candidate.applicationId || "") ===
+          String(candidateApplicationId || "") ||
+        String(candidate.id || "") === String(candidateApplicationId || "")
+      );
+    });
+
+    if (!matchedCandidate) {
+      console.warn("FINAL INTERVIEW SUBMIT: Candidate not found", {
+        candidateId,
+        candidateApplicationId,
+        candidateList,
+      });
+
+      return false;
+    }
+
+    const submissionId = `final-interview-${Date.now()}`;
+
+    const savedFormLink = `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
+      matchedCandidate.candidateId || candidateId || "",
+    )}&candidateApplicationId=${encodeURIComponent(
+      matchedCandidate.candidateApplicationId ||
+        matchedCandidate.id ||
+        candidateApplicationId ||
+        "",
+    )}&submissionId=${encodeURIComponent(submissionId)}&mode=view`;
+
+    const submittedFormRecord = {
+      id: submissionId,
+      candidateId: matchedCandidate.candidateId || candidateId || "",
+      candidateApplicationId:
+        matchedCandidate.candidateApplicationId ||
+        matchedCandidate.id ||
+        candidateApplicationId ||
+        "",
+      positionId: positionId || "",
+      formId: formId || "",
+      formName: formName || "Final Interview Form",
+      submittedAt: getCurrentTimestamp(),
+      submittedBy: currentUserName,
+      answers,
+      fieldsSnapshot,
+      savedFormLink,
+    };
+
+    const movementReason =
+      "Final interview form was submitted. Candidate moved from Interview Scheduled to Interviewed.";
+
+    const updatedCandidateRecord = normalizeCandidate({
+      ...matchedCandidate,
+      previousStage: matchedCandidate.currentStage || "Interview Scheduled",
+      currentStage: "Interviewed",
+      dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
+      interviewStatus: "Completed",
+
+      finalInterviewSubmitted: true,
+      finalInterviewSubmittedAt: getCurrentTimestamp(),
+      finalInterviewPositionId: positionId || "",
+      finalInterviewFormId: formId || "",
+      finalInterviewAnswers: answers,
+      finalInterviewSubmittedForms: [
+        ...(matchedCandidate.finalInterviewSubmittedForms || []),
+        submittedFormRecord,
+      ],
+
+      reasonForMovement: movementReason,
+      timeline: [
+        ...(matchedCandidate.timeline || []),
+        {
+          stage: "Interviewed",
+          owner: currentUserName,
+          source: "Final Interview Form",
+          timestamp: getCurrentTimestamp(),
+          reason: movementReason,
+          remarks: "Interview status changed to Completed.",
+          savedFormLink,
+          submittedFormId: submissionId,
+        },
+      ],
+    });
+
+    setCandidateList((prev) => {
+      const next = prev.map((candidate) => {
+        const isMatchedCandidate =
+          String(candidate.candidateId || "") === String(candidateId || "") ||
+          String(candidate.candidateApplicationId || "") ===
+            String(candidateApplicationId || "") ||
+          String(candidate.applicationId || "") ===
+            String(candidateApplicationId || "") ||
+          String(candidate.id || "") === String(candidateApplicationId || "");
+
+        return isMatchedCandidate ? updatedCandidateRecord : candidate;
+      });
+
+      savePipelineCandidateData(next);
+
+      return next;
+    });
+
+    syncSelectedCandidate(updatedCandidateRecord);
+    syncTalentPoolFromPipelineApplication(updatedCandidateRecord);
+    setSelectedCandidate(updatedCandidateRecord);
+    setActiveStage("Interviewed");
+
+    return true;
+  }
+
   const value = {
     user,
     currentUserName,
@@ -1562,6 +1710,9 @@ export function CandidatePipelineProvider({ children }) {
     handleSubmitDropOff,
 
     handleResetSampleData,
+
+    handleStartInterview,
+    handleSubmitFinalInterview,
 
     ConfirmationDialog,
   };
