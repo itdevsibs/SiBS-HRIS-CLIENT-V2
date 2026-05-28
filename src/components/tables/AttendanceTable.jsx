@@ -2,18 +2,15 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   CircleCheckBig,
   CircleX,
-  Search,
   Timer,
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
 const PAGE_LIMIT = 15;
@@ -376,24 +373,34 @@ function StatCard({
   );
 }
 
-function AnimatedDropdown({ open, children, className = "" }) {
+function TimeBadge({ value, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
-      } ${className}`}
+      className={`inline-flex min-w-[74px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
     >
-      <div className="min-h-0 overflow-hidden">
+      {value}
+    </div>
+  );
+}
+
+function MobileMetric({ label, value, className = "" }) {
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
+      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+
+      {className ? (
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
-          }`}
+          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
         >
-          {children}
+          {value}
         </div>
-      </div>
+      ) : (
+        <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
+          {value}
+        </strong>
+      )}
     </div>
   );
 }
@@ -402,8 +409,6 @@ export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
   const [accountFilter, setAccountFilter] = useState("All");
   const [accountOptions, setAccountOptions] = useState([]);
-  const [accountSearch, setAccountSearch] = useState("");
-  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [isDraggingTable, setIsDraggingTable] = useState(false);
 
   const paginationContext = usePagination("attendance");
@@ -411,6 +416,9 @@ export default function AttendanceTable() {
   const {
     page = 1,
     search = "",
+    searchInput = "",
+    setSearchInput,
+    handleSearchKeyDown,
     loading,
     setLoading,
     setPagination,
@@ -423,7 +431,6 @@ export default function AttendanceTable() {
   const navigate = useNavigate();
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
-  const accountDropdownRef = useRef(null);
   const latestRequestIdRef = useRef(0);
 
   const dragStateRef = useRef({
@@ -443,39 +450,11 @@ export default function AttendanceTable() {
   const managerView = isManagerUser(user);
   const adminView = user?.tokenType === "admin" || hrAdminView || managerView;
 
-  const filteredAccountOptions = useMemo(() => {
-    const keyword = accountSearch.trim().toLowerCase();
-
-    if (!keyword) return accountOptions;
-
-    return accountOptions.filter((account) =>
-      String(account || "").toLowerCase().includes(keyword),
-    );
-  }, [accountOptions, accountSearch]);
-
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
     navigateRef.current = navigate;
   }, [setLoading, setPagination, navigate]);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        accountDropdownRef.current &&
-        !accountDropdownRef.current.contains(e.target)
-      ) {
-        setShowAccountDropdown(false);
-        setAccountSearch("");
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   const safePagination = pagination || {
     currentPage: page || 1,
@@ -488,6 +467,11 @@ export default function AttendanceTable() {
 
   const currentPage = Number(safePagination.currentPage || page || 1);
   const totalPages = Number(safePagination.totalPages || currentPage || 1);
+  const totalRecords =
+    safePagination.total === null || safePagination.total === undefined
+      ? 0
+      : Number(safePagination.total || 0);
+
   const hasPreviousPage =
     Boolean(safePagination.hasPreviousPage) || currentPage > 1;
   const hasNextPage =
@@ -528,14 +512,17 @@ export default function AttendanceTable() {
 
   function handleAccountSelect(accountName) {
     setAccountFilter(accountName);
-    setAccountSearch("");
-    setShowAccountDropdown(false);
     goToPage(1);
   }
 
-  function getAccountFilterLabel() {
-    if (!accountFilter || accountFilter === "All") return "All Accounts";
-    return accountFilter;
+  function handleAttendanceSearchKeyDown(e) {
+    if (typeof handleSearchKeyDown === "function") {
+      handleSearchKeyDown(e);
+    }
+
+    if (e.key === "Enter") {
+      goToPage(1);
+    }
   }
 
   function handleDragStart(e) {
@@ -543,7 +530,7 @@ export default function AttendanceTable() {
 
     const target = e.target;
     const isInteractiveElement = target.closest(
-      "button, a, input, select, textarea",
+      "button, a, input, select, textarea, [data-no-table-drag='true']",
     );
 
     if (isInteractiveElement) return;
@@ -590,13 +577,21 @@ export default function AttendanceTable() {
 
   useEffect(() => {
     if (tableScrollRef.current) {
-      tableScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      tableScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
     }
 
     if (mobileScrollRef.current) {
-      mobileScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      mobileScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
     }
-  }, [page, accountFilter]);
+  }, [page, search, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -608,12 +603,9 @@ export default function AttendanceTable() {
       try {
         setLoadingRef.current?.(true);
 
-        const shouldLoadAccountOptions = hrAdminView && accountOptions.length === 0;
+        const shouldLoadAccountOptions =
+          hrAdminView && accountOptions.length === 0;
 
-        /*
-          If you updated getAttendance to support includeAccounts, this sends it.
-          If your helper still only accepts 3 params, the extra object is ignored by JS.
-        */
         const result = await getAttendance(
           page,
           search,
@@ -645,7 +637,10 @@ export default function AttendanceTable() {
 
         setAttendance(result.data || []);
 
-        if (Array.isArray(result.accountOptions) && result.accountOptions.length > 0) {
+        if (
+          Array.isArray(result.accountOptions) &&
+          result.accountOptions.length > 0
+        ) {
           setAccountOptions(result.accountOptions);
         }
 
@@ -824,6 +819,13 @@ export default function AttendanceTable() {
     };
   }, [attendance]);
 
+  const accountDropdownOptions = useMemo(() => {
+    return accountOptions.map((account) => ({
+      label: account,
+      value: account,
+    }));
+  }, [accountOptions]);
+
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="p-4 sm:p-5">
@@ -880,105 +882,40 @@ export default function AttendanceTable() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-[#101828]">
-              Attendance Records
-            </h2>
+        <PaginationTable
+          title="Attendance Records"
+          subtitle={
+            adminView
+              ? "View employee attendance records for the current page."
+              : "View your current page of attendance records."
+          }
+          loading={loading}
+          searchValue={searchInput}
+          searchPlaceholder={
+            adminView ? "Search employee then press Enter" : "Search then press Enter"
+          }
+          onSearchChange={(value) => setSearchInput?.(value)}
+          onSearchKeyDown={handleAttendanceSearchKeyDown}
+          dropdownFilters={
+            hrAdminView
+              ? [
+                  {
+                    key: "account",
+                    value: accountFilter,
+                    onChange: handleAccountSelect,
+                    options: accountDropdownOptions,
+                    allLabel: "All Accounts",
+                    placeholder: "Search accounts...",
+                    className: "sm:w-[320px]",
+                  },
+                ]
+              : []
+          }
+          showPagination={false}
+          className="mb-5"
+        />
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              {adminView
-                ? "View employee attendance records for the current page."
-                : "View your current page of attendance records."}
-            </p>
-          </div>
-
-          {hrAdminView && (
-            <div
-              ref={accountDropdownRef}
-              className="relative z-50 w-full lg:w-[320px]"
-            >
-              <div className="relative">
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-
-                <input
-                  type="text"
-                  value={
-                    showAccountDropdown ? accountSearch : getAccountFilterLabel()
-                  }
-                  onChange={(e) => {
-                    setAccountSearch(e.target.value);
-                    setShowAccountDropdown(true);
-                  }}
-                  onFocus={() => {
-                    setShowAccountDropdown(true);
-                    setAccountSearch("");
-                  }}
-                  placeholder="Search accounts..."
-                  autoComplete="off"
-                  className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
-
-                <ChevronDown
-                  size={18}
-                  onClick={() => {
-                    setShowAccountDropdown((prev) => !prev);
-                    setAccountSearch("");
-                  }}
-                  className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-                    showAccountDropdown ? "rotate-180" : ""
-                  }`}
-                />
-
-                <AnimatedDropdown open={showAccountDropdown}>
-                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => handleAccountSelect("All")}
-                      className={`block w-full px-4 py-3 text-left text-sm transition ${
-                        accountFilter === "All"
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      All Accounts
-                    </button>
-
-                    {filteredAccountOptions.length > 0 ? (
-                      filteredAccountOptions.map((account, index) => {
-                        const checked = accountFilter === account;
-
-                        return (
-                          <button
-                            key={`${account}-${index}`}
-                            type="button"
-                            onClick={() => handleAccountSelect(account)}
-                            className={`block w-full px-4 py-3 text-left text-sm transition ${
-                              checked
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <span className="block truncate">{account}</span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                        No accounts found.
-                      </div>
-                    )}
-                  </div>
-                </AnimatedDropdown>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
           <div
             ref={tableScrollRef}
             onMouseDown={handleDragStart}
@@ -1318,70 +1255,19 @@ export default function AttendanceTable() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
-          <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-            Showing {attendance.length} loaded attendance records
-          </p>
-
-          <div className="flex items-center gap-2 max-sm:justify-center">
-            <button
-              type="button"
-              disabled={loading || !hasPreviousPage}
-              onClick={goPreviousPage}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </button>
-
-            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
-              Page {currentPage}
-            </span>
-
-            <button
-              type="button"
-              disabled={loading || !hasNextPage}
-              onClick={goNextPage}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <PaginationTable
+          loading={loading}
+          showSearch={false}
+          showPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadedCount={attendance.length}
+          totalRecords={totalRecords}
+          recordLabel="attendance records"
+          onPrevious={goPreviousPage}
+          onNext={goNextPage}
+        />
       </div>
-    </div>
-  );
-}
-
-function TimeBadge({ value, className = "" }) {
-  return (
-    <div
-      className={`inline-flex min-w-[74px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-    >
-      {value}
-    </div>
-  );
-}
-
-function MobileMetric({ label, value, className = "" }) {
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
-      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      {className ? (
-        <div
-          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-        >
-          {value}
-        </div>
-      ) : (
-        <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
-          {value}
-        </strong>
-      )}
     </div>
   );
 }

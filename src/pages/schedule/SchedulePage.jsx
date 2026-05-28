@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Search,
-} from "lucide-react";
+import { CalendarDays, Clock } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { getSchedule } from "../../lib/axios/getSchedule";
 import { formatDate } from "../../components/layout/FormatDateTime";
+import PaginationTable from "@/services/pagination/PaginationTable";
 
 const SCHEDULE_STATE_KEY = "schedulePageState";
 const PAGE_LIMIT = 15;
@@ -200,10 +195,12 @@ export default function SchedulePage() {
           totalRecords: 0,
           limit: PAGE_LIMIT,
         });
+
         return;
       }
 
       setSchedule(result.data || []);
+
       setPagination(
         result.pagination || {
           currentPage: page,
@@ -240,27 +237,22 @@ export default function SchedulePage() {
     };
 
     window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
 
-  useEffect(() => {
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
         top: 0,
+        left: 0,
         behavior: "smooth",
       });
     }
-  }, [page]);
+  }, [page, searchKeyword]);
 
   function runSearch() {
     setSearchKeyword(searchInput.trim());
@@ -328,6 +320,12 @@ export default function SchedulePage() {
     };
   }, [filteredSchedule]);
 
+  const currentPage = Number(pagination.currentPage || page || 1);
+  const totalPages = Math.max(Number(pagination.totalPages || 1), 1);
+  const totalRecords = Number(
+    pagination.totalRecords ?? pagination.total ?? filteredSchedule.length ?? 0,
+  );
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -355,22 +353,6 @@ export default function SchedulePage() {
                 View your work schedule and assigned shift details.
               </p>
             </div>
-
-            <div className="sibs-profile-tab-panel relative w-full shrink-0 lg:w-80">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
-
-              <input
-                type="text"
-                placeholder="Search schedule then press Enter"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
-            </div>
           </section>
 
           <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
@@ -387,7 +369,7 @@ export default function SchedulePage() {
               </div>
 
               <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-                Page {pagination.currentPage} of {pagination.totalPages}
+                Page {currentPage} of {totalPages}
               </Badge>
             </div>
 
@@ -433,19 +415,19 @@ export default function SchedulePage() {
             style={{ animationDelay: "80ms" }}
           >
             <div className="p-4 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    Schedule Records
-                  </h2>
+              <PaginationTable
+                title="Schedule Records"
+                subtitle="View your current page of schedule records."
+                loading={loading}
+                searchValue={searchInput}
+                searchPlaceholder="Search schedule then press Enter"
+                onSearchChange={(value) => setSearchInput(value)}
+                onSearchKeyDown={handleSearchKeyDown}
+                showPagination={false}
+                className="mb-5"
+              />
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    View your current page of schedule records.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
+              <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
                 <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
                   <table className="w-full min-w-[980px] border-collapse bg-white">
                     <thead className="sticky top-0 z-10 bg-slate-50">
@@ -453,21 +435,27 @@ export default function SchedulePage() {
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Date
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Mode
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Login
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Break Out
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Break In
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Logout
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Registered
                         </th>
@@ -542,37 +530,18 @@ export default function SchedulePage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
-                <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {filteredSchedule.length} loaded schedule records
-                </p>
-
-                <div className="flex items-center gap-2 max-sm:justify-center">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || loading}
-                    onClick={handlePreviousPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={16} />
-                    Previous
-                  </button>
-
-                  <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
-                    Page {pagination.currentPage}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={page >= pagination.totalPages || loading}
-                    onClick={handleNextPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <PaginationTable
+                loading={loading}
+                showSearch={false}
+                showPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                loadedCount={filteredSchedule.length}
+                totalRecords={totalRecords}
+                recordLabel="schedule records"
+                onPrevious={handlePreviousPage}
+                onNext={handleNextPage}
+              />
             </div>
           </section>
         </div>

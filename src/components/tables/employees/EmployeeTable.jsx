@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -7,16 +7,45 @@ import {
   Building2,
   CalendarDays,
   UserRound,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 
 import { getEmployee } from "../../../lib/axios/getEmployee";
 import { formatDate } from "../../../lib/axios/dateFormatter";
 import { usePagination } from "@/services/context/PaginationContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
+import { useUser } from "../../../services/context/UserContext";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 const PAGE_LIMIT = 15;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function canViewAccountFilter(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "hr_admin",
+      "hradmin",
+      "super_admin",
+      "superadmin",
+      "super_administrator",
+    ].includes(role),
+  );
+}
 
 function formatEmployeeName(emp) {
   const lastName = String(emp?.lastName || emp?.gy_emp_lname || "").trim();
@@ -53,6 +82,67 @@ function getAccountManager(emp) {
   );
 }
 
+function getProfileImageUrl(emp) {
+  const directUrl =
+    emp?.profilePictureUrl ||
+    emp?.profile_picture_url ||
+    emp?.profileUrl ||
+    emp?.profile_url ||
+    "";
+
+  if (directUrl) return directUrl;
+
+  const filename =
+    emp?.profile_filename ||
+    emp?.profileFilename ||
+    emp?.profilePicture ||
+    emp?.profile_picture ||
+    "";
+
+  if (!filename) return "";
+
+  if (String(filename).startsWith("http")) return filename;
+
+  return `${API_URL}/api/employee-profile/file/${encodeURIComponent(filename)}`;
+}
+
+function ProfileAvatar({ emp, size = "md" }) {
+  const imageUrl = getProfileImageUrl(emp);
+
+  const sizeClass =
+    size === "lg"
+      ? "h-12 w-12"
+      : size === "sm"
+        ? "h-9 w-9"
+        : "h-10 w-10";
+
+  return (
+    <div
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt="Profile"
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            const fallback = e.currentTarget.nextElementSibling;
+            if (fallback) fallback.style.display = "flex";
+          }}
+        />
+      ) : null}
+
+      <div
+        className="flex h-full w-full items-center justify-center text-sibs-primary-1"
+        style={{ display: imageUrl ? "none" : "flex" }}
+      >
+        <UserRound size={size === "lg" ? 24 : 20} />
+      </div>
+    </div>
+  );
+}
+
 function MobileInfoItem({ icon: Icon, label, value }) {
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
@@ -82,8 +172,10 @@ function MobileEmployeeCard({ emp, onOpen }) {
       onClick={() => onOpen(emp)}
       className="sibs-page-card-in block w-full cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-start gap-3">
+        <ProfileAvatar emp={emp} size="lg" />
+
+        <div className="min-w-0 flex-1">
           <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
             {emp.sibsId || "N/A"}
           </p>
@@ -140,14 +232,25 @@ function MobileEmployeeCard({ emp, onOpen }) {
 }
 
 export default function EmployeeTable() {
+  const { user } = useUser();
+  const showAccountFilter = canViewAccountFilter(user);
+
   const [employees, setEmployees] = useState([]);
   const [isDraggingTable, setIsDraggingTable] = useState(false);
+
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountOptions, setAccountOptions] = useState([]);
+
+  const loadedAccountOptionsRef = useRef(false);
 
   const paginationContext = usePagination("employees");
 
   const {
     page = 1,
     search = "",
+    searchInput = "",
+    setSearchInput,
+    handleSearchKeyDown,
     loading,
     setLoading,
     setPagination,
@@ -184,11 +287,38 @@ export default function EmployeeTable() {
   const totalPages = Number(safePagination.totalPages || 1);
   const totalRecords = Number(safePagination.total || 0);
 
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+
+  const accountDropdownOptions = useMemo(() => {
+    const backendOptions = Array.isArray(accountOptions) ? accountOptions : [];
+
+    const loadedOptions = employees
+      .map((emp) => String(emp?.account || "").trim())
+      .filter(Boolean);
+
+    const merged = [...new Set([...backendOptions, ...loadedOptions])].sort(
+      (a, b) => a.localeCompare(b),
+    );
+
+    return merged.map((account) => ({
+      label: account,
+      value: account,
+    }));
+  }, [accountOptions, employees]);
+
   useEffect(() => {
     navigateRef.current = navigate;
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
   }, [navigate, setLoading, setPagination]);
+
+  useEffect(() => {
+    if (!showAccountFilter && accountFilter !== "All") {
+      setAccountFilter("All");
+      loadedAccountOptionsRef.current = false;
+    }
+  }, [showAccountFilter, accountFilter]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -206,16 +336,26 @@ export default function EmployeeTable() {
         behavior: "smooth",
       });
     }
-  }, [page]);
+  }, [page, search, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const fetchEmployees = async () => {
+    async function fetchEmployees() {
       try {
         setLoadingRef.current?.(true);
 
-        const result = await getEmployee(page, search);
+        const shouldLoadAccountOptions =
+          showAccountFilter && !loadedAccountOptionsRef.current;
+
+        const result = await getEmployee(
+          page,
+          search,
+          showAccountFilter ? accountFilter : "All",
+          {
+            includeAccounts: shouldLoadAccountOptions,
+          },
+        );
 
         if (cancelled) return;
 
@@ -237,6 +377,15 @@ export default function EmployeeTable() {
         }
 
         setEmployees(result.data || []);
+
+        if (
+          showAccountFilter &&
+          shouldLoadAccountOptions &&
+          Array.isArray(result.accountOptions)
+        ) {
+          setAccountOptions(result.accountOptions);
+          loadedAccountOptionsRef.current = true;
+        }
 
         setPaginationRef.current?.(
           result.pagination || {
@@ -263,14 +412,14 @@ export default function EmployeeTable() {
           setLoadingRef.current?.(false);
         }
       }
-    };
+    }
 
     fetchEmployees();
 
     return () => {
       cancelled = true;
     };
-  }, [page, search]);
+  }, [page, search, accountFilter, showAccountFilter]);
 
   function goToPage(nextPage) {
     const cleanPage = Math.max(Number(nextPage) || 1, 1);
@@ -296,13 +445,28 @@ export default function EmployeeTable() {
   }
 
   function handlePreviousPage() {
-    if (loading || currentPage <= 1) return;
+    if (loading || !hasPreviousPage) return;
     goToPage(currentPage - 1);
   }
 
   function handleNextPage() {
-    if (loading || currentPage >= totalPages) return;
+    if (loading || !hasNextPage) return;
     goToPage(currentPage + 1);
+  }
+
+  function handleEmployeeSearchKeyDown(e) {
+    if (typeof handleSearchKeyDown === "function") {
+      handleSearchKeyDown(e);
+    }
+
+    if (e.key === "Enter") {
+      goToPage(1);
+    }
+  }
+
+  function handleAccountSelect(nextAccount) {
+    setAccountFilter(nextAccount || "All");
+    goToPage(1);
   }
 
   function handleDragStart(e) {
@@ -310,7 +474,7 @@ export default function EmployeeTable() {
 
     const target = e.target;
     const isInteractiveElement = target.closest(
-      "button, a, input, select, textarea",
+      "button, a, input, select, textarea, [data-no-table-drag='true']",
     );
 
     if (isInteractiveElement) return;
@@ -367,6 +531,35 @@ export default function EmployeeTable() {
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="p-4 sm:p-5">
+        <PaginationTable
+          title="Employee Records"
+          subtitle="Only 15 employee records are loaded from the backend per page."
+          loading={loading}
+          searchValue={searchInput}
+          searchPlaceholder="Search employee then press Enter"
+          onSearchChange={(value) => setSearchInput?.(value)}
+          onSearchKeyDown={handleEmployeeSearchKeyDown}
+          dropdownFilters={
+            showAccountFilter
+              ? [
+                  {
+                    key: "account",
+                    value: accountFilter,
+                    onChange: handleAccountSelect,
+                    options: accountDropdownOptions,
+                    allLabel: "All Accounts",
+                    placeholder: "Search accounts...",
+                    className: "sm:w-[320px]",
+                    searchable: true,
+                    includeAll: true,
+                  },
+                ]
+              : []
+          }
+          showPagination={false}
+          className="mb-5"
+        />
+
         <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
           <div
             ref={tableScrollRef}
@@ -378,11 +571,15 @@ export default function EmployeeTable() {
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <table className="w-full min-w-[1550px] border-collapse bg-white">
+            <table className="w-full min-w-[1650px] border-collapse bg-white">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                     SiBS ID
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Profile
                   </th>
 
                   <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
@@ -427,12 +624,12 @@ export default function EmployeeTable() {
                 </tr>
               </thead>
 
-              <tbody key={`${page}-${search}-${loading}`}>
+              <tbody key={`${page}-${search}-${accountFilter}-${loading}`}>
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={index}>
                       <td
-                        colSpan={11}
+                        colSpan={12}
                         className="border-t border-[#f3f4f6] px-5 py-4"
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
@@ -442,7 +639,7 @@ export default function EmployeeTable() {
                 ) : employees.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={12}
                       className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
                     >
                       No employees found.
@@ -457,6 +654,12 @@ export default function EmployeeTable() {
                     >
                       <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
                         {emp.sibsId || "N/A"}
+                      </td>
+
+                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4">
+                        <div className="flex justify-center">
+                          <ProfileAvatar emp={emp} />
+                        </div>
                       </td>
 
                       <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
@@ -511,10 +714,7 @@ export default function EmployeeTable() {
         </div>
 
         <div className="block lg:hidden">
-          <div
-            ref={mobileScrollRef}
-            className="max-h-[670px] overflow-y-auto"
-          >
+          <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto">
             {loading ? (
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
                 Loading...
@@ -524,7 +724,10 @@ export default function EmployeeTable() {
                 No employees found.
               </div>
             ) : (
-              <div key={`${page}-${search}`} className="flex flex-col gap-3">
+              <div
+                key={`${page}-${search}-${accountFilter}`}
+                className="flex flex-col gap-3"
+              >
                 {employees.map((emp, index) => (
                   <MobileEmployeeCard
                     key={emp.sibsId || index}
@@ -537,38 +740,18 @@ export default function EmployeeTable() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
-          <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-            Showing {employees.length} loaded employee records
-            {totalRecords > 0 ? ` out of ${totalRecords}` : ""}
-          </p>
-
-          <div className="flex items-center gap-2 max-sm:justify-center">
-            <button
-              type="button"
-              disabled={currentPage <= 1 || loading}
-              onClick={handlePreviousPage}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </button>
-
-            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
-              Page {currentPage}
-            </span>
-
-            <button
-              type="button"
-              disabled={currentPage >= totalPages || loading}
-              onClick={handleNextPage}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <PaginationTable
+          loading={loading}
+          showSearch={false}
+          showPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadedCount={employees.length}
+          totalRecords={totalRecords}
+          recordLabel="employee records"
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+        />
       </div>
     </div>
   );

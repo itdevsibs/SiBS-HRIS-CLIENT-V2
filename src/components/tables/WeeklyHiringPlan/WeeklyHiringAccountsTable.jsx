@@ -1,5 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, ListChecks } from "lucide-react";
+
+import PaginationTable from "@/services/pagination/PaginationTable";
+
+const PAGE_LIMIT = 15;
 
 function getNumberValue(...values) {
   for (const value of values) {
@@ -55,44 +59,44 @@ function getStatusClass(status) {
 function getRowMetrics(item) {
   const requiredHeadcount = getNumberValue(
     item.requiredHeadcount,
-    item.required_headcount
+    item.required_headcount,
   );
 
   const actualHeadcount = getNumberValue(
     item.actualHeadcount,
-    item.actual_headcount
+    item.actual_headcount,
   );
 
   const requiredBufferHeadcount = getNumberValue(
     item.requiredBufferHeadcount,
     item.required_buffer_headcount,
     item.bufferHeadcount,
-    item.buffer_headcount
+    item.buffer_headcount,
   );
 
   const requiredBufferPercent = getNumberValue(
     item.requiredBufferPercent,
     item.required_buffer_percent,
     item.bufferPercent,
-    item.buffer_percent
+    item.buffer_percent,
   );
 
   const actualBufferCount = getNumberValue(
     item.actualBufferCount,
     item.actual_buffer_count,
     item.missingHeadcount,
-    item.missing_headcount
+    item.missing_headcount,
   );
 
   const actualBufferPercent = getNumberValue(
     item.actualBufferPercent,
-    item.actual_buffer_percent
+    item.actual_buffer_percent,
   );
 
   const requiredActualHeadcountWithBuffer = getNumberValue(
     item.requiredActualHeadcountWithBuffer,
     item.required_actual_headcount_with_buffer,
-    requiredHeadcount + requiredBufferHeadcount
+    requiredHeadcount + requiredBufferHeadcount,
   );
 
   const absenteeismPastSixWeeksAverage = getNumberValue(
@@ -101,14 +105,14 @@ function getRowMetrics(item) {
     item.absenteeismOpsCount,
     item.absenteeism_ops_count,
     item.absenteeismCount,
-    item.absenteeism_count
+    item.absenteeism_count,
   );
 
   const attritionPastSixWeeksAverage = getNumberValue(
     item.attritionPastSixWeeksAverage,
     item.attrition_past_six_weeks_average,
     item.attritionPastCount,
-    item.attrition_past_count
+    item.attrition_past_count,
   );
 
   const opsPrf = getNumberValue(item.opsPrf, item.ops_prf);
@@ -119,12 +123,12 @@ function getRowMetrics(item) {
     requiredBufferHeadcount +
       absenteeismPastSixWeeksAverage +
       attritionPastSixWeeksAverage +
-      opsPrf
+      opsPrf,
   );
 
   const leadsToInterview = getNumberValue(
     item.leadsToInterview,
-    item.leads_to_interview
+    item.leads_to_interview,
   );
 
   const hiringRate = getNumberValue(item.hiringRate, item.hiring_rate, 5);
@@ -194,23 +198,142 @@ export default function WeeklyHiringAccountsTable({
   });
 
   const [isDraggingTable, setIsDraggingTable] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const safePlans = Array.isArray(filteredPlans) ? filteredPlans : [];
+
+  const statusOptions = useMemo(() => {
+    const statuses = new Set();
+
+    safePlans.forEach((item) => {
+      const value = String(item.pipelineStatus || "").trim();
+      if (value) statuses.add(value);
+    });
+
+    return [
+      { label: "All Status", value: "All" },
+      ...Array.from(statuses)
+        .sort()
+        .map((value) => ({
+          label: value,
+          value,
+        })),
+    ];
+  }, [safePlans]);
+
+  const displayPlans = useMemo(() => {
+    const keyword = String(search || "").trim().toLowerCase();
+
+    return safePlans.filter((item) => {
+      const status = String(item.pipelineStatus || "").trim();
+
+      const matchesStatus =
+        statusFilter === "All" ||
+        status.toLowerCase() === statusFilter.toLowerCase();
+
+      const metrics = getRowMetrics(item);
+
+      const searchableText = [
+        item.id,
+        item.account,
+        item.cluster,
+        item.pipelineStatus,
+        item.statusNote,
+        metrics.requiredHeadcount,
+        metrics.actualHeadcount,
+        metrics.requiredBufferHeadcount,
+        metrics.requiredBufferPercent,
+        metrics.actualBufferCount,
+        metrics.actualBufferPercent,
+        metrics.requiredActualHeadcountWithBuffer,
+        metrics.absenteeismPastSixWeeksAverage,
+        metrics.attritionPastSixWeeksAverage,
+        metrics.opsPrf,
+        metrics.actualHeadcountNeeds,
+        metrics.leadsToInterview,
+        metrics.hiringRate,
+      ]
+        .filter((value) => value !== undefined && value !== null)
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !keyword || searchableText.includes(keyword);
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [safePlans, search, statusFilter]);
+
+  const totalRecords = displayPlans.length;
+  const totalPages = Math.max(Math.ceil(totalRecords / PAGE_LIMIT), 1);
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+
+  const paginatedPlans = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const startIndex = (safePage - 1) * PAGE_LIMIT;
+
+    return displayPlans.slice(startIndex, startIndex + PAGE_LIMIT);
+  }, [displayPlans, currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredPlans, search, statusFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
-      tableScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      tableScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
     }
 
     if (mobileScrollRef.current) {
-      mobileScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      mobileScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
     }
-  }, [filteredPlans.length]);
+  }, [currentPage, search, statusFilter]);
+
+  function handlePreviousPage() {
+    if (accountsLoading || !hasPreviousPage) return;
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  }
+
+  function handleNextPage() {
+    if (accountsLoading || !hasNextPage) return;
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }
+
+  function handleSearchKeyDown(e) {
+    if (e.key !== "Enter") return;
+
+    setSearch(searchInput);
+    setCurrentPage(1);
+  }
+
+  function handleStatusChange(nextStatus) {
+    setStatusFilter(nextStatus);
+    setCurrentPage(1);
+  }
 
   function handleDragStart(e) {
     if (e.button !== 0) return;
 
     const target = e.target;
     const isInteractiveElement = target.closest(
-      "button, a, input, select, textarea"
+      "button, a, input, select, textarea, [data-no-table-drag='true']",
     );
 
     if (isInteractiveElement) return;
@@ -269,20 +392,32 @@ export default function WeeklyHiringAccountsTable({
               <ListChecks size={14} />
               Account Plan
             </div>
-
-            <h2 className="mt-3 text-base font-extrabold text-[#101828]">
-              Weekly Hiring Accounts
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review Excel-based hiring plan computation per account, including
-              buffer, actual buffer, headcount needs, OPS PRF, and leads.
-            </p>
           </div>
 
           <div className="inline-flex w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-            Records: {filteredPlans.length}
+            Records: {totalRecords}
           </div>
+        </div>
+
+        <div className="mt-4">
+          <PaginationTable
+            title="Weekly Hiring Accounts"
+            subtitle="Review Excel-based hiring plan computation per account, including buffer, actual buffer, headcount needs, OPS PRF, and leads."
+            loading={accountsLoading}
+            searchValue={searchInput}
+            searchPlaceholder="Search account then press Enter"
+            onSearchChange={(value) => setSearchInput(value)}
+            onSearchKeyDown={handleSearchKeyDown}
+            filters={[
+              {
+                key: "pipelineStatus",
+                value: statusFilter,
+                onChange: handleStatusChange,
+                options: statusOptions,
+              },
+            ]}
+            showPagination={false}
+          />
         </div>
       </div>
 
@@ -355,17 +490,19 @@ export default function WeeklyHiringAccountsTable({
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody key={`${currentPage}-${search}-${statusFilter}-${accountsLoading}`}>
                 {accountsLoading ? (
-                  <tr>
-                    <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={17}
-                    >
-                      Loading weekly hiring plan records...
-                    </td>
-                  </tr>
-                ) : filteredPlans.length === 0 ? (
+                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                    <tr key={index}>
+                      <td
+                        className="border-b border-[#E6ECF2] px-5 py-5"
+                        colSpan={17}
+                      >
+                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                      </td>
+                    </tr>
+                  ))
+                ) : paginatedPlans.length === 0 ? (
                   <tr>
                     <td
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
@@ -375,7 +512,7 @@ export default function WeeklyHiringAccountsTable({
                     </td>
                   </tr>
                 ) : (
-                  filteredPlans.map((item) => {
+                  paginatedPlans.map((item) => {
                     const metrics = getRowMetrics(item);
 
                     return (
@@ -432,13 +569,13 @@ export default function WeeklyHiringAccountsTable({
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
                           {formatNumber(
                             metrics.requiredActualHeadcountWithBuffer,
-                            2
+                            2,
                           )}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
                           {formatNumber(
-                            metrics.absenteeismPastSixWeeksAverage
+                            metrics.absenteeismPastSixWeeksAverage,
                           )}
                         </td>
 
@@ -465,7 +602,7 @@ export default function WeeklyHiringAccountsTable({
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
                           <span
                             className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              item.pipelineStatus
+                              item.pipelineStatus,
                             )}`}
                           >
                             {item.pipelineStatus || "--"}
@@ -507,13 +644,16 @@ export default function WeeklyHiringAccountsTable({
               <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
                 Loading weekly hiring plan records...
               </div>
-            ) : filteredPlans.length === 0 ? (
+            ) : paginatedPlans.length === 0 ? (
               <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
                 No weekly hiring plan records found.
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredPlans.map((item) => {
+              <div
+                key={`${currentPage}-${search}-${statusFilter}`}
+                className="space-y-3"
+              >
+                {paginatedPlans.map((item) => {
                   const metrics = getRowMetrics(item);
 
                   return (
@@ -536,7 +676,7 @@ export default function WeeklyHiringAccountsTable({
 
                         <span
                           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                            item.pipelineStatus
+                            item.pipelineStatus,
                           )}`}
                         >
                           {item.pipelineStatus || "--"}
@@ -558,7 +698,7 @@ export default function WeeklyHiringAccountsTable({
                           label="Required Buffer HC"
                           value={formatNumber(
                             metrics.requiredBufferHeadcount,
-                            2
+                            2,
                           )}
                         />
 
@@ -591,21 +731,21 @@ export default function WeeklyHiringAccountsTable({
                           label="Required Actual HC + Buffer"
                           value={formatNumber(
                             metrics.requiredActualHeadcountWithBuffer,
-                            2
+                            2,
                           )}
                         />
 
                         <MobileMetric
                           label="Absenteeism Avg"
                           value={formatNumber(
-                            metrics.absenteeismPastSixWeeksAverage
+                            metrics.absenteeismPastSixWeeksAverage,
                           )}
                         />
 
                         <MobileMetric
                           label="Attrition Avg"
                           value={formatNumber(
-                            metrics.attritionPastSixWeeksAverage
+                            metrics.attritionPastSixWeeksAverage,
                           )}
                         />
 
@@ -616,10 +756,7 @@ export default function WeeklyHiringAccountsTable({
 
                         <MobileMetric
                           label="Actual HC Needs"
-                          value={formatNumber(
-                            metrics.actualHeadcountNeeds,
-                            2
-                          )}
+                          value={formatNumber(metrics.actualHeadcountNeeds, 2)}
                           valueClassName="text-violet-700"
                         />
 
@@ -655,6 +792,19 @@ export default function WeeklyHiringAccountsTable({
             )}
           </div>
         </div>
+
+        <PaginationTable
+          loading={accountsLoading}
+          showSearch={false}
+          showPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadedCount={paginatedPlans.length}
+          totalRecords={totalRecords}
+          recordLabel="weekly hiring account records"
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+        />
       </div>
     </section>
   );

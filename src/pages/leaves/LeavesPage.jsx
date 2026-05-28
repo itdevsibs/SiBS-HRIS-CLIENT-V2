@@ -3,13 +3,9 @@ import Header from "../../components/layout/Header";
 import {
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Eye,
   FileText,
-  Search,
   UserRound,
   X,
   XCircle,
@@ -17,6 +13,7 @@ import {
 
 import { getLeaves } from "@/lib/axios/getLeaves";
 import { useUser } from "../../services/context/UserContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 
 const PAGE_LIMIT = 15;
 
@@ -79,6 +76,8 @@ function canViewAccountFilter(user) {
 
   return roles.some((role) =>
     [
+      "admin",
+      "administrator",
       "hr_admin",
       "hradmin",
       "super_admin",
@@ -229,28 +228,6 @@ function StatCard({
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
         >
           <Icon size={22} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function AnimatedDropdown({ open, children, className = "" }) {
-  return (
-    <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
-      } ${className}`}
-    >
-      <div className="min-h-0 overflow-hidden">
-        <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
-          }`}
-        >
-          {children}
         </div>
       </div>
     </div>
@@ -492,7 +469,6 @@ export default function LeavesPage() {
   const { user } = useUser();
   const mainScrollRef = useRef(null);
   const tableScrollRef = useRef(null);
-  const accountDropdownRef = useRef(null);
 
   const [leaves, setLeaves] = useState([]);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -505,8 +481,6 @@ export default function LeavesPage() {
 
   const [accountFilter, setAccountFilter] = useState("All");
   const [accountOptions, setAccountOptions] = useState([]);
-  const [accountSearch, setAccountSearch] = useState("");
-  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [recordScope, setRecordScope] = useState("all");
@@ -523,21 +497,6 @@ export default function LeavesPage() {
     String(user?.role || "").toLowerCase() === "employee";
 
   const showAccountFilter = canViewAccountFilter(user);
-
-  const filteredAccountOptions = useMemo(() => {
-    const keyword = accountSearch.trim().toLowerCase();
-
-    if (!keyword) return accountOptions;
-
-    return accountOptions.filter((account) =>
-      String(account || "").toLowerCase().includes(keyword),
-    );
-  }, [accountOptions, accountSearch]);
-
-  function getAccountFilterLabel() {
-    if (!accountFilter || accountFilter === "All") return "All Accounts";
-    return accountFilter;
-  }
 
   function scrollPageToTop() {
     requestAnimationFrame(() => {
@@ -640,8 +599,6 @@ export default function LeavesPage() {
 
   function handleAccountSelect(accountName) {
     setAccountFilter(accountName);
-    setAccountSearch("");
-    setShowAccountDropdown(false);
     setCurrentPage(1);
 
     fetchLeaves({
@@ -674,9 +631,7 @@ export default function LeavesPage() {
     }
   }
 
-  function handleStatusChange(e) {
-    const nextStatus = e.target.value;
-
+  function handleStatusChange(nextStatus) {
     setStatusFilter(nextStatus);
     setCurrentPage(1);
 
@@ -690,7 +645,7 @@ export default function LeavesPage() {
   }
 
   function handlePreviousPage() {
-    if (loading || currentPage <= 1) return;
+    if (loading || !pagination.hasPreviousPage) return;
 
     const nextPage = currentPage - 1;
 
@@ -726,24 +681,6 @@ export default function LeavesPage() {
   }
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        accountDropdownRef.current &&
-        !accountDropdownRef.current.contains(e.target)
-      ) {
-        setShowAccountDropdown(false);
-        setAccountSearch("");
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
     fetchLeaves({
       pageValue: 1,
       searchValue: "",
@@ -751,6 +688,7 @@ export default function LeavesPage() {
       accountValue: "All",
       shouldScrollTop: true,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -822,6 +760,18 @@ export default function LeavesPage() {
   }, [paginatedLeaves]);
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
+
+  const currentPaginationPage = Number(pagination.currentPage || currentPage);
+  const totalPages = pagination.hasNextPage
+    ? currentPaginationPage + 1
+    : currentPaginationPage;
+
+  const accountDropdownOptions = useMemo(() => {
+    return accountOptions.map((account) => ({
+      label: account,
+      value: account,
+    }));
+  }, [accountOptions]);
 
   return (
     <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
@@ -936,136 +886,55 @@ export default function LeavesPage() {
             style={{ animationDelay: "80ms" }}
           >
             <div className="p-4 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    {isPersonalView ? "My Leave Records" : "Leave Records"}
-                  </h2>
+              <PaginationTable
+                title={isPersonalView ? "My Leave Records" : "Leave Records"}
+                subtitle={
+                  isPersonalView
+                    ? "Only your current page of leave records is loaded."
+                    : "Only 15 leave records are loaded from the backend per page."
+                }
+                loading={loading}
+                searchValue={searchInput}
+                searchPlaceholder="Search then press Enter"
+                onSearchChange={(value) => setSearchInput(value)}
+                onSearchKeyDown={handleSearchKeyDown}
+                dropdownFilters={
+                  showAccountFilter
+                    ? [
+                        {
+                          key: "account",
+                          value: accountFilter,
+                          onChange: handleAccountSelect,
+                          options: accountDropdownOptions,
+                          allLabel: "All Accounts",
+                          placeholder: "Search accounts...",
+                          className: "sm:w-[280px]",
+                          searchable: true,
+                          includeAll: true,
+                        },
+                      ]
+                    : []
+                }
+                filters={[
+                  {
+                    key: "status",
+                    value: statusFilter,
+                    onChange: handleStatusChange,
+                    options: [
+                      { label: "All Status", value: "All" },
+                      { label: "Approved", value: "Approved" },
+                      { label: "Pending", value: "Pending" },
+                      { label: "Rejected", value: "Rejected" },
+                    ],
+                    className: "sm:w-[190px]",
+                    searchable: false,
+                  },
+                ]}
+                showPagination={false}
+                className="mb-5"
+              />
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    {isPersonalView
-                      ? "Only your current page of leave records is loaded."
-                      : "Only 15 leave records are loaded from the backend per page."}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
-                  <div className="relative w-full sm:w-[340px]">
-                    <Search
-                      size={18}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                    />
-
-                    <input
-                      type="text"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyDown={handleSearchKeyDown}
-                      placeholder="Search then press Enter"
-                      className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    />
-                  </div>
-
-                  {showAccountFilter && (
-                    <div
-                      ref={accountDropdownRef}
-                      className="relative z-50 w-full sm:w-[280px]"
-                    >
-                      <Search
-                        size={17}
-                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                      />
-
-                      <input
-                        type="text"
-                        value={
-                          showAccountDropdown
-                            ? accountSearch
-                            : getAccountFilterLabel()
-                        }
-                        onChange={(e) => {
-                          setAccountSearch(e.target.value);
-                          setShowAccountDropdown(true);
-                        }}
-                        onFocus={() => {
-                          setShowAccountDropdown(true);
-                          setAccountSearch("");
-                        }}
-                        placeholder="Search accounts..."
-                        autoComplete="off"
-                        className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-10 pr-10 text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      />
-
-                      <ChevronDown
-                        size={17}
-                        onClick={() => {
-                          setShowAccountDropdown((prev) => !prev);
-                          setAccountSearch("");
-                        }}
-                        className={`absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-                          showAccountDropdown ? "rotate-180" : ""
-                        }`}
-                      />
-
-                      <AnimatedDropdown open={showAccountDropdown}>
-                        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                          <button
-                            type="button"
-                            onClick={() => handleAccountSelect("All")}
-                            className={`block w-full px-4 py-3 text-left text-sm transition ${
-                              accountFilter === "All"
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            All Accounts
-                          </button>
-
-                          {filteredAccountOptions.length > 0 ? (
-                            filteredAccountOptions.map((account, index) => {
-                              const checked = accountFilter === account;
-
-                              return (
-                                <button
-                                  key={`${account}-${index}`}
-                                  type="button"
-                                  onClick={() => handleAccountSelect(account)}
-                                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                    checked
-                                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                      : "text-[#344054] hover:bg-[#F8FAFC]"
-                                  }`}
-                                >
-                                  <span className="block truncate">
-                                    {account}
-                                  </span>
-                                </button>
-                              );
-                            })
-                          ) : (
-                            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                              No accounts found.
-                            </div>
-                          )}
-                        </div>
-                      </AnimatedDropdown>
-                    </div>
-                  )}
-
-                  <select
-                    value={statusFilter}
-                    onChange={handleStatusChange}
-                    className="h-11 rounded-full border border-sibs-tertiary-8 bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
+              <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
                 <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
                   <table className="w-full min-w-[1280px] border-collapse bg-white">
                     <thead className="sticky top-0 z-10 bg-slate-50">
@@ -1073,33 +942,43 @@ export default function LeavesPage() {
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Employee
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Leave Type
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Filed
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Date From
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Date To
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Days
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Credits
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Plotted
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Remaining
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Status
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-right text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Action
                         </th>
@@ -1205,37 +1084,18 @@ export default function LeavesPage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
-                <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {paginatedLeaves.length} loaded leave records
-                </p>
-
-                <div className="flex items-center gap-2 max-sm:justify-center">
-                  <button
-                    type="button"
-                    disabled={!pagination.hasPreviousPage || loading}
-                    onClick={handlePreviousPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={16} />
-                    Previous
-                  </button>
-
-                  <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
-                    Page {pagination.currentPage}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={!pagination.hasNextPage || loading}
-                    onClick={handleNextPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <PaginationTable
+                loading={loading}
+                showSearch={false}
+                showPagination
+                currentPage={currentPaginationPage}
+                totalPages={totalPages}
+                loadedCount={paginatedLeaves.length}
+                totalRecords={0}
+                recordLabel="leave records"
+                onPrevious={handlePreviousPage}
+                onNext={handleNextPage}
+              />
             </div>
           </section>
         </div>
