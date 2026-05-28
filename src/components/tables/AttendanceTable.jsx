@@ -18,6 +18,7 @@ import socket from "@/lib/axios/socket";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
 const PAGE_LIMIT = 15;
+const LATE_GRACE_MS = 60 * 1000;
 
 function formatNumber(value) {
   if (value === "..." || value === null || value === undefined) return "...";
@@ -27,20 +28,218 @@ function formatNumber(value) {
   });
 }
 
-function capWorkHours(value) {
+function normalizeStatus(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+}
+
+function getNumberValue(value) {
   if (value === null || value === undefined || value === "") return 0;
 
   const numberValue = Number(value);
 
   if (Number.isNaN(numberValue)) return 0;
 
-  return Math.min(numberValue, 8);
+  return numberValue;
 }
 
-function displayCappedWorkHours(value) {
-  if (value === null || value === undefined || value === "") return "—";
+function getValidDate(value) {
+  if (!value) return null;
 
-  return formatNumber(capWorkHours(value));
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed;
+}
+
+function getTimeOnlyParts(value) {
+  if (!value) return null;
+
+  const raw = String(value).trim();
+
+  const amPmMatch = raw.match(
+    /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i,
+  );
+
+  if (amPmMatch) {
+    let hour = Number(amPmMatch[1]);
+    const minute = Number(amPmMatch[2]);
+    const second = Number(amPmMatch[3] || 0);
+    const meridiem = amPmMatch[4].toUpperCase();
+
+    if (meridiem === "PM" && hour !== 12) hour += 12;
+    if (meridiem === "AM" && hour === 12) hour = 0;
+
+    return { hour, minute, second };
+  }
+
+  const timeMatch = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+
+  if (timeMatch) {
+    return {
+      hour: Number(timeMatch[1]),
+      minute: Number(timeMatch[2]),
+      second: Number(timeMatch[3] || 0),
+    };
+  }
+
+  const parsed = getValidDate(raw);
+
+  if (!parsed) return null;
+
+  return {
+    hour: parsed.getHours(),
+    minute: parsed.getMinutes(),
+    second: parsed.getSeconds(),
+  };
+}
+
+function buildDateTimeFromTrackerDate(trackerDate, timeValue) {
+  const baseDate = getValidDate(trackerDate) || new Date();
+  const timeParts = getTimeOnlyParts(timeValue);
+
+  if (!timeParts) {
+    return getValidDate(timeValue);
+  }
+
+  const result = new Date(baseDate);
+
+  result.setHours(timeParts.hour, timeParts.minute, timeParts.second || 0, 0);
+
+  return result;
+}
+
+function getHoursBetween(startTime, endTime) {
+  if (!startTime || !endTime) return 0;
+
+  const start = getValidDate(startTime);
+  const end = getValidDate(endTime);
+
+  if (!start || !end) return 0;
+
+  let diffMs = end.getTime() - start.getTime();
+
+  if (diffMs < 0) {
+    diffMs += 24 * 60 * 60 * 1000;
+  }
+
+  return diffMs / (1000 * 60 * 60);
+}
+
+function getScheduleStart(item) {
+  return (
+    item?.schedule_start ||
+    item?.scheduleStart ||
+    item?.gy_schedule_start ||
+    item?.gy_sched_start ||
+    item?.gy_sched_timein ||
+    item?.gy_sched_in ||
+    item?.shift_start ||
+    item?.shiftStart ||
+    item?.schedStart ||
+    item?.sched_start ||
+    null
+  );
+}
+
+function getScheduleEnd(item) {
+  return (
+    item?.schedule_end ||
+    item?.scheduleEnd ||
+    item?.gy_schedule_end ||
+    item?.gy_sched_end ||
+    item?.gy_sched_timeout ||
+    item?.gy_sched_out ||
+    item?.shift_end ||
+    item?.shiftEnd ||
+    item?.schedEnd ||
+    item?.sched_end ||
+    null
+  );
+}
+
+/*
+  Late rule:
+  Schedule 01:00:00 PM
+  Login 01:00:00 PM to 01:00:59 PM = not late
+  Login 01:01:00 PM and above = late
+*/
+function isLateBySchedule(actualTime, scheduledTime) {
+  if (!actualTime || !scheduledTime) return false;
+
+  return actualTime.getTime() - scheduledTime.getTime() >= LATE_GRACE_MS;
+}
+
+function getBreakHours(item) {
+  if (item?.gy_tracker_breakout && item?.gy_tracker_breakin) {
+    return getHoursBetween(item.gy_tracker_breakout, item.gy_tracker_breakin);
+  }
+
+  return getNumberValue(item?.gy_tracker_bh);
+}
+
+function getComputedWorkHours(item) {
+  const savedWh = getNumberValue(item?.gy_tracker_wh);
+
+  const actualLogin = getValidDate(item?.gy_tracker_login);
+  const actualLogout = getValidDate(item?.gy_tracker_logout);
+
+  if (!actualLogin || !actualLogout) {
+    return savedWh;
+  }
+
+  const trackerDate = item?.gy_tracker_date;
+  const scheduleStartRaw = getScheduleStart(item);
+  const scheduleEndRaw = getScheduleEnd(item);
+
+  const scheduleStart = scheduleStartRaw
+    ? buildDateTimeFromTrackerDate(trackerDate, scheduleStartRaw)
+    : null;
+
+  const scheduleEnd = scheduleEndRaw
+    ? buildDateTimeFromTrackerDate(trackerDate, scheduleEndRaw)
+    : null;
+
+  if (
+    scheduleStart &&
+    scheduleEnd &&
+    scheduleEnd.getTime() <= scheduleStart.getTime()
+  ) {
+    scheduleEnd.setDate(scheduleEnd.getDate() + 1);
+  }
+
+  const effectiveStart =
+    scheduleStart && actualLogin.getTime() < scheduleStart.getTime()
+      ? scheduleStart
+      : actualLogin;
+
+  const effectiveEnd =
+    scheduleEnd && actualLogout.getTime() > scheduleEnd.getTime()
+      ? scheduleEnd
+      : actualLogout;
+
+  let totalHours = getHoursBetween(effectiveStart, effectiveEnd);
+
+  totalHours -= getBreakHours(item);
+
+  if (totalHours > 0) return Math.max(totalHours, 0);
+
+  return savedWh;
+}
+
+function capWorkHoursFromItem(item) {
+  return Math.min(getComputedWorkHours(item), 8);
+}
+
+function displayCappedWorkHours(item) {
+  const computedHours = getComputedWorkHours(item);
+
+  if (!computedHours) return "—";
+
+  return formatNumber(Math.min(computedHours, 8));
 }
 
 function formatEmployeeName(item) {
@@ -67,6 +266,43 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
+function getAccessValue(user) {
+  return Number(
+    user?.admin_access ??
+      user?.adminAccess ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
+}
+
+function getLoggedInSibsId(user) {
+  return String(
+    user?.username ||
+      user?.sibs_id ||
+      user?.sibsId ||
+      user?.gy_user_code ||
+      user?.employeeCode ||
+      user?.code ||
+      "",
+  ).trim();
+}
+
+function isOwnAttendanceRow(item, user) {
+  const loggedInSibsId = getLoggedInSibsId(user);
+
+  const rowSibsId = String(
+    item?.gy_emp_code ||
+      item?.sibsId ||
+      item?.sibs_id ||
+      item?.employeeCode ||
+      "",
+  ).trim();
+
+  return !!loggedInSibsId && !!rowSibsId && loggedInSibsId === rowSibsId;
+}
+
 function isHrAdminUser(user) {
   const roles = [
     user?.role,
@@ -78,6 +314,19 @@ function isHrAdminUser(user) {
   ].map(normalizeRole);
 
   return roles.includes("hr_admin") || roles.includes("hradmin");
+}
+
+function isManagerUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.includes("manager") || getAccessValue(user) === 5;
 }
 
 function Badge({ children, className = "" }) {
@@ -154,6 +403,7 @@ export default function AttendanceTable() {
   const [accountOptions, setAccountOptions] = useState([]);
   const [accountSearch, setAccountSearch] = useState("");
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [isDraggingTable, setIsDraggingTable] = useState(false);
 
   const paginationContext = usePagination("attendance");
 
@@ -173,6 +423,14 @@ export default function AttendanceTable() {
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
   const accountDropdownRef = useRef(null);
+
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
+
   const { user } = useUser();
 
   const setLoadingRef = useRef(setLoading);
@@ -180,7 +438,8 @@ export default function AttendanceTable() {
   const navigateRef = useRef(navigate);
 
   const hrAdminView = isHrAdminUser(user);
-  const adminView = user?.tokenType === "admin" || hrAdminView;
+  const managerView = isManagerUser(user);
+  const adminView = user?.tokenType === "admin" || hrAdminView || managerView;
 
   const filteredAccountOptions = useMemo(() => {
     const keyword = accountSearch.trim().toLowerCase();
@@ -269,6 +528,56 @@ export default function AttendanceTable() {
   function getAccountFilterLabel() {
     if (!accountFilter || accountFilter === "All") return "All Accounts";
     return accountFilter;
+  }
+
+  function handleDragStart(e) {
+    if (e.button !== 0) return;
+
+    const target = e.target;
+    const isInteractiveElement = target.closest(
+      "button, a, input, select, textarea",
+    );
+
+    if (isInteractiveElement) return;
+
+    const container = tableScrollRef.current;
+    if (!container) return;
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: e.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+      moved: false,
+    };
+
+    setIsDraggingTable(true);
+  }
+
+  function handleDragMove(e) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!dragState.isDown || !container) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
+    }
+
+    container.scrollLeft = dragState.scrollLeft - walk;
+  }
+
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
+
+    window.setTimeout(() => {
+      setIsDraggingTable(false);
+      dragStateRef.current.moved = false;
+    }, 0);
   }
 
   useEffect(() => {
@@ -420,11 +729,79 @@ export default function AttendanceTable() {
       return "border-slate-200 bg-slate-50 text-sibs-primary-1";
     }
 
-    if (statusKey === "on-time") {
+    const cleanStatus = normalizeStatus(statusKey);
+
+    if (
+      cleanStatus === "on-time" ||
+      cleanStatus === "ontime" ||
+      cleanStatus === "early"
+    ) {
       return "border-emerald-200 bg-emerald-50 text-emerald-600";
     }
 
-    return "border-red-200 bg-red-50 text-red-600";
+    if (cleanStatus === "late") {
+      return "border-red-200 bg-red-50 text-red-600";
+    }
+
+    return "border-emerald-200 bg-emerald-50 text-emerald-600";
+  }
+
+  function getLoginBadgeClass(item, value, statusKey) {
+    if (value === "—") {
+      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
+    }
+
+    const actualLogin = getValidDate(item?.gy_tracker_login);
+    const scheduleStartRaw = getScheduleStart(item);
+
+    const scheduledLogin = scheduleStartRaw
+      ? buildDateTimeFromTrackerDate(item?.gy_tracker_date, scheduleStartRaw)
+      : null;
+
+    if (actualLogin && scheduledLogin) {
+      if (isLateBySchedule(actualLogin, scheduledLogin)) {
+        return "border-red-200 bg-red-50 text-red-600";
+      }
+
+      return "border-emerald-200 bg-emerald-50 text-emerald-600";
+    }
+
+    /*
+      Fallback when API has no schedule_start:
+      - If backend says late but displayed login minute is 00, show green.
+      - If displayed login minute is 01 or above, show red.
+      This matches:
+      01:00:00 PM to 01:00:59 PM = not late
+      01:01:00 PM and above = late
+    */
+    const cleanStatus = normalizeStatus(statusKey);
+
+    if (cleanStatus === "late" && actualLogin) {
+      const loginMinute = actualLogin.getMinutes();
+
+      if (loginMinute === 0) {
+        return "border-emerald-200 bg-emerald-50 text-emerald-600";
+      }
+
+      return "border-red-200 bg-red-50 text-red-600";
+    }
+
+    return getTimeBadgeClass(value, statusKey);
+  }
+
+  function getManagerSafeTimeBadgeClass(item, value, statusKey) {
+    if (value === "—") {
+      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
+    }
+
+    const workHours = getComputedWorkHours(item);
+    const isManagerOwnRow = managerView && isOwnAttendanceRow(item, user);
+
+    if (isManagerOwnRow && workHours >= 8) {
+      return "border-emerald-200 bg-emerald-50 text-emerald-600";
+    }
+
+    return getTimeBadgeClass(value, statusKey);
   }
 
   function getStatusBadgeClass(status) {
@@ -460,7 +837,7 @@ export default function AttendanceTable() {
     ).length;
 
     const totalWorkHours = attendance.reduce(
-      (sum, item) => sum + capWorkHours(item.gy_tracker_wh),
+      (sum, item) => sum + capWorkHoursFromItem(item),
       0,
     );
 
@@ -627,7 +1004,16 @@ export default function AttendanceTable() {
         </div>
 
         <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-          <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
+          <div
+            ref={tableScrollRef}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            className={`max-h-[580px] overflow-auto select-none ${
+              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <table className="w-full min-w-[1280px] border-collapse bg-white">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr>
@@ -722,7 +1108,9 @@ export default function AttendanceTable() {
 
                     return (
                       <tr
-                        key={`${item.gy_tracker_id || item.gy_tracker_date || "row"}-${index}`}
+                        key={`${
+                          item.gy_tracker_id || item.gy_tracker_date || "row"
+                        }-${index}`}
                         className="transition-all duration-200 hover:bg-slate-50"
                       >
                         {adminView && (
@@ -750,7 +1138,8 @@ export default function AttendanceTable() {
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
                           <TimeBadge
                             value={loginTime}
-                            className={getTimeBadgeClass(
+                            className={getLoginBadgeClass(
+                              item,
                               loginTime,
                               item.login_status,
                             )}
@@ -771,7 +1160,8 @@ export default function AttendanceTable() {
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
                           <TimeBadge
                             value={breakinTime}
-                            className={getTimeBadgeClass(
+                            className={getManagerSafeTimeBadgeClass(
+                              item,
                               breakinTime,
                               item.breakin_status,
                             )}
@@ -781,7 +1171,8 @@ export default function AttendanceTable() {
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
                           <TimeBadge
                             value={logoutTime}
-                            className={getTimeBadgeClass(
+                            className={getManagerSafeTimeBadgeClass(
+                              item,
                               logoutTime,
                               item.logout_status,
                             )}
@@ -789,7 +1180,7 @@ export default function AttendanceTable() {
                         </td>
 
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
-                          {displayCappedWorkHours(item.gy_tracker_wh)}
+                          {displayCappedWorkHours(item)}
                         </td>
 
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
@@ -814,6 +1205,10 @@ export default function AttendanceTable() {
               </tbody>
             </table>
           </div>
+
+          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+            Hold left click and drag left or right to scroll the table.
+          </p>
         </div>
 
         <div className="mt-5 block lg:hidden">
@@ -840,7 +1235,11 @@ export default function AttendanceTable() {
 
                   return (
                     <div
-                      key={`${item.gy_tracker_id || item.gy_tracker_date || "mobile"}-${index}`}
+                      key={`${
+                        item.gy_tracker_id ||
+                        item.gy_tracker_date ||
+                        "mobile"
+                      }-${index}`}
                       className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -879,7 +1278,8 @@ export default function AttendanceTable() {
                         <MobileMetric
                           label="Login"
                           value={loginTime}
-                          className={getTimeBadgeClass(
+                          className={getLoginBadgeClass(
+                            item,
                             loginTime,
                             item.login_status,
                           )}
@@ -898,7 +1298,8 @@ export default function AttendanceTable() {
                         <MobileMetric
                           label="End Break"
                           value={breakinTime}
-                          className={getTimeBadgeClass(
+                          className={getManagerSafeTimeBadgeClass(
+                            item,
                             breakinTime,
                             item.breakin_status,
                           )}
@@ -907,7 +1308,8 @@ export default function AttendanceTable() {
                         <MobileMetric
                           label="Logout"
                           value={logoutTime}
-                          className={getTimeBadgeClass(
+                          className={getManagerSafeTimeBadgeClass(
+                            item,
                             logoutTime,
                             item.logout_status,
                           )}
@@ -915,7 +1317,7 @@ export default function AttendanceTable() {
 
                         <MobileMetric
                           label="WH"
-                          value={displayCappedWorkHours(item.gy_tracker_wh)}
+                          value={displayCappedWorkHours(item)}
                         />
 
                         <MobileMetric

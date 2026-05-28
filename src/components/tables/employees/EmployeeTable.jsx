@@ -37,6 +37,20 @@ function formatEmployeeName(emp) {
   );
 }
 
+function getAccountManager(emp) {
+  return (
+    emp?.accountManager ||
+    emp?.account_manager ||
+    emp?.manager ||
+    emp?.managerName ||
+    emp?.accountManagerName ||
+    emp?.gy_acc_manager ||
+    emp?.gy_emp_om ||
+    emp?.gy_emp_supervisor ||
+    "N/A"
+  );
+}
+
 function MobileInfoItem({ icon: Icon, label, value }) {
   return (
     <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
@@ -97,6 +111,12 @@ function MobileEmployeeCard({ emp, onOpen }) {
           <MobileInfoItem icon={Briefcase} label="Account" value={emp.account} />
 
           <MobileInfoItem
+            icon={UserRound}
+            label="Account Manager"
+            value={getAccountManager(emp)}
+          />
+
+          <MobileInfoItem
             icon={Building2}
             label="Department"
             value={emp.department || "N/A"}
@@ -117,6 +137,7 @@ function MobileEmployeeCard({ emp, onOpen }) {
 
 export default function EmployeeTable() {
   const [employees, setEmployees] = useState([]);
+  const [isDraggingTable, setIsDraggingTable] = useState(false);
 
   const { page, search, loading, setLoading, setPagination } =
     usePagination("employees");
@@ -125,6 +146,13 @@ export default function EmployeeTable() {
 
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
+
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
 
   const navigateRef = useRef(navigate);
   const setLoadingRef = useRef(setLoading);
@@ -213,46 +241,120 @@ export default function EmployeeTable() {
     };
   }, [page, search]);
 
-  const handleOpenEmployee = (emp) => {
+  function handleDragStart(e) {
+    if (e.button !== 0) return;
+
+    const target = e.target;
+    const isInteractiveElement = target.closest(
+      "button, a, input, select, textarea",
+    );
+
+    if (isInteractiveElement) return;
+
+    const container = tableScrollRef.current;
+    if (!container) return;
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: e.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+      moved: false,
+    };
+
+    setIsDraggingTable(true);
+  }
+
+  function handleDragMove(e) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!dragState.isDown || !container) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
+    }
+
+    container.scrollLeft = dragState.scrollLeft - walk;
+  }
+
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
+
+    window.setTimeout(() => {
+      setIsDraggingTable(false);
+      dragStateRef.current.moved = false;
+    }, 0);
+  }
+
+  function handleOpenEmployee(emp) {
+    if (dragStateRef.current.moved) return;
+
     sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
     sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page }));
     navigate("/employee/employee-data");
-  };
+  }
 
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="hidden lg:block">
-        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-          <table className="w-full min-w-[1400px] border-collapse bg-white text-sm text-sibs-primary-1">
+        <div
+          ref={tableScrollRef}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+          className={`max-h-[670px] overflow-auto select-none ${
+            isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+          }`}
+        >
+          <table className="w-full min-w-[1550px] border-collapse bg-white text-sm text-sibs-primary-1">
             <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
               <tr>
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   SiBS ID
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Full Name
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Email
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Gender
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Birthdate
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Civil Status
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Account
                 </th>
+
+                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
+                  Account Manager
+                </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Department
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Contact
                 </th>
+
                 <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
                   Hire Date
                 </th>
@@ -263,7 +365,7 @@ export default function EmployeeTable() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan="10"
+                    colSpan="11"
                     className="p-6 text-center text-sibs-tertiary-5"
                   >
                     Loading...
@@ -272,7 +374,7 @@ export default function EmployeeTable() {
               ) : employees.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="10"
+                    colSpan="11"
                     className="p-6 text-center text-sibs-tertiary-5"
                   >
                     No employees found
@@ -314,6 +416,10 @@ export default function EmployeeTable() {
                     </td>
 
                     <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
+                      {getAccountManager(emp)}
+                    </td>
+
+                    <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
                       {emp.department || "N/A"}
                     </td>
 
@@ -330,6 +436,10 @@ export default function EmployeeTable() {
             </tbody>
           </table>
         </div>
+
+        <p className="mt-2 px-1 text-xs font-semibold text-sibs-tertiary-5">
+          Hold left click and drag left or right to scroll the table.
+        </p>
       </div>
 
       <div className="block lg:hidden">

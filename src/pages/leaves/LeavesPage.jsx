@@ -3,6 +3,7 @@ import Header from "../../components/layout/Header";
 import {
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -57,6 +58,34 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function canViewAccountFilter(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "hr_admin",
+      "hradmin",
+      "super_admin",
+      "superadmin",
+      "super_administrator",
+    ].includes(role),
+  );
 }
 
 function getLeaveTypeLabel(type, fallbackLabel) {
@@ -206,6 +235,28 @@ function StatCard({
   );
 }
 
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DetailRow({ label, value }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-[#f3f4f6] py-3 last:border-b-0">
@@ -339,12 +390,10 @@ function LeaveDetailsModal({ open, item, onClose }) {
                 </h3>
 
                 <DetailRow label="Leave ID" value={item.gy_leave_id} />
-
                 <DetailRow
                   label="Filed Date"
                   value={formatDateTime(item.gy_leave_filed)}
                 />
-
                 <DetailRow
                   label="Leave Type"
                   value={getLeaveTypeLabel(
@@ -352,29 +401,23 @@ function LeaveDetailsModal({ open, item, onClose }) {
                     item.leave_type_label,
                   )}
                 />
-
                 <DetailRow
                   label="Paid Leave"
                   value={formatNumber(item.gy_leave_paid)}
                 />
-
                 <DetailRow
                   label="Leave Day"
                   value={formatNumber(item.gy_leave_day)}
                 />
-
                 <DetailRow
                   label="Date From"
                   value={formatDate(item.gy_leave_date_from)}
                 />
-
                 <DetailRow
                   label="Date To"
                   value={formatDate(item.gy_leave_date_to)}
                 />
-
                 <DetailRow label="Reason" value={item.gy_leave_reason} />
-
                 <DetailRow label="Remarks" value={item.gy_leave_remarks} />
               </div>
             </div>
@@ -389,27 +432,22 @@ function LeaveDetailsModal({ open, item, onClose }) {
                   label="Available From"
                   value={formatDate(item.gy_leave_avail_date)}
                 />
-
                 <DetailRow
                   label="Available To"
                   value={formatDate(item.gy_leave_avail_dateto)}
                 />
-
                 <DetailRow
                   label="Approved Credits"
                   value={formatNumber(item.leave_credit)}
                 />
-
                 <DetailRow
                   label="Plotted Leaves"
                   value={formatNumber(item.leave_plotted)}
                 />
-
                 <DetailRow
                   label="Remaining Leaves"
                   value={formatNumber(item.leave_remaining)}
                 />
-
                 <DetailRow
                   label="Justification"
                   value={item.gy_leave_avail_justify}
@@ -425,14 +463,11 @@ function LeaveDetailsModal({ open, item, onClose }) {
                   label="Status"
                   value={normalizeStatus(item.gy_leave_status)}
                 />
-
                 <ApproverRow item={item} />
-
                 <DetailRow
                   label="Date Approved"
                   value={formatDateTime(item.gy_leave_date_approved)}
                 />
-
                 <DetailRow label="Attachment" value={item.gy_leave_attachment} />
               </div>
             </div>
@@ -456,6 +491,7 @@ function LeaveDetailsModal({ open, item, onClose }) {
 export default function LeavesPage() {
   const { user } = useUser();
   const mainScrollRef = useRef(null);
+  const accountDropdownRef = useRef(null);
 
   const [leaves, setLeaves] = useState([]);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -465,6 +501,11 @@ export default function LeavesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountOptions, setAccountOptions] = useState([]);
+  const [accountSearch, setAccountSearch] = useState("");
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [recordScope, setRecordScope] = useState("all");
@@ -479,6 +520,56 @@ export default function LeavesPage() {
 
   const isEmployeeAccount =
     String(user?.role || "").toLowerCase() === "employee";
+
+  const showAccountFilter = canViewAccountFilter(user);
+
+  const filteredAccountOptions = useMemo(() => {
+    const keyword = accountSearch.trim().toLowerCase();
+
+    if (!keyword) return accountOptions;
+
+    return accountOptions.filter((account) =>
+      String(account || "").toLowerCase().includes(keyword),
+    );
+  }, [accountOptions, accountSearch]);
+
+  function getAccountFilterLabel() {
+    if (!accountFilter || accountFilter === "All") return "All Accounts";
+    return accountFilter;
+  }
+
+  function handleAccountSelect(accountName) {
+    setAccountFilter(accountName);
+    setAccountSearch("");
+    setShowAccountDropdown(false);
+    setCurrentPage(1);
+
+    fetchLeaves({
+      pageValue: 1,
+      searchValue: searchKeyword,
+      statusValue: statusFilter,
+      accountValue: accountName,
+      shouldScrollTop: true,
+    });
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(e.target)
+      ) {
+        setShowAccountDropdown(false);
+        setAccountSearch("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   function scrollPageToTop() {
     requestAnimationFrame(() => {
@@ -502,6 +593,7 @@ export default function LeavesPage() {
     pageValue = currentPage,
     searchValue = searchKeyword,
     statusValue = statusFilter,
+    accountValue = accountFilter,
     shouldScrollTop = false,
   } = {}) {
     if (shouldScrollTop) {
@@ -513,13 +605,19 @@ export default function LeavesPage() {
     try {
       const res = await getLeaves({
         page: pageValue,
+        limit: PAGE_LIMIT,
         search: searchValue,
         status: statusValue,
+        account: showAccountFilter ? accountValue : "All",
       });
 
       if (res?.success && Array.isArray(res.data)) {
         setLeaves(res.data);
         setRecordScope(res.scope || "all");
+
+        if (Array.isArray(res.accountOptions)) {
+          setAccountOptions(res.accountOptions);
+        }
 
         setPagination(
           res.pagination || {
@@ -532,7 +630,6 @@ export default function LeavesPage() {
         );
       } else {
         setLeaves([]);
-
         setPagination({
           currentPage: pageValue,
           limit: PAGE_LIMIT,
@@ -545,7 +642,6 @@ export default function LeavesPage() {
       console.error("FETCH LEAVES ERROR:", err);
 
       setLeaves([]);
-
       setPagination({
         currentPage: pageValue,
         limit: PAGE_LIMIT,
@@ -572,6 +668,7 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: keyword,
       statusValue: statusFilter,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
@@ -592,6 +689,7 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: searchKeyword,
       statusValue: nextStatus,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
@@ -607,6 +705,7 @@ export default function LeavesPage() {
       pageValue: nextPage,
       searchValue: searchKeyword,
       statusValue: statusFilter,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
@@ -622,6 +721,7 @@ export default function LeavesPage() {
       pageValue: nextPage,
       searchValue: searchKeyword,
       statusValue: statusFilter,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
@@ -631,13 +731,14 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: "",
       statusValue: "All",
+      accountValue: "All",
       shouldScrollTop: true,
     });
   }, []);
 
   useEffect(() => {
     scrollPageToTop();
-  }, [currentPage, searchKeyword, statusFilter]);
+  }, [currentPage, searchKeyword, statusFilter, accountFilter]);
 
   const paginatedLeaves = useMemo(() => {
     return leaves.map((item) => {
@@ -848,6 +949,92 @@ export default function LeavesPage() {
                     />
                   </div>
 
+                  {showAccountFilter && (
+                    <div
+                      ref={accountDropdownRef}
+                      className="relative z-50 w-full sm:w-[280px]"
+                    >
+                      <Search
+                        size={17}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                      />
+
+                      <input
+                        type="text"
+                        value={
+                          showAccountDropdown
+                            ? accountSearch
+                            : getAccountFilterLabel()
+                        }
+                        onChange={(e) => {
+                          setAccountSearch(e.target.value);
+                          setShowAccountDropdown(true);
+                        }}
+                        onFocus={() => {
+                          setShowAccountDropdown(true);
+                          setAccountSearch("");
+                        }}
+                        placeholder="Search accounts..."
+                        autoComplete="off"
+                        className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-10 pr-10 text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      />
+
+                      <ChevronDown
+                        size={17}
+                        onClick={() => {
+                          setShowAccountDropdown((prev) => !prev);
+                          setAccountSearch("");
+                        }}
+                        className={`absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                          showAccountDropdown ? "rotate-180" : ""
+                        }`}
+                      />
+
+                      <AnimatedDropdown open={showAccountDropdown}>
+                        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                          <button
+                            type="button"
+                            onClick={() => handleAccountSelect("All")}
+                            className={`block w-full px-4 py-3 text-left text-sm transition ${
+                              accountFilter === "All"
+                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                                : "text-[#344054] hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            All Accounts
+                          </button>
+
+                          {filteredAccountOptions.length > 0 ? (
+                            filteredAccountOptions.map((account, index) => {
+                              const checked = accountFilter === account;
+
+                              return (
+                                <button
+                                  key={`${account}-${index}`}
+                                  type="button"
+                                  onClick={() => handleAccountSelect(account)}
+                                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                                    checked
+                                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                                  }`}
+                                >
+                                  <span className="block truncate">
+                                    {account}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          ) : (
+                            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                              No accounts found.
+                            </div>
+                          )}
+                        </div>
+                      </AnimatedDropdown>
+                    </div>
+                  )}
+
                   <select
                     value={statusFilter}
                     onChange={handleStatusChange}
@@ -903,7 +1090,7 @@ export default function LeavesPage() {
                     </thead>
 
                     <tbody
-                      key={`${currentPage}-${searchKeyword}-${statusFilter}-${loading}`}
+                      key={`${currentPage}-${searchKeyword}-${statusFilter}-${accountFilter}-${loading}`}
                     >
                       {loading ? (
                         Array.from({ length: PAGE_LIMIT }).map((_, index) => (
