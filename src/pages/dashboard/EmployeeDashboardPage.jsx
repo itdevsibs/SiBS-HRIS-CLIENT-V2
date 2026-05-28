@@ -10,12 +10,111 @@ import {
   UserPlus,
   BarChart3,
   LayoutDashboard,
+  ArrowRight,
+  Bell,
+  Activity,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import { useUser } from "../../services/context/UserContext";
 import { useAdmin } from "../../services/context/AdminContext";
+
+function SummaryCard({
+  label,
+  value,
+  icon: Icon,
+  valueClassName = "text-sibs-primary-1",
+  delay = 0,
+}) {
+  return (
+    <div
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+            {label}
+          </p>
+
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
+          >
+            {value}
+          </p>
+        </div>
+
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          <Icon size={22} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InfoPanel({ title, description, icon: Icon, buttonText, delay = 0 }) {
+  return (
+    <div
+      className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="m-0 text-base font-bold text-[#101828]">{title}</h3>
+
+          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            {description}
+          </p>
+        </div>
+
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+          <Icon size={20} />
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
+      >
+        {buttonText}
+        <ArrowRight size={16} />
+      </button>
+    </div>
+  );
+}
+
+function QuickActionCard({ title, desc, icon: Icon, delay = 0, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="sibs-page-card-in group flex min-h-[74px] w-full items-center justify-between gap-4 rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex min-w-0 items-center gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
+          <Icon size={19} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="m-0 truncate text-sm font-extrabold text-sibs-primary-1">
+            {title}
+          </p>
+
+          <p className="mt-0.5 truncate text-xs font-medium text-sibs-tertiary-5">
+            {desc}
+          </p>
+        </div>
+      </div>
+
+      <ArrowRight
+        size={18}
+        className="shrink-0 text-sibs-primary-1 transition-transform duration-200 group-hover:translate-x-1"
+      />
+    </button>
+  );
+}
 
 export default function EmployeeDashboardPage() {
   const navigate = useNavigate();
@@ -45,40 +144,6 @@ export default function EmployeeDashboardPage() {
       user?.firstName || ""
     }${user?.middleName ? " " + user.middleName : ""}`.trim() || "User"
   ).toUpperCase();
-
-  if (loading || !user || user.role !== "employee") {
-    return (
-      <div className="employee-dashboard-page">
-        <Header />
-
-        <main className="employee-dashboard-main">
-          <div className="employee-dashboard-loading-card sibs-page-header-in">
-            <div className="mb-4 h-10 w-64 animate-pulse rounded bg-gray-200" />
-            <div className="h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
-          </div>
-
-          <div className="employee-summary-grid">
-            {[1, 2, 3, 4, 5].map((item, index) => (
-              <div
-                key={item}
-                className="employee-summary-card employee-animated-card"
-                style={{ animationDelay: `${index * 60}ms` }}
-              >
-                <div className="h-10 w-10 shrink-0 animate-pulse rounded-[8px] bg-gray-200" />
-
-                <div className="min-w-0">
-                  <div className="mb-2 h-3 w-24 animate-pulse rounded bg-gray-200" />
-                  <div className="h-5 w-12 animate-pulse rounded bg-gray-200" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </main>
-
-        <AdminLoginModal />
-      </div>
-    );
-  }
 
   const summaryCards = [
     {
@@ -123,397 +188,154 @@ export default function EmployeeDashboardPage() {
       title: "Attendance",
       desc: "Track attendance",
       icon: ClipboardList,
+      onClick: () => navigate("/attendance"),
     },
     {
       title: "View Reports",
-      desc: "Analytics & insights",
+      desc: "Analytics and insights",
       icon: BarChart3,
     },
   ];
 
+  if (loading || !user || user.role !== "employee") {
+    return (
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+        <Header />
+
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+          <div className="flex min-w-0 flex-col gap-6">
+            <section className="sibs-page-header-in">
+              <div className="h-10 w-64 animate-pulse rounded bg-gray-200" />
+              <div className="mt-3 h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
+            </section>
+
+            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="mt-3 h-8 w-12 animate-pulse rounded bg-gray-200" />
+                    </div>
+
+                    <div className="h-12 w-12 animate-pulse rounded-2xl bg-gray-200" />
+                  </div>
+                </div>
+              ))}
+            </section>
+          </div>
+        </main>
+
+        <AdminLoginModal />
+      </div>
+    );
+  }
+
   return (
-    <div className="employee-dashboard-page">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="employee-dashboard-main">
-        {/* TITLE */}
-        <section className="employee-dashboard-title-section sibs-page-header-in">
-          <div className="employee-dashboard-title-row">
-            <LayoutDashboard
-              size={30}
-              className="employee-dashboard-title-icon"
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <LayoutDashboard
+                  size={34}
+                  strokeWidth={2.2}
+                  className="shrink-0 text-sibs-primary-1 transition-transform duration-300 group-hover:scale-105"
+                />
+
+                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                  My Dashboard
+                </h1>
+              </div>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Welcome back,{" "}
+                <span className="font-extrabold text-sibs-primary-2">
+                  {displayName}
+                </span>
+              </p>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div>
+              <h2 className="text-base font-bold text-[#101828]">
+                Dashboard Summary
+              </h2>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Overview of your HRIS records, attendance, payroll, and tasks.
+              </p>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {summaryCards.map((item, index) => (
+                <SummaryCard
+                  key={item.label}
+                  label={item.label}
+                  value={item.value}
+                  icon={item.icon}
+                  delay={index * 60}
+                />
+              ))}
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <InfoPanel
+              title="Recent Activity"
+              description="No activity yet"
+              buttonText="View all activity"
+              icon={Activity}
+              delay={90}
             />
 
-            <h1 className="employee-dashboard-title">My Dashboard</h1>
-          </div>
+            <InfoPanel
+              title="Notifications"
+              description="No notifications"
+              buttonText="View all notifications"
+              icon={Bell}
+              delay={150}
+            />
+          </section>
 
-          <p className="employee-dashboard-welcome">
-            Welcome back, <span>{displayName}</span>
-          </p>
-        </section>
+          <section
+            className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "210ms" }}
+          >
+            <div>
+              <h2 className="text-base font-bold text-[#101828]">
+                Quick Actions
+              </h2>
 
-        {/* SUMMARY CARDS */}
-        <section className="employee-summary-grid">
-          {summaryCards.map((item, index) => (
-            <div
-              key={item.label}
-              className="employee-summary-card employee-animated-card"
-              style={{ animationDelay: `${index * 60}ms` }}
-            >
-              <div className="employee-card-icon">
-                <item.icon size={18} />
-              </div>
-
-              <div className="min-w-0">
-                <p className="employee-card-label">{item.label}</p>
-                <h2 className="employee-card-value">{item.value}</h2>
-              </div>
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Common employee shortcuts for HRIS tasks.
+              </p>
             </div>
-          ))}
-        </section>
 
-        {/* ACTIVITY + NOTIFICATIONS */}
-        <section className="employee-info-grid">
-          <div
-            className="employee-info-card employee-panel-animated"
-            style={{ animationDelay: "90ms" }}
-          >
-            <h3>Recent Activity</h3>
-            <p>No activity yet</p>
-
-            <button type="button">View all activity</button>
-          </div>
-
-          <div
-            className="employee-info-card employee-panel-animated"
-            style={{ animationDelay: "150ms" }}
-          >
-            <h3>Notifications</h3>
-            <p>No notifications</p>
-
-            <button type="button">View all notifications</button>
-          </div>
-        </section>
-
-        {/* QUICK ACTIONS */}
-        <section
-          className="employee-quick-section employee-panel-animated"
-          style={{ animationDelay: "210ms" }}
-        >
-          <h3 className="employee-quick-title">Quick Actions</h3>
-
-          <div className="employee-quick-grid">
-            {quickActions.map((item, index) => (
-              <div
-                key={item.title}
-                className="employee-quick-card employee-animated-card"
-                style={{ animationDelay: `${index * 60}ms` }}
-              >
-                <div className="employee-card-icon">
-                  <item.icon size={18} />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="employee-quick-name">{item.title}</p>
-                  <p className="employee-quick-desc">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {quickActions.map((item, index) => (
+                <QuickActionCard
+                  key={item.title}
+                  title={item.title}
+                  desc={item.desc}
+                  icon={item.icon}
+                  delay={index * 60}
+                  onClick={item.onClick}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
       </main>
 
       <AdminLoginModal />
-
-      <style>{`
-        .employee-dashboard-page {
-          flex: 1;
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: var(--sibs-tertiary-10);
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-
-        .employee-dashboard-main {
-          flex: 1;
-          overflow-y: auto;
-          padding: 24px;
-          background: var(--sibs-tertiary-10);
-        }
-
-        .employee-dashboard-loading-card {
-          margin-bottom: 24px;
-          border-radius: 12px;
-          background: #ffffff;
-          padding: 20px;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-        }
-
-        .employee-dashboard-title-section {
-          margin-bottom: 24px;
-        }
-
-        .employee-dashboard-title-row {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .employee-dashboard-title-icon {
-          color: var(--sibs-primary-1);
-          transition: transform 0.25s ease;
-        }
-
-        .employee-dashboard-title-row:hover .employee-dashboard-title-icon {
-          transform: scale(1.08);
-        }
-
-        .employee-dashboard-title {
-          margin: 0;
-          color: var(--sibs-primary-1);
-          font-size: 36px;
-          line-height: 1;
-          font-weight: 800;
-          letter-spacing: -1px;
-        }
-
-        .employee-dashboard-welcome {
-          margin-top: 6px;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 400;
-        }
-
-        .employee-dashboard-welcome span {
-          color: var(--sibs-primary-2);
-          font-weight: 500;
-        }
-
-        .employee-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .employee-summary-card {
-          min-height: 76px;
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            background 0.2s ease;
-        }
-
-        .employee-summary-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        .employee-card-icon {
-          width: 40px;
-          height: 40px;
-          flex-shrink: 0;
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--sibs-primary-1);
-          color: #ffffff;
-          transition: transform 0.2s ease;
-        }
-
-        .employee-summary-card:hover .employee-card-icon,
-        .employee-quick-card:hover .employee-card-icon {
-          transform: scale(1.06);
-        }
-
-        .employee-card-label {
-          margin: 0;
-          color: var(--sibs-primary-1);
-          font-size: 12px;
-          font-weight: 500;
-          line-height: 1.2;
-        }
-
-        .employee-card-value {
-          margin: 2px 0 0;
-          color: var(--sibs-primary-1);
-          font-size: 20px;
-          line-height: 1;
-          font-weight: 800;
-        }
-
-        .employee-info-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .employee-info-card {
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 16px;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .employee-info-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-        }
-
-        .employee-info-card h3 {
-          margin: 0 0 10px;
-          color: var(--sibs-primary-1);
-          font-size: 16px;
-          font-weight: 800;
-        }
-
-        .employee-info-card p {
-          margin: 0 0 16px;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 400;
-        }
-
-        .employee-info-card button {
-          width: 100%;
-          height: 38px;
-          border-radius: 8px;
-          border: 1px solid var(--sibs-tertiary-9);
-          background: #ffffff;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition:
-            transform 0.2s ease,
-            border-color 0.2s ease,
-            background 0.2s ease,
-            box-shadow 0.2s ease;
-        }
-
-        .employee-info-card button:hover {
-          border-color: var(--sibs-primary-1);
-          background: rgba(4, 44, 81, 0.05);
-          box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-          transform: translateY(-1px);
-        }
-
-        .employee-info-card button:active {
-          transform: scale(0.98);
-        }
-
-        .employee-quick-section {
-          margin-top: 4px;
-          border-radius: 12px;
-        }
-
-        .employee-quick-title {
-          margin: 0 0 14px;
-          color: var(--sibs-primary-1);
-          font-size: 16px;
-          font-weight: 800;
-        }
-
-        .employee-quick-grid {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
-        }
-
-        .employee-quick-card {
-          min-height: 76px;
-          background: #ffffff;
-          border-radius: 12px;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          cursor: pointer;
-          box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-          transition:
-            box-shadow 0.2s ease,
-            transform 0.2s ease,
-            border-color 0.2s ease,
-            background 0.2s ease;
-          border: 1px solid transparent;
-        }
-
-        .employee-quick-card:hover {
-          border-color: rgba(4, 44, 81, 0.25);
-          background: #f8fafc;
-          box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
-          transform: translateY(-2px);
-        }
-
-        .employee-quick-card:active {
-          transform: scale(0.99);
-        }
-
-        .employee-quick-name {
-          margin: 0;
-          color: var(--sibs-primary-1);
-          font-size: 14px;
-          line-height: 1.2;
-          font-weight: 800;
-        }
-
-        .employee-quick-desc {
-          margin: 2px 0 0;
-          color: var(--sibs-primary-1);
-          font-size: 12px;
-          line-height: 1.2;
-          font-weight: 400;
-        }
-
-        .employee-animated-card {
-          animation: sibsProfileTabPanelIn 260ms ease-out both;
-          will-change: opacity, transform;
-        }
-
-        .employee-panel-animated {
-          animation: sibsProfileTabPanelIn 240ms ease-out both;
-          will-change: opacity, transform;
-        }
-
-        @media (max-width: 1280px) {
-          .employee-summary-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .employee-quick-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-
-        @media (max-width: 768px) {
-          .employee-dashboard-main {
-            padding: 20px;
-          }
-
-          .employee-dashboard-title {
-            font-size: 30px;
-          }
-
-          .employee-summary-grid,
-          .employee-info-grid,
-          .employee-quick-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }

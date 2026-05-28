@@ -5,7 +5,6 @@ import {
   BriefcaseBusiness,
   AlertTriangle,
   CircleAlert,
-  UsersRound,
   UserX,
   Clock3,
   UserRoundCheck,
@@ -13,8 +12,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  TrendingDown,
   Activity,
   CalendarDays,
   X,
@@ -192,6 +189,12 @@ const movementStages = [
   "Hired",
 ];
 
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 0,
+  });
+}
+
 function formatDate(date) {
   if (!date) return "—";
 
@@ -264,49 +267,33 @@ function StatCard({
   title,
   value,
   icon: Icon,
-  description,
-  trend,
-  trendType,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
   delay = 0,
 }) {
-  const TrendIcon = trendType === "down" ? TrendingDown : TrendingUp;
-
   return (
     <div
-      className="sibs-page-card-in group flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
-        <Icon size={18} />
-      </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+            {title}
+          </p>
 
-      <div className="min-w-0">
-        <p className="m-0 truncate text-xs font-normal text-sibs-tertiary-5">
-          {title}
-        </p>
-
-        <h2 className="m-0 truncate text-lg font-bold leading-tight text-sibs-primary-1">
-          {value}
-        </h2>
-
-        {description && (
-          <span className="block truncate text-xs font-normal text-sibs-tertiary-5">
-            {description}
-          </span>
-        )}
-
-        {trend && (
-          <div
-            className={`mt-2 inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
-              trendType === "down"
-                ? "border-red-200 bg-red-50 text-red-600"
-                : "border-green-200 bg-green-50 text-green-600"
-            }`}
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
           >
-            <TrendIcon size={13} />
-            {trend}
-          </div>
-        )}
+            {value}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
@@ -792,11 +779,6 @@ export default function OMDashboardPage() {
 
   const maxMovement = Math.max(...Object.values(totals.movement), 1);
 
-  const filledPercentage =
-    totals.totalApproved > 0
-      ? Math.round((totals.totalFilled / totals.totalApproved) * 100)
-      : 0;
-
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -822,73 +804,82 @@ export default function OMDashboardPage() {
           </p>
         </section>
 
-        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total Open Roles"
-            value={totals.totalOpenRoles}
-            icon={BriefcaseBusiness}
-            description="Roles with remaining open slots"
-            trend="Department filtered"
-            delay={0}
-          />
+        <section className="mb-6 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold text-[#101828]">
+                Operations Dashboard Summary
+              </h2>
 
-          <StatCard
-            title="Requirement vs Filled"
-            value={`${totals.totalFilled}/${totals.totalApproved}`}
-            icon={UserRoundCheck}
-            description="Approved hiring requirement"
-            trend={`${filledPercentage}% filled`}
-            delay={60}
-          />
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Overview of open roles, hiring progress, risks, weekly movement,
+                and aging roles.
+              </p>
+            </div>
+          </div>
 
-          <StatCard
-            title="At-Risk Roles"
-            value={totals.atRisk}
-            icon={AlertTriangle}
-            description="Roles that may miss due date"
-            trend="+ Need review"
-            trendType="down"
-            delay={120}
-          />
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <StatCard
+              title="Total Open Roles"
+              value={formatNumber(totals.totalOpenRoles)}
+              icon={BriefcaseBusiness}
+              delay={0}
+            />
 
-          <StatCard
-            title="Delayed Roles"
-            value={totals.delayed}
-            icon={CircleAlert}
-            description="Roles already behind plan"
-            trend="Needs action"
-            trendType="down"
-            delay={180}
-          />
+            <StatCard
+              title="Requirement vs Filled"
+              value={`${formatNumber(totals.totalFilled)} / ${formatNumber(
+                totals.totalApproved
+              )}`}
+              icon={UserRoundCheck}
+              delay={60}
+            />
 
-          <StatCard
-            title="Weekly Movement"
-            value={totals.movement.Hired}
-            icon={Activity}
-            description="Total hired this week"
-            trend="+ Hiring output"
-            delay={240}
-          />
+            <StatCard
+              title="At-Risk Roles"
+              value={formatNumber(totals.atRisk)}
+              icon={AlertTriangle}
+              valueClassName="text-amber-500"
+              iconClassName="bg-amber-50 text-amber-600"
+              delay={120}
+            />
 
-          <StatCard
-            title="Drop-offs"
-            value={totals.totalDropOffs}
-            icon={UserX}
-            description="Candidate exits across stages"
-            trend="Monitor reasons"
-            trendType="down"
-            delay={300}
-          />
+            <StatCard
+              title="Delayed Roles"
+              value={formatNumber(totals.delayed)}
+              icon={CircleAlert}
+              valueClassName="text-red-600"
+              iconClassName="bg-red-50 text-red-600"
+              delay={180}
+            />
 
-          <StatCard
-            title="Aging Roles"
-            value={totals.agingRoles}
-            icon={Clock3}
-            description="Roles aging 15+ days"
-            trend="Review weekly"
-            trendType="down"
-            delay={360}
-          />
+            <StatCard
+              title="Weekly Movement"
+              value={formatNumber(totals.movement.Hired)}
+              icon={Activity}
+              valueClassName="text-emerald-600"
+              iconClassName="bg-emerald-50 text-emerald-600"
+              delay={240}
+            />
+
+            <StatCard
+              title="Drop-Offs"
+              value={formatNumber(totals.totalDropOffs)}
+              icon={UserX}
+              valueClassName="text-red-600"
+              iconClassName="bg-red-50 text-red-600"
+              delay={300}
+            />
+
+            <StatCard
+              title="Aging Roles"
+              value={formatNumber(totals.agingRoles)}
+              icon={Clock3}
+              valueClassName="text-amber-500"
+              iconClassName="bg-amber-50 text-amber-600"
+              delay={360}
+            />
+          </div>
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
@@ -1171,7 +1162,9 @@ export default function OMDashboardPage() {
                   <div
                     key={item.recruiter}
                     className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-slate-50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-                    style={{ animationDelay: `${Math.min(index * 60, 300)}ms` }}
+                    style={{
+                      animationDelay: `${Math.min(index * 60, 300)}ms`,
+                    }}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>

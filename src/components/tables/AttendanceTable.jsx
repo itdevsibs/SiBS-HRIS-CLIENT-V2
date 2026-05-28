@@ -1,19 +1,108 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CircleCheckBig, CircleX } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleCheckBig,
+  CircleX,
+  Timer,
+} from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
 import { usePagination } from "@/services/context/PaginationContext";
 import socket from "@/lib/axios/socket";
-import TableFooter from "./footer/TableFooter";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
-const AttendanceTable = () => {
+const PAGE_LIMIT = 15;
+
+function formatNumber(value) {
+  if (value === "..." || value === null || value === undefined) return "...";
+
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 2,
+  });
+}
+
+function capWorkHours(value) {
+  if (value === null || value === undefined || value === "") return 0;
+
+  const numberValue = Number(value);
+
+  if (Number.isNaN(numberValue)) return 0;
+
+  return Math.min(numberValue, 8);
+}
+
+function displayCappedWorkHours(value) {
+  if (value === null || value === undefined || value === "") return "—";
+
+  return formatNumber(capWorkHours(value));
+}
+
+function Badge({ children, className = "" }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
+  return (
+    <div
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+            {title}
+          </p>
+
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
+          >
+            {value}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
 
-  const { page, search, loading, setLoading, setPagination } =
-    usePagination("attendance");
+  const paginationContext = usePagination("attendance");
+
+  const {
+    page = 1,
+    search = "",
+    loading,
+    setLoading,
+    setPagination,
+    pagination,
+    setPage,
+    setCurrentPage,
+    handlePageChange,
+  } = paginationContext;
 
   const navigate = useNavigate();
   const tableScrollRef = useRef(null);
@@ -29,6 +118,49 @@ const AttendanceTable = () => {
     setPaginationRef.current = setPagination;
     navigateRef.current = navigate;
   }, [setLoading, setPagination, navigate]);
+
+  const safePagination = pagination || {
+    currentPage: page || 1,
+    totalPages: 1,
+    total: 0,
+    limit: PAGE_LIMIT,
+  };
+
+  const currentPage = Number(safePagination.currentPage || page || 1);
+  const totalPages = Number(safePagination.totalPages || 1);
+
+  function goToPage(nextPage) {
+    const cleanPage = Math.max(Number(nextPage) || 1, 1);
+
+    if (typeof setPage === "function") {
+      setPage(cleanPage);
+      return;
+    }
+
+    if (typeof setCurrentPage === "function") {
+      setCurrentPage(cleanPage);
+      return;
+    }
+
+    if (typeof handlePageChange === "function") {
+      handlePageChange(cleanPage);
+      return;
+    }
+
+    console.error(
+      "Pagination context does not expose setPage, setCurrentPage, or handlePageChange.",
+    );
+  }
+
+  function goPreviousPage() {
+    if (loading || currentPage <= 1) return;
+    goToPage(currentPage - 1);
+  }
+
+  function goNextPage() {
+    if (loading || currentPage >= totalPages) return;
+    goToPage(currentPage + 1);
+  }
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -58,10 +190,12 @@ const AttendanceTable = () => {
           }
 
           setAttendance([]);
+
           setPaginationRef.current?.({
             totalPages: 1,
             currentPage: 1,
             total: 0,
+            limit: PAGE_LIMIT,
           });
 
           return;
@@ -72,9 +206,10 @@ const AttendanceTable = () => {
         setPaginationRef.current?.(
           result.pagination || {
             totalPages: 1,
-            currentPage: 1,
-            total: 0,
-          }
+            currentPage: page,
+            total: result.data?.length || 0,
+            limit: PAGE_LIMIT,
+          },
         );
       } catch (err) {
         if (cancelled) return;
@@ -82,10 +217,12 @@ const AttendanceTable = () => {
         console.error("Fetch attendance error:", err);
 
         setAttendance([]);
+
         setPaginationRef.current?.({
           totalPages: 1,
           currentPage: 1,
           total: 0,
+          limit: PAGE_LIMIT,
         });
       } finally {
         if (!cancelled) {
@@ -121,9 +258,10 @@ const AttendanceTable = () => {
         setPaginationRef.current?.(
           result.pagination || {
             totalPages: 1,
-            currentPage: 1,
-            total: 0,
-          }
+            currentPage: page,
+            total: result.data?.length || 0,
+            limit: PAGE_LIMIT,
+          },
         );
       } catch (err) {
         console.error("Live attendance refresh error:", err);
@@ -137,14 +275,12 @@ const AttendanceTable = () => {
     };
   }, [page, search]);
 
-  const formatTime = (time) => {
-    if (!time) return "--";
+  function formatTime(time) {
+    if (!time) return "—";
 
     const parsed = new Date(time);
 
-    if (Number.isNaN(parsed.getTime())) {
-      return "--";
-    }
+    if (Number.isNaN(parsed.getTime())) return "—";
 
     return parsed.toLocaleTimeString("en-US", {
       timeZone: "Asia/Manila",
@@ -152,354 +288,489 @@ const AttendanceTable = () => {
       minute: "2-digit",
       hour12: true,
     });
-  };
+  }
 
-  const getTimeBadgeClass = (value, statusKey) => {
-    if (value === "--") {
-      return "text-sibs-primary-1";
+  function getTimeBadgeClass(value, statusKey) {
+    if (value === "—") {
+      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
     }
 
     if (statusKey === "on-time") {
-      return "bg-green-100 text-green-700";
+      return "border-emerald-200 bg-emerald-50 text-emerald-600";
     }
 
-    return "bg-red-100 text-red-600";
-  };
+    return "border-red-200 bg-red-50 text-red-600";
+  }
 
-  const renderStatusBadge = (status) => {
+  function getStatusBadgeClass(status) {
+    if (status === "Approved") {
+      return "border-emerald-200 bg-emerald-50 text-emerald-600";
+    }
+
+    return "border-amber-200 bg-amber-50 text-amber-600";
+  }
+
+  function renderStatusBadge(status) {
     const approved = status === "Approved";
 
     return (
-      <div
-        className={`inline-flex items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${
-          approved ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-        }`}
-      >
-        {approved ? <CircleCheckBig size={16} /> : <CircleX size={16} />}
-        <span>{status ?? "--"}</span>
-      </div>
+      <Badge className={getStatusBadgeClass(status)}>
+        <span className="mr-1 inline-flex items-center">
+          {approved ? <CircleCheckBig size={15} /> : <CircleX size={15} />}
+        </span>
+        {status ?? "—"}
+      </Badge>
     );
-  };
+  }
 
   const adminView = user?.tokenType === "admin";
 
+  const pageStats = useMemo(() => {
+    const totalLoaded = attendance.length;
+
+    const approvedCount = attendance.filter(
+      (item) => item.gy_tracker_status === "Approved",
+    ).length;
+
+    const pendingCount = attendance.filter(
+      (item) => item.gy_tracker_status !== "Approved",
+    ).length;
+
+    const totalWorkHours = attendance.reduce(
+      (sum, item) => sum + capWorkHours(item.gy_tracker_wh),
+      0,
+    );
+
+    return {
+      totalLoaded,
+      approvedCount,
+      pendingCount,
+      totalWorkHours,
+    };
+  }, [attendance]);
+
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
-      <div className="hidden lg:block">
-        <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
-          <table className="w-full min-w-[1280px] border-collapse bg-white text-sm text-sibs-primary-1">
-            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
-              <tr>
-                {adminView && (
-                  <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
-                    SiBS ID
-                  </th>
-                )}
+      <div className="p-4 sm:p-5">
+        <div className="mb-5 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold text-[#101828]">
+                Current Page Summary
+              </h2>
 
-                {adminView && (
-                  <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
-                    Employee Name
-                  </th>
-                )}
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                These totals are based only on the current attendance records
+                loaded for this page.
+              </p>
+            </div>
 
-                <th className="h-12 whitespace-nowrap px-3 text-left text-sm font-bold text-sibs-primary-1">
-                  Tracker Date
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Login
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Start Break
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  End Break
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Logout
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  WH
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  BH
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  OT
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  ATH
-                </th>
-                <th className="h-12 whitespace-nowrap px-3 text-center text-sm font-bold text-sibs-primary-1">
-                  Status
-                </th>
-              </tr>
-            </thead>
+            <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+              Page {currentPage}
+            </Badge>
+          </div>
 
-            <tbody key={`${page}-${search}`} className="sibs-profile-tab-panel">
-              {loading ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              title="Loaded Attendance"
+              value={loading ? "..." : formatNumber(pageStats.totalLoaded)}
+              icon={CalendarDays}
+              delay={0}
+            />
+
+            <StatCard
+              title="Approved"
+              value={loading ? "..." : formatNumber(pageStats.approvedCount)}
+              icon={CircleCheckBig}
+              valueClassName="text-emerald-600"
+              iconClassName="bg-emerald-50 text-emerald-600"
+              delay={60}
+            />
+
+            <StatCard
+              title="Pending"
+              value={loading ? "..." : formatNumber(pageStats.pendingCount)}
+              icon={CircleX}
+              valueClassName="text-amber-500"
+              iconClassName="bg-amber-50 text-amber-600"
+              delay={120}
+            />
+
+            <StatCard
+              title="Page WH"
+              value={loading ? "..." : formatNumber(pageStats.totalWorkHours)}
+              icon={Timer}
+              delay={180}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-[#101828]">
+              Attendance Records
+            </h2>
+
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              {adminView
+                ? "View employee attendance records for the current page."
+                : "View your current page of attendance records."}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+          <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
+            <table className="w-full min-w-[1280px] border-collapse bg-white">
+              <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr>
-                  <td
-                    className="p-6 text-center text-sm text-sibs-tertiary-5"
-                    colSpan={adminView ? 12 : 10}
-                  >
-                    <div className="sibs-profile-tab-panel inline-flex items-center justify-center rounded-xl bg-sibs-tertiary-10 px-5 py-3 font-semibold">
-                      Loading...
-                    </div>
-                  </td>
+                  {adminView && (
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      SiBS ID
+                    </th>
+                  )}
+
+                  {adminView && (
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Employee Name
+                    </th>
+                  )}
+
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Tracker Date
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Login
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Start Break
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    End Break
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Logout
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    WH
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    BH
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    OT
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    ATH
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Status
+                  </th>
                 </tr>
-              ) : attendance.length === 0 ? (
-                <tr>
-                  <td
-                    className="p-6 text-center text-sm text-sibs-tertiary-5"
-                    colSpan={adminView ? 12 : 10}
-                  >
-                    <div className="sibs-profile-tab-panel inline-flex items-center justify-center rounded-xl bg-sibs-tertiary-10 px-5 py-3 font-semibold">
-                      No records found
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                attendance.map((item, index) => {
+              </thead>
+
+              <tbody key={`${page}-${search}-${loading}`}>
+                {loading ? (
+                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                    <tr key={index}>
+                      <td
+                        colSpan={adminView ? 12 : 10}
+                        className="border-t border-[#f3f4f6] px-5 py-4"
+                      >
+                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                      </td>
+                    </tr>
+                  ))
+                ) : attendance.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={adminView ? 12 : 10}
+                      className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                    >
+                      No attendance records found.
+                    </td>
+                  </tr>
+                ) : (
+                  attendance.map((item, index) => {
+                    const loginTime = formatTime(item.gy_tracker_login);
+                    const breakoutTime = formatTime(item.gy_tracker_breakout);
+                    const breakinTime = formatTime(item.gy_tracker_breakin);
+                    const logoutTime = formatTime(item.gy_tracker_logout);
+
+                    const employeeName = [
+                      item.gy_emp_fname,
+                      item.gy_emp_mname,
+                      item.gy_emp_lname,
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                      .trim()
+                      .toUpperCase();
+
+                    return (
+                      <tr
+                        key={`${item.gy_tracker_id || item.gy_tracker_date || "row"}-${index}`}
+                        className="transition-all duration-200 hover:bg-slate-50"
+                      >
+                        {adminView && (
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                            {item.gy_emp_code || "—"}
+                          </td>
+                        )}
+
+                        {adminView && (
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                            {employeeName || "—"}
+                          </td>
+                        )}
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#344054]">
+                          {formatDate(item.gy_tracker_date)}
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                          <TimeBadge
+                            value={loginTime}
+                            className={getTimeBadgeClass(
+                              loginTime,
+                              item.login_status,
+                            )}
+                          />
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                          <TimeBadge
+                            value={breakoutTime}
+                            className={
+                              breakoutTime === "—"
+                                ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
+                                : "border-emerald-200 bg-emerald-50 text-emerald-600"
+                            }
+                          />
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                          <TimeBadge
+                            value={breakinTime}
+                            className={getTimeBadgeClass(
+                              breakinTime,
+                              item.breakin_status,
+                            )}
+                          />
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                          <TimeBadge
+                            value={logoutTime}
+                            className={getTimeBadgeClass(
+                              logoutTime,
+                              item.logout_status,
+                            )}
+                          />
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
+                          {displayCappedWorkHours(item.gy_tracker_wh)}
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                          {item.gy_tracker_bh ?? "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                          {item.gy_tracker_ot ?? "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                          {item.gy_tracker_ath ?? "—"}
+                        </td>
+
+                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                          {renderStatusBadge(item.gy_tracker_status)}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-5 block lg:hidden">
+          <div ref={mobileScrollRef} className="max-h-[580px] overflow-y-auto">
+            {loading ? (
+              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                Loading...
+              </div>
+            ) : attendance.length === 0 ? (
+              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                No attendance records found.
+              </div>
+            ) : (
+              <div key={`${page}-${search}`} className="flex flex-col gap-3">
+                {attendance.map((item, index) => {
+                  const employeeName = [
+                    item.gy_emp_fname,
+                    item.gy_emp_mname,
+                    item.gy_emp_lname,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim()
+                    .toUpperCase();
+
                   const loginTime = formatTime(item.gy_tracker_login);
                   const breakoutTime = formatTime(item.gy_tracker_breakout);
                   const breakinTime = formatTime(item.gy_tracker_breakin);
                   const logoutTime = formatTime(item.gy_tracker_logout);
 
                   return (
-                    <tr
-                      key={`${item.gy_tracker_date || "row"}-${index}`}
-                      className="transition-all duration-200 hover:bg-slate-50"
-                      style={{
-                        animationDelay: `${Math.min(index * 25, 250)}ms`,
-                      }}
+                    <div
+                      key={`${item.gy_tracker_id || item.gy_tracker_date || "mobile"}-${index}`}
+                      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
                     >
-                      {adminView && (
-                        <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
-                          {item.gy_emp_code || "--"}
-                        </td>
-                      )}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          {adminView && (
+                            <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
+                              {item.gy_emp_code || "N/A"}
+                            </p>
+                          )}
 
-                      {adminView && (
-                        <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-medium text-sibs-primary-1">
-                          {[
-                            item.gy_emp_fname,
-                            item.gy_emp_mname,
-                            item.gy_emp_lname,
-                          ]
-                            .filter(Boolean)
-                            .join(" ")
-                            .trim()
-                            .toUpperCase() || "--"}
-                        </td>
-                      )}
+                          <h3 className="m-0 text-sm font-bold leading-tight text-sibs-primary-1">
+                            {adminView
+                              ? employeeName || "N/A"
+                              : formatDate(item.gy_tracker_date)}
+                          </h3>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
-                        {formatDate(item.gy_tracker_date)}
-                      </td>
+                          {adminView && (
+                            <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                              {formatDate(item.gy_tracker_date)}
+                            </p>
+                          )}
+                        </div>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <TimeBadge
+                        <div className="shrink-0">
+                          {renderStatusBadge(item.gy_tracker_status)}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <MobileMetric
+                          label="Login"
                           value={loginTime}
                           className={getTimeBadgeClass(
                             loginTime,
-                            item.login_status
+                            item.login_status,
                           )}
                         />
-                      </td>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <TimeBadge
+                        <MobileMetric
+                          label="Start Break"
                           value={breakoutTime}
                           className={
-                            breakoutTime === "--"
-                              ? "text-sibs-primary-1"
-                              : "bg-green-100 text-green-700"
+                            breakoutTime === "—"
+                              ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-600"
                           }
                         />
-                      </td>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <TimeBadge
+                        <MobileMetric
+                          label="End Break"
                           value={breakinTime}
                           className={getTimeBadgeClass(
                             breakinTime,
-                            item.breakin_status
+                            item.breakin_status,
                           )}
                         />
-                      </td>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        <TimeBadge
+                        <MobileMetric
+                          label="Logout"
                           value={logoutTime}
                           className={getTimeBadgeClass(
                             logoutTime,
-                            item.logout_status
+                            item.logout_status,
                           )}
                         />
-                      </td>
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
-                        {item.gy_tracker_wh ?? "--"}
-                      </td>
+                        <MobileMetric
+                          label="WH"
+                          value={displayCappedWorkHours(item.gy_tracker_wh)}
+                        />
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
-                        {item.gy_tracker_bh ?? "--"}
-                      </td>
+                        <MobileMetric
+                          label="BH"
+                          value={item.gy_tracker_bh ?? "—"}
+                        />
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
-                        {item.gy_tracker_ot ?? "--"}
-                      </td>
+                        <MobileMetric
+                          label="OT"
+                          value={item.gy_tracker_ot ?? "—"}
+                        />
 
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center text-sm text-sibs-primary-1">
-                        {item.gy_tracker_ath ?? "--"}
-                      </td>
-
-                      <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-center">
-                        {renderStatusBadge(item.gy_tracker_status)}
-                      </td>
-                    </tr>
+                        <MobileMetric
+                          label="ATH"
+                          value={item.gy_tracker_ath ?? "—"}
+                        />
+                      </div>
+                    </div>
                   );
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
+          <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
+            Showing {attendance.length} loaded attendance records
+          </p>
+
+          <div className="flex items-center gap-2 max-sm:justify-center">
+            <button
+              type="button"
+              disabled={currentPage <= 1 || loading}
+              onClick={goPreviousPage}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
+
+            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
+              Page {currentPage}
+            </span>
+
+            <button
+              type="button"
+              disabled={currentPage >= totalPages || loading}
+              onClick={goNextPage}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
-
-      <div className="block lg:hidden">
-        <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto p-3">
-          {loading ? (
-            <div className="sibs-profile-tab-panel rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              Loading...
-            </div>
-          ) : attendance.length === 0 ? (
-            <div className="sibs-profile-tab-panel rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              No records found
-            </div>
-          ) : (
-            <div key={`${page}-${search}`} className="flex flex-col gap-3">
-              {attendance.map((item, index) => {
-                const employeeName = [
-                  item.gy_emp_fname,
-                  item.gy_emp_mname,
-                  item.gy_emp_lname,
-                ]
-                  .filter(Boolean)
-                  .join(" ")
-                  .trim()
-                  .toUpperCase();
-
-                const loginTime = formatTime(item.gy_tracker_login);
-                const breakoutTime = formatTime(item.gy_tracker_breakout);
-                const breakinTime = formatTime(item.gy_tracker_breakin);
-                const logoutTime = formatTime(item.gy_tracker_logout);
-
-                return (
-                  <div
-                    key={`${item.gy_tracker_date || "mobile"}-${index}`}
-                    className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-                    style={{
-                      animationDelay: `${Math.min(index * 40, 300)}ms`,
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        {adminView && (
-                          <p className="m-0 text-xs font-medium text-sibs-tertiary-5">
-                            {item.gy_emp_code || "N/A"}
-                          </p>
-                        )}
-
-                        <h3 className="m-0 text-sm font-semibold leading-tight text-sibs-primary-1">
-                          {adminView
-                            ? employeeName || "N/A"
-                            : formatDate(item.gy_tracker_date)}
-                        </h3>
-
-                        {adminView && (
-                          <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                            {formatDate(item.gy_tracker_date)}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="shrink-0">
-                        {renderStatusBadge(item.gy_tracker_status)}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <MobileMetric
-                        label="Login"
-                        value={loginTime}
-                        className={getTimeBadgeClass(
-                          loginTime,
-                          item.login_status
-                        )}
-                      />
-
-                      <MobileMetric
-                        label="Start Break"
-                        value={breakoutTime}
-                        className={
-                          breakoutTime === "--"
-                            ? "text-sibs-primary-1"
-                            : "bg-green-100 text-green-700"
-                        }
-                      />
-
-                      <MobileMetric
-                        label="End Break"
-                        value={breakinTime}
-                        className={getTimeBadgeClass(
-                          breakinTime,
-                          item.breakin_status
-                        )}
-                      />
-
-                      <MobileMetric
-                        label="Logout"
-                        value={logoutTime}
-                        className={getTimeBadgeClass(
-                          logoutTime,
-                          item.logout_status
-                        )}
-                      />
-
-                      <MobileMetric
-                        label="WH"
-                        value={item.gy_tracker_wh ?? "--"}
-                      />
-                      <MobileMetric
-                        label="BH"
-                        value={item.gy_tracker_bh ?? "--"}
-                      />
-                      <MobileMetric
-                        label="OT"
-                        value={item.gy_tracker_ot ?? "--"}
-                      />
-                      <MobileMetric
-                        label="ATH"
-                        value={item.gy_tracker_ath ?? "--"}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <TableFooter tableEntity="attendance" totalLabel="Total Attendance" />
     </div>
   );
-};
+}
 
 function TimeBadge({ value, className = "" }) {
   return (
     <div
-      className={`inline-flex min-w-[74px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+      className={`inline-flex min-w-[74px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
     >
       {value}
     </div>
@@ -508,22 +779,22 @@ function TimeBadge({ value, className = "" }) {
 
 function MobileMetric({ label, value, className = "" }) {
   return (
-    <div className="rounded-[10px] bg-sibs-tertiary-10 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
-      <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
+    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
+      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
 
       {className ? (
         <div
-          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
         >
           {value}
         </div>
       ) : (
-        <strong className="mt-1 block text-sm font-medium text-sibs-primary-1">
+        <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
           {value}
         </strong>
       )}
     </div>
   );
 }
-
-export default AttendanceTable;
