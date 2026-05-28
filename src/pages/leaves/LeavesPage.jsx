@@ -3,12 +3,9 @@ import Header from "../../components/layout/Header";
 import {
   CalendarDays,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Eye,
   FileText,
-  Search,
   UserRound,
   X,
   XCircle,
@@ -16,6 +13,7 @@ import {
 
 import { getLeaves } from "@/lib/axios/getLeaves";
 import { useUser } from "../../services/context/UserContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 
 const PAGE_LIMIT = 15;
 
@@ -57,6 +55,36 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function canViewAccountFilter(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "admin",
+      "administrator",
+      "hr_admin",
+      "hradmin",
+      "super_admin",
+      "superadmin",
+      "super_administrator",
+    ].includes(role),
+  );
 }
 
 function getLeaveTypeLabel(type, fallbackLabel) {
@@ -339,12 +367,10 @@ function LeaveDetailsModal({ open, item, onClose }) {
                 </h3>
 
                 <DetailRow label="Leave ID" value={item.gy_leave_id} />
-
                 <DetailRow
                   label="Filed Date"
                   value={formatDateTime(item.gy_leave_filed)}
                 />
-
                 <DetailRow
                   label="Leave Type"
                   value={getLeaveTypeLabel(
@@ -352,29 +378,23 @@ function LeaveDetailsModal({ open, item, onClose }) {
                     item.leave_type_label,
                   )}
                 />
-
                 <DetailRow
                   label="Paid Leave"
                   value={formatNumber(item.gy_leave_paid)}
                 />
-
                 <DetailRow
                   label="Leave Day"
                   value={formatNumber(item.gy_leave_day)}
                 />
-
                 <DetailRow
                   label="Date From"
                   value={formatDate(item.gy_leave_date_from)}
                 />
-
                 <DetailRow
                   label="Date To"
                   value={formatDate(item.gy_leave_date_to)}
                 />
-
                 <DetailRow label="Reason" value={item.gy_leave_reason} />
-
                 <DetailRow label="Remarks" value={item.gy_leave_remarks} />
               </div>
             </div>
@@ -389,27 +409,22 @@ function LeaveDetailsModal({ open, item, onClose }) {
                   label="Available From"
                   value={formatDate(item.gy_leave_avail_date)}
                 />
-
                 <DetailRow
                   label="Available To"
                   value={formatDate(item.gy_leave_avail_dateto)}
                 />
-
                 <DetailRow
                   label="Approved Credits"
                   value={formatNumber(item.leave_credit)}
                 />
-
                 <DetailRow
                   label="Plotted Leaves"
                   value={formatNumber(item.leave_plotted)}
                 />
-
                 <DetailRow
                   label="Remaining Leaves"
                   value={formatNumber(item.leave_remaining)}
                 />
-
                 <DetailRow
                   label="Justification"
                   value={item.gy_leave_avail_justify}
@@ -425,14 +440,11 @@ function LeaveDetailsModal({ open, item, onClose }) {
                   label="Status"
                   value={normalizeStatus(item.gy_leave_status)}
                 />
-
                 <ApproverRow item={item} />
-
                 <DetailRow
                   label="Date Approved"
                   value={formatDateTime(item.gy_leave_date_approved)}
                 />
-
                 <DetailRow label="Attachment" value={item.gy_leave_attachment} />
               </div>
             </div>
@@ -456,6 +468,7 @@ function LeaveDetailsModal({ open, item, onClose }) {
 export default function LeavesPage() {
   const { user } = useUser();
   const mainScrollRef = useRef(null);
+  const tableScrollRef = useRef(null);
 
   const [leaves, setLeaves] = useState([]);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -465,6 +478,9 @@ export default function LeavesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountOptions, setAccountOptions] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [recordScope, setRecordScope] = useState("all");
@@ -479,6 +495,8 @@ export default function LeavesPage() {
 
   const isEmployeeAccount =
     String(user?.role || "").toLowerCase() === "employee";
+
+  const showAccountFilter = canViewAccountFilter(user);
 
   function scrollPageToTop() {
     requestAnimationFrame(() => {
@@ -498,10 +516,23 @@ export default function LeavesPage() {
     });
   }
 
+  function scrollTableToTop() {
+    requestAnimationFrame(() => {
+      if (tableScrollRef.current) {
+        tableScrollRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "smooth",
+        });
+      }
+    });
+  }
+
   async function fetchLeaves({
     pageValue = currentPage,
     searchValue = searchKeyword,
     statusValue = statusFilter,
+    accountValue = accountFilter,
     shouldScrollTop = false,
   } = {}) {
     if (shouldScrollTop) {
@@ -513,13 +544,19 @@ export default function LeavesPage() {
     try {
       const res = await getLeaves({
         page: pageValue,
+        limit: PAGE_LIMIT,
         search: searchValue,
         status: statusValue,
+        account: showAccountFilter ? accountValue : "All",
       });
 
       if (res?.success && Array.isArray(res.data)) {
         setLeaves(res.data);
         setRecordScope(res.scope || "all");
+
+        if (Array.isArray(res.accountOptions)) {
+          setAccountOptions(res.accountOptions);
+        }
 
         setPagination(
           res.pagination || {
@@ -532,7 +569,6 @@ export default function LeavesPage() {
         );
       } else {
         setLeaves([]);
-
         setPagination({
           currentPage: pageValue,
           limit: PAGE_LIMIT,
@@ -545,7 +581,6 @@ export default function LeavesPage() {
       console.error("FETCH LEAVES ERROR:", err);
 
       setLeaves([]);
-
       setPagination({
         currentPage: pageValue,
         limit: PAGE_LIMIT,
@@ -562,6 +597,19 @@ export default function LeavesPage() {
     }
   }
 
+  function handleAccountSelect(accountName) {
+    setAccountFilter(accountName);
+    setCurrentPage(1);
+
+    fetchLeaves({
+      pageValue: 1,
+      searchValue: searchKeyword,
+      statusValue: statusFilter,
+      accountValue: accountName,
+      shouldScrollTop: true,
+    });
+  }
+
   function runSearch() {
     const keyword = searchInput.trim();
 
@@ -572,6 +620,7 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: keyword,
       statusValue: statusFilter,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
@@ -582,9 +631,7 @@ export default function LeavesPage() {
     }
   }
 
-  function handleStatusChange(e) {
-    const nextStatus = e.target.value;
-
+  function handleStatusChange(nextStatus) {
     setStatusFilter(nextStatus);
     setCurrentPage(1);
 
@@ -592,12 +639,13 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: searchKeyword,
       statusValue: nextStatus,
+      accountValue: accountFilter,
       shouldScrollTop: true,
     });
   }
 
   function handlePreviousPage() {
-    if (loading || currentPage <= 1) return;
+    if (loading || !pagination.hasPreviousPage) return;
 
     const nextPage = currentPage - 1;
 
@@ -607,8 +655,11 @@ export default function LeavesPage() {
       pageValue: nextPage,
       searchValue: searchKeyword,
       statusValue: statusFilter,
-      shouldScrollTop: true,
+      accountValue: accountFilter,
+      shouldScrollTop: false,
     });
+
+    scrollTableToTop();
   }
 
   function handleNextPage() {
@@ -622,8 +673,11 @@ export default function LeavesPage() {
       pageValue: nextPage,
       searchValue: searchKeyword,
       statusValue: statusFilter,
-      shouldScrollTop: true,
+      accountValue: accountFilter,
+      shouldScrollTop: false,
     });
+
+    scrollTableToTop();
   }
 
   useEffect(() => {
@@ -631,13 +685,15 @@ export default function LeavesPage() {
       pageValue: 1,
       searchValue: "",
       statusValue: "All",
+      accountValue: "All",
       shouldScrollTop: true,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     scrollPageToTop();
-  }, [currentPage, searchKeyword, statusFilter]);
+  }, [searchKeyword, statusFilter, accountFilter]);
 
   const paginatedLeaves = useMemo(() => {
     return leaves.map((item) => {
@@ -704,6 +760,18 @@ export default function LeavesPage() {
   }, [paginatedLeaves]);
 
   const isPersonalView = isEmployeeAccount || recordScope === "personal";
+
+  const currentPaginationPage = Number(pagination.currentPage || currentPage);
+  const totalPages = pagination.hasNextPage
+    ? currentPaginationPage + 1
+    : currentPaginationPage;
+
+  const accountDropdownOptions = useMemo(() => {
+    return accountOptions.map((account) => ({
+      label: account,
+      value: account,
+    }));
+  }, [accountOptions]);
 
   return (
     <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
@@ -818,84 +886,99 @@ export default function LeavesPage() {
             style={{ animationDelay: "80ms" }}
           >
             <div className="p-4 sm:p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    {isPersonalView ? "My Leave Records" : "Leave Records"}
-                  </h2>
+              <PaginationTable
+                title={isPersonalView ? "My Leave Records" : "Leave Records"}
+                subtitle={
+                  isPersonalView
+                    ? "Only your current page of leave records is loaded."
+                    : "Only 15 leave records are loaded from the backend per page."
+                }
+                loading={loading}
+                searchValue={searchInput}
+                searchPlaceholder="Search then press Enter"
+                onSearchChange={(value) => setSearchInput(value)}
+                onSearchKeyDown={handleSearchKeyDown}
+                dropdownFilters={
+                  showAccountFilter
+                    ? [
+                        {
+                          key: "account",
+                          value: accountFilter,
+                          onChange: handleAccountSelect,
+                          options: accountDropdownOptions,
+                          allLabel: "All Accounts",
+                          placeholder: "Search accounts...",
+                          className: "sm:w-[280px]",
+                          searchable: true,
+                          includeAll: true,
+                        },
+                      ]
+                    : []
+                }
+                filters={[
+                  {
+                    key: "status",
+                    value: statusFilter,
+                    onChange: handleStatusChange,
+                    options: [
+                      { label: "All Status", value: "All" },
+                      { label: "Approved", value: "Approved" },
+                      { label: "Pending", value: "Pending" },
+                      { label: "Rejected", value: "Rejected" },
+                    ],
+                    className: "sm:w-[190px]",
+                    searchable: false,
+                  },
+                ]}
+                showPagination={false}
+                className="mb-5"
+              />
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    {isPersonalView
-                      ? "Only your current page of leave records is loaded."
-                      : "Only 15 leave records are loaded from the backend per page."}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
-                  <div className="relative w-full sm:w-[340px]">
-                    <Search
-                      size={18}
-                      className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                    />
-
-                    <input
-                      type="text"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyDown={handleSearchKeyDown}
-                      placeholder="Search then press Enter"
-                      className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    />
-                  </div>
-
-                  <select
-                    value={statusFilter}
-                    onChange={handleStatusChange}
-                    className="h-11 rounded-full border border-sibs-tertiary-8 bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2]">
-                <div className="max-h-[580px] overflow-auto">
+              <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+                <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
                   <table className="w-full min-w-[1280px] border-collapse bg-white">
                     <thead className="sticky top-0 z-10 bg-slate-50">
                       <tr>
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Employee
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Leave Type
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Filed
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Date From
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Date To
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Days
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Credits
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Plotted
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Remaining
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Status
                         </th>
+
                         <th className="whitespace-nowrap px-5 py-4 text-right text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                           Action
                         </th>
@@ -903,7 +986,7 @@ export default function LeavesPage() {
                     </thead>
 
                     <tbody
-                      key={`${currentPage}-${searchKeyword}-${statusFilter}-${loading}`}
+                      key={`${currentPage}-${searchKeyword}-${statusFilter}-${accountFilter}-${loading}`}
                     >
                       {loading ? (
                         Array.from({ length: PAGE_LIMIT }).map((_, index) => (
@@ -1001,37 +1084,18 @@ export default function LeavesPage() {
                 </div>
               </div>
 
-              <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
-                <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {paginatedLeaves.length} loaded leave records
-                </p>
-
-                <div className="flex items-center gap-2 max-sm:justify-center">
-                  <button
-                    type="button"
-                    disabled={!pagination.hasPreviousPage || loading}
-                    onClick={handlePreviousPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={16} />
-                    Previous
-                  </button>
-
-                  <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
-                    Page {pagination.currentPage}
-                  </span>
-
-                  <button
-                    type="button"
-                    disabled={!pagination.hasNextPage || loading}
-                    onClick={handleNextPage}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Next
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+              <PaginationTable
+                loading={loading}
+                showSearch={false}
+                showPagination
+                currentPage={currentPaginationPage}
+                totalPages={totalPages}
+                loadedCount={paginatedLeaves.length}
+                totalRecords={0}
+                recordLabel="leave records"
+                onPrevious={handlePreviousPage}
+                onNext={handleNextPage}
+              />
             </div>
           </section>
         </div>

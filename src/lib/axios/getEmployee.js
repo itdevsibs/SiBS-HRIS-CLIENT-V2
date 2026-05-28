@@ -1,11 +1,18 @@
 import api from "./api-template";
 
-export async function getEmployee(page = 1, search = "") {
+export async function getEmployee(
+  page = 1,
+  search = "",
+  account = "All",
+  options = {},
+) {
   try {
     const res = await api.get("/api/employees", {
       params: {
         page,
         search,
+        account: account || "All",
+        includeAccounts: options?.includeAccounts ? 1 : 0,
       },
       withCredentials: true,
     });
@@ -13,6 +20,8 @@ export async function getEmployee(page = 1, search = "") {
     return {
       success: res.data?.success ?? true,
       data: res.data?.data || [],
+      accountOptions: res.data?.accountOptions || [],
+      selectedAccount: res.data?.selectedAccount || account || "All",
       pagination: res.data?.pagination || {
         totalPages: 1,
         currentPage: 1,
@@ -25,12 +34,14 @@ export async function getEmployee(page = 1, search = "") {
     console.error(
       "Axios getEmployee API error:",
       err?.response?.status,
-      err?.message
+      err?.message,
     );
 
     return {
       success: false,
       data: [],
+      accountOptions: [],
+      selectedAccount: account || "All",
       pagination: {
         totalPages: 1,
         currentPage: 1,
@@ -62,7 +73,7 @@ export async function getEmployeeById(sibsId) {
     console.error(
       "Axios getEmployeeById API error:",
       err?.response?.status,
-      err?.message
+      err?.message,
     );
 
     return {
@@ -94,7 +105,7 @@ export async function getSupervisorResignations() {
     console.error(
       "Axios getSupervisorResignations API error:",
       error?.response?.status,
-      error?.message
+      error?.message,
     );
 
     return {
@@ -126,7 +137,7 @@ export async function updateSupervisorResignation({
       },
       {
         withCredentials: true,
-      }
+      },
     );
 
     return {
@@ -139,7 +150,7 @@ export async function updateSupervisorResignation({
     console.error(
       "Axios updateSupervisorResignation API error:",
       error?.response?.status,
-      error?.response?.data || error?.message
+      error?.response?.data || error?.message,
     );
 
     return {
@@ -165,7 +176,7 @@ export async function getSupervisorAttritions() {
   } catch (err) {
     console.error(
       "GETSUPERVISORATTRITIONS ERROR:",
-      err.response?.data || err.message
+      err.response?.data || err.message,
     );
 
     return {

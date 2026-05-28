@@ -2,15 +2,19 @@ import api from "./api-template";
 
 export async function getLeaves({
   page = 1,
+  limit = 15,
   search = "",
   status = "All",
+  account = "All",
 } = {}) {
   try {
     const res = await api.get("/api/leaves", {
       params: {
         page,
+        limit,
         search,
         status,
+        account,
       },
     });
 
@@ -21,12 +25,12 @@ export async function getLeaves({
   }
 }
 
-export async function getMyLeaveBalance() {
+export async function getLeavesSummary() {
   try {
-    const res = await api.get("/api/leaves/my-balance");
+    const res = await api.get("/api/leaves/summary");
     return res.data;
   } catch (err) {
-    console.error("GET MY LEAVE BALANCE API ERROR:", err);
+    console.error("GET LEAVES SUMMARY API ERROR:", err);
     throw err;
   }
 }
