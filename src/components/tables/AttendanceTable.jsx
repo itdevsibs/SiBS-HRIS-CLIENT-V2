@@ -2,10 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleCheckBig,
   CircleX,
+  Search,
   Timer,
 } from "lucide-react";
 
@@ -39,6 +41,43 @@ function displayCappedWorkHours(value) {
   if (value === null || value === undefined || value === "") return "—";
 
   return formatNumber(capWorkHours(value));
+}
+
+function formatEmployeeName(item) {
+  const lastName = String(item?.gy_emp_lname || "").trim();
+  const firstName = String(item?.gy_emp_fname || "").trim();
+  const middleName = String(item?.gy_emp_mname || "").trim();
+
+  if (lastName || firstName || middleName) {
+    return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
+      middleName ? ` ${middleName}` : ""
+    }`
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+  }
+
+  return String(item?.gy_emp_fullname || "").trim().toUpperCase() || "—";
+}
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isHrAdminUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.includes("hr_admin") || roles.includes("hradmin");
 }
 
 function Badge({ children, className = "" }) {
@@ -87,8 +126,34 @@ function StatCard({
   );
 }
 
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [accountOptions, setAccountOptions] = useState([]);
+  const [accountSearch, setAccountSearch] = useState("");
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
 
   const paginationContext = usePagination("attendance");
 
@@ -107,17 +172,49 @@ export default function AttendanceTable() {
   const navigate = useNavigate();
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
+  const accountDropdownRef = useRef(null);
   const { user } = useUser();
 
   const setLoadingRef = useRef(setLoading);
   const setPaginationRef = useRef(setPagination);
   const navigateRef = useRef(navigate);
 
+  const hrAdminView = isHrAdminUser(user);
+  const adminView = user?.tokenType === "admin" || hrAdminView;
+
+  const filteredAccountOptions = useMemo(() => {
+    const keyword = accountSearch.trim().toLowerCase();
+
+    if (!keyword) return accountOptions;
+
+    return accountOptions.filter((account) =>
+      String(account || "").toLowerCase().includes(keyword),
+    );
+  }, [accountOptions, accountSearch]);
+
   useEffect(() => {
     setLoadingRef.current = setLoading;
     setPaginationRef.current = setPagination;
     navigateRef.current = navigate;
   }, [setLoading, setPagination, navigate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        accountDropdownRef.current &&
+        !accountDropdownRef.current.contains(e.target)
+      ) {
+        setShowAccountDropdown(false);
+        setAccountSearch("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const safePagination = pagination || {
     currentPage: page || 1,
@@ -162,6 +259,18 @@ export default function AttendanceTable() {
     goToPage(currentPage + 1);
   }
 
+  function handleAccountSelect(accountName) {
+    setAccountFilter(accountName);
+    setAccountSearch("");
+    setShowAccountDropdown(false);
+    goToPage(1);
+  }
+
+  function getAccountFilterLabel() {
+    if (!accountFilter || accountFilter === "All") return "All Accounts";
+    return accountFilter;
+  }
+
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
@@ -170,7 +279,7 @@ export default function AttendanceTable() {
     if (mobileScrollRef.current) {
       mobileScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [page]);
+  }, [page, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,7 +288,11 @@ export default function AttendanceTable() {
       try {
         setLoadingRef.current?.(true);
 
-        const result = await getAttendance(page, search);
+        const result = await getAttendance(
+          page,
+          search,
+          hrAdminView ? accountFilter : "All",
+        );
 
         if (cancelled) return;
 
@@ -202,6 +315,10 @@ export default function AttendanceTable() {
         }
 
         setAttendance(result.data || []);
+
+        if (Array.isArray(result.accountOptions)) {
+          setAccountOptions(result.accountOptions);
+        }
 
         setPaginationRef.current?.(
           result.pagination || {
@@ -236,7 +353,7 @@ export default function AttendanceTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search]);
+  }, [page, search, accountFilter, hrAdminView]);
 
   useEffect(() => {
     socket.connect();
@@ -249,11 +366,19 @@ export default function AttendanceTable() {
   useEffect(() => {
     const handleAttendanceUpdated = async () => {
       try {
-        const result = await getAttendance(page, search);
+        const result = await getAttendance(
+          page,
+          search,
+          hrAdminView ? accountFilter : "All",
+        );
 
         if (!result?.success) return;
 
         setAttendance(result.data || []);
+
+        if (Array.isArray(result.accountOptions)) {
+          setAccountOptions(result.accountOptions);
+        }
 
         setPaginationRef.current?.(
           result.pagination || {
@@ -273,7 +398,7 @@ export default function AttendanceTable() {
     return () => {
       socket.off("attendance-updated", handleAttendanceUpdated);
     };
-  }, [page, search]);
+  }, [page, search, accountFilter, hrAdminView]);
 
   function formatTime(time) {
     if (!time) return "—";
@@ -322,8 +447,6 @@ export default function AttendanceTable() {
       </Badge>
     );
   }
-
-  const adminView = user?.tokenType === "admin";
 
   const pageStats = useMemo(() => {
     const totalLoaded = attendance.length;
@@ -417,6 +540,90 @@ export default function AttendanceTable() {
                 : "View your current page of attendance records."}
             </p>
           </div>
+
+          {hrAdminView && (
+            <div
+              ref={accountDropdownRef}
+              className="relative z-50 w-full lg:w-[320px]"
+            >
+              <div className="relative">
+                <Search
+                  size={18}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                />
+
+                <input
+                  type="text"
+                  value={
+                    showAccountDropdown ? accountSearch : getAccountFilterLabel()
+                  }
+                  onChange={(e) => {
+                    setAccountSearch(e.target.value);
+                    setShowAccountDropdown(true);
+                  }}
+                  onFocus={() => {
+                    setShowAccountDropdown(true);
+                    setAccountSearch("");
+                  }}
+                  placeholder="Search accounts..."
+                  autoComplete="off"
+                  className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                />
+
+                <ChevronDown
+                  size={18}
+                  onClick={() => {
+                    setShowAccountDropdown((prev) => !prev);
+                    setAccountSearch("");
+                  }}
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                    showAccountDropdown ? "rotate-180" : ""
+                  }`}
+                />
+
+                <AnimatedDropdown open={showAccountDropdown}>
+                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                    <button
+                      type="button"
+                      onClick={() => handleAccountSelect("All")}
+                      className={`block w-full px-4 py-3 text-left text-sm transition ${
+                        accountFilter === "All"
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      All Accounts
+                    </button>
+
+                    {filteredAccountOptions.length > 0 ? (
+                      filteredAccountOptions.map((account, index) => {
+                        const checked = accountFilter === account;
+
+                        return (
+                          <button
+                            key={`${account}-${index}`}
+                            type="button"
+                            onClick={() => handleAccountSelect(account)}
+                            className={`block w-full px-4 py-3 text-left text-sm transition ${
+                              checked
+                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                                : "text-[#344054] hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            <span className="block truncate">{account}</span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                        No accounts found.
+                      </div>
+                    )}
+                  </div>
+                </AnimatedDropdown>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-5 hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
@@ -433,6 +640,12 @@ export default function AttendanceTable() {
                   {adminView && (
                     <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                       Employee Name
+                    </th>
+                  )}
+
+                  {hrAdminView && (
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Account
                     </th>
                   )}
 
@@ -478,12 +691,12 @@ export default function AttendanceTable() {
                 </tr>
               </thead>
 
-              <tbody key={`${page}-${search}-${loading}`}>
+              <tbody key={`${page}-${search}-${accountFilter}-${loading}`}>
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={index}>
                       <td
-                        colSpan={adminView ? 12 : 10}
+                        colSpan={adminView ? (hrAdminView ? 13 : 12) : 10}
                         className="border-t border-[#f3f4f6] px-5 py-4"
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
@@ -493,7 +706,7 @@ export default function AttendanceTable() {
                 ) : attendance.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={adminView ? 12 : 10}
+                      colSpan={adminView ? (hrAdminView ? 13 : 12) : 10}
                       className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
                     >
                       No attendance records found.
@@ -505,16 +718,7 @@ export default function AttendanceTable() {
                     const breakoutTime = formatTime(item.gy_tracker_breakout);
                     const breakinTime = formatTime(item.gy_tracker_breakin);
                     const logoutTime = formatTime(item.gy_tracker_logout);
-
-                    const employeeName = [
-                      item.gy_emp_fname,
-                      item.gy_emp_mname,
-                      item.gy_emp_lname,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")
-                      .trim()
-                      .toUpperCase();
+                    const employeeName = formatEmployeeName(item);
 
                     return (
                       <tr
@@ -529,7 +733,13 @@ export default function AttendanceTable() {
 
                         {adminView && (
                           <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
-                            {employeeName || "—"}
+                            {employeeName}
+                          </td>
+                        )}
+
+                        {hrAdminView && (
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {item.gy_emp_account || "—"}
                           </td>
                         )}
 
@@ -617,18 +827,12 @@ export default function AttendanceTable() {
                 No attendance records found.
               </div>
             ) : (
-              <div key={`${page}-${search}`} className="flex flex-col gap-3">
+              <div
+                key={`${page}-${search}-${accountFilter}`}
+                className="flex flex-col gap-3"
+              >
                 {attendance.map((item, index) => {
-                  const employeeName = [
-                    item.gy_emp_fname,
-                    item.gy_emp_mname,
-                    item.gy_emp_lname,
-                  ]
-                    .filter(Boolean)
-                    .join(" ")
-                    .trim()
-                    .toUpperCase();
-
+                  const employeeName = formatEmployeeName(item);
                   const loginTime = formatTime(item.gy_tracker_login);
                   const breakoutTime = formatTime(item.gy_tracker_breakout);
                   const breakinTime = formatTime(item.gy_tracker_breakin);
@@ -649,9 +853,15 @@ export default function AttendanceTable() {
 
                           <h3 className="m-0 text-sm font-bold leading-tight text-sibs-primary-1">
                             {adminView
-                              ? employeeName || "N/A"
+                              ? employeeName
                               : formatDate(item.gy_tracker_date)}
                           </h3>
+
+                          {hrAdminView && (
+                            <p className="mt-1 text-xs font-semibold text-[#344054]">
+                              {item.gy_emp_account || "No account"}
+                            </p>
+                          )}
 
                           {adminView && (
                             <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">

@@ -16,6 +16,27 @@ import TableFooter from "../footer/TableFooter";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
+function formatEmployeeName(emp) {
+  const lastName = String(emp?.lastName || emp?.gy_emp_lname || "").trim();
+  const firstName = String(emp?.firstName || emp?.gy_emp_fname || "").trim();
+  const middleName = String(emp?.middleName || emp?.gy_emp_mname || "").trim();
+
+  if (lastName || firstName || middleName) {
+    return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
+      middleName ? ` ${middleName}` : ""
+    }`
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+  }
+
+  return (
+    String(emp?.fullName || emp?.gy_emp_fullname || "")
+      .trim()
+      .toUpperCase() || "N/A"
+  );
+}
+
 function MobileInfoItem({ icon: Icon, label, value }) {
   return (
     <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
@@ -37,10 +58,7 @@ function MobileInfoItem({ icon: Icon, label, value }) {
 }
 
 function MobileEmployeeCard({ emp, onOpen }) {
-  const fullName = [emp.firstName, emp.middleName, emp.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .toUpperCase();
+  const fullName = formatEmployeeName(emp);
 
   return (
     <button
@@ -54,7 +72,7 @@ function MobileEmployeeCard({ emp, onOpen }) {
         </p>
 
         <h3 className="mt-1 text-sm font-semibold leading-tight text-sibs-primary-1">
-          {fullName || "N/A"}
+          {fullName}
         </h3>
       </div>
 
@@ -168,7 +186,7 @@ export default function EmployeeTable() {
             totalPages: 1,
             currentPage: 1,
             total: 0,
-          }
+          },
         );
       } catch (err) {
         if (cancelled) return;
@@ -272,10 +290,7 @@ export default function EmployeeTable() {
                     </td>
 
                     <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-medium text-sibs-primary-1">
-                      {[emp.firstName, emp.middleName, emp.lastName]
-                        .filter(Boolean)
-                        .join(" ")
-                        .toUpperCase() || "N/A"}
+                      {formatEmployeeName(emp)}
                     </td>
 
                     <td className="h-[54px] whitespace-nowrap border-t border-[#e6ecf2] px-3 text-left text-sm font-normal text-sibs-primary-1">
