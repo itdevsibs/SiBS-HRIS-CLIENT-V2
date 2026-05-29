@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   UserRound,
+  MapPin,
 } from "lucide-react";
 
 import { getEmployee } from "../../../lib/axios/getEmployee";
@@ -26,7 +27,7 @@ function normalizeRole(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function canViewAccountFilter(user) {
+function canViewEmployeeFilters(user) {
   const roles = [
     user?.role,
     user?.tokenType,
@@ -36,14 +37,26 @@ function canViewAccountFilter(user) {
     user?.gy_user_type,
   ].map(normalizeRole);
 
-  return roles.some((role) =>
-    [
-      "hr_admin",
-      "hradmin",
-      "super_admin",
-      "superadmin",
-      "super_administrator",
-    ].includes(role),
+  const access = Number(
+    user?.admin_access ??
+      user?.adminAccess ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
+
+  return (
+    access === 1 ||
+    roles.some((role) =>
+      [
+        "hr_admin",
+        "hradmin",
+        "super_admin",
+        "superadmin",
+        "super_administrator",
+      ].includes(role),
+    )
   );
 }
 
@@ -104,6 +117,66 @@ function getProfileImageUrl(emp) {
   if (String(filename).startsWith("http")) return filename;
 
   return `${API_URL}/api/employee-profile/file/${encodeURIComponent(filename)}`;
+}
+
+function normalizeDepartmentOption(option) {
+  if (typeof option === "string" || typeof option === "number") {
+    return {
+      label: String(option),
+      value: String(option),
+    };
+  }
+
+  return {
+    label:
+      option?.label ||
+      option?.name_department ||
+      option?.departmentName ||
+      option?.name ||
+      "N/A",
+    value: String(
+      option?.value ||
+        option?.id_department ||
+        option?.departmentId ||
+        option?.id ||
+        "",
+    ),
+  };
+}
+
+function normalizeAccountOption(option) {
+  if (typeof option === "string" || typeof option === "number") {
+    return {
+      label: String(option),
+      value: String(option),
+    };
+  }
+
+  return {
+    label: option?.label || option?.account || option?.gy_acc_name || "N/A",
+    value: String(option?.value || option?.account || option?.gy_acc_name || ""),
+  };
+}
+
+function getAssignedSite(emp) {
+  const value =
+    emp?.site ??
+    emp?.assignedSite ??
+    emp?.location ??
+    emp?.gy_assignedloc ??
+    emp?.assigned_loc ??
+    "";
+
+  const raw = String(value ?? "").trim();
+
+  if (!raw) return "N/A";
+
+  if (raw === "0") return "Tagum";
+  if (raw === "1") return "Davao";
+  if (raw === "2") return "Both Tagum and Davao";
+  if (raw === "3") return "Hybrid";
+
+  return raw;
 }
 
 function ProfileAvatar({ emp, size = "md" }) {
@@ -207,6 +280,12 @@ function MobileEmployeeCard({ emp, onOpen }) {
           <MobileInfoItem icon={Briefcase} label="Account" value={emp.account} />
 
           <MobileInfoItem
+            icon={MapPin}
+            label="Site"
+            value={getAssignedSite(emp)}
+          />
+
+          <MobileInfoItem
             icon={UserRound}
             label="Account Manager"
             value={getAccountManager(emp)}
@@ -233,15 +312,19 @@ function MobileEmployeeCard({ emp, onOpen }) {
 
 export default function EmployeeTable() {
   const { user } = useUser();
-  const showAccountFilter = canViewAccountFilter(user);
+  const showEmployeeFilters = canViewEmployeeFilters(user);
 
   const [employees, setEmployees] = useState([]);
   const [isDraggingTable, setIsDraggingTable] = useState(false);
 
+  const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
+
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
 
-  const loadedAccountOptionsRef = useRef(false);
+  const loadedDepartmentOptionsRef = useRef(false);
+  const loadedAccountOptionsKeyRef = useRef("");
 
   const paginationContext = usePagination("employees");
 
@@ -290,21 +373,32 @@ export default function EmployeeTable() {
   const hasPreviousPage = currentPage > 1;
   const hasNextPage = currentPage < totalPages;
 
+  const departmentDropdownOptions = useMemo(() => {
+    return (Array.isArray(departmentOptions) ? departmentOptions : [])
+      .map(normalizeDepartmentOption)
+      .filter((item) => item.value && item.label);
+  }, [departmentOptions]);
+
   const accountDropdownOptions = useMemo(() => {
-    const backendOptions = Array.isArray(accountOptions) ? accountOptions : [];
+    const backendOptions = (Array.isArray(accountOptions) ? accountOptions : [])
+      .map(normalizeAccountOption)
+      .filter((item) => item.value && item.label);
 
     const loadedOptions = employees
       .map((emp) => String(emp?.account || "").trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((account) => ({ label: account, value: account }));
 
-    const merged = [...new Set([...backendOptions, ...loadedOptions])].sort(
-      (a, b) => a.localeCompare(b),
+    const optionMap = new Map();
+
+    [...backendOptions, ...loadedOptions].forEach((option) => {
+      if (!option.value) return;
+      optionMap.set(option.value, option);
+    });
+
+    return [...optionMap.values()].sort((a, b) =>
+      String(a.label).localeCompare(String(b.label)),
     );
-
-    return merged.map((account) => ({
-      label: account,
-      value: account,
-    }));
   }, [accountOptions, employees]);
 
   useEffect(() => {
@@ -314,11 +408,14 @@ export default function EmployeeTable() {
   }, [navigate, setLoading, setPagination]);
 
   useEffect(() => {
-    if (!showAccountFilter && accountFilter !== "All") {
-      setAccountFilter("All");
-      loadedAccountOptionsRef.current = false;
+    if (!showEmployeeFilters) {
+      if (departmentFilter !== "All") setDepartmentFilter("All");
+      if (accountFilter !== "All") setAccountFilter("All");
+
+      loadedDepartmentOptionsRef.current = false;
+      loadedAccountOptionsKeyRef.current = "";
     }
-  }, [showAccountFilter, accountFilter]);
+  }, [showEmployeeFilters, departmentFilter, accountFilter]);
 
   useEffect(() => {
     if (tableScrollRef.current) {
@@ -336,7 +433,7 @@ export default function EmployeeTable() {
         behavior: "smooth",
       });
     }
-  }, [page, search, accountFilter]);
+  }, [page, search, departmentFilter, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -345,15 +442,21 @@ export default function EmployeeTable() {
       try {
         setLoadingRef.current?.(true);
 
-        const shouldLoadAccountOptions =
-          showAccountFilter && !loadedAccountOptionsRef.current;
+        const accountOptionsKey = `${departmentFilter || "All"}`;
+        const shouldLoadDepartments =
+          showEmployeeFilters && !loadedDepartmentOptionsRef.current;
+        const shouldLoadAccounts =
+          showEmployeeFilters &&
+          loadedAccountOptionsKeyRef.current !== accountOptionsKey;
 
         const result = await getEmployee(
           page,
           search,
-          showAccountFilter ? accountFilter : "All",
+          showEmployeeFilters ? accountFilter : "All",
           {
-            includeAccounts: shouldLoadAccountOptions,
+            department: showEmployeeFilters ? departmentFilter : "All",
+            includeDepartments: shouldLoadDepartments,
+            includeAccounts: shouldLoadAccounts,
           },
         );
 
@@ -379,12 +482,21 @@ export default function EmployeeTable() {
         setEmployees(result.data || []);
 
         if (
-          showAccountFilter &&
-          shouldLoadAccountOptions &&
+          showEmployeeFilters &&
+          shouldLoadDepartments &&
+          Array.isArray(result.departmentOptions)
+        ) {
+          setDepartmentOptions(result.departmentOptions);
+          loadedDepartmentOptionsRef.current = true;
+        }
+
+        if (
+          showEmployeeFilters &&
+          shouldLoadAccounts &&
           Array.isArray(result.accountOptions)
         ) {
           setAccountOptions(result.accountOptions);
-          loadedAccountOptionsRef.current = true;
+          loadedAccountOptionsKeyRef.current = accountOptionsKey;
         }
 
         setPaginationRef.current?.(
@@ -419,7 +531,7 @@ export default function EmployeeTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, accountFilter, showAccountFilter]);
+  }, [page, search, departmentFilter, accountFilter, showEmployeeFilters]);
 
   function goToPage(nextPage) {
     const cleanPage = Math.max(Number(nextPage) || 1, 1);
@@ -462,6 +574,17 @@ export default function EmployeeTable() {
     if (e.key === "Enter") {
       goToPage(1);
     }
+  }
+
+  function handleDepartmentSelect(nextDepartment) {
+    const cleanDepartment = nextDepartment || "All";
+
+    setDepartmentFilter(cleanDepartment);
+    setAccountFilter("All");
+    setAccountOptions([]);
+    loadedAccountOptionsKeyRef.current = "";
+
+    goToPage(1);
   }
 
   function handleAccountSelect(nextAccount) {
@@ -540,8 +663,19 @@ export default function EmployeeTable() {
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleEmployeeSearchKeyDown}
           dropdownFilters={
-            showAccountFilter
+            showEmployeeFilters
               ? [
+                  {
+                    key: "department",
+                    value: departmentFilter,
+                    onChange: handleDepartmentSelect,
+                    options: departmentDropdownOptions,
+                    allLabel: "All Departments",
+                    placeholder: "Search departments...",
+                    className: "sm:w-[280px]",
+                    searchable: true,
+                    includeAll: true,
+                  },
                   {
                     key: "account",
                     value: accountFilter,
@@ -571,7 +705,7 @@ export default function EmployeeTable() {
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <table className="w-full min-w-[1650px] border-collapse bg-white">
+            <table className="w-full min-w-[1750px] border-collapse bg-white">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr>
                   <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
@@ -607,6 +741,10 @@ export default function EmployeeTable() {
                   </th>
 
                   <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                    Site
+                  </th>
+
+                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                     Account Manager
                   </th>
 
@@ -624,12 +762,14 @@ export default function EmployeeTable() {
                 </tr>
               </thead>
 
-              <tbody key={`${page}-${search}-${accountFilter}-${loading}`}>
+              <tbody
+                key={`${page}-${search}-${departmentFilter}-${accountFilter}-${loading}`}
+              >
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={index}>
                       <td
-                        colSpan={12}
+                        colSpan={13}
                         className="border-t border-[#f3f4f6] px-5 py-4"
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
@@ -639,7 +779,7 @@ export default function EmployeeTable() {
                 ) : employees.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={12}
+                      colSpan={13}
                       className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
                     >
                       No employees found.
@@ -687,6 +827,10 @@ export default function EmployeeTable() {
                       </td>
 
                       <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                        {getAssignedSite(emp)}
+                      </td>
+
+                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
                         {getAccountManager(emp)}
                       </td>
 
@@ -725,7 +869,7 @@ export default function EmployeeTable() {
               </div>
             ) : (
               <div
-                key={`${page}-${search}-${accountFilter}`}
+                key={`${page}-${search}-${departmentFilter}-${accountFilter}`}
                 className="flex flex-col gap-3"
               >
                 {employees.map((emp, index) => (

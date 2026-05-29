@@ -11,7 +11,9 @@ export async function getEmployee(
       params: {
         page,
         search,
+        department: options?.department || "All",
         account: account || "All",
+        includeDepartments: options?.includeDepartments ? 1 : 0,
         includeAccounts: options?.includeAccounts ? 1 : 0,
       },
       withCredentials: true,
@@ -20,7 +22,9 @@ export async function getEmployee(
     return {
       success: res.data?.success ?? true,
       data: res.data?.data || [],
+      departmentOptions: res.data?.departmentOptions || [],
       accountOptions: res.data?.accountOptions || [],
+      selectedDepartment: res.data?.selectedDepartment || options?.department || "All",
       selectedAccount: res.data?.selectedAccount || account || "All",
       pagination: res.data?.pagination || {
         totalPages: 1,
@@ -40,7 +44,9 @@ export async function getEmployee(
     return {
       success: false,
       data: [],
+      departmentOptions: [],
       accountOptions: [],
+      selectedDepartment: options?.department || "All",
       selectedAccount: account || "All",
       pagination: {
         totalPages: 1,

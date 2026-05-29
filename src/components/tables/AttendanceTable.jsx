@@ -159,12 +159,6 @@ function getScheduleEnd(item) {
   );
 }
 
-/*
-  Late rule:
-  Schedule 01:00:00 PM
-  Login 01:00:00 PM to 01:00:59 PM = not late
-  Login 01:01:00 PM and above = late
-*/
 function isLateBySchedule(actualTime, scheduledTime) {
   if (!actualTime || !scheduledTime) return false;
 
@@ -314,6 +308,25 @@ function isHrAdminUser(user) {
   return roles.includes("hr_admin") || roles.includes("hradmin");
 }
 
+function isSuperAdminUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    ["super_admin", "superadmin", "super_administrator"].includes(role),
+  );
+}
+
+function canUseAttendanceFilters(user) {
+  return isHrAdminUser(user) || isSuperAdminUser(user);
+}
+
 function isManagerUser(user) {
   const roles = [
     user?.role,
@@ -325,6 +338,65 @@ function isManagerUser(user) {
   ].map(normalizeRole);
 
   return roles.includes("manager") || getAccessValue(user) === 5;
+}
+
+function normalizeDepartmentOption(option) {
+  if (typeof option === "string" || typeof option === "number") {
+    return {
+      label: String(option),
+      value: String(option),
+    };
+  }
+
+  return {
+    label:
+      option?.label ||
+      option?.name_department ||
+      option?.departmentName ||
+      option?.name ||
+      "N/A",
+    value: String(
+      option?.value ||
+        option?.id_department ||
+        option?.departmentId ||
+        option?.id ||
+        "",
+    ),
+  };
+}
+
+function normalizeAccountOption(option) {
+  if (typeof option === "string" || typeof option === "number") {
+    return {
+      label: String(option),
+      value: String(option),
+    };
+  }
+
+  return {
+    label: option?.label || option?.account || option?.gy_acc_name || "N/A",
+    value: String(option?.value || option?.account || option?.gy_acc_name || ""),
+  };
+}
+
+function getAssignedSite(item) {
+  const value =
+    item?.site ??
+    item?.assignedSite ??
+    item?.gy_assignedloc ??
+    item?.assigned_loc ??
+    "";
+
+  const raw = String(value ?? "").trim();
+
+  if (!raw) return "—";
+
+  if (raw === "0") return "Tagum";
+  if (raw === "1") return "Davao";
+  if (raw === "2") return "Both Tagum and Davao";
+  if (raw === "3") return "Hybrid";
+
+  return raw;
 }
 
 function Badge({ children, className = "" }) {
@@ -407,8 +479,16 @@ function MobileMetric({ label, value, className = "" }) {
 
 export default function AttendanceTable() {
   const [attendance, setAttendance] = useState([]);
+
+  const [departmentFilter, setDepartmentFilter] = useState("All");
   const [accountFilter, setAccountFilter] = useState("All");
+
+  const [departmentOptions, setDepartmentOptions] = useState([]);
   const [accountOptions, setAccountOptions] = useState([]);
+
+  const loadedDepartmentOptionsRef = useRef(false);
+  const loadedAccountOptionsKeyRef = useRef("");
+
   const [isDraggingTable, setIsDraggingTable] = useState(false);
 
   const paginationContext = usePagination("attendance");
@@ -447,8 +527,12 @@ export default function AttendanceTable() {
   const navigateRef = useRef(navigate);
 
   const hrAdminView = isHrAdminUser(user);
+  const superAdminView = isSuperAdminUser(user);
+  const attendanceFiltersView = canUseAttendanceFilters(user);
+
   const managerView = isManagerUser(user);
-  const adminView = user?.tokenType === "admin" || hrAdminView || managerView;
+  const adminView =
+    user?.tokenType === "admin" || hrAdminView || superAdminView || managerView;
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
@@ -476,6 +560,37 @@ export default function AttendanceTable() {
     Boolean(safePagination.hasPreviousPage) || currentPage > 1;
   const hasNextPage =
     Boolean(safePagination.hasNextPage) || currentPage < totalPages;
+
+  const departmentDropdownOptions = useMemo(() => {
+    return (Array.isArray(departmentOptions) ? departmentOptions : [])
+      .map(normalizeDepartmentOption)
+      .filter((item) => item.value && item.label);
+  }, [departmentOptions]);
+
+  const accountDropdownOptions = useMemo(() => {
+    const backendOptions = (Array.isArray(accountOptions) ? accountOptions : [])
+      .map(normalizeAccountOption)
+      .filter((item) => item.value && item.label);
+
+    const loadedOptions = attendance
+      .map((item) => String(item?.gy_emp_account || "").trim())
+      .filter(Boolean)
+      .map((account) => ({
+        label: account,
+        value: account,
+      }));
+
+    const optionMap = new Map();
+
+    [...backendOptions, ...loadedOptions].forEach((option) => {
+      if (!option.value) return;
+      optionMap.set(option.value, option);
+    });
+
+    return [...optionMap.values()].sort((a, b) =>
+      String(a.label).localeCompare(String(b.label)),
+    );
+  }, [accountOptions, attendance]);
 
   function goToPage(nextPage) {
     const cleanPage = Math.max(Number(nextPage) || 1, 1);
@@ -510,8 +625,19 @@ export default function AttendanceTable() {
     goToPage(currentPage + 1);
   }
 
+  function handleDepartmentSelect(departmentId) {
+    const cleanDepartment = departmentId || "All";
+
+    setDepartmentFilter(cleanDepartment);
+    setAccountFilter("All");
+    setAccountOptions([]);
+    loadedAccountOptionsKeyRef.current = "";
+
+    goToPage(1);
+  }
+
   function handleAccountSelect(accountName) {
-    setAccountFilter(accountName);
+    setAccountFilter(accountName || "All");
     goToPage(1);
   }
 
@@ -576,6 +702,16 @@ export default function AttendanceTable() {
   }
 
   useEffect(() => {
+    if (!attendanceFiltersView) {
+      if (departmentFilter !== "All") setDepartmentFilter("All");
+      if (accountFilter !== "All") setAccountFilter("All");
+
+      loadedDepartmentOptionsRef.current = false;
+      loadedAccountOptionsKeyRef.current = "";
+    }
+  }, [attendanceFiltersView, departmentFilter, accountFilter]);
+
+  useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
         top: 0,
@@ -591,7 +727,7 @@ export default function AttendanceTable() {
         behavior: "smooth",
       });
     }
-  }, [page, search, accountFilter]);
+  }, [page, search, departmentFilter, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -603,14 +739,24 @@ export default function AttendanceTable() {
       try {
         setLoadingRef.current?.(true);
 
+        const accountOptionsKey = `${departmentFilter || "All"}`;
+
+        const shouldLoadDepartmentOptions =
+          attendanceFiltersView && !loadedDepartmentOptionsRef.current;
+
         const shouldLoadAccountOptions =
-          hrAdminView && accountOptions.length === 0;
+          attendanceFiltersView &&
+          loadedAccountOptionsKeyRef.current !== accountOptionsKey;
 
         const result = await getAttendance(
           page,
           search,
-          hrAdminView ? accountFilter : "All",
-          { includeAccounts: shouldLoadAccountOptions },
+          attendanceFiltersView ? accountFilter : "All",
+          {
+            department: attendanceFiltersView ? departmentFilter : "All",
+            includeDepartments: shouldLoadDepartmentOptions,
+            includeAccounts: shouldLoadAccountOptions,
+          },
         );
 
         if (cancelled || latestRequestIdRef.current !== requestId) return;
@@ -638,10 +784,21 @@ export default function AttendanceTable() {
         setAttendance(result.data || []);
 
         if (
-          Array.isArray(result.accountOptions) &&
-          result.accountOptions.length > 0
+          attendanceFiltersView &&
+          shouldLoadDepartmentOptions &&
+          Array.isArray(result.departmentOptions)
+        ) {
+          setDepartmentOptions(result.departmentOptions);
+          loadedDepartmentOptionsRef.current = true;
+        }
+
+        if (
+          attendanceFiltersView &&
+          shouldLoadAccountOptions &&
+          Array.isArray(result.accountOptions)
         ) {
           setAccountOptions(result.accountOptions);
+          loadedAccountOptionsKeyRef.current = accountOptionsKey;
         }
 
         setPaginationRef.current?.(
@@ -681,7 +838,13 @@ export default function AttendanceTable() {
     return () => {
       cancelled = true;
     };
-  }, [page, search, accountFilter, hrAdminView, accountOptions.length]);
+  }, [
+    page,
+    search,
+    departmentFilter,
+    accountFilter,
+    attendanceFiltersView,
+  ]);
 
   function formatTime(time) {
     if (!time) return "—";
@@ -819,12 +982,13 @@ export default function AttendanceTable() {
     };
   }, [attendance]);
 
-  const accountDropdownOptions = useMemo(() => {
-    return accountOptions.map((account) => ({
-      label: account,
-      value: account,
-    }));
-  }, [accountOptions]);
+  const emptyColSpan = adminView
+    ? attendanceFiltersView
+      ? 15
+      : 12
+    : attendanceFiltersView
+      ? 13
+      : 10;
 
   return (
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
@@ -892,13 +1056,26 @@ export default function AttendanceTable() {
           loading={loading}
           searchValue={searchInput}
           searchPlaceholder={
-            adminView ? "Search employee then press Enter" : "Search then press Enter"
+            adminView
+              ? "Search employee then press Enter"
+              : "Search then press Enter"
           }
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleAttendanceSearchKeyDown}
           dropdownFilters={
-            hrAdminView
+            attendanceFiltersView
               ? [
+                  {
+                    key: "department",
+                    value: departmentFilter,
+                    onChange: handleDepartmentSelect,
+                    options: departmentDropdownOptions,
+                    allLabel: "All Departments",
+                    placeholder: "Search departments...",
+                    className: "sm:w-[280px]",
+                    searchable: true,
+                    includeAll: true,
+                  },
                   {
                     key: "account",
                     value: accountFilter,
@@ -907,6 +1084,8 @@ export default function AttendanceTable() {
                     allLabel: "All Accounts",
                     placeholder: "Search accounts...",
                     className: "sm:w-[320px]",
+                    searchable: true,
+                    includeAll: true,
                   },
                 ]
               : []
@@ -926,7 +1105,7 @@ export default function AttendanceTable() {
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <table className="w-full min-w-[1280px] border-collapse bg-white">
+            <table className="w-full min-w-[1480px] border-collapse bg-white">
               <thead className="sticky top-0 z-10 bg-slate-50">
                 <tr>
                   {adminView && (
@@ -941,9 +1120,21 @@ export default function AttendanceTable() {
                     </th>
                   )}
 
-                  {hrAdminView && (
+                  {attendanceFiltersView && (
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Department
+                    </th>
+                  )}
+
+                  {attendanceFiltersView && (
                     <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
                       Account
+                    </th>
+                  )}
+
+                  {attendanceFiltersView && (
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Site
                     </th>
                   )}
 
@@ -989,12 +1180,14 @@ export default function AttendanceTable() {
                 </tr>
               </thead>
 
-              <tbody key={`${page}-${search}-${accountFilter}-${loading}`}>
+              <tbody
+                key={`${page}-${search}-${departmentFilter}-${accountFilter}-${loading}`}
+              >
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
                     <tr key={index}>
                       <td
-                        colSpan={adminView ? (hrAdminView ? 13 : 12) : 10}
+                        colSpan={emptyColSpan}
                         className="border-t border-[#f3f4f6] px-5 py-4"
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
@@ -1004,7 +1197,7 @@ export default function AttendanceTable() {
                 ) : attendance.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={adminView ? (hrAdminView ? 13 : 12) : 10}
+                      colSpan={emptyColSpan}
                       className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
                     >
                       No attendance records found.
@@ -1037,9 +1230,21 @@ export default function AttendanceTable() {
                           </td>
                         )}
 
-                        {hrAdminView && (
+                        {attendanceFiltersView && (
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {item.department || "—"}
+                          </td>
+                        )}
+
+                        {attendanceFiltersView && (
                           <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
                             {item.gy_emp_account || "—"}
+                          </td>
+                        )}
+
+                        {attendanceFiltersView && (
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {getAssignedSite(item)}
                           </td>
                         )}
 
@@ -1135,7 +1340,7 @@ export default function AttendanceTable() {
               </div>
             ) : (
               <div
-                key={`${page}-${search}-${accountFilter}`}
+                key={`${page}-${search}-${departmentFilter}-${accountFilter}`}
                 className="flex flex-col gap-3"
               >
                 {attendance.map((item, index) => {
@@ -1168,9 +1373,11 @@ export default function AttendanceTable() {
                               : formatDate(item.gy_tracker_date)}
                           </h3>
 
-                          {hrAdminView && (
+                          {attendanceFiltersView && (
                             <p className="mt-1 text-xs font-semibold text-[#344054]">
-                              {item.gy_emp_account || "No account"}
+                              {item.department || "No department"} /{" "}
+                              {item.gy_emp_account || "No account"} /{" "}
+                              {getAssignedSite(item)}
                             </p>
                           )}
 
