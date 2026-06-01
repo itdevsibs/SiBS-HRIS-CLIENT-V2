@@ -11,9 +11,12 @@ export async function getAttendance(
       params: {
         page,
         search,
+        department: options?.department || "All",
         account: account || "All",
+        includeDepartments: options?.includeDepartments ? 1 : 0,
         includeAccounts: options?.includeAccounts ? 1 : 0,
       },
+      withCredentials: true,
     });
 
     return res.data;
