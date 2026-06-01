@@ -17,6 +17,7 @@ import FormLaunchRulesCard from "../../components/recruitment/settings/FormLaunc
 import PlaceholderSettingsPanel from "../../components/recruitment/settings/PlaceholderSettingsPanel";
 import RelatedRecruitmentSettingsCard from "../../components/recruitment/settings/RelatedRecruitmentSettingsCard";
 import SettingsInfoCards from "../../components/recruitment/settings/SettingsInfoCards";
+import ApprovalRulesSettings from "@/components/recruitment/settings/ApprovalRulesSettings";
 
 import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
 import Header from "../../components/layout/Header";
@@ -38,7 +39,6 @@ export default function RecruitmentSettingsPage() {
     handleResetFields,
     handleSaveSettings,
   } = useRecruitmentSettings();
-  
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
@@ -145,6 +145,10 @@ export default function RecruitmentSettingsPage() {
                   <FormLaunchRulesCard />
                   <RelatedRecruitmentSettingsCard />
                 </div>
+              </div>
+            ) : activeTab === "Approval Rules" ? (
+              <div className="space-y-5 bg-[#F5F7FA] p-4">
+                <ApprovalRulesSettings />
               </div>
             ) : (
               <PlaceholderSettingsPanel activeTab={activeTab} />
