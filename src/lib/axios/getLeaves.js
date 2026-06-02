@@ -6,6 +6,8 @@ export async function getLeaves({
   search = "",
   status = "All",
   account = "All",
+  dateFrom = "",
+  dateTo = "",
 } = {}) {
   try {
     const res = await api.get("/api/leaves", {
@@ -15,13 +17,31 @@ export async function getLeaves({
         search,
         status,
         account,
+        dateFrom,
+        dateTo,
       },
     });
 
     return res.data;
   } catch (err) {
     console.error("GET LEAVES API ERROR:", err);
-    throw err;
+
+    return {
+      success: false,
+      status: err?.response?.status || 500,
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to fetch leave records.",
+      data: [],
+      pagination: {
+        currentPage: 1,
+        limit,
+        returned: 0,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      },
+    };
   }
 }
 
@@ -31,6 +51,14 @@ export async function getLeavesSummary() {
     return res.data;
   } catch (err) {
     console.error("GET LEAVES SUMMARY API ERROR:", err);
-    throw err;
+
+    return {
+      success: false,
+      message:
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to fetch leave summary.",
+      data: null,
+    };
   }
 }

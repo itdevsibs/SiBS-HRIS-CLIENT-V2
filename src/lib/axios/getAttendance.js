@@ -11,6 +11,8 @@ export async function getAttendance(
       params: {
         page,
         search,
+        dateFrom: options?.dateFrom || "",
+        dateTo: options?.dateTo || "",
         department: options?.department || "All",
         account: account || "All",
         includeDepartments: options?.includeDepartments ? 1 : 0,
