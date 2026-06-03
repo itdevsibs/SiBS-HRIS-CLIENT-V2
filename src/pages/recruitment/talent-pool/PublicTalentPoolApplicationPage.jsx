@@ -829,6 +829,8 @@ export default function PublicTalentPoolApplicationPage() {
       contactNumber: form.phone1.trim(),
       phone1: form.phone1.trim(),
       phone2: form.phone2.trim(),
+      phoneNumber1: form.phone1.trim(),
+      phoneNumber2: form.phone2.trim(),
 
       industryRelevantExperience: form.industryRelevantExperience.trim(),
       lengthOfWorkExperience: hasRelevantExperience
@@ -847,6 +849,7 @@ export default function PublicTalentPoolApplicationPage() {
       workExperiences: hasRelevantExperience
         ? [
             {
+              industry: form.industryRelevantExperience.trim(),
               industryRelevantExperience:
                 form.industryRelevantExperience.trim(),
               lengthOfWorkExperience: form.lengthOfWorkExperience,
@@ -855,9 +858,11 @@ export default function PublicTalentPoolApplicationPage() {
               company: form.company.trim(),
               monthlyCompensation: form.monthlyCompensation.trim(),
               reasonForLeaving: form.reasonForLeaving.trim(),
+              hasOtherExperience: form.hasOtherExperience || "No",
             },
             ...(form.hasOtherExperience === "Yes"
               ? form.otherExperiences.map((experience) => ({
+                  industry: experience.industryRelevantExperience.trim(),
                   industryRelevantExperience:
                     experience.industryRelevantExperience.trim(),
                   lengthOfWorkExperience:
@@ -869,12 +874,14 @@ export default function PublicTalentPoolApplicationPage() {
                     experience.monthlyCompensation.trim(),
                   reasonForLeaving:
                     experience.reasonForLeaving.trim(),
+                  hasOtherExperience: "No",
                 }))
               : []),
           ]
         : [],
       otherExperiences: hasRelevantExperience && form.hasOtherExperience === "Yes"
         ? form.otherExperiences.map((experience) => ({
+            industry: experience.industryRelevantExperience.trim(),
             industryRelevantExperience:
               experience.industryRelevantExperience.trim(),
             lengthOfWorkExperience: experience.lengthOfWorkExperience,
@@ -883,11 +890,14 @@ export default function PublicTalentPoolApplicationPage() {
             company: experience.company.trim(),
             monthlyCompensation: experience.monthlyCompensation.trim(),
             reasonForLeaving: experience.reasonForLeaving.trim(),
+            hasOtherExperience: "No",
           }))
         : [],
 
       highestEducationalAttainment: form.highestEducationalAttainment,
+      educationalAttainment: form.highestEducationalAttainment,
       affiliationsAndCertifications: form.affiliationsAndCertifications,
+      affiliations: form.affiliationsAndCertifications,
       trainingAttended: form.trainingAttended.trim(),
 
       fullyVaccinated: form.fullyVaccinated,
@@ -924,20 +934,42 @@ export default function PublicTalentPoolApplicationPage() {
       attachmentFileDataUrl,
       attachmentFileUrl: attachmentFileDataUrl,
 
-      source: applicationSource,
+      source: applicationSource || "Public Application",
+      roleCapability: form.openPosition,
+      skillsLanguage: "",
+      availability: "Available",
+      accountFit: "Not assigned yet",
       entryType: "Public Application",
       createdBy: "Candidate",
       createdBySibsId: "",
       createdAt: today,
       status: "New Applicant",
       submittedAt: today,
+      lastActivity: today,
       isPublicSubmission: true,
+      applicationHistory: [
+        {
+          role: form.openPosition,
+          account: "Unassigned",
+          outcome: "Public Application Submitted",
+          date: today,
+        },
+      ],
+      remarks: "Submitted from public applicant form.",
     };
 
     const existing = readLocalStorage(PUBLIC_SUBMISSIONS_KEY, []);
     const updated = [newSubmission, ...existing];
 
     writeLocalStorage(PUBLIC_SUBMISSIONS_KEY, updated);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("ta-public-submissions-updated", {
+          detail: newSubmission,
+        })
+      );
+    }
 
     setSubmittedRecord(newSubmission);
     setForm(emptyPublicForm);

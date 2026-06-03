@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Header from "../../components/layout/Header";
 import {
   Mail,
@@ -20,9 +20,28 @@ import {
   ChevronRight,
   RefreshCcw,
   ClipboardList,
+  UsersRound,
+  UserCheck,
+  BriefcaseBusiness,
+  ShieldCheck,
+  Layers3,
+  Target,
+  Activity,
+  Timer,
 } from "lucide-react";
 
-const weeklyReports = [
+const WEEKLY_REPORTS_STORAGE_KEY = "ta_weekly_reports";
+const ACTION_ITEMS_STORAGE_KEY = "ta_action_items";
+const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
+const INTERNAL_CANDIDATES_KEY = "ta_internal_candidates";
+const CANDIDATE_APPLICATIONS_KEY = "ta_candidate_applications";
+const PIPELINE_CANDIDATES_KEY = "ta_pipeline_candidates";
+const OFFER_RECORDS_KEY = "ta_offer_records";
+const ONBOARDING_RECORDS_KEY = "ta_onboarding_records";
+const HIRING_NEEDS_KEY = "ta_hiring_needs";
+const WEEKLY_HIRING_PLAN_KEY = "ta_weekly_hiring_plan";
+
+const fallbackWeeklyReports = [
   {
     id: 1,
     reportId: "WR-2026-W18",
@@ -45,6 +64,11 @@ const weeklyReports = [
     hired: 20,
     missingDataCount: 2,
     actionItemsCount: 5,
+    publicApplicants: 0,
+    talentPoolCount: 0,
+    pendingHiringNeeds: 0,
+    pendingOffers: 0,
+    pendingOnboarding: 0,
     summary:
       "Hiring delivery is progressing but CSR, QA, and System Developer roles require immediate action due to risk and delay flags.",
     roles: [
@@ -105,6 +129,11 @@ const weeklyReports = [
     hired: 16,
     missingDataCount: 1,
     actionItemsCount: 4,
+    publicApplicants: 0,
+    talentPoolCount: 0,
+    pendingHiringNeeds: 0,
+    pendingOffers: 0,
+    pendingOnboarding: 0,
     summary:
       "Previous week showed stronger sourcing volume but interview conversion remained a concern.",
     roles: [
@@ -153,6 +182,11 @@ const weeklyReports = [
     hired: 14,
     missingDataCount: 0,
     actionItemsCount: 3,
+    publicApplicants: 0,
+    talentPoolCount: 0,
+    pendingHiringNeeds: 0,
+    pendingOffers: 0,
+    pendingOnboarding: 0,
     summary:
       "Hiring progress was stable with fewer missing data issues compared to later weeks.",
     roles: [
@@ -176,14 +210,144 @@ function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
+function safeReadArray(key, fallback = []) {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : fallback;
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeWriteArray(key, value) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      key,
+      JSON.stringify(Array.isArray(value) ? value : [])
+    );
+  } catch {
+    // Frontend-only fallback.
+  }
+}
+
+function getTodayDate() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getCurrentWeekLabel() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now - start;
+  const oneWeek = 1000 * 60 * 60 * 24 * 7;
+  const weekNumber = Math.ceil(diff / oneWeek);
+
+  return `Week ${weekNumber}, ${now.getFullYear()}`;
+}
+
+function getCurrentWeekDateRange() {
+  const today = new Date();
+  const day = today.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  return `${monday.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+  })} - ${sunday.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
+function generateReportId() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const diff = now - start;
+  const oneWeek = 1000 * 60 * 60 * 24 * 7;
+  const weekNumber = Math.ceil(diff / oneWeek);
+
+  return `WR-${now.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+}
+
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "—";
+
+  return parsed.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 0,
+  });
+}
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function getCandidateStatus(record) {
+  return normalizeText(
+    record?.status ||
+      record?.pipelineStatus ||
+      record?.currentStage ||
+      record?.stage ||
+      record?.finalStatus ||
+      ""
+  );
+}
+
+function getRoleFromRecord(record) {
+  return normalizeText(
+    record?.roleTitle ||
+      record?.positionTitle ||
+      record?.openPosition ||
+      record?.roleCapability ||
+      record?.appliedRole ||
+      record?.jobDescriptionTitle ||
+      record?.job_description_title ||
+      "Not assigned"
+  );
+}
+
+function getAccountFromRecord(record) {
+  return normalizeText(
+    record?.account ||
+      record?.appliedAccount ||
+      record?.departmentAccount ||
+      record?.department_account ||
+      record?.accountName ||
+      record?.roleAccount ||
+      "Not assigned"
+  );
+}
+
+function getOwnerFromRecord(record) {
+  return normalizeText(
+    record?.owner ||
+      record?.taOwner ||
+      record?.assignedTo ||
+      record?.preparedBy ||
+      record?.createdBy ||
+      "Unassigned"
+  );
 }
 
 function getStatusClass(status) {
@@ -212,64 +376,372 @@ function getRoleStatusClass(status) {
   }
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
-  return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
+function getPriorityStatus(required, filled) {
+  const req = Number(required || 0);
+  const done = Number(filled || 0);
 
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
+  if (req <= 0) return "On Track";
 
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
-          </p>
-        )}
-      </div>
-    </div>
-  );
+  const percentage = Math.round((done / req) * 100);
+
+  if (percentage >= 100) return "On Track";
+  if (percentage >= 70) return "At Risk";
+  return "Delayed";
 }
 
-function MovementBar({ label, value, max }) {
-  const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
+function buildModuleContext() {
+  const publicSubmissions = safeReadArray(PUBLIC_SUBMISSIONS_KEY);
+  const internalCandidates = safeReadArray(INTERNAL_CANDIDATES_KEY);
+  const candidateApplications = safeReadArray(CANDIDATE_APPLICATIONS_KEY);
+  const pipelineCandidates = safeReadArray(PIPELINE_CANDIDATES_KEY);
+  const offers = safeReadArray(OFFER_RECORDS_KEY);
+  const onboarding = safeReadArray(ONBOARDING_RECORDS_KEY);
+  const hiringNeeds = safeReadArray(HIRING_NEEDS_KEY);
+  const weeklyPlan = safeReadArray(WEEKLY_HIRING_PLAN_KEY);
+  const actionItems = safeReadArray(ACTION_ITEMS_STORAGE_KEY);
 
-  return (
-    <div>
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
-          {label}
-        </p>
+  const allCandidates = [...publicSubmissions, ...internalCandidates];
+  const allPipeline = [...candidateApplications, ...pipelineCandidates];
 
-        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
-          {value}
-        </p>
-      </div>
+  const sourced = allCandidates.length + allPipeline.length;
 
-      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
-        <div
-          className="h-full rounded-full bg-sibs-primary-1"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
+  const screened = allPipeline.filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return (
+      status.includes("screen") ||
+      status.includes("interview") ||
+      status.includes("offer") ||
+      status.includes("accepted") ||
+      status.includes("hired")
+    );
+  }).length;
+
+  const interviewed = allPipeline.filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return (
+      status.includes("interview") ||
+      status.includes("offer") ||
+      status.includes("accepted") ||
+      status.includes("hired")
+    );
+  }).length;
+
+  const offeredFromPipeline = allPipeline.filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return (
+      status.includes("offer") ||
+      status.includes("offered") ||
+      status.includes("accepted") ||
+      status.includes("hired")
+    );
+  }).length;
+
+  const offered = Math.max(offers.length, offeredFromPipeline);
+
+  const accepted = offers.filter((item) => {
+    const status = normalizeText(
+      item.status || item.offerStatus || item.approvalStatus || item.finalStatus
+    ).toLowerCase();
+
+    return status.includes("accepted") || status.includes("approved");
+  }).length;
+
+  const hiredFromPipeline = allPipeline.filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return status.includes("hired") || status.includes("active");
+  }).length;
+
+  const trueHires = onboarding.filter((item) => {
+    const status = normalizeText(
+      item.finalOutcome || item.showStatus || item.status || item.onboardingStatus
+    ).toLowerCase();
+
+    return status.includes("true hire") || status.includes("show");
+  }).length;
+
+  const hired = Math.max(hiredFromPipeline, trueHires);
+
+  const dropOffs =
+    allPipeline.filter((item) => {
+      const status = getCandidateStatus(item).toLowerCase();
+      return (
+        status.includes("failed") ||
+        status.includes("drop") ||
+        status.includes("withdraw") ||
+        status.includes("declined") ||
+        status.includes("rejected") ||
+        status.includes("cancelled")
+      );
+    }).length +
+    offers.filter((item) => {
+      const status = normalizeText(
+        item.status || item.offerStatus || item.finalStatus
+      ).toLowerCase();
+
+      return (
+        status.includes("declined") ||
+        status.includes("rejected") ||
+        status.includes("withdraw")
+      );
+    }).length +
+    onboarding.filter((item) => {
+      const status = normalizeText(
+        item.finalOutcome || item.showStatus || item.status || item.onboardingStatus
+      ).toLowerCase();
+
+      return (
+        status.includes("no show") ||
+        status.includes("withdraw") ||
+        status.includes("pre-start")
+      );
+    }).length;
+
+  const pendingHiringNeeds = hiringNeeds.filter((item) => {
+    const status = normalizeText(item.approvalStatus || item.status).toLowerCase();
+
+    return (
+      !status ||
+      status.includes("for approval") ||
+      status.includes("pending") ||
+      status.includes("under review")
+    );
+  });
+
+  const pendingOffers = offers.filter((item) => {
+    const status = normalizeText(
+      item.status || item.offerStatus || item.approvalStatus || item.finalStatus
+    ).toLowerCase();
+
+    return (
+      status.includes("pending") ||
+      status.includes("for review") ||
+      status.includes("for approval") ||
+      status.includes("offered")
+    );
+  });
+
+  const pendingOnboarding = onboarding.filter((item) => {
+    const status = normalizeText(
+      item.finalOutcome || item.showStatus || item.status || item.onboardingStatus
+    ).toLowerCase();
+
+    return status.includes("pending") || status.includes("waiting");
+  });
+
+  const openActionItems = actionItems.filter(
+    (item) => normalizeText(item.status) !== "Completed"
   );
+
+  const missingData = [];
+
+  if (pendingHiringNeeds.length > 0) {
+    missingData.push(`${pendingHiringNeeds.length} hiring need/s still pending approval.`);
+  }
+
+  if (pendingOffers.length > 0) {
+    missingData.push(`${pendingOffers.length} offer record/s still pending review or acceptance.`);
+  }
+
+  if (pendingOnboarding.length > 0) {
+    missingData.push(`${pendingOnboarding.length} onboarding record/s still pending start confirmation.`);
+  }
+
+  if (openActionItems.length > 0) {
+    missingData.push(`${openActionItems.length} action item/s remain open.`);
+  }
+
+  const weeklyRoles =
+    weeklyPlan.length > 0
+      ? weeklyPlan.map((item, index) => {
+          const role = getRoleFromRecord(item);
+          const account = getAccountFromRecord(item);
+
+          const requirement = Number(
+            item.requiredHeadcount || item.requirement || item.headcount || 0
+          );
+
+          const filled = Number(
+            item.actualHeadcount || item.filled || item.currentFilled || 0
+          );
+
+          const status = normalizeText(
+            item.overallStatus || item.pipelineStatus || item.status
+          );
+
+          return {
+            id: item.id || item.weeklyPlanItemId || index + 1,
+            role,
+            account,
+            requirement,
+            filled,
+            status: status || getPriorityStatus(requirement, filled),
+            owner: getOwnerFromRecord(item),
+          };
+        })
+      : hiringNeeds.map((item, index) => {
+          const role = getRoleFromRecord(item);
+          const account = getAccountFromRecord(item);
+          const requirement = Number(item.headcount || item.requiredHeadcount || 0);
+
+          return {
+            id: item.id || item.hiringNeedId || index + 1,
+            role,
+            account,
+            requirement,
+            filled: 0,
+            status: getPriorityStatus(requirement, 0),
+            owner: getOwnerFromRecord(item),
+          };
+        });
+
+  const totalRequirement = weeklyRoles.reduce(
+    (sum, item) => sum + Number(item.requirement || 0),
+    0
+  );
+
+  const totalFilled = weeklyRoles.reduce(
+    (sum, item) => sum + Number(item.filled || 0),
+    0
+  );
+
+  const atRiskRoles = weeklyRoles.filter(
+    (item) => item.status === "At Risk"
+  ).length;
+
+  const delayedRoles = weeklyRoles.filter(
+    (item) => item.status === "Delayed"
+  ).length;
+
+  const actionItemTitles =
+    openActionItems.length > 0
+      ? openActionItems.slice(0, 8).map((item) => item.actionItem)
+      : ["No open action items recorded for the current week."];
+
+  return {
+    publicSubmissions,
+    internalCandidates,
+    allCandidates,
+    candidateApplications,
+    pipelineCandidates,
+    offers,
+    onboarding,
+    hiringNeeds,
+    weeklyPlan,
+    actionItems,
+    sourced,
+    screened,
+    interviewed,
+    offered,
+    accepted,
+    hired,
+    dropOffs,
+    pendingHiringNeeds,
+    pendingOffers,
+    pendingOnboarding,
+    openActionItems,
+    missingData,
+    weeklyRoles,
+    totalRequirement,
+    totalFilled,
+    atRiskRoles,
+    delayedRoles,
+    actionItemTitles,
+  };
 }
 
-function DetailRow({ label, value }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
+function buildCurrentReportFromModules(context) {
+  const hasLiveData =
+    context.publicSubmissions.length > 0 ||
+    context.internalCandidates.length > 0 ||
+    context.candidateApplications.length > 0 ||
+    context.pipelineCandidates.length > 0 ||
+    context.offers.length > 0 ||
+    context.onboarding.length > 0 ||
+    context.hiringNeeds.length > 0 ||
+    context.weeklyPlan.length > 0 ||
+    context.actionItems.length > 0;
 
-      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
-        {value || "—"}
-      </div>
-    </div>
-  );
+  if (!hasLiveData) return null;
+
+  const summaryParts = [];
+
+  if (context.totalRequirement > 0) {
+    summaryParts.push(
+      `Current filled headcount is ${context.totalFilled}/${context.totalRequirement}.`
+    );
+  }
+
+  if (context.atRiskRoles > 0) {
+    summaryParts.push(`${context.atRiskRoles} role/account group/s are at risk.`);
+  }
+
+  if (context.delayedRoles > 0) {
+    summaryParts.push(`${context.delayedRoles} role/account group/s are delayed.`);
+  }
+
+  if (context.openActionItems.length > 0) {
+    summaryParts.push(`${context.openActionItems.length} action item/s require follow-up.`);
+  }
+
+  if (context.pendingOffers.length > 0) {
+    summaryParts.push(`${context.pendingOffers.length} offer/s are pending review or acceptance.`);
+  }
+
+  if (context.pendingOnboarding.length > 0) {
+    summaryParts.push(`${context.pendingOnboarding.length} onboarding record/s need start confirmation.`);
+  }
+
+  return {
+    id: Date.now(),
+    reportId: generateReportId(),
+    weekLabel: getCurrentWeekLabel(),
+    dateRange: getCurrentWeekDateRange(),
+    status: "Generated",
+    generatedDate: getTodayDate(),
+    generatedBy: "System",
+    totalOpenRoles: context.weeklyRoles.length,
+    totalRequirement: context.totalRequirement,
+    totalFilled: context.totalFilled,
+    atRiskRoles: context.atRiskRoles,
+    delayedRoles: context.delayedRoles,
+    dropOffs: context.dropOffs,
+    sourced: context.sourced,
+    screened: context.screened,
+    interviewed: context.interviewed,
+    offered: context.offered,
+    accepted: context.accepted,
+    hired: context.hired,
+    missingDataCount: context.missingData.length,
+    actionItemsCount: context.openActionItems.length,
+    publicApplicants: context.publicSubmissions.length,
+    talentPoolCount: context.allCandidates.length,
+    pendingHiringNeeds: context.pendingHiringNeeds.length,
+    pendingOffers: context.pendingOffers.length,
+    pendingOnboarding: context.pendingOnboarding.length,
+    summary:
+      summaryParts.length > 0
+        ? summaryParts.join(" ")
+        : "No major recruitment risk detected from the current local module data.",
+    roles:
+      context.weeklyRoles.length > 0
+        ? context.weeklyRoles
+        : [
+            {
+              role: "No active weekly plan",
+              account: "Recruitment",
+              requirement: 0,
+              filled: 0,
+              status: "On Track",
+              owner: "System",
+            },
+          ],
+    actionItems: context.actionItemTitles,
+    missingData:
+      context.missingData.length > 0
+        ? context.missingData
+        : ["No missing data recorded."],
+    generatedFromModules: true,
+  };
 }
 
 function buildEmailPreview(report) {
@@ -314,16 +786,244 @@ Accepted: ${report.accepted}
 Hired: ${report.hired}
 Drop-offs: ${report.dropOffs}
 
-4. Current Status by Role / Account
+4. Recruitment Module Signals
+Public Applicants: ${report.publicApplicants || 0}
+Talent Pool Records: ${report.talentPoolCount || 0}
+Pending Hiring Needs: ${report.pendingHiringNeeds || 0}
+Pending Offers: ${report.pendingOffers || 0}
+Pending Onboarding: ${report.pendingOnboarding || 0}
+
+5. Current Status by Role / Account
 ${roleSummary}
 
-5. Action Items
+6. Action Items
 ${actionItems}
 
-6. Missing Data Explanation
+7. Missing Data Explanation
 ${missingData}
 
 Thank you.`;
+}
+
+function getModuleSignalCards(context) {
+  return [
+    {
+      title: "Public Talent Pool",
+      value: context.publicSubmissions.length,
+      description: "Public applicants",
+      icon: UsersRound,
+      hasRisk: context.publicSubmissions.some(
+        (item) => getCandidateStatus(item) === "New Applicant"
+      ),
+    },
+    {
+      title: "Talent Pool",
+      value: context.allCandidates.length,
+      description: "Candidate records",
+      icon: UserCheck,
+      hasRisk: context.allCandidates.some(
+        (item) => getCandidateStatus(item) === "New Applicant"
+      ),
+    },
+    {
+      title: "Hiring Needs",
+      value: context.hiringNeeds.length,
+      description: `${context.pendingHiringNeeds.length} pending approval`,
+      icon: BriefcaseBusiness,
+      hasRisk: context.pendingHiringNeeds.length > 0,
+    },
+    {
+      title: "Candidate Pipeline",
+      value: context.candidateApplications.length + context.pipelineCandidates.length,
+      description: "Pipeline records",
+      icon: Layers3,
+      hasRisk: context.dropOffs > 0,
+    },
+    {
+      title: "Offers",
+      value: context.offers.length,
+      description: `${context.pendingOffers.length} pending offer`,
+      icon: ShieldCheck,
+      hasRisk: context.pendingOffers.length > 0,
+    },
+    {
+      title: "Onboarding",
+      value: context.onboarding.length,
+      description: `${context.pendingOnboarding.length} pending start`,
+      icon: CheckCircle2,
+      hasRisk: context.pendingOnboarding.length > 0,
+    },
+    {
+      title: "Action Items",
+      value: context.openActionItems.length,
+      description: "Open follow-ups",
+      icon: ListChecks,
+      hasRisk: context.openActionItems.length > 0,
+    },
+  ];
+}
+
+function StatCard({ title, value, icon: Icon, description, delay = 0 }) {
+  const cardTheme = {
+    Reports: {
+      iconBg: "bg-[#F3F7FB]",
+      iconText: "text-sibs-primary-1",
+      valueText: "text-sibs-primary-1",
+      descriptionText: "text-sibs-primary-1",
+    },
+    Generated: {
+      iconBg: "bg-blue-50",
+      iconText: "text-blue-600",
+      valueText: "text-blue-600",
+      descriptionText: "text-blue-600",
+    },
+    Sent: {
+      iconBg: "bg-emerald-50",
+      iconText: "text-emerald-600",
+      valueText: "text-emerald-600",
+      descriptionText: "text-emerald-600",
+    },
+    Archived: {
+      iconBg: "bg-[#F3F7FB]",
+      iconText: "text-sibs-primary-1",
+      valueText: "text-sibs-primary-1",
+      descriptionText: "text-sibs-primary-1",
+    },
+    "Action Items": {
+      iconBg: "bg-amber-50",
+      iconText: "text-amber-600",
+      valueText: "text-amber-600",
+      descriptionText: "text-amber-600",
+    },
+    "Missing Data": {
+      iconBg: "bg-red-50",
+      iconText: "text-red-600",
+      valueText: "text-red-600",
+      descriptionText: "text-red-600",
+    },
+  };
+
+  const theme = cardTheme[title] || {
+    iconBg: "bg-[#F3F7FB]",
+    iconText: "text-sibs-primary-1",
+    valueText: "text-sibs-primary-1",
+    descriptionText: "text-sibs-primary-1",
+  };
+
+  return (
+    <div
+      className="sibs-page-card-in flex min-w-0 items-center gap-4 rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div
+        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform duration-200 ${theme.iconBg} ${theme.iconText}`}
+      >
+        <Icon size={20} />
+      </div>
+
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold text-[#101828]">{title}</p>
+
+        <h2
+          className={`mt-1 text-3xl font-extrabold tracking-[0.18em] ${theme.valueText}`}
+        >
+          {value}
+        </h2>
+
+        {description && (
+          <p
+            className={`mt-1 truncate text-xs font-medium ${theme.descriptionText}`}
+          >
+            {description}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModuleSignalCard({ item, index }) {
+  const Icon = item.icon;
+
+  return (
+    <div
+      className="sibs-page-card-in rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
+            item.hasRisk
+              ? "bg-red-50 text-red-600"
+              : "bg-[#F3F7FB] text-sibs-primary-1"
+          }`}
+        >
+          <Icon size={20} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-[#101828]">
+            {item.title}
+          </p>
+
+          <h2
+            className={`mt-1 text-3xl font-extrabold tracking-[0.18em] ${
+              item.hasRisk ? "text-red-600" : "text-sibs-primary-1"
+            }`}
+          >
+            {formatNumber(item.value)}
+          </h2>
+
+          <p
+            className={`mt-1 truncate text-xs font-medium ${
+              item.hasRisk ? "text-red-600" : "text-sibs-primary-1"
+            }`}
+          >
+            {item.description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MovementBar({ label, value, max }) {
+  const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-4">
+        <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
+          {label}
+        </p>
+
+        <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
+          {value}
+        </p>
+      </div>
+
+      <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
+        <div
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+
+      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
+        {value || "—"}
+      </div>
+    </div>
+  );
 }
 
 function WeeklyReportMobileCard({ report, onView }) {
@@ -331,7 +1031,7 @@ function WeeklyReportMobileCard({ report, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl bg-white p-4 text-left shadow-sm transition hover:bg-[#F8FAFC] hover:shadow-md"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -388,13 +1088,13 @@ function WeeklyReportMobileCard({ report, onView }) {
           {report.delayedRoles} Delayed
         </span>
 
-        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-bold text-[#344054]">
+        <span className="inline-flex rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-bold text-[#344054]">
           {formatDate(report.generatedDate)}
         </span>
       </div>
 
       <div className="mt-4">
-        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
+        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 shadow-sm">
           <Eye size={15} />
           Preview Report
         </span>
@@ -403,7 +1103,7 @@ function WeeklyReportMobileCard({ report, onView }) {
   );
 }
 
-function ReportDetailsModal({ open, report, onClose }) {
+function ReportDetailsModal({ open, report, onClose, onMarkSent }) {
   const [copied, setCopied] = useState(false);
 
   if (!open || !report) return null;
@@ -415,7 +1115,8 @@ function ReportDetailsModal({ open, report, onClose }) {
     report.offered,
     report.accepted,
     report.hired,
-    report.dropOffs
+    report.dropOffs,
+    1
   );
 
   const emailPreview = buildEmailPreview(report);
@@ -440,12 +1141,28 @@ function ReportDetailsModal({ open, report, onClose }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                  report.status
+                )}`}
+              >
+                {report.status}
+              </span>
+
+              {report.generatedFromModules && (
+                <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  Generated from Recruitment Data
+                </span>
+              )}
+            </div>
+
+            <h2 className="mt-3 text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Weekly Report Preview
             </h2>
 
@@ -467,7 +1184,7 @@ function ReportDetailsModal({ open, report, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_430px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
@@ -478,22 +1195,12 @@ function ReportDetailsModal({ open, report, onClose }) {
                       {report.dateRange}
                     </p>
 
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          report.status
-                        )}`}
-                      >
-                        {report.status}
-                      </span>
-
-                      <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                        Auto-generated
-                      </span>
-                    </div>
+                    <p className="mt-3 text-sm leading-6 text-[#344054]">
+                      {report.summary}
+                    </p>
                   </div>
 
-                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-center">
+                  <div className="rounded-xl bg-blue-50 px-5 py-4 text-center">
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
                       Filled
                     </p>
@@ -505,7 +1212,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <h3 className="mb-5 text-sm font-bold text-[#101828]">
                   Weekly KPI Snapshot
                 </h3>
@@ -549,7 +1256,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <h3 className="mb-4 text-sm font-bold text-[#101828]">
                   Role / Account Summary
                 </h3>
@@ -558,7 +1265,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                   {report.roles.map((role, index) => (
                     <div
                       key={`${role.role}-${index}`}
-                      className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                      className="rounded-xl bg-[#F8FAFC] p-4"
                     >
                       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
                         <div className="min-w-0">
@@ -572,7 +1279,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-[#344054]">
+                          <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#344054]">
                             {role.filled}/{role.requirement} filled
                           </span>
 
@@ -590,7 +1297,7 @@ function ReportDetailsModal({ open, report, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <div className="rounded-xl bg-blue-50 p-5">
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Report Generation Rule
                 </h3>
@@ -605,7 +1312,7 @@ function ReportDetailsModal({ open, report, onClose }) {
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+              <div className="rounded-xl bg-[#F8FAFC] p-5">
                 <h3 className="text-sm font-bold text-[#101828]">
                   Report Summary
                 </h3>
@@ -628,10 +1335,22 @@ function ReportDetailsModal({ open, report, onClose }) {
                     label="Missing Data"
                     value={report.missingDataCount}
                   />
+                  <DetailRow
+                    label="Public Applicants"
+                    value={report.publicApplicants}
+                  />
+                  <DetailRow
+                    label="Pending Offers"
+                    value={report.pendingOffers}
+                  />
+                  <DetailRow
+                    label="Pending Onboarding"
+                    value={report.pendingOnboarding}
+                  />
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="text-sm font-bold text-[#101828]">
@@ -646,14 +1365,14 @@ function ReportDetailsModal({ open, report, onClose }) {
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1 shadow-sm transition hover:bg-sibs-primary-1/5"
                   >
                     <Copy size={14} />
                     {copied ? "Copied" : "Copy"}
                   </button>
                 </div>
 
-                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-xs leading-6 text-[#344054]">
+                <pre className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-xl bg-[#F8FAFC] p-4 text-xs leading-6 text-[#344054]">
                   {emailPreview}
                 </pre>
               </div>
@@ -661,7 +1380,7 @@ function ReportDetailsModal({ open, report, onClose }) {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:bg-sibs-primary-1/5"
                 >
                   <Download size={16} />
                   Export
@@ -669,10 +1388,11 @@ function ReportDetailsModal({ open, report, onClose }) {
 
                 <button
                   type="button"
+                  onClick={() => onMarkSent(report)}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 py-3 text-sm font-bold text-white transition hover:opacity-90"
                 >
                   <Send size={16} />
-                  Send
+                  Mark as Sent
                 </button>
               </div>
             </div>
@@ -699,11 +1419,68 @@ export default function WeeklyReportsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const [savedReports, setSavedReports] = useState(() => {
+    const stored = safeReadArray(WEEKLY_REPORTS_STORAGE_KEY, []);
+    return stored.length > 0 ? stored : fallbackWeeklyReports;
+  });
+
+  useEffect(() => {
+    safeWriteArray(WEEKLY_REPORTS_STORAGE_KEY, savedReports);
+  }, [savedReports]);
+
+  useEffect(() => {
+    function refreshFromStorage() {
+      setRefreshKey((prev) => prev + 1);
+    }
+
+    window.addEventListener("storage", refreshFromStorage);
+    window.addEventListener("focus", refreshFromStorage);
+    window.addEventListener("ta-public-submission-created", refreshFromStorage);
+    window.addEventListener("ta-pipeline-sync-updated", refreshFromStorage);
+    window.addEventListener("ta-offers-updated", refreshFromStorage);
+    window.addEventListener("ta-onboarding-updated", refreshFromStorage);
+
+    return () => {
+      window.removeEventListener("storage", refreshFromStorage);
+      window.removeEventListener("focus", refreshFromStorage);
+      window.removeEventListener(
+        "ta-public-submission-created",
+        refreshFromStorage
+      );
+      window.removeEventListener("ta-pipeline-sync-updated", refreshFromStorage);
+      window.removeEventListener("ta-offers-updated", refreshFromStorage);
+      window.removeEventListener("ta-onboarding-updated", refreshFromStorage);
+    };
+  }, []);
+
+  const moduleContext = useMemo(() => buildModuleContext(), [refreshKey]);
+
+  const generatedCurrentReport = useMemo(
+    () => buildCurrentReportFromModules(moduleContext),
+    [moduleContext]
+  );
+
+  const reports = useMemo(() => {
+    if (!generatedCurrentReport) return savedReports;
+
+    const withoutSameWeek = savedReports.filter(
+      (report) => report.reportId !== generatedCurrentReport.reportId
+    );
+
+    return [generatedCurrentReport, ...withoutSameWeek];
+  }, [generatedCurrentReport, savedReports]);
+
+  const moduleSignalCards = useMemo(
+    () => getModuleSignalCards(moduleContext),
+    [moduleContext]
+  );
 
   const filteredReports = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return weeklyReports.filter((report) => {
+    return reports.filter((report) => {
       const matchesSearch =
         !keyword ||
         report.reportId.toLowerCase().includes(keyword) ||
@@ -716,22 +1493,20 @@ export default function WeeklyReportsPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [search, statusFilter]);
+  }, [reports, search, statusFilter]);
 
   const stats = useMemo(() => {
-    const current = weeklyReports[0];
+    const current = reports[0];
 
-    const totalReports = weeklyReports.length;
+    const totalReports = reports.length;
 
-    const generated = weeklyReports.filter(
+    const generated = reports.filter(
       (report) => report.status === "Generated"
     ).length;
 
-    const sent = weeklyReports.filter(
-      (report) => report.status === "Sent"
-    ).length;
+    const sent = reports.filter((report) => report.status === "Sent").length;
 
-    const archived = weeklyReports.filter(
+    const archived = reports.filter(
       (report) => report.status === "Archived"
     ).length;
 
@@ -742,33 +1517,89 @@ export default function WeeklyReportsPage() {
       sent,
       archived,
     };
-  }, []);
+  }, [reports]);
+
+  function handleGenerateCurrentWeek() {
+    const report = buildCurrentReportFromModules(moduleContext);
+
+    if (!report) {
+      alert("No recruitment module data is available to generate a weekly report.");
+      return;
+    }
+
+    setSavedReports((prev) => [
+      report,
+      ...prev.filter((item) => item.reportId !== report.reportId),
+    ]);
+
+    setSelectedReport(report);
+  }
+
+  function handleMarkSent(report) {
+    const updated = {
+      ...report,
+      status: "Sent",
+    };
+
+    setSavedReports((prev) => [
+      updated,
+      ...prev.filter((item) => item.reportId !== report.reportId),
+    ]);
+
+    setSelectedReport(updated);
+  }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10">
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <FileClock size={28} className="shrink-0 text-sibs-primary-1" />
+      <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
+        <div className="sibs-page-header-in min-w-0 mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ClipboardList size={14} />
+              Recruitment
+            </div>
 
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
+            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
               Weekly Reports
             </h1>
+
+            <p className="mt-1 max-w-4xl text-sm font-medium text-sibs-tertiary-5">
+              Generate weekly hiring reports from Hiring Needs, Weekly Hiring
+              Plan, Candidate Pipeline, Offers, Onboarding, Action Items, Talent
+              Pool, and Public Talent Pool data
+            </p>
           </div>
 
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Auto-generated weekly hiring reports and email preview.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:mb-4">
+            <button
+              type="button"
+              onClick={() => setRefreshKey((prev) => prev + 1)}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-md active:scale-[0.98]"
+            >
+              <RefreshCcw size={18} />
+              Refresh Data
+            </button>
+
+            <button
+              type="button"
+              onClick={handleGenerateCurrentWeek}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              <FileClock size={18} />
+              Generate Current Week
+            </button>
+          </div>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <StatCard
             title="Reports"
             value={stats.totalReports}
             icon={FileText}
             description="Weekly reports created"
+            delay={0}
           />
 
           <StatCard
@@ -776,6 +1607,7 @@ export default function WeeklyReportsPage() {
             value={stats.generated}
             icon={Clock3}
             description="Pending send"
+            delay={60}
           />
 
           <StatCard
@@ -783,6 +1615,7 @@ export default function WeeklyReportsPage() {
             value={stats.sent}
             icon={CheckCircle2}
             description="Already distributed"
+            delay={120}
           />
 
           <StatCard
@@ -790,85 +1623,90 @@ export default function WeeklyReportsPage() {
             value={stats.archived}
             icon={ClipboardList}
             description="Historical reports"
+            delay={180}
           />
 
           <StatCard
             title="Action Items"
-            value={stats.current.actionItemsCount}
+            value={stats.current?.actionItemsCount || 0}
             icon={ListChecks}
             description="Current week actions"
+            delay={240}
           />
 
           <StatCard
             title="Missing Data"
-            value={stats.current.missingDataCount}
+            value={stats.current?.missingDataCount || 0}
             icon={AlertTriangle}
             description="Needs explanation"
+            delay={300}
           />
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="text-lg font-bold text-sibs-primary-1">
                   Current Weekly Report Snapshot
                 </h2>
 
-                <p className="text-sm text-sibs-tertiary-5">
-                  Hiring plan, KPI snapshot, current status, and action items.
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  Hiring plan, KPI snapshot, current status, and action items
                 </p>
               </div>
 
-              <BarChart3 size={20} className="shrink-0 text-gray-400" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F3F7FB] text-sibs-primary-1">
+                <BarChart3 size={21} />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <div className="rounded-xl bg-[#F8FAFC] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Requirement
                 </p>
 
                 <p className="mt-2 text-2xl font-bold text-sibs-primary-1">
-                  {stats.current.totalRequirement}
+                  {stats.current?.totalRequirement || 0}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <div className="rounded-xl bg-[#F8FAFC] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Filled
                 </p>
 
                 <p className="mt-2 text-2xl font-bold text-emerald-600">
-                  {stats.current.totalFilled}
+                  {stats.current?.totalFilled || 0}
                 </p>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+              <div className="rounded-xl bg-[#F8FAFC] p-4">
                 <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Drop-offs
                 </p>
 
                 <p className="mt-2 text-2xl font-bold text-red-600">
-                  {stats.current.dropOffs}
+                  {stats.current?.dropOffs || 0}
                 </p>
               </div>
             </div>
 
-            <div className="mt-5 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+            <div className="mt-5 rounded-xl bg-[#F8FAFC] p-5">
               <h3 className="text-sm font-bold text-[#101828]">
                 Current Week Summary
               </h3>
 
               <p className="mt-2 text-sm leading-6 text-[#344054]">
-                {stats.current.summary}
+                {stats.current?.summary || "No weekly report data available."}
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
+          <div className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
+              <div className="rounded-full bg-[#F3F7FB] p-3 text-sibs-primary-1">
                 <Mail size={22} />
               </div>
 
@@ -877,7 +1715,7 @@ export default function WeeklyReportsPage() {
                   Weekly Email Requirement
                 </h3>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                <p className="mt-2 text-sm leading-6 text-sibs-tertiary-5">
                   The system should automatically generate the weekly report
                   format with summary per role/account, hiring plan snapshot,
                   weekly KPI snapshot, current status, action items, and missing
@@ -888,38 +1726,37 @@ export default function WeeklyReportsPage() {
           </div>
         </div>
 
-        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <h3 className="mb-2 font-semibold text-sibs-primary-1">
-                Weekly Report Records
-              </h3>
+        <section className="mb-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-sibs-primary-1">
+              Recruitment Module Signals
+            </h2>
 
-              <p className="text-sm text-sibs-tertiary-5">
-                Generated reports, email previews, and historical archive.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
-            >
-              <RefreshCcw size={18} />
-              Generate Current Week
-            </button>
+            <p className="text-sm font-medium text-sibs-tertiary-5">
+              These values are pulled from other recruitment module local records
+            </p>
           </div>
-        </div>
 
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {moduleSignalCards.map((item, index) => (
+              <ModuleSignalCard key={item.title} item={item} index={index} />
+            ))}
+          </div>
+        </section>
+
+        <section className="sibs-profile-tab-panel overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="border-b border-gray-100 p-4 sm:p-6">
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_320px_170px] xl:items-center">
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Weekly Report List
-                </h2>
+                <div className="flex items-center gap-2">
+                  <FilterIcon />
+                  <h2 className="text-lg font-bold text-sibs-primary-1">
+                    Weekly Report List
+                  </h2>
+                </div>
 
-                <p className="text-sm text-sibs-tertiary-5">
-                  Search and filter weekly report records.
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  Search and filter generated, sent, and archived reports
                 </p>
               </div>
 
@@ -956,13 +1793,13 @@ export default function WeeklyReportsPage() {
               {filteredReports.length > 0 ? (
                 filteredReports.map((report) => (
                   <WeeklyReportMobileCard
-                    key={report.id}
+                    key={report.reportId}
                     report={report}
                     onView={() => setSelectedReport(report)}
                   />
                 ))
               ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-xl bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
                   No weekly reports found.
                 </div>
               )}
@@ -990,7 +1827,7 @@ export default function WeeklyReportsPage() {
                     {filteredReports.length > 0 ? (
                       filteredReports.map((report) => (
                         <tr
-                          key={report.id}
+                          key={report.reportId}
                           className="transition hover:bg-[#F8FAFC]"
                         >
                           <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
@@ -1076,8 +1913,8 @@ export default function WeeklyReportsPage() {
 
             <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredReports.length} of {weeklyReports.length}{" "}
-                weekly reports
+                Showing {filteredReports.length > 0 ? 1 : 0} to{" "}
+                {filteredReports.length} of {reports.length} weekly reports
               </p>
 
               <div className="flex items-center gap-2">
@@ -1097,13 +1934,6 @@ export default function WeeklyReportsPage() {
 
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-                >
-                  2
-                </button>
-
-                <button
-                  type="button"
                   className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
                 >
                   <ChevronRight size={16} />
@@ -1113,16 +1943,35 @@ export default function WeeklyReportsPage() {
           </div>
         </section>
 
-        <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <h3 className="text-sm font-bold text-sibs-primary-1">
-            Weekly Reports Rule
-          </h3>
+        <section className="sibs-profile-tab-panel mt-6 rounded-xl bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="rounded-full bg-[#F3F7FB] p-3 text-sibs-primary-1">
+                <Timer size={22} />
+              </div>
 
-          <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            The weekly hiring email should be auto-generated from raw HRIS data:
-            Hiring Plan snapshot, Weekly KPI Snapshot, Current Status, Action
-            Items, and Missing Data explanations.
-          </p>
+              <div>
+                <h3 className="text-sm font-bold text-sibs-primary-1">
+                  Weekly Reports Rule
+                </h3>
+
+                <p className="mt-2 max-w-5xl text-sm leading-6 text-sibs-primary-1/80">
+                  The weekly hiring email should be auto-generated from raw HRIS
+                  data: Hiring Plan snapshot, Weekly KPI Snapshot, Current
+                  Status, Action Items, and Missing Data explanations.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGenerateCurrentWeek}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              <RefreshCcw size={18} />
+              Generate Report
+            </button>
+          </div>
         </section>
       </main>
 
@@ -1130,7 +1979,12 @@ export default function WeeklyReportsPage() {
         open={!!selectedReport}
         report={selectedReport}
         onClose={() => setSelectedReport(null)}
+        onMarkSent={handleMarkSent}
       />
     </div>
   );
+}
+
+function FilterIcon() {
+  return <Activity size={18} className="text-sibs-primary-1" />;
 }
