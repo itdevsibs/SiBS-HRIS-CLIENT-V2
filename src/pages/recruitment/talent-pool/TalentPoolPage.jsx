@@ -900,6 +900,27 @@ function writeLocalStorage(key, value) {
   }
 }
 
+function normalizeWorkExperienceRecord(experience = {}) {
+  const industry =
+    experience.industry ||
+    experience.industryRelevantExperience ||
+    experience.relevantExperience ||
+    "";
+
+  return {
+    ...experience,
+    industry,
+    industryRelevantExperience: experience.industryRelevantExperience || industry,
+    lengthOfWorkExperience: experience.lengthOfWorkExperience || "",
+    years: experience.years || "",
+    role: experience.role || "",
+    company: experience.company || "",
+    monthlyCompensation: experience.monthlyCompensation || "",
+    reasonForLeaving: experience.reasonForLeaving || "",
+    hasOtherExperience: experience.hasOtherExperience || "No",
+  };
+}
+
 function normalizeCandidateRecord(candidate) {
   const openPosition = candidate.openPosition || candidate.roleCapability || "";
   const source =
@@ -907,6 +928,32 @@ function normalizeCandidateRecord(candidate) {
     (Array.isArray(candidate.hearAboutUs) && candidate.hearAboutUs.length
       ? candidate.hearAboutUs.join(", ")
       : "Public Application");
+
+  const phoneNumber1 =
+    candidate.phoneNumber1 ||
+    candidate.phone1 ||
+    candidate.contactNumber ||
+    candidate.phone ||
+    "";
+
+  const phoneNumber2 = candidate.phoneNumber2 || candidate.phone2 || "";
+
+  const educationalAttainment =
+    candidate.educationalAttainment ||
+    candidate.highestEducationalAttainment ||
+    "";
+
+  const affiliations = Array.isArray(candidate.affiliations)
+    ? candidate.affiliations
+    : Array.isArray(candidate.affiliationsAndCertifications)
+      ? candidate.affiliationsAndCertifications
+      : candidate.affiliations
+        ? [candidate.affiliations]
+        : [];
+
+  const workExperiences = Array.isArray(candidate.workExperiences)
+    ? candidate.workExperiences.map(normalizeWorkExperienceRecord)
+    : [];
 
   return {
     ...candidate,
@@ -922,17 +969,20 @@ function normalizeCandidateRecord(candidate) {
         : source
           ? [source]
           : [],
-    contactNumber: candidate.phoneNumber1 || candidate.contactNumber || "",
-    phoneNumber1: candidate.phoneNumber1 || candidate.contactNumber || "",
-    phoneNumber2: candidate.phoneNumber2 || "",
+    contactNumber: phoneNumber1,
+    phoneNumber1,
+    phoneNumber2,
+    phone1: candidate.phone1 || phoneNumber1,
+    phone2: candidate.phone2 || phoneNumber2,
     workExperience: candidate.workExperience || "",
-    workExperiences: Array.isArray(candidate.workExperiences)
-      ? candidate.workExperiences
-      : [],
-    educationalAttainment: candidate.educationalAttainment || "",
-    affiliations: Array.isArray(candidate.affiliations)
-      ? candidate.affiliations
-      : [],
+    workExperiences,
+    educationalAttainment,
+    highestEducationalAttainment:
+      candidate.highestEducationalAttainment || educationalAttainment,
+    affiliations,
+    affiliationsAndCertifications: Array.isArray(candidate.affiliationsAndCertifications)
+      ? candidate.affiliationsAndCertifications
+      : affiliations,
     references: Array.isArray(candidate.references)
       ? candidate.references
       : [
@@ -945,21 +995,40 @@ function normalizeCandidateRecord(candidate) {
     employeeId: candidate.employeeId || "",
     nickname: candidate.nickname || "",
     audioFileName: candidate.audioFileName || "",
-    audioFileUrl: candidate.audioFileUrl || candidate.audioDataUrl || "",
-    audioFileType: candidate.audioFileType || candidate.audioMimeType || "",
+    audioFileUrl:
+      candidate.audioFileUrl ||
+      candidate.audioFileDataUrl ||
+      candidate.audioDataUrl ||
+      "",
+    audioFileType:
+      candidate.audioFileType || candidate.audioMimeType || "",
     attachmentFileName: candidate.attachmentFileName || "",
-    attachmentFileUrl: candidate.attachmentFileUrl || candidate.attachmentDataUrl || "",
-    attachmentFileType: candidate.attachmentFileType || candidate.attachmentMimeType || "",
+    attachmentFileUrl:
+      candidate.attachmentFileUrl ||
+      candidate.attachmentFileDataUrl ||
+      candidate.attachmentDataUrl ||
+      "",
+    attachmentFileType:
+      candidate.attachmentFileType || candidate.attachmentMimeType || "",
     source,
     availability: candidate.availability || "Available",
-    accountFit: "Not assigned yet",
-    entryType: candidate.entryType || (candidate.isPublicSubmission ? "Public Application" : "TA Manual Entry"),
+    accountFit: candidate.accountFit || "Not assigned yet",
+    entryType:
+      candidate.entryType ||
+      (candidate.isPublicSubmission ? "Public Application" : "TA Manual Entry"),
     createdBy: toDisplayPersonName(
-      candidate.createdBy || candidate.addedBy || candidate.submittedBy || (candidate.isPublicSubmission ? "Candidate" : "Current User"),
+      candidate.createdBy ||
+        candidate.addedBy ||
+        candidate.submittedBy ||
+        (candidate.isPublicSubmission ? "Candidate" : "Current User"),
       candidate.isPublicSubmission ? "Candidate" : "Current User"
     ),
     createdBySibsId: candidate.createdBySibsId || candidate.addedBySibsId || "",
-    createdAt: candidate.createdAt || candidate.submittedAt || candidate.lastActivity || getTodayDate(),
+    createdAt:
+      candidate.createdAt ||
+      candidate.submittedAt ||
+      candidate.lastActivity ||
+      getTodayDate(),
     lastActivity: candidate.lastActivity || candidate.submittedAt || getTodayDate(),
     tags: candidate.tags || normalizeTags(openPosition, candidate.skillsLanguage),
   };
@@ -990,7 +1059,7 @@ function candidateToForm(candidate) {
       name: item?.name || "",
       phone: item?.phone || "",
     })),
-    accountFit: "Not assigned yet",
+    accountFit: normalized.accountFit || "Not assigned yet",
     consent: Boolean(normalized.consent ?? true),
   };
 }
@@ -1134,6 +1203,65 @@ function MultiCheckGroup({ options, value, onChange, columns = "md:grid-cols-2" 
       ))}
     </div>
   );
+}
+
+function getCandidateUniqueKey(candidate) {
+  return String(
+    candidate?.candidateId ||
+      `${candidate?.email || ""}-${candidate?.submittedAt || candidate?.createdAt || ""}` ||
+      candidate?.id ||
+      ""
+  ).trim();
+}
+
+function importPublicSubmission(submission, index = 0) {
+  return normalizeCandidateRecord({
+    ...submission,
+    id: submission.id || Date.now() + index,
+    candidateId: submission.candidateId || generateCandidateId(index + 1),
+    status: submission.status || "New Applicant",
+    source: submission.source || "Public Application",
+    entryType: "Public Application",
+    createdBy: "Candidate",
+    createdBySibsId: submission.createdBySibsId || "",
+    createdAt: submission.createdAt || submission.submittedAt || getTodayDate(),
+    lastActivity: submission.lastActivity || submission.submittedAt || getTodayDate(),
+    isPublicSubmission: true,
+    accountFit: submission.accountFit || "Not assigned yet",
+    applicationHistory:
+      Array.isArray(submission.applicationHistory) && submission.applicationHistory.length > 0
+        ? submission.applicationHistory
+        : [
+            {
+              role: submission.openPosition || submission.roleCapability,
+              account: submission.accountFit || "Unassigned",
+              outcome: "Public Application Submitted",
+              date: submission.submittedAt || getTodayDate(),
+            },
+          ],
+    remarks: submission.remarks || "Submitted from public applicant form.",
+  });
+}
+
+function mergeCandidateLists(primaryCandidates = [], publicSubmissions = []) {
+  const existingKeys = new Set();
+  const normalizedPrimary = primaryCandidates.map((candidate) => {
+    const normalized = normalizeCandidateRecord(candidate);
+    const key = getCandidateUniqueKey(normalized);
+    if (key) existingKeys.add(key);
+    return normalized;
+  });
+
+  const importedPublic = publicSubmissions
+    .map(importPublicSubmission)
+    .filter((candidate) => {
+      const key = getCandidateUniqueKey(candidate);
+      if (!key || existingKeys.has(key)) return false;
+      existingKeys.add(key);
+      return true;
+    });
+
+  return [...importedPublic, ...normalizedPrimary];
 }
 
 function TalentPoolMobileCard({ candidate, onView }) {
@@ -2577,45 +2705,37 @@ export default function TalentPoolPage() {
   const [moveToPipelineForm, setMoveToPipelineForm] = useState(emptyMoveToPipelineForm);
 
   useEffect(() => {
-    const savedCandidates = readLocalStorage(INTERNAL_CANDIDATES_KEY, null);
+    function syncPublicSubmissions() {
+      const savedCandidates = readLocalStorage(INTERNAL_CANDIDATES_KEY, null);
+      const publicSubmissions = readLocalStorage(PUBLIC_SUBMISSIONS_KEY, []);
+      const baseCandidates =
+        Array.isArray(savedCandidates) && savedCandidates.length > 0
+          ? savedCandidates
+          : initialCandidates;
 
-    if (savedCandidates && Array.isArray(savedCandidates)) {
-      setCandidateList(savedCandidates.map(normalizeCandidateRecord));
-      return;
-    }
+      const merged = mergeCandidateLists(baseCandidates, publicSubmissions);
 
-    const publicSubmissions = readLocalStorage(PUBLIC_SUBMISSIONS_KEY, []);
-
-    if (publicSubmissions.length > 0) {
-      const imported = publicSubmissions.map((submission, index) =>
-        normalizeCandidateRecord({
-          ...submission,
-          id: initialCandidates.length + index + 1,
-          candidateId:
-            submission.candidateId || generateCandidateId(initialCandidates.length + index + 1),
-          status: "New Applicant",
-          source: submission.source || "Public Application",
-          entryType: "Public Application",
-          createdBy: "Candidate",
-          createdBySibsId: "",
-          createdAt: submission.submittedAt || getTodayDate(),
-          isPublicSubmission: true,
-          applicationHistory: [
-            {
-              role: submission.openPosition || submission.roleCapability,
-              account: submission.accountFit || "Unassigned",
-              outcome: "Public Application Submitted",
-              date: submission.submittedAt || getTodayDate(),
-            },
-          ],
-          remarks: submission.remarks || "Submitted from public applicant form.",
-        })
-      );
-
-      const merged = [...imported, ...initialCandidates.map(normalizeCandidateRecord)];
       setCandidateList(merged);
       writeLocalStorage(INTERNAL_CANDIDATES_KEY, merged);
     }
+
+    syncPublicSubmissions();
+
+    function handlePublicSubmissionSync(event) {
+      if (!event || event.key === PUBLIC_SUBMISSIONS_KEY) {
+        syncPublicSubmissions();
+      }
+    }
+
+    window.addEventListener("storage", handlePublicSubmissionSync);
+    window.addEventListener("focus", syncPublicSubmissions);
+    window.addEventListener("ta-public-submissions-updated", syncPublicSubmissions);
+
+    return () => {
+      window.removeEventListener("storage", handlePublicSubmissionSync);
+      window.removeEventListener("focus", syncPublicSubmissions);
+      window.removeEventListener("ta-public-submissions-updated", syncPublicSubmissions);
+    };
   }, []);
 
   useEffect(() => {
