@@ -9,7 +9,10 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 import { getAttendance } from "../../lib/axios/getAttendance";
-import { usePagination } from "@/services/context/PaginationContext";
+import {
+  usePagination,
+  PaginationDateRangeFilter,
+} from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate } from "@/components/layout/FormatDateTime";
 
@@ -323,8 +326,31 @@ function isSuperAdminUser(user) {
   );
 }
 
+function isTalentAcquisitionUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "ta",
+      "talent_acquisition",
+      "talent_acquisition_admin",
+      "ta_admin",
+      "recruitment",
+      "recruiter",
+      "sourcing",
+    ].includes(role),
+  );
+}
+
 function canUseAttendanceFilters(user) {
-  return isHrAdminUser(user) || isSuperAdminUser(user);
+  return isHrAdminUser(user) || isSuperAdminUser(user) || isTalentAcquisitionUser(user);
 }
 
 function isManagerUser(user) {
@@ -503,10 +529,14 @@ export default function AttendanceTable() {
     setLoading,
     setPagination,
     pagination,
+    filterValues,
     setPage,
     setCurrentPage,
     handlePageChange,
   } = paginationContext;
+
+  const dateFrom = filterValues?.dateFrom || "";
+  const dateTo = filterValues?.dateTo || "";
 
   const navigate = useNavigate();
   const tableScrollRef = useRef(null);
@@ -528,11 +558,18 @@ export default function AttendanceTable() {
 
   const hrAdminView = isHrAdminUser(user);
   const superAdminView = isSuperAdminUser(user);
-  const attendanceFiltersView = canUseAttendanceFilters(user);
-
   const managerView = isManagerUser(user);
+  const talentAcquisitionView = isTalentAcquisitionUser(user);
+
+  const attendanceFiltersView = canUseAttendanceFilters(user);
+  const attendanceDateRangeView = true;
+
   const adminView =
-    user?.tokenType === "admin" || hrAdminView || superAdminView || managerView;
+    user?.tokenType === "admin" ||
+    hrAdminView ||
+    superAdminView ||
+    managerView ||
+    talentAcquisitionView;
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
@@ -727,7 +764,7 @@ export default function AttendanceTable() {
         behavior: "smooth",
       });
     }
-  }, [page, search, departmentFilter, accountFilter]);
+  }, [page, search, dateFrom, dateTo, departmentFilter, accountFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -753,6 +790,8 @@ export default function AttendanceTable() {
           search,
           attendanceFiltersView ? accountFilter : "All",
           {
+            dateFrom,
+            dateTo,
             department: attendanceFiltersView ? departmentFilter : "All",
             includeDepartments: shouldLoadDepartmentOptions,
             includeAccounts: shouldLoadAccountOptions,
@@ -841,6 +880,8 @@ export default function AttendanceTable() {
   }, [
     page,
     search,
+    dateFrom,
+    dateTo,
     departmentFilter,
     accountFilter,
     attendanceFiltersView,
@@ -1091,6 +1132,12 @@ export default function AttendanceTable() {
               : []
           }
           showPagination={false}
+          className="mb-3"
+        />
+
+        <PaginationDateRangeFilter
+          entity="attendance"
+          visible={attendanceDateRangeView}
           className="mb-5"
         />
 
@@ -1181,7 +1228,7 @@ export default function AttendanceTable() {
               </thead>
 
               <tbody
-                key={`${page}-${search}-${departmentFilter}-${accountFilter}-${loading}`}
+                key={`${page}-${search}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
               >
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
@@ -1340,7 +1387,7 @@ export default function AttendanceTable() {
               </div>
             ) : (
               <div
-                key={`${page}-${search}-${departmentFilter}-${accountFilter}`}
+                key={`${page}-${search}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
                 className="flex flex-col gap-3"
               >
                 {attendance.map((item, index) => {
