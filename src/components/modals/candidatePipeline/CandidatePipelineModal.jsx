@@ -529,66 +529,80 @@ const CandidatePipelineModal = ({
 
                     {isOffered && (
                       <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          {offerApprovers.map((approver) => {
-                            const approval = candidate.offerApprovals?.[
-                              approver
-                            ] || {
-                              status: "For Review",
-                              updatedAt: null,
-                              remarks: "",
-                            };
+                        {(() => {
+                          const approvedBy = offerApprovers.filter(
+                            (approver) => {
+                              const approval =
+                                candidate.offerApprovals?.[approver];
+                              return approval?.status === "Approved";
+                            },
+                          );
 
-                            return (
-                              <div
-                                key={approver}
-                                className="rounded-xl border border-[#E6ECF2] bg-white p-4"
-                              >
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                  <p className="text-sm font-bold text-[#101828]">
-                                    {approver}
+                          const isRejected = offerApprovers.some((approver) => {
+                            const approval =
+                              candidate.offerApprovals?.[approver];
+                            return approval?.status === "Rejected";
+                          });
+
+                          const approvalStatus =
+                            candidate.offerApprovalStatus ||
+                            getOfferApprovalSummary(candidate);
+
+                          return (
+                            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
+                              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                                    Offer Approval
                                   </p>
-                                  <span
-                                    className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getOfferApprovalClass(
-                                      approval.status,
-                                    )}`}
-                                  >
-                                    {approval.status || "For Review"}
-                                  </span>
+
+                                  <h4 className="mt-1 text-base font-extrabold text-[#101828]">
+                                    {approvalStatus === "Approved"
+                                      ? "Offer Approved"
+                                      : isRejected
+                                        ? "Offer Rejected"
+                                        : "For Review"}
+                                  </h4>
                                 </div>
-                                <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                                  {approval.updatedAt ||
-                                    "Waiting for approval update from Offers page."}
-                                </p>
-                                {approval.remarks && (
-                                  <p className="mt-2 rounded-lg bg-[#F8FAFC] p-2 text-xs font-semibold leading-5 text-[#475467]">
-                                    {approval.remarks}
-                                  </p>
-                                )}
+
+                                <span
+                                  className={`w-fit rounded-full border px-3 py-1 text-xs font-extrabold ${getOfferApprovalClass(
+                                    approvalStatus || "For Review",
+                                  )}`}
+                                >
+                                  {approvalStatus || "For Review"}
+                                </span>
                               </div>
-                            );
-                          })}
-                        </div>
 
-                        {(candidate.offerApprovalStatus ||
-                          getOfferApprovalSummary(candidate)) ===
-                          "Rejected" && (
-                          <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-                            Offer was not approved. Check the Offers page
-                            approval cards for the approver status.
-                          </div>
-                        )}
+                              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                                  Approved By
+                                </p>
 
-                        {!isOfferApproved(candidate) &&
-                          (candidate.offerApprovalStatus ||
-                            getOfferApprovalSummary(candidate)) !==
-                            "Rejected" && (
-                            <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-                              Offer is still for review. The email button will
-                              be enabled after Raul Nadela and Haasanor both
-                              approve the offer in the Offers page.
+                                <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
+                                  {approvedBy.length > 0
+                                    ? approvedBy.join(", ")
+                                    : "Waiting for approval"}
+                                </p>
+                              </div>
+
+                              {approvalStatus !== "Approved" && !isRejected && (
+                                <p className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm font-semibold leading-6 text-sibs-primary-1">
+                                  Offer is still for review. The email button
+                                  will be enabled once all required approvals
+                                  are completed in the Offers page.
+                                </p>
+                              )}
+
+                              {isRejected && (
+                                <p className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold leading-6 text-red-600">
+                                  Offer approval was rejected. Please review the
+                                  approval details in the Offers page.
+                                </p>
+                              )}
                             </div>
-                          )}
+                          );
+                        })()}
 
                         {isOfferApproved(candidate) &&
                           !candidate.offerEmailSent && (
