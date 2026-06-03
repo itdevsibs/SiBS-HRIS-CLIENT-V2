@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../../components/layout/Header";
 import { CreateOnboardingModal } from "../../components/modals/onboarding/OnboardingModal.jsx";
 import {
@@ -18,6 +24,8 @@ import {
   ChevronRight,
   FileText,
   Timer,
+  Filter,
+  ChevronDown,
 } from "lucide-react";
 import { saveCandidateExperienceRecord } from "@/lib/utils/candidateExperienceStore";
 
@@ -29,6 +37,8 @@ const PIPELINE_CANDIDATES_STORAGE_KEY = "ta_pipeline_candidates";
 const OFFERS_UPDATED_BROWSER_EVENT = "ta-offers-updated";
 const ONBOARDING_UPDATED_BROWSER_EVENT = "ta-onboarding-updated";
 const PIPELINE_SYNC_BROWSER_EVENT = "ta-pipeline-sync-updated";
+
+const ONBOARDING_RECORDS_PER_PAGE = 8;
 
 const initialOnboardingRecords = [
   {
@@ -148,8 +158,6 @@ const ownerOptions = [
   "Paul Garcia",
 ];
 
-const locationOptions = ["Davao", "Tagum", "Hybrid", "Remote"];
-
 const onboardingReasonCategoryOptions = [
   "No Response",
   "Personal Reason",
@@ -187,11 +195,120 @@ const emptyOutcomeForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  required = false,
+  zIndex = "z-30",
+  height = "h-12",
+  labelClassName = "mb-1 block text-sm font-bold text-[#101828]",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const displayValue = value || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className={labelClassName}>
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex ${height} w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+      >
+        <span
+          className={`truncate ${
+            value ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const selected = String(value) === String(option);
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
 }
 
 function safeReadArray(key) {
@@ -212,10 +329,10 @@ function safeWriteArray(key, value) {
   try {
     window.localStorage.setItem(
       key,
-      JSON.stringify(Array.isArray(value) ? value : [])
+      JSON.stringify(Array.isArray(value) ? value : []),
     );
   } catch {
-    // Local frontend storage only.
+    // localStorage only.
   }
 }
 
@@ -245,7 +362,11 @@ function generateOnboardingId(nextNumber) {
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return "—";
+
+  return parsed.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -265,6 +386,11 @@ function getDaysToStart(acceptedDate, expectedDate) {
 
   const accepted = new Date(acceptedDate);
   const expected = new Date(expectedDate);
+
+  if (Number.isNaN(accepted.getTime()) || Number.isNaN(expected.getTime())) {
+    return "—";
+  }
+
   const diff = expected.getTime() - accepted.getTime();
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
 
@@ -357,7 +483,7 @@ function normalizeOnboardingRecord(record) {
 
 function saveOnboardingList(records) {
   const normalizedRecords = records.map((record) =>
-    normalizeOnboardingRecord(record)
+    normalizeOnboardingRecord(record),
   );
 
   safeWriteArray(ONBOARDING_STORAGE_KEY, normalizedRecords);
@@ -391,7 +517,7 @@ function updatePipelineForOnboarding(record, nextStage, reason) {
       const alreadyUpdated = candidate.timeline?.some(
         (item) =>
           item.onboardingId === normalizedRecord.onboardingId &&
-          item.stage === nextStage
+          item.stage === nextStage,
       );
 
       if (alreadyUpdated) {
@@ -450,35 +576,57 @@ function updatePipelineForOnboarding(record, nextStage, reason) {
   });
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
+function SummaryCard({
+  title,
+  value,
+  icon: Icon,
+  description,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
+    <div
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
           </p>
-        )}
+
+          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
 }
 
-function ProgressBar({ label, value, total }) {
+function ProgressBar({ label, value, total, delay = 0 }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
           {label}
         </p>
+
         <p className="shrink-0 text-sm font-bold text-sibs-primary-1">
           {percentage}%
         </p>
@@ -486,7 +634,7 @@ function ProgressBar({ label, value, total }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -515,16 +663,18 @@ function OnboardingMobileCard({ record, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-bold text-sibs-primary-1">
             {normalizedRecord.onboardingId}
           </p>
+
           <h3 className="mt-1 text-sm font-bold text-[#101828]">
             {normalizedRecord.candidateName}
           </h3>
+
           <p className="mt-1 break-words text-xs font-semibold text-sibs-tertiary-5">
             {normalizedRecord.roleTitle} / {normalizedRecord.account}
           </p>
@@ -532,7 +682,7 @@ function OnboardingMobileCard({ record, onView }) {
 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getShowStatusClass(
-            normalizedRecord.showStatus
+            normalizedRecord.showStatus,
           )}`}
         >
           {normalizedRecord.showStatus}
@@ -540,19 +690,21 @@ function OnboardingMobileCard({ record, onView }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Expected
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {formatDate(normalizedRecord.expectedStartDate)}
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Actual
           </p>
+
           <p className="mt-1 text-xs font-bold text-[#344054]">
             {formatDate(normalizedRecord.actualStartDate)}
           </p>
@@ -562,7 +714,7 @@ function OnboardingMobileCard({ record, onView }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getOutcomeClass(
-            normalizedRecord.finalOutcome
+            normalizedRecord.finalOutcome,
           )}`}
         >
           {normalizedRecord.finalOutcome}
@@ -591,7 +743,6 @@ function OnboardingMobileCard({ record, onView }) {
   );
 }
 
-
 function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) {
   if (!open || !record) return null;
 
@@ -605,7 +756,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -623,6 +774,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
               {isNoShow && "Mark as No Show"}
               {isWithdraw && "Mark as Pre-start Withdrawal"}
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Update the final onboarding outcome for this accepted offer.
             </p>
@@ -631,7 +783,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -660,6 +812,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
               >
                 {record.candidateName}
               </h3>
+
               <p
                 className={`mt-1 text-sm font-semibold ${
                   isShow
@@ -676,6 +829,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                 <span className="rounded-full border border-white/70 bg-white px-3 py-1 text-xs font-bold text-[#344054]">
                   Expected Start: {formatDate(record.expectedStartDate)}
                 </span>
+
                 <span className="rounded-full border border-white/70 bg-white px-3 py-1 text-xs font-bold text-[#344054]">
                   Current Status: {record.showStatus}
                 </span>
@@ -687,6 +841,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                 <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                   Actual Start Date <span className="text-red-500">*</span>
                 </label>
+
                 <input
                   required
                   type="date"
@@ -701,32 +856,29 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
 
             {(isNoShow || isWithdraw) && (
               <>
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Reason Category <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={form.reasonCategory}
-                    onChange={(e) =>
-                      setForm({ ...form, reasonCategory: e.target.value })
-                    }
-                    className={inputClass()}
-                  >
-                    <option value="">Select reason category</option>
-                    {onboardingReasonCategoryOptions.map((category) => (
-                      <option key={category} value={category}>
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Reason Category"
+                  required
+                  value={form.reasonCategory}
+                  options={onboardingReasonCategoryOptions}
+                  placeholder="Select reason category"
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      reasonCategory: value,
+                    })
+                  }
+                  height="h-11"
+                  zIndex="z-50"
+                  labelClassName="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5"
+                />
 
                 <div>
                   <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                     {isNoShow ? "No Show Reason" : "Withdrawal Reason"}{" "}
                     <span className="text-red-500">*</span>
                   </label>
+
                   <textarea
                     required
                     value={form.withdrawalReason}
@@ -751,6 +903,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                   <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                     Candidate Feedback
                   </label>
+
                   <textarea
                     value={form.candidateFeedback}
                     onChange={(e) =>
@@ -762,32 +915,27 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
                   />
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                    Experience Rating
-                  </label>
-                  <select
-                    value={form.experienceRating}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        experienceRating: Number(e.target.value),
-                      })
-                    }
-                    className={inputClass()}
-                  >
-                    <option value={5}>5 - Excellent</option>
-                    <option value={4}>4 - Good</option>
-                    <option value={3}>3 - Neutral</option>
-                    <option value={2}>2 - Poor</option>
-                    <option value={1}>1 - Very Poor</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Experience Rating"
+                  value={String(form.experienceRating)}
+                  options={["5", "4", "3", "2", "1"]}
+                  placeholder="Select rating"
+                  onChange={(value) =>
+                    setForm({
+                      ...form,
+                      experienceRating: Number(value),
+                    })
+                  }
+                  height="h-11"
+                  zIndex="z-40"
+                  labelClassName="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5"
+                />
 
                 <div>
                   <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                     Feedback Tag
                   </label>
+
                   <input
                     value={form.feedbackTag}
                     onChange={(e) =>
@@ -808,6 +956,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                 Remarks
               </label>
+
               <textarea
                 value={form.remarks}
                 onChange={(e) => setForm({ ...form, remarks: e.target.value })}
@@ -821,6 +970,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
               <h3 className="text-sm font-bold text-sibs-primary-1">
                 System Action
               </h3>
+
               <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                 {isShow &&
                   "Marking as Show moves the Candidate Pipeline to Hired and increases filled count."}
@@ -838,7 +988,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]"
             >
               Cancel
             </button>
@@ -846,7 +996,7 @@ function OutcomeModal({ open, record, type, form, setForm, onClose, onSubmit }) 
             <button
               type="submit"
               onClick={onSubmit}
-              className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition ${
+              className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] ${
                 isShow
                   ? "bg-emerald-600 hover:bg-emerald-700"
                   : isNoShow
@@ -887,7 +1037,7 @@ function OnboardingDetailsModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -895,6 +1045,7 @@ function OnboardingDetailsModal({
             <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
               Onboarding Transition Details
             </h2>
+
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Track accepted offer to actual start, show/no-show, and pre-start
               withdrawal.
@@ -904,7 +1055,7 @@ function OnboardingDetailsModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -920,6 +1071,7 @@ function OnboardingDetailsModal({
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
                       {normalizedRecord.candidateName}
                     </h3>
+
                     <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
                       {normalizedRecord.candidateEmail}
                     </p>
@@ -927,7 +1079,7 @@ function OnboardingDetailsModal({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getShowStatusClass(
-                          normalizedRecord.showStatus
+                          normalizedRecord.showStatus,
                         )}`}
                       >
                         {normalizedRecord.showStatus}
@@ -935,7 +1087,7 @@ function OnboardingDetailsModal({
 
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOutcomeClass(
-                          normalizedRecord.finalOutcome
+                          normalizedRecord.finalOutcome,
                         )}`}
                       >
                         {normalizedRecord.finalOutcome}
@@ -947,6 +1099,7 @@ function OnboardingDetailsModal({
                     <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
                       Expected Start
                     </p>
+
                     <p className="mt-1 text-2xl font-bold text-sibs-primary-1">
                       {formatDate(normalizedRecord.expectedStartDate)}
                     </p>
@@ -965,6 +1118,7 @@ function OnboardingDetailsModal({
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-xs font-bold text-blue-700">
                         1
                       </div>
+
                       <div className="my-1 h-full min-h-8 w-px bg-gray-200" />
                     </div>
 
@@ -972,6 +1126,7 @@ function OnboardingDetailsModal({
                       <p className="text-sm font-bold text-[#101828]">
                         Offer Accepted
                       </p>
+
                       <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
                         {formatDate(normalizedRecord.acceptedOfferDate)}
                       </p>
@@ -983,6 +1138,7 @@ function OnboardingDetailsModal({
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-amber-100 bg-amber-50 text-xs font-bold text-amber-700">
                         2
                       </div>
+
                       <div className="my-1 h-full min-h-8 w-px bg-gray-200" />
                     </div>
 
@@ -990,6 +1146,7 @@ function OnboardingDetailsModal({
                       <p className="text-sm font-bold text-[#101828]">
                         Expected Start Date
                       </p>
+
                       <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
                         {formatDate(normalizedRecord.expectedStartDate)}
                       </p>
@@ -1000,7 +1157,7 @@ function OnboardingDetailsModal({
                     <div className="flex flex-col items-center">
                       <div
                         className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold ${getShowStatusClass(
-                          normalizedRecord.showStatus
+                          normalizedRecord.showStatus,
                         )}`}
                       >
                         3
@@ -1011,6 +1168,7 @@ function OnboardingDetailsModal({
                       <p className="text-sm font-bold text-[#101828]">
                         Final Start Outcome
                       </p>
+
                       <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
                         {normalizedRecord.actualStartDate
                           ? formatDate(normalizedRecord.actualStartDate)
@@ -1046,6 +1204,7 @@ function OnboardingDetailsModal({
                       <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
                         Reason Category
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-red-700">
                         {normalizedRecord.reasonCategory || "—"}
                       </p>
@@ -1055,6 +1214,7 @@ function OnboardingDetailsModal({
                       <p className="text-[11px] font-bold uppercase tracking-wide text-red-400">
                         Experience Rating
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-red-700">
                         {normalizedRecord.experienceRating
                           ? `${normalizedRecord.experienceRating}/5`
@@ -1079,6 +1239,7 @@ function OnboardingDetailsModal({
 
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <h3 className="text-sm font-bold text-[#101828]">Remarks</h3>
+
                 <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
                   {normalizedRecord.remarks || "No remarks provided."}
                 </p>
@@ -1119,7 +1280,7 @@ function OnboardingDetailsModal({
                     label="Days to Start"
                     value={getDaysToStart(
                       normalizedRecord.acceptedOfferDate,
-                      normalizedRecord.expectedStartDate
+                      normalizedRecord.expectedStartDate,
                     )}
                   />
                   <DetailRow label="Owner" value={normalizedRecord.owner} />
@@ -1131,6 +1292,7 @@ function OnboardingDetailsModal({
                   <h3 className="text-sm font-bold text-[#101828]">
                     Update Outcome
                   </h3>
+
                   <p className="mt-2 text-sm leading-6 text-sibs-tertiary-5">
                     Onboarding controls the final hiring result. Only Show will
                     count as a true hire.
@@ -1142,7 +1304,7 @@ function OnboardingDetailsModal({
                       onClick={() =>
                         onOpenOutcomeModal(normalizedRecord, "Show")
                       }
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
                     >
                       <UserCheck size={16} />
                       Mark as Show
@@ -1153,7 +1315,7 @@ function OnboardingDetailsModal({
                       onClick={() =>
                         onOpenOutcomeModal(normalizedRecord, "No Show")
                       }
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-700"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md active:scale-[0.98]"
                     >
                       <UserX size={16} />
                       Mark as No Show
@@ -1164,7 +1326,7 @@ function OnboardingDetailsModal({
                       onClick={() =>
                         onOpenOutcomeModal(normalizedRecord, "Withdrawn")
                       }
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-orange-700"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-orange-700 hover:shadow-md active:scale-[0.98]"
                     >
                       <CircleX size={16} />
                       Mark as Withdrawn
@@ -1178,6 +1340,7 @@ function OnboardingDetailsModal({
                   <h3 className="text-sm font-bold text-orange-700">
                     Pre-start Withdrawal
                   </h3>
+
                   <p className="mt-2 text-sm leading-6 text-orange-700/90">
                     {normalizedRecord.withdrawalReason}
                   </p>
@@ -1188,6 +1351,7 @@ function OnboardingDetailsModal({
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Onboarding Rule
                 </h3>
+
                 <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                   Accepted offer creates onboarding. Show creates true hire. No
                   Show and Pre-start Withdrawal create Candidate Experience
@@ -1203,7 +1367,7 @@ function OnboardingDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               Close
             </button>
@@ -1215,6 +1379,8 @@ function OnboardingDetailsModal({
 }
 
 export default function OnboardingPage() {
+  const mainRef = useRef(null);
+
   const [onboardingList, setOnboardingList] = useState(initialOnboardingRecords);
   const [acceptedOfferList, setAcceptedOfferList] =
     useState(fallbackAcceptedOffers);
@@ -1225,6 +1391,7 @@ export default function OnboardingPage() {
   const [outcomeFilter, setOutcomeFilter] = useState("All Outcomes");
   const [ownerFilter, setOwnerFilter] = useState("All Owners");
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [onboardingForm, setOnboardingForm] = useState(emptyOnboardingForm);
@@ -1232,6 +1399,47 @@ export default function OnboardingPage() {
   const [outcomeRecord, setOutcomeRecord] = useState(null);
   const [outcomeType, setOutcomeType] = useState("");
   const [outcomeForm, setOutcomeForm] = useState(emptyOutcomeForm);
+
+  function scrollToTop(behavior = "auto") {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const storedOnboarding = safeReadArray(ONBOARDING_STORAGE_KEY);
@@ -1242,7 +1450,7 @@ export default function OnboardingPage() {
         : initialOnboardingRecords;
 
     const normalizedOnboarding = baseOnboarding.map((record) =>
-      normalizeOnboardingRecord(record)
+      normalizeOnboardingRecord(record),
     );
 
     const acceptedOffers = getAcceptedOffersFromStorage();
@@ -1251,6 +1459,15 @@ export default function OnboardingPage() {
     setAcceptedOfferList(acceptedOffers);
     saveOnboardingList(normalizedOnboarding);
     setHasLoadedStorage(true);
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -1261,6 +1478,12 @@ export default function OnboardingPage() {
   useEffect(() => {
     function refreshAcceptedOffers() {
       setAcceptedOfferList(getAcceptedOffersFromStorage());
+      setCurrentPage(1);
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
     }
 
     window.addEventListener(OFFERS_UPDATED_BROWSER_EVENT, refreshAcceptedOffers);
@@ -1269,7 +1492,7 @@ export default function OnboardingPage() {
     return () => {
       window.removeEventListener(
         OFFERS_UPDATED_BROWSER_EVENT,
-        refreshAcceptedOffers
+        refreshAcceptedOffers,
       );
       window.removeEventListener("storage", refreshAcceptedOffers);
     };
@@ -1307,7 +1530,7 @@ export default function OnboardingPage() {
       (record) =>
         String(record.offerId || "") === String(onboardingForm.offerId || "") ||
         String(record.candidateEmail || "") ===
-          String(onboardingForm.candidateEmail || "")
+          String(onboardingForm.candidateEmail || ""),
     );
 
     if (alreadyExists) {
@@ -1352,7 +1575,7 @@ export default function OnboardingPage() {
 
     setOnboardingList((prev) => {
       const next = [newRecord, ...prev].map((record) =>
-        normalizeOnboardingRecord(record)
+        normalizeOnboardingRecord(record),
       );
 
       saveOnboardingList(next);
@@ -1360,6 +1583,13 @@ export default function OnboardingPage() {
     });
 
     setSelectedRecord(newRecord);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
     handleCloseCreateModal();
   }
 
@@ -1405,7 +1635,7 @@ export default function OnboardingPage() {
         alert(
           outcomeType === "No Show"
             ? "No Show reason is required."
-            : "Withdrawal reason is required."
+            : "Withdrawal reason is required.",
         );
         return;
       }
@@ -1433,7 +1663,7 @@ export default function OnboardingPage() {
       updatePipelineForOnboarding(
         updatedRecord,
         "Hired",
-        "Candidate showed up and was marked as True Hire."
+        "Candidate showed up and was marked as True Hire.",
       );
     }
 
@@ -1457,7 +1687,7 @@ export default function OnboardingPage() {
       updatePipelineForOnboarding(
         updatedRecord,
         "Drop-offs",
-        "Candidate did not show up on the expected start date."
+        "Candidate did not show up on the expected start date.",
       );
     }
 
@@ -1481,7 +1711,7 @@ export default function OnboardingPage() {
       updatePipelineForOnboarding(
         updatedRecord,
         "Drop-offs",
-        "Candidate withdrew before the expected start date."
+        "Candidate withdrew before the expected start date.",
       );
     }
 
@@ -1490,7 +1720,7 @@ export default function OnboardingPage() {
         record.id === outcomeRecord.id ||
         record.onboardingId === outcomeRecord.onboardingId
           ? updatedRecord
-          : record
+          : record,
       );
 
       saveOnboardingList(next);
@@ -1537,7 +1767,27 @@ export default function OnboardingPage() {
     }
 
     setSelectedRecord(updatedRecord);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
     handleCloseOutcomeModal();
+  }
+
+  function handleClearFilters() {
+    setSearch("");
+    setShowStatusFilter("All Status");
+    setOutcomeFilter("All Outcomes");
+    setOwnerFilter("All Owners");
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   const filteredRecords = useMemo(() => {
@@ -1579,26 +1829,90 @@ export default function OnboardingPage() {
     ownerFilter,
   ]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRecords.length / ONBOARDING_RECORDS_PER_PAGE),
+  );
+
+  const paginatedRecords = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (safePage - 1) * ONBOARDING_RECORDS_PER_PAGE;
+    const end = start + ONBOARDING_RECORDS_PER_PAGE;
+
+    return filteredRecords.slice(start, end);
+  }, [filteredRecords, currentPage, totalPages]);
+
+  const showingFrom =
+    filteredRecords.length > 0
+      ? (currentPage - 1) * ONBOARDING_RECORDS_PER_PAGE + 1
+      : 0;
+
+  const showingTo = Math.min(
+    currentPage * ONBOARDING_RECORDS_PER_PAGE,
+    filteredRecords.length,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [search, showStatusFilter, outcomeFilter, ownerFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      scrollToTop("auto");
+    }
+  }, [currentPage, totalPages]);
+
+  function handlePageChange(nextPage) {
+    const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+
+    if (safePage === currentPage) {
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
+
+      return;
+    }
+
+    setCurrentPage(safePage);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
   const stats = useMemo(() => {
     const total = onboardingList.length;
 
     const trueHires = onboardingList.filter(
-      (record) => normalizeOnboardingRecord(record).finalOutcome === "True Hire"
+      (record) => normalizeOnboardingRecord(record).finalOutcome === "True Hire",
     ).length;
 
     const pending = onboardingList.filter(
       (record) =>
-        normalizeOnboardingRecord(record).finalOutcome === "Pending Start"
+        normalizeOnboardingRecord(record).finalOutcome === "Pending Start",
     ).length;
 
     const noShow = onboardingList.filter(
-      (record) => normalizeOnboardingRecord(record).finalOutcome === "No Show"
+      (record) => normalizeOnboardingRecord(record).finalOutcome === "No Show",
     ).length;
 
     const withdrawals = onboardingList.filter(
       (record) =>
         normalizeOnboardingRecord(record).finalOutcome ===
-        "Pre-start Withdrawal"
+        "Pre-start Withdrawal",
     ).length;
 
     const showRate = total > 0 ? Math.round((trueHires / total) * 100) : 0;
@@ -1617,401 +1931,471 @@ export default function OnboardingPage() {
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <ClipboardList size={28} className="shrink-0 text-sibs-primary-1" />
-
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Onboarding
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Track onboarding transitions, true hires, show/no-show, and
-            pre-start withdrawals.
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard
-            title="Accepted Offers"
-            value={stats.total}
-            icon={FileText}
-            description="Moved to onboarding"
-          />
-
-          <StatCard
-            title="True Hires"
-            value={stats.trueHires}
-            icon={UserCheck}
-            description={`${stats.showRate}% show rate`}
-          />
-
-          <StatCard
-            title="Pending Start"
-            value={stats.pending}
-            icon={Clock3}
-            description="Waiting for start date"
-          />
-
-          <StatCard
-            title="No Show"
-            value={stats.noShow}
-            icon={UserX}
-            description="Did not start"
-          />
-
-          <StatCard
-            title="Pre-start Withdrawal"
-            value={stats.withdrawals}
-            icon={CircleX}
-            description="Needs reason"
-          />
-
-          <StatCard
-            title="Show Rate"
-            value={`${stats.showRate}%`}
-            icon={CheckCircle2}
-            description="Onboarding KPI"
-          />
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Onboarding Outcome Summary
-                </h2>
-                <p className="text-sm text-sibs-tertiary-5">
-                  Tracks true hires versus accepted offers.
-                </p>
-              </div>
-
-              <Timer size={20} className="shrink-0 text-gray-400" />
-            </div>
-
-            <div className="space-y-5">
-              <ProgressBar
-                label="True Hires"
-                value={stats.trueHires}
-                total={stats.total}
-              />
-              <ProgressBar
-                label="Pending Start"
-                value={stats.pending}
-                total={stats.total}
-              />
-              <ProgressBar
-                label="No Show"
-                value={stats.noShow}
-                total={stats.total}
-              />
-              <ProgressBar
-                label="Pre-start Withdrawal"
-                value={stats.withdrawals}
-                total={stats.total}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
-                <AlertTriangle size={22} />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-sibs-primary-1">
-                  Correct Onboarding Flow
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  Accepted Offer creates onboarding. Onboarding determines if
-                  the candidate becomes a True Hire. Only Show should move the
-                  candidate to Hired and count as filled.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <main
+        ref={mainRef}
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+      >
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h3 className="mb-2 font-semibold text-sibs-primary-1">
-                Onboarding Records
-              </h3>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                <ClipboardList size={14} />
+                Recruitment Setup
+              </div>
 
-              <p className="text-sm text-sibs-tertiary-5">
-                Candidate tracking from accepted offer to actual start.
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Onboarding
+              </h1>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Track onboarding transitions, true hires, show/no-show, and
+                pre-start withdrawals.
               </p>
             </div>
 
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />
               Add Onboarding Record
             </button>
           </div>
-        </div>
 
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px_170px_210px_170px] xl:items-center">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Onboarding List
-                </h2>
-                <p className="text-sm text-sibs-tertiary-5">
-                  Search and filter onboarding records.
-                </p>
-              </div>
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "60ms" }}
+          >
+            <h2 className="text-base font-bold text-[#101828]">
+              Onboarding Summary
+            </h2>
 
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search candidate, role, account..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+              <SummaryCard
+                title="Accepted Offers"
+                value={stats.total}
+                icon={FileText}
+                description="Moved to onboarding"
+                delay={0}
+              />
 
-              <select
-                value={showStatusFilter}
-                onChange={(e) => setShowStatusFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {showStatusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="True Hires"
+                value={stats.trueHires}
+                icon={UserCheck}
+                description={`${stats.showRate}% show rate`}
+                valueClassName="text-emerald-600"
+                iconClassName="bg-emerald-50 text-emerald-600"
+                delay={60}
+              />
 
-              <select
-                value={outcomeFilter}
-                onChange={(e) => setOutcomeFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {outcomeOptions.map((outcome) => (
-                  <option key={outcome} value={outcome}>
-                    {outcome}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="Pending Start"
+                value={stats.pending}
+                icon={Clock3}
+                description="Waiting for start date"
+                valueClassName="text-amber-500"
+                iconClassName="bg-amber-50 text-amber-600"
+                delay={120}
+              />
 
-              <select
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {ownerOptions.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="No Show"
+                value={stats.noShow}
+                icon={UserX}
+                description="Did not start"
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={180}
+              />
+
+              <SummaryCard
+                title="Pre-start Withdrawal"
+                value={stats.withdrawals}
+                icon={CircleX}
+                description="Needs reason"
+                valueClassName="text-orange-600"
+                iconClassName="bg-orange-50 text-orange-600"
+                delay={240}
+              />
+
+              <SummaryCard
+                title="Show Rate"
+                value={`${stats.showRate}%`}
+                icon={CheckCircle2}
+                description="Onboarding KPI"
+                valueClassName="text-sibs-primary-1"
+                iconClassName="bg-[#F2F6FA] text-sibs-primary-1"
+                delay={300}
+              />
             </div>
-          </div>
+          </section>
 
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 lg:hidden">
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((item) => {
-                  const record = normalizeOnboardingRecord(item);
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_420px]">
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "120ms" }}
+            >
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Onboarding Outcome Summary
+                  </h2>
 
-                  return (
-                    <OnboardingMobileCard
-                      key={`${record.onboardingId}-${record.candidateEmail}`}
-                      record={record}
-                      onView={() => setSelectedRecord(record)}
-                    />
-                  );
-                })
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No onboarding records found.
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Tracks true hires versus accepted offers.
+                  </p>
                 </div>
-              )}
-            </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[1220px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Onboarding ID</th>
-                      <th className="px-5 py-4">Candidate</th>
-                      <th className="px-5 py-4">Role / Account</th>
-                      <th className="px-5 py-4">Accepted Offer</th>
-                      <th className="px-5 py-4">Expected Start</th>
-                      <th className="px-5 py-4">Actual Start</th>
-                      <th className="px-5 py-4">Show Status</th>
-                      <th className="px-5 py-4">Final Outcome</th>
-                      <th className="px-5 py-4">Owner</th>
-                      <th className="px-5 py-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {filteredRecords.length > 0 ? (
-                      filteredRecords.map((item) => {
-                        const record = normalizeOnboardingRecord(item);
-
-                        return (
-                          <tr
-                            key={`${record.onboardingId}-${record.candidateEmail}`}
-                            className="transition hover:bg-[#F8FAFC]"
-                          >
-                            <td className="px-5 py-4 text-sm font-bold text-sibs-primary-1">
-                              {record.onboardingId}
-                            </td>
-
-                            <td className="px-5 py-4">
-                              <p className="text-sm font-bold text-[#101828]">
-                                {record.candidateName}
-                              </p>
-                              <p className="text-xs font-semibold text-sibs-tertiary-5">
-                                {record.candidateEmail}
-                              </p>
-                            </td>
-
-                            <td className="px-5 py-4">
-                              <p className="text-sm font-bold text-[#344054]">
-                                {record.roleTitle}
-                              </p>
-                              <p className="text-xs font-semibold text-sibs-tertiary-5">
-                                {record.account}
-                              </p>
-                            </td>
-
-                            <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                              <div className="flex items-center gap-2">
-                                <CalendarDays
-                                  size={15}
-                                  className="text-gray-400"
-                                />
-                                {formatDate(record.acceptedOfferDate)}
-                              </div>
-                            </td>
-
-                            <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {formatDate(record.expectedStartDate)}
-                            </td>
-
-                            <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {formatDate(record.actualStartDate)}
-                            </td>
-
-                            <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getShowStatusClass(
-                                  record.showStatus
-                                )}`}
-                              >
-                                {record.showStatus}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOutcomeClass(
-                                  record.finalOutcome
-                                )}`}
-                              >
-                                {record.finalOutcome}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {record.owner}
-                            </td>
-
-                            <td className="px-5 py-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedRecord(record)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                              >
-                                <Eye size={15} />
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No onboarding records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+                  <Timer size={22} />
+                </div>
               </div>
-            </div>
 
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredRecords.length} of{" "}
-                {onboardingList.length} onboarding records
-              </p>
+              <div className="space-y-5">
+                <ProgressBar
+                  label="True Hires"
+                  value={stats.trueHires}
+                  total={stats.total}
+                  delay={0}
+                />
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
+                <ProgressBar
+                  label="Pending Start"
+                  value={stats.pending}
+                  total={stats.total}
+                  delay={60}
+                />
 
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
-                >
-                  1
-                </button>
+                <ProgressBar
+                  label="No Show"
+                  value={stats.noShow}
+                  total={stats.total}
+                  delay={120}
+                />
 
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-                >
-                  2
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                <ProgressBar
+                  label="Pre-start Withdrawal"
+                  value={stats.withdrawals}
+                  total={stats.total}
+                  delay={180}
+                />
               </div>
-            </div>
+            </section>
+
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm sm:p-6"
+              style={{ animationDelay: "180ms" }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
+                  <AlertTriangle size={22} />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-sibs-primary-1">
+                    Correct Onboarding Flow
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                    Accepted Offer creates onboarding. Onboarding determines if
+                    the candidate becomes a True Hire. Only Show should move the
+                    candidate to Hired and count as filled.
+                  </p>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
 
-        <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <h3 className="text-sm font-bold text-sibs-primary-1">
-            Onboarding Transition Rule
-          </h3>
-          <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            Accepted Offer creates onboarding. Start Date, Show / No Show, and
-            Pre-start Withdrawal must be captured. Only Show becomes True Hire
-            and should move the candidate to Hired.
-          </p>
-        </section>
+          <section
+            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            style={{ animationDelay: "240ms" }}
+          >
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-sibs-primary-1">
+                    Onboarding Records
+                  </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Search and filter accepted offer to actual start records.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  {filteredRecords.length} Records
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_190px_230px_190px_auto] xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">
+                    Search
+                  </label>
+
+                  <div className="relative">
+                    <Search
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    />
+
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search candidate, role, account..."
+                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    />
+                  </div>
+                </div>
+
+                <CustomSelect
+                  label="Show Status"
+                  value={showStatusFilter}
+                  options={showStatusOptions}
+                  onChange={setShowStatusFilter}
+                  zIndex="z-50"
+                />
+
+                <CustomSelect
+                  label="Outcome"
+                  value={outcomeFilter}
+                  options={outcomeOptions}
+                  onChange={setOutcomeFilter}
+                  zIndex="z-40"
+                />
+
+                <CustomSelect
+                  label="Owner"
+                  value={ownerFilter}
+                  options={ownerOptions}
+                  onChange={setOwnerFilter}
+                  zIndex="z-30"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                >
+                  <Filter size={17} />
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3 lg:hidden">
+                {paginatedRecords.length > 0 ? (
+                  paginatedRecords.map((item) => {
+                    const record = normalizeOnboardingRecord(item);
+
+                    return (
+                      <OnboardingMobileCard
+                        key={`${record.onboardingId}-${record.candidateEmail}`}
+                        record={record}
+                        onView={() => setSelectedRecord(record)}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                    No onboarding records found.
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto p-0">
+                  <table className="w-full min-w-[1350px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                    <thead>
+                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                        <th className="px-5 py-4 first:rounded-tl-2xl">
+                          Onboarding ID
+                        </th>
+                        <th className="px-5 py-4">Candidate</th>
+                        <th className="px-5 py-4">Role / Account</th>
+                        <th className="px-5 py-4">Accepted Offer</th>
+                        <th className="px-5 py-4">Expected Start</th>
+                        <th className="px-5 py-4">Actual Start</th>
+                        <th className="px-5 py-4">Show Status</th>
+                        <th className="px-5 py-4">Final Outcome</th>
+                        <th className="px-5 py-4">Owner</th>
+                        <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {paginatedRecords.length > 0 ? (
+                        paginatedRecords.map((item) => {
+                          const record = normalizeOnboardingRecord(item);
+
+                          return (
+                            <tr
+                              key={`${record.onboardingId}-${record.candidateEmail}`}
+                              className="transition-all duration-200 hover:bg-[#FAFBFC]"
+                            >
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-sibs-primary-1">
+                                {record.onboardingId}
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                <p className="text-sm font-bold text-[#101828]">
+                                  {record.candidateName}
+                                </p>
+
+                                <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                  {record.candidateEmail}
+                                </p>
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                <p className="text-sm font-bold text-[#344054]">
+                                  {record.roleTitle}
+                                </p>
+
+                                <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                  {record.account}
+                                </p>
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                <div className="flex items-center gap-2">
+                                  <CalendarDays
+                                    size={15}
+                                    className="text-gray-400"
+                                  />
+                                  {formatDate(record.acceptedOfferDate)}
+                                </div>
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                {formatDate(record.expectedStartDate)}
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                {formatDate(record.actualStartDate)}
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                <span
+                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getShowStatusClass(
+                                    record.showStatus,
+                                  )}`}
+                                >
+                                  {record.showStatus}
+                                </span>
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                <span
+                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getOutcomeClass(
+                                    record.finalOutcome,
+                                  )}`}
+                                >
+                                  {record.finalOutcome}
+                                </span>
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                {record.owner}
+                              </td>
+
+                              <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedRecord(record)}
+                                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                                >
+                                  <Eye size={15} />
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={10}
+                            className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                          >
+                            No onboarding records found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {showingFrom} to {showingTo} of {filteredRecords.length}{" "}
+                  onboarding records
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    const active = currentPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
+            style={{ animationDelay: "300ms" }}
+          >
+            <h3 className="text-sm font-bold text-sibs-primary-1">
+              Onboarding Transition Rule
+            </h3>
+
+            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+              Accepted Offer creates onboarding. Start Date, Show / No Show, and
+              Pre-start Withdrawal must be captured. Only Show becomes True Hire
+              and should move the candidate to Hired.
+            </p>
+          </section>
+        </div>
       </main>
 
       <CreateOnboardingModal

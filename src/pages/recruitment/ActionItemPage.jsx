@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../../components/layout/Header";
 import {
   Activity,
@@ -8,6 +14,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
@@ -41,6 +48,8 @@ const ONBOARDING_RECORDS_KEY = "ta_onboarding_records";
 const HIRING_NEEDS_KEY = "ta_hiring_needs";
 const WEEKLY_HIRING_PLAN_KEY = "ta_weekly_hiring_plan";
 const WEEKLY_HIRING_ACTION_ITEMS_KEY = "ta_weekly_hiring_action_items";
+
+const ACTION_ITEMS_PER_PAGE = 8;
 
 const initialActionItems = [
   {
@@ -151,7 +160,6 @@ const initialActionItems = [
 ];
 
 const statusOptions = ["All Status", "Planned", "Ongoing", "Completed"];
-
 const riskOptions = ["All Risk", "High", "Medium", "Low"];
 
 const moduleOptions = [
@@ -208,7 +216,106 @@ const emptyActionForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const displayValue = value || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span className="truncate">{displayValue}</span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const selected = value === option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
 }
 
 function getTodayDate() {
@@ -243,7 +350,7 @@ function safeWriteArray(key, value) {
   try {
     window.localStorage.setItem(
       key,
-      JSON.stringify(Array.isArray(value) ? value : [])
+      JSON.stringify(Array.isArray(value) ? value : []),
     );
   } catch {
     // Frontend-only storage fallback.
@@ -280,7 +387,7 @@ function getCandidateStatus(record) {
       record?.currentStage ||
       record?.stage ||
       record?.finalStatus ||
-      ""
+      "",
   );
 }
 
@@ -412,26 +519,30 @@ function buildModuleContext() {
   const allCandidates = [...publicSubmissions, ...internalCandidates];
 
   const newPublicApplicants = publicSubmissions.filter(
-    (item) => getCandidateStatus(item) === "New Applicant" || item?.isPublicSubmission
+    (item) =>
+      getCandidateStatus(item) === "New Applicant" ||
+      item?.isPublicSubmission,
   );
 
   const newTalentPoolApplicants = allCandidates.filter(
-    (item) => getCandidateStatus(item) === "New Applicant"
+    (item) => getCandidateStatus(item) === "New Applicant",
   );
 
-  const screeningCandidates = [...candidateApplications, ...pipelineCandidates].filter(
-    (item) => {
-      const status = getCandidateStatus(item).toLowerCase();
-      return status.includes("screen") || status.includes("initial");
-    }
-  );
+  const screeningCandidates = [
+    ...candidateApplications,
+    ...pipelineCandidates,
+  ].filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return status.includes("screen") || status.includes("initial");
+  });
 
-  const interviewCandidates = [...candidateApplications, ...pipelineCandidates].filter(
-    (item) => {
-      const status = getCandidateStatus(item).toLowerCase();
-      return status.includes("interview");
-    }
-  );
+  const interviewCandidates = [
+    ...candidateApplications,
+    ...pipelineCandidates,
+  ].filter((item) => {
+    const status = getCandidateStatus(item).toLowerCase();
+    return status.includes("interview");
+  });
 
   const offeredCandidates = [
     ...candidateApplications,
@@ -444,7 +555,10 @@ function buildModuleContext() {
 
   const pendingOffers = offers.filter((item) => {
     const status = normalizeText(
-      item.status || item.offerStatus || item.approvalStatus || item.finalStatus
+      item.status ||
+        item.offerStatus ||
+        item.approvalStatus ||
+        item.finalStatus,
     ).toLowerCase();
 
     return (
@@ -457,7 +571,10 @@ function buildModuleContext() {
 
   const acceptedOffers = offers.filter((item) => {
     const status = normalizeText(
-      item.status || item.offerStatus || item.approvalStatus || item.finalStatus
+      item.status ||
+        item.offerStatus ||
+        item.approvalStatus ||
+        item.finalStatus,
     ).toLowerCase();
 
     return status.includes("accepted") || status.includes("approved");
@@ -465,7 +582,10 @@ function buildModuleContext() {
 
   const pendingOnboarding = onboarding.filter((item) => {
     const status = normalizeText(
-      item.showStatus || item.finalOutcome || item.status || item.onboardingStatus
+      item.showStatus ||
+        item.finalOutcome ||
+        item.status ||
+        item.onboardingStatus,
     ).toLowerCase();
 
     return status.includes("pending") || status.includes("waiting");
@@ -473,7 +593,10 @@ function buildModuleContext() {
 
   const onboardingRisks = onboarding.filter((item) => {
     const status = normalizeText(
-      item.showStatus || item.finalOutcome || item.status || item.onboardingStatus
+      item.showStatus ||
+        item.finalOutcome ||
+        item.status ||
+        item.onboardingStatus,
     ).toLowerCase();
 
     return (
@@ -484,7 +607,9 @@ function buildModuleContext() {
   });
 
   const pendingHiringNeeds = hiringNeeds.filter((item) => {
-    const status = normalizeText(item.approvalStatus || item.status).toLowerCase();
+    const status = normalizeText(
+      item.approvalStatus || item.status,
+    ).toLowerCase();
 
     return (
       !status ||
@@ -496,15 +621,15 @@ function buildModuleContext() {
 
   const weeklyAtRisk = weeklyPlan.filter((item) => {
     const status = normalizeText(
-      item.status || item.pipelineStatus || item.overallStatus
+      item.status || item.pipelineStatus || item.overallStatus,
     ).toLowerCase();
 
     const required = Number(
-      item.requiredHeadcount || item.requirement || item.headcount || 0
+      item.requiredHeadcount || item.requirement || item.headcount || 0,
     );
 
     const actual = Number(
-      item.actualHeadcount || item.filled || item.currentFilled || 0
+      item.actualHeadcount || item.filled || item.currentFilled || 0,
     );
 
     return (
@@ -671,7 +796,7 @@ function buildSystemGeneratedActions(context) {
   if (context.pendingOffers.length > 0 || context.offeredCandidates.length > 0) {
     const count = Math.max(
       context.pendingOffers.length,
-      context.offeredCandidates.length
+      context.offeredCandidates.length,
     );
 
     actions.push({
@@ -699,7 +824,8 @@ function buildSystemGeneratedActions(context) {
   }
 
   if (context.pendingOnboarding.length > 0 || context.onboardingRisks.length > 0) {
-    const total = context.pendingOnboarding.length + context.onboardingRisks.length;
+    const total =
+      context.pendingOnboarding.length + context.onboardingRisks.length;
 
     actions.push({
       id: "SYS-ONBOARD-007",
@@ -760,7 +886,6 @@ function getModuleInsightCards(context) {
       icon: UsersRound,
       value: context.publicSubmissions.length,
       riskValue: context.newPublicApplicants.length,
-      label: "Public Applicants",
       description: `${context.newPublicApplicants.length} new applicant/s need review`,
     },
     {
@@ -768,7 +893,6 @@ function getModuleInsightCards(context) {
       icon: UserCheck,
       value: context.allCandidates.length,
       riskValue: context.newTalentPoolApplicants.length,
-      label: "Candidate Records",
       description: `${context.newTalentPoolApplicants.length} new record/s need classification`,
     },
     {
@@ -776,15 +900,17 @@ function getModuleInsightCards(context) {
       icon: BriefcaseBusiness,
       value: context.hiringNeeds.length,
       riskValue: context.pendingHiringNeeds.length,
-      label: "Hiring Requests",
       description: `${context.pendingHiringNeeds.length} pending approval/s`,
     },
     {
       module: "Candidate Pipeline",
       icon: Layers3,
-      value: context.candidateApplications.length + context.pipelineCandidates.length,
-      riskValue: context.screeningCandidates.length + context.interviewCandidates.length,
-      label: "Pipeline Records",
+      value:
+        context.candidateApplications.length +
+        context.pipelineCandidates.length,
+      riskValue:
+        context.screeningCandidates.length +
+        context.interviewCandidates.length,
       description: `${context.interviewCandidates.length} interview-stage candidate/s`,
     },
     {
@@ -792,15 +918,14 @@ function getModuleInsightCards(context) {
       icon: ShieldCheck,
       value: context.offers.length,
       riskValue: context.pendingOffers.length,
-      label: "Offer Records",
       description: `${context.pendingOffers.length} pending offer review/s`,
     },
     {
       module: "Onboarding",
       icon: CheckCircle2,
       value: context.onboarding.length,
-      riskValue: context.pendingOnboarding.length + context.onboardingRisks.length,
-      label: "Onboarding Records",
+      riskValue:
+        context.pendingOnboarding.length + context.onboardingRisks.length,
       description: `${context.onboardingRisks.length} onboarding risk/s`,
     },
     {
@@ -808,102 +933,57 @@ function getModuleInsightCards(context) {
       icon: BarChart3,
       value: context.weeklyPlan.length,
       riskValue: context.weeklyAtRisk.length,
-      label: "Weekly Plan Accounts",
       description: `${context.weeklyAtRisk.length} account/s at risk`,
     },
   ];
 }
 
-function StatCard({ title, value, icon: Icon, description, delay = 0 }) {
-  const cardTheme = {
-    "Total Actions": {
-      iconBg: "bg-[#F3F7FB]",
-      iconText: "text-sibs-primary-1",
-      valueText: "text-sibs-primary-1",
-      descriptionText: "text-sibs-primary-1",
-    },
-    Active: {
-      iconBg: "bg-blue-50",
-      iconText: "text-blue-600",
-      valueText: "text-blue-600",
-      descriptionText: "text-blue-600",
-    },
-    Planned: {
-      iconBg: "bg-amber-50",
-      iconText: "text-amber-500",
-      valueText: "text-amber-600",
-      descriptionText: "text-amber-600",
-    },
-    Completed: {
-      iconBg: "bg-emerald-50",
-      iconText: "text-emerald-600",
-      valueText: "text-emerald-600",
-      descriptionText: "text-emerald-600",
-    },
-    "High Risk": {
-      iconBg: "bg-red-50",
-      iconText: "text-red-600",
-      valueText: "text-red-600",
-      descriptionText: "text-red-600",
-    },
-    Overdue: {
-      iconBg: "bg-red-50",
-      iconText: "text-red-600",
-      valueText: "text-red-600",
-      descriptionText: "text-red-600",
-    },
-    "Module Signals": {
-      iconBg: "bg-[#F3F7FB]",
-      iconText: "text-sibs-primary-1",
-      valueText: "text-sibs-primary-1",
-      descriptionText: "text-sibs-primary-1",
-    },
-  };
-
-  const theme = cardTheme[title] || {
-    iconBg: "bg-[#F3F7FB]",
-    iconText: "text-sibs-primary-1",
-    valueText: "text-sibs-primary-1",
-    descriptionText: "text-sibs-primary-1",
-  };
-
+function SummaryCard({
+  title,
+  value,
+  icon: Icon,
+  description,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
   return (
     <div
-      className="sibs-page-card-in flex min-w-0 items-center gap-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div
-        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition-transform duration-200 ${theme.iconBg} ${theme.iconText}`}
-      >
-        <Icon size={20} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-sm font-bold text-[#101828]">{title}</p>
-
-        <h2
-          className={`mt-1 text-3xl font-extrabold tracking-[0.18em] ${theme.valueText}`}
-        >
-          {value}
-        </h2>
-
-        {description && (
-          <p
-            className={`mt-1 truncate text-xs font-medium ${theme.descriptionText}`}
-          >
-            {description}
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
           </p>
-        )}
+
+          <p className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}>
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
 }
 
-function ProgressBar({ label, value, total, helper }) {
+function ProgressBar({ label, value, total, helper, delay = 0 }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
@@ -944,46 +1024,46 @@ function DetailRow({ label, value }) {
   );
 }
 
-function ModuleInsightCard({ item, index }) {
+function ModuleInsightCard({ item, delay = 0 }) {
   const Icon = item.icon;
   const hasRisk = Number(item.riskValue || 0) > 0;
 
   return (
     <div
-      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center gap-4">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${
-            hasRisk
-              ? "bg-red-50 text-red-600"
-              : "bg-[#F3F7FB] text-sibs-primary-1"
-          }`}
-        >
-          <Icon size={20} />
-        </div>
-
+      <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-[#101828]">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
             {item.module}
           </p>
 
-          <h2
-            className={`mt-1 text-3xl font-extrabold tracking-[0.18em] ${
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold ${
               hasRisk ? "text-red-600" : "text-sibs-primary-1"
             }`}
           >
             {formatNumber(item.value)}
-          </h2>
+          </p>
 
           <p
-            className={`mt-1 truncate text-xs font-medium ${
-              hasRisk ? "text-red-600" : "text-sibs-primary-1"
+            className={`mt-1 truncate text-xs font-semibold ${
+              hasRisk ? "text-red-600" : "text-sibs-tertiary-5"
             }`}
           >
             {item.description}
           </p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${
+            hasRisk
+              ? "bg-red-50 text-red-600"
+              : "bg-[#F2F6FA] text-sibs-primary-1"
+          }`}
+        >
+          <Icon size={22} />
         </div>
       </div>
     </div>
@@ -995,7 +1075,7 @@ function ActionItemMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1022,7 +1102,7 @@ function ActionItemMobileCard({ item, onView }) {
 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            item.status
+            item.status,
           )}`}
         >
           {item.status}
@@ -1030,7 +1110,7 @@ function ActionItemMobileCard({ item, onView }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Owner
           </p>
@@ -1040,7 +1120,7 @@ function ActionItemMobileCard({ item, onView }) {
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Deadline
           </p>
@@ -1054,7 +1134,7 @@ function ActionItemMobileCard({ item, onView }) {
       <div className="mt-3 flex flex-wrap gap-2">
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getModuleClass(
-            item.module
+            item.module,
           )}`}
         >
           {item.module || "Recruitment"}
@@ -1062,7 +1142,7 @@ function ActionItemMobileCard({ item, onView }) {
 
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskClass(
-            item.riskLevel
+            item.riskLevel,
           )}`}
         >
           {item.riskLevel} Risk
@@ -1070,7 +1150,7 @@ function ActionItemMobileCard({ item, onView }) {
 
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getGapClass(
-            item.linkedGap
+            item.linkedGap,
           )}`}
         >
           {item.linkedGap}
@@ -1100,7 +1180,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getModuleClass(
-                  item.module
+                  item.module,
                 )}`}
               >
                 {item.module || "Recruitment"}
@@ -1108,7 +1188,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
 
               <span
                 className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                  item.status
+                  item.status,
                 )}`}
               >
                 {item.status}
@@ -1134,7 +1214,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -1162,7 +1242,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
                     <div className="mt-4 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getRiskClass(
-                          item.riskLevel
+                          item.riskLevel,
                         )}`}
                       >
                         {item.riskLevel} Risk
@@ -1170,7 +1250,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
 
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getGapClass(
-                          item.linkedGap
+                          item.linkedGap,
                         )}`}
                       >
                         {item.linkedGap}
@@ -1260,7 +1340,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
                   value={Number(item.filled || 0)}
                   total={Number(item.requirement || 0)}
                   helper={`${Number(item.filled || 0)} filled out of ${Number(
-                    item.requirement || 0
+                    item.requirement || 0,
                   )} required`}
                 />
 
@@ -1328,7 +1408,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
                   <button
                     type="button"
                     onClick={() => onComplete(item)}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-700 hover:shadow-md active:scale-[0.98]"
                   >
                     <CheckCircle2 size={16} />
                     Mark as Completed
@@ -1380,7 +1460,7 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               Close
             </button>
@@ -1392,6 +1472,8 @@ function ActionItemDetailsModal({ open, item, onClose, onComplete }) {
 }
 
 export default function ActionItemsPage() {
+  const mainRef = useRef(null);
+
   const [actionItemList, setActionItemList] = useState(() => {
     const stored = safeReadArray(ACTION_ITEMS_STORAGE_KEY, []);
     return stored.length > 0 ? stored : initialActionItems;
@@ -1405,9 +1487,51 @@ export default function ActionItemsPage() {
   const [moduleFilter, setModuleFilter] = useState("All Modules");
   const [ownerFilter, setOwnerFilter] = useState("All Owners");
   const [selectedItem, setSelectedItem] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [actionForm, setActionForm] = useState(emptyActionForm);
+
+  function scrollToTop(behavior = "auto") {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     safeWriteArray(ACTION_ITEMS_STORAGE_KEY, actionItemList);
@@ -1416,6 +1540,12 @@ export default function ActionItemsPage() {
   useEffect(() => {
     function refreshFromStorage() {
       setRefreshKey((prev) => prev + 1);
+      setCurrentPage(1);
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
     }
 
     window.addEventListener("storage", refreshFromStorage);
@@ -1430,7 +1560,7 @@ export default function ActionItemsPage() {
       window.removeEventListener("focus", refreshFromStorage);
       window.removeEventListener(
         "ta-public-submission-created",
-        refreshFromStorage
+        refreshFromStorage,
       );
       window.removeEventListener("ta-pipeline-sync-updated", refreshFromStorage);
       window.removeEventListener("ta-offers-updated", refreshFromStorage);
@@ -1442,19 +1572,19 @@ export default function ActionItemsPage() {
 
   const moduleInsightCards = useMemo(
     () => getModuleInsightCards(moduleContext),
-    [moduleContext]
+    [moduleContext],
   );
 
   const systemGeneratedActions = useMemo(
     () => buildSystemGeneratedActions(moduleContext),
-    [moduleContext]
+    [moduleContext],
   );
 
   const combinedItems = useMemo(() => {
     const existingIds = new Set(actionItemList.map((item) => item.actionId));
 
     const cleanSystemActions = systemGeneratedActions.filter(
-      (item) => !existingIds.has(item.actionId)
+      (item) => !existingIds.has(item.actionId),
     );
 
     return [...cleanSystemActions, ...actionItemList];
@@ -1476,6 +1606,27 @@ export default function ActionItemsPage() {
 
   function handleRefresh() {
     setRefreshKey((prev) => prev + 1);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
+  function handleClearFilters() {
+    setSearch("");
+    setStatusFilter("All Status");
+    setRiskFilter("All Risk");
+    setGapFilter("All Gaps");
+    setModuleFilter("All Modules");
+    setOwnerFilter("All Owners");
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   function handleAddActionItem(e) {
@@ -1553,6 +1704,13 @@ export default function ActionItemsPage() {
 
     setActionItemList((prev) => [newActionItem, ...prev]);
     setSelectedItem(newActionItem);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
     handleCloseAddModal();
   }
 
@@ -1570,11 +1728,16 @@ export default function ActionItemsPage() {
 
     setActionItemList((prev) =>
       prev.map((record) =>
-        record.actionId === item.actionId ? updatedItem : record
-      )
+        record.actionId === item.actionId ? updatedItem : record,
+      ),
     );
 
     setSelectedItem(updatedItem);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   const filteredItems = useMemo(() => {
@@ -1650,17 +1813,91 @@ export default function ActionItemsPage() {
     });
   }, [filteredItems]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedItems.length / ACTION_ITEMS_PER_PAGE),
+  );
+
+  const paginatedItems = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (safePage - 1) * ACTION_ITEMS_PER_PAGE;
+    const end = start + ACTION_ITEMS_PER_PAGE;
+
+    return sortedItems.slice(start, end);
+  }, [sortedItems, currentPage, totalPages]);
+
+  const showingFrom =
+    sortedItems.length > 0 ? (currentPage - 1) * ACTION_ITEMS_PER_PAGE + 1 : 0;
+
+  const showingTo = Math.min(
+    currentPage * ACTION_ITEMS_PER_PAGE,
+    sortedItems.length,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    search,
+    statusFilter,
+    riskFilter,
+    gapFilter,
+    moduleFilter,
+    ownerFilter,
+  ]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      scrollToTop("auto");
+    }
+  }, [currentPage, totalPages]);
+
+  function handlePageChange(nextPage) {
+    const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+
+    if (safePage === currentPage) {
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
+
+      return;
+    }
+
+    setCurrentPage(safePage);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
   const stats = useMemo(() => {
     const total = combinedItems.length;
-    const planned = combinedItems.filter((item) => item.status === "Planned").length;
-    const ongoing = combinedItems.filter((item) => item.status === "Ongoing").length;
+    const planned = combinedItems.filter(
+      (item) => item.status === "Planned",
+    ).length;
+    const ongoing = combinedItems.filter(
+      (item) => item.status === "Ongoing",
+    ).length;
     const completed = combinedItems.filter(
-      (item) => item.status === "Completed"
+      (item) => item.status === "Completed",
     ).length;
     const highRisk = combinedItems.filter(
-      (item) => item.riskLevel === "High"
+      (item) => item.riskLevel === "High",
     ).length;
-    const suggested = combinedItems.filter((item) => item.systemGenerated).length;
+    const suggested = combinedItems.filter((item) => item.systemGenerated)
+      .length;
 
     const overdue = combinedItems.filter((item) => {
       if (item.status === "Completed") return false;
@@ -1700,388 +1937,434 @@ export default function ActionItemsPage() {
 
   const moduleRiskTotal = moduleInsightCards.reduce(
     (sum, item) => sum + Number(item.riskValue || 0),
-    0
+    0,
   );
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
-        <div className="sibs-page-header-in min-w-0 mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <ClipboardList size={14} />
-              Recruitment
-            </div>
-
-            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-              Action Items
-            </h1>
-
-            <p className="mt-1 max-w-4xl text-sm font-medium text-sibs-tertiary-5">
-              Track manual and system-suggested actions connected to Public
-              Talent Pool, Talent Pool, Hiring Needs, Job Description,
-              Candidate Pipeline, Offers, Onboarding, Weekly Hiring Plan, and
-              Recruitment Reports
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:mb-4">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-md active:scale-[0.98]"
-            >
-              <RefreshCcw size={18} />
-              Refresh Signals
-            </button>
-
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Action Item
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-7">
-          <StatCard
-            title="Total Actions"
-            value={stats.total}
-            icon={FileText}
-            description="Manual + suggested"
-            delay={0}
-          />
-
-          <StatCard
-            title="Active"
-            value={stats.active}
-            icon={Activity}
-            description="Needs movement"
-            delay={60}
-          />
-
-          <StatCard
-            title="Planned"
-            value={stats.planned}
-            icon={Clock3}
-            description="Not started"
-            delay={120}
-          />
-
-          <StatCard
-            title="Completed"
-            value={stats.completed}
-            icon={CheckCircle2}
-            description={`${stats.completionRate}% complete`}
-            delay={180}
-          />
-
-          <StatCard
-            title="High Risk"
-            value={stats.highRisk}
-            icon={AlertTriangle}
-            description="Priority"
-            delay={240}
-          />
-
-          <StatCard
-            title="Overdue"
-            value={stats.overdue}
-            icon={CircleAlert}
-            description="Needs review"
-            delay={300}
-          />
-
-          <StatCard
-            title="Module Signals"
-            value={moduleRiskTotal}
-            icon={Target}
-            description="Recruitment data"
-            delay={360}
-          />
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Recruitment Action Health
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Status and risk distribution across all action items
-                </p>
+      <main
+        ref={mainRef}
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+      >
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                <ClipboardList size={14} />
+                Recruitment Setup
               </div>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F3F7FB] text-sibs-primary-1">
-                <ListChecks size={21} />
-              </div>
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Action Items
+              </h1>
+
+              <p className="mt-1 max-w-5xl text-sm font-medium text-sibs-tertiary-5">
+                Track manual and system-suggested actions connected to Public
+                Talent Pool, Talent Pool, Hiring Needs, Job Description,
+                Candidate Pipeline, Offers, Onboarding, Weekly Hiring Plan, and
+                Recruitment Reports.
+              </p>
             </div>
 
-            <div className="space-y-5">
-              <ProgressBar
-                label="Planned"
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
+              >
+                <RefreshCcw size={17} />
+                Refresh Signals
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                Add Action Item
+              </button>
+            </div>
+          </div>
+
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "60ms" }}
+          >
+            <h2 className="text-base font-bold text-[#101828]">
+              Action Items Summary
+            </h2>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-7">
+              <SummaryCard
+                title="Total Actions"
+                value={stats.total}
+                icon={FileText}
+                description="Manual + suggested"
+                delay={0}
+              />
+
+              <SummaryCard
+                title="Active"
+                value={stats.active}
+                icon={Activity}
+                description="Needs movement"
+                valueClassName="text-blue-600"
+                iconClassName="bg-blue-50 text-blue-600"
+                delay={60}
+              />
+
+              <SummaryCard
+                title="Planned"
                 value={stats.planned}
-                total={stats.total}
-                helper="Actions not yet started"
+                icon={Clock3}
+                description="Not started"
+                valueClassName="text-amber-500"
+                iconClassName="bg-amber-50 text-amber-600"
+                delay={120}
               />
 
-              <ProgressBar
-                label="Ongoing"
-                value={stats.ongoing}
-                total={stats.total}
-                helper="Actions currently in progress"
-              />
-
-              <ProgressBar
-                label="Completed"
+              <SummaryCard
+                title="Completed"
                 value={stats.completed}
-                total={stats.total}
-                helper="Closed and ready for reporting"
+                icon={CheckCircle2}
+                description={`${stats.completionRate}% complete`}
+                valueClassName="text-emerald-600"
+                iconClassName="bg-emerald-50 text-emerald-600"
+                delay={180}
               />
 
-              <ProgressBar
-                label="High Risk"
+              <SummaryCard
+                title="High Risk"
                 value={stats.highRisk}
-                total={stats.total}
-                helper="Items that need immediate movement"
+                icon={AlertTriangle}
+                description="Priority"
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={240}
               />
 
-              <ProgressBar
-                label="Overdue"
+              <SummaryCard
+                title="Overdue"
                 value={stats.overdue}
-                total={stats.total}
-                helper="Past deadline and still open"
+                icon={CircleAlert}
+                description="Needs review"
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={300}
+              />
+
+              <SummaryCard
+                title="Module Signals"
+                value={moduleRiskTotal}
+                icon={Target}
+                description="Recruitment data"
+                delay={360}
               />
             </div>
-          </div>
+          </section>
 
-          <div className="sibs-profile-tab-panel rounded-xl border border-red-100 bg-red-50 p-5 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-start gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-red-600">
-                <AlertTriangle size={22} />
-              </div>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "120ms" }}
+            >
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Recruitment Action Health
+                  </h2>
 
-              <div>
-                <h3 className="text-lg font-bold text-red-700">
-                  Priority Watchlist
-                </h3>
-
-                <p className="mt-1 text-sm font-medium leading-6 text-red-700/80">
-                  Most urgent open items based on risk level and deadline
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {topRisks.length > 0 ? (
-                topRisks.map((item) => (
-                  <button
-                    type="button"
-                    key={`${item.sourceType}-${item.id}-${item.actionId}`}
-                    onClick={() => setSelectedItem(item)}
-                    className="w-full rounded-xl border border-red-100 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-red-600">
-                          {item.actionId} · {item.module || "Recruitment"}
-                        </p>
-
-                        <p className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-[#101828]">
-                          {item.actionItem}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskClass(
-                          item.riskLevel
-                        )}`}
-                      >
-                        {item.riskLevel}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                      {getDaysLeft(item.deadline)}
-                    </p>
-                  </button>
-                ))
-              ) : (
-                <div className="rounded-xl border border-emerald-100 bg-white p-5 text-center">
-                  <CheckCircle2 className="mx-auto text-emerald-600" size={28} />
-
-                  <p className="mt-2 text-sm font-bold text-emerald-700">
-                    No open high-priority items.
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Status and risk distribution across all action items.
                   </p>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        <section className="mb-6">
-          <div className="mb-4">
-            <h2 className="text-lg font-bold text-sibs-primary-1">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+                  <ListChecks size={22} />
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <ProgressBar
+                  label="Planned"
+                  value={stats.planned}
+                  total={stats.total}
+                  helper="Actions not yet started"
+                  delay={0}
+                />
+
+                <ProgressBar
+                  label="Ongoing"
+                  value={stats.ongoing}
+                  total={stats.total}
+                  helper="Actions currently in progress"
+                  delay={60}
+                />
+
+                <ProgressBar
+                  label="Completed"
+                  value={stats.completed}
+                  total={stats.total}
+                  helper="Closed and ready for reporting"
+                  delay={120}
+                />
+
+                <ProgressBar
+                  label="High Risk"
+                  value={stats.highRisk}
+                  total={stats.total}
+                  helper="Items that need immediate movement"
+                  delay={180}
+                />
+
+                <ProgressBar
+                  label="Overdue"
+                  value={stats.overdue}
+                  total={stats.total}
+                  helper="Past deadline and still open"
+                  delay={240}
+                />
+              </div>
+            </section>
+
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-red-100 bg-red-50 p-5 shadow-sm sm:p-6"
+              style={{ animationDelay: "180ms" }}
+            >
+              <div className="mb-5 flex items-start gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-red-600">
+                  <AlertTriangle size={22} />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-red-700">
+                    Priority Watchlist
+                  </h3>
+
+                  <p className="mt-1 text-sm font-medium leading-6 text-red-700/80">
+                    Most urgent open items based on risk level and deadline.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {topRisks.length > 0 ? (
+                  topRisks.map((item, index) => (
+                    <button
+                      type="button"
+                      key={`${item.sourceType}-${item.id}-${item.actionId}`}
+                      onClick={() => setSelectedItem(item)}
+                      className="sibs-page-card-in w-full rounded-xl border border-red-100 bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FAFBFC] hover:shadow-sm active:scale-[0.98]"
+                      style={{ animationDelay: `${index * 60}ms` }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-red-600">
+                            {item.actionId} · {item.module || "Recruitment"}
+                          </p>
+
+                          <p className="mt-1 line-clamp-2 text-sm font-bold leading-5 text-[#101828]">
+                            {item.actionItem}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getRiskClass(
+                            item.riskLevel,
+                          )}`}
+                        >
+                          {item.riskLevel}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
+                        {getDaysLeft(item.deadline)}
+                      </p>
+                    </button>
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-emerald-100 bg-white p-5 text-center">
+                    <CheckCircle2
+                      className="mx-auto text-emerald-600"
+                      size={28}
+                    />
+
+                    <p className="mt-2 text-sm font-bold text-emerald-700">
+                      No open high-priority items.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "240ms" }}
+          >
+            <h2 className="text-base font-bold text-[#101828]">
               Recruitment Module Signals
             </h2>
 
-            <p className="text-sm font-medium text-sibs-tertiary-5">
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Data-driven indicators pulled from the recruitment module local
-              records
+              records.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {moduleInsightCards.map((item, index) => (
-              <ModuleInsightCard key={item.module} item={item} index={index} />
-            ))}
-          </div>
-        </section>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {moduleInsightCards.map((item, index) => (
+                <ModuleInsightCard
+                  key={item.module}
+                  item={item}
+                  delay={index * 60}
+                />
+              ))}
+            </div>
+          </section>
 
-        <section className="sibs-profile-tab-panel overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[1fr_300px_155px_145px_190px_190px_170px] 2xl:items-center">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Filter size={18} className="text-sibs-primary-1" />
-
+          <section
+            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            style={{ animationDelay: "300ms" }}
+          >
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
                   <h2 className="text-lg font-bold text-sibs-primary-1">
                     Action Item List
                   </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Search and filter manual and system-suggested actions.
+                  </p>
                 </div>
 
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Search and filter manual and system-suggested actions
-                </p>
+                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  {sortedItems.length} Records
+                </span>
               </div>
 
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
+              <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[1fr_170px_150px_200px_190px_190px_auto] 2xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">
+                    Search
+                  </label>
 
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search action, module, owner..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
+                  <div className="relative">
+                    <Search
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    />
 
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={riskFilter}
-                onChange={(e) => setRiskFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {riskOptions.map((risk) => (
-                  <option key={risk} value={risk}>
-                    {risk}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={moduleFilter}
-                onChange={(e) => setModuleFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {moduleOptions.map((module) => (
-                  <option key={module} value={module}>
-                    {module}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={gapFilter}
-                onChange={(e) => setGapFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {gapOptions.map((gap) => (
-                  <option key={gap} value={gap}>
-                    {gap}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={ownerFilter}
-                onChange={(e) => setOwnerFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {ownerOptions.map((owner) => (
-                  <option key={owner} value={owner}>
-                    {owner}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 lg:hidden">
-              {sortedItems.length > 0 ? (
-                sortedItems.map((item) => (
-                  <ActionItemMobileCard
-                    key={`${item.sourceType}-${item.id}-${item.actionId}`}
-                    item={item}
-                    onView={() => setSelectedItem(item)}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No action item records found.
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search action, module, owner..."
+                      className={inputClass("pl-11 pr-4")}
+                    />
+                  </div>
                 </div>
-              )}
+
+                <CustomSelect
+                  label="Status"
+                  value={statusFilter}
+                  options={statusOptions}
+                  onChange={setStatusFilter}
+                  zIndex="z-60"
+                />
+
+                <CustomSelect
+                  label="Risk"
+                  value={riskFilter}
+                  options={riskOptions}
+                  onChange={setRiskFilter}
+                  zIndex="z-50"
+                />
+
+                <CustomSelect
+                  label="Module"
+                  value={moduleFilter}
+                  options={moduleOptions}
+                  onChange={setModuleFilter}
+                  zIndex="z-40"
+                />
+
+                <CustomSelect
+                  label="Gap"
+                  value={gapFilter}
+                  options={gapOptions}
+                  onChange={setGapFilter}
+                  zIndex="z-30"
+                />
+
+                <CustomSelect
+                  label="Owner"
+                  value={ownerFilter}
+                  options={ownerOptions}
+                  onChange={setOwnerFilter}
+                  zIndex="z-20"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                >
+                  <Filter size={17} />
+                  Clear
+                </button>
+              </div>
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[560px] overflow-auto">
-                <table className="w-full min-w-[1420px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Action ID</th>
-                      <th className="px-5 py-4">Action Item</th>
-                      <th className="px-5 py-4">Module</th>
-                      <th className="px-5 py-4">Role / Account</th>
-                      <th className="px-5 py-4">Owner</th>
-                      <th className="px-5 py-4">Deadline</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">Risk</th>
-                      <th className="px-5 py-4">Gap</th>
-                      <th className="px-5 py-4 text-right">Action</th>
-                    </tr>
-                  </thead>
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3 lg:hidden">
+                {paginatedItems.length > 0 ? (
+                  paginatedItems.map((item) => (
+                    <ActionItemMobileCard
+                      key={`${item.sourceType}-${item.id}-${item.actionId}`}
+                      item={item}
+                      onView={() => setSelectedItem(item)}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                    No action item records found.
+                  </div>
+                )}
+              </div>
 
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {sortedItems.length > 0 ? (
-                      sortedItems.map((item) => (
-                        <tr
-                          key={`${item.sourceType}-${item.id}-${item.actionId}`}
-                          className="transition duration-200 hover:bg-[#F8FAFC]"
-                        >
-                          <td className="px-5 py-4 align-top">
-                            <div>
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto p-0">
+                  <table className="w-full min-w-[1420px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                    <thead>
+                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                        <th className="px-5 py-4 first:rounded-tl-2xl">
+                          Action ID
+                        </th>
+                        <th className="px-5 py-4">Action Item</th>
+                        <th className="px-5 py-4">Module</th>
+                        <th className="px-5 py-4">Role / Account</th>
+                        <th className="px-5 py-4">Owner</th>
+                        <th className="px-5 py-4">Deadline</th>
+                        <th className="px-5 py-4">Status</th>
+                        <th className="px-5 py-4">Risk</th>
+                        <th className="px-5 py-4">Gap</th>
+                        <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {paginatedItems.length > 0 ? (
+                        paginatedItems.map((item) => (
+                          <tr
+                            key={`${item.sourceType}-${item.id}-${item.actionId}`}
+                            className="transition-all duration-200 hover:bg-[#FAFBFC]"
+                          >
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
                               <p className="text-sm font-bold text-sibs-primary-1">
                                 {item.actionId}
                               </p>
@@ -2089,188 +2372,214 @@ export default function ActionItemsPage() {
                               <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                                 {item.sourceType || "Manual"}
                               </p>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="max-w-[360px] px-5 py-4 align-top">
-                            <p className="line-clamp-2 text-sm font-bold leading-6 text-[#101828]">
-                              {item.actionItem}
-                            </p>
-
-                            {item.systemGenerated && (
-                              <span className="mt-2 inline-flex rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700">
-                                System Suggested
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getModuleClass(
-                                item.module
-                              )}`}
-                            >
-                              {item.module || "Recruitment"}
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 align-top">
-                            <p className="text-sm font-bold text-[#101828]">
-                              {item.roleTitle || "—"}
-                            </p>
-
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {item.account || "—"}
-                            </p>
-                          </td>
-
-                          <td className="px-5 py-4 align-top">
-                            <div className="flex items-center gap-2 text-sm font-semibold text-[#344054]">
-                              <UserRound size={15} className="text-gray-400" />
-                              {item.owner}
-                            </div>
-                          </td>
-
-                          <td className="px-5 py-4 align-top">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2 text-sm font-semibold text-[#344054]">
-                                <CalendarDays size={15} className="text-gray-400" />
-                                {formatDate(item.deadline)}
-                              </div>
-
-                              <p
-                                className={`text-xs font-bold ${
-                                  getDaysLeftValue(item.deadline) < 0 &&
-                                  item.status !== "Completed"
-                                    ? "text-red-600"
-                                    : "text-sibs-tertiary-5"
-                                }`}
-                              >
-                                {getDaysLeft(item.deadline)}
+                            <td className="max-w-[360px] border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <p className="line-clamp-2 text-sm font-bold leading-6 text-[#101828]">
+                                {item.actionItem}
                               </p>
-                            </div>
-                          </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                item.status
-                              )}`}
-                            >
-                              {item.status}
-                            </span>
-                          </td>
+                              {item.systemGenerated && (
+                                <span className="mt-2 inline-flex rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[10px] font-bold text-purple-700">
+                                  System Suggested
+                                </span>
+                              )}
+                            </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getRiskClass(
-                                item.riskLevel
-                              )}`}
-                            >
-                              {item.riskLevel}
-                            </span>
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <span
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getModuleClass(
+                                  item.module,
+                                )}`}
+                              >
+                                {item.module || "Recruitment"}
+                              </span>
+                            </td>
 
-                          <td className="px-5 py-4 align-top">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getGapClass(
-                                item.linkedGap
-                              )}`}
-                            >
-                              {item.linkedGap}
-                            </span>
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <p className="text-sm font-bold text-[#101828]">
+                                {item.roleTitle || "—"}
+                              </p>
 
-                          <td className="px-5 py-4 text-right align-top">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedItem(item)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm"
-                            >
-                              <Eye size={15} />
-                              View
-                            </button>
+                              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                {item.account || "—"}
+                              </p>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <div className="flex items-center gap-2 text-sm font-semibold text-[#344054]">
+                                <UserRound
+                                  size={15}
+                                  className="text-gray-400"
+                                />
+                                {item.owner}
+                              </div>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-[#344054]">
+                                  <CalendarDays
+                                    size={15}
+                                    className="text-gray-400"
+                                  />
+                                  {formatDate(item.deadline)}
+                                </div>
+
+                                <p
+                                  className={`text-xs font-bold ${
+                                    getDaysLeftValue(item.deadline) < 0 &&
+                                    item.status !== "Completed"
+                                      ? "text-red-600"
+                                      : "text-sibs-tertiary-5"
+                                  }`}
+                                >
+                                  {getDaysLeft(item.deadline)}
+                                </p>
+                              </div>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <span
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                                  item.status,
+                                )}`}
+                              >
+                                {item.status}
+                              </span>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <span
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getRiskClass(
+                                  item.riskLevel,
+                                )}`}
+                              >
+                                {item.riskLevel}
+                              </span>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 align-top">
+                              <span
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getGapClass(
+                                  item.linkedGap,
+                                )}`}
+                              >
+                                {item.linkedGap}
+                              </span>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right align-top">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedItem(item)}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                              >
+                                <Eye size={15} />
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={10}
+                            className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                          >
+                            No action item records found.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No action item records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing {sortedItems.length > 0 ? 1 : 0} to {sortedItems.length}{" "}
-                of {combinedItems.length} action item records
-              </p>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
-                >
-                  1
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="sibs-profile-tab-panel mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-start gap-3">
-              <div className="rounded-full bg-white p-3 text-sibs-primary-1">
-                <Timer size={22} />
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              <div>
-                <h3 className="text-sm font-bold text-sibs-primary-1">
-                  Action Items Rule
-                </h3>
-
-                <p className="mt-2 max-w-5xl text-sm leading-6 text-sibs-primary-1/80">
-                  Every role or account that is not fully hired must have at
-                  least one action item. The item must be linked to the correct
-                  gap: Pipeline, Screening, Interview, Offer, JD, Approval,
-                  Capacity / Manpower, Onboarding, or Reporting.
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {showingFrom} to {showingTo} of {sortedItems.length}{" "}
+                  action item records
                 </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    const active = currentPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
+          </section>
 
-            <button
-              type="button"
-              onClick={handleOpenAddModal}
-              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Missing Action
-            </button>
-          </div>
-        </section>
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
+            style={{ animationDelay: "360ms" }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
+                  <Timer size={22} />
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-bold text-sibs-primary-1">
+                    Action Items Rule
+                  </h3>
+
+                  <p className="mt-2 max-w-5xl text-sm leading-6 text-sibs-primary-1/80">
+                    Every role or account that is not fully hired must have at
+                    least one action item. The item must be linked to the correct
+                    gap: Pipeline, Screening, Interview, Offer, JD, Approval,
+                    Capacity / Manpower, Onboarding, or Reporting.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                Add Missing Action
+              </button>
+            </div>
+          </section>
+        </div>
       </main>
 
       <AddActionItemModal

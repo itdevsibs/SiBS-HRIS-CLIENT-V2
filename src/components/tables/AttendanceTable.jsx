@@ -1452,6 +1452,16 @@ export default function AttendanceTable() {
                         />
 
                         <MobileMetric
+                          label="Logout"
+                          value={logoutTime}
+                          className={getManagerSafeTimeBadgeClass(
+                            item,
+                            logoutTime,
+                            item.logout_status,
+                          )}
+                        />
+
+                        <MobileMetric
                           label="Start Break"
                           value={breakoutTime}
                           className={
@@ -1468,16 +1478,6 @@ export default function AttendanceTable() {
                             item,
                             breakinTime,
                             item.breakin_status,
-                          )}
-                        />
-
-                        <MobileMetric
-                          label="Logout"
-                          value={logoutTime}
-                          className={getManagerSafeTimeBadgeClass(
-                            item,
-                            logoutTime,
-                            item.logout_status,
                           )}
                         />
 

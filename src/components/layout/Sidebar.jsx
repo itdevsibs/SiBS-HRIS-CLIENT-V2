@@ -28,6 +28,114 @@ import {
 } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 
+function SibsLogo({ collapsed = false, isMobile = false }) {
+  const showText = !collapsed || isMobile;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -18 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
+      whileHover={{ scale: 1.025 }}
+      className={[
+        "flex min-w-0 select-none items-center",
+        showText ? "gap-3" : "justify-center",
+      ].join(" ")}
+    >
+      <motion.div
+        whileHover={{ rotate: -3, scale: 1.05 }}
+        transition={{ type: "spring", stiffness: 260, damping: 18 }}
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[17px] bg-[#042C51] shadow-[0_10px_24px_rgba(4,44,81,0.20)]"
+      >
+        <motion.div
+          className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-tertiary-10"
+          animate={{
+            backgroundColor: ["#FF5C28", "#042C51", "#FF5C28"],
+            boxShadow: [
+              "0 0 0px rgba(255,92,40,0)",
+              "0 0 14px rgba(255,92,40,0.40)",
+              "0 0 0px rgba(255,92,40,0)",
+            ],
+          }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+        <div className="absolute inset-[5px] rounded-[13px] border border-white/10" />
+
+        <motion.span
+          className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
+          animate={{
+            textShadow: [
+              "0 0 0px rgba(255,255,255,0)",
+              "0 0 10px rgba(255,255,255,0.32)",
+              "0 0 0px rgba(255,255,255,0)",
+            ],
+          }}
+          transition={{
+            duration: 5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          S
+        </motion.span>
+      </motion.div>
+
+      {showText && (
+        <div className="min-w-0 leading-none">
+          <div className="flex min-w-0 items-baseline whitespace-nowrap">
+            <motion.span
+              className="text-[22px] font-semibold tracking-[-0.035em]"
+              animate={{
+                color: ["#042C51", "#FF5C28", "#042C51"],
+                textShadow: [
+                  "0 0 0px rgba(255,255,255,0)",
+                  "0 0 6px rgba(255,255,255,0.35)",
+                  "0 0 0px rgba(255,255,255,0)",
+                ],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              SiBS&nbsp;
+            </motion.span>
+
+            <motion.span
+              className="text-[22px] font-semibold tracking-[-0.035em]"
+              animate={{
+                color: ["#FF5C28", "#042C51", "#FF5C28"],
+                textShadow: [
+                  "0 0 0px rgba(255,255,255,0)",
+                  "0 0 6px rgba(255,255,255,0.35)",
+                  "0 0 0px rgba(255,255,255,0)",
+                ],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              HRIS
+            </motion.span>
+          </div>
+
+          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-sibs-tertiary-5">
+            Human Resource System
+          </p>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function Sidebar() {
   const { user, loading } = useUser();
 
@@ -388,7 +496,10 @@ export default function Sidebar() {
           />
 
           {(!collapsed || isMobile) && (
-            <span draggable={false} className="pointer-events-none min-w-0 truncate">
+            <span
+              draggable={false}
+              className="pointer-events-none min-w-0 truncate"
+            >
               {item.name}
             </span>
           )}
@@ -434,73 +545,41 @@ export default function Sidebar() {
           "lg:sticky lg:translate-x-0",
         ].join(" ")}
       >
-        <div className="flex h-[73px] shrink-0 items-center justify-between gap-2 px-4">
-          <motion.div
-            initial={{ opacity: 0, x: -18 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            whileHover={{ scale: 1.04 }}
-            className="flex min-w-0 select-none items-center gap-2"
-          >
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-800 text-[11px] font-semibold text-white">
-              S
-            </div>
+        <div
+          className={[
+            "flex h-[73px] shrink-0 items-center gap-2 px-4",
+            !isMobile && collapsed ? "justify-center" : "justify-between",
+          ].join(" ")}
+        >
+          <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
 
-            {(!collapsed || isMobile) && (
-              <span className="inline-flex min-w-0 select-none whitespace-nowrap text-xl font-bold tracking-tight">
-                <motion.span
-                  animate={{
-                    color: ["#003366", "#ff6b00", "#003366"],
-                    textShadow: [
-                      "0 0 0px rgba(255,255,255,0)",
-                      "0 0 6px rgba(255,255,255,0.35)",
-                      "0 0 0px rgba(255,255,255,0)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  SiBS&nbsp;
-                </motion.span>
+          {(!collapsed || isMobile) && (
+            <button
+              onClick={() => {
+                if (isMobile) {
+                  setMobileOpen(false);
+                } else {
+                  setCollapsed((prev) => !prev);
+                }
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-sibs-tertiary-9 active:scale-[0.98]"
+              type="button"
+              aria-label={isMobile ? "Close sidebar" : "Toggle sidebar"}
+            >
+              {isMobile ? <X size={18} /> : <Menu size={18} />}
+            </button>
+          )}
 
-                <motion.span
-                  animate={{
-                    color: ["#ff6b00", "#003366", "#ff6b00"],
-                    textShadow: [
-                      "0 0 0px rgba(255,255,255,0)",
-                      "0 0 6px rgba(255,255,255,0.35)",
-                      "0 0 0px rgba(255,255,255,0)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  HRIS
-                </motion.span>
-              </span>
-            )}
-          </motion.div>
-
-          <button
-            onClick={() => {
-              if (isMobile) {
-                setMobileOpen(false);
-              } else {
-                setCollapsed((prev) => !prev);
-              }
-            }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-sibs-primary-1 transition hover:bg-sibs-tertiary-9"
-            type="button"
-            aria-label={isMobile ? "Close sidebar" : "Toggle sidebar"}
-          >
-            {isMobile ? <X size={18} /> : <Menu size={18} />}
-          </button>
+          {!isMobile && collapsed && (
+            <button
+              onClick={() => setCollapsed((prev) => !prev)}
+              className="absolute right-3 top-[20px] flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-sibs-tertiary-9 active:scale-[0.98]"
+              type="button"
+              aria-label="Expand sidebar"
+            >
+              <Menu size={17} />
+            </button>
+          )}
         </div>
 
         {!showMenu ? (
