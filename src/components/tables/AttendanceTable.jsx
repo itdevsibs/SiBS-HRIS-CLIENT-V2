@@ -326,8 +326,31 @@ function isSuperAdminUser(user) {
   );
 }
 
+function isTalentAcquisitionUser(user) {
+  const roles = [
+    user?.role,
+    user?.tokenType,
+    user?.userRole,
+    user?.accountType,
+    user?.user_type,
+    user?.gy_user_type,
+  ].map(normalizeRole);
+
+  return roles.some((role) =>
+    [
+      "ta",
+      "talent_acquisition",
+      "talent_acquisition_admin",
+      "ta_admin",
+      "recruitment",
+      "recruiter",
+      "sourcing",
+    ].includes(role),
+  );
+}
+
 function canUseAttendanceFilters(user) {
-  return isHrAdminUser(user) || isSuperAdminUser(user);
+  return isHrAdminUser(user) || isSuperAdminUser(user) || isTalentAcquisitionUser(user);
 }
 
 function isManagerUser(user) {
@@ -536,12 +559,17 @@ export default function AttendanceTable() {
   const hrAdminView = isHrAdminUser(user);
   const superAdminView = isSuperAdminUser(user);
   const managerView = isManagerUser(user);
+  const talentAcquisitionView = isTalentAcquisitionUser(user);
 
   const attendanceFiltersView = canUseAttendanceFilters(user);
   const attendanceDateRangeView = true;
 
   const adminView =
-    user?.tokenType === "admin" || hrAdminView || superAdminView || managerView;
+    user?.tokenType === "admin" ||
+    hrAdminView ||
+    superAdminView ||
+    managerView ||
+    talentAcquisitionView;
 
   useEffect(() => {
     setLoadingRef.current = setLoading;
