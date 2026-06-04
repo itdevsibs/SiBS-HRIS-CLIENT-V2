@@ -237,7 +237,7 @@ function textareaClass(extra = "") {
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
         open
           ? "grid-rows-[1fr] opacity-100"
           : "pointer-events-none grid-rows-[0fr] opacity-0"
@@ -317,7 +317,7 @@ function CustomSelect({
   }, []);
 
   return (
-    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
       <label className="mb-1 block text-sm font-bold text-[#101828]">
         {label}
         {required && <span className="text-red-500"> *</span>}
@@ -376,6 +376,7 @@ function FormSelect({
   onChange,
   placeholder = "Select",
   required = false,
+  zIndex = "z-30",
 }) {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -397,7 +398,7 @@ function FormSelect({
   }, []);
 
   return (
-    <div ref={dropdownRef} className="relative z-30">
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
       <FieldLabel required={required}>{label}</FieldLabel>
 
       <button
@@ -601,7 +602,7 @@ function PositionFormModal({
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-visible rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
           <div>
@@ -625,8 +626,8 @@ function PositionFormModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5">
+        <div className="flex-1 overflow-y-auto overflow-x-visible p-5 sm:p-6">
+          <section className="relative z-[40] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <FieldLabel required>Position Title</FieldLabel>
@@ -649,6 +650,7 @@ function PositionFormModal({
                   value={form.department}
                   options={departmentOptions}
                   placeholder="Select department"
+                  zIndex="z-50"
                   onChange={(value) => setForm({ ...form, department: value })}
                 />
               </div>
@@ -660,6 +662,7 @@ function PositionFormModal({
                   value={form.locationSite}
                   options={locationOptions}
                   placeholder="Select location"
+                  zIndex="z-40"
                   onChange={(value) =>
                     setForm({ ...form, locationSite: value })
                   }
@@ -673,6 +676,7 @@ function PositionFormModal({
                   value={form.status}
                   options={statusOptions.filter((item) => item !== "All")}
                   placeholder="Select status"
+                  zIndex="z-30"
                   onChange={(value) => setForm({ ...form, status: value })}
                 />
 

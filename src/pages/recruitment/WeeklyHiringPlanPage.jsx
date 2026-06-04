@@ -114,6 +114,49 @@ function getBackendNumber(record, keys, fallback = 0) {
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
 }
 
+function getHeadcountApprovalStatus(record) {
+  return String(
+    record?.headcountStatus ||
+      record?.headcount_status ||
+      record?.approvalStatus ||
+      record?.approval_status ||
+      record?.headcountApprovalStatus ||
+      record?.headcount_approval_status ||
+      record?.status ||
+      "Kronos"
+  ).trim();
+}
+
+function getDisplayRequiredHeadcount(record) {
+  const status = getHeadcountApprovalStatus(record);
+
+  const kronosRequiredHeadcount = getBackendNumber(
+    record,
+    [
+      "kronosRequiredHeadcount",
+      "kronos_required_headcount",
+      "kronosBasedRequiredHeadcount",
+      "kronos_based_required_headcount",
+      "kronosHeadcount",
+      "kronos_headcount",
+    ],
+    getBackendNumber(record, ["requiredHeadcount", "required_headcount"])
+  );
+
+  const approvedRequiredHeadcount = getBackendNumber(record, [
+    "approvedRequiredHeadcount",
+    "approved_required_headcount",
+    "requiredHeadcount",
+    "required_headcount",
+  ]);
+
+  if (status === "Approved") {
+    return approvedRequiredHeadcount;
+  }
+
+  return kronosRequiredHeadcount;
+}
+
 function getLoggedInOwnerDisplay(user) {
   const sibsId = String(
     user?.username ||
@@ -593,10 +636,34 @@ export default function WeeklyHiringPlanPage() {
         }-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
 
         if (!uniqueAccountsMap.has(key)) {
-          const requiredHeadcount = getBackendNumber(account, [
-            "requiredHeadcount",
-            "required_headcount",
+          const headcountStatus = getHeadcountApprovalStatus(account);
+
+          const kronosRequiredHeadcount = getBackendNumber(
+            account,
+            [
+              "kronosRequiredHeadcount",
+              "kronos_required_headcount",
+              "kronosBasedRequiredHeadcount",
+              "kronos_based_required_headcount",
+              "kronosHeadcount",
+              "kronos_headcount",
+            ],
+            getBackendNumber(account, [
+              "requiredHeadcount",
+              "required_headcount",
+            ])
+          );
+
+          const requestedRequiredHeadcount = getBackendNumber(account, [
+            "requestedRequiredHeadcount",
+            "requested_required_headcount",
+            "savedRequiredHeadcount",
+            "saved_required_headcount",
+            "pendingRequiredHeadcount",
+            "pending_required_headcount",
           ]);
+
+          const requiredHeadcount = getDisplayRequiredHeadcount(account);
 
           uniqueAccountsMap.set(key, {
             ...account,
@@ -611,8 +678,18 @@ export default function WeeklyHiringPlanPage() {
             account: accountName,
             clusterName,
             cluster: clusterName,
+
             requiredHeadcount,
             required_headcount: requiredHeadcount,
+
+            kronosRequiredHeadcount,
+            kronos_required_headcount: kronosRequiredHeadcount,
+
+            requestedRequiredHeadcount,
+            requested_required_headcount: requestedRequiredHeadcount,
+
+            headcountStatus,
+            headcount_status: headcountStatus,
           });
         }
       });
@@ -723,10 +800,31 @@ export default function WeeklyHiringPlanPage() {
             ? selectedClusters[0]
             : "Unassigned");
 
-      const requiredHeadcount = getBackendNumber(account, [
-        "requiredHeadcount",
-        "required_headcount",
+      const headcountStatus = getHeadcountApprovalStatus(account);
+
+      const kronosRequiredHeadcount = getBackendNumber(
+        account,
+        [
+          "kronosRequiredHeadcount",
+          "kronos_required_headcount",
+          "kronosBasedRequiredHeadcount",
+          "kronos_based_required_headcount",
+          "kronosHeadcount",
+          "kronos_headcount",
+        ],
+        getBackendNumber(account, ["requiredHeadcount", "required_headcount"])
+      );
+
+      const requestedRequiredHeadcount = getBackendNumber(account, [
+        "requestedRequiredHeadcount",
+        "requested_required_headcount",
+        "savedRequiredHeadcount",
+        "saved_required_headcount",
+        "pendingRequiredHeadcount",
+        "pending_required_headcount",
       ]);
+
+      const requiredHeadcount = getDisplayRequiredHeadcount(account);
 
       const actualHeadcount = getBackendNumber(account, [
         "actualHeadcount",
@@ -844,7 +942,19 @@ export default function WeeklyHiringPlanPage() {
         account: accountName,
 
         requiredHeadcount,
+        required_headcount: requiredHeadcount,
+
+        kronosRequiredHeadcount,
+        kronos_required_headcount: kronosRequiredHeadcount,
+
+        requestedRequiredHeadcount,
+        requested_required_headcount: requestedRequiredHeadcount,
+
+        headcountStatus,
+        headcount_status: headcountStatus,
+
         actualHeadcount,
+        actual_headcount: actualHeadcount,
 
         bufferHeadcount,
         bufferPercent,
@@ -1045,6 +1155,16 @@ export default function WeeklyHiringPlanPage() {
 
           requiredHeadcount: 0,
           required_headcount: 0,
+
+          kronosRequiredHeadcount: 0,
+          kronos_required_headcount: 0,
+
+          requestedRequiredHeadcount: 0,
+          requested_required_headcount: 0,
+
+          headcountStatus: "Kronos",
+          headcount_status: "Kronos",
+
           actualHeadcount: 0,
           actual_headcount: 0,
           bufferHeadcount: 0,
@@ -1186,7 +1306,8 @@ export default function WeeklyHiringPlanPage() {
         String(item.owner || "").toLowerCase().includes(keyword) ||
         String(item.actionItem || "").toLowerCase().includes(keyword) ||
         String(item.actionItemOwner || "").toLowerCase().includes(keyword) ||
-        String(item.actionItemStatus || "").toLowerCase().includes(keyword);
+        String(item.actionItemStatus || "").toLowerCase().includes(keyword) ||
+        String(item.headcountStatus || "").toLowerCase().includes(keyword);
 
       return (
         matchesUserAccess &&
@@ -1259,74 +1380,6 @@ export default function WeeklyHiringPlanPage() {
     }));
   }
 
-  function patchRequiredHeadcountLocally(item, requiredHeadcount) {
-    const targetAccountName = String(
-      item.account || item.accountName || item.account_name || ""
-    )
-      .trim()
-      .toLowerCase();
-
-    const targetAccountId = String(
-      item.backendAccountId ||
-        item.accountId ||
-        item.account_id ||
-        item.gy_acc_id ||
-        item.id ||
-        ""
-    )
-      .trim()
-      .toLowerCase();
-
-    setRemoteAccounts((prev) =>
-      (prev || []).map((account) => {
-        const accountName = String(
-          account.accountName ||
-            account.account ||
-            account.account_name ||
-            account.gy_acc_name ||
-            ""
-        )
-          .trim()
-          .toLowerCase();
-
-        const accountId = String(
-          account.backendAccountId ||
-            account.accountId ||
-            account.account_id ||
-            account.gy_acc_id ||
-            account.id ||
-            ""
-        )
-          .trim()
-          .toLowerCase();
-
-        const sameAccount =
-          (targetAccountId && accountId && targetAccountId === accountId) ||
-          (targetAccountName &&
-            accountName &&
-            targetAccountName === accountName);
-
-        if (!sameAccount) return account;
-
-        return {
-          ...account,
-          requiredHeadcount,
-          required_headcount: requiredHeadcount,
-        };
-      })
-    );
-
-    setSelectedPlan((prev) => {
-      if (!prev || prev.id !== item.id) return prev;
-
-      return {
-        ...prev,
-        requiredHeadcount,
-        required_headcount: requiredHeadcount,
-      };
-    });
-  }
-
   async function handleSaveRequiredHeadcount(item, options = {}) {
     const { silent = false, overrideRequiredHeadcount } = options;
 
@@ -1393,23 +1446,23 @@ export default function WeeklyHiringPlanPage() {
         opsPrf: Number(item.opsPrf || item.ops_prf || 0),
         priorityLevel: item.priorityLevel || item.priority_level || null,
         remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
+        status: "Pending",
       });
 
       setRequiredInputs((prev) => ({
         ...prev,
-        [item.id]: String(requiredHeadcount ?? 0),
+        [item.id]: String(item.requiredHeadcount ?? item.required_headcount ?? 0),
       }));
 
-      patchRequiredHeadcountLocally(item, requiredHeadcount ?? 0);
       editedRequiredInputsRef.current.delete(item.id);
 
-      if (!silent) {
-        await fetchAccountsByCluster({ resetAccountFilter: false });
+      await fetchAccountsByCluster({ resetAccountFilter: false });
 
+      if (!silent) {
         openStatusModal({
           type: "success",
-          title: "Required Headcount Saved",
-          message: `Required headcount for ${item.account} was saved successfully.`,
+          title: "Required Headcount Submitted",
+          message: `Required headcount update for ${item.account} was submitted for approval. The table will continue showing Kronos-based headcount until approved.`,
           closeViewModalOnSuccess: true,
         });
       }
@@ -1504,15 +1557,15 @@ export default function WeeklyHiringPlanPage() {
         opsPrf: Number(item.opsPrf || item.ops_prf || 0),
         priorityLevel: item.priorityLevel || item.priority_level || null,
         remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
+        status: "Pending",
         uploadedFile: file,
       });
 
       setRequiredInputs((prev) => ({
         ...prev,
-        [item.id]: String(requiredHeadcount),
+        [item.id]: String(item.requiredHeadcount ?? item.required_headcount ?? 0),
       }));
 
-      patchRequiredHeadcountLocally(item, requiredHeadcount);
       editedRequiredInputsRef.current.delete(item.id);
 
       await fetchAccountsByCluster({ resetAccountFilter: false });
@@ -1525,8 +1578,8 @@ export default function WeeklyHiringPlanPage() {
 
       openStatusModal({
         type: "success",
-        title: "File Uploaded",
-        message: `Weekly hiring plan file for ${item.account} was uploaded successfully.`,
+        title: "Update Submitted",
+        message: `Weekly hiring plan update for ${item.account} was submitted for approval. The table will continue showing Kronos-based headcount until approved.`,
         closeViewModalOnSuccess: true,
       });
     } catch (error) {

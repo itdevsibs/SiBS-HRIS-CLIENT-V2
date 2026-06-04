@@ -1,5 +1,18 @@
-import React from "react";
-import { X, Plus, RotateCcw } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  BriefcaseBusiness,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Plus,
+  RotateCcw,
+  Target,
+  X,
+} from "lucide-react";
 
 const activeHiringGaps = [
   {
@@ -107,11 +120,385 @@ const emptyActionForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function readonlyInputClass(extra = "") {
+  return `h-12 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatDateDisplay(value) {
+  if (!value) return "";
+
+  const [year, month, day] = String(value).split("-").map(Number);
+
+  if (!year || !month || !day) return "";
+
+  const parsed = new Date(year, month - 1, day);
+
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCalendarDays(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = firstDay.getDay();
+
+  const calendarStart = new Date(year, month, 1 - startDay);
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    return date;
+  });
+}
+
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function DateDropdown({
+  label,
+  value,
+  onChange,
+  required = false,
+  placeholder = "Select deadline",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedDate = useMemo(() => {
+    if (!value) return null;
+
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    const parsed = new Date(year, month - 1, day);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [value]);
+
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
+
+  const today = new Date();
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  function goToPreviousMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }
+
+  function goToNextMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleTodayClick() {
+    const currentDate = new Date();
+    onChange(toDateInputValue(currentDate));
+    setViewDate(currentDate);
+    setOpen(false);
+  }
+
+  const monthTitle = viewDate.toLocaleDateString("en-PH", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const displayValue = value ? formatDateDisplay(value) : placeholder;
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#E6ECF2] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
+
+          <span
+            className={`truncate ${
+              value ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayValue}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="bg-white p-3">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
+            <button
+              type="button"
+              onClick={goToPreviousMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <p className="text-sm font-extrabold text-sibs-primary-1">
+              {monthTitle}
+            </p>
+
+            <button
+              type="button"
+              onClick={goToNextMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+              >
+                {day}
+              </div>
+            ))}
+
+            {calendarDays.map((date) => {
+              const currentMonth = date.getMonth() === viewDate.getMonth();
+              const active = selectedDate && isSameDate(date, selectedDate);
+              const isToday = isSameDate(date, today);
+
+              return (
+                <button
+                  key={toDateInputValue(date)}
+                  type="button"
+                  onClick={() => handleSelectDate(date)}
+                  className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    active
+                      ? "bg-sibs-primary-1 text-white shadow-sm"
+                      : isToday
+                        ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
+                        : currentMonth
+                          ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
+                          : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
+                  }`}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  required = false,
+  zIndex = "z-30",
+  optionValue = (option) => option,
+  optionLabel = (option) => option,
+  optionDescription = null,
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedOption = options.find(
+    (option) => String(optionValue(option)) === String(value),
+  );
+
+  const displayValue = selectedOption ? optionLabel(selectedOption) : placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span
+          className={`truncate ${
+            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const currentValue = optionValue(option);
+            const currentLabel = optionLabel(option);
+            const currentDescription = optionDescription
+              ? optionDescription(option)
+              : "";
+            const selected = String(value) === String(currentValue);
+
+            return (
+              <button
+                key={currentValue}
+                type="button"
+                onClick={() => {
+                  onChange(currentValue, option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{currentLabel}</span>
+
+                {currentDescription && (
+                  <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                    {currentDescription}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
 }
 
 function DetailRow({ label, value }) {
@@ -139,7 +526,7 @@ export function AddActionItemModal({
   if (!open) return null;
 
   const selectedRole = activeHiringGaps.find(
-    (role) => String(role.weeklyPlanItemId) === String(form.weeklyPlanItemId)
+    (role) => String(role.weeklyPlanItemId) === String(form.weeklyPlanItemId),
   );
 
   const remainingGap =
@@ -147,7 +534,7 @@ export function AddActionItemModal({
 
   function handleRoleChange(weeklyPlanItemId) {
     const selectedGap = activeHiringGaps.find(
-      (role) => String(role.weeklyPlanItemId) === String(weeklyPlanItemId)
+      (role) => String(role.weeklyPlanItemId) === String(weeklyPlanItemId),
     );
 
     if (!selectedGap) {
@@ -171,18 +558,32 @@ export function AddActionItemModal({
     });
   }
 
+  function handleResetClick() {
+    if (onReset) {
+      onReset();
+      return;
+    }
+
+    setForm(emptyActionForm);
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4 font-jakarta"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ClipboardList size={14} />
+              Recruitment Action
+            </div>
+
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
               Add Action Item
             </h2>
 
@@ -195,7 +596,7 @@ export function AddActionItemModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -206,39 +607,39 @@ export function AddActionItemModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Link to Hiring Gap
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Link to Hiring Gap
+                    </h3>
+
+                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                      Select the role or account that needs a linked action.
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                    <BriefcaseBusiness size={19} />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Role / Account with Hiring Gap{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
+                    <CustomSelect
+                      label="Role / Account with Hiring Gap"
                       required
                       value={form.weeklyPlanItemId}
-                      onChange={(e) => handleRoleChange(e.target.value)}
-                      className={inputClass()}
-                    >
-                      <option value="">Select role with hiring gap</option>
-
-                      {activeHiringGaps.map((role) => {
+                      options={activeHiringGaps}
+                      onChange={handleRoleChange}
+                      placeholder="Select role with hiring gap"
+                      zIndex="z-50"
+                      optionValue={(role) => role.weeklyPlanItemId}
+                      optionLabel={(role) => role.roleAccount}
+                      optionDescription={(role) => {
                         const gap = role.requirement - role.filled;
-
-                        return (
-                          <option
-                            key={role.weeklyPlanItemId}
-                            value={role.weeklyPlanItemId}
-                          >
-                            {role.roleAccount} — {role.filled}/
-                            {role.requirement} filled, {gap} remaining
-                          </option>
-                        );
-                      })}
-                    </select>
+                        return `${role.filled}/${role.requirement} filled • ${gap} remaining • ${role.roleStatus}`;
+                      }}
+                    />
                   </div>
 
                   <div>
@@ -249,7 +650,7 @@ export function AddActionItemModal({
                     <input
                       readOnly
                       value={form.roleTitle}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -261,7 +662,7 @@ export function AddActionItemModal({
                     <input
                       readOnly
                       value={form.account}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -273,7 +674,7 @@ export function AddActionItemModal({
                     <input
                       readOnly
                       value={form.requirement || ""}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -285,16 +686,28 @@ export function AddActionItemModal({
                     <input
                       readOnly
                       value={form.filled || ""}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
                 </div>
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Action Details
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Action Details
+                    </h3>
+
+                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                      Add the owner, deadline, status, risk, and linked gap.
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                    <Target size={19} />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="md:col-span-2">
@@ -314,106 +727,59 @@ export function AddActionItemModal({
                     />
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Owner <span className="text-red-500">*</span>
-                    </label>
+                  <CustomSelect
+                    label="Owner"
+                    required
+                    value={form.owner}
+                    options={actionOwnerOptions}
+                    onChange={(value) => setForm({ ...form, owner: value })}
+                    placeholder="Select owner"
+                    zIndex="z-40"
+                  />
 
-                    <select
-                      required
-                      value={form.owner}
-                      onChange={(e) =>
-                        setForm({ ...form, owner: e.target.value })
-                      }
-                      className={inputClass()}
-                    >
-                      <option value="">Select owner</option>
+                  <DateDropdown
+                    label="Deadline"
+                    required
+                    value={form.deadline}
+                    onChange={(value) =>
+                      setForm({ ...form, deadline: value })
+                    }
+                    placeholder="Select deadline"
+                    zIndex="z-40"
+                  />
 
-                      {actionOwnerOptions.map((owner) => (
-                        <option key={owner} value={owner}>
-                          {owner}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Status"
+                    required
+                    value={form.status}
+                    options={actionStatusOptions}
+                    onChange={(value) => setForm({ ...form, status: value })}
+                    placeholder="Select status"
+                    zIndex="z-30"
+                  />
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Deadline <span className="text-red-500">*</span>
-                    </label>
-
-                    <input
-                      required
-                      type="date"
-                      value={form.deadline}
-                      onChange={(e) =>
-                        setForm({ ...form, deadline: e.target.value })
-                      }
-                      className={inputClass()}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Status <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      required
-                      value={form.status}
-                      onChange={(e) =>
-                        setForm({ ...form, status: e.target.value })
-                      }
-                      className={inputClass()}
-                    >
-                      {actionStatusOptions.map((status) => (
-                        <option key={status} value={status}>
-                          {status}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Risk Level <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      required
-                      value={form.riskLevel}
-                      onChange={(e) =>
-                        setForm({ ...form, riskLevel: e.target.value })
-                      }
-                      className={inputClass()}
-                    >
-                      {actionRiskOptions.map((risk) => (
-                        <option key={risk} value={risk}>
-                          {risk}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Risk Level"
+                    required
+                    value={form.riskLevel}
+                    options={actionRiskOptions}
+                    onChange={(value) => setForm({ ...form, riskLevel: value })}
+                    placeholder="Select risk level"
+                    zIndex="z-20"
+                  />
 
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Linked Gap <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
+                    <CustomSelect
+                      label="Linked Gap"
                       required
                       value={form.linkedGap}
-                      onChange={(e) =>
-                        setForm({ ...form, linkedGap: e.target.value })
+                      options={actionGapOptions}
+                      onChange={(value) =>
+                        setForm({ ...form, linkedGap: value })
                       }
-                      className={inputClass()}
-                    >
-                      {actionGapOptions.map((gap) => (
-                        <option key={gap} value={gap}>
-                          {gap}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="Select linked gap"
+                      zIndex="z-10"
+                    />
                   </div>
 
                   <div className="md:col-span-2">
@@ -437,23 +803,38 @@ export function AddActionItemModal({
 
             <div className="space-y-5">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
-                  How this connects to TA-HRIS
-                </h3>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1">
+                    <ClipboardList size={20} />
+                  </div>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  Action Items are created when a role is not fully hired. They
-                  connect the weekly hiring plan to execution and make sure
-                  every gap has an owner, deadline, and follow-up action.
-                </p>
+                  <div>
+                    <h3 className="text-sm font-bold text-sibs-primary-1">
+                      How this connects to TA-HRIS
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                      Action Items are created when a role is not fully hired.
+                      They connect the weekly hiring plan to execution and make
+                      sure every gap has an owner, deadline, and follow-up
+                      action.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <h3 className="text-sm font-bold text-[#101828]">
-                  Selected Hiring Gap
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-bold text-[#101828]">
+                    Selected Hiring Gap
+                  </h3>
 
-                <div className="mt-4">
+                  <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                    {selectedRole ? selectedRole.roleStatus : "No Role"}
+                  </span>
+                </div>
+
+                <div>
                   <DetailRow label="Role / Account" value={form.roleAccount} />
                   <DetailRow label="Requirement" value={form.requirement} />
                   <DetailRow label="Filled" value={form.filled} />
@@ -470,16 +851,44 @@ export function AddActionItemModal({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
-                <h3 className="text-sm font-bold text-amber-700">
-                  Required Rule
-                </h3>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
+                    <CheckCircle2 size={20} />
+                  </div>
 
-                <p className="mt-2 text-sm leading-6 text-amber-700/90">
-                  Every role where Current Filled is lower than Approved
-                  Requirement should have at least one Planned or Ongoing action
-                  item before the weekly report is generated.
-                </p>
+                  <div>
+                    <h3 className="text-sm font-bold text-emerald-700">
+                      Action Rule
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-emerald-700/90">
+                      Make sure each open hiring gap has a clear owner,
+                      deadline, and next step before it is included in the
+                      weekly hiring report.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600">
+                    <AlertTriangle size={20} />
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-bold text-amber-700">
+                      Required Rule
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-amber-700/90">
+                      Every role where Current Filled is lower than Approved
+                      Requirement should have at least one Planned or Ongoing
+                      action item before the weekly report is generated.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-red-100 bg-red-50 p-5">
@@ -497,12 +906,12 @@ export function AddActionItemModal({
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-[#E6ECF2] px-5 py-4 sm:px-6">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
-              onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+              onClick={handleResetClick}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
             >
               <RotateCcw size={17} />
               Reset
@@ -511,15 +920,15 @@ export function AddActionItemModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]"
             >
               Cancel
             </button>
 
             <button
-              type="submit"
+              type="button"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={17} />
               Save Action Item

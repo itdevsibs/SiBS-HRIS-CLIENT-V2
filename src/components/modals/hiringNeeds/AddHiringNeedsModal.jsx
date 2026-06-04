@@ -1,5 +1,15 @@
-import React from "react";
-import { ChevronDown, Clock, FileText, Plus, X } from "lucide-react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileText,
+  Plus,
+  X,
+} from "lucide-react";
 
 function FieldLabel({ children, required = false }) {
   return (
@@ -19,20 +29,452 @@ function TextInput({ className = "", ...props }) {
   );
 }
 
-function SelectInput({ children, className = "", ...props }) {
+function formatShortDate(value) {
+  if (!value) return "";
+
+  const [year, month, day] = String(value).split("-").map(Number);
+
+  if (!year || !month || !day) return "";
+
+  const parsed = new Date(year, month - 1, day);
+
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCalendarDays(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = firstDay.getDay();
+  const calendarStart = new Date(year, month, 1 - startDay);
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    return date;
+  });
+}
+
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
   return (
-    <div className="relative">
-      <select
-        {...props}
-        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function DropdownPortal({
+  open,
+  anchorRef,
+  children,
+  onClose,
+  maxHeight = 256,
+}) {
+  const dropdownRef = useRef(null);
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return;
+
+    function updatePosition() {
+      const rect = anchorRef.current.getBoundingClientRect();
+
+      setStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, anchorRef]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(e) {
+      const clickedAnchor = anchorRef.current?.contains(e.target);
+      const clickedDropdown = dropdownRef.current?.contains(e.target);
+
+      if (!clickedAnchor && !clickedDropdown) {
+        onClose?.();
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, anchorRef, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      style={{
+        top: `${style.top}px`,
+        left: `${style.left}px`,
+        width: `${style.width}px`,
+      }}
+    >
+      <div
+        className="overflow-y-auto py-2 sibs-scrollbar"
+        style={{ maxHeight }}
       >
         {children}
-      </select>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
-      <ChevronDown
-        size={18}
-        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-      />
+function CustomSelect({
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+  optionValue = (option) => option,
+  optionLabel = (option) => option,
+  optionDescription = null,
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+
+  const selectedOption = options.find(
+    (option) => String(optionValue(option)) === String(value),
+  );
+
+  const displayValue = selectedOption ? optionLabel(selectedOption) : placeholder;
+
+  return (
+    <div className="relative">
+      <button
+        ref={anchorRef}
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 ${
+          disabled
+            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+            : open
+              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
+              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        }`}
+      >
+        <span
+          className={`truncate ${
+            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <DropdownPortal
+        open={open && !disabled}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+      >
+        {options.length > 0 ? (
+          options.map((option) => {
+            const currentValue = optionValue(option);
+            const currentLabel = optionLabel(option);
+            const currentDescription = optionDescription
+              ? optionDescription(option)
+              : "";
+            const selected = String(value) === String(currentValue);
+
+            return (
+              <button
+                key={currentValue || currentLabel}
+                type="button"
+                onClick={() => {
+                  onChange(currentValue, option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{currentLabel}</span>
+
+                {currentDescription && (
+                  <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                    {currentDescription}
+                  </span>
+                )}
+              </button>
+            );
+          })
+        ) : (
+          <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+            No options available.
+          </div>
+        )}
+      </DropdownPortal>
+    </div>
+  );
+}
+
+function DateDropdown({
+  value,
+  onChange,
+  placeholder = "Select date",
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedDate = useMemo(() => {
+    if (!value) return null;
+
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    const parsed = new Date(year, month - 1, day);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [value]);
+
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
+  const today = new Date();
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
+  function goToPreviousMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }
+
+  function goToNextMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleTodayClick() {
+    const currentDate = new Date();
+
+    onChange(toDateInputValue(currentDate));
+    setViewDate(currentDate);
+    setOpen(false);
+  }
+
+  const monthTitle = viewDate.toLocaleDateString("en-PH", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const displayValue = value ? formatShortDate(value) : placeholder;
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 ${
+          disabled
+            ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
+            : open
+              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
+              : "border-[#E6ECF2] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
+
+          <span
+            className={`truncate ${
+              value ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayValue}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <div
+        className={`grid transition-all duration-300 ease-out ${
+          open && !disabled
+            ? "mt-2 grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className={`rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-xl transition-all duration-300 ease-out ${
+              open && !disabled
+                ? "translate-y-0 scale-100"
+                : "-translate-y-2 scale-[0.98]"
+            }`}
+          >
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
+              <button
+                type="button"
+                onClick={goToPreviousMonth}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <p className="text-sm font-extrabold text-sibs-primary-1">
+                {monthTitle}
+              </p>
+
+              <button
+                type="button"
+                onClick={goToNextMonth}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                <div
+                  key={day}
+                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+                >
+                  {day}
+                </div>
+              ))}
+
+              {calendarDays.map((date) => {
+                const currentMonth = date.getMonth() === viewDate.getMonth();
+                const active = selectedDate && isSameDate(date, selectedDate);
+                const isToday = isSameDate(date, today);
+
+                return (
+                  <button
+                    key={toDateInputValue(date)}
+                    type="button"
+                    onClick={() => handleSelectDate(date)}
+                    className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                      active
+                        ? "bg-sibs-primary-1 text-white shadow-sm"
+                        : isToday
+                          ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
+                          : currentMonth
+                            ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
+                            : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
+                    }`}
+                  >
+                    {date.getDate()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
+              >
+                Clear
+              </button>
+
+              <button
+                type="button"
+                onClick={handleTodayClick}
+                className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              >
+                Today
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -102,6 +544,68 @@ export default function AddHiringNeedsModal({
     }));
   }
 
+  const jobDescriptionOptions = [
+    {
+      value: "",
+      label: jobDescriptionLoading
+        ? "Loading job descriptions..."
+        : "Select Position Title",
+      description: "",
+    },
+    ...jobDescriptions.map((item) => ({
+      value: item.id,
+      label: `${item.roleTitle || "Untitled Job Description"}${
+        item.jdCode ? ` (${item.jdCode})` : ""
+      }`,
+      description:
+        item.departmentAccount ||
+        (item.department && item.account
+          ? `${item.department} / ${item.account}`
+          : item.department || item.account || ""),
+    })),
+  ];
+
+  const reasonOptions = [
+    {
+      value: "",
+      label: "Select Reason",
+    },
+    ...reasonForHiringOptions.map((reason) => ({
+      value: reason,
+      label: reason,
+    })),
+  ];
+
+  const assignmentOptions = [
+    {
+      value: "Probationary",
+      label: "Probationary",
+    },
+    {
+      value: "Permanent/Regular",
+      label: "Permanent / Regular",
+    },
+    {
+      value: "Other",
+      label: "Other",
+    },
+  ];
+
+  const locationOptions = [
+    {
+      value: "Davao Site",
+      label: "Davao Site",
+    },
+    {
+      value: "Tagum Site",
+      label: "Tagum Site",
+    },
+    {
+      value: "Mabini Site",
+      label: "Mabini Site",
+    },
+  ];
+
   return (
     <div
       className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
@@ -156,24 +660,20 @@ export default function AddHiringNeedsModal({
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
               <div className="lg:col-span-2">
                 <FieldLabel required>Position Title</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.jobDescriptionDbId || ""}
-                  onChange={(e) => handleJobDescriptionChange(e.target.value)}
+                  options={jobDescriptionOptions}
+                  onChange={(value) => handleJobDescriptionChange(value)}
                   disabled={jobDescriptionLoading}
-                >
-                  <option value="">
-                    {jobDescriptionLoading
+                  placeholder={
+                    jobDescriptionLoading
                       ? "Loading job descriptions..."
-                      : "Select Position Title"}
-                  </option>
-
-                  {jobDescriptions.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.roleTitle || "Untitled Job Description"}
-                      {item.jdCode ? ` (${item.jdCode})` : ""}
-                    </option>
-                  ))}
-                </SelectInput>
+                      : "Select Position Title"
+                  }
+                  optionValue={(option) => option.value}
+                  optionLabel={(option) => option.label}
+                  optionDescription={(option) => option.description}
+                />
               </div>
 
               <div>
@@ -213,44 +713,38 @@ export default function AddHiringNeedsModal({
 
               <div>
                 <FieldLabel required>Reason for Hiring</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.reasonForHiring || ""}
-                  onChange={(e) =>
-                    updateField("reasonForHiring", e.target.value)
-                  }
-                >
-                  <option value="">Select Reason</option>
-
-                  {reasonForHiringOptions.map((reason) => (
-                    <option key={reason} value={reason}>
-                      {reason}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={reasonOptions}
+                  onChange={(value) => updateField("reasonForHiring", value)}
+                  placeholder="Select Reason"
+                  optionValue={(option) => option.value}
+                  optionLabel={(option) => option.label}
+                />
               </div>
 
               <div>
                 <FieldLabel required>Assignment</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.assignment || "Probationary"}
-                  onChange={(e) => handleAssignmentChange(e.target.value)}
-                >
-                  <option value="Probationary">Probationary</option>
-                  <option value="Permanent/Regular">Permanent / Regular</option>
-                  <option value="Other">Other</option>
-                </SelectInput>
+                  options={assignmentOptions}
+                  onChange={handleAssignmentChange}
+                  placeholder="Select Assignment"
+                  optionValue={(option) => option.value}
+                  optionLabel={(option) => option.label}
+                />
               </div>
 
               <div>
                 <FieldLabel required>Location / Site</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.locationSite || "Davao Site"}
-                  onChange={(e) => updateField("locationSite", e.target.value)}
-                >
-                  <option value="Davao Site">Davao Site</option>
-                  <option value="Tagum Site">Tagum Site</option>
-                  <option value="Mabini Site">Mabini Site</option>
-                </SelectInput>
+                  options={locationOptions}
+                  onChange={(value) => updateField("locationSite", value)}
+                  placeholder="Select Location"
+                  optionValue={(option) => option.value}
+                  optionLabel={(option) => option.label}
+                />
               </div>
 
               {form.assignment === "Other" && (
@@ -266,23 +760,27 @@ export default function AddHiringNeedsModal({
                 </div>
               )}
 
-              <div>
-                <FieldLabel required>Date Needed</FieldLabel>
-                <TextInput
-                  type="date"
-                  value={form.dateNeeded || ""}
-                  onChange={(e) => updateField("dateNeeded", e.target.value)}
-                />
-              </div>
+              <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                  <div>
+                    <FieldLabel required>Date Needed</FieldLabel>
+                    <DateDropdown
+                      value={form.dateNeeded || ""}
+                      onChange={(value) => updateField("dateNeeded", value)}
+                      placeholder="Select Date Needed"
+                    />
+                  </div>
 
-              <div>
-                <FieldLabel required>Prepared By</FieldLabel>
-                <TextInput
-                  value={form.preparedBy || ""}
-                  readOnly
-                  disabled
-                  placeholder="Logged-in user"
-                />
+                  <div>
+                    <FieldLabel required>Prepared By</FieldLabel>
+                    <TextInput
+                      value={form.preparedBy || ""}
+                      readOnly
+                      disabled
+                      placeholder="Logged-in user"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="lg:col-span-2">

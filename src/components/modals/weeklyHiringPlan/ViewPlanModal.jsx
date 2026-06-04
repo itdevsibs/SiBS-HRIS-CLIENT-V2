@@ -90,6 +90,10 @@ function getNumberValue(...values) {
 
 function getStatusClass(status) {
   switch (status) {
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Rejected":
+      return "border-red-200 bg-red-50 text-red-700";
     case "On Track":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
     case "At Risk":
@@ -101,12 +105,29 @@ function getStatusClass(status) {
     case "In Progress":
       return "border-cyan-200 bg-cyan-50 text-cyan-700";
     case "Pending":
-      return "border-gray-200 bg-gray-50 text-gray-700";
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Kronos":
+      return "border-blue-200 bg-blue-50 text-blue-700";
     case "Not Started":
       return "border-slate-200 bg-slate-50 text-slate-700";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
+}
+
+function getHeadcountStatusText(item) {
+  return String(
+    getSafeValue(
+      item?.headcountStatus,
+      item?.headcount_status,
+      item?.approvalStatus,
+      item?.approval_status,
+      item?.headcountApprovalStatus,
+      item?.headcount_approval_status,
+      item?.status,
+      "Kronos"
+    )
+  ).trim();
 }
 
 function getFileExtension(filename) {
@@ -521,8 +542,8 @@ function UpdateHeadcountModal({
             </h2>
 
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Enter the new required headcount, details or remarks, and upload
-              supporting documents.
+              Submitted updates will stay pending until approved. The table will
+              continue showing Kronos-based required headcount until approval.
             </p>
           </div>
 
@@ -624,7 +645,7 @@ function UpdateHeadcountModal({
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Save size={17} />
-            {isSaving ? "Saving..." : "Save Update"}
+            {isSaving ? "Submitting..." : "Submit for Approval"}
           </button>
         </div>
       </div>
@@ -701,9 +722,30 @@ export default function ViewPlanModal({
       )
     );
 
+    const headcountStatus = getHeadcountStatusText(item);
+
     const requiredHeadcount = getNumberValue(
       item?.requiredHeadcount,
       item?.required_headcount
+    );
+
+    const kronosRequiredHeadcount = getNumberValue(
+      item?.kronosRequiredHeadcount,
+      item?.kronos_required_headcount,
+      item?.kronosBasedRequiredHeadcount,
+      item?.kronos_based_required_headcount,
+      item?.kronosHeadcount,
+      item?.kronos_headcount,
+      requiredHeadcount
+    );
+
+    const requestedRequiredHeadcount = getNumberValue(
+      item?.requestedRequiredHeadcount,
+      item?.requested_required_headcount,
+      item?.savedRequiredHeadcount,
+      item?.saved_required_headcount,
+      item?.pendingRequiredHeadcount,
+      item?.pending_required_headcount
     );
 
     const actualHeadcount = getNumberValue(
@@ -774,7 +816,12 @@ export default function ViewPlanModal({
       projectedEmployeeNeeds,
       hiringPlanPercent,
       leadsToInterview,
+
+      headcountStatus,
       requiredHeadcount,
+      kronosRequiredHeadcount,
+      requestedRequiredHeadcount,
+
       actualHeadcount,
       requiredBufferHeadcount,
       requiredBufferPercent,
@@ -800,6 +847,11 @@ export default function ViewPlanModal({
   const isSavingRequired = savingRequiredId === item.id;
   const isSavingFile = savingFileId === item.id;
   const isSubmitting = submitting || isSavingRequired || isSavingFile;
+
+  const hasPendingRequestedHeadcount =
+    computed.headcountStatus === "Pending" &&
+    Number.isFinite(Number(computed.requestedRequiredHeadcount)) &&
+    Number(computed.requestedRequiredHeadcount) > 0;
 
   function handleAnimatedClose() {
     if (isClosing || isSubmitting) return;
@@ -879,6 +931,14 @@ export default function ViewPlanModal({
           <div className="flex shrink-0 items-center gap-2">
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                computed.headcountStatus
+              )}`}
+            >
+              {computed.headcountStatus || "Kronos"}
+            </span>
+
+            <span
+              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
                 item.pipelineStatus
               )}`}
             >
@@ -910,11 +970,40 @@ export default function ViewPlanModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sibs-scrollbar">
+          {computed.headcountStatus === "Pending" && (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+              <p className="text-sm font-extrabold text-amber-800">
+                Required headcount update is pending approval.
+              </p>
+
+              <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
+                The displayed required headcount remains based on Kronos data.
+                The requested headcount will only replace it after approval.
+              </p>
+            </div>
+          )}
+
+          {computed.headcountStatus === "Rejected" && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+              <p className="text-sm font-extrabold text-red-800">
+                Required headcount update was rejected.
+              </p>
+
+              <p className="mt-1 text-sm font-semibold leading-6 text-red-700">
+                The displayed required headcount remains based on Kronos data.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               title="Required Headcount"
               value={formatNumber(computed.requiredHeadcount)}
-              subtitle="Weekly requirement"
+              subtitle={
+                computed.headcountStatus === "Approved"
+                  ? "Approved requirement"
+                  : "Kronos-based requirement"
+              }
               icon={ClipboardList}
             />
 
@@ -983,9 +1072,41 @@ export default function ViewPlanModal({
               <InfoBox label="Week" value={item.week || "--"} />
 
               <InfoBox
+                label="Headcount Approval Status"
+                value={
+                  <span
+                    className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                      computed.headcountStatus
+                    )}`}
+                  >
+                    {computed.headcountStatus || "Kronos"}
+                  </span>
+                }
+              />
+
+              <InfoBox
                 label="Required Headcount"
                 value={formatNumber(computed.requiredHeadcount)}
+                valueClassName={
+                  computed.headcountStatus === "Approved"
+                    ? "text-emerald-700"
+                    : "text-sibs-primary-1"
+                }
               />
+
+              <InfoBox
+                label="Kronos Required Headcount"
+                value={formatNumber(computed.kronosRequiredHeadcount)}
+                valueClassName="text-blue-700"
+              />
+
+              {hasPendingRequestedHeadcount && (
+                <InfoBox
+                  label="Pending Requested Headcount"
+                  value={formatNumber(computed.requestedRequiredHeadcount)}
+                  valueClassName="text-amber-700"
+                />
+              )}
 
               <InfoBox
                 label="Actual Headcount"

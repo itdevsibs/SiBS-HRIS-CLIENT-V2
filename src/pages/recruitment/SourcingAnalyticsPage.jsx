@@ -9,6 +9,7 @@ import Header from "../../components/layout/Header";
 import {
   Activity,
   BarChart3,
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -280,6 +281,24 @@ function formatDate(date) {
   });
 }
 
+function formatShortDate(date) {
+  if (!date) return "";
+
+  const [year, month, day] = String(date).split("-").map(Number);
+
+  if (!year || !month || !day) return "";
+
+  const parsed = new Date(year, month - 1, day);
+
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function formatCurrency(value) {
   const amount = Number(value || 0);
 
@@ -368,7 +387,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
     />
   );
 }
@@ -377,25 +396,327 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
     />
   );
 }
 
-function SelectInput({ children, className = "", ...props }) {
+function AnimatedDropdown({ open, children, className = "" }) {
   return (
-    <div className="relative">
-      <select
-        {...props}
-        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
-      >
-        {children}
-      </select>
+    <div
+      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <ChevronDown
-        size={18}
-        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-      />
+function CustomSelect({
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const displayValue = value || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span
+          className={`truncate ${
+            value ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const selected = value === option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCalendarDays(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = firstDay.getDay();
+  const calendarStart = new Date(year, month, 1 - startDay);
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+    return date;
+  });
+}
+
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function DateDropdown({
+  value,
+  onChange,
+  placeholder = "Select date",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedDate = useMemo(() => {
+    if (!value) return null;
+
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    const parsed = new Date(year, month - 1, day);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [value]);
+
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
+
+  const today = new Date();
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  function goToPreviousMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }
+
+  function goToNextMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleTodayClick() {
+    const currentDate = new Date();
+    onChange(toDateInputValue(currentDate));
+    setViewDate(currentDate);
+    setOpen(false);
+  }
+
+  const monthTitle = viewDate.toLocaleDateString("en-PH", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const displayValue = value ? formatShortDate(value) : placeholder;
+
+  return (
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#E6ECF2] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
+
+          <span
+            className={`truncate ${
+              value ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayValue}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="bg-white p-3">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
+            <button
+              type="button"
+              onClick={goToPreviousMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <p className="text-sm font-extrabold text-sibs-primary-1">
+              {monthTitle}
+            </p>
+
+            <button
+              type="button"
+              onClick={goToNextMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+              >
+                {day}
+              </div>
+            ))}
+
+            {calendarDays.map((date) => {
+              const currentMonth = date.getMonth() === viewDate.getMonth();
+              const active = selectedDate && isSameDate(date, selectedDate);
+              const isToday = isSameDate(date, today);
+
+              return (
+                <button
+                  key={toDateInputValue(date)}
+                  type="button"
+                  onClick={() => handleSelectDate(date)}
+                  className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    active
+                      ? "bg-sibs-primary-1 text-white shadow-sm"
+                      : isToday
+                        ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
+                        : currentMonth
+                          ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
+                          : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
+                  }`}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      </AnimatedDropdown>
     </div>
   );
 }
@@ -669,7 +990,7 @@ function AddSourceCostModal({
         </div>
 
         <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="sibs-page-card-in rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+          <div className="sibs-page-card-in relative z-[40] overflow-visible rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6">
               <h3 className="text-base font-extrabold text-[#101828]">
                 Cost Information
@@ -683,17 +1004,13 @@ function AddSourceCostModal({
             <div className="grid grid-cols-1 gap-5">
               <div>
                 <FieldLabel required>Sourcing Option</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.source}
-                  onChange={(e) => updateField("source", e.target.value)}
-                >
-                  <option value="">Select sourcing option</option>
-                  {sourcingOptions.map((source) => (
-                    <option key={source} value={source}>
-                      {source}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={sourcingOptions}
+                  onChange={(value) => updateField("source", value)}
+                  placeholder="Select sourcing option"
+                  zIndex="z-50"
+                />
               </div>
 
               <div>
@@ -719,17 +1036,18 @@ function AddSourceCostModal({
 
               <div>
                 <FieldLabel required>Date Spent</FieldLabel>
-                <TextInput
-                  type="date"
+                <DateDropdown
                   value={form.dateSpent}
-                  onChange={(e) => updateField("dateSpent", e.target.value)}
+                  onChange={(value) => updateField("dateSpent", value)}
+                  placeholder="Select date spent"
+                  zIndex="z-40"
                 />
               </div>
             </div>
           </div>
 
           <div
-            className="sibs-profile-tab-panel mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4"
+            className="sibs-profile-tab-panel relative z-0 mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4"
             style={{ animationDelay: "120ms" }}
           >
             <p className="text-sm font-bold text-sibs-primary-1">
