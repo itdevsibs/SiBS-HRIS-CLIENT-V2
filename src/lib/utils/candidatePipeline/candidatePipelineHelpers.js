@@ -932,3 +932,26 @@ export function findTalentPoolProfile(candidate) {
     ...candidate,
   };
 }
+
+export function getFridayOfCurrentWeek() {
+  const today = new Date();
+  const day = today.getDay(); // Sunday = 0, Monday = 1, Friday = 5
+
+  const friday = new Date(today);
+  friday.setDate(today.getDate() + (5 - day));
+  friday.setHours(8, 0, 0, 0);
+
+  return friday;
+}
+
+export function formatNhoScheduleDate(date) {
+  if (!date) return "—";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}

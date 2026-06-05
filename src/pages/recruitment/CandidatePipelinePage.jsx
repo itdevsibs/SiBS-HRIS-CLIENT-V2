@@ -101,6 +101,7 @@ export default function CandidatePipelinePage() {
     handleUpdateOfferApproval,
     handleSendOfferEmail,
     handleOfferDecision,
+    handleScheduleNhoAuto,
   } = useCandidatePipeline();
 
   return (
