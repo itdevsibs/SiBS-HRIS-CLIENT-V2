@@ -105,7 +105,7 @@ function formatDateTime(value) {
   }
 
   return date.toLocaleString("en-PH", {
-    month: "short",
+    month: "long",
     day: "numeric",
     year: "numeric",
     hour: "numeric",
@@ -1070,7 +1070,7 @@ function UpdateHeadcountsPanel() {
           style={{ animationDelay: "180ms" }}
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] table-fixed border-collapse">
+            <table className="w-full min-w-[1160px] table-fixed border-collapse">
               <colgroup>
                 <col className="w-[240px]" />
                 <col className="w-[170px]" />
@@ -1079,6 +1079,7 @@ function UpdateHeadcountsPanel() {
                 <col className="w-[140px]" />
                 <col className="w-[140px]" />
                 <col className="w-[220px]" />
+                <col className="w-[180px]" />
               </colgroup>
 
               <thead className="bg-[#F5F7FA]">
@@ -1090,13 +1091,14 @@ function UpdateHeadcountsPanel() {
                   <th className="px-5 py-3">Actual HC</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">Requested By</th>
+                  <th className="px-5 py-3">Date Created</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-[#EEF2F6] bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center">
+                    <td colSpan={8} className="px-5 py-12 text-center">
                       <Loader2
                         size={28}
                         className="mx-auto mb-3 animate-spin text-sibs-primary-1"
@@ -1179,11 +1181,16 @@ function UpdateHeadcountsPanel() {
                             "—"}
                         </p>
                       </td>
+                      <td className="px-5 py-4">
+                        <p className="truncate font-bold text-[#344054]">
+                          {formatDateTime(item.createdAt || item.created_at)}
+                        </p>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center">
+                    <td colSpan={8} className="px-5 py-12 text-center">
                       <ClipboardList
                         size={28}
                         className="mx-auto mb-3 text-sibs-tertiary-5"
