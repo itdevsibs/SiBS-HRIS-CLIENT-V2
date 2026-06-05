@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Header from "../../components/layout/Header";
 import StatusModal from "@/components/modals/StatusModal";
@@ -221,7 +227,7 @@ function normalizeItem(item) {
         item.prepared_by ||
         item.hiringManager ||
         item.hiring_manager ||
-        ""
+        "",
     ),
 
     approvalStatus:
@@ -256,6 +262,8 @@ function isAdditionalRequest(item) {
 }
 
 export default function HiringNeedsPage() {
+  const mainRef = useRef(null);
+
   const { user } = useUser();
   const preparedByName = getUserDisplayName(user);
 
@@ -278,9 +286,58 @@ export default function HiringNeedsPage() {
     preparedById: user?.id || user?.userId || user?.gy_user_id || "",
   });
 
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  function scrollToTop(behavior = "auto") {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }
+
+  function forceScrollToTop() {
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    forceScrollToTop();
+  }, []);
+
   useEffect(() => {
     fetchList();
     fetchJobDescriptions();
+    forceScrollToTop();
   }, []);
 
   useEffect(() => {
@@ -291,12 +348,9 @@ export default function HiringNeedsPage() {
     }));
   }, [preparedByName, user]);
 
-  const [statusModal, setStatusModal] = useState({
-    open: false,
-    type: "success",
-    title: "",
-    message: "",
-  });
+  useEffect(() => {
+    forceScrollToTop();
+  }, [search, statusFilter, siteFilter, reasonFilter]);
 
   async function fetchList() {
     setLoading(true);
@@ -316,6 +370,7 @@ export default function HiringNeedsPage() {
       setList(fallbackPersonnelRequisitions);
     } finally {
       setLoading(false);
+      forceScrollToTop();
     }
   }
 
@@ -378,6 +433,34 @@ export default function HiringNeedsPage() {
     }));
   }
 
+  function handleDataTableClickCapture(event) {
+    const button = event.target?.closest?.("button");
+
+    if (!button || button.disabled) return;
+
+    const buttonText = String(button.textContent || "").trim().toLowerCase();
+    const ariaLabel = String(button.getAttribute("aria-label") || "").toLowerCase();
+    const title = String(button.getAttribute("title") || "").toLowerCase();
+
+    const isPaginationClick =
+      buttonText === "previous" ||
+      buttonText === "next" ||
+      buttonText === "prev" ||
+      /^\d+$/.test(buttonText) ||
+      ariaLabel.includes("page") ||
+      ariaLabel.includes("next") ||
+      ariaLabel.includes("previous") ||
+      title.includes("page") ||
+      title.includes("next") ||
+      title.includes("previous");
+
+    if (!isPaginationClick) return;
+
+    window.setTimeout(() => {
+      forceScrollToTop();
+    }, 0);
+  }
+
   async function handleCreate(e) {
     e.preventDefault();
 
@@ -385,7 +468,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Position Title Required",
-        "Please select a Position Title from Job Description."
+        "Please select a Position Title from Job Description.",
       );
       return;
     }
@@ -394,7 +477,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Position Title Required",
-        "Position Title is required."
+        "Position Title is required.",
       );
       return;
     }
@@ -403,7 +486,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Department / Account Required",
-        "Department / Account is required."
+        "Department / Account is required.",
       );
       return;
     }
@@ -412,7 +495,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Invalid Headcount",
-        "Headcount must be greater than 0."
+        "Headcount must be greater than 0.",
       );
       return;
     }
@@ -421,7 +504,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Reason Required",
-        "Reason for Hiring is required."
+        "Reason for Hiring is required.",
       );
       return;
     }
@@ -430,7 +513,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Invalid Reason",
-        "Invalid Reason for Hiring selected."
+        "Invalid Reason for Hiring selected.",
       );
       return;
     }
@@ -439,7 +522,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Assignment Required",
-        "Assignment is required."
+        "Assignment is required.",
       );
       return;
     }
@@ -448,7 +531,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Other Assignment Required",
-        "Please enter Other assignment information."
+        "Please enter Other assignment information.",
       );
       return;
     }
@@ -457,7 +540,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Location Required",
-        "Location / Site is required."
+        "Location / Site is required.",
       );
       return;
     }
@@ -466,7 +549,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Date Needed Required",
-        "Date Needed is required."
+        "Date Needed is required.",
       );
       return;
     }
@@ -517,7 +600,8 @@ export default function HiringNeedsPage() {
 
         assignment: form.assignment,
         assignmentOther: form.assignment === "Other" ? form.assignmentOther : "",
-        assignment_other: form.assignment === "Other" ? form.assignmentOther : "",
+        assignment_other:
+          form.assignment === "Other" ? form.assignmentOther : "",
 
         locationSite: form.locationSite,
         location_site: form.locationSite,
@@ -547,18 +631,20 @@ export default function HiringNeedsPage() {
       if (res?.success || res?.data || res?.id) {
         resetForm();
         setShowCreateModal(false);
-        fetchList();
+        await fetchList();
 
         showStatusModal(
           "success",
           "Personnel Requisition Created",
-          "The hiring need was submitted successfully and is now for approval."
+          "The hiring need was submitted successfully and is now for approval.",
         );
+
+        forceScrollToTop();
       } else {
         showStatusModal(
           "error",
           "Submission Failed",
-          res?.message || "Failed to create personnel requisition."
+          res?.message || "Failed to create personnel requisition.",
         );
       }
     } catch (err) {
@@ -567,7 +653,7 @@ export default function HiringNeedsPage() {
       showStatusModal(
         "error",
         "Submission Failed",
-        err?.response?.data?.message || "Failed to create personnel requisition."
+        err?.response?.data?.message || "Failed to create personnel requisition.",
       );
     }
   }
@@ -609,20 +695,20 @@ export default function HiringNeedsPage() {
     const total = normalizedList.length;
 
     const forApproval = normalizedList.filter(
-      (item) => normalizeStatus(item.approvalStatus) === "For Approval"
+      (item) => normalizeStatus(item.approvalStatus) === "For Approval",
     ).length;
 
     const approved = normalizedList.filter(
-      (item) => normalizeStatus(item.approvalStatus) === "Approved"
+      (item) => normalizeStatus(item.approvalStatus) === "Approved",
     ).length;
 
     const notApproved = normalizedList.filter(
-      (item) => normalizeStatus(item.approvalStatus) === "Not Approved"
+      (item) => normalizeStatus(item.approvalStatus) === "Not Approved",
     ).length;
 
     const totalHeadcount = normalizedList.reduce(
       (sum, item) => sum + Number(item.headcount || 0),
-      0
+      0,
     );
 
     return {
@@ -655,7 +741,10 @@ export default function HiringNeedsPage() {
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main
+        ref={mainRef}
+        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+      >
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
@@ -684,7 +773,10 @@ export default function HiringNeedsPage() {
             </button>
           </div>
 
-          <div className="sibs-profile-tab-panel" style={{ animationDelay: "60ms" }}>
+          <div
+            className="sibs-profile-tab-panel"
+            style={{ animationDelay: "60ms" }}
+          >
             <HiringSearchTable
               search={search}
               setSearch={setSearch}
@@ -695,12 +787,11 @@ export default function HiringNeedsPage() {
               reasonFilter={reasonFilter}
               setReasonFilter={setReasonFilter}
               reasonForHiringOptions={reasonForHiringOptions}
+              onChange={forceScrollToTop}
             />
           </div>
 
-          <div
-            className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]"
-          >
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1fr]">
             <div
               className="sibs-profile-tab-panel"
               style={{ animationDelay: "120ms" }}
@@ -720,12 +811,15 @@ export default function HiringNeedsPage() {
             key={`${search}-${statusFilter}-${siteFilter}-${reasonFilter}-${loading}`}
             className="sibs-profile-tab-panel"
             style={{ animationDelay: "240ms" }}
+            onClickCapture={handleDataTableClickCapture}
           >
             <HiringNeedsDataTable
               loading={loading}
               filteredList={filteredList}
               normalizedList={normalizedList}
               onView={setSelectedItem}
+              onPageChange={forceScrollToTop}
+              scrollToTop={forceScrollToTop}
             />
           </div>
         </div>

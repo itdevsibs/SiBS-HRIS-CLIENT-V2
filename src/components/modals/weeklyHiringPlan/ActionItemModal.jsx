@@ -8,10 +8,70 @@ const STATUS_OPTIONS = [
   { label: "Completed", value: "Completed" },
 ];
 
+function getSafeValue(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getNumberValue(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && value !== "") {
+      const numberValue = Number(value);
+
+      if (Number.isFinite(numberValue)) {
+        return numberValue;
+      }
+    }
+  }
+
+  return 0;
+}
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
   });
+}
+
+function getHeadcountStatusText(item) {
+  return String(
+    getSafeValue(
+      item?.headcountStatus,
+      item?.headcount_status,
+      item?.approvalStatus,
+      item?.approval_status,
+      item?.headcountApprovalStatus,
+      item?.headcount_approval_status,
+      item?.status,
+      "Kronos"
+    )
+  ).trim();
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Rejected":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "Pending":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "Kronos":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "Completed":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "In Progress":
+      return "border-cyan-200 bg-cyan-50 text-cyan-700";
+    case "Not Started":
+      return "border-slate-200 bg-slate-50 text-slate-700";
+    default:
+      return "border-gray-200 bg-gray-50 text-gray-600";
+  }
 }
 
 function FieldLabel({ children, required = false }) {
@@ -46,8 +106,8 @@ function AnimatedDropdown({ open, children }) {
     <div
       className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
         open
-          ? "grid-rows-[1fr] opacity-100 translate-y-0"
-          : "pointer-events-none grid-rows-[0fr] opacity-0 -translate-y-1"
+          ? "grid-rows-[1fr] translate-y-0 opacity-100"
+          : "pointer-events-none grid-rows-[0fr] -translate-y-1 opacity-0"
       }`}
     >
       <div className="min-h-0 overflow-hidden">
@@ -180,6 +240,45 @@ export default function ActionItemModal({
 
   if (!shouldRender || !item) return null;
 
+  const headcountStatus = getHeadcountStatusText(item);
+
+  const requiredHeadcount = getNumberValue(
+    item.requiredHeadcount,
+    item.required_headcount
+  );
+
+  const kronosRequiredHeadcount = getNumberValue(
+    item.kronosRequiredHeadcount,
+    item.kronos_required_headcount,
+    item.kronosBasedRequiredHeadcount,
+    item.kronos_based_required_headcount,
+    item.kronosHeadcount,
+    item.kronos_headcount,
+    requiredHeadcount
+  );
+
+  const requestedRequiredHeadcount = getNumberValue(
+    item.requestedRequiredHeadcount,
+    item.requested_required_headcount,
+    item.savedRequiredHeadcount,
+    item.saved_required_headcount,
+    item.pendingRequiredHeadcount,
+    item.pending_required_headcount
+  );
+
+  const actualHeadcount = getNumberValue(
+    item.actualHeadcount,
+    item.actual_headcount
+  );
+
+  const leadsToInterview = getNumberValue(
+    item.leadsToInterview,
+    item.leads_to_interview
+  );
+
+  const showPendingRequestedHeadcount =
+    headcountStatus === "Pending" && requestedRequiredHeadcount > 0;
+
   function updateField(field, value) {
     setForm((prev) => ({
       ...prev,
@@ -249,16 +348,75 @@ export default function ActionItemModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5">
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-extrabold text-sibs-primary-1">
-              {item.account || "—"} / {item.cluster || "—"}
-            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold text-sibs-primary-1">
+                  {item.account || "—"} / {item.cluster || "—"}
+                </p>
 
-            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-primary-1/75">
-              Required: {formatNumber(item.requiredHeadcount)} / Actual:{" "}
-              {formatNumber(item.actualHeadcount)} / Leads:{" "}
-              {formatNumber(item.leadsToInterview)}
-            </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-sibs-primary-1/75">
+                  Required: {formatNumber(requiredHeadcount)} / Actual:{" "}
+                  {formatNumber(actualHeadcount)} / Leads:{" "}
+                  {formatNumber(leadsToInterview)}
+                </p>
+              </div>
+
+              <span
+                className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+                  headcountStatus
+                )}`}
+              >
+                {headcountStatus || "Kronos"}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                  Kronos Required
+                </p>
+
+                <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                  {formatNumber(kronosRequiredHeadcount)}
+                </p>
+              </div>
+
+              {showPendingRequestedHeadcount ? (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+                    Pending Requested
+                  </p>
+
+                  <p className="mt-1 text-sm font-extrabold text-amber-700">
+                    {formatNumber(requestedRequiredHeadcount)}
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                    Display Source
+                  </p>
+
+                  <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                    {headcountStatus === "Approved" ? "Approved" : "Kronos"}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {headcountStatus === "Pending" && (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-amber-800">
+                Pending Headcount Approval
+              </p>
+
+              <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
+                Required headcount is still Kronos-based until the pending
+                update is approved.
+              </p>
+            </div>
+          )}
 
           <div className="mt-5 space-y-4 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
             <div>

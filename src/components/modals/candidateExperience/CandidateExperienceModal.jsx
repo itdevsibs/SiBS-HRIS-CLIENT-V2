@@ -1,5 +1,15 @@
-import React from "react";
-import { X, Plus, RotateCcw, Star } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  BriefcaseBusiness,
+  ChevronDown,
+  ClipboardList,
+  MessageSquareText,
+  Plus,
+  RotateCcw,
+  Star,
+  UserRound,
+  X,
+} from "lucide-react";
 
 const candidatesForExperience = [
   {
@@ -92,11 +102,157 @@ const emptyExperienceForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function readonlyInputClass(extra = "") {
+  return `h-12 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  required = false,
+  zIndex = "z-30",
+  optionValue = (option) => option,
+  optionLabel = (option) => option,
+  optionDescription = null,
+  icon: Icon,
+  danger = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedOption = options.find(
+    (option) => String(optionValue(option)) === String(value),
+  );
+
+  const displayValue = selectedOption ? optionLabel(selectedOption) : placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-12 w-full items-center justify-between rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:bg-[#F8FAFC] focus:ring-4 ${
+          danger
+            ? "border-[#E6ECF2] hover:border-red-400 focus:border-red-500 focus:ring-red-500/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-sibs-primary-1/10"
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          {Icon && (
+            <Icon size={17} className="shrink-0 text-sibs-tertiary-5" />
+          )}
+
+          <span
+            className={`truncate ${
+              selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayValue}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.length > 0 ? (
+            options.map((option) => {
+              const currentValue = optionValue(option);
+              const currentLabel = optionLabel(option);
+              const currentDescription = optionDescription
+                ? optionDescription(option)
+                : "";
+              const selected = String(value) === String(currentValue);
+
+              return (
+                <button
+                  key={currentValue}
+                  type="button"
+                  onClick={() => {
+                    onChange(currentValue, option);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                    selected
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <span className="block truncate">{currentLabel}</span>
+
+                  {currentDescription && (
+                    <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                      {currentDescription}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+              No options available.
+            </div>
+          )}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
 }
 
 function DetailRow({ label, value }) {
@@ -127,7 +283,7 @@ function StarRatingInput({ value, onChange }) {
             key={ratingValue}
             type="button"
             onClick={() => onChange(ratingValue)}
-            className="rounded-lg p-1 transition hover:bg-amber-50"
+            className="rounded-lg p-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-50 active:scale-[0.98]"
             aria-label={`${ratingValue} star`}
           >
             <Star
@@ -164,7 +320,7 @@ export function AddExperienceModal({
 
   function handleCandidateChange(candidateId) {
     const selectedCandidate = candidatesForExperience.find(
-      (candidate) => candidate.candidateId === candidateId
+      (candidate) => String(candidate.candidateId) === String(candidateId),
     );
 
     if (!selectedCandidate) {
@@ -200,18 +356,40 @@ export function AddExperienceModal({
     });
   }
 
+  function handleCurrentStageChange(stage) {
+    setForm({
+      ...form,
+      currentStage: stage,
+      dropOffStage: isExitEvent ? stage : form.dropOffStage,
+    });
+  }
+
+  function handleResetClick() {
+    if (onReset) {
+      onReset();
+      return;
+    }
+
+    setForm(emptyExperienceForm);
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4 font-jakarta"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
-            <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <MessageSquareText size={14} />
+              Candidate Experience
+            </div>
+
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
               Add Candidate Experience Record
             </h2>
 
@@ -224,7 +402,7 @@ export function AddExperienceModal({
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -235,34 +413,40 @@ export function AddExperienceModal({
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Candidate Source Data
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Candidate Source Data
+                    </h3>
+
+                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                      Select the candidate and confirm the linked recruitment
+                      information.
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                    <UserRound size={19} />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Candidate <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
+                    <CustomSelect
+                      label="Candidate"
                       required
                       value={form.candidateId}
-                      onChange={(e) => handleCandidateChange(e.target.value)}
-                      className={inputClass()}
-                    >
-                      <option value="">Select candidate</option>
-
-                      {candidatesForExperience.map((candidate) => (
-                        <option
-                          key={candidate.candidateId}
-                          value={candidate.candidateId}
-                        >
-                          {candidate.candidateName} — {candidate.roleTitle} /{" "}
-                          {candidate.account}
-                        </option>
-                      ))}
-                    </select>
+                      options={candidatesForExperience}
+                      onChange={handleCandidateChange}
+                      placeholder="Select candidate"
+                      zIndex="z-50"
+                      icon={UserRound}
+                      optionValue={(candidate) => candidate.candidateId}
+                      optionLabel={(candidate) => candidate.candidateName}
+                      optionDescription={(candidate) =>
+                        `${candidate.roleTitle} / ${candidate.account} • ${candidate.currentStage}`
+                      }
+                    />
                   </div>
 
                   <div>
@@ -273,7 +457,7 @@ export function AddExperienceModal({
                     <input
                       readOnly
                       value={form.candidateName}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -285,7 +469,7 @@ export function AddExperienceModal({
                     <input
                       readOnly
                       value={form.candidateEmail}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -297,7 +481,7 @@ export function AddExperienceModal({
                     <input
                       readOnly
                       value={form.roleTitle}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -309,7 +493,7 @@ export function AddExperienceModal({
                     <input
                       readOnly
                       value={form.account}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
@@ -321,135 +505,90 @@ export function AddExperienceModal({
                     <input
                       readOnly
                       value={form.source}
-                      className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none"
+                      className={readonlyInputClass()}
                     />
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Owner
-                    </label>
-
-                    <select
-                      value={form.owner}
-                      onChange={(e) =>
-                        setForm({ ...form, owner: e.target.value })
-                      }
-                      className={inputClass()}
-                    >
-                      <option value="">Select owner</option>
-
-                      {ownerOptions.map((owner) => (
-                        <option key={owner} value={owner}>
-                          {owner}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Owner"
+                    value={form.owner}
+                    options={ownerOptions}
+                    onChange={(value) => setForm({ ...form, owner: value })}
+                    placeholder="Select owner"
+                    zIndex="z-40"
+                    icon={UserRound}
+                  />
                 </div>
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-sm font-bold text-[#101828]">
-                  Experience Details
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Experience Details
+                    </h3>
+
+                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                      Record the event type, stage, reason, feedback, and star
+                      rating.
+                    </p>
+                  </div>
+
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                    <ClipboardList size={19} />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Event Type <span className="text-red-500">*</span>
-                    </label>
+                  <CustomSelect
+                    label="Event Type"
+                    required
+                    value={form.eventType}
+                    options={eventTypeOptions}
+                    onChange={handleEventTypeChange}
+                    placeholder="Select event type"
+                    zIndex="z-30"
+                    icon={MessageSquareText}
+                  />
 
-                    <select
-                      required
-                      value={form.eventType}
-                      onChange={(e) => handleEventTypeChange(e.target.value)}
-                      className={inputClass()}
-                    >
-                      {eventTypeOptions.map((eventType) => (
-                        <option key={eventType} value={eventType}>
-                          {eventType}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Current Stage
-                    </label>
-
-                    <select
-                      value={form.currentStage}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          currentStage: e.target.value,
-                          dropOffStage: isExitEvent
-                            ? e.target.value
-                            : form.dropOffStage,
-                        })
-                      }
-                      className={inputClass()}
-                    >
-                      <option value="">Select stage</option>
-
-                      {candidateStageOptions.map((stage) => (
-                        <option key={stage} value={stage}>
-                          {stage}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Current Stage"
+                    value={form.currentStage}
+                    options={candidateStageOptions}
+                    onChange={handleCurrentStageChange}
+                    placeholder="Select stage"
+                    zIndex="z-20"
+                    icon={BriefcaseBusiness}
+                  />
 
                   {isExitEvent && (
-                    <div>
-                      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        Drop-off / Exit Stage{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-
-                      <select
-                        required
-                        value={form.dropOffStage}
-                        onChange={(e) =>
-                          setForm({ ...form, dropOffStage: e.target.value })
-                        }
-                        className="h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
-                      >
-                        <option value="">Select exit stage</option>
-
-                        {candidateStageOptions.map((stage) => (
-                          <option key={stage} value={stage}>
-                            {stage}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <CustomSelect
+                      label="Drop-off / Exit Stage"
+                      required
+                      value={form.dropOffStage}
+                      options={candidateStageOptions}
+                      onChange={(value) =>
+                        setForm({ ...form, dropOffStage: value })
+                      }
+                      placeholder="Select exit stage"
+                      zIndex="z-10"
+                      icon={BriefcaseBusiness}
+                      danger
+                    />
                   )}
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Reason Category <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      required
-                      value={form.reasonCategory}
-                      onChange={(e) =>
-                        setForm({ ...form, reasonCategory: e.target.value })
-                      }
-                      className={inputClass()}
-                    >
-                      <option value="">Select reason category</option>
-
-                      {reasonCategoryOptions.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <CustomSelect
+                    label="Reason Category"
+                    required
+                    value={form.reasonCategory}
+                    options={reasonCategoryOptions}
+                    onChange={(value) =>
+                      setForm({ ...form, reasonCategory: value })
+                    }
+                    placeholder="Select reason category"
+                    zIndex="z-[5]"
+                    icon={ClipboardList}
+                  />
 
                   <div className="md:col-span-2">
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
@@ -489,16 +628,18 @@ export function AddExperienceModal({
                       Experience Rating <span className="text-red-500">*</span>
                     </label>
 
-                    <StarRatingInput
-                      value={form.experienceRating}
-                      onChange={(rating) =>
-                        setForm({ ...form, experienceRating: rating })
-                      }
-                    />
+                    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                      <StarRatingInput
+                        value={form.experienceRating}
+                        onChange={(rating) =>
+                          setForm({ ...form, experienceRating: rating })
+                        }
+                      />
 
-                    <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-                      The selected stars are saved as a number from 1 to 5.
-                    </p>
+                      <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+                        The selected stars are saved as a number from 1 to 5.
+                      </p>
+                    </div>
                   </div>
 
                   <div className="md:col-span-2">
@@ -521,14 +662,23 @@ export function AddExperienceModal({
 
             <div className="space-y-5">
               <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-sm font-bold text-sibs-primary-1">
-                  Where this data comes from
-                </h3>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1">
+                    <MessageSquareText size={20} />
+                  </div>
 
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  This page reads records created by Candidate Pipeline, Offers,
-                  Onboarding, and manual Candidate Experience entries.
-                </p>
+                  <div>
+                    <h3 className="text-sm font-bold text-sibs-primary-1">
+                      Where this data comes from
+                    </h3>
+
+                    <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                      This page reads records created by Candidate Pipeline,
+                      Offers, Onboarding, and manual Candidate Experience
+                      entries.
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
@@ -561,12 +711,12 @@ export function AddExperienceModal({
           </div>
         </form>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="border-t border-[#E6ECF2] px-5 py-4 sm:px-6">
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
-              onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+              onClick={handleResetClick}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
             >
               <RotateCcw size={17} />
               Reset
@@ -575,15 +725,15 @@ export function AddExperienceModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]"
             >
               Cancel
             </button>
 
             <button
-              type="submit"
+              type="button"
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={17} />
               Save Experience

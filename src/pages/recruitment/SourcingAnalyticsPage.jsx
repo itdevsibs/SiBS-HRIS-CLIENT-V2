@@ -1,8 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../../components/layout/Header";
 import {
   Activity,
   BarChart3,
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -21,6 +28,7 @@ import {
 
 const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
 const SOURCE_COST_ENTRIES_KEY = "ta_sourcing_cost_entries";
+const SOURCING_RECORDS_PER_PAGE = 8;
 
 const sourcingOptions = [
   "Employee Referral Program",
@@ -267,6 +275,24 @@ function formatDate(date) {
   if (Number.isNaN(parsed.getTime())) return "—";
 
   return parsed.toLocaleDateString("en-PH", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatShortDate(date) {
+  if (!date) return "";
+
+  const [year, month, day] = String(date).split("-").map(Number);
+
+  if (!year || !month || !day) return "";
+
+  const parsed = new Date(year, month - 1, day);
+
+  if (Number.isNaN(parsed.getTime())) return "";
+
+  return parsed.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -361,7 +387,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
     />
   );
 }
@@ -370,25 +396,327 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
+      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
     />
   );
 }
 
-function SelectInput({ children, className = "", ...props }) {
+function AnimatedDropdown({ open, children, className = "" }) {
   return (
-    <div className="relative">
-      <select
-        {...props}
-        className={`h-12 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${className}`}
-      >
-        {children}
-      </select>
+    <div
+      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-      <ChevronDown
-        size={18}
-        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-      />
+function CustomSelect({
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const displayValue = value || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span
+          className={`truncate ${
+            value ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const selected = value === option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">{option}</span>
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
+}
+
+function toDateInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getCalendarDays(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDay = firstDay.getDay();
+  const calendarStart = new Date(year, month, 1 - startDay);
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+    return date;
+  });
+}
+
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function DateDropdown({
+  value,
+  onChange,
+  placeholder = "Select date",
+  zIndex = "z-30",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedDate = useMemo(() => {
+    if (!value) return null;
+
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) return null;
+
+    const parsed = new Date(year, month - 1, day);
+
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }, [value]);
+
+  const [viewDate, setViewDate] = useState(() => selectedDate || new Date());
+
+  const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
+
+  const today = new Date();
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewDate(selectedDate);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  function goToPreviousMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  }
+
+  function goToNextMonth() {
+    setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleTodayClick() {
+    const currentDate = new Date();
+    onChange(toDateInputValue(currentDate));
+    setViewDate(currentDate);
+    setOpen(false);
+  }
+
+  const monthTitle = viewDate.toLocaleDateString("en-PH", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const displayValue = value ? formatShortDate(value) : placeholder;
+
+  return (
+    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#E6ECF2] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
+
+          <span
+            className={`truncate ${
+              value ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayValue}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="bg-white p-3">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
+            <button
+              type="button"
+              onClick={goToPreviousMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <p className="text-sm font-extrabold text-sibs-primary-1">
+              {monthTitle}
+            </p>
+
+            <button
+              type="button"
+              onClick={goToNextMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              <div
+                key={day}
+                className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+              >
+                {day}
+              </div>
+            ))}
+
+            {calendarDays.map((date) => {
+              const currentMonth = date.getMonth() === viewDate.getMonth();
+              const active = selectedDate && isSameDate(date, selectedDate);
+              const isToday = isSameDate(date, today);
+
+              return (
+                <button
+                  key={toDateInputValue(date)}
+                  type="button"
+                  onClick={() => handleSelectDate(date)}
+                  className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                    active
+                      ? "bg-sibs-primary-1 text-white shadow-sm"
+                      : isToday
+                        ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
+                        : currentMonth
+                          ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
+                          : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
+                  }`}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTodayClick}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      </AnimatedDropdown>
     </div>
   );
 }
@@ -399,9 +727,13 @@ function SummaryCard({
   icon,
   valueClassName = "text-sibs-primary-1",
   description,
+  delay = 0,
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div
+      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
@@ -421,7 +753,7 @@ function SummaryCard({
           )}
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1 transition-transform duration-200 group-hover:scale-105">
           {icon}
         </div>
       </div>
@@ -429,11 +761,11 @@ function SummaryCard({
   );
 }
 
-function VolumeBar({ label, value, max }) {
+function VolumeBar({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
 
@@ -444,7 +776,7 @@ function VolumeBar({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -452,11 +784,11 @@ function VolumeBar({ label, value, max }) {
   );
 }
 
-function ConversionBar({ label, value, max }) {
+function ConversionBar({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
 
@@ -467,7 +799,7 @@ function ConversionBar({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -475,11 +807,11 @@ function ConversionBar({ label, value, max }) {
   );
 }
 
-function CostBar({ label, value, max }) {
+function CostBar({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="truncate text-sm font-bold text-[#344054]">{label}</p>
 
@@ -490,7 +822,7 @@ function CostBar({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -498,11 +830,14 @@ function CostBar({ label, value, max }) {
   );
 }
 
-function FunnelRow({ label, value, max }) {
+function FunnelRow({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((Number(value || 0) / max) * 100) : 0;
 
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div
+      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-sm"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="text-sm font-bold text-[#344054]">{label}</p>
 
@@ -511,7 +846,7 @@ function FunnelRow({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-white">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -526,19 +861,20 @@ function DetailRow({ label, value }) {
         {label}
       </p>
 
-      <div className="max-w-[60%] text-right text-sm font-bold text-[#344054]">
+      <div className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054]">
         {value || "—"}
       </div>
     </div>
   );
 }
 
-function SourceMobileCard({ source, onView }) {
+function SourceMobileCard({ source, onView, delay = 0 }) {
   return (
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC]"
+      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--sibs-primary-1)]/40 hover:bg-[#FAFBFC] hover:shadow-md active:scale-[0.98]"
+      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -621,7 +957,7 @@ function AddSourceCostModal({
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
       >
         <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -632,7 +968,7 @@ function AddSourceCostModal({
               </div>
 
               <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
-                ADD SOURCE COST
+                Add Source Cost
               </h2>
 
               <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
@@ -645,7 +981,7 @@ function AddSourceCostModal({
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
               aria-label="Close modal"
             >
               <X size={20} />
@@ -654,7 +990,7 @@ function AddSourceCostModal({
         </div>
 
         <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+          <div className="sibs-page-card-in relative z-[40] overflow-visible rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-6">
               <h3 className="text-base font-extrabold text-[#101828]">
                 Cost Information
@@ -668,17 +1004,13 @@ function AddSourceCostModal({
             <div className="grid grid-cols-1 gap-5">
               <div>
                 <FieldLabel required>Sourcing Option</FieldLabel>
-                <SelectInput
+                <CustomSelect
                   value={form.source}
-                  onChange={(e) => updateField("source", e.target.value)}
-                >
-                  <option value="">Select sourcing option</option>
-                  {sourcingOptions.map((source) => (
-                    <option key={source} value={source}>
-                      {source}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={sourcingOptions}
+                  onChange={(value) => updateField("source", value)}
+                  placeholder="Select sourcing option"
+                  zIndex="z-50"
+                />
               </div>
 
               <div>
@@ -704,16 +1036,20 @@ function AddSourceCostModal({
 
               <div>
                 <FieldLabel required>Date Spent</FieldLabel>
-                <TextInput
-                  type="date"
+                <DateDropdown
                   value={form.dateSpent}
-                  onChange={(e) => updateField("dateSpent", e.target.value)}
+                  onChange={(value) => updateField("dateSpent", value)}
+                  placeholder="Select date spent"
+                  zIndex="z-40"
                 />
               </div>
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <div
+            className="sibs-profile-tab-panel relative z-0 mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4"
+            style={{ animationDelay: "120ms" }}
+          >
             <p className="text-sm font-bold text-sibs-primary-1">
               Cost per Hire Formula
             </p>
@@ -730,7 +1066,7 @@ function AddSourceCostModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
             >
               Reset
             </button>
@@ -738,14 +1074,14 @@ function AddSourceCostModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={17} />
               Add Source Cost
@@ -766,13 +1102,13 @@ function SourceDetailsModal({ open, source, onClose }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
             <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
-              SOURCE PERFORMANCE DETAILS
+              Source Performance Details
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
@@ -784,7 +1120,7 @@ function SourceDetailsModal({ open, source, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -794,7 +1130,7 @@ function SourceDetailsModal({ open, source, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_380px]">
             <div className="space-y-5">
-              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
                     <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
@@ -828,7 +1164,10 @@ function SourceDetailsModal({ open, source, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div
+                className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={{ animationDelay: "60ms" }}
+              >
                 <h3 className="mb-5 text-sm font-extrabold text-[#101828]">
                   Source Funnel
                 </h3>
@@ -838,41 +1177,50 @@ function SourceDetailsModal({ open, source, onClose }) {
                     label="Candidate Volume"
                     value={source.volume}
                     max={source.volume}
+                    delay={0}
                   />
                   <FunnelRow
                     label="Screened"
                     value={source.screened}
                     max={source.volume}
+                    delay={60}
                   />
                   <FunnelRow
                     label="Interviewed"
                     value={source.interviewed}
                     max={source.volume}
+                    delay={120}
                   />
                   <FunnelRow
                     label="Offered"
                     value={source.offered}
                     max={source.volume}
+                    delay={180}
                   />
                   <FunnelRow
                     label="Hired"
                     value={source.hired}
                     max={source.volume}
+                    delay={240}
                   />
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div
+                className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={{ animationDelay: "120ms" }}
+              >
                 <h3 className="text-sm font-extrabold text-[#101828]">
                   Source Cost Entries
                 </h3>
 
                 <div className="mt-4 space-y-3">
                   {source.costEntries.length > 0 ? (
-                    source.costEntries.map((entry) => (
+                    source.costEntries.map((entry, index) => (
                       <div
                         key={entry.id}
-                        className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
+                        className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-sm"
+                        style={{ animationDelay: `${index * 60}ms` }}
                       >
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div>
@@ -899,7 +1247,10 @@ function SourceDetailsModal({ open, source, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+              <div
+                className="sibs-profile-tab-panel rounded-2xl border border-blue-100 bg-blue-50 p-5"
+                style={{ animationDelay: "180ms" }}
+              >
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Data Source
                 </h3>
@@ -913,7 +1264,7 @@ function SourceDetailsModal({ open, source, onClose }) {
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+              <div className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
                 <h3 className="text-sm font-extrabold text-[#101828]">
                   Source Summary
                 </h3>
@@ -952,7 +1303,10 @@ function SourceDetailsModal({ open, source, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+              <div
+                className="sibs-profile-tab-panel rounded-2xl border border-amber-100 bg-amber-50 p-5"
+                style={{ animationDelay: "120ms" }}
+              >
                 <h3 className="text-sm font-bold text-amber-700">Important</h3>
 
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
@@ -969,7 +1323,7 @@ function SourceDetailsModal({ open, source, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               Close
             </button>
@@ -981,17 +1335,61 @@ function SourceDetailsModal({ open, source, onClose }) {
 }
 
 export default function SourcingAnalyticsPage() {
+  const mainRef = useRef(null);
+
   const [publicSubmissions, setPublicSubmissions] = useState([]);
   const [costEntries, setCostEntries] = useState([]);
 
   const [search, setSearch] = useState("");
   const [selectedSource, setSelectedSource] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showAddCostModal, setShowAddCostModal] = useState(false);
   const [costForm, setCostForm] = useState({
     ...initialCostForm,
     dateSpent: getTodayISO(),
   });
+
+  function scrollToTop(behavior = "auto") {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     refreshFromLocalStorage();
@@ -1014,7 +1412,7 @@ export default function SourcingAnalyticsPage() {
       const volume = matchedCandidates.length;
       const screened = matchedCandidates.filter(isScreenedCandidate).length;
       const interviewed = matchedCandidates.filter(
-        isInterviewedCandidate
+        isInterviewedCandidate,
       ).length;
       const offered = matchedCandidates.filter(isOfferedCandidate).length;
       const hired = matchedCandidates.filter(isHiredCandidate).length;
@@ -1059,22 +1457,65 @@ export default function SourcingAnalyticsPage() {
     });
   }, [sourceRows, search]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredSources.length / SOURCING_RECORDS_PER_PAGE),
+  );
+
+  const paginatedSources = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (safePage - 1) * SOURCING_RECORDS_PER_PAGE;
+    const end = start + SOURCING_RECORDS_PER_PAGE;
+
+    return filteredSources.slice(start, end);
+  }, [filteredSources, currentPage, totalPages]);
+
+  const showingFrom =
+    filteredSources.length > 0
+      ? (currentPage - 1) * SOURCING_RECORDS_PER_PAGE + 1
+      : 0;
+
+  const showingTo = Math.min(
+    currentPage * SOURCING_RECORDS_PER_PAGE,
+    filteredSources.length,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      scrollToTop("auto");
+    }
+  }, [currentPage, totalPages]);
+
   const totals = useMemo(() => {
     const activeSourceRows = sourceRows.filter((source) => source.volume > 0);
 
     const totalVolume = sourceRows.reduce(
       (sum, source) => sum + Number(source.volume || 0),
-      0
+      0,
     );
 
     const totalHired = sourceRows.reduce(
       (sum, source) => sum + Number(source.hired || 0),
-      0
+      0,
     );
 
     const totalSourceCost = sourceRows.reduce(
       (sum, source) => sum + Number(source.sourceCost || 0),
-      0
+      0,
     );
 
     const averageConversion =
@@ -1084,11 +1525,11 @@ export default function SourcingAnalyticsPage() {
       totalHired > 0 ? totalSourceCost / totalHired : 0;
 
     const topVolumeSource = [...sourceRows].sort(
-      (a, b) => Number(b.volume || 0) - Number(a.volume || 0)
+      (a, b) => Number(b.volume || 0) - Number(a.volume || 0),
     )[0];
 
     const highestCostSource = [...sourceRows].sort(
-      (a, b) => Number(b.sourceCost || 0) - Number(a.sourceCost || 0)
+      (a, b) => Number(b.sourceCost || 0) - Number(a.sourceCost || 0),
     )[0];
 
     return {
@@ -1107,21 +1548,21 @@ export default function SourcingAnalyticsPage() {
   const maxVolume = useMemo(() => {
     return Math.max(
       1,
-      ...sourceRows.map((source) => Number(source.volume || 0))
+      ...sourceRows.map((source) => Number(source.volume || 0)),
     );
   }, [sourceRows]);
 
   const maxConversion = useMemo(() => {
     return Math.max(
       1,
-      ...sourceRows.map((source) => Number(source.conversionRate || 0))
+      ...sourceRows.map((source) => Number(source.conversionRate || 0)),
     );
   }, [sourceRows]);
 
   const maxCost = useMemo(() => {
     return Math.max(
       1,
-      ...sourceRows.map((source) => Number(source.sourceCost || 0))
+      ...sourceRows.map((source) => Number(source.sourceCost || 0)),
     );
   }, [sourceRows]);
 
@@ -1130,10 +1571,16 @@ export default function SourcingAnalyticsPage() {
     const storedCostEntries = readLocalStorage(SOURCE_COST_ENTRIES_KEY, []);
 
     setPublicSubmissions(
-      Array.isArray(storedSubmissions) ? storedSubmissions : []
+      Array.isArray(storedSubmissions) ? storedSubmissions : [],
     );
 
     setCostEntries(Array.isArray(storedCostEntries) ? storedCostEntries : []);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   function loadSampleData() {
@@ -1142,6 +1589,12 @@ export default function SourcingAnalyticsPage() {
 
     setPublicSubmissions(samplePublicSubmissions);
     setCostEntries(sampleSourceCostEntries);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   function resetCostForm() {
@@ -1159,6 +1612,37 @@ export default function SourcingAnalyticsPage() {
   function handleCloseAddCostModal() {
     setShowAddCostModal(false);
     resetCostForm();
+  }
+
+  function handleClearSearch() {
+    setSearch("");
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
+  function handlePageChange(nextPage) {
+    const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+
+    if (safePage === currentPage) {
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
+
+      return;
+    }
+
+    setCurrentPage(safePage);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   function handleAddSourceCost(e) {
@@ -1200,17 +1684,26 @@ export default function SourcingAnalyticsPage() {
 
     setShowAddCostModal(false);
     resetCostForm();
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <main
+        ref={mainRef}
+        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+      >
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                 <BarChart3 size={14} />
                 Recruitment
               </div>
@@ -1230,7 +1723,7 @@ export default function SourcingAnalyticsPage() {
               <button
                 type="button"
                 onClick={refreshFromLocalStorage}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
               >
                 <Activity size={18} />
                 Refresh Data
@@ -1239,7 +1732,7 @@ export default function SourcingAnalyticsPage() {
               <button
                 type="button"
                 onClick={loadSampleData}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
               >
                 <ReceiptText size={18} />
                 Load Sample Data
@@ -1248,7 +1741,7 @@ export default function SourcingAnalyticsPage() {
               <button
                 type="button"
                 onClick={handleOpenAddCostModal}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
               >
                 <Plus size={18} />
                 Add Source Cost
@@ -1256,7 +1749,10 @@ export default function SourcingAnalyticsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "60ms" }}
+          >
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_auto] xl:items-end">
               <div>
                 <label className="mb-1 block text-sm font-bold text-[#101828]">
@@ -1273,23 +1769,27 @@ export default function SourcingAnalyticsPage() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search source or latest applicant..."
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   />
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => setSearch("")}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                onClick={handleClearSearch}
+                disabled={!search.trim()}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
               >
                 <Filter size={17} />
                 Clear
               </button>
             </div>
-          </div>
+          </section>
 
-          <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "120ms" }}
+          >
             <h2 className="text-base font-bold text-[#101828]">
               Sourcing Performance Summary
             </h2>
@@ -1300,6 +1800,7 @@ export default function SourcingAnalyticsPage() {
                 value={totals.totalSources}
                 icon={<MousePointerClick size={22} />}
                 description={`${totals.activeSources} with applicants`}
+                delay={0}
               />
 
               <SummaryCard
@@ -1307,6 +1808,7 @@ export default function SourcingAnalyticsPage() {
                 value={totals.totalVolume}
                 icon={<UsersRound size={22} />}
                 description="From public form"
+                delay={60}
               />
 
               <SummaryCard
@@ -1315,6 +1817,7 @@ export default function SourcingAnalyticsPage() {
                 valueClassName="text-emerald-600"
                 icon={<UserCheck size={22} />}
                 description="Based on frontend status"
+                delay={120}
               />
 
               <SummaryCard
@@ -1323,6 +1826,7 @@ export default function SourcingAnalyticsPage() {
                 valueClassName="text-blue-600"
                 icon={<TrendingUp size={22} />}
                 description={`${costEntries.length} cost entries`}
+                delay={180}
               />
 
               <SummaryCard
@@ -1330,12 +1834,16 @@ export default function SourcingAnalyticsPage() {
                 value={formatCurrency(totals.overallCostPerHire)}
                 icon={<Target size={22} />}
                 description="Total cost / total hired"
+                delay={240}
               />
             </div>
           </section>
 
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "180ms" }}
+            >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-base font-bold text-[#101828]">
@@ -1351,18 +1859,22 @@ export default function SourcingAnalyticsPage() {
               </div>
 
               <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
-                {sourceRows.map((source) => (
+                {sourceRows.map((source, index) => (
                   <VolumeBar
                     key={source.id}
                     label={source.source}
                     value={source.volume}
                     max={maxVolume}
+                    delay={index * 35}
                   />
                 ))}
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "240ms" }}
+            >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-base font-bold text-[#101828]">
@@ -1378,18 +1890,22 @@ export default function SourcingAnalyticsPage() {
               </div>
 
               <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
-                {sourceRows.map((source) => (
+                {sourceRows.map((source, index) => (
                   <ConversionBar
                     key={source.id}
                     label={source.source}
                     value={source.conversionRate}
                     max={maxConversion}
+                    delay={index * 35}
                   />
                 ))}
               </div>
             </div>
 
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            <div
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "300ms" }}
+            >
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <h2 className="text-base font-bold text-[#101828]">
@@ -1405,19 +1921,23 @@ export default function SourcingAnalyticsPage() {
               </div>
 
               <div className="max-h-[420px] space-y-5 overflow-y-auto pr-1">
-                {sourceRows.map((source) => (
+                {sourceRows.map((source, index) => (
                   <CostBar
                     key={source.id}
                     label={source.source}
                     value={source.sourceCost}
                     max={maxCost}
+                    delay={index * 35}
                   />
                 ))}
               </div>
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+          <section
+            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            style={{ animationDelay: "360ms" }}
+          >
             <div className="hidden lg:block">
               <div className="overflow-x-auto p-6">
                 <table className="w-full min-w-[1350px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
@@ -1444,11 +1964,11 @@ export default function SourcingAnalyticsPage() {
                   </thead>
 
                   <tbody>
-                    {filteredSources.length > 0 ? (
-                      filteredSources.map((source) => (
+                    {paginatedSources.length > 0 ? (
+                      paginatedSources.map((source) => (
                         <tr
                           key={source.id}
-                          className="transition hover:bg-[#FAFBFC]"
+                          className="transition-all duration-200 hover:bg-[#FAFBFC]"
                         >
                           <td className="border-b border-[#E6ECF2] px-5 py-5">
                             <p className="text-sm font-bold text-[#0F172A]">
@@ -1504,7 +2024,7 @@ export default function SourcingAnalyticsPage() {
                             <button
                               type="button"
                               onClick={() => setSelectedSource(source)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
                             >
                               <Eye size={16} />
                               View
@@ -1526,30 +2046,47 @@ export default function SourcingAnalyticsPage() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#E6ECF2] px-6 py-4">
+              <div className="flex flex-col justify-between gap-4 border-t border-[#E6ECF2] px-6 py-4 md:flex-row md:items-center">
                 <p className="text-sm font-medium text-sibs-primary-1">
-                  Showing 1 to {filteredSources.length} of {sourceRows.length}{" "}
-                  source records
+                  Showing {showingFrom} to {showingTo} of{" "}
+                  {filteredSources.length} source records
                 </p>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                   >
                     <ChevronLeft size={16} />
                   </button>
 
-                  <button
-                    type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
-                  >
-                    1
-                  </button>
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    const active = currentPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`inline-flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : "border border-[#D6DEE8] bg-white text-sibs-tertiary-5 hover:bg-[#F8FAFC]"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
 
                   <button
                     type="button"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -1558,12 +2095,13 @@ export default function SourcingAnalyticsPage() {
             </div>
 
             <div className="space-y-3 p-4 lg:hidden">
-              {filteredSources.length > 0 ? (
-                filteredSources.map((source) => (
+              {paginatedSources.length > 0 ? (
+                paginatedSources.map((source, index) => (
                   <SourceMobileCard
                     key={source.id}
                     source={source}
                     onView={() => setSelectedSource(source)}
+                    delay={index * 60}
                   />
                 ))
               ) : (
@@ -1571,10 +2109,60 @@ export default function SourcingAnalyticsPage() {
                   No source performance records found.
                 </div>
               )}
+
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {showingFrom} to {showingTo} of{" "}
+                  {filteredSources.length} source records
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    const active = currentPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+          <section
+            className="sibs-profile-tab-panel rounded-2xl border border-blue-100 bg-blue-50 p-5"
+            style={{ animationDelay: "420ms" }}
+          >
             <h3 className="text-sm font-bold text-sibs-primary-1">
               Cost per Hire Rule
             </h3>

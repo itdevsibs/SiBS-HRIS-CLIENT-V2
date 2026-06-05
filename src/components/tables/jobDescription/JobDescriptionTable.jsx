@@ -106,7 +106,7 @@ function JdStatusBadge({ status }) {
   return (
     <span
       className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-md px-3 py-2 text-[11px] font-bold leading-none ${getJdStatusClass(
-        status
+        status,
       )}`}
     >
       {getJdStatusLabel(status)}
@@ -239,7 +239,7 @@ function FilterDropdown({
     return options.filter((option) =>
       String(option.label || option.value || "")
         .toLowerCase()
-        .includes(keyword)
+        .includes(keyword),
     );
   }, [options, search]);
 
@@ -280,7 +280,7 @@ function FilterDropdown({
         <AnimatedDropdown open={show} maxHeight="max-h-64">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option) => {
-              const checked = selectedValue === option.value;
+              const selected = selectedValue === option.value;
 
               return (
                 <button
@@ -291,20 +291,13 @@ function FilterDropdown({
                     setSearch("");
                     setShow(false);
                   }}
-                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                    checked
+                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                    selected
                       ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                       : "text-[#344054] hover:bg-[#F8FAFC]"
                   }`}
                 >
-                  <input
-                    type="radio"
-                    checked={checked}
-                    readOnly
-                    className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
-                  />
-
-                  <span className="truncate">{option.label}</span>
+                  <span className="block truncate">{option.label}</span>
                 </button>
               );
             })
@@ -514,7 +507,10 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
         </section>
       </div>
 
-      <div key={`${jdViewFilter}-${statusFilter}-${searchInput}`} className="min-h-0 flex-1 p-4 sm:p-6 sibs-profile-tab-panel">
+      <div
+        key={`${jdViewFilter}-${statusFilter}-${searchInput}`}
+        className="min-h-0 flex-1 p-4 sm:p-6 sibs-profile-tab-panel"
+      >
         <div className="h-full lg:hidden">
           <div className="thin-scroll h-full overflow-y-auto">
             {filteredList.length > 0 ? (

@@ -1,7 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../../components/layout/Header";
 import {
-  BookOpen,
   Search,
   Eye,
   X,
@@ -12,6 +17,7 @@ import {
   CheckCircle2,
   UsersRound,
   MessageSquareText,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CalendarDays,
@@ -19,12 +25,17 @@ import {
   ThumbsDown,
   ListChecks,
   Plus,
+  ClipboardList,
+  Filter,
+  Timer,
 } from "lucide-react";
 import {
   getCandidateExperienceRecords,
   saveCandidateExperienceRecord,
 } from "@/lib/utils/candidateExperienceStore";
 import { AddExperienceModal } from "../../components/modals/candidateExperience/CandidateExperienceModal.jsx";
+
+const RECORDS_PER_PAGE = 8;
 
 const initialCandidateExperienceRecords = [
   {
@@ -207,7 +218,111 @@ const emptyExperienceForm = {
 };
 
 function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
+}
+
+function AnimatedDropdown({ open, children, className = "" }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  zIndex = "z-30",
+  formatOption,
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const displayValue = value || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      >
+        <span className="truncate">
+          {formatOption ? formatOption(displayValue) : displayValue}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedDropdown open={open}>
+        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+          {options.map((option) => {
+            const selected = value === option;
+
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`block w-full px-4 py-3 text-left text-sm transition ${
+                  selected
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <span className="block truncate">
+                  {formatOption ? formatOption(option) : option}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </AnimatedDropdown>
+    </div>
+  );
 }
 
 function getTodayDate() {
@@ -217,7 +332,11 @@ function getTodayDate() {
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) return "—";
+
+  return parsed.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -306,32 +425,54 @@ function RatingStars({ rating, size = 15 }) {
   );
 }
 
-function StatCard({ title, value, icon: Icon, description }) {
+function SummaryCard({
+  title,
+  value,
+  icon: Icon,
+  description,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-xs text-sibs-tertiary-5">{title}</p>
-        <h2 className="text-lg font-bold text-sibs-primary-1">{value}</h2>
-
-        {description && (
-          <p className="truncate text-xs text-sibs-tertiary-5">
-            {description}
+    <div
+      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+            {title}
           </p>
-        )}
+
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}
+          >
+            {value}
+          </p>
+
+          {description && (
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {description}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
 }
 
-function BarRow({ label, value, max }) {
+function BarRow({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
 
   return (
-    <div>
+    <div className="sibs-page-card-in" style={{ animationDelay: `${delay}ms` }}>
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="min-w-0 truncate text-sm font-bold text-[#344054]">
           {label}
@@ -344,7 +485,7 @@ function BarRow({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#EEF2F6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -366,12 +507,13 @@ function DetailRow({ label, value }) {
   );
 }
 
-function ExperienceMobileCard({ record, onView }) {
+function ExperienceMobileCard({ record, onView, delay = 0 }) {
   return (
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className="sibs-page-card-in w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
+      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -390,7 +532,7 @@ function ExperienceMobileCard({ record, onView }) {
 
         <span
           className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            record.finalStatus
+            record.finalStatus,
           )}`}
         >
           {record.finalStatus}
@@ -398,7 +540,7 @@ function ExperienceMobileCard({ record, onView }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Event
           </p>
@@ -408,7 +550,7 @@ function ExperienceMobileCard({ record, onView }) {
           </p>
         </div>
 
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
           <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Exit Stage
           </p>
@@ -423,7 +565,7 @@ function ExperienceMobileCard({ record, onView }) {
         {record.dropOffCategory && (
           <span
             className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${getDropOffClass(
-              record.dropOffCategory
+              record.dropOffCategory,
             )}`}
           >
             {record.dropOffCategory}
@@ -435,7 +577,7 @@ function ExperienceMobileCard({ record, onView }) {
         </span>
       </div>
 
-      <div className="mt-3 flex items-center justify-between rounded-lg bg-[#F8FAFC] p-3">
+      <div className="mt-3 flex items-center justify-between rounded-xl bg-[#F8FAFC] p-3">
         <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
           Rating
         </p>
@@ -444,7 +586,7 @@ function ExperienceMobileCard({ record, onView }) {
       </div>
 
       <div className="mt-4">
-        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
+        <span className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-3 py-2 text-xs font-bold text-sibs-primary-1">
           <Eye size={15} />
           View Details
         </span>
@@ -466,7 +608,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
@@ -483,7 +625,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -493,7 +635,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                 <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                   <div className="min-w-0">
                     <h3 className="text-lg font-bold text-[#101828] sm:text-xl">
@@ -507,7 +649,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <span
                         className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          record.finalStatus
+                          record.finalStatus,
                         )}`}
                       >
                         {record.finalStatus}
@@ -516,7 +658,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                       {record.dropOffCategory && (
                         <span
                           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getDropOffClass(
-                            record.dropOffCategory
+                            record.dropOffCategory,
                           )}`}
                         >
                           {record.dropOffCategory}
@@ -545,7 +687,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div
+                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={{ animationDelay: "60ms" }}
+              >
                 <div className="mb-5 flex items-center gap-2">
                   <ListChecks size={18} className="text-sibs-primary-1" />
 
@@ -564,7 +709,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                         <div className="flex flex-col items-center">
                           <div
                             className={`flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold ${getTimelineClass(
-                              item.status
+                              item.status,
                             )}`}
                           >
                             {index + 1}
@@ -575,7 +720,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
                           )}
                         </div>
 
-                        <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                        <div className="flex-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                           <div className="flex flex-col justify-between gap-2 md:flex-row md:items-center">
                             <div>
                               <p className="text-sm font-bold text-[#101828]">
@@ -589,7 +734,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
 
                             <span
                               className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getTimelineClass(
-                                item.status
+                                item.status,
                               )}`}
                             >
                               {item.status}
@@ -607,7 +752,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
               </div>
 
               {record.finalStatus === "Drop-off" && (
-                <div className="rounded-xl border border-red-100 bg-red-50 p-5">
+                <div
+                  className="sibs-profile-tab-panel rounded-xl border border-red-100 bg-red-50 p-5"
+                  style={{ animationDelay: "120ms" }}
+                >
                   <h3 className="text-sm font-bold text-red-700">
                     Drop-off / Exit Details
                   </h3>
@@ -640,7 +788,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 </div>
               )}
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div
+                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={{ animationDelay: "180ms" }}
+              >
                 <h3 className="text-sm font-bold text-[#101828]">
                   Candidate Feedback
                 </h3>
@@ -652,7 +803,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+              <div className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
                 <h3 className="text-sm font-bold text-[#101828]">
                   Candidate Summary
                 </h3>
@@ -673,7 +824,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+              <div
+                className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={{ animationDelay: "80ms" }}
+              >
                 <h3 className="text-sm font-bold text-[#101828]">
                   Candidate Perception
                 </h3>
@@ -705,7 +859,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
+              <div
+                className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
+                style={{ animationDelay: "140ms" }}
+              >
                 <h3 className="text-sm font-bold text-sibs-primary-1">
                   Rating Rule
                 </h3>
@@ -716,7 +873,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
                 </p>
               </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+              <div
+                className="sibs-profile-tab-panel rounded-xl border border-emerald-100 bg-emerald-50 p-5"
+                style={{ animationDelay: "200ms" }}
+              >
                 <h3 className="text-sm font-bold text-emerald-700">
                   Employer Branding Data
                 </h3>
@@ -735,7 +895,7 @@ function CandidateExperienceModal({ open, record, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+              className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               Close
             </button>
@@ -747,8 +907,10 @@ function CandidateExperienceModal({ open, record, onClose }) {
 }
 
 export default function CandidateExperiencePage() {
+  const mainRef = useRef(null);
+
   const [experienceList, setExperienceList] = useState(
-    initialCandidateExperienceRecords
+    initialCandidateExperienceRecords,
   );
 
   const [search, setSearch] = useState("");
@@ -756,17 +918,65 @@ export default function CandidateExperiencePage() {
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [ratingFilter, setRatingFilter] = useState("All Ratings");
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [experienceForm, setExperienceForm] = useState(emptyExperienceForm);
+
+  function scrollToTop(behavior = "auto") {
+    requestAnimationFrame(() => {
+      if (mainRef.current) {
+        mainRef.current.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior,
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }
+    });
+  }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     function loadStoredRecords() {
       const storedRecords = getCandidateExperienceRecords();
 
       setExperienceList(
-        mergeExperienceRecords(storedRecords, initialCandidateExperienceRecords)
+        mergeExperienceRecords(storedRecords, initialCandidateExperienceRecords),
       );
+
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
     }
 
     loadStoredRecords();
@@ -777,7 +987,7 @@ export default function CandidateExperiencePage() {
     return () => {
       window.removeEventListener(
         "candidate-experience-updated",
-        loadStoredRecords
+        loadStoredRecords,
       );
       window.removeEventListener("storage", loadStoredRecords);
     };
@@ -795,6 +1005,19 @@ export default function CandidateExperiencePage() {
 
   function handleResetExperienceForm() {
     setExperienceForm(emptyExperienceForm);
+  }
+
+  function handleClearFilters() {
+    setSearch("");
+    setStageFilter("All Stages");
+    setCategoryFilter("All Categories");
+    setRatingFilter("All Ratings");
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
   }
 
   function handleAddExperienceRecord(e) {
@@ -885,6 +1108,13 @@ export default function CandidateExperiencePage() {
 
     setExperienceList((prev) => mergeExperienceRecords([savedRecord], prev));
     setSelectedRecord(savedRecord);
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
     handleCloseAddModal();
   }
 
@@ -919,15 +1149,77 @@ export default function CandidateExperiencePage() {
     });
   }, [experienceList, search, stageFilter, categoryFilter, ratingFilter]);
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRecords.length / RECORDS_PER_PAGE),
+  );
+
+  const paginatedRecords = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (safePage - 1) * RECORDS_PER_PAGE;
+    const end = start + RECORDS_PER_PAGE;
+
+    return filteredRecords.slice(start, end);
+  }, [filteredRecords, currentPage, totalPages]);
+
+  const showingFrom =
+    filteredRecords.length > 0 ? (currentPage - 1) * RECORDS_PER_PAGE + 1 : 0;
+
+  const showingTo = Math.min(
+    currentPage * RECORDS_PER_PAGE,
+    filteredRecords.length,
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    scrollToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [search, stageFilter, categoryFilter, ratingFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+      scrollToTop("auto");
+    }
+  }, [currentPage, totalPages]);
+
+  function handlePageChange(nextPage) {
+    const safePage = Math.min(Math.max(nextPage, 1), totalPages);
+
+    if (safePage === currentPage) {
+      scrollToTop("auto");
+
+      window.setTimeout(() => {
+        scrollToTop("auto");
+      }, 0);
+
+      return;
+    }
+
+    setCurrentPage(safePage);
+    scrollToTop("auto");
+
+    window.setTimeout(() => {
+      scrollToTop("auto");
+    }, 0);
+  }
+
   const stats = useMemo(() => {
     const total = experienceList.length;
 
     const dropOffs = experienceList.filter(
-      (record) => record.finalStatus === "Drop-off"
+      (record) => record.finalStatus === "Drop-off",
     ).length;
 
     const completed = experienceList.filter(
-      (record) => record.finalStatus === "Completed"
+      (record) => record.finalStatus === "Completed",
     ).length;
 
     const averageRating =
@@ -935,17 +1227,17 @@ export default function CandidateExperiencePage() {
         ? (
             experienceList.reduce(
               (sum, record) => sum + Number(record.experienceRating || 0),
-              0
+              0,
             ) / total
           ).toFixed(1)
         : "0.0";
 
     const lowRating = experienceList.filter(
-      (record) => Number(record.experienceRating) <= 2
+      (record) => Number(record.experienceRating) <= 2,
     ).length;
 
     const positiveRating = experienceList.filter(
-      (record) => Number(record.experienceRating) >= 4
+      (record) => Number(record.experienceRating) >= 4,
     ).length;
 
     return {
@@ -960,7 +1252,7 @@ export default function CandidateExperiencePage() {
 
   const dropOffByStage = useMemo(() => {
     const records = experienceList.filter(
-      (record) => record.finalStatus === "Drop-off"
+      (record) => record.finalStatus === "Drop-off",
     );
 
     return records.reduce((acc, record) => {
@@ -972,7 +1264,7 @@ export default function CandidateExperiencePage() {
 
   const dropOffByCategory = useMemo(() => {
     const records = experienceList.filter(
-      (record) => record.finalStatus === "Drop-off"
+      (record) => record.finalStatus === "Drop-off",
     );
 
     return records.reduce((acc, record) => {
@@ -996,434 +1288,525 @@ export default function CandidateExperiencePage() {
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <BookOpen size={28} className="shrink-0 text-sibs-primary-1" />
-
-            <h1 className="min-w-0 break-words text-2xl font-bold text-sibs-primary-1 sm:text-4xl">
-              Candidate Experience
-            </h1>
-          </div>
-
-          <p className="mt-1 text-sm text-sibs-tertiary-5">
-            Drop-off tracking, candidate feedback, and experience rating.
-          </p>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-6">
-          <StatCard
-            title="Records"
-            value={stats.total}
-            icon={UsersRound}
-            description="Experience records"
-          />
-
-          <StatCard
-            title="Drop-offs"
-            value={stats.dropOffs}
-            icon={UserX}
-            description="Exited candidates"
-          />
-
-          <StatCard
-            title="Completed"
-            value={stats.completed}
-            icon={CheckCircle2}
-            description="Completed process"
-          />
-
-          <StatCard
-            title="Avg. Rating"
-            value={stats.averageRating}
-            icon={Star}
-            description="Out of 5"
-          />
-
-          <StatCard
-            title="Positive Ratings"
-            value={stats.positiveRating}
-            icon={ThumbsUp}
-            description="4 to 5 rating"
-          />
-
-          <StatCard
-            title="Low Ratings"
-            value={stats.lowRating}
-            icon={ThumbsDown}
-            description="Needs review"
-          />
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_420px]">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Drop-offs by Stage
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Shows where candidates are lost.
-                </p>
-              </div>
-
-              <BarChart3 size={20} className="shrink-0 text-gray-400" />
-            </div>
-
-            <div className="space-y-5">
-              {Object.entries(dropOffByStage).length > 0 ? (
-                Object.entries(dropOffByStage).map(([stage, count]) => (
-                  <BarRow
-                    key={stage}
-                    label={stage}
-                    value={count}
-                    max={maxStageDropOff}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
-                  No drop-off data yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Drop-offs by Reason
-                </h2>
-
-                <p className="text-sm text-sibs-tertiary-5">
-                  Shows why candidates exit.
-                </p>
-              </div>
-
-              <AlertTriangle size={20} className="shrink-0 text-gray-400" />
-            </div>
-
-            <div className="space-y-5">
-              {Object.entries(dropOffByCategory).length > 0 ? (
-                Object.entries(dropOffByCategory).map(([category, count]) => (
-                  <BarRow
-                    key={category}
-                    label={category}
-                    value={count}
-                    max={maxCategoryDropOff}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
-                  No drop-off reason data yet.
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-            <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
-                <MessageSquareText size={22} />
-              </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-sibs-primary-1">
-                  Candidate Experience Insight
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                  Most candidate losses currently happen during{" "}
-                  <span className="font-bold">{topStage}</span>. The top
-                  recorded reason is{" "}
-                  <span className="font-bold">{topCategory}</span>.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 rounded-xl bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <main
+        ref={mainRef}
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+      >
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <h3 className="mb-2 font-semibold text-sibs-primary-1">
-                Candidate Experience Records
-              </h3>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+                <ClipboardList size={14} />
+                Recruitment Setup
+              </div>
 
-              <p className="text-sm text-sibs-tertiary-5">
-                Drop-off reason, feedback, rating, and stage-level records.
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Candidate Experience
+              </h1>
+
+              <p className="mt-1 max-w-5xl text-sm font-medium text-sibs-tertiary-5">
+                Track drop-offs, offer declines, onboarding no-shows,
+                withdrawals, candidate feedback, and experience ratings.
               </p>
             </div>
 
             <button
               type="button"
               onClick={handleOpenAddModal}
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
             >
               <Plus size={18} />
               Add Experience Record
             </button>
           </div>
-        </div>
 
-        <section className="overflow-hidden rounded-xl bg-white shadow-sm">
-          <div className="border-b border-gray-100 p-4 sm:p-6">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_300px_170px_210px_150px] xl:items-center">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-sibs-primary-1">
-                  Candidate Experience List
-                </h2>
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={{ animationDelay: "60ms" }}
+          >
+            <h2 className="text-base font-bold text-[#101828]">
+              Candidate Experience Summary
+            </h2>
 
-                <p className="text-sm text-sibs-tertiary-5">
-                  Search and filter candidate experience records.
-                </p>
-              </div>
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+              <SummaryCard
+                title="Records"
+                value={stats.total}
+                icon={UsersRound}
+                description="Experience records"
+                delay={0}
+              />
 
-              <div className="relative">
-                <Search
-                  size={17}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
+              <SummaryCard
+                title="Drop-offs"
+                value={stats.dropOffs}
+                icon={UserX}
+                description="Exited candidates"
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={60}
+              />
 
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search candidate, role, feedback..."
-                  className={inputClass("pl-11 pr-4")}
-                />
-              </div>
+              <SummaryCard
+                title="Completed"
+                value={stats.completed}
+                icon={CheckCircle2}
+                description="Completed process"
+                valueClassName="text-emerald-600"
+                iconClassName="bg-emerald-50 text-emerald-600"
+                delay={120}
+              />
 
-              <select
-                value={stageFilter}
-                onChange={(e) => setStageFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {stageOptions.map((stage) => (
-                  <option key={stage} value={stage}>
-                    {stage}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="Avg. Rating"
+                value={stats.averageRating}
+                icon={Star}
+                description="Out of 5"
+                valueClassName="text-amber-600"
+                iconClassName="bg-amber-50 text-amber-600"
+                delay={180}
+              />
 
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {categoryOptions.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="Positive Ratings"
+                value={stats.positiveRating}
+                icon={ThumbsUp}
+                description="4 to 5 rating"
+                valueClassName="text-emerald-600"
+                iconClassName="bg-emerald-50 text-emerald-600"
+                delay={240}
+              />
 
-              <select
-                value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value)}
-                className={inputClass()}
-              >
-                {ratingOptions.map((rating) => (
-                  <option key={rating} value={rating}>
-                    {rating === "All Ratings" ? rating : `${rating} Star`}
-                  </option>
-                ))}
-              </select>
+              <SummaryCard
+                title="Low Ratings"
+                value={stats.lowRating}
+                icon={ThumbsDown}
+                description="Needs review"
+                valueClassName="text-red-600"
+                iconClassName="bg-red-50 text-red-600"
+                delay={300}
+              />
             </div>
+          </section>
+
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_420px]">
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "120ms" }}
+            >
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Drop-offs by Stage
+                  </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Shows where candidates are lost.
+                  </p>
+                </div>
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
+                  <BarChart3 size={22} />
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {Object.entries(dropOffByStage).length > 0 ? (
+                  Object.entries(dropOffByStage).map(
+                    ([stage, count], index) => (
+                      <BarRow
+                        key={stage}
+                        label={stage}
+                        value={count}
+                        max={maxStageDropOff}
+                        delay={index * 60}
+                      />
+                    ),
+                  )
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
+                    No drop-off data yet.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+              style={{ animationDelay: "180ms" }}
+            >
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-[#101828]">
+                    Drop-offs by Reason
+                  </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Shows why candidates exit.
+                  </p>
+                </div>
+
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                  <AlertTriangle size={22} />
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {Object.entries(dropOffByCategory).length > 0 ? (
+                  Object.entries(dropOffByCategory).map(
+                    ([category, count], index) => (
+                      <BarRow
+                        key={category}
+                        label={category}
+                        value={count}
+                        max={maxCategoryDropOff}
+                        delay={index * 60}
+                      />
+                    ),
+                  )
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#E6ECF2] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-sibs-tertiary-5">
+                    No drop-off reason data yet.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section
+              className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm sm:p-6"
+              style={{ animationDelay: "240ms" }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
+                  <MessageSquareText size={22} />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-bold text-sibs-primary-1">
+                    Candidate Experience Insight
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
+                    Most candidate losses currently happen during{" "}
+                    <span className="font-bold">{topStage}</span>. The top
+                    recorded reason is{" "}
+                    <span className="font-bold">{topCategory}</span>.
+                  </p>
+                </div>
+              </div>
+            </section>
           </div>
 
-          <div className="p-4 sm:p-6">
-            <div className="space-y-3 lg:hidden">
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record) => (
-                  <ExperienceMobileCard
-                    key={record.id}
-                    record={record}
-                    onView={() => setSelectedRecord(record)}
-                  />
-                ))
-              ) : (
-                <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No candidate experience records found.
+          <section
+            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            style={{ animationDelay: "300ms" }}
+          >
+            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
+                  <h2 className="text-lg font-bold text-sibs-primary-1">
+                    Candidate Experience List
+                  </h2>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Search and filter candidate experience records.
+                  </p>
                 </div>
-              )}
+
+                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  {filteredRecords.length} Records
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 2xl:grid-cols-[1fr_260px_230px_160px_auto] 2xl:items-end">
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-[#101828]">
+                    Search
+                  </label>
+
+                  <div className="relative">
+                    <Search
+                      size={18}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                    />
+
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search candidate, role, feedback..."
+                      className={inputClass("pl-11 pr-4")}
+                    />
+                  </div>
+                </div>
+
+                <CustomSelect
+                  label="Stage"
+                  value={stageFilter}
+                  options={stageOptions}
+                  onChange={setStageFilter}
+                  zIndex="z-50"
+                />
+
+                <CustomSelect
+                  label="Category"
+                  value={categoryFilter}
+                  options={categoryOptions}
+                  onChange={setCategoryFilter}
+                  zIndex="z-40"
+                />
+
+                <CustomSelect
+                  label="Rating"
+                  value={ratingFilter}
+                  options={ratingOptions}
+                  onChange={setRatingFilter}
+                  zIndex="z-30"
+                  formatOption={(value) =>
+                    value === "All Ratings" ? value : `${value} Star`
+                  }
+                />
+
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                >
+                  <Filter size={17} />
+                  Clear
+                </button>
+              </div>
             </div>
 
-            <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-              <div className="max-h-[520px] overflow-auto">
-                <table className="w-full min-w-[1220px] border-collapse text-left">
-                  <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
-                    <tr className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      <th className="px-5 py-4">Candidate</th>
-                      <th className="px-5 py-4">Role / Account</th>
-                      <th className="px-5 py-4">Event</th>
-                      <th className="px-5 py-4">Status</th>
-                      <th className="px-5 py-4">Exit Stage</th>
-                      <th className="px-5 py-4">Reason Category</th>
-                      <th className="px-5 py-4">Rating</th>
-                      <th className="px-5 py-4">Feedback Tag</th>
-                      <th className="px-5 py-4">Date</th>
-                      <th className="px-5 py-4 text-right">Action</th>
-                    </tr>
-                  </thead>
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3 lg:hidden">
+                {paginatedRecords.length > 0 ? (
+                  paginatedRecords.map((record, index) => (
+                    <ExperienceMobileCard
+                      key={record.id}
+                      record={record}
+                      onView={() => setSelectedRecord(record)}
+                      delay={index * 60}
+                    />
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                    No candidate experience records found.
+                  </div>
+                )}
+              </div>
 
-                  <tbody className="divide-y divide-gray-100 bg-white">
-                    {filteredRecords.length > 0 ? (
-                      filteredRecords.map((record) => (
-                        <tr
-                          key={record.id}
-                          className="transition hover:bg-[#F8FAFC]"
-                        >
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-bold text-[#101828]">
-                              {record.candidateName}
-                            </p>
+              <div className="hidden lg:block">
+                <div className="overflow-x-auto p-0">
+                  <table className="w-full min-w-[1220px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                    <thead>
+                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                        <th className="px-5 py-4 first:rounded-tl-2xl">
+                          Candidate
+                        </th>
+                        <th className="px-5 py-4">Role / Account</th>
+                        <th className="px-5 py-4">Event</th>
+                        <th className="px-5 py-4">Status</th>
+                        <th className="px-5 py-4">Exit Stage</th>
+                        <th className="px-5 py-4">Reason Category</th>
+                        <th className="px-5 py-4">Rating</th>
+                        <th className="px-5 py-4">Feedback Tag</th>
+                        <th className="px-5 py-4">Date</th>
+                        <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                          Action
+                        </th>
+                      </tr>
+                    </thead>
 
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {record.candidateEmail}
-                            </p>
-                          </td>
+                    <tbody>
+                      {paginatedRecords.length > 0 ? (
+                        paginatedRecords.map((record) => (
+                          <tr
+                            key={record.id}
+                            className="transition-all duration-200 hover:bg-[#FAFBFC]"
+                          >
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <p className="text-sm font-bold text-[#101828]">
+                                {record.candidateName}
+                              </p>
 
-                          <td className="px-5 py-4">
-                            <p className="text-sm font-bold text-[#344054]">
-                              {record.roleTitle}
-                            </p>
+                              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                {record.candidateEmail}
+                              </p>
+                            </td>
 
-                            <p className="text-xs font-semibold text-sibs-tertiary-5">
-                              {record.account}
-                            </p>
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <p className="text-sm font-bold text-[#344054]">
+                                {record.roleTitle}
+                              </p>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {record.eventType}
-                          </td>
+                              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                {record.account}
+                              </p>
+                            </td>
 
-                          <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                record.finalStatus
-                              )}`}
-                            >
-                              {record.finalStatus}
-                            </span>
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                              {record.eventType}
+                            </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {record.dropOffStage || "—"}
-                          </td>
-
-                          <td className="px-5 py-4">
-                            {record.dropOffCategory ? (
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
                               <span
-                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getDropOffClass(
-                                  record.dropOffCategory
+                                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                                  record.finalStatus,
                                 )}`}
                               >
-                                {record.dropOffCategory}
+                                {record.finalStatus}
                               </span>
-                            ) : (
-                              <span className="text-sm font-semibold text-gray-400">
-                                —
-                              </span>
-                            )}
-                          </td>
+                            </td>
 
-                          <td className="px-5 py-4">
-                            <RatingStars rating={record.experienceRating} />
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                              {record.dropOffStage || "—"}
+                            </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {record.feedbackTag || "—"}
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              {record.dropOffCategory ? (
+                                <span
+                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getDropOffClass(
+                                    record.dropOffCategory,
+                                  )}`}
+                                >
+                                  {record.dropOffCategory}
+                                </span>
+                              ) : (
+                                <span className="text-sm font-semibold text-gray-400">
+                                  —
+                                </span>
+                              )}
+                            </td>
 
-                          <td className="px-5 py-4 text-sm font-semibold text-[#344054]">
-                            <div className="flex items-center gap-2">
-                              <CalendarDays
-                                size={15}
-                                className="text-gray-400"
-                              />
-                              {formatDate(record.dateRecorded)}
-                            </div>
-                          </td>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <RatingStars rating={record.experienceRating} />
+                            </td>
 
-                          <td className="px-5 py-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRecord(record)}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
-                            >
-                              <Eye size={15} />
-                              View
-                            </button>
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                              {record.feedbackTag || "—"}
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                              <div className="flex items-center gap-2">
+                                <CalendarDays
+                                  size={15}
+                                  className="text-gray-400"
+                                />
+                                {formatDate(record.dateRecorded)}
+                              </div>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRecord(record)}
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                              >
+                                <Eye size={15} />
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={10}
+                            className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                          >
+                            No candidate experience records found.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        >
-                          No candidate experience records found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  Showing {showingFrom} to {showingTo} of{" "}
+                  {filteredRecords.length} candidate experience records
+                </p>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage <= 1}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, index) => {
+                    const pageNumber = index + 1;
+                    const active = currentPage === pageNumber;
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage >= totalPages}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-              <p className="text-sm font-semibold text-sibs-tertiary-5">
-                Showing 1 to {filteredRecords.length} of{" "}
-                {experienceList.length} candidate experience records
-              </p>
+          <section
+            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
+            style={{ animationDelay: "360ms" }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="rounded-xl bg-white p-3 text-sibs-primary-1">
+                  <Timer size={22} />
+                </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronLeft size={16} />
-                </button>
+                <div>
+                  <h3 className="text-sm font-bold text-sibs-primary-1">
+                    Candidate Experience Rule
+                  </h3>
 
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-sibs-primary-1 text-sm font-bold text-white"
-                >
-                  1
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-sm font-bold text-gray-600 transition hover:bg-gray-50"
-                >
-                  2
-                </button>
-
-                <button
-                  type="button"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50"
-                >
-                  <ChevronRight size={16} />
-                </button>
+                  <p className="mt-2 max-w-5xl text-sm leading-6 text-sibs-primary-1/80">
+                    The data comes from Candidate Pipeline drop-offs, Offer
+                    declines, Onboarding no-shows or withdrawals, and manual
+                    candidate feedback. The star rating is saved as a number
+                    from 1 to 5 and only displayed as stars in the frontend.
+                  </p>
+                </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleOpenAddModal}
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              >
+                <Plus size={18} />
+                Add Feedback
+              </button>
             </div>
-          </div>
-        </section>
-
-        <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
-          <h3 className="text-sm font-bold text-sibs-primary-1">
-            Candidate Experience Rule
-          </h3>
-
-          <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-            The data comes from Candidate Pipeline drop-offs, Offer declines,
-            Onboarding no-shows or withdrawals, and manual candidate feedback.
-            The star rating is saved as a number from 1 to 5 and only displayed
-            as stars in the frontend.
-          </p>
-        </section>
+          </section>
+        </div>
       </main>
 
       <AddExperienceModal
