@@ -880,19 +880,34 @@ export default function ViewPlanModal({
         ? requiredInputValue
         : item.requiredHeadcount ?? item.required_headcount ?? 0;
 
+    const numericRequiredHeadcount = Number(currentRequiredHeadcount);
+
+    if (!Number.isFinite(numericRequiredHeadcount)) {
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      await onSaveRequiredHeadcount?.(item, {
-        silent: true,
-        overrideRequiredHeadcount: currentRequiredHeadcount,
-      });
+      /*
+        IMPORTANT:
+        If there is a supporting file, use the file upload endpoint because
+        onUpdateWeeklyPlanFile already saves the required headcount + file together.
 
+        If there is no file, save only the required headcount using
+        onSaveRequiredHeadcount with silent: false so the parent StatusModal
+        will show success/error properly.
+      */
       if (weeklyPlanFile) {
         await onUpdateWeeklyPlanFile?.(item, currentRequiredHeadcount);
       } else {
-        setShowHeadcountModal(false);
+        await onSaveRequiredHeadcount?.(item, {
+          silent: false,
+          overrideRequiredHeadcount: currentRequiredHeadcount,
+        });
       }
+
+      setShowHeadcountModal(false);
     } finally {
       setSubmitting(false);
     }

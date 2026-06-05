@@ -39,6 +39,8 @@ import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewForms";
 import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
 
+import ApprovalRequest from "./pages/communication/ApprovalRequest";
+
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
@@ -309,6 +311,16 @@ const Router = () => {
         element={
           <PrivateRoute>
             <RecruitmentSettingsPage />
+          </PrivateRoute>
+        }
+      />
+
+      {/* COMMUNICATION */}
+      <Route
+        path="/approval-request"
+        element={
+          <PrivateRoute>
+            <ApprovalRequest />
           </PrivateRoute>
         }
       />

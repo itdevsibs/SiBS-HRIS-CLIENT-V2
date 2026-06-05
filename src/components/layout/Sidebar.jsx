@@ -10,6 +10,7 @@ import {
   Calendar,
   CalendarDays,
   CircleUser,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   DollarSign,
@@ -390,6 +391,12 @@ export default function Sidebar() {
 
   const communicationMenu = [
     {
+      name: "Approval Request",
+      icon: ClipboardCheck,
+      path: "/approval-request",
+      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+    },
+    {
       name: "Email Logs",
       icon: FileClock,
       path: "/email-logs",
@@ -613,7 +620,7 @@ export default function Sidebar() {
 
                 {getVisibleItems(communicationMenu).length > 0 && (
                   <Section
-                    title="COMMUNICATION"
+                    title="COMMUNICATIONS"
                     short="COM"
                     collapsed={!isMobile && collapsed}
                   >
