@@ -41,21 +41,20 @@ export function getOfferId(candidateOrOffer, index = 0) {
 }
 
 export function getOfferApprovalSummary(offer) {
-  const approvalUsers = getOfferApprovalUsers();
   const approvals = offer?.approvals || offer?.offerApprovals || {};
+  const approvalValues = Object.values(approvals);
 
-  const statuses = approvalUsers.map(
-    (name) => approvals?.[name]?.status || "For Review",
+  const hasRejected = approvalValues.some(
+    (approval) => approval?.status === "Rejected",
   );
 
-  if (statuses.includes("Rejected")) return "Rejected";
+  if (hasRejected) return "Rejected";
 
-  if (
-    approvalUsers.length > 0 &&
-    statuses.every((status) => status === "Approved")
-  ) {
-    return "Approved";
-  }
+  const hasApproved = approvalValues.some(
+    (approval) => approval?.status === "Approved",
+  );
+
+  if (hasApproved) return "Approved";
 
   return "For Review";
 }
@@ -67,7 +66,9 @@ export function isOfferedCandidate(candidate) {
       candidate?.pipelineStage ||
       candidate?.status ||
       "",
-  ).toLowerCase();
+  )
+    .trim()
+    .toLowerCase();
 
   return stage === "offered" || stage === "offer" || stage === "offer approval";
 }
@@ -215,6 +216,26 @@ export function normalizePipelineCandidateToOffer(
       "Offer received from Candidate Pipeline.",
 
     approvals,
+    currentStage:
+      override.currentStage ||
+      candidate.currentStage ||
+      candidate.stage ||
+      candidate.pipelineStage ||
+      "Offered",
+
+    stage:
+      override.stage ||
+      candidate.stage ||
+      candidate.currentStage ||
+      candidate.pipelineStage ||
+      "Offered",
+
+    pipelineStage:
+      override.pipelineStage ||
+      candidate.pipelineStage ||
+      candidate.currentStage ||
+      candidate.stage ||
+      "Offered",
   };
 }
 
@@ -239,6 +260,14 @@ export function getStatusClass(status) {
 }
 
 export function buildPipelineOfferPayload(offer) {
+  const approvalStatus = getOfferApprovalSummary(offer);
+
+  const nextStage =
+    approvalStatus === "Approved" ? "Accepted" : "Offered";
+
+  const nextCandidateResponse =
+    approvalStatus === "Approved" ? "Accepted" : "Pending";
+
   return {
     candidateApplicationId: offer.candidateApplicationId,
     candidateId: offer.candidateId,
@@ -253,7 +282,11 @@ export function buildPipelineOfferPayload(offer) {
     }`,
 
     owner: offer.owner || "Current User",
-    currentStage: "Offered",
+
+    currentStage: nextStage,
+    stage: nextStage,
+    pipelineStage: nextStage,
+
     source: offer.source || "Offers Page",
 
     offerDetails: {
@@ -266,11 +299,18 @@ export function buildPipelineOfferPayload(offer) {
       preparedBy: offer.owner || "Current User",
     },
 
-    offerApprovals: offer.approvals || {},
-    offerApprovalStatus: getOfferApprovalSummary(offer),
+    offerApprovals: offer.approvals || offer.offerApprovals || {},
+    offerApprovalStatus: approvalStatus,
 
     offerEmailSent: Boolean(offer.contractSent),
     offerEmailSentAt: offer.contractSentAt || null,
-    offerDecision: offer.candidateResponse || "Pending",
+
+    offerDecision: nextCandidateResponse,
+    candidateResponse: nextCandidateResponse,
+
+    remarks:
+      approvalStatus === "Approved"
+        ? "Offer approved. Candidate moved to Accepted."
+        : offer.remarks || "",
   };
 }

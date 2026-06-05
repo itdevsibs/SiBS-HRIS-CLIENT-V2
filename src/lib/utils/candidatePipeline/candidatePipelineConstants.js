@@ -12,9 +12,9 @@ export const pipelineStages = [
   "Interview Scheduled",
   "Interviewed",
   "Offered",
-  "Accepted (For NHO)",
-  "Incomplete Requirements",
-  "Drop-off",
+  "Accepted",
+  "For NHO",
+  // "Drop-off",
 ];
 
 export const normalStageFlow = [

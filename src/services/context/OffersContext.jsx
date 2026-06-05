@@ -1,6 +1,11 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useUser } from "./UserContext";
-import { useCandidatePipeline } from "./CandidatePipelineContext";
 import useConfirmDialog from "../../hooks/offers/useConfirmDialog";
 import {
   OFFER_ELIGIBLE_STORAGE_KEY,
@@ -24,6 +29,7 @@ import {
   canUserApproveOffer,
   getOfferApprovalUsers,
 } from "../../lib/utils/offers/offerApprovalSettings";
+import { useCandidatePipeline } from "./CandidatePipelineContext";
 
 const OffersContext = createContext(null);
 
@@ -76,15 +82,18 @@ function updateCandidateStorageFromOffer(updatedOffer) {
       if (!current.length) return;
 
       const offerKey = getCandidateKey(payload);
-      const candidateEmail = String(payload.candidateEmail || "").toLowerCase();
+      const candidateEmail = String(payload.candidateEmail || "")
+        .toLowerCase()
+        .trim();
 
       const next = current.map((candidate) => {
         const candidateKey = getCandidateKey(candidate);
+
         const emailMatch =
           candidateEmail &&
-          String(
-            candidate.candidateEmail || candidate.email || "",
-          ).toLowerCase() === candidateEmail;
+          String(candidate.candidateEmail || candidate.email || "")
+            .toLowerCase()
+            .trim() === candidateEmail;
 
         if (candidateKey !== offerKey && !emailMatch) {
           return candidate;
@@ -97,6 +106,10 @@ function updateCandidateStorageFromOffer(updatedOffer) {
             ...(candidate.offerDetails || {}),
             ...(payload.offerDetails || {}),
           },
+          offerApprovals: {
+            ...(candidate.offerApprovals || {}),
+            ...(payload.offerApprovals || {}),
+          },
         };
       });
 
@@ -105,18 +118,51 @@ function updateCandidateStorageFromOffer(updatedOffer) {
   );
 }
 
+function getCurrentUserName(user) {
+  const currentUser = Array.isArray(user) ? user[0] : user;
+
+  const directName =
+    currentUser?.name ||
+    currentUser?.fullName ||
+    currentUser?.employeeName ||
+    currentUser?.displayName ||
+    currentUser?.username ||
+    currentUser?.gy_user_fullname ||
+    currentUser?.gy_user_name ||
+    currentUser?.gy_user_username;
+
+  if (directName) {
+    return String(directName).trim();
+  }
+
+  const lastName = String(currentUser?.lastName || "").trim();
+  const firstName = String(currentUser?.firstName || "").trim();
+  const middleName = String(currentUser?.middleName || "").trim();
+
+  const firstAndMiddle = [firstName, middleName].filter(Boolean).join(" ");
+
+  const fullNameFromParts = [lastName, firstAndMiddle]
+    .filter(Boolean)
+    .join(", ")
+    .trim();
+
+  return (
+    fullNameFromParts ||
+    currentUser?.email ||
+    currentUser?.gy_user_email ||
+    "Current User"
+  );
+}
+
 export function OffersProvider({ children }) {
   const { user } = useUser();
-  const { candidateList = [] } = useCandidatePipeline() || {};
+
+  const { candidateList = [], updateCandidateFromOffer } =
+    useCandidatePipeline() || {};
+
   const { confirmAction, ConfirmationDialog } = useConfirmDialog();
 
-  const currentUserName =
-    user?.name ||
-    user?.fullName ||
-    user?.employeeName ||
-    user?.displayName ||
-    user?.username ||
-    "Current User";
+  const currentUserName = useMemo(() => getCurrentUserName(user), [user]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
@@ -125,6 +171,10 @@ export function OffersProvider({ children }) {
   const [offerOverrides, setOfferOverrides] = useState(() =>
     readOfferOverrides(),
   );
+
+  useEffect(() => {
+    console.log("Current User:", currentUserName);
+  }, [currentUserName]);
 
   const sourceCandidates = useMemo(() => {
     return candidateList.length ? candidateList : getStoredPipelineCandidates();
@@ -136,12 +186,12 @@ export function OffersProvider({ children }) {
     );
 
     return sourceCandidates
-      .filter(isOfferedCandidate)
       .map((candidate, index) => {
         const override = overrideMap.get(getCandidateKey(candidate)) || {};
 
         return normalizePipelineCandidateToOffer(candidate, index, override);
-      });
+      })
+      .filter(isOfferedCandidate);
   }, [offerOverrides, sourceCandidates]);
 
   const filteredOffers = useMemo(() => {
@@ -181,21 +231,31 @@ export function OffersProvider({ children }) {
 
   const stats = useMemo(() => {
     const total = offerList.length;
+
     const forReview = offerList.filter(
       (offer) => offer.status === "For Review",
     ).length;
+
     const approved = offerList.filter(
       (offer) => offer.status === "Approved",
     ).length;
+
     const contractSent = offerList.filter(
       (offer) => offer.status === "Contract Sent",
     ).length;
+
     const accepted = offerList.filter(
-      (offer) => offer.status === "Accepted",
+      (offer) =>
+        offer.status === "Accepted" ||
+        offer.currentStage === "Accepted" ||
+        offer.stage === "Accepted" ||
+        offer.pipelineStage === "Accepted",
     ).length;
+
     const declined = offerList.filter(
-      (offer) => offer.status === "Declined",
+      (offer) => offer.status === "Declined" || offer.status === "Rejected",
     ).length;
+
     const acceptanceRate = total ? Math.round((accepted / total) * 100) : 0;
 
     return {
@@ -215,11 +275,16 @@ export function OffersProvider({ children }) {
   }
 
   function updateOffer(updatedOffer) {
+    const payload = buildPipelineOfferPayload(updatedOffer);
+
     writeOfferOverride(updatedOffer);
     updateCandidateStorageFromOffer(updatedOffer);
 
+    updateCandidateFromOffer?.(payload);
+
     setOfferOverrides((prev) => {
       const updatedKey = getCandidateKey(updatedOffer);
+
       const exists = prev.some(
         (offer) => getCandidateKey(offer) === updatedKey,
       );
@@ -261,7 +326,7 @@ export function OffersProvider({ children }) {
     if (!confirmed) return;
 
     const updatedApprovals = {
-      ...(offer.approvals || {}),
+      ...(offer.approvals || offer.offerApprovals || {}),
       [currentUserName]: {
         status,
         updatedAt: getCurrentTimestamp(),
@@ -269,19 +334,42 @@ export function OffersProvider({ children }) {
       },
     };
 
+    const nextApprovalStatus = getOfferApprovalSummary({
+      approvals: updatedApprovals,
+    });
+
+    const nextStage =
+      nextApprovalStatus === "Approved" ? "Accepted" : "Offered";
+
+    const nextCandidateResponse =
+      nextApprovalStatus === "Approved" ? "Accepted" : "Pending";
+
     const updatedOffer = normalizePipelineCandidateToOffer(
       {
         ...offer,
+        currentStage: nextStage,
+        stage: nextStage,
+        pipelineStage: nextStage,
         offerApprovals: updatedApprovals,
-        offerApprovalStatus: getOfferApprovalSummary({
-          approvals: updatedApprovals,
-        }),
+        offerApprovalStatus: nextApprovalStatus,
+        offerDecision: nextCandidateResponse,
+        candidateResponse: nextCandidateResponse,
       },
       0,
       {
         ...offer,
+        currentStage: nextStage,
+        stage: nextStage,
+        pipelineStage: nextStage,
         approvals: updatedApprovals,
-        remarks: `${currentUserName} marked the offer as ${status}.`,
+        offerApprovals: updatedApprovals,
+        status: nextApprovalStatus,
+        candidateResponse: nextCandidateResponse,
+        offerDecision: nextCandidateResponse,
+        remarks:
+          nextApprovalStatus === "Approved"
+            ? `${currentUserName} approved the offer. Candidate moved to Accepted.`
+            : `${currentUserName} marked the offer as ${status}.`,
       },
     );
 
@@ -293,15 +381,21 @@ export function OffersProvider({ children }) {
       candidateApplicationId: offer.candidateApplicationId,
       candidateId: offer.candidateId,
       candidateEmail: offer.candidateEmail,
-      offerApprovals: updatedOffer.approvals,
-      offerApprovalStatus: getOfferApprovalSummary(updatedOffer),
+      offerApprovals: updatedApprovals,
+      offerApprovalStatus: nextApprovalStatus,
       approvalUsers,
       approvedOrRejectedBy: currentUserName,
       approvalAction: status,
+      currentStage: nextStage,
+      stage: nextStage,
+      pipelineStage: nextStage,
+      offerDecision: nextCandidateResponse,
+      candidateResponse: nextCandidateResponse,
       timestamp: getCurrentTimestamp(),
-      reasonForMovement: `${currentUserName} marked the offer as ${status}. Overall offer approval status: ${getOfferApprovalSummary(
-        updatedOffer,
-      )}.`,
+      reasonForMovement:
+        nextApprovalStatus === "Approved"
+          ? `${currentUserName} approved the offer. Candidate moved from Offered to Accepted.`
+          : `${currentUserName} marked the offer as ${status}. Overall offer approval status: ${nextApprovalStatus}.`,
       owner: currentUserName,
       source: "Offers Page",
       remarks: `Updated by ${currentUserName}`,
