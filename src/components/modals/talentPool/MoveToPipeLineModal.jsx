@@ -7,7 +7,7 @@ import {
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
 
-export default function MoveToPipelineModal() {
+export default function MoveToPipeLineModal() {
   const {
     pipelineTarget,
     moveToPipelineForm,
