@@ -6,7 +6,6 @@ import React, {
   useState,
 } from "react";
 import { useUser } from "./UserContext";
-import { useCandidatePipeline } from "./CandidatePipelineContext";
 import useConfirmDialog from "../../hooks/offers/useConfirmDialog";
 import {
   OFFER_ELIGIBLE_STORAGE_KEY,
@@ -30,6 +29,7 @@ import {
   canUserApproveOffer,
   getOfferApprovalUsers,
 } from "../../lib/utils/offers/offerApprovalSettings";
+import { useCandidatePipeline } from "./CandidatePipelineContext";
 
 const OffersContext = createContext(null);
 
