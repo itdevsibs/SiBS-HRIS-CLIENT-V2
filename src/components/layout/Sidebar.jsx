@@ -27,7 +27,12 @@ import {
   Users,
   X,
 } from "lucide-react";
+
 import { useUser } from "../../services/context/UserContext";
+import {
+  getSupervisorAttritions,
+  getSupervisorResignations,
+} from "../../lib/axios/getEmployee";
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
@@ -162,6 +167,9 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const [attritionNotificationCount, setAttritionNotificationCount] =
+    useState(0);
+
   useEffect(() => {
     setMounted(true);
 
@@ -231,6 +239,68 @@ export default function Sidebar() {
       document.body.style.overflow = "";
     };
   }, [mobileOpen, mounted]);
+
+  useEffect(() => {
+    if (!mounted || loading || !user) return;
+    if (!ADMIN_ROLES.includes(user.role)) return;
+
+    let isMounted = true;
+
+    async function fetchAttritionNotifications() {
+      try {
+        const [resignationResult, attritionResult] = await Promise.all([
+          getSupervisorResignations(),
+          getSupervisorAttritions(),
+        ]);
+
+        const resignationData = resignationResult?.success
+          ? resignationResult.data || []
+          : [];
+
+        const attritionData = attritionResult?.success
+          ? attritionResult.data || []
+          : [];
+
+        const pendingResignationCount = resignationData.filter(
+          (item) => item.status === "Pending",
+        ).length;
+
+        const pendingAttritionCount = attritionData.filter((item) => {
+          const isDeclined =
+            Number(item.tlIsDeclined) === 1 ||
+            Number(item.omIsDeclined) === 1 ||
+            Number(item.somIsDeclined) === 1;
+
+          const isFullyApproved =
+            (item.hideTl ||
+              !item.tlSibsId ||
+              Number(item.tlIsApproved) === 1) &&
+            (!item.omSibsId || Number(item.omIsApproved) === 1) &&
+            (!item.somSibsId || Number(item.somIsApproved) === 1);
+
+          return !isDeclined && !isFullyApproved;
+        }).length;
+
+        if (isMounted) {
+          setAttritionNotificationCount(
+            pendingResignationCount + pendingAttritionCount,
+          );
+        }
+      } catch (error) {
+        console.error("Sidebar attrition notification error:", error);
+
+        if (isMounted) {
+          setAttritionNotificationCount(0);
+        }
+      }
+    }
+
+    fetchAttritionNotifications();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mounted, loading, user, pathname, ADMIN_ROLES]);
 
   const employeeCoreMenu = [
     {
@@ -302,6 +372,7 @@ export default function Sidebar() {
       icon: FileText,
       path: "/attrition",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      notificationCount: attritionNotificationCount,
     },
   ];
 
@@ -475,6 +546,9 @@ export default function Sidebar() {
       const isActive =
         pathname === item.path || pathname.startsWith(`${item.path}/`);
 
+      const notificationCount = Number(item.notificationCount || 0);
+      const hasNotification = notificationCount > 0;
+
       return (
         <Link
           key={`${item.name}-${index}`}
@@ -484,31 +558,45 @@ export default function Sidebar() {
           onClick={handleLinkClick}
           title={!isMobile && collapsed ? item.name : ""}
           className={[
-            "group flex min-w-0 select-none items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-normal transition",
+            "group relative flex min-w-0 select-none items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-normal transition",
             "text-sibs-tertiary-5 hover:bg-sibs-tertiary-9 hover:text-sibs-primary-1",
             isActive ? "bg-sibs-tertiary-9 text-sibs-primary-1" : "",
             !isMobile && collapsed ? "justify-center px-2" : "",
           ].join(" ")}
         >
-          <Icon
-            size={18}
-            strokeWidth={1.9}
-            draggable={false}
-            className={[
-              "pointer-events-none shrink-0 transition",
-              isActive
-                ? "text-sibs-primary-1"
-                : "text-sibs-tertiary-5 group-hover:text-sibs-primary-1",
-            ].join(" ")}
-          />
+          <div className="relative shrink-0">
+            <Icon
+              size={18}
+              strokeWidth={1.9}
+              draggable={false}
+              className={[
+                "pointer-events-none shrink-0 transition",
+                isActive
+                  ? "text-sibs-primary-1"
+                  : "text-sibs-tertiary-5 group-hover:text-sibs-primary-1",
+              ].join(" ")}
+            />
+
+            {hasNotification && collapsed && !isMobile && (
+              <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-sibs-tertiary-10" />
+            )}
+          </div>
 
           {(!collapsed || isMobile) && (
-            <span
-              draggable={false}
-              className="pointer-events-none min-w-0 truncate"
-            >
-              {item.name}
-            </span>
+            <>
+              <span
+                draggable={false}
+                className="pointer-events-none min-w-0 flex-1 truncate"
+              >
+                {item.name}
+              </span>
+
+              {hasNotification && (
+                <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
+            </>
           )}
         </Link>
       );
