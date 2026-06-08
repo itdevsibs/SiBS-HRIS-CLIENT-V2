@@ -10,7 +10,7 @@ import TalentPoolTable from "../../../components/recruitment/talentPool/TalentPo
 import AddCandidateModal from "../../../components/modals/talentPool/AddCandidateModal";
 import CandidateProfileModal from "../../../components/modals/talentPool/CandidateProfileModal";
 import UpdateStatusModal from "../../../components/modals/talentPool/UpdateStatusModal";
-import MoveToPipelineModal from "../../../components/modals/talentPool/MoveToPipelineModal";
+import MoveToPipeLineModal from "../../../components/modals/talentPool/MoveToPipeLineModal";
 
 export default function TalentPoolPage() {
   const { uploadInputRef, openPublicForm, openAddCandidateModal } =
@@ -127,7 +127,7 @@ export default function TalentPoolPage() {
       <AddCandidateModal />
       <CandidateProfileModal />
       <UpdateStatusModal />
-      <MoveToPipelineModal />
+      <MoveToPipeLineModal />
     </div>
   );
 }
