@@ -4,7 +4,7 @@ import { FileText, ChevronDown, UserRound, X } from "lucide-react";
 import api from "../../../lib/axios/api-template";
 import { useUser } from "../../../services/context/UserContext";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const REASONS = [
   "Personal Reasons",
@@ -16,6 +16,29 @@ const REASONS = [
   "Compensation and Benefits",
   "Other",
 ];
+
+function normalizeSibsId(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (!cleanValue) return "";
+
+  const numericValue = Number(cleanValue);
+
+  if (Number.isFinite(numericValue)) {
+    return String(numericValue);
+  }
+
+  return cleanValue;
+}
+
+function isSameSibsId(a, b) {
+  const cleanA = String(a || "").trim();
+  const cleanB = String(b || "").trim();
+
+  if (!cleanA || !cleanB) return false;
+
+  return cleanA === cleanB || normalizeSibsId(cleanA) === normalizeSibsId(cleanB);
+}
 
 function formatPerson(sibsId, fullName) {
   if (!sibsId && !fullName) return "N/A";
@@ -36,7 +59,7 @@ function formatEmployeeDisplay(employee) {
 }
 
 function FileTypeIcon({ filename }) {
-  const ext = filename?.split(".").pop()?.toLowerCase() || "";
+  const ext = String(filename || "").split(".").pop()?.toLowerCase() || "";
 
   const config = {
     doc: { label: "W", color: "bg-blue-600" },
@@ -51,6 +74,8 @@ function FileTypeIcon({ filename }) {
     gif: { label: "IMG", color: "bg-purple-600" },
     webp: { label: "IMG", color: "bg-purple-600" },
     svg: { label: "IMG", color: "bg-purple-600" },
+    heic: { label: "IMG", color: "bg-purple-600" },
+    heif: { label: "IMG", color: "bg-purple-600" },
   };
 
   const file = config[ext] || { label: "FILE", color: "bg-gray-600" };
@@ -124,6 +149,9 @@ function ApproverSection({
     });
   };
 
+  const isApproved = Number(approvedValue) === 1 || approvedValue === true;
+  const isDeclined = Number(declinedValue) === 1 || declinedValue === true;
+
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-sibs-tertiary-10 p-4">
       <div className="mb-2 flex items-center gap-2">
@@ -135,30 +163,32 @@ function ApproverSection({
         {formatPerson(person?.sibsId, person?.fullName)}
       </p>
 
-      <div className="mt-4 flex items-center gap-6">
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
-          <input
-            type="checkbox"
-            checked={Number(approvedValue) === 1 || approvedValue === true}
-            onChange={handleToggleApproved}
-            readOnly={readOnly}
-            disabled={readOnly || !editable}
-            className="h-4 w-4"
-          />
-          <span>Approved</span>
-        </label>
+      <div className="mt-4 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={handleToggleApproved}
+          disabled={readOnly || !editable}
+          className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
+            isApproved
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+          }`}
+        >
+          Approve
+        </button>
 
-        <label className="flex items-center gap-2 text-sm text-sibs-primary-1">
-          <input
-            type="checkbox"
-            checked={Number(declinedValue) === 1 || declinedValue === true}
-            onChange={handleToggleDeclined}
-            readOnly={readOnly}
-            disabled={readOnly || !editable}
-            className="h-4 w-4"
-          />
-          <span>Declined</span>
-        </label>
+        <button
+          type="button"
+          onClick={handleToggleDeclined}
+          disabled={readOnly || !editable}
+          className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
+            isDeclined
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+          }`}
+        >
+          Decline
+        </button>
       </div>
 
       <div className="mt-4">
@@ -175,7 +205,7 @@ function ApproverSection({
           placeholder="Enter remarks"
           className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
             !readOnly && editable
-              ? "border-[#D7DEE8] bg-white focus:border-sibs-primary-1"
+              ? "border-[#D7DEE8] bg-white focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
               : "border-gray-200 bg-gray-50 text-sibs-primary-1"
           }`}
         />
@@ -238,13 +268,13 @@ export default function AttritionModal({
   ).trim();
 
   const canEditTl =
-    isEdit && String(safeForm?.tlSibsId || "").trim() === loggedInSibsId;
+    isEdit && isSameSibsId(safeForm?.tlSibsId, loggedInSibsId);
 
   const canEditOm =
-    isEdit && String(safeForm?.omSibsId || "").trim() === loggedInSibsId;
+    isEdit && isSameSibsId(safeForm?.omSibsId, loggedInSibsId);
 
   const canEditSom =
-    isEdit && String(safeForm?.somSibsId || "").trim() === loggedInSibsId;
+    isEdit && isSameSibsId(safeForm?.somSibsId, loggedInSibsId);
 
   const isApproverEditMode = isEdit && (canEditTl || canEditOm || canEditSom);
 
@@ -252,7 +282,7 @@ export default function AttritionModal({
     if (!safeForm?.employeeSibsId) return employeeOptions;
 
     const exists = employeeOptions.some(
-      (item) => String(item.sibsId) === String(safeForm.employeeSibsId),
+      (item) => isSameSibsId(item.sibsId, safeForm.employeeSibsId),
     );
 
     if (exists) return employeeOptions;
@@ -289,8 +319,8 @@ export default function AttritionModal({
     }
 
     return (
-      mergedEmployeeOptions.find(
-        (item) => String(item.sibsId) === String(safeForm?.employeeSibsId),
+      mergedEmployeeOptions.find((item) =>
+        isSameSibsId(item.sibsId, safeForm?.employeeSibsId),
       ) || null
     );
   }, [isView, data, mergedEmployeeOptions, safeForm?.employeeSibsId]);
@@ -303,7 +333,7 @@ export default function AttritionModal({
     return mergedEmployeeOptions.filter((employee) => {
       const sibsId = String(employee.sibsId || "").toLowerCase();
       const fullName = String(employee.fullName || "").toLowerCase();
-      const combined = `${sibsId} - ${fullName}`;
+      const combined = `${sibsId} - ${fullName}`.toLowerCase();
 
       return (
         sibsId.includes(keyword) ||
@@ -321,7 +351,9 @@ export default function AttritionModal({
     if (!open) return;
 
     const handleEscape = (e) => {
-      if (e.key === "Escape") onClose?.();
+      if (e.key === "Escape" && !submitting) {
+        onClose?.();
+      }
     };
 
     const handleClickOutside = (e) => {
@@ -359,7 +391,7 @@ export default function AttritionModal({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
-  }, [open, onClose, selectedEmployee]);
+  }, [open, onClose, selectedEmployee, submitting]);
 
   useEffect(() => {
     if (!open || !isAdd) return;
@@ -643,13 +675,13 @@ export default function AttritionModal({
   const title = isView
     ? "View Attrition"
     : isEdit
-      ? "Edit Attrition"
+      ? "Review Attrition"
       : "Submit Attrition";
 
   const subtitle = isView
     ? "Attrition request details"
     : isEdit
-      ? "Update the attrition request form"
+      ? "Review and update the attrition request approval"
       : "Fill out the attrition request form";
 
   if (!mounted || !open || (isView && !data)) return null;
@@ -657,7 +689,9 @@ export default function AttritionModal({
   const content = (
     <div
       className="fixed inset-0 z-[99999] flex h-dvh w-screen items-center justify-center bg-black/40 px-4 py-6"
-      onClick={onClose}
+      onClick={() => {
+        if (!submitting) onClose?.();
+      }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -723,7 +757,7 @@ export default function AttritionModal({
                       }}
                       placeholder="Search SiBS ID or employee name"
                       autoComplete="off"
-                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 pr-10 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1"
+                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 pr-10 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
 
                     <ChevronDown
@@ -742,9 +776,10 @@ export default function AttritionModal({
                         </div>
                       ) : filteredEmployeeOptions.length > 0 ? (
                         filteredEmployeeOptions.map((employee) => {
-                          const isSelected =
-                            String(safeForm?.employeeSibsId) ===
-                            String(employee.sibsId);
+                          const isSelected = isSameSibsId(
+                            safeForm?.employeeSibsId,
+                            employee.sibsId,
+                          );
 
                           return (
                             <button
@@ -804,7 +839,7 @@ export default function AttritionModal({
                     className={`w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition ${
                       isEdit
                         ? "border-gray-200 bg-gray-50"
-                        : "border-[#D7DEE8] focus:border-sibs-primary-1"
+                        : "border-[#D7DEE8] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     }`}
                     required
                   />
@@ -925,14 +960,12 @@ export default function AttritionModal({
                       setDropdownOpen(false);
 
                       if (selectedEmployee) {
-                        setEmployeeSearch(
-                          formatEmployeeDisplay(selectedEmployee),
-                        );
+                        setEmployeeSearch(formatEmployeeDisplay(selectedEmployee));
                       }
                     }}
                     className={`relative flex w-full items-center justify-between rounded-xl border bg-white px-4 py-3 text-left text-sm transition ${
                       reasonOpen
-                        ? "border-sibs-primary-1"
+                        ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
                         : "border-[#D7DEE8]"
                     }`}
                   >
@@ -1022,7 +1055,7 @@ export default function AttritionModal({
                   className={`w-full resize-none rounded-xl border px-4 py-3 text-sm outline-none transition ${
                     isEdit || isView
                       ? "border-gray-200 bg-gray-50"
-                      : "border-[#D7DEE8] focus:border-sibs-primary-1"
+                      : "border-[#D7DEE8] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                   }`}
                   required={!isView}
                 />

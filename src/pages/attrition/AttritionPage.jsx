@@ -24,6 +24,29 @@ import {
   getTodayDate,
 } from "../../components/layout/FormatDateTime";
 
+function normalizeSibsId(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (!cleanValue) return "";
+
+  const numericValue = Number(cleanValue);
+
+  if (Number.isFinite(numericValue)) {
+    return String(numericValue);
+  }
+
+  return cleanValue;
+}
+
+function isSameSibsId(a, b) {
+  const cleanA = String(a || "").trim();
+  const cleanB = String(b || "").trim();
+
+  if (!cleanA || !cleanB) return false;
+
+  return cleanA === cleanB || normalizeSibsId(cleanA) === normalizeSibsId(cleanB);
+}
+
 export default function AttritionPage() {
   const { user } = useUser();
 
@@ -120,8 +143,97 @@ export default function AttritionPage() {
 
   const activeTabIndex = Math.max(
     0,
-    tabs.findIndex((tab) => tab.label === activeTab)
+    tabs.findIndex((tab) => tab.label === activeTab),
   );
+
+  function getLoggedInSibsId() {
+    return String(user?.username || user?.sibs_id || user?.sibsId || "").trim();
+  }
+
+  function canCurrentUserReviewAttrition(item) {
+    const loggedInSibsId = getLoggedInSibsId();
+    const status = String(item?.status || "").trim().toLowerCase();
+
+    if (status !== "pending") return false;
+
+    if (item?.canEdit === true || Number(item?.canEdit) === 1) {
+      return true;
+    }
+
+    const isTlApprover = isSameSibsId(item?.tlSibsId, loggedInSibsId);
+    const isOmApprover = isSameSibsId(item?.omSibsId, loggedInSibsId);
+    const isSomApprover = isSameSibsId(item?.somSibsId, loggedInSibsId);
+
+    if (isTlApprover) {
+      return (
+        Number(item?.tlIsApproved || 0) !== 1 &&
+        Number(item?.tlIsDeclined || 0) !== 1
+      );
+    }
+
+    if (isOmApprover) {
+      return (
+        Number(item?.omIsApproved || 0) !== 1 &&
+        Number(item?.omIsDeclined || 0) !== 1
+      );
+    }
+
+    if (isSomApprover) {
+      return (
+        Number(item?.somIsApproved || 0) !== 1 &&
+        Number(item?.somIsDeclined || 0) !== 1
+      );
+    }
+
+    return false;
+  }
+
+  function unlockPageScrollSoon() {
+    window.setTimeout(() => {
+      const hasOpenDialog = document.querySelector('[role="dialog"]');
+
+      if (!hasOpenDialog) {
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+      }
+    }, 0);
+  }
+
+  function forceUnlockPageScroll() {
+    window.setTimeout(() => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    }, 0);
+  }
+
+  function showStatus({
+    type = "success",
+    title = "",
+    message = "",
+    closeForm = false,
+  }) {
+    if (closeForm) {
+      setOpenForm(false);
+    }
+
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  }
+
+  function closeStatusModal() {
+    setStatusModal({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+    });
+
+    unlockPageScrollSoon();
+  }
 
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
@@ -159,6 +271,7 @@ export default function AttritionPage() {
 
     setOpenForm(false);
     resetForm();
+    forceUnlockPageScroll();
   };
 
   const closeViewModal = () => {
@@ -166,16 +279,16 @@ export default function AttritionPage() {
       open: false,
       data: null,
     });
-  };
 
-  const handleOpenView = (item) => {
-    setViewModal({
-      open: true,
-      data: item,
-    });
+    forceUnlockPageScroll();
   };
 
   const handleOpenEdit = (item) => {
+    setViewModal({
+      open: false,
+      data: null,
+    });
+
     setEditingId(item.id);
 
     setForm({
@@ -222,6 +335,18 @@ export default function AttritionPage() {
     });
 
     setOpenForm(true);
+  };
+
+  const handleOpenView = (item) => {
+    if (canCurrentUserReviewAttrition(item)) {
+      handleOpenEdit(item);
+      return;
+    }
+
+    setViewModal({
+      open: true,
+      data: item,
+    });
   };
 
   const fetchResignations = async () => {
@@ -272,8 +397,120 @@ export default function AttritionPage() {
     }
   };
 
+  function getAttritionValidationError() {
+    if (!editingId) {
+      if (!form.employeeSibsId) {
+        return "Please select an employee before submitting the attrition request.";
+      }
+
+      if (!form.attritionDate) {
+        return "Please select the notice date.";
+      }
+
+      if (!form.lastWorkingDate) {
+        return "Please select the last working date.";
+      }
+
+      if (!form.reason) {
+        return "Please select a reason for attrition.";
+      }
+
+      if (form.reason === "Other" && !String(form.otherReason || "").trim()) {
+        return "Please specify the reason because you selected Other.";
+      }
+
+      const noticeDate = new Date(form.attritionDate);
+      const lastWorkingDate = new Date(form.lastWorkingDate);
+
+      if (
+        !Number.isNaN(noticeDate.getTime()) &&
+        !Number.isNaN(lastWorkingDate.getTime()) &&
+        lastWorkingDate < noticeDate
+      ) {
+        return "Last working date cannot be earlier than the notice date.";
+      }
+
+      return "";
+    }
+
+    const loggedInSibsId = getLoggedInSibsId();
+
+    const isTlApprover = isSameSibsId(form.tlSibsId, loggedInSibsId);
+    const isOmApprover = isSameSibsId(form.omSibsId, loggedInSibsId);
+    const isSomApprover = isSameSibsId(form.somSibsId, loggedInSibsId);
+
+    if (!isTlApprover && !isOmApprover && !isSomApprover) {
+      return "You are not assigned as an approver for this attrition request.";
+    }
+
+    if (isTlApprover) {
+      const hasDecision =
+        Number(form.tlIsApproved) === 1 || Number(form.tlIsDeclined) === 1;
+
+      if (!hasDecision) {
+        return "Please select Approve or Decline for TL / Manager approval.";
+      }
+
+      if (
+        Number(form.tlIsDeclined) === 1 &&
+        !String(form.tlRemarks || "").trim()
+      ) {
+        return "Please enter TL / Manager remarks when declining the request.";
+      }
+    }
+
+    if (isOmApprover) {
+      const hasDecision =
+        Number(form.omIsApproved) === 1 || Number(form.omIsDeclined) === 1;
+
+      if (!hasDecision) {
+        return "Please select Approve or Decline for OM approval.";
+      }
+
+      if (
+        Number(form.omIsDeclined) === 1 &&
+        !String(form.omRemarks || "").trim()
+      ) {
+        return "Please enter OM remarks when declining the request.";
+      }
+    }
+
+    if (isSomApprover) {
+      const hasDecision =
+        Number(form.somIsApproved) === 1 || Number(form.somIsDeclined) === 1;
+
+      if (!hasDecision) {
+        return "Please select Approve or Decline for SOM approval.";
+      }
+
+      if (
+        Number(form.somIsDeclined) === 1 &&
+        !String(form.somRemarks || "").trim()
+      ) {
+        return "Please enter SOM remarks when declining the request.";
+      }
+    }
+
+    return "";
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const validationMessage = getAttritionValidationError();
+
+    if (validationMessage) {
+      showStatus({
+        type: "error",
+        title: editingId
+          ? "Unable to Update Attrition"
+          : "Unable to Submit Attrition",
+        message: validationMessage,
+      });
+
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -308,16 +545,17 @@ export default function AttritionPage() {
         : await saveAttrition(payload);
 
       if (!result?.success) {
-        setStatusModal({
-          open: true,
+        showStatus({
           type: "error",
           title: editingId ? "Update Failed" : "Submission Failed",
           message:
             result?.message ||
+            result?.error ||
             (editingId
-              ? "Failed to update attrition."
-              : "Failed to submit attrition."),
+              ? "Failed to update attrition. Please check the approval details and try again."
+              : "Failed to submit attrition. Please check the required fields and try again."),
         });
+
         return;
       }
 
@@ -327,29 +565,30 @@ export default function AttritionPage() {
 
       await Promise.all([fetchAttritions(), fetchResignations()]);
 
-      setStatusModal({
-        open: true,
+      showStatus({
         type: "success",
         title: editingId ? "Attrition Updated" : "Attrition Submitted",
         message:
           result?.message ||
           (editingId
-            ? "Your attrition request has been updated successfully."
-            : "Your attrition request has been submitted successfully."),
+            ? "The attrition request has been updated successfully."
+            : "The attrition request has been submitted successfully."),
       });
+
+      forceUnlockPageScroll();
     } catch (error) {
       console.error("Failed to save attrition:", error);
 
-      setStatusModal({
-        open: true,
+      showStatus({
         type: "error",
         title: editingId ? "Update Failed" : "Submission Failed",
         message:
           error?.response?.data?.message ||
+          error?.response?.data?.error ||
           error?.message ||
           (editingId
-            ? "Something went wrong while updating your attrition."
-            : "Something went wrong while submitting your attrition."),
+            ? "Something went wrong while updating the attrition request."
+            : "Something went wrong while submitting the attrition request."),
       });
     } finally {
       setSubmitting(false);
@@ -476,14 +715,7 @@ export default function AttritionPage() {
             type={statusModal.type}
             title={statusModal.title}
             message={statusModal.message}
-            onClose={() =>
-              setStatusModal({
-                open: false,
-                type: "success",
-                title: "",
-                message: "",
-              })
-            }
+            onClose={closeStatusModal}
           />
 
           <section className="sibs-profile-tab-panel relative z-[5] min-w-0">
@@ -513,13 +745,7 @@ export default function AttritionPage() {
                     <span className="truncate">{label}</span>
 
                     {count > 0 && (
-                      <span
-                        className={`inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none shadow-sm transition-all duration-300 ${
-                          isActive
-                            ? "bg-white text-sibs-primary-1"
-                            : "bg-red-500 text-white"
-                        }`}
-                      >
+                      <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm transition-all duration-300">
                         {count}
                       </span>
                     )}

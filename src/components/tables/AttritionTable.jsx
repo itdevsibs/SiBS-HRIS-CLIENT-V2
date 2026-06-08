@@ -8,8 +8,31 @@ import { useUser } from "../../services/context/UserContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { formatDate, formatDateTime } from "@/components/layout/FormatDateTime";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const PAGE_LIMIT = 15;
+
+function normalizeSibsId(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (!cleanValue) return "";
+
+  const numericValue = Number(cleanValue);
+
+  if (Number.isFinite(numericValue)) {
+    return String(numericValue);
+  }
+
+  return cleanValue;
+}
+
+function isSameSibsId(a, b) {
+  const cleanA = String(a || "").trim();
+  const cleanB = String(b || "").trim();
+
+  if (!cleanA || !cleanB) return false;
+
+  return cleanA === cleanB || normalizeSibsId(cleanA) === normalizeSibsId(cleanB);
+}
 
 function getFileType(filename) {
   const ext = filename?.split(".").pop()?.toLowerCase() || "";
@@ -27,6 +50,8 @@ function getFileType(filename) {
     gif: "image",
     webp: "image",
     svg: "image",
+    heic: "image",
+    heif: "image",
   };
 
   return typeMap[ext] || "file";
@@ -174,23 +199,46 @@ function MobileInfo({ label, value, full = false }) {
   );
 }
 
-function MobileAttritionCard({
-  item,
-  user,
-  loggedInSibsId,
-  onView,
-  onEdit,
-}) {
-  const fileUrl = getUploadedFileUrl(item);
-
+function canReviewAttrition(item, loggedInSibsId) {
   const isPending = String(item.status || "").toLowerCase() === "pending";
 
-  const isApprover =
-    String(item.tlSibsId || "").trim() === loggedInSibsId ||
-    String(item.omSibsId || "").trim() === loggedInSibsId ||
-    String(item.somSibsId || "").trim() === loggedInSibsId;
+  if (!isPending) return false;
 
-  const isEditable = isPending && isApprover;
+  if (item.canEdit === true || Number(item.canEdit) === 1) {
+    return true;
+  }
+
+  const isTlApprover = isSameSibsId(item.tlSibsId, loggedInSibsId);
+  const isOmApprover = isSameSibsId(item.omSibsId, loggedInSibsId);
+  const isSomApprover = isSameSibsId(item.somSibsId, loggedInSibsId);
+
+  if (isTlApprover) {
+    return (
+      Number(item.tlIsApproved || 0) !== 1 &&
+      Number(item.tlIsDeclined || 0) !== 1
+    );
+  }
+
+  if (isOmApprover) {
+    return (
+      Number(item.omIsApproved || 0) !== 1 &&
+      Number(item.omIsDeclined || 0) !== 1
+    );
+  }
+
+  if (isSomApprover) {
+    return (
+      Number(item.somIsApproved || 0) !== 1 &&
+      Number(item.somIsDeclined || 0) !== 1
+    );
+  }
+
+  return false;
+}
+
+function MobileAttritionCard({ item, user, loggedInSibsId, onView, onEdit }) {
+  const fileUrl = getUploadedFileUrl(item);
+  const isEditable = canReviewAttrition(item, loggedInSibsId);
 
   return (
     <div
@@ -273,18 +321,7 @@ function MobileAttritionCard({
       </div>
 
       <div className="mt-4 flex justify-end gap-2">
-        <ActionButton
-          type="view"
-          onClick={(e) => {
-            e.stopPropagation();
-            onView?.(item);
-          }}
-        >
-          <Eye size={14} />
-          View
-        </ActionButton>
-
-        {isEditable && (
+        {isEditable ? (
           <ActionButton
             type="edit"
             onClick={(e) => {
@@ -293,7 +330,18 @@ function MobileAttritionCard({
             }}
           >
             <Pencil size={14} />
-            Edit
+            Review
+          </ActionButton>
+        ) : (
+          <ActionButton
+            type="view"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView?.(item);
+            }}
+          >
+            <Eye size={14} />
+            View
           </ActionButton>
         )}
       </div>
@@ -686,16 +734,7 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                 ) : (
                   displayedAttritions.map((item) => {
                     const fileUrl = getUploadedFileUrl(item);
-
-                    const isPending =
-                      String(item.status || "").toLowerCase() === "pending";
-
-                    const isApprover =
-                      String(item.tlSibsId || "").trim() === loggedInSibsId ||
-                      String(item.omSibsId || "").trim() === loggedInSibsId ||
-                      String(item.somSibsId || "").trim() === loggedInSibsId;
-
-                    const isEditable = isPending && isApprover;
+                    const isEditable = canReviewAttrition(item, loggedInSibsId);
 
                     return (
                       <tr
@@ -757,18 +796,7 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
 
                         <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <ActionButton
-                              type="view"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onView?.(item);
-                              }}
-                            >
-                              <Eye size={14} />
-                              View
-                            </ActionButton>
-
-                            {isEditable && (
+                            {isEditable ? (
                               <ActionButton
                                 type="edit"
                                 onClick={(e) => {
@@ -777,7 +805,18 @@ export default function AttritionTable({ reloadKey = 0, onView, onEdit }) {
                                 }}
                               >
                                 <Pencil size={14} />
-                                Edit
+                                Review
+                              </ActionButton>
+                            ) : (
+                              <ActionButton
+                                type="view"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onView?.(item);
+                                }}
+                              >
+                                <Eye size={14} />
+                                View
                               </ActionButton>
                             )}
                           </div>
