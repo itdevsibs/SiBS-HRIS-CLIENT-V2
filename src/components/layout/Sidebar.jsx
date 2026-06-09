@@ -368,9 +368,9 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
     },
     {
-      name: "Attrition",
+      name: "Resignation Management",
       icon: FileText,
-      path: "/attrition",
+      path: "/resignation",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
       notificationCount: attritionNotificationCount,
     },

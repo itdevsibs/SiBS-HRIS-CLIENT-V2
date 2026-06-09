@@ -34,9 +34,10 @@ import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 
 import {
+  getManagedEmployees,
   getSupervisorResignations,
   saveSupervisorResignation,
-} from "../../lib/axios/getEmployee";
+} from "../../lib/axios/getResignationManagement";
 
 import {
   formatDate,
@@ -352,6 +353,93 @@ function DropdownPortal({
       >
         {children}
       </div>
+    </div>,
+    document.body,
+  );
+}
+
+function EmployeeDropdownPortal({ open, anchorRef, children, onClose }) {
+  const dropdownRef = useRef(null);
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 420,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return undefined;
+
+    function updatePosition() {
+      const rect = anchorRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+
+      const dropdownWidth = Math.min(460, viewportWidth - 32);
+      const preferredLeft = rect.left;
+      const safeLeft = Math.min(
+        Math.max(16, preferredLeft),
+        viewportWidth - dropdownWidth - 16,
+      );
+
+      setStyle({
+        top: rect.bottom + 8,
+        left: safeLeft,
+        width: dropdownWidth,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, anchorRef]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleClickOutside(e) {
+      const clickedAnchor = anchorRef.current?.contains(e.target);
+      const clickedDropdown = dropdownRef.current?.contains(e.target);
+
+      if (!clickedAnchor && !clickedDropdown) {
+        onClose?.();
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, anchorRef, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-[999999] overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl"
+      style={{
+        top: `${style.top}px`,
+        left: `${style.left}px`,
+        width: `${style.width}px`,
+      }}
+    >
+      {children}
     </div>,
     document.body,
   );
@@ -944,12 +1032,7 @@ function ResignationFilters({
   );
 }
 
-function ResignationTableCard({
-  data,
-  totalRecords,
-  loading,
-  onView,
-}) {
+function ResignationTableCard({ data, totalRecords, loading, onView }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
@@ -985,24 +1068,16 @@ function ResignationTableCard({
                   <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
                     Employee
                   </th>
-                  <th className="px-5 py-4 text-left align-top">
-                    Filed By
-                  </th>
-                  <th className="px-5 py-4 text-center align-top">
-                    Type
-                  </th>
+                  <th className="px-5 py-4 text-left align-top">Filed By</th>
+                  <th className="px-5 py-4 text-center align-top">Type</th>
                   <th className="px-5 py-4 text-center align-top">
                     Resignation Date
                   </th>
                   <th className="px-5 py-4 text-center align-top">
                     Last Working Date
                   </th>
-                  <th className="px-5 py-4 text-center align-top">
-                    Status
-                  </th>
-                  <th className="px-5 py-4 text-left align-top">
-                    Reason
-                  </th>
+                  <th className="px-5 py-4 text-center align-top">Status</th>
+                  <th className="px-5 py-4 text-left align-top">Reason</th>
                   <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
                     Actions
                   </th>
@@ -1122,7 +1197,9 @@ function ResignationRow({ item, onView }) {
       </td>
 
       <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-        {formatDate(item?.resignationDate || item?.resignation_date || getItemDate(item))}
+        {formatDate(
+          item?.resignationDate || item?.resignation_date || getItemDate(item),
+        )}
       </td>
 
       <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
@@ -1226,10 +1303,136 @@ function MobileMetric({ label, value }) {
   );
 }
 
+function EmployeePickerField({
+  label,
+  selectedSibsId,
+  selectedName,
+  employees = [],
+  loading = false,
+  search = "",
+  open = false,
+  onOpenChange,
+  onSearchChange,
+  onSelect,
+}) {
+  const anchorRef = useRef(null);
+
+  return (
+    <div className="relative">
+      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </label>
+
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => onOpenChange?.(!open)}
+        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+        }`}
+      >
+        <span className="min-w-0 truncate text-sibs-primary-1">
+          {selectedSibsId
+            ? `${selectedSibsId} - ${selectedName || "Selected employee"}`
+            : "Select employee under your management"}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <EmployeeDropdownPortal
+        open={open}
+        anchorRef={anchorRef}
+        onClose={() => onOpenChange?.(false)}
+      >
+        <div className="sticky top-0 z-10 border-b border-[#E6ECF2] bg-white p-3">
+          <div className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+            />
+
+            <input
+              value={search}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder="Search SIBS ID or employee name..."
+              className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 pl-9 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[320px] overflow-y-auto py-2 sibs-scrollbar">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-primary-1">
+              <Loader2 size={17} className="animate-spin" />
+              Loading employees...
+            </div>
+          ) : employees.length === 0 ? (
+            <div className="px-4 py-6 text-center text-sm font-bold text-sibs-tertiary-5">
+              No employees found under your management.
+            </div>
+          ) : (
+            employees.map((employee) => (
+              <button
+                key={employee.sibsId}
+                type="button"
+                onClick={() => onSelect?.(employee)}
+                className={`block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC] ${
+                  selectedSibsId === employee.sibsId
+                    ? "bg-[#EAF2FB]"
+                    : "bg-white"
+                }`}
+              >
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1/10 text-xs font-extrabold text-sibs-primary-1">
+                    {getInitials(employee.fullName || employee.sibsId || "E")}
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold text-[#101828]">
+                      {employee.fullName || "Unnamed Employee"}
+                    </p>
+
+                    <p className="mt-0.5 truncate text-xs font-bold text-[#2F6CA5]">
+                      {employee.sibsId || "N/A"}
+                      {employee.department ? ` · ${employee.department}` : ""}
+                    </p>
+
+                    {employee.account && (
+                      <p className="mt-0.5 truncate text-xs font-semibold text-sibs-tertiary-5">
+                        {employee.account}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </EmployeeDropdownPortal>
+    </div>
+  );
+}
+
 function ResignationApplyModal({
   open,
   form,
   submitting,
+  managedEmployees = [],
+  employeePickerLoading = false,
+  employeePickerSearch = "",
+  employeePickerOpen = false,
+  onEmployeePickerOpenChange,
+  onEmployeePickerSearchChange,
+  onSearchManagedEmployees,
+  onSelectManagedEmployee,
   onClose,
   onChange,
   onSubmit,
@@ -1286,12 +1489,20 @@ function ResignationApplyModal({
                 </h3>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormInput
+                  <EmployeePickerField
                     label="Employee SIBS ID"
-                    name="employeeSibsId"
-                    value={form.employeeSibsId}
-                    onChange={onChange}
-                    placeholder="Enter employee SIBS ID"
+                    selectedSibsId={form.employeeSibsId}
+                    selectedName={form.employeeName}
+                    employees={managedEmployees}
+                    loading={employeePickerLoading}
+                    search={employeePickerSearch}
+                    open={employeePickerOpen}
+                    onOpenChange={onEmployeePickerOpenChange}
+                    onSearchChange={(value) => {
+                      onEmployeePickerSearchChange?.(value);
+                      onSearchManagedEmployees?.(value);
+                    }}
+                    onSelect={onSelectManagedEmployee}
                   />
 
                   <FormInput
@@ -1299,7 +1510,8 @@ function ResignationApplyModal({
                     name="employeeName"
                     value={form.employeeName}
                     onChange={onChange}
-                    placeholder="Enter employee full name"
+                    placeholder="Employee name will auto-fill"
+                    readOnly
                   />
 
                   <FormInput
@@ -1486,6 +1698,7 @@ function FormInput({
   onChange,
   type = "text",
   placeholder = "",
+  readOnly = false,
 }) {
   return (
     <div>
@@ -1498,8 +1711,11 @@ function FormInput({
         name={name}
         value={value}
         onChange={onChange}
+        readOnly={readOnly}
         placeholder={placeholder}
-        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        className={`h-12 w-full rounded-xl border border-[#D0D5DD] px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+          readOnly ? "cursor-not-allowed bg-[#F8FAFC]" : "bg-white"
+        }`}
       />
     </div>
   );
@@ -1636,7 +1852,9 @@ function ViewResignationModal({ open, item, onClose }) {
               />
               <InfoBox
                 label="Last Working Date"
-                value={formatDate(item?.lastWorkingDate || item?.last_working_date)}
+                value={formatDate(
+                  item?.lastWorkingDate || item?.last_working_date,
+                )}
               />
               <InfoBox
                 label="Filed By"
@@ -1701,7 +1919,7 @@ function InfoBox({ label, value, large = false }) {
   );
 }
 
-export default function AttritionPage() {
+export default function ResignationManagementPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -1713,6 +1931,11 @@ export default function AttritionPage() {
   const [resignationLoading, setResignationLoading] = useState(false);
   const [selectedResignation, setSelectedResignation] = useState(null);
 
+  const [managedEmployees, setManagedEmployees] = useState([]);
+  const [employeePickerLoading, setEmployeePickerLoading] = useState(false);
+  const [employeePickerSearch, setEmployeePickerSearch] = useState("");
+  const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
+
   const mainScrollRef = useRef(null);
 
   const initialResignationForm = {
@@ -1723,6 +1946,8 @@ export default function AttritionPage() {
     resignationType: "",
     reason: "",
     remarks: "",
+    department: "",
+    account: "",
     uploadedFile: null,
   };
 
@@ -1789,6 +2014,34 @@ export default function AttritionPage() {
   const hasActiveFilters =
     search || statusFilter !== "All" || typeFilter !== "All";
 
+  const fetchManagedEmployees = useCallback(async (searchValue = "") => {
+    try {
+      setEmployeePickerLoading(true);
+
+      const result = await getManagedEmployees({
+        page: 1,
+        limit: 50,
+        search: searchValue,
+      });
+
+      if (!result?.success) {
+        setManagedEmployees([]);
+        return [];
+      }
+
+      const data = Array.isArray(result.data) ? result.data : [];
+      setManagedEmployees(data);
+
+      return data;
+    } catch (error) {
+      console.error("FETCH MANAGED EMPLOYEES ERROR:", error);
+      setManagedEmployees([]);
+      return [];
+    } finally {
+      setEmployeePickerLoading(false);
+    }
+  }, []);
+
   const fetchResignations = useCallback(async ({ showError = false } = {}) => {
     try {
       setResignationLoading(true);
@@ -1803,8 +2056,7 @@ export default function AttritionPage() {
             open: true,
             type: "error",
             title: "Load Failed",
-            message:
-              result?.message || "Failed to load resignation records.",
+            message: result?.message || "Failed to load resignation records.",
           });
         }
 
@@ -1886,15 +2138,33 @@ export default function AttritionPage() {
 
   function handleOpenAddResignation() {
     resetResignationForm();
+    setEmployeePickerSearch("");
+    setEmployeePickerOpen(false);
     setOpenResignationForm(true);
+    fetchManagedEmployees("");
   }
 
   function closeResignationFormModal() {
     if (resignationSubmitting) return;
 
     setOpenResignationForm(false);
+    setEmployeePickerSearch("");
+    setEmployeePickerOpen(false);
     resetResignationForm();
     forceUnlockPageScroll();
+  }
+
+  function handleSelectManagedEmployee(employee) {
+    setResignationForm((prev) => ({
+      ...prev,
+      employeeSibsId: employee?.sibsId || "",
+      employeeName: employee?.fullName || "",
+      department: employee?.department || "",
+      account: employee?.account || "",
+    }));
+
+    setEmployeePickerOpen(false);
+    setEmployeePickerSearch("");
   }
 
   function handleResignationChange(e) {
@@ -1908,11 +2178,11 @@ export default function AttritionPage() {
 
   function getResignationValidationError() {
     if (!resignationForm.employeeSibsId) {
-      return "Please enter the employee SIBS ID.";
+      return "Please select the employee SIBS ID.";
     }
 
     if (!resignationForm.employeeName) {
-      return "Please enter the employee name.";
+      return "Please select an employee.";
     }
 
     if (!resignationForm.resignationDate) {
@@ -1990,6 +2260,8 @@ export default function AttritionPage() {
       }
 
       setOpenResignationForm(false);
+      setEmployeePickerSearch("");
+      setEmployeePickerOpen(false);
       resetResignationForm();
 
       await fetchResignations();
@@ -2114,6 +2386,14 @@ export default function AttritionPage() {
         open={openResignationForm}
         form={resignationForm}
         submitting={resignationSubmitting}
+        managedEmployees={managedEmployees}
+        employeePickerLoading={employeePickerLoading}
+        employeePickerSearch={employeePickerSearch}
+        employeePickerOpen={employeePickerOpen}
+        onEmployeePickerOpenChange={setEmployeePickerOpen}
+        onEmployeePickerSearchChange={setEmployeePickerSearch}
+        onSearchManagedEmployees={fetchManagedEmployees}
+        onSelectManagedEmployee={handleSelectManagedEmployee}
         onClose={closeResignationFormModal}
         onChange={handleResignationChange}
         onSubmit={handleSubmitResignation}

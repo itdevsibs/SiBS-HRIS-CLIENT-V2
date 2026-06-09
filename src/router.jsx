@@ -14,9 +14,8 @@ import EmployeesPage from "./pages/employee/EmployeesPage";
 
 import AttendancePage from "./pages/attendance/AttendancePage";
 import LeavesPage from "./pages/leaves/LeavesPage";
-import AttritionPage from "./pages/attrition/AttritionPage";
+import ResignationManagementPage from "./pages/resignation-management/ResignationManagementPage";
 import RequisitionsPage from "./pages/requisitions/RequisitionPage";
-import ResignationPage from "./pages/resignation/ResignationPage";
 import SchedulePage from "./pages/schedule/SchedulePage";
 import UsersPage from "./pages/users/UserManagementPage";
 import ProfileUserPage from "./pages/profile/UserProfilePage";
@@ -45,7 +44,7 @@ function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
 }
 
-const Router = () => {
+export default function Router() {
   return (
     <Routes>
       {/* AUTH / PUBLIC */}
@@ -125,10 +124,10 @@ const Router = () => {
       />
 
       <Route
-        path="/attrition"
+        path="/resignation"
         element={
           <PrivateRoute>
-            <AttritionPage />
+            <ResignationManagementPage />
           </PrivateRoute>
         }
       />
@@ -138,15 +137,6 @@ const Router = () => {
         element={
           <PrivateRoute>
             <RequisitionsPage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/resignation"
-        element={
-          <PrivateRoute>
-            <ResignationPage />
           </PrivateRoute>
         }
       />
@@ -329,6 +319,4 @@ const Router = () => {
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
-};
-
-export default Router;
+}
