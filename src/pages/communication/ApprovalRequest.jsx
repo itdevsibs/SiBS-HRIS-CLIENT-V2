@@ -35,6 +35,7 @@ import {
   approveRequestByModule,
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
+import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
 
 const REQUEST_MODULES = [
   "Attrition",
@@ -114,8 +115,14 @@ function formatDate(dateValue) {
   }).format(date);
 }
 
+<<<<<<< HEAD
 function normalizeStatus(status) {
   const cleanStatus = String(status || "").trim();
+=======
+function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+>>>>>>> 010a097 (fore rebase)
 
   if (cleanStatus === "Declined") return "Rejected";
   if (cleanStatus === "Retained") return "Rejected";
@@ -382,6 +389,7 @@ function CustomSelect({
     value === "All" && allLabel ? allLabel : value || allLabel || "Select";
 
   return (
+<<<<<<< HEAD
     <div className="relative">
       <label className="mb-1 block text-sm font-bold text-[#101828]">
         {label}
@@ -436,6 +444,13 @@ function CustomSelect({
         })}
       </DropdownPortal>
     </div>
+=======
+    String(request?.type || "").toLowerCase() === "resignation" ||
+    String(request?.source || "")
+      .toLowerCase()
+      .includes("resignation") ||
+    String(request?.id || "").startsWith("RES")
+>>>>>>> 010a097 (fore rebase)
   );
 }
 
@@ -701,11 +716,16 @@ export default function ApprovalRequest() {
         loading: true,
       }));
 
-      const payload = buildApprovalPayload(request, action, decisionModal.remarks, {
-        personallySpoken: decisionModal.personallySpoken,
-        employeeRetained: decisionModal.employeeRetained,
-        actionTaken: decisionModal.actionTaken,
-      });
+      const payload = buildApprovalPayload(
+        request,
+        action,
+        decisionModal.remarks,
+        {
+          personallySpoken: decisionModal.personallySpoken,
+          employeeRetained: decisionModal.employeeRetained,
+          actionTaken: decisionModal.actionTaken,
+        },
+      );
 
       const result =
         action === "approve"
@@ -1177,6 +1197,7 @@ function ApprovalRequestTable({
 
       <div className="p-5">
         <div className="hidden lg:block">
+<<<<<<< HEAD
           <div className="overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar">
             <table className="w-full min-w-[1300px] border-collapse bg-white text-left">
               <thead className="sticky top-0 z-10">
@@ -1207,18 +1228,70 @@ function ApprovalRequestTable({
                   </th>
                 </tr>
               </thead>
+=======
+          <div className="max-h-[670px] overflow-auto sibs-scrollbar">
+            {activeModule === "Job Description" ? (
+              <JobDescriptionRequestTable
+                requests={requests}
+                loading={loading}
+                totalRecords={totalRecords}
+                onView={onView}
+              />
+            ) : (
+              <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                    <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                      Request
+                    </th>
+                    <th className="px-5 py-4 text-left align-top">Requester</th>
+                    <th className="px-5 py-4 text-center align-top">Type</th>
+                    <th className="px-5 py-4 text-center align-top">
+                      Date Requested
+                    </th>
+                    <th className="px-5 py-4 text-center align-top">
+                      Priority
+                    </th>
+                    <th className="px-5 py-4 text-center align-top">Status</th>
+                    <th className="px-5 py-4 text-left align-top">Approver</th>
+                    <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+>>>>>>> 010a097 (fore rebase)
 
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={8}
-                    >
-                      <Loader2
-                        size={28}
-                        className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td
+                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        colSpan={8}
+                      >
+                        <Loader2
+                          size={28}
+                          className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                        />
+                        Loading approval requests...
+                      </td>
+                    </tr>
+                  ) : requests.length === 0 ? (
+                    <tr>
+                      <td
+                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        colSpan={8}
+                      >
+                        No approval requests found for {activeModule}.
+                      </td>
+                    </tr>
+                  ) : (
+                    requests.map((request) => (
+                      <ApprovalRequestRow
+                        key={`${request.source || "request"}-${request.id}`}
+                        request={request}
+                        onView={() => onView(request)}
                       />
+<<<<<<< HEAD
                       Loading approval requests...
                     </td>
                   </tr>
@@ -1242,6 +1315,13 @@ function ApprovalRequestTable({
                 )}
               </tbody>
             </table>
+=======
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
+>>>>>>> 010a097 (fore rebase)
           </div>
         </div>
 
@@ -1684,7 +1764,10 @@ function FormLikeBox({ label, value, large = false }) {
 }
 
 function FileTypeMini({ filename }) {
-  const ext = String(filename || "").split(".").pop()?.toLowerCase();
+  const ext = String(filename || "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
 
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
   const isPdf = ext === "pdf";
@@ -1832,8 +1915,14 @@ function DecisionModal({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <DecisionInfoBox label="Request ID" value={request.id || "--"} />
-                <DecisionInfoBox label="Request Type" value={request.type || "--"} />
+                <DecisionInfoBox
+                  label="Request ID"
+                  value={request.id || "--"}
+                />
+                <DecisionInfoBox
+                  label="Request Type"
+                  value={request.type || "--"}
+                />
                 <DecisionInfoBox
                   label="Requester"
                   value={request.requester || request.employeeName || "--"}
@@ -1844,7 +1933,9 @@ function DecisionModal({
                 />
                 <DecisionInfoBox
                   label="Date Requested"
-                  value={formatDate(request.dateRequested || request.requestDate)}
+                  value={formatDate(
+                    request.dateRequested || request.requestDate,
+                  )}
                 />
                 <DecisionInfoBox
                   label="Last Working Date"
@@ -1858,7 +1949,10 @@ function DecisionModal({
                   label="Priority"
                   value={request.priority || "Normal"}
                 />
-                <DecisionInfoBox label="Source" value={request.source || "--"} />
+                <DecisionInfoBox
+                  label="Source"
+                  value={request.source || "--"}
+                />
               </div>
 
               {isResignation && (
