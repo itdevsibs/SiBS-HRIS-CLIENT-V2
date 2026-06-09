@@ -64,6 +64,14 @@ const API_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5000";
 
+const DEFAULT_COUNTS = {
+  total: 0,
+  pending: 0,
+  forReview: 0,
+  approved: 0,
+  rejected: 0,
+};
+
 function getFileUrl(url) {
   const value = String(url || "").trim();
 
@@ -79,14 +87,6 @@ function getFileUrl(url) {
 
   return `${API_URL}/${value}`;
 }
-
-const DEFAULT_COUNTS = {
-  total: 0,
-  pending: 0,
-  forReview: 0,
-  approved: 0,
-  rejected: 0,
-};
 
 function DropdownPortal({
   open,
@@ -319,7 +319,6 @@ function normalizeStatus(status) {
 
 function safeText(value, fallback = "--") {
   const text = String(value || "").trim();
-
   return text || fallback;
 }
 
@@ -342,6 +341,7 @@ function buildApprovalPayload(request, action, remarks = "", extra = {}) {
     requestType: request?.type || "",
     source: request?.source || "",
     remarks: remarks || "",
+    action,
 
     personallySpoken: extra.personallySpoken || "",
     employeeRetained: extra.employeeRetained || "",
@@ -417,22 +417,30 @@ function getApprovalSteps(request) {
 function getStepStatus(step) {
   if (step.declined) return "Rejected";
   if (step.approved) return "Approved";
-
   return "Pending";
 }
 
 function getActiveApprovalStepKey(request) {
   const steps = getApprovalSteps(request);
   const activeStep = steps.find((step) => !step.approved && !step.declined);
-
   return activeStep?.key || "";
+}
+
+function isResignationRequest(request) {
+  return (
+    String(request?.type || "").toLowerCase() === "resignation" ||
+    String(request?.source || "").toLowerCase().includes("resignation") ||
+    String(request?.id || "").startsWith("RES")
+  );
 }
 
 export default function ApprovalRequest() {
   const [activeModule, setActiveModule] = useState("Attrition");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [typeFilter, setTypeFilter] = useState("All");
+
+  // Default to Resignation so supervisor-filed resignations are immediately visible here.
+  const [typeFilter, setTypeFilter] = useState("Resignation");
 
   const [requests, setRequests] = useState([]);
   const [counts, setCounts] = useState(DEFAULT_COUNTS);
@@ -505,11 +513,13 @@ export default function ApprovalRequest() {
           return;
         }
 
-        setRequests(Array.isArray(result.data) ? result.data : []);
+        const data = Array.isArray(result.data) ? result.data : [];
+
+        setRequests(data);
         setCounts(result.counts || DEFAULT_COUNTS);
         setPagination(
           result.pagination || {
-            total: Array.isArray(result.data) ? result.data.length : 0,
+            total: data.length,
             totalPages: 1,
             currentPage: 1,
             limit: 200,
@@ -553,14 +563,14 @@ export default function ApprovalRequest() {
   function handleClearFilters() {
     setSearch("");
     setStatusFilter("All");
-    setTypeFilter("All");
+    setTypeFilter(activeModule === "Attrition" ? "Resignation" : "All");
   }
 
   function handleChangeModule(moduleName) {
     setActiveModule(moduleName);
     setSearch("");
     setStatusFilter("All");
-    setTypeFilter("All");
+    setTypeFilter(moduleName === "Attrition" ? "Resignation" : "All");
     setSelectedRequest(null);
   }
 
@@ -634,38 +644,40 @@ export default function ApprovalRequest() {
       return;
     }
 
-    if (!decisionModal.personallySpoken) {
-      openStatus({
-        type: "error",
-        title: "Required Field",
-        message:
-          "Please select if you have personally spoken to the resigning employee.",
-      });
+    if (isResignationRequest(request)) {
+      if (!decisionModal.personallySpoken) {
+        openStatus({
+          type: "error",
+          title: "Required Field",
+          message:
+            "Please select if you have personally spoken to the resigning employee.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    if (!decisionModal.employeeRetained) {
-      openStatus({
-        type: "error",
-        title: "Required Field",
-        message: "Please select if the employee was retained.",
-      });
+      if (!decisionModal.employeeRetained) {
+        openStatus({
+          type: "error",
+          title: "Required Field",
+          message: "Please select if the employee was retained.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    if (
-      decisionModal.personallySpoken === "Yes" &&
-      !String(decisionModal.actionTaken || "").trim()
-    ) {
-      openStatus({
-        type: "error",
-        title: "Required Field",
-        message: "Please enter what you have done.",
-      });
+      if (
+        decisionModal.personallySpoken === "Yes" &&
+        !String(decisionModal.actionTaken || "").trim()
+      ) {
+        openStatus({
+          type: "error",
+          title: "Required Field",
+          message: "Please enter what you have done.",
+        });
 
-      return;
+        return;
+      }
     }
 
     const requestId = getRawRequestId(request);
@@ -797,8 +809,8 @@ export default function ApprovalRequest() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review, monitor, and manage approval requests submitted across
-              HRIS modules.
+              Review resignation approvals filed by direct supervisors and
+              manage other HRIS module approvals.
             </p>
           </div>
 
@@ -1408,6 +1420,7 @@ function ViewApprovalRequestModal({
 
   const status = normalizeStatus(request.status);
   const canReview = request.canReview === true || request.raw?.canEdit === true;
+  const isResignation = isResignationRequest(request);
 
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
@@ -1421,14 +1434,12 @@ function ViewApprovalRequestModal({
 
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  {request.type === "Attrition"
-                    ? "View Attrition"
-                    : request.title || "Approval Request"}
+                  {isResignation ? "View Resignation Approval" : request.title}
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  {request.type === "Attrition"
-                    ? "Attrition request details"
+                  {isResignation
+                    ? "Resignation approval request details"
                     : `${request.title || "Approval Request"} details`}
                 </p>
               </div>
@@ -1449,7 +1460,7 @@ function ViewApprovalRequestModal({
           <div className="space-y-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormLikeBox
-                label="Notice Date"
+                label={isResignation ? "Resignation Date" : "Notice Date"}
                 value={formatDate(request.dateRequested || request.requestDate)}
               />
 
@@ -1596,10 +1607,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
               />
 
               {step.personallySpoken === "Yes" && (
-                <MiniInfo
-                  label="What Have You Done"
-                  value={step.actionTaken}
-                />
+                <MiniInfo label="What Have You Done" value={step.actionTaken} />
               )}
             </div>
 
@@ -1618,7 +1626,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
             <div className="mt-4">
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                  status
+                  status,
                 )}`}
               >
                 {React.createElement(getStatusIcon(status), { size: 14 })}
@@ -1726,6 +1734,7 @@ function DecisionModal({
 
   const isApprove = action === "approve";
   const requestStatus = normalizeStatus(request.status);
+  const isResignation = isResignationRequest(request);
 
   return createPortal(
     <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4">
@@ -1839,88 +1848,94 @@ function DecisionModal({
                 <DecisionInfoBox label="Source" value={request.source || "--"} />
               </div>
 
+              {isResignation && (
+                <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                  <h3 className="text-base font-extrabold text-sibs-primary-1">
+                    Resignation Approval Questions
+                  </h3>
+
+                  <p className="mt-2 text-sm font-medium text-sibs-tertiary-5">
+                    Complete the required decision details before submitting.
+                  </p>
+
+                  <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 md:items-start">
+                    <div className="flex h-full flex-col">
+                      <label className="mb-3 min-h-[40px] text-xs font-extrabold uppercase leading-5 tracking-wide text-sibs-primary-1">
+                        Have you personally spoken to the resigning employee?{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <select
+                        value={personallySpoken}
+                        onChange={(e) =>
+                          onChangePersonallySpoken(e.target.value)
+                        }
+                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        required
+                      >
+                        <option value="">Select answer</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div className="flex h-full flex-col">
+                      <label className="mb-3 min-h-[40px] text-xs font-extrabold uppercase leading-5 tracking-wide text-sibs-primary-1">
+                        Was the employee retained (Y/N)?{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <select
+                        value={employeeRetained}
+                        onChange={(e) =>
+                          onChangeEmployeeRetained(e.target.value)
+                        }
+                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        required
+                      >
+                        <option value="">Select answer</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {personallySpoken === "Yes" && (
+                    <div className="mt-6">
+                      <label className="mb-3 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        What have you done?{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+
+                      <textarea
+                        value={actionTaken}
+                        onChange={(e) => onChangeActionTaken(e.target.value)}
+                        rows={4}
+                        placeholder="Enter action taken..."
+                        className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Approval Questions
-                </h3>
+                <label className="mb-3 block text-sm font-extrabold text-[#101828]">
+                  Remarks {isApprove ? "(optional)" : "(required)"}
+                </label>
 
-                <p className="mt-2 text-sm font-medium text-sibs-tertiary-5">
-                  Complete the required decision details before submitting.
-                </p>
-
-                <div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2 md:items-start">
-                  <div className="flex h-full flex-col">
-                    <label className="mb-3 min-h-[40px] text-xs font-extrabold uppercase leading-5 tracking-wide text-sibs-primary-1">
-                      Have you personally spoken to the resigning employee?{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      value={personallySpoken}
-                      onChange={(e) => onChangePersonallySpoken(e.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      required
-                    >
-                      <option value="">Select answer</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-
-                  <div className="flex h-full flex-col">
-                    <label className="mb-3 min-h-[40px] text-xs font-extrabold uppercase leading-5 tracking-wide text-sibs-primary-1">
-                      Was the employee retained (Y/N)?{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <select
-                      value={employeeRetained}
-                      onChange={(e) => onChangeEmployeeRetained(e.target.value)}
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      required
-                    >
-                      <option value="">Select answer</option>
-                      <option value="Yes">Yes</option>
-                      <option value="No">No</option>
-                    </select>
-                  </div>
-                </div>
-
-                {personallySpoken === "Yes" && (
-                  <div className="mt-6">
-                    <label className="mb-3 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      What have you done?{" "}
-                      <span className="text-red-500">*</span>
-                    </label>
-
-                    <textarea
-                      value={actionTaken}
-                      onChange={(e) => onChangeActionTaken(e.target.value)}
-                      rows={4}
-                      placeholder="Enter action taken..."
-                      className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      required
-                    />
-                  </div>
-                )}
-
-                <div className="mt-6">
-                  <label className="mb-3 block text-sm font-extrabold text-[#101828]">
-                    Remarks {isApprove ? "(optional)" : "(required)"}
-                  </label>
-
-                  <textarea
-                    value={remarks}
-                    onChange={(e) => onChangeRemarks(e.target.value)}
-                    rows={5}
-                    placeholder={
-                      isApprove
-                        ? "Add approval remarks..."
-                        : "Enter reason for rejecting..."
-                    }
-                    className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </div>
+                <textarea
+                  value={remarks}
+                  onChange={(e) => onChangeRemarks(e.target.value)}
+                  rows={5}
+                  placeholder={
+                    isApprove
+                      ? "Add approval remarks..."
+                      : "Enter reason for rejecting..."
+                  }
+                  className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                />
               </div>
             </div>
 
@@ -1937,30 +1952,34 @@ function DecisionModal({
                     subtitle={request.id || "--"}
                   />
 
-                  <DecisionChecklistItem
-                    done={!!personallySpoken}
-                    title="Personally spoken answer"
-                    subtitle={personallySpoken || "Waiting for answer"}
-                  />
+                  {isResignation && (
+                    <>
+                      <DecisionChecklistItem
+                        done={!!personallySpoken}
+                        title="Personally spoken answer"
+                        subtitle={personallySpoken || "Waiting for answer"}
+                      />
 
-                  <DecisionChecklistItem
-                    done={!!employeeRetained}
-                    title="Employee retained answer"
-                    subtitle={employeeRetained || "Waiting for answer"}
-                  />
+                      <DecisionChecklistItem
+                        done={!!employeeRetained}
+                        title="Employee retained answer"
+                        subtitle={employeeRetained || "Waiting for answer"}
+                      />
 
-                  <DecisionChecklistItem
-                    done={
-                      personallySpoken !== "Yes" ||
-                      !!String(actionTaken || "").trim()
-                    }
-                    title="Action taken details"
-                    subtitle={
-                      personallySpoken === "Yes"
-                        ? actionTaken || "Required"
-                        : "Not required"
-                    }
-                  />
+                      <DecisionChecklistItem
+                        done={
+                          personallySpoken !== "Yes" ||
+                          !!String(actionTaken || "").trim()
+                        }
+                        title="Action taken details"
+                        subtitle={
+                          personallySpoken === "Yes"
+                            ? actionTaken || "Required"
+                            : "Not required"
+                        }
+                      />
+                    </>
+                  )}
 
                   <DecisionChecklistItem
                     done={isApprove || !!String(remarks || "").trim()}

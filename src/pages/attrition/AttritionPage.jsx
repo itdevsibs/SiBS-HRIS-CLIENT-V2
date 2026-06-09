@@ -1,113 +1,1732 @@
-import { useEffect, useRef, useState } from "react";
-import { FileText, Search, Plus } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronDown,
+  Clock3,
+  Eye,
+  FileCheck2,
+  FileText,
+  ListChecks,
+  Loader2,
+  Mail,
+  Plus,
+  RefreshCcw,
+  Search,
+  Send,
+  TrendingDown,
+  UploadCloud,
+  UserCheck,
+  UsersRound,
+  X,
+  XCircle,
+} from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import AttritionModal from "../../components/modals/attrition/AttritionModal";
 import StatusModal from "../../components/modals/StatusModal";
-import AttritionTable from "../../components/tables/AttritionTable";
-import ResignationTable from "../../components/tables/employees/EmployeeResignationTable";
-import EmployeeAttritionTable from "../../components/tables/employees/EmployeeAttritionTable";
 
-import { saveAttrition, updateAttrition } from "../../lib/axios/getAttrition";
 import {
   getSupervisorResignations,
-  getSupervisorAttritions,
-  updateSupervisorResignation,
+  saveSupervisorResignation,
 } from "../../lib/axios/getEmployee";
-
-import { usePagination } from "../../services/context/PaginationContext";
-import { useUser } from "../../services/context/UserContext";
 
 import {
   formatDate,
-  formatDateTime,
   getTodayDate,
 } from "../../components/layout/FormatDateTime";
 
-function normalizeSibsId(value) {
-  const cleanValue = String(value || "").trim();
+const DEFAULT_COUNTS = {
+  total: 0,
+  pending: 0,
+  notice: 0,
+  completed: 0,
+  declined: 0,
+};
 
-  if (!cleanValue) return "";
+const STATUS_OPTIONS = [
+  "All",
+  "For Approval",
+  "In Notice Period",
+  "Completed",
+  "Declined",
+];
 
-  const numericValue = Number(cleanValue);
+const TYPE_OPTIONS = [
+  "All",
+  "Voluntary",
+  "Immediate",
+  "End of Contract",
+  "Health Reason",
+  "Personal Reason",
+  "Career Opportunity",
+  "Other",
+];
 
-  if (Number.isFinite(numericValue)) {
-    return String(numericValue);
-  }
-
-  return cleanValue;
+function normalizeStatus(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
-function isSameSibsId(a, b) {
-  const cleanA = String(a || "").trim();
-  const cleanB = String(b || "").trim();
+function safeText(value, fallback = "--") {
+  const text = String(value || "").trim();
+  return text || fallback;
+}
 
-  if (!cleanA || !cleanB) return false;
+function getResignationStatus(item) {
+  const status = normalizeStatus(item?.status);
 
-  return cleanA === cleanB || normalizeSibsId(cleanA) === normalizeSibsId(cleanB);
+  const isDeclined =
+    Number(item?.tlIsDeclined || 0) === 1 ||
+    Number(item?.omIsDeclined || 0) === 1 ||
+    Number(item?.somIsDeclined || 0) === 1 ||
+    status === "declined" ||
+    status === "rejected";
+
+  if (isDeclined) return "Declined";
+
+  const isCompleted =
+    status === "completed" ||
+    status === "complete" ||
+    status === "approved" ||
+    status === "cleared" ||
+    Number(item?.isCompleted || 0) === 1;
+
+  if (isCompleted) return "Completed";
+
+  const lastWorkingDate =
+    item?.lastWorkingDate || item?.last_working_date || item?.effectivityDate;
+
+  if (lastWorkingDate) {
+    const today = new Date();
+    const lastDay = new Date(lastWorkingDate);
+
+    if (!Number.isNaN(lastDay.getTime())) {
+      today.setHours(0, 0, 0, 0);
+      lastDay.setHours(0, 0, 0, 0);
+
+      if (lastDay >= today) return "In Notice Period";
+    }
+  }
+
+  return "For Approval";
+}
+
+function getItemDate(item) {
+  return (
+    item?.resignationDate ||
+    item?.resignation_date ||
+    item?.attritionDate ||
+    item?.createdAt ||
+    item?.created_at ||
+    item?.dateFiled ||
+    item?.filedDate ||
+    null
+  );
+}
+
+function getFullName(item) {
+  return (
+    item?.employeeName ||
+    item?.fullName ||
+    item?.full_name ||
+    item?.name ||
+    "Employee"
+  );
+}
+
+function getEmployeeSibsId(item) {
+  return item?.employeeSibsId || item?.sibsId || item?.sibs_id || "--";
+}
+
+function getEmployeeDepartment(item) {
+  return (
+    item?.departmentName ||
+    item?.department ||
+    item?.deptName ||
+    item?.dept_name ||
+    "--"
+  );
+}
+
+function getEmployeePosition(item) {
+  return (
+    item?.position ||
+    item?.jobTitle ||
+    item?.job_title ||
+    item?.designation ||
+    item?.departmentName ||
+    item?.department ||
+    "Employee"
+  );
+}
+
+function getInitials(name) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (!parts.length) return "E";
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function isStageApproved(item, stage) {
+  if (stage === "tl") return Number(item?.tlIsApproved || 0) === 1;
+  if (stage === "om") return Number(item?.omIsApproved || 0) === 1;
+  if (stage === "som") return Number(item?.somIsApproved || 0) === 1;
+  return false;
+}
+
+function isStageDeclined(item, stage) {
+  if (stage === "tl") return Number(item?.tlIsDeclined || 0) === 1;
+  if (stage === "om") return Number(item?.omIsDeclined || 0) === 1;
+  if (stage === "som") return Number(item?.somIsDeclined || 0) === 1;
+  return false;
+}
+
+function getStageStatus(items, stage) {
+  if (!items.length) return "No Requests";
+
+  const approvedCount = items.filter((item) =>
+    isStageApproved(item, stage),
+  ).length;
+
+  const declinedCount = items.filter((item) =>
+    isStageDeclined(item, stage),
+  ).length;
+
+  if (declinedCount > 0) return "Has Declined";
+  if (approvedCount === items.length) return "Approved";
+  if (approvedCount > 0) return "In Progress";
+
+  return "Pending";
+}
+
+function getStatusClass(status) {
+  switch (status) {
+    case "Completed":
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Declined":
+    case "Rejected":
+      return "border-red-200 bg-red-50 text-red-700";
+    case "In Notice Period":
+    case "For Review":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "For Approval":
+    case "Pending":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    default:
+      return "border-gray-200 bg-gray-50 text-gray-600";
+  }
+}
+
+function getStatusIcon(status) {
+  switch (status) {
+    case "Completed":
+    case "Approved":
+      return CheckCircle2;
+    case "Declined":
+    case "Rejected":
+      return XCircle;
+    case "In Notice Period":
+      return AlertCircle;
+    default:
+      return Clock3;
+  }
+}
+
+function getStageClass(status) {
+  switch (status) {
+    case "Approved":
+      return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    case "In Progress":
+      return "border-blue-100 bg-blue-50 text-blue-700";
+    case "Has Declined":
+      return "border-red-100 bg-red-50 text-red-700";
+    case "No Requests":
+      return "border-slate-100 bg-slate-50 text-slate-600";
+    default:
+      return "border-amber-100 bg-amber-50 text-amber-700";
+  }
+}
+
+function getFileName(item) {
+  return item?.uploadedFile || item?.uploadedFileName || item?.fileName || "";
+}
+
+function DropdownPortal({
+  open,
+  anchorRef,
+  children,
+  onClose,
+  maxHeight = 256,
+}) {
+  const dropdownRef = useRef(null);
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return undefined;
+
+    function updatePosition() {
+      const rect = anchorRef.current.getBoundingClientRect();
+
+      setStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, anchorRef]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleClickOutside(e) {
+      const clickedAnchor = anchorRef.current?.contains(e.target);
+      const clickedDropdown = dropdownRef.current?.contains(e.target);
+
+      if (!clickedAnchor && !clickedDropdown) {
+        onClose?.();
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, anchorRef, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      style={{
+        top: `${style.top}px`,
+        left: `${style.left}px`,
+        width: `${style.width}px`,
+      }}
+    >
+      <div
+        className="overflow-y-auto py-2 sibs-scrollbar"
+        style={{ maxHeight }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  allLabel = "",
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+
+  const displayValue =
+    value === "All" && allLabel ? allLabel : value || allLabel || "Select";
+
+  return (
+    <div className="relative">
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-12 w-full items-center justify-between rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD]"
+        }`}
+      >
+        <span className="truncate">{displayValue}</span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <DropdownPortal
+        open={open}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+      >
+        {options.map((option) => {
+          const optionLabel = option === "All" && allLabel ? allLabel : option;
+          const selected = value === option;
+
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+              className={`block w-full px-4 py-3 text-left text-sm transition ${
+                selected
+                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                  : "text-[#344054] hover:bg-[#F8FAFC]"
+              }`}
+            >
+              <span className="block truncate">{optionLabel}</span>
+            </button>
+          );
+        })}
+      </DropdownPortal>
+    </div>
+  );
+}
+
+function ResignationSummaryCards({ stats, loading }) {
+  const normalizedStats = {
+    ...DEFAULT_COUNTS,
+    ...(stats || {}),
+  };
+
+  const cards = [
+    {
+      title: "Total Resignations",
+      value: normalizedStats.total,
+      icon: FileCheck2,
+      className: "bg-blue-50 text-sibs-primary-1",
+    },
+    {
+      title: "For Approval",
+      value: normalizedStats.pending,
+      icon: Clock3,
+      className: "bg-amber-50 text-amber-700",
+    },
+    {
+      title: "Notice Period",
+      value: normalizedStats.notice,
+      icon: AlertCircle,
+      className: "bg-cyan-50 text-cyan-700",
+    },
+    {
+      title: "Completed",
+      value: normalizedStats.completed,
+      icon: CheckCircle2,
+      className: "bg-emerald-50 text-emerald-700",
+    },
+    {
+      title: "Declined",
+      value: normalizedStats.declined,
+      icon: XCircle,
+      className: "bg-red-50 text-red-700",
+    },
+  ];
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <FileCheck2 size={14} />
+              Resignation Overview
+            </div>
+
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+              Resignation Summary
+            </h2>
+
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              Monitor filed resignation records, current progress, notice
+              period, and completed clearance.
+            </p>
+          </div>
+
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+            {loading && <Loader2 size={15} className="animate-spin" />}
+            Records: {normalizedStats.total}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
+        {cards.map((card) => {
+          const Icon = card.icon;
+
+          return (
+            <div
+              key={card.title}
+              className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:bg-[#FAFBFC] hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                    {card.title}
+                  </p>
+
+                  <p className="mt-2 text-2xl font-extrabold text-sibs-primary-1">
+                    {loading ? "..." : card.value}
+                  </p>
+                </div>
+
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.className}`}
+                >
+                  <Icon size={21} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function ApprovalStageRow({ stage, approver, role, status }) {
+  return (
+    <tr className="border-b border-[#edf1f5] last:border-b-0">
+      <td className="px-4 py-3 text-sm font-semibold text-sibs-primary-1">
+        {stage}
+      </td>
+
+      <td className="px-4 py-3 text-sm font-medium text-[#344054]">
+        {approver}
+      </td>
+
+      <td className="px-4 py-3 text-sm font-medium text-sibs-tertiary-5">
+        {role}
+      </td>
+
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
+            status,
+          )}`}
+        >
+          {status}
+        </span>
+      </td>
+    </tr>
+  );
+}
+
+function ResignationProcessStep({
+  number,
+  icon: Icon,
+  title,
+  description,
+  active,
+  done,
+}) {
+  return (
+    <div className="relative min-w-0 flex-1">
+      <div className="flex min-w-0 flex-col items-center text-center">
+        <div
+          className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-300 ${
+            done
+              ? "bg-emerald-600 text-white"
+              : active
+                ? "bg-sibs-primary-1 text-white"
+                : "bg-[#eef2f6] text-sibs-tertiary-5"
+          }`}
+        >
+          <Icon size={20} />
+        </div>
+
+        <div className="mt-3 min-w-0">
+          <p
+            className={`text-xs font-bold ${
+              done || active ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {number}. {title}
+          </p>
+
+          <p className="mt-1 text-xs font-medium leading-5 text-sibs-tertiary-5">
+            {description}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResignationAnalytics({ data = [], loading = false }) {
+  const analytics = useMemo(() => {
+    const total = data.length;
+
+    const pending = data.filter(
+      (item) => getResignationStatus(item) === "For Approval",
+    ).length;
+
+    const notice = data.filter(
+      (item) => getResignationStatus(item) === "In Notice Period",
+    ).length;
+
+    const completed = data.filter(
+      (item) => getResignationStatus(item) === "Completed",
+    ).length;
+
+    const declined = data.filter(
+      (item) => getResignationStatus(item) === "Declined",
+    ).length;
+
+    const monthMap = new Map();
+
+    data.forEach((item) => {
+      const rawDate = getItemDate(item);
+      if (!rawDate) return;
+
+      const date = new Date(rawDate);
+      if (Number.isNaN(date.getTime())) return;
+
+      const label = date.toLocaleDateString("en-US", {
+        month: "short",
+        timeZone: "Asia/Manila",
+      });
+
+      monthMap.set(label, (monthMap.get(label) || 0) + 1);
+    });
+
+    const trend = Array.from(monthMap.entries()).slice(-6);
+    const maxTrendValue = Math.max(...trend.map(([, value]) => value), 1);
+
+    return {
+      total,
+      pending,
+      notice,
+      completed,
+      declined,
+      trend,
+      maxTrendValue,
+      completionRate: total ? Math.round((completed / total) * 100) : 0,
+    };
+  }, [data]);
+
+  const approvalStages = useMemo(
+    () => [
+      {
+        stage: "1",
+        approver: "Team Leader",
+        role: "Direct Supervisor",
+        status: getStageStatus(data, "tl"),
+      },
+      {
+        stage: "2",
+        approver: "Operations Manager",
+        role: "Department Head",
+        status: getStageStatus(data, "om"),
+      },
+      {
+        stage: "3",
+        approver: "Senior Operations Manager",
+        role: "Final Operations Approval",
+        status: getStageStatus(data, "som"),
+      },
+      {
+        stage: "4",
+        approver: "HR / Admin",
+        role: "Clearance & Completion",
+        status: analytics.completed > 0 ? "In Progress" : "Pending",
+      },
+    ],
+    [analytics.completed, data],
+  );
+
+  return (
+    <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
+      <div className="min-w-0 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ListChecks size={14} />
+              Process Flow
+            </div>
+
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+              Resignation Process
+            </h2>
+
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              From employee email submission to TL/OM filing, approval request,
+              notice period, and HR/Admin completion.
+            </p>
+          </div>
+
+          <span className="mt-2 w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054] sm:mt-0">
+            Sequential Approval
+          </span>
+        </div>
+
+        <div className="relative mt-6">
+          <div className="absolute left-[8%] right-[8%] top-6 hidden h-0.5 bg-[#d9e2ec] lg:block" />
+
+          <div className="relative grid min-w-0 grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <ResignationProcessStep
+              number="1"
+              icon={Mail}
+              title="Email Received"
+              description="Employee submits resignation letter via email."
+              done={analytics.total > 0}
+            />
+
+            <ResignationProcessStep
+              number="2"
+              icon={UserCheck}
+              title="Filed by TL / OM"
+              description="Supervisor applies resignation in the system."
+              done={analytics.total > 0}
+            />
+
+            <ResignationProcessStep
+              number="3"
+              icon={Send}
+              title="For Approval"
+              description="Request appears in Approval Request module."
+              active={analytics.pending > 0}
+              done={analytics.notice > 0 || analytics.completed > 0}
+            />
+
+            <ResignationProcessStep
+              number="4"
+              icon={Clock3}
+              title="Notice Period"
+              description="Employee renders remaining working days."
+              active={analytics.notice > 0}
+              done={analytics.completed > 0}
+            />
+
+            <ResignationProcessStep
+              number="5"
+              icon={CheckCircle2}
+              title="Completed"
+              description="Clearance and final resignation completed."
+              done={analytics.completed > 0}
+            />
+          </div>
+        </div>
+
+        <div className="mt-7 overflow-hidden rounded-2xl border border-[#E6ECF2]">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+            <h3 className="text-sm font-extrabold text-sibs-primary-1">
+              Approval Stages
+            </h3>
+
+            <p className="text-xs font-semibold text-sibs-tertiary-5">
+              TL / OM / SOM / HR
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] border-collapse">
+              <thead>
+                <tr className="bg-white text-left text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                  <th className="px-4 py-3">Stage</th>
+                  <th className="px-4 py-3">Approver</th>
+                  <th className="px-4 py-3">Role</th>
+                  <th className="px-4 py-3">Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {approvalStages.map((stage) => (
+                  <ApprovalStageRow
+                    key={stage.stage}
+                    stage={stage.stage}
+                    approver={stage.approver}
+                    role={stage.role}
+                    status={stage.status}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid min-w-0 grid-cols-1 gap-5">
+        <div className="min-w-0 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-red-700">
+                <TrendingDown size={14} />
+                Trend
+              </div>
+
+              <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+                Resignation Trend
+              </h2>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Monthly filed resignations
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+              <TrendingDown size={19} />
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC]">
+              <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
+            </div>
+          ) : analytics.trend.length > 0 ? (
+            <div className="flex h-40 items-end gap-3">
+              {analytics.trend.map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex min-w-0 flex-1 flex-col items-center gap-2"
+                >
+                  <div className="flex h-28 w-full items-end rounded-full bg-[#f2f4f7]">
+                    <div
+                      className="w-full rounded-full bg-sibs-primary-1 transition-all duration-300"
+                      style={{
+                        height: `${Math.max(
+                          12,
+                          (value / analytics.maxTrendValue) * 100,
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-sibs-primary-1">
+                      {value}
+                    </p>
+
+                    <p className="text-[11px] font-semibold text-sibs-tertiary-5">
+                      {label}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[#d9e2ec] bg-[#f8fafc] text-center">
+              <UsersRound size={22} className="text-sibs-tertiary-5" />
+
+              <p className="mt-2 text-sm font-semibold text-sibs-primary-1">
+                No trend data yet
+              </p>
+
+              <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
+                Filed resignations will appear here.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+          <h3 className="text-base font-extrabold text-sibs-primary-1">
+            Approval Routing
+          </h3>
+
+          <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
+            All resignation approval decisions are handled in the Approval
+            Request module. This page is only for filing, monitoring, process
+            tracking, analytics, and full resignation listing.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResignationFilters({
+  search,
+  setSearch,
+  statusFilter,
+  setStatusFilter,
+  typeFilter,
+  setTypeFilter,
+  hasActiveFilters,
+  onClearFilters,
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px] xl:items-end">
+        <div>
+          <label className="mb-1 block text-sm font-bold text-[#101828]">
+            Search
+          </label>
+
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+            />
+
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search employee, SIBS ID, department, type, status, reason..."
+              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+            />
+          </div>
+        </div>
+
+        <CustomSelect
+          label="Resignation Status"
+          value={statusFilter}
+          options={STATUS_OPTIONS}
+          allLabel="All Status"
+          onChange={setStatusFilter}
+        />
+
+        <CustomSelect
+          label="Resignation Type"
+          value={typeFilter}
+          options={TYPE_OPTIONS}
+          allLabel="All Types"
+          onChange={setTypeFilter}
+        />
+      </div>
+
+      {hasActiveFilters && (
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+          >
+            Clear Filters
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResignationTableCard({
+  data,
+  totalRecords,
+  loading,
+  onView,
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <ListChecks size={14} />
+              Resignation List
+            </div>
+
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+              All Resignations
+            </h2>
+
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              View all resignation records filed by TL/OM or direct supervisors.
+            </p>
+          </div>
+
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+            {loading && <Loader2 size={15} className="animate-spin" />}
+            Showing: {data.length} / {totalRecords}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 sm:p-5">
+        <div className="hidden lg:block">
+          <div className="max-h-[670px] overflow-auto sibs-scrollbar">
+            <table className="w-full min-w-[1250px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                    Employee
+                  </th>
+                  <th className="px-5 py-4 text-left align-top">
+                    Filed By
+                  </th>
+                  <th className="px-5 py-4 text-center align-top">
+                    Type
+                  </th>
+                  <th className="px-5 py-4 text-center align-top">
+                    Resignation Date
+                  </th>
+                  <th className="px-5 py-4 text-center align-top">
+                    Last Working Date
+                  </th>
+                  <th className="px-5 py-4 text-center align-top">
+                    Status
+                  </th>
+                  <th className="px-5 py-4 text-left align-top">
+                    Reason
+                  </th>
+                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      colSpan={8}
+                    >
+                      <Loader2
+                        size={28}
+                        className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                      />
+                      Loading resignations...
+                    </td>
+                  </tr>
+                ) : data.length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      colSpan={8}
+                    >
+                      No resignation records found.
+                    </td>
+                  </tr>
+                ) : (
+                  data.map((item, index) => (
+                    <ResignationRow
+                      key={item?.id || item?.resignationId || index}
+                      item={item}
+                      onView={() => onView(item)}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="block lg:hidden">
+          {loading ? (
+            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+              <Loader2
+                size={28}
+                className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+              />
+              Loading resignations...
+            </div>
+          ) : data.length === 0 ? (
+            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+              No resignation records found.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {data.map((item, index) => (
+                <ResignationMobileCard
+                  key={item?.id || item?.resignationId || index}
+                  item={item}
+                  onView={() => onView(item)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ResignationRow({ item, onView }) {
+  const status = getResignationStatus(item);
+  const StatusIcon = getStatusIcon(status);
+  const employeeName = getFullName(item);
+
+  return (
+    <tr className="transition hover:bg-[#FAFBFC]">
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1/10 text-xs font-extrabold text-sibs-primary-1">
+            {getInitials(employeeName)}
+          </div>
+
+          <div className="min-w-0">
+            <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+              {employeeName}
+            </p>
+
+            <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+              {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
+            </p>
+          </div>
+        </div>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+          {item?.filedByName ||
+            item?.encodedByName ||
+            item?.createdByName ||
+            item?.supervisorName ||
+            "TL / OM"}
+        </p>
+
+        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+          Direct supervisor
+        </p>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
+          {item?.resignationType || item?.type || "--"}
+        </span>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+        {formatDate(item?.resignationDate || item?.resignation_date || getItemDate(item))}
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+        {formatDate(item?.lastWorkingDate || item?.last_working_date)}
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+        <span
+          className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+            status,
+          )}`}
+        >
+          <StatusIcon size={14} />
+          {status}
+        </span>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <p className="max-w-[260px] truncate text-sm font-semibold text-[#344054]">
+          {item?.reason || item?.remarks || "--"}
+        </p>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+        <button
+          type="button"
+          onClick={onView}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+        >
+          <Eye size={16} />
+          View
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function ResignationMobileCard({ item, onView }) {
+  const status = getResignationStatus(item);
+  const StatusIcon = getStatusIcon(status);
+
+  return (
+    <button
+      type="button"
+      onClick={onView}
+      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+            {getFullName(item)}
+          </h3>
+
+          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+            {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
+          </p>
+        </div>
+
+        <span
+          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+            status,
+          )}`}
+        >
+          <StatusIcon size={12} />
+          {status}
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <MobileMetric label="Type" value={item?.resignationType || item?.type} />
+        <MobileMetric
+          label="Date"
+          value={formatDate(item?.resignationDate || getItemDate(item))}
+        />
+        <MobileMetric
+          label="Last Working"
+          value={formatDate(item?.lastWorkingDate || item?.last_working_date)}
+        />
+        <MobileMetric label="Filed By" value={item?.filedByName || "TL / OM"} />
+      </div>
+
+      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+        <Eye size={16} />
+        View Details
+      </div>
+    </button>
+  );
+}
+
+function MobileMetric({ label, value }) {
+  return (
+    <div className="rounded-xl bg-[#F8FAFC] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-sm font-extrabold text-sibs-primary-1">
+        {value || "--"}
+      </p>
+    </div>
+  );
+}
+
+function ResignationApplyModal({
+  open,
+  form,
+  submitting,
+  onClose,
+  onChange,
+  onSubmit,
+}) {
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4"
+    >
+      <form
+        onSubmit={onSubmit}
+        className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-2xl"
+      >
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DDE5EF] text-sibs-primary-1">
+                <FileText size={22} />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
+                  New Resignation
+                </h2>
+
+                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
+                  File resignation after receiving the employee’s resignation
+                  email.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sibs-scrollbar">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                <h3 className="text-base font-extrabold text-sibs-primary-1">
+                  Employee Information
+                </h3>
+
+                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormInput
+                    label="Employee SIBS ID"
+                    name="employeeSibsId"
+                    value={form.employeeSibsId}
+                    onChange={onChange}
+                    placeholder="Enter employee SIBS ID"
+                  />
+
+                  <FormInput
+                    label="Employee Name"
+                    name="employeeName"
+                    value={form.employeeName}
+                    onChange={onChange}
+                    placeholder="Enter employee full name"
+                  />
+
+                  <FormInput
+                    label="Resignation Date"
+                    name="resignationDate"
+                    type="date"
+                    value={form.resignationDate}
+                    onChange={onChange}
+                  />
+
+                  <FormInput
+                    label="Last Working Date"
+                    name="lastWorkingDate"
+                    type="date"
+                    value={form.lastWorkingDate}
+                    onChange={onChange}
+                  />
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                      Resignation Type
+                    </label>
+
+                    <select
+                      name="resignationType"
+                      value={form.resignationType}
+                      onChange={onChange}
+                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    >
+                      <option value="">Select type</option>
+                      {TYPE_OPTIONS.filter((type) => type !== "All").map(
+                        (type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                      Email Attachment
+                    </label>
+
+                    <label className="flex h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
+                      <span className="min-w-0 truncate">
+                        {form.uploadedFile?.name ||
+                          "Upload resignation email/file"}
+                      </span>
+
+                      <UploadCloud size={17} className="shrink-0" />
+
+                      <input
+                        type="file"
+                        name="uploadedFile"
+                        onChange={onChange}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormTextarea
+                      label="Reason / Summary"
+                      name="reason"
+                      value={form.reason}
+                      onChange={onChange}
+                      rows={4}
+                      placeholder="Summarize the employee’s resignation reason based on the submitted email."
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormTextarea
+                      label="TL / OM Remarks"
+                      name="remarks"
+                      value={form.remarks}
+                      onChange={onChange}
+                      rows={3}
+                      placeholder="Add remarks before sending the resignation request for approval."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                <h3 className="text-base font-extrabold text-sibs-primary-1">
+                  Filing Checklist
+                </h3>
+
+                <div className="mt-4 space-y-3">
+                  <ChecklistItem
+                    done={!!form.employeeSibsId}
+                    title="Employee selected"
+                    subtitle={form.employeeSibsId || "Waiting for SIBS ID"}
+                  />
+
+                  <ChecklistItem
+                    done={!!form.employeeName}
+                    title="Employee name"
+                    subtitle={form.employeeName || "Waiting for name"}
+                  />
+
+                  <ChecklistItem
+                    done={!!form.resignationDate && !!form.lastWorkingDate}
+                    title="Dates completed"
+                    subtitle={
+                      form.resignationDate && form.lastWorkingDate
+                        ? `${form.resignationDate} to ${form.lastWorkingDate}`
+                        : "Waiting for resignation and last working date"
+                    }
+                  />
+
+                  <ChecklistItem
+                    done={!!form.resignationType}
+                    title="Resignation type"
+                    subtitle={form.resignationType || "Waiting for type"}
+                  />
+
+                  <ChecklistItem
+                    done={!!String(form.reason || "").trim()}
+                    title="Reason summary"
+                    subtitle={
+                      form.reason || "Waiting for reason / email summary"
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                <h3 className="text-base font-extrabold text-sibs-primary-1">
+                  Process Rule
+                </h3>
+
+                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
+                  After submission, this resignation will appear in the
+                  Approval Request module for the assigned approver. Approval
+                  decisions should not be made on this page.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-5">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
+            >
+              {submitting ? (
+                <Loader2 size={17} className="animate-spin" />
+              ) : (
+                <Send size={17} />
+              )}
+              {submitting ? "Submitting..." : "Submit Resignation"}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>,
+    document.body,
+  );
+}
+
+function FormInput({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  placeholder = "",
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      />
+    </div>
+  );
+}
+
+function FormTextarea({
+  label,
+  name,
+  value,
+  onChange,
+  rows = 4,
+  placeholder = "",
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </label>
+
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+      />
+    </div>
+  );
+}
+
+function ChecklistItem({ done = false, title, subtitle }) {
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+      <div className="flex items-start gap-3">
+        <div
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
+            done
+              ? "border-emerald-500 bg-emerald-50 text-emerald-600"
+              : "border-amber-500 bg-amber-50 text-amber-600"
+          }`}
+        >
+          {done ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-[#101828]">{title}</p>
+
+          <p className="mt-1 line-clamp-2 text-xs font-bold text-[#2F6CA5]">
+            {subtitle || "—"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ViewResignationModal({ open, item, onClose }) {
+  if (!open || !item) return null;
+
+  const status = getResignationStatus(item);
+  const StatusIcon = getStatusIcon(status);
+  const fileName = getFileName(item);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DDE5EF] text-sibs-primary-1">
+                <FileText size={22} />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
+                  View Resignation
+                </h2>
+
+                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
+                  Resignation record details
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sibs-scrollbar">
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                    Employee
+                  </p>
+
+                  <h3 className="mt-2 text-xl font-extrabold text-[#101828]">
+                    {getFullName(item)}
+                  </h3>
+
+                  <p className="mt-1 text-sm font-bold text-[#2F6CA5]">
+                    {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
+                  </p>
+                </div>
+
+                <span
+                  className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+                    status,
+                  )}`}
+                >
+                  <StatusIcon size={14} />
+                  {status}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <InfoBox
+                label="Resignation Type"
+                value={item?.resignationType || item?.type}
+              />
+              <InfoBox
+                label="Resignation Date"
+                value={formatDate(item?.resignationDate || getItemDate(item))}
+              />
+              <InfoBox
+                label="Last Working Date"
+                value={formatDate(item?.lastWorkingDate || item?.last_working_date)}
+              />
+              <InfoBox
+                label="Filed By"
+                value={
+                  item?.filedByName ||
+                  item?.encodedByName ||
+                  item?.createdByName ||
+                  item?.supervisorName ||
+                  "TL / OM"
+                }
+              />
+              <InfoBox label="Position" value={getEmployeePosition(item)} />
+              <InfoBox label="Uploaded File" value={fileName || "--"} />
+            </div>
+
+            <InfoBox label="Reason / Summary" value={item?.reason} large />
+            <InfoBox label="Remarks" value={item?.remarks} large />
+
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+              <h3 className="text-base font-extrabold text-sibs-primary-1">
+                Approval Reminder
+              </h3>
+
+              <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
+                Approval and decline actions for this resignation should be
+                handled in the Approval Request module.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-4">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function InfoBox({ label, value, large = false }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-bold text-sibs-primary-1">{label}</p>
+
+      <div
+        className={`rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-medium text-[#344054] ${
+          large ? "min-h-[92px] whitespace-pre-line" : "min-h-[43px]"
+        }`}
+      >
+        {safeText(value)}
+      </div>
+    </div>
+  );
 }
 
 export default function AttritionPage() {
-  const { user } = useUser();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [typeFilter, setTypeFilter] = useState("All");
 
-  const { searchInput, setSearchInput, handleSearchKeyDown } =
-    usePagination("attrition");
-
-  const [activeTab, setActiveTab] = useState("Resignation");
-
-  const [openForm, setOpenForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [openResignationForm, setOpenResignationForm] = useState(false);
+  const [resignationSubmitting, setResignationSubmitting] = useState(false);
 
   const [resignations, setResignations] = useState([]);
   const [resignationLoading, setResignationLoading] = useState(false);
-
-  const [attritions, setAttritions] = useState([]);
-  const [attritionLoading, setAttritionLoading] = useState(false);
+  const [selectedResignation, setSelectedResignation] = useState(null);
 
   const mainScrollRef = useRef(null);
 
-  const [viewModal, setViewModal] = useState({
-    open: false,
-    data: null,
-  });
-
-  const initialForm = {
+  const initialResignationForm = {
     employeeSibsId: "",
     employeeName: "",
-    resignationType: "",
-    attritionDate: getTodayDate(),
+    resignationDate: getTodayDate(),
     lastWorkingDate: "",
+    resignationType: "",
     reason: "",
-    otherReason: "",
     remarks: "",
     uploadedFile: null,
-    uploadedFileName: "",
-    existingUploadedFile: "",
-
-    tlSibsId: "",
-    tlFullName: "",
-    tlIsApproved: 0,
-    tlIsDeclined: 0,
-    tlRemarks: "",
-
-    omSibsId: "",
-    omFullName: "",
-    omIsApproved: 0,
-    omIsDeclined: 0,
-    omRemarks: "",
-
-    somSibsId: "",
-    somFullName: "",
-    somIsApproved: 0,
-    somIsDeclined: 0,
-    somRemarks: "",
-
-    hideTl: false,
   };
 
-  const [form, setForm] = useState(initialForm);
+  const [resignationForm, setResignationForm] = useState(initialResignationForm);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -116,112 +1735,118 @@ export default function AttritionPage() {
     message: "",
   });
 
-  const pageTitle = user?.role === "employee" ? "My Attrition" : "Attrition";
+  const stats = useMemo(() => {
+    const counts = {
+      ...DEFAULT_COUNTS,
+      total: resignations.length,
+    };
 
-  const tabs = [
-    {
-      label: "Resignation",
-      count: resignations.filter((item) => item.status === "Pending").length,
-    },
-    {
-      label: "Attrition",
-      count: attritions.filter((item) => {
-        const isDeclined =
-          Number(item.tlIsDeclined) === 1 ||
-          Number(item.omIsDeclined) === 1 ||
-          Number(item.somIsDeclined) === 1;
+    resignations.forEach((item) => {
+      const status = getResignationStatus(item);
 
-        const isFullyApproved =
-          (item.hideTl || !item.tlSibsId || Number(item.tlIsApproved) === 1) &&
-          (!item.omSibsId || Number(item.omIsApproved) === 1) &&
-          (!item.somSibsId || Number(item.somIsApproved) === 1);
+      if (status === "For Approval") counts.pending += 1;
+      if (status === "In Notice Period") counts.notice += 1;
+      if (status === "Completed") counts.completed += 1;
+      if (status === "Declined") counts.declined += 1;
+    });
 
-        return !isDeclined && !isFullyApproved;
-      }).length,
-    },
-  ];
+    return counts;
+  }, [resignations]);
 
-  const activeTabIndex = Math.max(
-    0,
-    tabs.findIndex((tab) => tab.label === activeTab),
-  );
+  const filteredResignations = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
 
-  function getLoggedInSibsId() {
-    return String(user?.username || user?.sibs_id || user?.sibsId || "").trim();
-  }
+    return resignations.filter((item) => {
+      const status = getResignationStatus(item);
+      const type = item?.resignationType || item?.type || "";
 
-  function canCurrentUserReviewAttrition(item) {
-    const loggedInSibsId = getLoggedInSibsId();
-    const status = String(item?.status || "").trim().toLowerCase();
+      const searchableText = [
+        item?.id,
+        item?.resignationId,
+        getFullName(item),
+        getEmployeeSibsId(item),
+        getEmployeeDepartment(item),
+        getEmployeePosition(item),
+        type,
+        status,
+        item?.reason,
+        item?.remarks,
+        item?.filedByName,
+        item?.supervisorName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-    if (status !== "pending") return false;
+      const matchesSearch = !keyword || searchableText.includes(keyword);
+      const matchesStatus = statusFilter === "All" || status === statusFilter;
+      const matchesType = typeFilter === "All" || type === typeFilter;
 
-    if (item?.canEdit === true || Number(item?.canEdit) === 1) {
-      return true;
-    }
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [resignations, search, statusFilter, typeFilter]);
 
-    const isTlApprover = isSameSibsId(item?.tlSibsId, loggedInSibsId);
-    const isOmApprover = isSameSibsId(item?.omSibsId, loggedInSibsId);
-    const isSomApprover = isSameSibsId(item?.somSibsId, loggedInSibsId);
+  const hasActiveFilters =
+    search || statusFilter !== "All" || typeFilter !== "All";
 
-    if (isTlApprover) {
-      return (
-        Number(item?.tlIsApproved || 0) !== 1 &&
-        Number(item?.tlIsDeclined || 0) !== 1
-      );
-    }
+  const fetchResignations = useCallback(async ({ showError = false } = {}) => {
+    try {
+      setResignationLoading(true);
 
-    if (isOmApprover) {
-      return (
-        Number(item?.omIsApproved || 0) !== 1 &&
-        Number(item?.omIsDeclined || 0) !== 1
-      );
-    }
+      const result = await getSupervisorResignations();
 
-    if (isSomApprover) {
-      return (
-        Number(item?.somIsApproved || 0) !== 1 &&
-        Number(item?.somIsDeclined || 0) !== 1
-      );
-    }
+      if (!result?.success) {
+        setResignations([]);
 
-    return false;
-  }
+        if (showError) {
+          setStatusModal({
+            open: true,
+            type: "error",
+            title: "Load Failed",
+            message:
+              result?.message || "Failed to load resignation records.",
+          });
+        }
 
-  function unlockPageScrollSoon() {
-    window.setTimeout(() => {
-      const hasOpenDialog = document.querySelector('[role="dialog"]');
-
-      if (!hasOpenDialog) {
-        document.body.style.overflow = "";
-        document.documentElement.style.overflow = "";
+        return [];
       }
-    }, 0);
-  }
+
+      const data = Array.isArray(result.data) ? result.data : [];
+      setResignations(data);
+
+      return data;
+    } catch (error) {
+      console.error("FETCH RESIGNATIONS ERROR:", error);
+      setResignations([]);
+
+      if (showError) {
+        setStatusModal({
+          open: true,
+          type: "error",
+          title: "Load Failed",
+          message:
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Something went wrong while loading resignations.",
+        });
+      }
+
+      return [];
+    } finally {
+      setResignationLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchResignations();
+  }, [fetchResignations]);
 
   function forceUnlockPageScroll() {
     window.setTimeout(() => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
     }, 0);
-  }
-
-  function showStatus({
-    type = "success",
-    title = "",
-    message = "",
-    closeForm = false,
-  }) {
-    if (closeForm) {
-      setOpenForm(false);
-    }
-
-    setStatusModal({
-      open: true,
-      type,
-      title,
-      message,
-    });
   }
 
   function closeStatusModal() {
@@ -231,572 +1856,282 @@ export default function AttritionPage() {
       title: "",
       message: "",
     });
-
-    unlockPageScrollSoon();
   }
 
-  const handleChange = (e) => {
-    const { name, value, files, type, checked } = e.target;
-
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        type === "file"
-          ? files?.[0] || null
-          : type === "checkbox"
-            ? checked
-              ? 1
-              : 0
-            : value,
-    }));
-  };
-
-  const resetForm = () => {
-    setForm({
-      ...initialForm,
-      attritionDate: getTodayDate(),
-    });
-
-    setEditingId(null);
-  };
-
-  const handleOpenAdd = () => {
-    resetForm();
-    setEditingId(null);
-    setOpenForm(true);
-  };
-
-  const closeFormModal = () => {
-    if (submitting) return;
-
-    setOpenForm(false);
-    resetForm();
-    forceUnlockPageScroll();
-  };
-
-  const closeViewModal = () => {
-    setViewModal({
-      open: false,
-      data: null,
-    });
-
-    forceUnlockPageScroll();
-  };
-
-  const handleOpenEdit = (item) => {
-    setViewModal({
-      open: false,
-      data: null,
-    });
-
-    setEditingId(item.id);
-
-    setForm({
-      employeeSibsId: item.sibsId || item.employeeSibsId || "",
-      employeeName: item.employeeName || item.fullName || "",
-      resignationType: item.resignationType || "",
-      attritionDate: item.attritionDate
-        ? new Date(item.attritionDate).toLocaleDateString("en-CA", {
-            timeZone: "Asia/Manila",
-          })
-        : "",
-      lastWorkingDate: item.lastWorkingDate
-        ? new Date(item.lastWorkingDate).toLocaleDateString("en-CA", {
-            timeZone: "Asia/Manila",
-          })
-        : "",
-      reason: item.reason || "",
-      otherReason: item.specifyOthers || item.otherReason || "",
-      remarks: item.remarks || "",
-
-      uploadedFile: null,
-      uploadedFileName: item.uploadedFile || "",
-      existingUploadedFile: item.uploadedFile || "",
-
-      tlSibsId: item.tlSibsId || "",
-      tlFullName: item.tlFullName || item.tlName || "",
-      tlIsApproved: Number(item.tlIsApproved || 0),
-      tlIsDeclined: Number(item.tlIsDeclined || 0),
-      tlRemarks: item.tlRemarks || "",
-
-      omSibsId: item.omSibsId || "",
-      omFullName: item.omFullName || item.omName || "",
-      omIsApproved: Number(item.omIsApproved || 0),
-      omIsDeclined: Number(item.omIsDeclined || 0),
-      omRemarks: item.omRemarks || "",
-
-      somSibsId: item.somSibsId || "",
-      somFullName: item.somFullName || item.somName || "",
-      somIsApproved: Number(item.somIsApproved || 0),
-      somIsDeclined: Number(item.somIsDeclined || 0),
-      somRemarks: item.somRemarks || "",
-
-      hideTl: !!item.hideTl,
-    });
-
-    setOpenForm(true);
-  };
-
-  const handleOpenView = (item) => {
-    if (canCurrentUserReviewAttrition(item)) {
-      handleOpenEdit(item);
-      return;
-    }
-
-    setViewModal({
+  function openStatus({ type = "success", title = "", message = "" }) {
+    setStatusModal({
       open: true,
-      data: item,
+      type,
+      title,
+      message,
     });
-  };
+  }
 
-  const fetchResignations = async () => {
-    try {
-      setResignationLoading(true);
+  function handleClearFilters() {
+    setSearch("");
+    setStatusFilter("All");
+    setTypeFilter("All");
+  }
 
-      const result = await getSupervisorResignations();
+  function handleRefresh() {
+    fetchResignations({ showError: true });
+  }
 
-      if (!result?.success) {
-        setResignations([]);
-        return [];
-      }
+  function resetResignationForm() {
+    setResignationForm({
+      ...initialResignationForm,
+      resignationDate: getTodayDate(),
+    });
+  }
 
-      const data = result.data || [];
-      setResignations(data);
+  function handleOpenAddResignation() {
+    resetResignationForm();
+    setOpenResignationForm(true);
+  }
 
-      return data;
-    } catch (error) {
-      console.error("Fetch resignations error:", error);
-      setResignations([]);
-      return [];
-    } finally {
-      setResignationLoading(false);
-    }
-  };
+  function closeResignationFormModal() {
+    if (resignationSubmitting) return;
 
-  const fetchAttritions = async () => {
-    try {
-      setAttritionLoading(true);
+    setOpenResignationForm(false);
+    resetResignationForm();
+    forceUnlockPageScroll();
+  }
 
-      const result = await getSupervisorAttritions();
+  function handleResignationChange(e) {
+    const { name, value, files, type } = e.target;
 
-      if (!result?.success) {
-        setAttritions([]);
-        return [];
-      }
+    setResignationForm((prev) => ({
+      ...prev,
+      [name]: type === "file" ? files?.[0] || null : value,
+    }));
+  }
 
-      const data = result.data || [];
-      setAttritions(data);
-
-      return data;
-    } catch (error) {
-      console.error("Fetch attritions error:", error);
-      setAttritions([]);
-      return [];
-    } finally {
-      setAttritionLoading(false);
-    }
-  };
-
-  function getAttritionValidationError() {
-    if (!editingId) {
-      if (!form.employeeSibsId) {
-        return "Please select an employee before submitting the attrition request.";
-      }
-
-      if (!form.attritionDate) {
-        return "Please select the notice date.";
-      }
-
-      if (!form.lastWorkingDate) {
-        return "Please select the last working date.";
-      }
-
-      if (!form.reason) {
-        return "Please select a reason for attrition.";
-      }
-
-      if (form.reason === "Other" && !String(form.otherReason || "").trim()) {
-        return "Please specify the reason because you selected Other.";
-      }
-
-      const noticeDate = new Date(form.attritionDate);
-      const lastWorkingDate = new Date(form.lastWorkingDate);
-
-      if (
-        !Number.isNaN(noticeDate.getTime()) &&
-        !Number.isNaN(lastWorkingDate.getTime()) &&
-        lastWorkingDate < noticeDate
-      ) {
-        return "Last working date cannot be earlier than the notice date.";
-      }
-
-      return "";
+  function getResignationValidationError() {
+    if (!resignationForm.employeeSibsId) {
+      return "Please enter the employee SIBS ID.";
     }
 
-    const loggedInSibsId = getLoggedInSibsId();
-
-    const isTlApprover = isSameSibsId(form.tlSibsId, loggedInSibsId);
-    const isOmApprover = isSameSibsId(form.omSibsId, loggedInSibsId);
-    const isSomApprover = isSameSibsId(form.somSibsId, loggedInSibsId);
-
-    if (!isTlApprover && !isOmApprover && !isSomApprover) {
-      return "You are not assigned as an approver for this attrition request.";
+    if (!resignationForm.employeeName) {
+      return "Please enter the employee name.";
     }
 
-    if (isTlApprover) {
-      const hasDecision =
-        Number(form.tlIsApproved) === 1 || Number(form.tlIsDeclined) === 1;
-
-      if (!hasDecision) {
-        return "Please select Approve or Decline for TL / Manager approval.";
-      }
-
-      if (
-        Number(form.tlIsDeclined) === 1 &&
-        !String(form.tlRemarks || "").trim()
-      ) {
-        return "Please enter TL / Manager remarks when declining the request.";
-      }
+    if (!resignationForm.resignationDate) {
+      return "Please select the resignation date.";
     }
 
-    if (isOmApprover) {
-      const hasDecision =
-        Number(form.omIsApproved) === 1 || Number(form.omIsDeclined) === 1;
-
-      if (!hasDecision) {
-        return "Please select Approve or Decline for OM approval.";
-      }
-
-      if (
-        Number(form.omIsDeclined) === 1 &&
-        !String(form.omRemarks || "").trim()
-      ) {
-        return "Please enter OM remarks when declining the request.";
-      }
+    if (!resignationForm.lastWorkingDate) {
+      return "Please select the last working date.";
     }
 
-    if (isSomApprover) {
-      const hasDecision =
-        Number(form.somIsApproved) === 1 || Number(form.somIsDeclined) === 1;
+    if (!resignationForm.resignationType) {
+      return "Please select the resignation type.";
+    }
 
-      if (!hasDecision) {
-        return "Please select Approve or Decline for SOM approval.";
-      }
+    if (!String(resignationForm.reason || "").trim()) {
+      return "Please enter the resignation reason or email summary.";
+    }
 
-      if (
-        Number(form.somIsDeclined) === 1 &&
-        !String(form.somRemarks || "").trim()
-      ) {
-        return "Please enter SOM remarks when declining the request.";
-      }
+    const resignationDate = new Date(resignationForm.resignationDate);
+    const lastWorkingDate = new Date(resignationForm.lastWorkingDate);
+
+    if (
+      !Number.isNaN(resignationDate.getTime()) &&
+      !Number.isNaN(lastWorkingDate.getTime()) &&
+      lastWorkingDate < resignationDate
+    ) {
+      return "Last working date cannot be earlier than the resignation date.";
     }
 
     return "";
   }
 
-  const handleSubmit = async (e) => {
+  async function handleSubmitResignation(e) {
     e.preventDefault();
 
-    const validationMessage = getAttritionValidationError();
+    const validationMessage = getResignationValidationError();
 
     if (validationMessage) {
-      showStatus({
+      openStatus({
         type: "error",
-        title: editingId
-          ? "Unable to Update Attrition"
-          : "Unable to Submit Attrition",
+        title: "Unable to Submit Resignation",
         message: validationMessage,
       });
 
       return;
     }
 
-    setSubmitting(true);
+    setResignationSubmitting(true);
 
     try {
-      const payload = editingId
-        ? {
-            employeeSibsId: form.employeeSibsId,
+      const payload = {
+        employeeSibsId: resignationForm.employeeSibsId,
+        employeeName: resignationForm.employeeName,
+        resignationDate: resignationForm.resignationDate,
+        lastWorkingDate: resignationForm.lastWorkingDate,
+        resignationType: resignationForm.resignationType,
+        reason: resignationForm.reason,
+        remarks: resignationForm.remarks,
+        uploadedFile: resignationForm.uploadedFile || null,
+      };
 
-            tlIsApproved: Number(form.tlIsApproved ?? 0),
-            tlIsDeclined: Number(form.tlIsDeclined ?? 0),
-            tlRemarks: form.tlRemarks || "",
-
-            omIsApproved: Number(form.omIsApproved ?? 0),
-            omIsDeclined: Number(form.omIsDeclined ?? 0),
-            omRemarks: form.omRemarks || "",
-
-            somIsApproved: Number(form.somIsApproved ?? 0),
-            somIsDeclined: Number(form.somIsDeclined ?? 0),
-            somRemarks: form.somRemarks || "",
-          }
-        : {
-            employeeSibsId: form.employeeSibsId,
-            reason: form.reason,
-            specifyOthers: form.reason === "Other" ? form.otherReason : null,
-            uploadedFile: form.uploadedFile || null,
-            attritionDate: form.attritionDate,
-            lastWorkingDate: form.lastWorkingDate,
-            remarks: form.remarks,
-          };
-
-      const result = editingId
-        ? await updateAttrition(editingId, payload)
-        : await saveAttrition(payload);
+      const result = await saveSupervisorResignation(payload);
 
       if (!result?.success) {
-        showStatus({
+        openStatus({
           type: "error",
-          title: editingId ? "Update Failed" : "Submission Failed",
+          title: "Submission Failed",
           message:
             result?.message ||
             result?.error ||
-            (editingId
-              ? "Failed to update attrition. Please check the approval details and try again."
-              : "Failed to submit attrition. Please check the required fields and try again."),
+            "Failed to submit resignation. Please check the required fields and try again.",
         });
 
         return;
       }
 
-      setOpenForm(false);
-      resetForm();
-      setReloadKey((prev) => prev + 1);
+      setOpenResignationForm(false);
+      resetResignationForm();
 
-      await Promise.all([fetchAttritions(), fetchResignations()]);
+      await fetchResignations();
 
-      showStatus({
+      openStatus({
         type: "success",
-        title: editingId ? "Attrition Updated" : "Attrition Submitted",
+        title: "Resignation Submitted",
         message:
           result?.message ||
-          (editingId
-            ? "The attrition request has been updated successfully."
-            : "The attrition request has been submitted successfully."),
+          "The resignation request has been submitted successfully and will now appear in Approval Request.",
       });
 
       forceUnlockPageScroll();
     } catch (error) {
-      console.error("Failed to save attrition:", error);
+      console.error("SUBMIT RESIGNATION ERROR:", error);
 
-      showStatus({
+      openStatus({
         type: "error",
-        title: editingId ? "Update Failed" : "Submission Failed",
+        title: "Submission Failed",
         message:
           error?.response?.data?.message ||
           error?.response?.data?.error ||
           error?.message ||
-          (editingId
-            ? "Something went wrong while updating the attrition request."
-            : "Something went wrong while submitting the attrition request."),
+          "Something went wrong while submitting the resignation request.",
       });
     } finally {
-      setSubmitting(false);
+      setResignationSubmitting(false);
     }
-  };
-
-  const handleUpdateSupervisor = async (payload) => {
-    const result = await updateSupervisorResignation(payload);
-
-    if (!result?.success) {
-      throw result?.error || new Error(result?.message || "Update failed");
-    }
-
-    await Promise.all([fetchResignations(), fetchAttritions()]);
-    setReloadKey((prev) => prev + 1);
-
-    return result;
-  };
-
-  useEffect(() => {
-    fetchAttritions();
-    fetchResignations();
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "Attrition") {
-      fetchAttritions();
-    }
-
-    if (activeTab === "Resignation") {
-      fetchResignations();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (mainScrollRef.current) {
-      mainScrollRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
-  }, [activeTab]);
+  }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
       <Header />
 
       <main
         ref={mainScrollRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
       >
-        <div className="flex min-w-0 flex-col gap-6">
-          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="group flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
-                <FileText
-                  size={24}
-                  className="transition-transform duration-300 group-hover:scale-110"
-                />
-              </div>
-
-              <div className="min-w-0">
-                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                  {pageTitle}
-                </h1>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  View and manage attrition and resignation requests
-                </p>
-              </div>
+        <div className="sibs-page-header-in mb-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <FileText size={14} />
+              Employee Movement
             </div>
 
-            {activeTab === "Attrition" && (
-              <div className="sibs-profile-tab-panel flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
-                <div className="relative w-full shrink-0 lg:w-80">
-                  <Search
-                    size={18}
-                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5 transition-transform duration-200"
-                  />
+            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+              Resignation Management
+            </h1>
 
-                  <input
-                    type="text"
-                    placeholder="Search attrition..."
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </div>
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              File, monitor, analyze, and track resignation records. Approval
+              decisions are handled in Approval Request.
+            </p>
+          </div>
 
-                <button
-                  type="button"
-                  onClick={handleOpenAdd}
-                  className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-                >
-                  <Plus size={17} />
-                  Submit Attrition
-                </button>
-              </div>
-            )}
-          </section>
-
-          <AttritionModal
-            mode={editingId ? "edit" : "add"}
-            open={openForm}
-            onClose={closeFormModal}
-            onSubmit={handleSubmit}
-            form={form}
-            onChange={handleChange}
-            submitting={submitting}
-          />
-
-          <AttritionModal
-            mode="view"
-            open={viewModal.open}
-            data={viewModal.data}
-            onClose={closeViewModal}
-            formatDate={formatDate}
-            formatDateTime={formatDateTime}
-          />
-
-          <StatusModal
-            open={statusModal.open}
-            type={statusModal.type}
-            title={statusModal.title}
-            message={statusModal.message}
-            onClose={closeStatusModal}
-          />
-
-          <section className="sibs-profile-tab-panel relative z-[5] min-w-0">
-            <div className="relative grid w-full max-w-[420px] grid-cols-2 overflow-hidden rounded-full bg-[#f2f4f7] p-1 shadow-sm">
-              <div
-                className="absolute bottom-1 top-1 rounded-full bg-sibs-primary-1 shadow-sm transition-all duration-300 ease-out"
-                style={{
-                  width: "calc((100% - 8px) / 2)",
-                  left: `calc(4px + ${activeTabIndex} * ((100% - 8px) / 2))`,
-                }}
-              />
-
-              {tabs.map(({ label, count }) => {
-                const isActive = activeTab === label;
-
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setActiveTab(label)}
-                    className={`relative z-[1] flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-full px-4 text-sm font-medium transition-all duration-300 ease-out active:scale-[0.97] ${
-                      isActive
-                        ? "text-white"
-                        : "text-[#344054] hover:bg-white/70 hover:text-sibs-primary-1"
-                    }`}
-                  >
-                    <span className="truncate">{label}</span>
-
-                    {count > 0 && (
-                      <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm transition-all duration-300">
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          {activeTab === "Attrition" && (
-            <section
-              key="Attrition"
-              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
-              style={{ animationDelay: "80ms" }}
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={resignationLoading}
+              className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <AttritionTable
-                reloadKey={reloadKey}
-                onView={handleOpenView}
-                onEdit={handleOpenEdit}
-              />
-            </section>
-          )}
+              {resignationLoading ? (
+                <Loader2 size={17} className="animate-spin" />
+              ) : (
+                <RefreshCcw size={17} />
+              )}
+              Refresh
+            </button>
 
-          {activeTab === "Resignation" && (
-            <section
-              key="Resignation"
-              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
-              style={{ animationDelay: "80ms" }}
+            <button
+              type="button"
+              onClick={handleOpenAddResignation}
+              className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98]"
             >
-              <ResignationTable
-                data={resignations}
-                loading={resignationLoading}
-                onUpdateSupervisor={handleUpdateSupervisor}
-              />
-            </section>
-          )}
+              <Plus size={17} />
+              New Resignation
+            </button>
+          </div>
+        </div>
 
-          {activeTab === "Attrition List" && (
-            <section
-              key="Attrition List"
-              className="sibs-profile-tab-panel min-w-0 overflow-hidden rounded-xl bg-white shadow-sm"
-              style={{ animationDelay: "80ms" }}
-            >
-              <EmployeeAttritionTable
-                data={attritions}
-                loading={attritionLoading}
-              />
-            </section>
-          )}
+        <div className="space-y-6">
+          <div className="relative z-[20] sibs-profile-tab-panel">
+            <ResignationSummaryCards
+              stats={stats}
+              loading={resignationLoading}
+            />
+          </div>
+
+          <div className="relative z-[10] sibs-profile-tab-panel">
+            <ResignationFilters
+              search={search}
+              setSearch={setSearch}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              typeFilter={typeFilter}
+              setTypeFilter={setTypeFilter}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={handleClearFilters}
+            />
+          </div>
+
+          <div className="relative z-[0] sibs-profile-tab-panel">
+            <ResignationAnalytics
+              data={resignations}
+              loading={resignationLoading}
+            />
+          </div>
+
+          <div className="relative z-[0] sibs-profile-tab-panel">
+            <ResignationTableCard
+              data={filteredResignations}
+              totalRecords={resignations.length}
+              loading={resignationLoading}
+              onView={setSelectedResignation}
+            />
+          </div>
         </div>
       </main>
+
+      <ResignationApplyModal
+        open={openResignationForm}
+        form={resignationForm}
+        submitting={resignationSubmitting}
+        onClose={closeResignationFormModal}
+        onChange={handleResignationChange}
+        onSubmit={handleSubmitResignation}
+      />
+
+      <ViewResignationModal
+        open={!!selectedResignation}
+        item={selectedResignation}
+        onClose={() => setSelectedResignation(null)}
+      />
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+      />
     </div>
   );
 }
