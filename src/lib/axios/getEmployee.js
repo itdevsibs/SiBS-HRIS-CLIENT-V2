@@ -24,7 +24,8 @@ export async function getEmployee(
       data: res.data?.data || [],
       departmentOptions: res.data?.departmentOptions || [],
       accountOptions: res.data?.accountOptions || [],
-      selectedDepartment: res.data?.selectedDepartment || options?.department || "All",
+      selectedDepartment:
+        res.data?.selectedDepartment || options?.department || "All",
       selectedAccount: res.data?.selectedAccount || account || "All",
       pagination: res.data?.pagination || {
         totalPages: 1,
@@ -54,10 +55,10 @@ export async function getEmployee(
         total: 0,
       },
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to fetch employees",
-      status: err.response?.status || 500,
+      status: err?.response?.status || 500,
       error: err,
     };
   }
@@ -86,10 +87,10 @@ export async function getEmployeeById(sibsId) {
       success: false,
       data: null,
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to fetch employee",
-      status: err.response?.status || 500,
+      status: err?.response?.status || 500,
       error: err,
     };
   }
@@ -118,10 +119,51 @@ export async function getSupervisorResignations() {
       success: false,
       data: [],
       message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Failed to load resignation records",
-      status: error.response?.status || 500,
+      status: error?.response?.status || 500,
+      error,
+    };
+  }
+}
+
+export async function saveSupervisorResignation(payload = {}) {
+  try {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value);
+      }
+    });
+
+    const res = await api.post("/api/resignation/supervisor", formData, {
+      withCredentials: true,
+    });
+
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || null,
+      message: res.data?.message || "Resignation submitted successfully",
+      status: res.status,
+    };
+  } catch (error) {
+    console.error(
+      "Axios saveSupervisorResignation API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return {
+      success: false,
+      data: null,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to submit resignation.",
+      status: error?.response?.status || 500,
       error,
     };
   }
@@ -163,10 +205,10 @@ export async function updateSupervisorResignation({
       success: false,
       data: null,
       message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Failed to update resignation",
-      status: error.response?.status || 500,
+      status: error?.response?.status || 500,
       error,
     };
   }
@@ -178,22 +220,28 @@ export async function getSupervisorAttritions() {
       withCredentials: true,
     });
 
-    return res.data;
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || [],
+      message: res.data?.message || "",
+      status: res.status,
+    };
   } catch (err) {
     console.error(
-      "GETSUPERVISORATTRITIONS ERROR:",
-      err.response?.data || err.message,
+      "Axios getSupervisorAttritions API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
 
     return {
       success: false,
       data: [],
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to load attritions",
+      status: err?.response?.status || 500,
       error: err,
-      status: err.response?.status || 500,
     };
   }
 }
