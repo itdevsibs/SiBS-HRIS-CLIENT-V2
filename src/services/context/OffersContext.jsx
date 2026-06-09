@@ -151,7 +151,7 @@ function getCurrentUserName(user) {
     currentUser?.email ||
     currentUser?.gy_user_email ||
     "Current User"
-  );
+  ); 
 }
 
 export function OffersProvider({ children }) {

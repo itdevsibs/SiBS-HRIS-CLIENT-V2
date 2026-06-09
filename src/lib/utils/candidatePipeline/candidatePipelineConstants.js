@@ -14,7 +14,6 @@ export const pipelineStages = [
   "Offered",
   "Accepted",
   "For NHO",
-  // "Drop-off",
 ];
 
 export const normalStageFlow = [
@@ -98,7 +97,7 @@ export const offerApprovalStatusOptions = [
 
 export const offerDecisionOptions = ["Negotiate", "Rejected", "Accepted"];
 
-export const prfStatusOptions = ["Review", "Matched", "Unmatched"];
+export const prfStatusOptions = ["Unmatched", "Matched"];
 
 export const assessmentStatusOptions = ["Not Take", "Taken"];
 

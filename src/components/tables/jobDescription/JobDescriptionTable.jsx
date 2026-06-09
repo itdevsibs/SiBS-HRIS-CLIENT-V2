@@ -1,11 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Eye,
-  Filter,
-  RotateCcw,
-  Search,
-} from "lucide-react";
+import { ChevronDown, Eye, Filter, RotateCcw, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
 
@@ -232,7 +226,9 @@ function FilterDropdown({
   zIndex = "z-40",
 }) {
   const filteredOptions = useMemo(() => {
-    const keyword = String(search || "").trim().toLowerCase();
+    const keyword = String(search || "")
+      .trim()
+      .toLowerCase();
 
     if (!keyword) return options;
 
@@ -353,7 +349,9 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
   }, []);
 
   const filteredList = useMemo(() => {
-    const keyword = String(searchInput || "").trim().toLowerCase();
+    const keyword = String(searchInput || "")
+      .trim()
+      .toLowerCase();
 
     return jobDescriptionList.filter((item) => {
       const normalizedStatus = normalizeJdStatus(item.jdStatus);
@@ -407,35 +405,30 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
   return (
     <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-xl bg-white shadow-sm">
       <div className="shrink-0 border-b border-gray-100">
-        <section className="overflow-visible rounded-t-xl border-b border-[#E6ECF2] bg-white">
-          <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0">
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  <Filter size={14} />
-                  JD Filters
-                </div>
-
-                <h2 className="mt-3 text-base font-extrabold text-[#101828]">
-                  Job Description List
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Search and filter JD records by view, status, role, account,
-                  department, owner, and JD code.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                  {filteredList.length} Records
-                </span>
-              </div>
-            </div>
-          </div>
-
+        <section className="overflow-visible rounded-t-xl border-[#E6ECF2] bg-white">
           <div className="p-4 sm:p-5">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_1fr_1.4fr_auto] xl:items-end">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_0.5fr_0.5fr_auto] xl:items-end">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Search
+                </label>
+
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search JD, role, account, owner..."
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  />
+                </div>
+              </div>
+
               <FilterDropdown
                 label="JD View"
                 value={jdViewFilter}
@@ -471,27 +464,6 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                 dropdownRef={statusDropdownRef}
                 zIndex="z-40"
               />
-
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Search
-                </label>
-
-                <div className="relative">
-                  <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search JD, role, account, owner..."
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </div>
-              </div>
 
               <button
                 type="button"
