@@ -59,11 +59,6 @@ const moduleIconMap = {
   "Hiring Needs": BriefcaseBusiness,
 };
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000";
-
 const DEFAULT_COUNTS = {
   total: 0,
   pending: 0,
@@ -71,6 +66,21 @@ const DEFAULT_COUNTS = {
   approved: 0,
   rejected: 0,
 };
+
+const EDGE = "rounded-[10px]";
+const PANEL_BORDER = "border border-[#E1E7EF]";
+const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
+const FLAT_BG = "bg-[#F6F8FB]";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000";
+
+function safeText(value, fallback = "--") {
+  const text = String(value || "").trim();
+  return text || fallback;
+}
 
 function getFileUrl(url) {
   const value = String(url || "").trim();
@@ -88,165 +98,33 @@ function getFileUrl(url) {
   return `${API_URL}/${value}`;
 }
 
-function DropdownPortal({
-  open,
-  anchorRef,
-  children,
-  onClose,
-  maxHeight = 256,
-}) {
-  const dropdownRef = useRef(null);
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
+function formatDate(dateValue) {
+  if (!dateValue) return "--";
 
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
+  const date = new Date(dateValue);
 
-    function updatePosition() {
-      const rect = anchorRef.current.getBoundingClientRect();
+  if (Number.isNaN(date.getTime())) {
+    return String(dateValue);
+  }
 
-      setStyle({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open, anchorRef]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleClickOutside(e) {
-      const clickedAnchor = anchorRef.current?.contains(e.target);
-      const clickedDropdown = dropdownRef.current?.contains(e.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleEscape(e) {
-      if (e.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, anchorRef, onClose]);
-
-  if (!open || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
-      style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
-      }}
-    >
-      <div
-        className="overflow-y-auto py-2 sibs-scrollbar"
-        style={{ maxHeight }}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
-  );
+  return new Intl.DateTimeFormat("en-PH", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
-function CustomSelect({
-  label,
-  value,
-  options = [],
-  onChange,
-  allLabel = "",
-}) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef(null);
+function normalizeStatus(status) {
+  const cleanStatus = String(status || "").trim();
 
-  const displayValue =
-    value === "All" && allLabel ? allLabel : value || allLabel || "Select";
+  if (cleanStatus === "Declined") return "Rejected";
+  if (cleanStatus === "Retained") return "Rejected";
+  if (cleanStatus === "Rejected") return "Rejected";
+  if (cleanStatus === "Approved") return "Approved";
+  if (cleanStatus === "For Review") return "For Review";
+  if (cleanStatus === "Pending") return "Pending";
 
-  return (
-    <div className="relative">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
-        {label}
-      </label>
-
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD]"
-        }`}
-      >
-        <span className="truncate">{displayValue}</span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <DropdownPortal
-        open={open}
-        anchorRef={anchorRef}
-        onClose={() => setOpen(false)}
-      >
-        {options.map((option) => {
-          const optionLabel = option === "All" && allLabel ? allLabel : option;
-          const selected = value === option;
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                selected
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
-              }`}
-            >
-              <span className="block truncate">{optionLabel}</span>
-            </button>
-          );
-        })}
-      </DropdownPortal>
-    </div>
-  );
+  return "Pending";
 }
 
 function getStatusClass(status) {
@@ -288,46 +166,20 @@ function getStatusIcon(status) {
   }
 }
 
-function formatDate(dateValue) {
-  if (!dateValue) return "--";
-
-  const date = new Date(dateValue);
-
-  if (Number.isNaN(date.getTime())) {
-    return String(dateValue);
-  }
-
-  return new Intl.DateTimeFormat("en-PH", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
-function normalizeStatus(status) {
-  const cleanStatus = String(status || "").trim();
-
-  if (cleanStatus === "Declined") return "Rejected";
-  if (cleanStatus === "Retained") return "Rejected";
-  if (cleanStatus === "Rejected") return "Rejected";
-  if (cleanStatus === "Approved") return "Approved";
-  if (cleanStatus === "For Review") return "For Review";
-  if (cleanStatus === "Pending") return "Pending";
-
-  return "Pending";
-}
-
-function safeText(value, fallback = "--") {
-  const text = String(value || "").trim();
-  return text || fallback;
-}
-
 function getRawRequestId(request) {
   return (
     request?.attritionId ||
     request?.raw?.id ||
     request?.rawId ||
     String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-/, "")
+  );
+}
+
+function isResignationRequest(request) {
+  return (
+    String(request?.type || "").toLowerCase() === "resignation" ||
+    String(request?.source || "").toLowerCase().includes("resignation") ||
+    String(request?.id || "").startsWith("RES")
   );
 }
 
@@ -426,11 +278,164 @@ function getActiveApprovalStepKey(request) {
   return activeStep?.key || "";
 }
 
-function isResignationRequest(request) {
+function DropdownPortal({
+  open,
+  anchorRef,
+  children,
+  onClose,
+  maxHeight = 256,
+}) {
+  const dropdownRef = useRef(null);
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return undefined;
+
+    function updatePosition() {
+      const rect = anchorRef.current.getBoundingClientRect();
+
+      setStyle({
+        top: rect.bottom + 8,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open, anchorRef]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleClickOutside(e) {
+      const clickedAnchor = anchorRef.current?.contains(e.target);
+      const clickedDropdown = dropdownRef.current?.contains(e.target);
+
+      if (!clickedAnchor && !clickedDropdown) {
+        onClose?.();
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, anchorRef, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-lg"
+      style={{
+        top: `${style.top}px`,
+        left: `${style.left}px`,
+        width: `${style.width}px`,
+      }}
+    >
+      <div
+        className="overflow-y-auto py-2 sibs-scrollbar"
+        style={{ maxHeight }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function CustomSelect({
+  label,
+  value,
+  options = [],
+  onChange,
+  allLabel = "",
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+
+  const displayValue =
+    value === "All" && allLabel ? allLabel : value || allLabel || "Select";
+
   return (
-    String(request?.type || "").toLowerCase() === "resignation" ||
-    String(request?.source || "").toLowerCase().includes("resignation") ||
-    String(request?.id || "").startsWith("RES")
+    <div className="relative">
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-11 w-full items-center justify-between rounded-[10px] border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD]"
+        }`}
+      >
+        <span className="truncate">{displayValue}</span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <DropdownPortal
+        open={open}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+      >
+        {options.map((option) => {
+          const optionLabel = option === "All" && allLabel ? allLabel : option;
+          const selected = value === option;
+
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+              className={`block w-full px-4 py-3 text-left text-sm transition ${
+                selected
+                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                  : "text-[#344054] hover:bg-[#F8FAFC]"
+              }`}
+            >
+              <span className="block truncate">{optionLabel}</span>
+            </button>
+          );
+        })}
+      </DropdownPortal>
+    </div>
   );
 }
 
@@ -438,8 +443,6 @@ export default function ApprovalRequest() {
   const [activeModule, setActiveModule] = useState("Attrition");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-
-  // Default to Resignation so supervisor-filed resignations are immediately visible here.
   const [typeFilter, setTypeFilter] = useState("Resignation");
 
   const [requests, setRequests] = useState([]);
@@ -793,7 +796,7 @@ export default function ApprovalRequest() {
   }, [requests, search, statusFilter, typeFilter]);
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
+    <div className={`flex h-screen flex-1 flex-col ${FLAT_BG} font-jakarta`}>
       <Header />
 
       <main className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
@@ -818,7 +821,7 @@ export default function ApprovalRequest() {
             type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
               <Loader2 size={17} className="animate-spin" />
@@ -829,7 +832,7 @@ export default function ApprovalRequest() {
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="relative z-[20] sibs-profile-tab-panel">
             <ApprovalSummaryCards
               stats={counts}
@@ -935,7 +938,7 @@ function ApprovalSearchTable({
   onClearFilters,
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+    <div className={`${EDGE} ${PANEL_BORDER} bg-white p-5`}>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px] xl:items-end">
         <div>
           <label className="mb-1 block text-sm font-bold text-[#101828]">
@@ -952,7 +955,7 @@ function ApprovalSearchTable({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search request, requester, department, type, status, approver..."
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             />
           </div>
         </div>
@@ -1029,8 +1032,8 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
   ];
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1048,21 +1051,21 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
             </p>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+          <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
             {loading && <Loader2 size={15} className="animate-spin" />}
             Records: {normalizedStats.total}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
 
           return (
             <div
               key={card.title}
-              className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:bg-[#FAFBFC] hover:shadow-md"
+              className={`${EDGE} ${SOFT_PANEL_BORDER} bg-white p-4 transition hover:bg-[#FAFBFC]`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -1076,7 +1079,7 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
                 </div>
 
                 <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.className}`}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] ${card.className}`}
                 >
                   <Icon size={21} />
                 </div>
@@ -1091,7 +1094,7 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
 
 function ApprovalModuleTabs({ activeModule, onChangeModule, moduleCounts }) {
   return (
-    <div className="border-t border-[#E6ECF2] bg-white px-4 sm:px-5">
+    <div className="border-t border-[#E6ECF2] bg-white px-5">
       <div className="flex min-w-0 gap-8 overflow-x-auto">
         {REQUEST_MODULES.map((moduleName) => {
           const isActive = activeModule === moduleName;
@@ -1140,8 +1143,8 @@ function ApprovalRequestTable({
   onChangeModule,
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1159,7 +1162,7 @@ function ApprovalRequestTable({
             </p>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+          <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
             {loading && <Loader2 size={15} className="animate-spin" />}
             Showing: {requests.length} / {totalRecords}
           </div>
@@ -1172,24 +1175,34 @@ function ApprovalRequestTable({
         moduleCounts={moduleCounts}
       />
 
-      <div className="p-4 sm:p-5">
+      <div className="p-5">
         <div className="hidden lg:block">
-          <div className="max-h-[670px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+          <div className="overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar">
+            <table className="w-full min-w-[1300px] border-collapse bg-white text-left">
               <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                     Request
                   </th>
-                  <th className="px-5 py-4 text-left align-top">Requester</th>
-                  <th className="px-5 py-4 text-center align-top">Type</th>
-                  <th className="px-5 py-4 text-center align-top">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                    Requester
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                    Type
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                     Date Requested
                   </th>
-                  <th className="px-5 py-4 text-center align-top">Priority</th>
-                  <th className="px-5 py-4 text-center align-top">Status</th>
-                  <th className="px-5 py-4 text-left align-top">Approver</th>
-                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                    Priority
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                    Status
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                    Approver
+                  </th>
+                  <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
                     Actions
                   </th>
                 </tr>
@@ -1212,7 +1225,7 @@ function ApprovalRequestTable({
                 ) : requests.length === 0 ? (
                   <tr>
                     <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
                       colSpan={8}
                     >
                       No approval requests found for {activeModule}.
@@ -1234,7 +1247,7 @@ function ApprovalRequestTable({
 
         <div className="block lg:hidden">
           {loading ? (
-            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
               <Loader2
                 size={28}
                 className="mx-auto mb-3 animate-spin text-sibs-primary-1"
@@ -1242,7 +1255,7 @@ function ApprovalRequestTable({
               Loading approval requests...
             </div>
           ) : requests.length === 0 ? (
-            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
               No approval requests found for {activeModule}.
             </div>
           ) : (
@@ -1268,7 +1281,7 @@ function ApprovalRequestRow({ request, onView }) {
 
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[260px] truncate text-sm font-extrabold text-[#101828]">
           {request.title || "--"}
         </p>
@@ -1278,7 +1291,7 @@ function ApprovalRequestRow({ request, onView }) {
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
           {request.requester || request.employeeName || "--"}
         </p>
@@ -1288,17 +1301,17 @@ function ApprovalRequestRow({ request, onView }) {
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
           {request.type || "--"}
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
         {formatDate(request.dateRequested || request.requestDate)}
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span
           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
             request.priority,
@@ -1308,7 +1321,7 @@ function ApprovalRequestRow({ request, onView }) {
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span
           className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
             status,
@@ -1319,17 +1332,17 @@ function ApprovalRequestRow({ request, onView }) {
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
           {request.approver || "--"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
         <button
           type="button"
           onClick={onView}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+          className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
         >
           <Eye size={16} />
           View
@@ -1347,7 +1360,7 @@ function ApprovalRequestMobileCard({ request, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+      className="w-full rounded-[10px] border border-[#E6ECF2] bg-white p-4 text-left transition hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -1387,7 +1400,7 @@ function ApprovalRequestMobileCard({ request, onView }) {
         <MobileMetric label="Approver" value={request.approver} />
       </div>
 
-      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
         <Eye size={16} />
         View Details
       </div>
@@ -1397,7 +1410,7 @@ function ApprovalRequestMobileCard({ request, onView }) {
 
 function MobileMetric({ label, value }) {
   return (
-    <div className="rounded-xl bg-[#F8FAFC] p-3">
+    <div className="rounded-[10px] bg-[#F8FAFC] p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -1424,11 +1437,11 @@ function ViewApprovalRequestModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl">
         <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DDE5EF] text-sibs-primary-1">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#EAF2FB] text-sibs-primary-1">
                 <FileText size={22} />
               </div>
 
@@ -1448,7 +1461,7 @@ function ViewApprovalRequestModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]"
               aria-label="Close"
             >
               <X size={22} />
@@ -1489,7 +1502,7 @@ function ViewApprovalRequestModal({
                   href={getFileUrl(request.uploadedFileUrl)}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex min-h-[74px] items-center gap-3 rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]"
+                  className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]"
                 >
                   <FileTypeMini filename={request.uploadedFile} />
 
@@ -1521,7 +1534,7 @@ function ViewApprovalRequestModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
             >
               Close
             </button>
@@ -1556,7 +1569,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
         return (
           <div
             key={step.key}
-            className="rounded-xl bg-[#E8EDF3] p-4 text-sibs-primary-1"
+            className="rounded-[10px] border border-[#E1E7EF] bg-[#F8FAFC] p-4 text-sibs-primary-1"
           >
             <div className="mb-3 flex items-center gap-2">
               <UserRoundCheck size={17} />
@@ -1572,7 +1585,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 type="button"
                 onClick={onApprove}
                 disabled={disabled}
-                className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-bold transition active:scale-[0.98] ${
+                className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-4 text-sm font-bold transition active:scale-[0.98] ${
                   isActive
                     ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                     : "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
@@ -1585,7 +1598,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 type="button"
                 onClick={onReject}
                 disabled={disabled}
-                className={`inline-flex h-10 items-center justify-center rounded-xl border px-4 text-sm font-bold transition active:scale-[0.98] ${
+                className={`inline-flex h-10 items-center justify-center rounded-[10px] border px-4 text-sm font-bold transition active:scale-[0.98] ${
                   isActive
                     ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
                     : "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
@@ -1616,9 +1629,9 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
                 Remarks
               </p>
 
-              <div className="min-h-[104px] rounded-xl bg-white px-4 py-3 text-sm font-medium leading-5 text-[#344054]">
+              <div className="min-h-[104px] rounded-[10px] border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-medium leading-5 text-[#344054]">
                 {step.remarks || (
-                  <span className="text-[#98A2B3]">Enter remarks</span>
+                  <span className="text-[#98A2B3]">No remarks yet</span>
                 )}
               </div>
             </div>
@@ -1642,7 +1655,7 @@ function ApprovalProcessCards({ request, canReview, onApprove, onReject }) {
 
 function MiniInfo({ label, value }) {
   return (
-    <div className="rounded-lg bg-white/80 px-3 py-2">
+    <div className="rounded-[10px] border border-[#E6ECF2] bg-white px-3 py-2">
       <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -1660,8 +1673,8 @@ function FormLikeBox({ label, value, large = false }) {
       <p className="mb-2 text-sm font-bold text-sibs-primary-1">{label}</p>
 
       <div
-        className={`rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-medium text-[#344054] ${
-          large ? "min-h-[46px]" : "min-h-[43px]"
+        className={`rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-medium text-[#344054] ${
+          large ? "min-h-[46px] whitespace-pre-line" : "min-h-[43px]"
         }`}
       >
         {safeText(value)}
@@ -1740,7 +1753,7 @@ function DecisionModal({
     <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4">
       <form
         onSubmit={onSubmit}
-        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-2xl"
+        className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl"
       >
         <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -1758,7 +1771,7 @@ function DecisionModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-tertiary-5 transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-sibs-tertiary-5 transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Close"
             >
               <X size={22} />
@@ -1769,7 +1782,7 @@ function DecisionModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sibs-scrollbar">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
-              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
@@ -1802,7 +1815,7 @@ function DecisionModal({
                     </div>
                   </div>
 
-                  <div className="flex h-24 w-32 shrink-0 flex-col items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-center">
+                  <div className="flex h-24 w-32 shrink-0 flex-col items-center justify-center rounded-[10px] border border-blue-100 bg-blue-50 text-center">
                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
                       Action
                     </p>
@@ -1849,7 +1862,7 @@ function DecisionModal({
               </div>
 
               {isResignation && (
-                <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
                   <h3 className="text-base font-extrabold text-sibs-primary-1">
                     Resignation Approval Questions
                   </h3>
@@ -1870,7 +1883,7 @@ function DecisionModal({
                         onChange={(e) =>
                           onChangePersonallySpoken(e.target.value)
                         }
-                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       >
                         <option value="">Select answer</option>
@@ -1890,7 +1903,7 @@ function DecisionModal({
                         onChange={(e) =>
                           onChangeEmployeeRetained(e.target.value)
                         }
-                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       >
                         <option value="">Select answer</option>
@@ -1912,7 +1925,7 @@ function DecisionModal({
                         onChange={(e) => onChangeActionTaken(e.target.value)}
                         rows={4}
                         placeholder="Enter action taken..."
-                        className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         required
                       />
                     </div>
@@ -1920,7 +1933,7 @@ function DecisionModal({
                 </div>
               )}
 
-              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
                 <label className="mb-3 block text-sm font-extrabold text-[#101828]">
                   Remarks {isApprove ? "(optional)" : "(required)"}
                 </label>
@@ -1934,13 +1947,13 @@ function DecisionModal({
                       ? "Add approval remarks..."
                       : "Enter reason for rejecting..."
                   }
-                  className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
                 <h3 className="text-base font-extrabold text-sibs-primary-1">
                   Approval Checklist
                 </h3>
@@ -1994,7 +2007,7 @@ function DecisionModal({
               </div>
 
               <div
-                className={`rounded-2xl border p-5 ${
+                className={`rounded-[10px] border p-5 ${
                   isApprove
                     ? "border-emerald-100 bg-emerald-50"
                     : "border-red-100 bg-red-50"
@@ -2019,7 +2032,7 @@ function DecisionModal({
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+              <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-5">
                 <h3 className="text-base font-extrabold text-sibs-primary-1">
                   Request Reason
                 </h3>
@@ -2038,7 +2051,7 @@ function DecisionModal({
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -2046,7 +2059,7 @@ function DecisionModal({
             <button
               type="submit"
               disabled={loading}
-              className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-6 text-sm font-extrabold text-white transition hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`inline-flex h-11 items-center justify-center gap-2 rounded-[10px] px-6 text-sm font-extrabold text-white transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 ${
                 isApprove
                   ? "bg-emerald-600 hover:bg-emerald-700"
                   : "bg-red-600 hover:bg-red-700"
@@ -2072,7 +2085,7 @@ function DecisionModal({
 
 function DecisionInfoBox({ label, value }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4">
+    <div className="rounded-[10px] border border-[#E6ECF2] bg-white p-4">
       <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
         {label}
       </p>
@@ -2086,7 +2099,7 @@ function DecisionInfoBox({ label, value }) {
 
 function DecisionChecklistItem({ done = false, title, subtitle }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+    <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
       <div className="flex items-start gap-3">
         <div
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
