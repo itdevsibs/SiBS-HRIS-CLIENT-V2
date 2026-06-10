@@ -106,8 +106,6 @@ function getStatusClass(status) {
       return "border-cyan-200 bg-cyan-50 text-cyan-700";
     case "Pending":
       return "border-amber-200 bg-amber-50 text-amber-700";
-    case "Kronos":
-      return "border-blue-200 bg-blue-50 text-blue-700";
     case "Not Started":
       return "border-slate-200 bg-slate-50 text-slate-700";
     default:
@@ -116,7 +114,7 @@ function getStatusClass(status) {
 }
 
 function getHeadcountStatusText(item) {
-  return String(
+  const rawStatus = String(
     getSafeValue(
       item?.headcountStatus,
       item?.headcount_status,
@@ -125,9 +123,15 @@ function getHeadcountStatusText(item) {
       item?.headcountApprovalStatus,
       item?.headcount_approval_status,
       item?.status,
-      "Kronos"
+      ""
     )
   ).trim();
+
+  if (!rawStatus || rawStatus.toLowerCase() === "kronos") {
+    return "";
+  }
+
+  return rawStatus;
 }
 
 function getFileExtension(filename) {
@@ -542,8 +546,8 @@ function UpdateHeadcountModal({
             </h2>
 
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Submitted updates will stay pending until approved. The table will
-              continue showing Kronos-based required headcount until approval.
+              Submitted updates will stay pending until approved. The displayed
+              required headcount will only change after approval.
             </p>
           </div>
 
@@ -729,16 +733,6 @@ export default function ViewPlanModal({
       item?.required_headcount
     );
 
-    const kronosRequiredHeadcount = getNumberValue(
-      item?.kronosRequiredHeadcount,
-      item?.kronos_required_headcount,
-      item?.kronosBasedRequiredHeadcount,
-      item?.kronos_based_required_headcount,
-      item?.kronosHeadcount,
-      item?.kronos_headcount,
-      requiredHeadcount
-    );
-
     const requestedRequiredHeadcount = getNumberValue(
       item?.requestedRequiredHeadcount,
       item?.requested_required_headcount,
@@ -819,7 +813,6 @@ export default function ViewPlanModal({
 
       headcountStatus,
       requiredHeadcount,
-      kronosRequiredHeadcount,
       requestedRequiredHeadcount,
 
       actualHeadcount,
@@ -889,15 +882,6 @@ export default function ViewPlanModal({
     try {
       setSubmitting(true);
 
-      /*
-        IMPORTANT:
-        If there is a supporting file, use the file upload endpoint because
-        onUpdateWeeklyPlanFile already saves the required headcount + file together.
-
-        If there is no file, save only the required headcount using
-        onSaveRequiredHeadcount with silent: false so the parent StatusModal
-        will show success/error properly.
-      */
       if (weeklyPlanFile) {
         await onUpdateWeeklyPlanFile?.(item, currentRequiredHeadcount);
       } else {
@@ -911,6 +895,22 @@ export default function ViewPlanModal({
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function renderHeadcountApprovalStatus() {
+    if (!computed.headcountStatus) {
+      return "--";
+    }
+
+    return (
+      <span
+        className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+          computed.headcountStatus
+        )}`}
+      >
+        {computed.headcountStatus}
+      </span>
+    );
   }
 
   return (
@@ -944,13 +944,15 @@ export default function ViewPlanModal({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                computed.headcountStatus
-              )}`}
-            >
-              {computed.headcountStatus || "Kronos"}
-            </span>
+            {computed.headcountStatus && (
+              <span
+                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                  computed.headcountStatus
+                )}`}
+              >
+                {computed.headcountStatus}
+              </span>
+            )}
 
             <span
               className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
@@ -992,8 +994,8 @@ export default function ViewPlanModal({
               </p>
 
               <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
-                The displayed required headcount remains based on Kronos data.
-                The requested headcount will only replace it after approval.
+                The requested headcount will only replace the displayed
+                requirement after approval.
               </p>
             </div>
           )}
@@ -1005,7 +1007,7 @@ export default function ViewPlanModal({
               </p>
 
               <p className="mt-1 text-sm font-semibold leading-6 text-red-700">
-                The displayed required headcount remains based on Kronos data.
+                The displayed required headcount remains unchanged.
               </p>
             </div>
           )}
@@ -1017,7 +1019,7 @@ export default function ViewPlanModal({
               subtitle={
                 computed.headcountStatus === "Approved"
                   ? "Approved requirement"
-                  : "Kronos-based requirement"
+                  : "Current requirement"
               }
               icon={ClipboardList}
             />
@@ -1088,15 +1090,7 @@ export default function ViewPlanModal({
 
               <InfoBox
                 label="Headcount Approval Status"
-                value={
-                  <span
-                    className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                      computed.headcountStatus
-                    )}`}
-                  >
-                    {computed.headcountStatus || "Kronos"}
-                  </span>
-                }
+                value={renderHeadcountApprovalStatus()}
               />
 
               <InfoBox
@@ -1107,12 +1101,6 @@ export default function ViewPlanModal({
                     ? "text-emerald-700"
                     : "text-sibs-primary-1"
                 }
-              />
-
-              <InfoBox
-                label="Kronos Required Headcount"
-                value={formatNumber(computed.kronosRequiredHeadcount)}
-                valueClassName="text-blue-700"
               />
 
               {hasPendingRequestedHeadcount && (

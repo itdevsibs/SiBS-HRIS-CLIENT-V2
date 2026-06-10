@@ -20,6 +20,10 @@ import { useUser } from "../../services/context/UserContext";
 
 const FULL_WEEKLY_ACCESS_ROLES = ["ta", "hr", "hr_admin", "super_admin"];
 
+const FLAT_PAGE_BG = "bg-[#F6F8FB]";
+const APPROVAL_EDGE =
+  "overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-sm";
+
 const initialActionItemForm = {
   actionItem: "",
   owner: "",
@@ -32,6 +36,21 @@ function getText(value) {
   return String(value || "").trim();
 }
 
+function normalizeRoleKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function canManageHiringPlanByRole(user) {
+  const role = normalizeRoleKey(
+    user?.role || user?.userRole || user?.adminRole || "",
+  );
+
+  return role === "hr" || role === "hr_admin";
+}
+
 function getAccountIdFromAny(item) {
   return getText(
     item?.backendAccountId ||
@@ -39,7 +58,7 @@ function getAccountIdFromAny(item) {
       item?.account_id ||
       item?.gy_acc_id ||
       item?.id ||
-      ""
+      "",
   );
 }
 
@@ -49,13 +68,13 @@ function getAccountNameFromAny(item) {
       item?.account ||
       item?.gy_acc_name ||
       item?.account_name ||
-      ""
+      "",
   );
 }
 
 function getGhlNameFromAny(item) {
   return getText(
-    item?.ghlName || item?.gy_acc_ghl_name || item?.ghl_name || ""
+    item?.ghlName || item?.gy_acc_ghl_name || item?.ghl_name || "",
   );
 }
 
@@ -123,7 +142,7 @@ function getHeadcountApprovalStatus(record) {
       record?.headcountApprovalStatus ||
       record?.headcount_approval_status ||
       record?.status ||
-      "Kronos"
+      "Kronos",
   ).trim();
 }
 
@@ -140,7 +159,7 @@ function getDisplayRequiredHeadcount(record) {
       "kronosHeadcount",
       "kronos_headcount",
     ],
-    getBackendNumber(record, ["requiredHeadcount", "required_headcount"])
+    getBackendNumber(record, ["requiredHeadcount", "required_headcount"]),
   );
 
   const approvedRequiredHeadcount = getBackendNumber(record, [
@@ -163,19 +182,19 @@ function getLoggedInOwnerDisplay(user) {
       user?.sibsId ||
       user?.sibs_id ||
       user?.gy_user_code ||
-      ""
+      "",
   ).trim();
 
   const lastName = String(
-    user?.gy_emp_lname || user?.lastName || user?.last_name || ""
+    user?.gy_emp_lname || user?.lastName || user?.last_name || "",
   ).trim();
 
   const firstName = String(
-    user?.gy_emp_fname || user?.firstName || user?.first_name || ""
+    user?.gy_emp_fname || user?.firstName || user?.first_name || "",
   ).trim();
 
   const middleName = String(
-    user?.gy_emp_mname || user?.middleName || user?.middle_name || ""
+    user?.gy_emp_mname || user?.middleName || user?.middle_name || "",
   ).trim();
 
   const fullName = `${lastName}, ${firstName}${
@@ -215,10 +234,42 @@ function calculatePipelineStatus(item) {
   return "On Track";
 }
 
+function buildWeekKey(week) {
+  const startDate = String(week?.startDate || week?.weekStart || "").trim();
+  const endDate = String(week?.endDate || week?.weekEnd || "").trim();
+
+  return `${startDate}__${endDate}`;
+}
+
+function getWeekHiringPlanPercent(week) {
+  const value =
+    week?.hiringPlanPercent ??
+    week?.hiring_plan_percent ??
+    week?.hiringRate ??
+    week?.hiring_rate ??
+    5;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 5;
+}
+
 async function saveRequiredHeadcount(payload) {
   const res = await api.post("/api/weekly-hiring-plan/headcount", payload, {
     withCredentials: true,
   });
+
+  return res.data;
+}
+
+async function lockWeeklyHiringPlanSnapshot(payload) {
+  const res = await api.post(
+    "/api/weekly-hiring-plan/headcount/lock-week",
+    payload,
+    {
+      withCredentials: true,
+    },
+  );
 
   return res.data;
 }
@@ -255,12 +306,12 @@ async function openWeeklyHiringPlanFile({ sibsId, filename }) {
 
   const res = await api.get(
     `/api/weekly-hiring-plan/file/${encodeURIComponent(
-      sibsId
+      sibsId,
     )}/${encodeURIComponent(filename)}`,
     {
       responseType: "blob",
       withCredentials: true,
-    }
+    },
   );
 
   const blobUrl = window.URL.createObjectURL(res.data);
@@ -282,19 +333,19 @@ function buildWeeklyAccess(user) {
   const assignedAccountIds = new Set(
     assignedAccounts
       .map((account) => getAccountIdFromAny(account))
-      .filter(Boolean)
+      .filter(Boolean),
   );
 
   const assignedAccountNames = new Set(
     assignedAccounts
       .map((account) => getAccountNameFromAny(account))
-      .filter(Boolean)
+      .filter(Boolean),
   );
 
   const assignedClusterNames = new Set(
     assignedAccounts
       .map((account) => getClusterFromAny(account))
-      .filter(Boolean)
+      .filter(Boolean),
   );
 
   return {
@@ -310,6 +361,8 @@ function buildWeeklyAccess(user) {
 export default function WeeklyHiringPlanPage() {
   const { user } = useUser();
 
+  const canManageHiringPlanPercent = canManageHiringPlanByRole(user);
+
   const mainScrollRef = useRef(null);
   const weekDropdownRef = useRef(null);
   const clusterDropdownRef = useRef(null);
@@ -321,14 +374,14 @@ export default function WeeklyHiringPlanPage() {
       user?.admin_access ??
       user?.gy_user_access ??
       user?.access ??
-      0
+      0,
   );
 
   const assignedAccountAccessValues = Array.isArray(user?.assignedAccounts)
     ? user.assignedAccounts.map((account) =>
         Number(
-          account?.adminAccess ?? account?.admin_access ?? account?.access ?? 0
-        )
+          account?.adminAccess ?? account?.admin_access ?? account?.access ?? 0,
+        ),
       )
     : [];
 
@@ -340,7 +393,7 @@ export default function WeeklyHiringPlanPage() {
       user?.adminRole ||
       user?.position ||
       user?.jobTitle ||
-      ""
+      "",
   ).toLowerCase();
 
   const canEditRequiredHeadcount =
@@ -356,6 +409,10 @@ export default function WeeklyHiringPlanPage() {
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
   const [weeksLoading, setWeeksLoading] = useState(false);
+  const [lockingWeeklyPlan, setLockingWeeklyPlan] = useState(false);
+  const [databaseLockedWeekKeys, setDatabaseLockedWeekKeys] = useState(
+    new Set(),
+  );
 
   const [search, setSearch] = useState("");
   const [weekSearch, setWeekSearch] = useState("");
@@ -405,7 +462,21 @@ export default function WeeklyHiringPlanPage() {
     weeklyVersions.find((week) => week.id === activeWeekId) ||
     weeklyVersions[0];
 
-  const isLocked = !!activeWeek?.locked;
+  const activeWeekKey = buildWeekKey(activeWeek);
+
+  const isWeekLockedForDisplay = Boolean(
+    activeWeek?.locked ||
+      activeWeek?.lockedByPreviousWeek ||
+      activeWeek?.lockedByInheritedLatestRate,
+  );
+
+  const isHiringPlanSnapshotLocked = Boolean(
+    activeWeek?.lockedByDatabase ||
+      activeWeek?.hasSavedSnapshot ||
+      activeWeek?.lockedByInheritedLatestRate ||
+      databaseLockedWeekKeys.has(activeWeekKey),
+  );
+
   const activeWeekStartDate = activeWeek?.startDate || "";
   const activeWeekEndDate = activeWeek?.endDate || "";
 
@@ -435,6 +506,7 @@ export default function WeeklyHiringPlanPage() {
         week.startDate,
         week.endDate,
         week.locked ? "Locked" : "Editable",
+        week.lockedByDatabase ? "Saved Snapshot" : "No Snapshot",
       ]
         .join(" ")
         .toLowerCase();
@@ -483,13 +555,47 @@ export default function WeeklyHiringPlanPage() {
 
         const weeks = await getWeeklyHiringPlanWeeks();
 
-        const formattedWeeks = (weeks || []).map((week) => ({
-          ...week,
-          records: [],
-        }));
+        const formattedWeeks = (weeks || []).map((week, index) => {
+          const startDate = week?.startDate || week?.weekStart || "";
+          const endDate = week?.endDate || week?.weekEnd || "";
+          const weekKey = `${startDate}__${endDate}`;
+          const hiringPlanPercent = getWeekHiringPlanPercent(week);
+
+          return {
+            ...week,
+            id: weekKey || week?.id || `week-${index}`,
+            originalId: week?.id || "",
+            startDate,
+            endDate,
+            weekKey,
+            records: [],
+
+            locked: Boolean(week?.locked),
+
+            lockedByDatabase: Boolean(
+              week?.lockedByDatabase || week?.hasSavedSnapshot,
+            ),
+            hasSavedSnapshot: Boolean(
+              week?.hasSavedSnapshot || week?.lockedByDatabase,
+            ),
+
+            hiringPlanPercent,
+            hiring_plan_percent: hiringPlanPercent,
+            hiringRate: hiringPlanPercent,
+            hiring_rate: hiringPlanPercent,
+          };
+        });
+
+        const initialDatabaseLockedWeekKeys = new Set(
+          formattedWeeks
+            .filter((week) => week.lockedByDatabase || week.hasSavedSnapshot)
+            .map((week) => buildWeekKey(week))
+            .filter((key) => key && key !== "__"),
+        );
 
         if (!ignore) {
           setWeeklyVersions(formattedWeeks);
+          setDatabaseLockedWeekKeys(initialDatabaseLockedWeekKeys);
           setActiveWeekId(formattedWeeks[0]?.id || "");
         }
       } catch (error) {
@@ -498,6 +604,7 @@ export default function WeeklyHiringPlanPage() {
         if (!ignore) {
           setWeeklyVersions([]);
           setActiveWeekId("");
+          setDatabaseLockedWeekKeys(new Set());
         }
       } finally {
         if (!ignore) {
@@ -512,6 +619,18 @@ export default function WeeklyHiringPlanPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!activeWeek) return;
+
+    const weekPercent = getWeekHiringPlanPercent(activeWeek);
+
+    setSelectedHiringPlanPercent(weekPercent);
+  }, [
+    activeWeekId,
+    activeWeek?.hiringPlanPercent,
+    activeWeek?.hiring_plan_percent,
+  ]);
 
   function isAllClustersSelected() {
     return selectedClusters.includes("All") || selectedClusters.length === 0;
@@ -558,6 +677,42 @@ export default function WeeklyHiringPlanPage() {
     });
   }
 
+  function markActiveWeekLocked(
+    savedHiringPlanPercent = selectedHiringPlanPercent,
+  ) {
+    const selectedWeekKey = buildWeekKey(activeWeek);
+    const cleanHiringPlanPercent = Number(savedHiringPlanPercent || 5);
+
+    if (!selectedWeekKey || selectedWeekKey === "__") return;
+
+    setDatabaseLockedWeekKeys((prev) => {
+      const next = new Set(prev);
+      next.add(selectedWeekKey);
+      return next;
+    });
+
+    setWeeklyVersions((prev) =>
+      prev.map((week) => {
+        const sameWeek = buildWeekKey(week) === selectedWeekKey;
+
+        if (!sameWeek) return week;
+
+        return {
+          ...week,
+          locked: true,
+          lockedByDatabase: true,
+          hasSavedSnapshot: true,
+          hiringPlanPercent: cleanHiringPlanPercent,
+          hiring_plan_percent: cleanHiringPlanPercent,
+          hiringRate: cleanHiringPlanPercent,
+          hiring_rate: cleanHiringPlanPercent,
+        };
+      }),
+    );
+
+    setSelectedHiringPlanPercent(cleanHiringPlanPercent);
+  }
+
   async function fetchAccountsByCluster({ resetAccountFilter = true } = {}) {
     if (!activeWeekStartDate || !activeWeekEndDate) {
       return [];
@@ -576,7 +731,7 @@ export default function WeeklyHiringPlanPage() {
         accounts = await getWeeklyHiringPlanAccounts(
           "All",
           activeWeekStartDate,
-          activeWeekEndDate
+          activeWeekEndDate,
         );
       } else {
         const results = await Promise.all(
@@ -584,9 +739,9 @@ export default function WeeklyHiringPlanPage() {
             getWeeklyHiringPlanAccounts(
               cluster,
               activeWeekStartDate,
-              activeWeekEndDate
-            )
-          )
+              activeWeekEndDate,
+            ),
+          ),
         );
 
         accounts = results.flat();
@@ -616,7 +771,7 @@ export default function WeeklyHiringPlanPage() {
             account?.account_id ||
             account?.backendAccountId ||
             account?.gy_acc_id ||
-            ""
+            "",
         ).trim();
 
         const accountName = String(
@@ -624,7 +779,7 @@ export default function WeeklyHiringPlanPage() {
             account?.account ||
             account?.account_name ||
             account?.gy_acc_name ||
-            ""
+            "",
         ).trim();
 
         const clusterName = getClusterFromAny(account);
@@ -651,7 +806,7 @@ export default function WeeklyHiringPlanPage() {
             getBackendNumber(account, [
               "requiredHeadcount",
               "required_headcount",
-            ])
+            ]),
           );
 
           const requestedRequiredHeadcount = getBackendNumber(account, [
@@ -705,7 +860,7 @@ export default function WeeklyHiringPlanPage() {
             account?.account_id ||
             account?.backendAccountId ||
             account?.gy_acc_id ||
-            ""
+            "",
         ).trim();
 
         const accountName = String(
@@ -713,7 +868,7 @@ export default function WeeklyHiringPlanPage() {
             account?.account ||
             account?.account_name ||
             account?.gy_acc_name ||
-            ""
+            "",
         ).trim();
 
         if (!accountName) return;
@@ -812,7 +967,7 @@ export default function WeeklyHiringPlanPage() {
           "kronosHeadcount",
           "kronos_headcount",
         ],
-        getBackendNumber(account, ["requiredHeadcount", "required_headcount"])
+        getBackendNumber(account, ["requiredHeadcount", "required_headcount"]),
       );
 
       const requestedRequiredHeadcount = getBackendNumber(account, [
@@ -843,7 +998,6 @@ export default function WeeklyHiringPlanPage() {
       ]);
 
       const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
-
       const absenteeismCount = rawAbsenteeismCount;
 
       const absenteeismPastSixWeeksAverage = getBackendNumber(
@@ -854,7 +1008,7 @@ export default function WeeklyHiringPlanPage() {
           "absenteeismOpsCount",
           "absenteeism_ops_count",
         ],
-        Math.round(rawAbsenteeismCount / 6)
+        Math.round(rawAbsenteeismCount / 6),
       );
 
       const attritionPastCount = Number(account.attritionPastCount || 0);
@@ -865,7 +1019,7 @@ export default function WeeklyHiringPlanPage() {
           "attritionPastSixWeeksAverage",
           "attrition_past_six_weeks_average",
         ],
-        Math.round(attritionPastCount / 6)
+        Math.round(attritionPastCount / 6),
       );
 
       const actualHeadcountNeeds = getBackendNumber(account, [
@@ -883,7 +1037,7 @@ export default function WeeklyHiringPlanPage() {
           "projectedNeeds",
           "projected_needs",
         ],
-        actualHeadcountNeeds || opsPrf
+        actualHeadcountNeeds || opsPrf,
       );
 
       const actionItem = account.actionItem || account.action_item || "";
@@ -926,6 +1080,17 @@ export default function WeeklyHiringPlanPage() {
               ]
             : [];
 
+      const rowHiringPlanPercent = getBackendNumber(
+        account,
+        [
+          "hiringPlanPercent",
+          "hiring_plan_percent",
+          "hiringRate",
+          "hiring_rate",
+        ],
+        getWeekHiringPlanPercent(activeWeek),
+      );
+
       const row = {
         id: String(
           account.id ||
@@ -933,7 +1098,7 @@ export default function WeeklyHiringPlanPage() {
             account.account_id ||
             account.requiredHeadcountId ||
             account.required_headcount_id ||
-            `db-${accountCluster}-${accountName}-${index}`
+            `db-${accountCluster}-${accountName}-${index}`,
         ),
         backendAccountId: account.id || account.accountId || account.gy_acc_id,
         accountId: account.id || account.accountId || account.gy_acc_id,
@@ -984,17 +1149,17 @@ export default function WeeklyHiringPlanPage() {
         attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
 
         attritionNhoToFstPstCount: Number(
-          account.attritionNhoToFstPstCount || 0
+          account.attritionNhoToFstPstCount || 0,
         ),
         attritionNhoToFstPstPercent: Number(
-          account.attritionNhoToFstPstPercent || 0
+          account.attritionNhoToFstPstPercent || 0,
         ),
 
         attritionInterviewToNhoCount: Number(
-          account.attritionInterviewToNhoCount || 0
+          account.attritionInterviewToNhoCount || 0,
         ),
         attritionInterviewToNhoPercent: Number(
-          account.attritionInterviewToNhoPercent || 0
+          account.attritionInterviewToNhoPercent || 0,
         ),
 
         leadsToInterview: getBackendNumber(account, [
@@ -1006,12 +1171,10 @@ export default function WeeklyHiringPlanPage() {
           "leads_to_interview",
         ]),
 
-        hiringRate: getBackendNumber(account, ["hiringRate", "hiring_rate"], 5),
-        hiring_rate: getBackendNumber(
-          account,
-          ["hiringRate", "hiring_rate"],
-          5
-        ),
+        hiringRate: rowHiringPlanPercent,
+        hiring_rate: rowHiringPlanPercent,
+        hiringPlanPercent: rowHiringPlanPercent,
+        hiring_plan_percent: rowHiringPlanPercent,
 
         pipelineStatus: account.pipelineStatus || "Pending",
         statusNote: account.headcountRemarks || account.departmentName || "-",
@@ -1054,13 +1217,35 @@ export default function WeeklyHiringPlanPage() {
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWeek?.label, selectedClusters, remoteAccounts]);
+  }, [
+    activeWeek?.label,
+    activeWeek?.hiringPlanPercent,
+    activeWeek?.hiring_plan_percent,
+    selectedClusters,
+    remoteAccounts,
+  ]);
 
   const hiringPlanAdjustedData = useMemo(() => {
-    const percent = Number(selectedHiringPlanPercent || 5);
-    const decimalPercent = percent > 0 ? percent / 100 : 0.05;
+    const percent = isHiringPlanSnapshotLocked
+      ? getWeekHiringPlanPercent(activeWeek)
+      : Number(selectedHiringPlanPercent || 5);
 
     return displayData.map((item) => {
+      const itemPercent = isHiringPlanSnapshotLocked
+        ? getBackendNumber(
+            item,
+            [
+              "hiringPlanPercent",
+              "hiring_plan_percent",
+              "hiringRate",
+              "hiring_rate",
+            ],
+            percent,
+          )
+        : percent;
+
+      const itemDecimalPercent = itemPercent > 0 ? itemPercent / 100 : 0.05;
+
       const actualHeadcountNeeds = Number(
         item.actualHeadcountNeeds ??
           item.actual_headcount_needs ??
@@ -1068,19 +1253,19 @@ export default function WeeklyHiringPlanPage() {
           item.projected_employee_needs ??
           item.opsPrf ??
           item.ops_prf ??
-          0
+          0,
       );
 
       const leadsToInterview =
-        decimalPercent > 0
-          ? Math.round(actualHeadcountNeeds / decimalPercent)
+        itemDecimalPercent > 0
+          ? Math.round(actualHeadcountNeeds / itemDecimalPercent)
           : 0;
 
       return {
         ...item,
 
-        hiringPlanPercent: percent,
-        hiring_plan_percent: percent,
+        hiringPlanPercent: itemPercent,
+        hiring_plan_percent: itemPercent,
 
         actualHeadcountNeeds,
         actual_headcount_needs: actualHeadcountNeeds,
@@ -1091,19 +1276,24 @@ export default function WeeklyHiringPlanPage() {
         leadsToInterview,
         leads_to_interview: leadsToInterview,
 
-        hiringRate: percent,
-        hiring_rate: percent,
+        hiringRate: itemPercent,
+        hiring_rate: itemPercent,
 
         pipelineStatus: calculatePipelineStatus({
           ...item,
           actualHeadcountNeeds,
           projectedEmployeeNeeds: actualHeadcountNeeds,
           leadsToInterview,
-          hiringRate: percent,
+          hiringRate: itemPercent,
         }),
       };
     });
-  }, [displayData, selectedHiringPlanPercent]);
+  }, [
+    displayData,
+    selectedHiringPlanPercent,
+    activeWeek,
+    isHiringPlanSnapshotLocked,
+  ]);
 
   const managerDisplayData = useMemo(() => {
     if (weeklyAccess.hasFullAccess) {
@@ -1121,9 +1311,9 @@ export default function WeeklyHiringPlanPage() {
         .map((item) =>
           String(getAccountIdFromAny(item) || item.account || "")
             .trim()
-            .toLowerCase()
+            .toLowerCase(),
         )
-        .filter(Boolean)
+        .filter(Boolean),
     );
 
     const emptyAssignedRows = assignedAccounts
@@ -1132,6 +1322,10 @@ export default function WeeklyHiringPlanPage() {
         const accountName = getAccountNameFromAny(account);
         const ghlName = getGhlNameFromAny(account);
         const cluster = getClusterFromAny(account);
+
+        const activeHiringPlanPercent = isHiringPlanSnapshotLocked
+          ? getWeekHiringPlanPercent(activeWeek)
+          : Number(selectedHiringPlanPercent || 5);
 
         const accountKey = String(accountId || accountName)
           .trim()
@@ -1203,10 +1397,10 @@ export default function WeeklyHiringPlanPage() {
           leadsToInterview: 0,
           leads_to_interview: 0,
 
-          hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
-          hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
-          hiringRate: Number(selectedHiringPlanPercent || 5),
-          hiring_rate: Number(selectedHiringPlanPercent || 5),
+          hiringPlanPercent: activeHiringPlanPercent,
+          hiring_plan_percent: activeHiringPlanPercent,
+          hiringRate: activeHiringPlanPercent,
+          hiring_rate: activeHiringPlanPercent,
 
           pipelineStatus: "Pending",
           statusNote: ghlName || "No weekly hiring plan record yet.",
@@ -1241,10 +1435,10 @@ export default function WeeklyHiringPlanPage() {
   }, [
     hiringPlanAdjustedData,
     weeklyAccess,
-    activeWeek?.label,
-    activeWeek?.id,
+    activeWeek,
     activeWeekId,
     selectedHiringPlanPercent,
+    isHiringPlanSnapshotLocked,
   ]);
 
   useEffect(() => {
@@ -1326,7 +1520,7 @@ export default function WeeklyHiringPlanPage() {
   ]);
 
   const activeWeekIndex = weeklyVersions.findIndex(
-    (week) => week.id === activeWeekId
+    (week) => week.id === activeWeekId,
   );
 
   const previousWeek = weeklyVersions[activeWeekIndex + 1];
@@ -1335,7 +1529,7 @@ export default function WeeklyHiringPlanPage() {
     ? previousWeek?.records?.find(
         (record) =>
           record.account === selectedPlan.account &&
-          record.cluster === selectedPlan.cluster
+          record.cluster === selectedPlan.cluster,
       )
     : null;
 
@@ -1362,6 +1556,165 @@ export default function WeeklyHiringPlanPage() {
       ...current,
       open: false,
     }));
+  }
+
+  async function handleLockWeeklyHiringPlan() {
+    if (!canManageHiringPlanPercent) {
+      openStatusModal({
+        type: "error",
+        title: "Permission Denied",
+        message: "Only HR and HR Admin can lock the hiring plan percentage.",
+      });
+      return;
+    }
+
+    if (lockingWeeklyPlan || accountsLoading || weeksLoading) return;
+
+    if (isHiringPlanSnapshotLocked) {
+      openStatusModal({
+        type: "error",
+        title: "Already Locked",
+        message:
+          "This weekly hiring plan already has a saved snapshot. You cannot lock the same week again.",
+      });
+      return;
+    }
+
+    if (!activeWeek || !activeWeekStartDate || !activeWeekEndDate) {
+      openStatusModal({
+        type: "error",
+        title: "Missing Weekly Version",
+        message: "Please select a valid weekly version first.",
+      });
+      return;
+    }
+
+    if (!selectedHiringPlanPercent) {
+      openStatusModal({
+        type: "error",
+        title: "Missing Hiring Plan",
+        message: "Please select a hiring plan percentage first.",
+      });
+      return;
+    }
+
+    const recordsToSave = (filteredPlans || [])
+      .filter((item) => getText(item.account || item.accountName))
+      .map((item) => ({
+        clusterName: item.cluster || item.clusterName || item.cluster_name || "",
+        accountName: item.account || item.accountName || item.account_name || "",
+
+        requiredHeadcount: Number(
+          item.requiredHeadcount || item.required_headcount || 0,
+        ),
+
+        actualHeadcount: Number(
+          item.actualHeadcount || item.actual_headcount || 0,
+        ),
+
+        opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+
+        actualHeadcountNeeds: Number(
+          item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
+        ),
+
+        leadsToInterview: Number(
+          item.leadsToInterview || item.leads_to_interview || 0,
+        ),
+
+        hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
+        hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
+
+        priorityLevel: item.priorityLevel || item.priority_level || "",
+
+        remarks:
+          item.headcountRemarks ||
+          item.remarks ||
+          item.statusNote ||
+          `Locked hiring plan at ${selectedHiringPlanPercent}%`,
+
+        uploadedFile: item.uploadedFile || item.uploaded_file || "",
+        uploadedBySibsId:
+          item.uploadedBySibsId || item.uploaded_by_sibs_id || "",
+
+        status: item.status === "Approved" ? "Approved" : "Pending",
+      }));
+
+    if (!recordsToSave.length) {
+      openStatusModal({
+        type: "error",
+        title: "No Records Found",
+        message: "There are no affected account records to lock for this week.",
+      });
+      return;
+    }
+
+    try {
+      setLockingWeeklyPlan(true);
+
+      const result = await lockWeeklyHiringPlanSnapshot({
+        weekNumber: activeWeek?.weekNumber || null,
+        weekLabel: activeWeek?.label || null,
+        weekStart: activeWeekStartDate,
+        weekEnd: activeWeekEndDate,
+        hiringPlanPercent: selectedHiringPlanPercent,
+        records: recordsToSave,
+      });
+
+      if (!result?.success) {
+        if (result?.locked) {
+          markActiveWeekLocked(
+            result?.data?.hiringPlanPercent || selectedHiringPlanPercent,
+          );
+        }
+
+        openStatusModal({
+          type: "error",
+          title: result?.locked ? "Already Locked" : "Lock Failed",
+          message: result?.message || "Failed to lock weekly hiring plan.",
+        });
+
+        return;
+      }
+
+      markActiveWeekLocked(
+        result?.data?.hiringPlanPercent || selectedHiringPlanPercent,
+      );
+
+      await fetchAccountsByCluster({
+        resetAccountFilter: false,
+      });
+
+      openStatusModal({
+        type: "success",
+        title: "Weekly Hiring Plan Locked",
+        message:
+          result?.message ||
+          `Saved ${recordsToSave.length} affected account records for the selected week.`,
+      });
+    } catch (error) {
+      console.error("LOCK WEEKLY HIRING PLAN ERROR:", error);
+
+      const responseData = error?.response?.data;
+
+      if (responseData?.locked) {
+        markActiveWeekLocked(
+          responseData?.data?.hiringPlanPercent || selectedHiringPlanPercent,
+        );
+      }
+
+      openStatusModal({
+        type: "error",
+        title: responseData?.locked ? "Already Locked" : "Lock Failed",
+        message:
+          responseData?.message ||
+          responseData?.error ||
+          error?.message ||
+          "Failed to lock weekly hiring plan.",
+      });
+    } finally {
+      setLockingWeeklyPlan(false);
+    }
   }
 
   function handleRequiredInputChange(itemId, value) {
@@ -1441,11 +1794,18 @@ export default function WeeklyHiringPlanPage() {
         accountName: item.account || item.accountName || item.account_name,
         requiredHeadcount,
         actualHeadcount: Number(
-          item.actualHeadcount || item.actual_headcount || 0
+          item.actualHeadcount || item.actual_headcount || 0,
         ),
         opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+        actualHeadcountNeeds: Number(
+          item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
+        ),
+        leadsToInterview: Number(
+          item.leadsToInterview || item.leads_to_interview || 0,
+        ),
         priorityLevel: item.priorityLevel || item.priority_level || null,
-        remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
+        remarks:
+          item.headcountRemarks || item.remarks || item.statusNote || null,
         status: "Pending",
       });
 
@@ -1552,11 +1912,18 @@ export default function WeeklyHiringPlanPage() {
         accountName: item.account || item.accountName || item.account_name,
         requiredHeadcount,
         actualHeadcount: Number(
-          item.actualHeadcount || item.actual_headcount || 0
+          item.actualHeadcount || item.actual_headcount || 0,
         ),
         opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+        actualHeadcountNeeds: Number(
+          item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
+        ),
+        leadsToInterview: Number(
+          item.leadsToInterview || item.leads_to_interview || 0,
+        ),
         priorityLevel: item.priorityLevel || item.priority_level || null,
-        remarks: item.headcountRemarks || item.remarks || item.statusNote || null,
+        remarks:
+          item.headcountRemarks || item.remarks || item.statusNote || null,
         status: "Pending",
         uploadedFile: file,
       });
@@ -1769,26 +2136,19 @@ export default function WeeklyHiringPlanPage() {
 
       const updatedItem = {
         ...actionItemTarget,
-
         actionItem: savedActionItem.actionItem,
         action_item: savedActionItem.action_item,
-
         actionItemOwner: savedActionItem.actionItemOwner,
         action_item_owner: savedActionItem.action_item_owner,
         owner: savedActionItem.owner,
-
         actionItemOwnerSibsId: savedActionItem.actionItemOwnerSibsId,
         action_item_owner_sibs_id: savedActionItem.action_item_owner_sibs_id,
-
         actionItemDeadline: savedActionItem.actionItemDeadline,
         action_item_deadline: savedActionItem.action_item_deadline,
-
         actionItemStatus: savedActionItem.actionItemStatus,
         action_item_status: savedActionItem.action_item_status,
-
         actionItemRemarks: savedActionItem.actionItemRemarks,
         action_item_remarks: savedActionItem.action_item_remarks,
-
         actionItems: [savedActionItem],
       };
 
@@ -1823,7 +2183,7 @@ export default function WeeklyHiringPlanPage() {
             ...account,
             ...updatedItem,
           };
-        })
+        }),
       );
 
       handleCloseActionItemModal();
@@ -1874,15 +2234,15 @@ export default function WeeklyHiringPlanPage() {
   }, [accountOptions, accountSearch]);
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
+    <div className={`flex h-screen flex-1 flex-col ${FLAT_PAGE_BG} font-jakarta`}>
       <Header />
 
       <main
         ref={mainScrollRef}
         className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
       >
-        <div className="sibs-page-header-in min-w-0 mb-6 flex items-end justify-between">
-          <div>
+        <div className="sibs-page-header-in mb-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <ClipboardList size={14} />
               Recruitment
@@ -1892,7 +2252,7 @@ export default function WeeklyHiringPlanPage() {
               Weekly Hiring Plan
             </h1>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            <p className="mt-1 max-w-3xl text-sm font-medium text-sibs-tertiary-5">
               Manage weekly manpower requirement, OPS PRF, hiring plan
               percentage, leads needed, and action items.
             </p>
@@ -1905,8 +2265,8 @@ export default function WeeklyHiringPlanPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="relative z-[80] sibs-profile-tab-panel">
+        <div className="space-y-5">
+          <section className="relative z-[80] overflow-visible rounded-[10px] border border-[#E1E7EF] bg-white shadow-sm">
             <WeeklyVersionTable
               weekDropdownRef={weekDropdownRef}
               clusterDropdownRef={clusterDropdownRef}
@@ -1934,9 +2294,9 @@ export default function WeeklyHiringPlanPage() {
               filteredAccountOptions={filteredAccountOptions}
               selectedHiringPlanPercent={selectedHiringPlanPercent}
               setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
-              search={search}
-              setSearch={setSearch}
-              isLocked={isLocked}
+              isLocked={isWeekLockedForDisplay}
+              isHiringPlanSnapshotLocked={isHiringPlanSnapshotLocked}
+              canManageHiringPlanPercent={canManageHiringPlanPercent}
               canEditRequiredHeadcount={canEditRequiredHeadcount}
               isAllClustersSelected={isAllClustersSelected}
               isAllAccountsSelected={isAllAccountsSelected}
@@ -1944,28 +2304,33 @@ export default function WeeklyHiringPlanPage() {
               handleToggleAccount={handleToggleAccount}
               user={user}
               assignedAccounts={user?.assignedAccounts || []}
+              onLockWeeklyHiringPlan={handleLockWeeklyHiringPlan}
+              lockingWeeklyPlan={lockingWeeklyPlan}
+              filteredPlansCount={filteredPlans.length}
             />
-          </div>
+          </section>
 
-          <div
-            className="relative z-[20] sibs-profile-tab-panel"
+          <section
+            className={`relative z-[20] ${APPROVAL_EDGE}`}
             style={{ animationDelay: "60ms" }}
           >
             <HeadcountTable filteredPlans={filteredPlans} />
-          </div>
+          </section>
 
-          <div
-            className="relative z-[10] sibs-profile-tab-panel"
+          <section
+            className={`relative z-[10] ${APPROVAL_EDGE}`}
             style={{ animationDelay: "120ms" }}
           >
             <PercentageRiskGraphTable filteredPlans={filteredPlans} />
-          </div>
+          </section>
 
-          <div
-            key={`${activeWeekId}-${selectedClusters.join("-")}-${selectedAccounts.join(
-              "-"
+          <section
+            key={`${activeWeekId}-${selectedClusters.join(
+              "-",
+            )}-${selectedAccounts.join(
+              "-",
             )}-${search}-${selectedHiringPlanPercent}`}
-            className="relative z-[0] sibs-profile-tab-panel"
+            className={`relative z-[0] ${APPROVAL_EDGE}`}
             style={{ animationDelay: "180ms" }}
           >
             <WeeklyHiringAccountsTable
@@ -1973,7 +2338,7 @@ export default function WeeklyHiringPlanPage() {
               filteredPlans={filteredPlans}
               onViewPlan={setSelectedPlan}
             />
-          </div>
+          </section>
         </div>
       </main>
 
@@ -1989,7 +2354,7 @@ export default function WeeklyHiringPlanPage() {
       <ViewPlanModal
         open={!!selectedPlan}
         item={selectedPlan}
-        locked={isLocked}
+        locked={isHiringPlanSnapshotLocked}
         canEditRequiredHeadcount={canEditRequiredHeadcount}
         previousWeekItem={previousSelectedPlan}
         requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}

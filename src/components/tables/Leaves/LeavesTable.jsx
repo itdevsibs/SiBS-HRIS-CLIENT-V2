@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Eye, X } from "lucide-react";
 
 import PaginationTable from "@/services/pagination/PaginationTable";
@@ -189,6 +189,206 @@ function ApproverRow({ item }) {
           {approver.name}
         </p>
       </div>
+    </div>
+  );
+}
+
+function InlineDateRangeFilter({ visible }) {
+  if (!visible) return null;
+
+  return (
+    <div className="leaves-date-filter-inline w-full lg:w-auto">
+      <style>
+        {`
+          .leaves-date-filter-inline {
+            width: 100%;
+          }
+
+          .leaves-date-filter-inline > div {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+          }
+
+          .leaves-date-filter-inline > div > button,
+          .leaves-date-filter-inline > div > div > button,
+          .leaves-date-filter-inline > div > div > div > button,
+          .leaves-date-filter-inline button[aria-haspopup="dialog"],
+          .leaves-date-filter-inline button[data-state] {
+            height: 44px !important;
+            min-height: 44px !important;
+            min-width: 220px !important;
+            border-radius: 10px !important;
+            border: 1px solid #D0D5DD !important;
+            background: #FFFFFF !important;
+            padding: 0 16px !important;
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            transition:
+              border-color 180ms ease,
+              background-color 180ms ease,
+              box-shadow 180ms ease,
+              transform 180ms ease !important;
+          }
+
+          .leaves-date-filter-inline > div > button:hover,
+          .leaves-date-filter-inline > div > div > button:hover,
+          .leaves-date-filter-inline > div > div > div > button:hover,
+          .leaves-date-filter-inline button[aria-haspopup="dialog"]:hover,
+          .leaves-date-filter-inline button[data-state]:hover {
+            border-color: rgba(13, 70, 118, 0.3) !important;
+            background: #F8FAFC !important;
+          }
+
+          .leaves-date-filter-inline > div > button:focus,
+          .leaves-date-filter-inline > div > div > button:focus,
+          .leaves-date-filter-inline > div > div > div > button:focus,
+          .leaves-date-filter-inline button[aria-haspopup="dialog"]:focus,
+          .leaves-date-filter-inline button[data-state="open"] {
+            border-color: #0D4676 !important;
+            box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
+          }
+
+          .leaves-date-filter-inline > div > button:active,
+          .leaves-date-filter-inline > div > div > button:active,
+          .leaves-date-filter-inline > div > div > div > button:active,
+          .leaves-date-filter-inline button[aria-haspopup="dialog"]:active {
+            transform: scale(0.98) !important;
+          }
+
+          .leaves-date-filter-inline > div > button svg,
+          .leaves-date-filter-inline > div > div > button svg,
+          .leaves-date-filter-inline > div > div > div > button svg,
+          .leaves-date-filter-inline button[aria-haspopup="dialog"] svg {
+            color: #0D4676 !important;
+          }
+
+          @media (max-width: 1023px) {
+            .leaves-date-filter-inline,
+            .leaves-date-filter-inline > div,
+            .leaves-date-filter-inline > div > button,
+            .leaves-date-filter-inline > div > div,
+            .leaves-date-filter-inline > div > div > button,
+            .leaves-date-filter-inline > div > div > div,
+            .leaves-date-filter-inline > div > div > div > button {
+              width: 100% !important;
+            }
+          }
+
+          .leaves-date-filter-inline [data-radix-popper-content-wrapper] {
+            z-index: 999999 !important;
+          }
+
+          .leaves-date-filter-inline .rdp,
+          .leaves-date-filter-inline [data-slot="calendar"],
+          .leaves-date-filter-inline [role="dialog"] {
+            border-radius: 16px !important;
+            border: 1px solid #D9E2EC !important;
+            background: #FFFFFF !important;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14) !important;
+            overflow: hidden !important;
+          }
+
+          .leaves-date-filter-inline .rdp-month_caption,
+          .leaves-date-filter-inline .rdp-caption_label,
+          .leaves-date-filter-inline [class*="caption_label"] {
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+          }
+
+          .leaves-date-filter-inline .rdp-weekday {
+            color: #174A7C !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+          }
+
+          .leaves-date-filter-inline .rdp-day_button,
+          .leaves-date-filter-inline [role="gridcell"] button {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            border: 0 !important;
+            border-radius: 9999px !important;
+            background: transparent !important;
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            outline: none !important;
+          }
+
+          .leaves-date-filter-inline .rdp-day_button:hover,
+          .leaves-date-filter-inline [role="gridcell"] button:hover {
+            background: #EAF2FB !important;
+            color: #0D4676 !important;
+          }
+
+          .leaves-date-filter-inline .rdp-selected .rdp-day_button,
+          .leaves-date-filter-inline [aria-selected="true"] button,
+          .leaves-date-filter-inline [data-selected="true"] button {
+            background: #E7F0FA !important;
+            color: #0D4676 !important;
+          }
+
+          .leaves-date-filter-inline .rdp-outside .rdp-day_button,
+          .leaves-date-filter-inline [data-outside="true"] button {
+            color: #98A7BA !important;
+            background: transparent !important;
+          }
+
+          .leaves-date-filter-inline .rdp-nav button,
+          .leaves-date-filter-inline button.rdp-button_previous,
+          .leaves-date-filter-inline button.rdp-button_next,
+          .leaves-date-filter-inline .rdp-button_previous,
+          .leaves-date-filter-inline .rdp-button_next {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            border: 0 !important;
+            border-radius: 9999px !important;
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            color: #0D4676 !important;
+          }
+
+          .leaves-date-filter-inline .rdp-nav button:hover,
+          .leaves-date-filter-inline button.rdp-button_previous:hover,
+          .leaves-date-filter-inline button.rdp-button_next:hover,
+          .leaves-date-filter-inline .rdp-button_previous:hover,
+          .leaves-date-filter-inline .rdp-button_next:hover {
+            background: #EAF2FB !important;
+          }
+
+          .leaves-date-filter-inline .rdp-footer button,
+          .leaves-date-filter-inline [class*="footer"] button {
+            height: auto !important;
+            min-height: 0 !important;
+            min-width: auto !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+            padding: 8px 10px !important;
+            color: #0D4676 !important;
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            box-shadow: none !important;
+          }
+
+          .leaves-date-filter-inline .rdp-footer button:hover,
+          .leaves-date-filter-inline [class*="footer"] button:hover {
+            background: #F2F6FA !important;
+          }
+        `}
+      </style>
+
+      <PaginationDateRangeFilter entity="leaves" visible className="m-0" />
     </div>
   );
 }
@@ -508,11 +708,10 @@ export default function LeavesTable({
                 searchable: false,
               },
             ]}
+            rightContent={<InlineDateRangeFilter visible />}
             showPagination={false}
-            className="mb-3"
+            className="mb-5"
           />
-
-          <PaginationDateRangeFilter entity="leaves" visible className="mb-5" />
 
           <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
             <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
