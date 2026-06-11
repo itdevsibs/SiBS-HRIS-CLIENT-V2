@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Filter,
-  Lock,
-  RotateCcw,
-  Search,
-  Unlock,
-} from "lucide-react";
+import { ChevronDown, Filter, Lock, Save, Unlock } from "lucide-react";
 
 const CLUSTER_OPTIONS = [
   "Coast Dental",
@@ -20,8 +13,10 @@ const FULL_ACCESS_ROLES = new Set(["ta", "hr", "hr_admin", "super_admin"]);
 
 const HIRING_PLAN_PERCENT_OPTIONS = Array.from(
   { length: 20 },
-  (_, index) => (index + 1) * 5
+  (_, index) => (index + 1) * 5,
 );
+
+const EDGE = "rounded-[10px]";
 
 function getText(value) {
   return String(value || "").trim();
@@ -33,13 +28,13 @@ function getAccountName(account) {
       account?.account ||
       account?.gy_acc_name ||
       account?.account_name ||
-      account?.name
+      account?.name,
   );
 }
 
 function getGhlName(account) {
   return getText(
-    account?.ghlName || account?.gy_acc_ghl_name || account?.ghl_name
+    account?.ghlName || account?.gy_acc_ghl_name || account?.ghl_name,
   );
 }
 
@@ -157,10 +152,23 @@ function formatWeeklyVersionDisplay(week) {
   return weekRange ? `${label} | ${weekRange}` : label;
 }
 
+function getWeekHiringPlanPercent(week, fallback = 5) {
+  const value =
+    week?.hiringPlanPercent ??
+    week?.hiring_plan_percent ??
+    week?.hiringRate ??
+    week?.hiring_rate ??
+    fallback;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 5;
+}
+
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-200 ease-out ${
         open
           ? "grid-rows-[1fr] opacity-100"
           : "pointer-events-none grid-rows-[0fr] opacity-0"
@@ -168,8 +176,8 @@ function AnimatedDropdown({ open, children, className = "" }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          className={`overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
           }`}
         >
           {children}
@@ -213,10 +221,26 @@ export default function WeeklyVersionTable({
   selectedHiringPlanPercent = 5,
   setSelectedHiringPlanPercent,
 
-  search,
-  setSearch,
-
+  /*
+    isLocked = display lock only.
+    This can be true for previous weeks.
+  */
   isLocked = false,
+
+  /*
+    isHiringPlanSnapshotLocked = database snapshot lock or inherited latest rate lock.
+    This disables Hiring Plan dropdown.
+  */
+  isHiringPlanSnapshotLocked = false,
+
+  /*
+    Only HR and HR Admin should be true.
+    This controls:
+    - Hiring Plan dropdown edit access
+    - Lock button visibility
+  */
+  canManageHiringPlanPercent = false,
+
   canEditRequiredHeadcount = false,
 
   isAllClustersSelected,
@@ -226,6 +250,10 @@ export default function WeeklyVersionTable({
 
   user = null,
   assignedAccounts = [],
+
+  onLockWeeklyHiringPlan,
+  lockingWeeklyPlan = false,
+  filteredPlansCount = 0,
 }) {
   const [showHiringPlanDropdown, setShowHiringPlanDropdown] = useState(false);
   const hiringPlanDropdownRef = useRef(null);
@@ -233,16 +261,45 @@ export default function WeeklyVersionTable({
   const canViewAllAccounts = canViewAllWeeklyAccounts(user);
   const isRestrictedManager = !canViewAllAccounts;
 
+  /*
+    Weekly version display lock:
+    Previous weeks can show Locked here.
+  */
+  const weekLockedForDisplay = Boolean(isLocked || activeWeek?.locked);
+
+  /*
+    Database/inherited snapshot lock:
+    This controls whether the hiring plan rate is static.
+  */
+  const weekAlreadySavedInDatabase = Boolean(
+    isHiringPlanSnapshotLocked ||
+      activeWeek?.lockedByDatabase ||
+      activeWeek?.hasSavedSnapshot ||
+      activeWeek?.lockedByInheritedLatestRate,
+  );
+
+  /*
+    Hiring Plan dropdown is disabled when:
+    - user is not HR / HR Admin, OR
+    - selected week is already database/inherited locked.
+  */
+  const hiringPlanControlLocked =
+    !canManageHiringPlanPercent || weekAlreadySavedInDatabase;
+
+  const displayedHiringPlanPercent = weekAlreadySavedInDatabase
+    ? getWeekHiringPlanPercent(activeWeek, selectedHiringPlanPercent)
+    : Number(selectedHiringPlanPercent || 5);
+
   const normalizedAssignedAccounts = useMemo(
     () => normalizeAssignedAccounts(user, assignedAccounts),
-    [user, assignedAccounts]
+    [user, assignedAccounts],
   );
 
   const assignedAccountNames = useMemo(() => {
     return new Set(
       normalizedAssignedAccounts
         .map((account) => getAccountName(account))
-        .filter(Boolean)
+        .filter(Boolean),
     );
   }, [normalizedAssignedAccounts]);
 
@@ -250,7 +307,7 @@ export default function WeeklyVersionTable({
     return new Set(
       normalizedAssignedAccounts
         .map((account) => getClusterNameFromAccount(account))
-        .filter(Boolean)
+        .filter(Boolean),
     );
   }, [normalizedAssignedAccounts]);
 
@@ -258,7 +315,7 @@ export default function WeeklyVersionTable({
     if (canViewAllAccounts) return CLUSTER_OPTIONS;
 
     return CLUSTER_OPTIONS.filter((cluster) =>
-      assignedClusterNames.has(cluster)
+      assignedClusterNames.has(cluster),
     );
   }, [canViewAllAccounts, assignedClusterNames]);
 
@@ -287,21 +344,26 @@ export default function WeeklyVersionTable({
     return selectedAccounts.includes("All") || selectedAccounts.length === 0;
   };
 
-  const hasActiveFilters =
-    !safeIsAllClustersSelected() ||
-    !safeIsAllAccountsSelected() ||
-    search ||
-    Number(selectedHiringPlanPercent) !== 5;
+  const canLockWeeklyPlan =
+    canManageHiringPlanPercent &&
+    typeof onLockWeeklyHiringPlan === "function" &&
+    !weekAlreadySavedInDatabase &&
+    !lockingWeeklyPlan &&
+    !accountsLoading &&
+    !weeksLoading &&
+    !!activeWeek &&
+    !!selectedHiringPlanPercent &&
+    Number(filteredPlansCount || 0) > 0;
 
   useEffect(() => {
     if (canViewAllAccounts) return;
 
     const selectedRealClusters = selectedClusters.filter(
-      (cluster) => cluster !== "All"
+      (cluster) => cluster !== "All",
     );
 
     const hasInvalidCluster = selectedRealClusters.some(
-      (cluster) => !assignedClusterNames.has(cluster)
+      (cluster) => !assignedClusterNames.has(cluster),
     );
 
     if (hasInvalidCluster) {
@@ -309,11 +371,11 @@ export default function WeeklyVersionTable({
     }
 
     const selectedRealAccounts = selectedAccounts.filter(
-      (account) => account !== "All"
+      (account) => account !== "All",
     );
 
     const hasInvalidAccount = selectedRealAccounts.some(
-      (account) => !assignedAccountNames.has(account)
+      (account) => !assignedAccountNames.has(account),
     );
 
     if (hasInvalidAccount) {
@@ -346,23 +408,29 @@ export default function WeeklyVersionTable({
     };
   }, []);
 
-  function handleClearFilters() {
-    setSelectedClusters(["All"]);
-    setSelectedAccounts(["All"]);
-    setAccountSearch("");
-    setSearch("");
-    setSelectedHiringPlanPercent?.(5);
-    setShowHiringPlanDropdown(false);
+  useEffect(() => {
+    if (hiringPlanControlLocked) {
+      setShowHiringPlanDropdown(false);
+    }
+  }, [hiringPlanControlLocked]);
+
+  function closeOtherDropdowns(except = "") {
+    if (except !== "week") setShowWeekDropdown(false);
+    if (except !== "cluster") setShowClusterDropdown(false);
+    if (except !== "account") setShowAccountDropdown(false);
+    if (except !== "hiringPlan") setShowHiringPlanDropdown(false);
   }
 
   function handleWeeklyVersionChange(week) {
     setActiveWeekId(week.id);
     setSelectedClusters(["All"]);
     setSelectedAccounts(["All"]);
-    setSearch("");
-    setWeekSearch("");
+    setWeekSearch?.("");
     setShowWeekDropdown(false);
     setShowHiringPlanDropdown(false);
+
+    const weekPercent = getWeekHiringPlanPercent(week, selectedHiringPlanPercent);
+    setSelectedHiringPlanPercent?.(weekPercent);
   }
 
   function handleClusterClick(cluster) {
@@ -390,9 +458,37 @@ export default function WeeklyVersionTable({
     setAccountSearch("");
   }
 
+  function getLockButtonTitle() {
+    if (!canManageHiringPlanPercent) {
+      return "Only HR and HR Admin can lock the hiring plan percentage.";
+    }
+
+    if (weekAlreadySavedInDatabase) {
+      return "This selected week already has a saved hiring plan snapshot in the database.";
+    }
+
+    if (!activeWeek) {
+      return "Select a weekly version first.";
+    }
+
+    if (!selectedHiringPlanPercent) {
+      return "Select a hiring plan percentage first.";
+    }
+
+    if (accountsLoading || weeksLoading) {
+      return "Please wait until weekly records are loaded.";
+    }
+
+    if (Number(filteredPlansCount || 0) <= 0) {
+      return "No affected account records found for this selected week.";
+    }
+
+    return "Save all affected account records for the selected week.";
+  }
+
   return (
-    <section className="overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <div className="relative z-[100] overflow-visible bg-white">
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -400,31 +496,50 @@ export default function WeeklyVersionTable({
               Weekly Filters
             </div>
 
-            <h2 className="mt-3 text-base font-extrabold text-[#101828]">
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
               Weekly Hiring Plan Filters
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Select weekly version, cluster, account, hiring plan percentage,
-              and keyword to refine the hiring plan.
+              Select weekly version, cluster, account, and hiring plan
+              percentage. HR and HR Admin can lock the latest editable hiring
+              plan rate.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`inline-flex w-fit items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${
-                isLocked
+                weekLockedForDisplay
                   ? "border-gray-200 bg-gray-50 text-gray-600"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
               }`}
             >
-              {isLocked ? <Lock size={13} /> : <Unlock size={13} />}
-              {isLocked ? "Locked" : "Editable"}
+              {weekLockedForDisplay ? <Lock size={13} /> : <Unlock size={13} />}
+              {weekLockedForDisplay ? "Locked" : "Editable"}
             </span>
+
+            {weekAlreadySavedInDatabase && (
+              <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                Static Hiring Plan: {displayedHiringPlanPercent}%
+              </span>
+            )}
+
+            {weekLockedForDisplay && !weekAlreadySavedInDatabase && (
+              <span className="inline-flex w-fit rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                Previous Week Display Lock
+              </span>
+            )}
 
             {isRestrictedManager && (
               <span className="inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
                 Manager View: Assigned Accounts Only
+              </span>
+            )}
+
+            {!canManageHiringPlanPercent && (
+              <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                View only: Hiring Plan %
               </span>
             )}
 
@@ -437,112 +552,125 @@ export default function WeeklyVersionTable({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr_1fr_auto] xl:items-end">
-          <div ref={weekDropdownRef} className="relative z-50">
+      <div className="overflow-visible px-5 py-5">
+        <div
+          className={`grid grid-cols-1 gap-3 overflow-visible ${
+            canManageHiringPlanPercent
+              ? "xl:grid-cols-[1.25fr_1fr_1fr_1fr_auto]"
+              : "xl:grid-cols-[1.25fr_1fr_1fr_1fr]"
+          } xl:items-end`}
+        >
+          <div
+            ref={weekDropdownRef}
+            className="relative z-[80] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Weekly Version
             </label>
 
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
+            <button
+              type="button"
+              onClick={() => {
+                if (weeksLoading) return;
 
-              <input
-                type="text"
-                value={
-                  showWeekDropdown
-                    ? weekSearch
-                    : formatWeeklyVersionDisplay(activeWeek)
-                }
-                onChange={(e) => {
-                  setWeekSearch(e.target.value);
-                  setShowWeekDropdown(true);
-                }}
-                onFocus={() => {
-                  setShowWeekDropdown(true);
-                  setWeekSearch("");
-                  setShowHiringPlanDropdown(false);
-                }}
-                placeholder={
-                  weeksLoading
-                    ? "Loading weekly versions..."
-                    : "Search weekly version..."
-                }
-                autoComplete="off"
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
+                setShowWeekDropdown((prev) => !prev);
+                setWeekSearch?.("");
+                closeOtherDropdowns("week");
+              }}
+              disabled={weeksLoading}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+            >
+              <span className="truncate">
+                {weeksLoading
+                  ? "Loading weekly versions..."
+                  : formatWeeklyVersionDisplay(activeWeek) ||
+                    "Select weekly version"}
+              </span>
 
               <ChevronDown
                 size={18}
-                onClick={() => {
-                  setShowWeekDropdown((prev) => !prev);
-                  setWeekSearch("");
-                  setShowHiringPlanDropdown(false);
-                }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showWeekDropdown ? "rotate-180" : ""
                 }`}
               />
+            </button>
 
-              <AnimatedDropdown open={showWeekDropdown}>
-                <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
-                  {filteredWeeklyVersions.length > 0 ? (
-                    filteredWeeklyVersions.map((week) => {
-                      const isSelected = week.id === activeWeekId;
+            <AnimatedDropdown open={showWeekDropdown && !weeksLoading}>
+              <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
+                {filteredWeeklyVersions.length > 0 ? (
+                  filteredWeeklyVersions.map((week) => {
+                    const isSelected = week.id === activeWeekId;
+                    const weekDisplayLocked = Boolean(week.locked);
+                    const weekSavedInDatabase = Boolean(
+                      week.lockedByDatabase ||
+                        week.hasSavedSnapshot ||
+                        week.lockedByInheritedLatestRate,
+                    );
 
-                      return (
-                        <button
-                          key={week.id}
-                          type="button"
-                          onClick={() => handleWeeklyVersionChange(week)}
-                          className={`block w-full px-4 py-3 text-left text-sm transition ${
-                            isSelected
-                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-bold">
-                                {formatWeekLabel(week)}
+                    const weekPercent =
+                      getWeekHiringPlanPercent(week) ||
+                      Number(week.latestLockedHiringPlanPercent || 5);
+
+                    return (
+                      <button
+                        key={week.id}
+                        type="button"
+                        onClick={() => handleWeeklyVersionChange(week)}
+                        className={`block w-full px-4 py-3 text-left text-sm transition ${
+                          isSelected
+                            ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                            : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate font-bold">
+                              {formatWeekLabel(week)}
+                            </p>
+
+                            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                              {week.weekRange || "—"}
+                            </p>
+
+                            {weekSavedInDatabase && (
+                              <p className="mt-1 truncate text-[11px] font-bold text-sibs-tertiary-5">
+                                Static Hiring Plan: {weekPercent}%
                               </p>
+                            )}
 
-                              <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                                {week.weekRange || "—"}
+                            {weekDisplayLocked && !weekSavedInDatabase && (
+                              <p className="mt-1 truncate text-[11px] font-bold text-amber-600">
+                                No snapshot yet
                               </p>
-                            </div>
-
-                            <span
-                              className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                                week.locked
-                                  ? "border-gray-200 bg-gray-50 text-gray-600"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                              }`}
-                            >
-                              {week.locked ? "Locked" : "Editable"}
-                            </span>
+                            )}
                           </div>
-                        </button>
-                      );
-                    })
-                  ) : weekSearch.trim() ? (
-                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                      No weekly version found.
-                    </div>
-                  ) : (
-                    <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                      No weekly versions available.
-                    </div>
-                  )}
-                </div>
-              </AnimatedDropdown>
-            </div>
+
+                          <span
+                            className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                              weekDisplayLocked
+                                ? "border-gray-200 bg-gray-50 text-gray-600"
+                                : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                            }`}
+                          >
+                            {weekDisplayLocked ? "Locked" : "Editable"}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                    No weekly versions available.
+                  </div>
+                )}
+              </div>
+            </AnimatedDropdown>
           </div>
 
-          <div ref={clusterDropdownRef} className="relative z-40">
+          <div
+            ref={clusterDropdownRef}
+            className="relative z-[70] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Cluster
             </label>
@@ -551,9 +679,9 @@ export default function WeeklyVersionTable({
               type="button"
               onClick={() => {
                 setShowClusterDropdown((prev) => !prev);
-                setShowHiringPlanDropdown(false);
+                closeOtherDropdowns("cluster");
               }}
-              className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             >
               <span className="truncate">
                 {getClusterFilterLabel(selectedClusters, isRestrictedManager)}
@@ -629,12 +757,15 @@ export default function WeeklyVersionTable({
             </AnimatedDropdown>
           </div>
 
-          <div ref={accountDropdownRef} className="relative z-30">
+          <div
+            ref={accountDropdownRef}
+            className="relative z-[60] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Account
             </label>
 
-            <div className="relative">
+            <div className="relative overflow-visible">
               <input
                 type="text"
                 value={
@@ -644,24 +775,25 @@ export default function WeeklyVersionTable({
                       ? "Loading accounts..."
                       : getAccountFilterLabel(
                           selectedAccounts,
-                          isRestrictedManager
+                          isRestrictedManager,
                         )
                 }
                 onChange={(e) => {
                   setAccountSearch(e.target.value);
                   setShowAccountDropdown(true);
+                  closeOtherDropdowns("account");
                 }}
                 onFocus={() => {
                   if (!accountsLoading) {
                     setShowAccountDropdown(true);
                     setAccountSearch("");
-                    setShowHiringPlanDropdown(false);
+                    closeOtherDropdowns("account");
                   }
                 }}
                 disabled={accountsLoading}
                 placeholder="Search accounts..."
                 autoComplete="off"
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
               />
 
               <ChevronDown
@@ -670,7 +802,7 @@ export default function WeeklyVersionTable({
                   if (!accountsLoading) {
                     setShowAccountDropdown((prev) => !prev);
                     setAccountSearch("");
-                    setShowHiringPlanDropdown(false);
+                    closeOtherDropdowns("account");
                   }
                 }}
                 className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
@@ -744,7 +876,10 @@ export default function WeeklyVersionTable({
             </div>
           </div>
 
-          <div ref={hiringPlanDropdownRef} className="relative z-20">
+          <div
+            ref={hiringPlanDropdownRef}
+            className="relative z-[50] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Hiring Plan (%)
             </label>
@@ -752,24 +887,42 @@ export default function WeeklyVersionTable({
             <button
               type="button"
               onClick={() => {
+                if (hiringPlanControlLocked) return;
+
                 setShowHiringPlanDropdown((prev) => !prev);
-                setShowWeekDropdown(false);
-                setShowClusterDropdown(false);
-                setShowAccountDropdown(false);
+                closeOtherDropdowns("hiringPlan");
               }}
-              className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              disabled={hiringPlanControlLocked}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border px-4 text-left text-sm font-bold outline-none transition ${
+                hiringPlanControlLocked
+                  ? "cursor-not-allowed border-[#D6DEE8] bg-[#F2F4F7] text-sibs-tertiary-5"
+                  : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              }`}
+              title={
+                !canManageHiringPlanPercent
+                  ? "Only HR and HR Admin can edit the hiring plan percentage."
+                  : weekAlreadySavedInDatabase
+                    ? "This selected week already has a saved hiring plan snapshot. Hiring plan percentage can no longer be changed."
+                    : "Select hiring plan percentage"
+              }
             >
-              <span className="truncate">{selectedHiringPlanPercent}%</span>
+              <span className="truncate">{displayedHiringPlanPercent}%</span>
 
               <ChevronDown
                 size={18}
-                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-                  showHiringPlanDropdown ? "rotate-180" : ""
+                className={`shrink-0 transition-transform duration-300 ${
+                  hiringPlanControlLocked
+                    ? "text-sibs-tertiary-5/60"
+                    : "text-sibs-tertiary-5"
+                } ${
+                  showHiringPlanDropdown && !hiringPlanControlLocked
+                    ? "rotate-180"
+                    : ""
                 }`}
               />
             </button>
 
-            <AnimatedDropdown open={showHiringPlanDropdown}>
+            <AnimatedDropdown open={showHiringPlanDropdown && !hiringPlanControlLocked}>
               <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
                 {HIRING_PLAN_PERCENT_OPTIONS.map((percent) => {
                   const checked =
@@ -804,38 +957,45 @@ export default function WeeklyVersionTable({
             </AnimatedDropdown>
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-bold text-[#101828]">
-              Search
-            </label>
-
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search hiring plan..."
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleClearFilters}
-            disabled={!hasActiveFilters}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RotateCcw size={17} />
-            Clear
-          </button>
+          {canManageHiringPlanPercent && (
+            <button
+              type="button"
+              onClick={canLockWeeklyPlan ? onLockWeeklyHiringPlan : undefined}
+              disabled={!canLockWeeklyPlan}
+              className={`inline-flex h-11 items-center justify-center gap-2 ${EDGE} border px-5 text-sm font-bold transition active:scale-[0.98] ${
+                canLockWeeklyPlan
+                  ? "border-sibs-primary-1 bg-sibs-primary-1 text-white hover:bg-sibs-primary-1/95 hover:shadow-sm"
+                  : weekAlreadySavedInDatabase
+                    ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-500"
+                    : "cursor-not-allowed border-[#D6DEE8] bg-[#F2F4F7] text-sibs-tertiary-5"
+              }`}
+              title={getLockButtonTitle()}
+            >
+              {lockingWeeklyPlan ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Saving...
+                </>
+              ) : weekAlreadySavedInDatabase ? (
+                <>
+                  <Lock size={17} />
+                  Locked
+                </>
+              ) : (
+                <>
+                  <Save size={17} />
+                  Lock
+                </>
+              )}
+            </button>
+          )}
         </div>
+
+        <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
+          Only HR and HR Admin can edit and lock the Hiring Plan %. Other users
+          can view the selected/static hiring rate only.
+        </p>
       </div>
-    </section>
+    </div>
   );
 }

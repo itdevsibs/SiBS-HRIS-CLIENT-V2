@@ -23,15 +23,19 @@ import {
   Search,
   Send,
   TrendingDown,
-  UploadCloud,
   UserCheck,
+  UserRound,
   UsersRound,
-  X,
   XCircle,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
+import { useUser } from "../../services/context/UserContext";
+import {
+  ResignationManagementModal,
+  ViewResignationModal,
+} from "../../components/modals/resignation-management/ResignationManagementModal";
 
 import {
   getManagedEmployees,
@@ -43,6 +47,15 @@ import {
   formatDate,
   getTodayDate,
 } from "../../components/layout/FormatDateTime";
+
+const EDGE = "rounded-[10px]";
+const PANEL_BORDER = "border border-[#E1E7EF]";
+const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
+const FLAT_BG = "bg-[#F6F8FB]";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5001";
 
 const DEFAULT_COUNTS = {
   total: 0,
@@ -60,24 +73,17 @@ const STATUS_OPTIONS = [
   "Declined",
 ];
 
-const TYPE_OPTIONS = [
-  "All",
-  "Voluntary",
-  "Immediate",
-  "End of Contract",
-  "Health Reason",
-  "Personal Reason",
-  "Career Opportunity",
-  "Other",
-];
+const TYPE_OPTIONS = ["All", "Formal", "Immediate"];
+
+function normalizeRoleKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
 
 function normalizeStatus(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function safeText(value, fallback = "--") {
-  const text = String(value || "").trim();
-  return text || fallback;
 }
 
 function getResignationStatus(item) {
@@ -168,25 +174,158 @@ function getEmployeePosition(item) {
   );
 }
 
-function getInitials(name) {
-  const parts = String(name || "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+function getProfileImageUrl(item) {
+  const directUrl =
+    item?.profilePictureUrl ||
+    item?.profile_picture_url ||
+    item?.profileUrl ||
+    item?.profile_url ||
+    item?.employeeProfileUrl ||
+    item?.employee_profile_url ||
+    "";
 
-  if (!parts.length) return "E";
+  if (directUrl) return directUrl;
 
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+  const filename =
+    item?.profile_filename ||
+    item?.profileFilename ||
+    item?.profilePicture ||
+    item?.profile_picture ||
+    item?.employeeProfilePicture ||
+    item?.employee_profile_picture ||
+    item?.profileImage ||
+    item?.profile_image ||
+    "";
+
+  if (!filename) return "";
+
+  if (String(filename).startsWith("http")) return filename;
+
+  return `${String(API_URL).replace(
+    /\/$/,
+    "",
+  )}/api/employee-profile/file/${encodeURIComponent(filename)}`;
+}
+
+function ProfileAvatar({ item, size = "md" }) {
+  const sibsId = getEmployeeSibsId(item);
+  const [fetchedEmployee, setFetchedEmployee] = useState(null);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  const mergedItem = {
+    ...(item || {}),
+    ...(fetchedEmployee || {}),
+  };
+
+  const imageUrl = getProfileImageUrl(mergedItem);
+
+  const shouldFetchProfile =
+    sibsId &&
+    sibsId !== "--" &&
+    !getProfileImageUrl(item || {}) &&
+    !fetchedEmployee;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl, sibsId]);
+
+  useEffect(() => {
+    if (!shouldFetchProfile) return undefined;
+
+    const controller = new AbortController();
+
+    async function fetchEmployeeProfile() {
+      try {
+        const response = await fetch(
+          `${String(API_URL).replace(
+            /\/$/,
+            "",
+          )}/api/employees/${encodeURIComponent(sibsId)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+
+        if (result?.success && result?.data) {
+          setFetchedEmployee(result.data);
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("PROFILE AVATAR FETCH ERROR:", error);
+        }
+      }
+    }
+
+    fetchEmployeeProfile();
+
+    return () => {
+      controller.abort();
+    };
+  }, [shouldFetchProfile, sibsId]);
+
+  function handleOpenProfile(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!imageUrl || imageFailed) return;
+
+    window.open(imageUrl, "_blank", "noopener,noreferrer");
+  }
+
+  const sizeClass =
+    size === "lg"
+      ? "h-12 w-12"
+      : size === "sm"
+        ? "h-9 w-9"
+        : "h-10 w-10";
+
+  const avatarContent =
+    imageUrl && !imageFailed ? (
+      <img
+        src={imageUrl}
+        alt="Profile"
+        className="h-full w-full object-cover"
+        onError={() => setImageFailed(true)}
+      />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center text-sibs-primary-1">
+        <UserRound size={size === "lg" ? 24 : 20} />
+      </div>
+    );
+
+  if (imageUrl && !imageFailed) {
+    return (
+      <button
+        type="button"
+        onClick={handleOpenProfile}
+        title="Open profile picture"
+        className={`group flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm outline-none transition hover:scale-[1.03] hover:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+      >
+        {avatarContent}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+    >
+      {avatarContent}
+    </div>
+  );
 }
 
 function isStageApproved(item, stage) {
   if (stage === "tl") return Number(item?.tlIsApproved || 0) === 1;
   if (stage === "om") return Number(item?.omIsApproved || 0) === 1;
   if (stage === "som") return Number(item?.somIsApproved || 0) === 1;
+
   return false;
 }
 
@@ -194,6 +333,7 @@ function isStageDeclined(item, stage) {
   if (stage === "tl") return Number(item?.tlIsDeclined || 0) === 1;
   if (stage === "om") return Number(item?.omIsDeclined || 0) === 1;
   if (stage === "som") return Number(item?.somIsDeclined || 0) === 1;
+
   return false;
 }
 
@@ -262,10 +402,6 @@ function getStageClass(status) {
     default:
       return "border-amber-100 bg-amber-50 text-amber-700";
   }
-}
-
-function getFileName(item) {
-  return item?.uploadedFile || item?.uploadedFileName || item?.fileName || "";
 }
 
 function DropdownPortal({
@@ -340,7 +476,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-lg`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -353,93 +489,6 @@ function DropdownPortal({
       >
         {children}
       </div>
-    </div>,
-    document.body,
-  );
-}
-
-function EmployeeDropdownPortal({ open, anchorRef, children, onClose }) {
-  const dropdownRef = useRef(null);
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-    width: 420,
-  });
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
-
-    function updatePosition() {
-      const rect = anchorRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-
-      const dropdownWidth = Math.min(460, viewportWidth - 32);
-      const preferredLeft = rect.left;
-      const safeLeft = Math.min(
-        Math.max(16, preferredLeft),
-        viewportWidth - dropdownWidth - 16,
-      );
-
-      setStyle({
-        top: rect.bottom + 8,
-        left: safeLeft,
-        width: dropdownWidth,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open, anchorRef]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleClickOutside(e) {
-      const clickedAnchor = anchorRef.current?.contains(e.target);
-      const clickedDropdown = dropdownRef.current?.contains(e.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleEscape(e) {
-      if (e.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, anchorRef, onClose]);
-
-  if (!open || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl"
-      style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
-      }}
-    >
-      {children}
     </div>,
     document.body,
   );
@@ -468,7 +517,7 @@ function CustomSelect({
         ref={anchorRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
             : "border-[#D0D5DD]"
@@ -556,8 +605,8 @@ function ResignationSummaryCards({ stats, loading }) {
   ];
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -575,21 +624,23 @@ function ResignationSummaryCards({ stats, loading }) {
             </p>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+          <div
+            className={`inline-flex w-fit items-center gap-2 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
+          >
             {loading && <Loader2 size={15} className="animate-spin" />}
             Records: {normalizedStats.total}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
 
           return (
             <div
               key={card.title}
-              className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:bg-[#FAFBFC] hover:shadow-md"
+              className={`${EDGE} ${SOFT_PANEL_BORDER} bg-white p-4 transition hover:bg-[#FAFBFC]`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -603,7 +654,7 @@ function ResignationSummaryCards({ stats, loading }) {
                 </div>
 
                 <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.className}`}
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} ${card.className}`}
                 >
                   <Icon size={21} />
                 </div>
@@ -769,7 +820,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
 
   return (
     <section className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[1.4fr_0.8fr]">
-      <div className="min-w-0 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+      <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
         <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -787,7 +838,9 @@ function ResignationAnalytics({ data = [], loading = false }) {
             </p>
           </div>
 
-          <span className="mt-2 w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054] sm:mt-0">
+          <span
+            className={`mt-2 w-fit ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054] sm:mt-0`}
+          >
             Sequential Approval
           </span>
         </div>
@@ -840,7 +893,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
           </div>
         </div>
 
-        <div className="mt-7 overflow-hidden rounded-2xl border border-[#E6ECF2]">
+        <div className={`mt-7 overflow-hidden ${EDGE} border border-[#E6ECF2]`}>
           <div className="flex items-center justify-between border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
             <h3 className="text-sm font-extrabold text-sibs-primary-1">
               Approval Stages
@@ -879,7 +932,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-5">
-        <div className="min-w-0 rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+        <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-red-700">
@@ -896,13 +949,17 @@ function ResignationAnalytics({ data = [], loading = false }) {
               </p>
             </div>
 
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} bg-red-50 text-red-600`}
+            >
               <TrendingDown size={19} />
             </div>
           </div>
 
           {loading ? (
-            <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC]">
+            <div
+              className={`flex h-40 items-center justify-center ${EDGE} border border-dashed border-[#D9E2EC] bg-[#F8FAFC]`}
+            >
               <Loader2 size={26} className="animate-spin text-sibs-primary-1" />
             </div>
           ) : analytics.trend.length > 0 ? (
@@ -937,7 +994,9 @@ function ResignationAnalytics({ data = [], loading = false }) {
               ))}
             </div>
           ) : (
-            <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-[#d9e2ec] bg-[#f8fafc] text-center">
+            <div
+              className={`flex h-40 flex-col items-center justify-center ${EDGE} border border-dashed border-[#d9e2ec] bg-[#f8fafc] text-center`}
+            >
               <UsersRound size={22} className="text-sibs-tertiary-5" />
 
               <p className="mt-2 text-sm font-semibold text-sibs-primary-1">
@@ -951,7 +1010,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
           )}
         </div>
 
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+        <div className={`${EDGE} border border-blue-100 bg-blue-50 p-5`}>
           <h3 className="text-base font-extrabold text-sibs-primary-1">
             Approval Routing
           </h3>
@@ -978,7 +1037,7 @@ function ResignationFilters({
   onClearFilters,
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+    <div className={`${EDGE} ${PANEL_BORDER} bg-white p-5`}>
       <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px] xl:items-end">
         <div>
           <label className="mb-1 block text-sm font-bold text-[#101828]">
@@ -995,7 +1054,7 @@ function ResignationFilters({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search employee, SIBS ID, department, type, status, reason..."
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             />
           </div>
         </div>
@@ -1034,8 +1093,8 @@ function ResignationFilters({
 
 function ResignationTableCard({ data, totalRecords, loading, onView }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1052,33 +1111,45 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
             </p>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+          <div
+            className={`inline-flex w-fit items-center gap-2 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
+          >
             {loading && <Loader2 size={15} className="animate-spin" />}
             Showing: {data.length} / {totalRecords}
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="p-5">
         <div className="hidden lg:block">
-          <div className="max-h-[670px] overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1250px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+          <div
+            className={`overflow-auto ${EDGE} border border-[#E6ECF2] sibs-scrollbar`}
+          >
+            <table className="w-full min-w-[1250px] border-collapse bg-white text-left">
               <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                     Employee
                   </th>
-                  <th className="px-5 py-4 text-left align-top">Filed By</th>
-                  <th className="px-5 py-4 text-center align-top">Type</th>
-                  <th className="px-5 py-4 text-center align-top">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                    Filed By
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                    Type
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                     Resignation Date
                   </th>
-                  <th className="px-5 py-4 text-center align-top">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                     Last Working Date
                   </th>
-                  <th className="px-5 py-4 text-center align-top">Status</th>
-                  <th className="px-5 py-4 text-left align-top">Reason</th>
-                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                    Status
+                  </th>
+                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                    Reason
+                  </th>
+                  <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
                     Actions
                   </th>
                 </tr>
@@ -1101,7 +1172,7 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
                 ) : data.length === 0 ? (
                   <tr>
                     <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
                       colSpan={8}
                     >
                       No resignation records found.
@@ -1123,7 +1194,9 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
 
         <div className="block lg:hidden">
           {loading ? (
-            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+            <div
+              className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
+            >
               <Loader2
                 size={28}
                 className="mx-auto mb-3 animate-spin text-sibs-primary-1"
@@ -1131,7 +1204,9 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
               Loading resignations...
             </div>
           ) : data.length === 0 ? (
-            <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+            <div
+              className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
+            >
               No resignation records found.
             </div>
           ) : (
@@ -1158,11 +1233,9 @@ function ResignationRow({ item, onView }) {
 
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1/10 text-xs font-extrabold text-sibs-primary-1">
-            {getInitials(employeeName)}
-          </div>
+          <ProfileAvatar item={item} />
 
           <div className="min-w-0">
             <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
@@ -1176,7 +1249,7 @@ function ResignationRow({ item, onView }) {
         </div>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
           {item?.filedByName ||
             item?.encodedByName ||
@@ -1190,23 +1263,23 @@ function ResignationRow({ item, onView }) {
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
           {item?.resignationType || item?.type || "--"}
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
         {formatDate(
           item?.resignationDate || item?.resignation_date || getItemDate(item),
         )}
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
         {formatDate(item?.lastWorkingDate || item?.last_working_date)}
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span
           className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
             status,
@@ -1217,17 +1290,17 @@ function ResignationRow({ item, onView }) {
         </span>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5">
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[260px] truncate text-sm font-semibold text-[#344054]">
           {item?.reason || item?.remarks || "--"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
         <button
           type="button"
           onClick={onView}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+          className={`inline-flex items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]`}
         >
           <Eye size={16} />
           View
@@ -1245,17 +1318,21 @@ function ResignationMobileCard({ item, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
+      className={`w-full ${EDGE} border border-[#E6ECF2] bg-white p-4 text-left transition hover:bg-[#F8FAFC]`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
-            {getFullName(item)}
-          </h3>
+        <div className="flex min-w-0 items-start gap-3">
+          <ProfileAvatar item={item} size="lg" />
 
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
-          </p>
+          <div className="min-w-0">
+            <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+              {getFullName(item)}
+            </h3>
+
+            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+              {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
+            </p>
+          </div>
         </div>
 
         <span
@@ -1270,18 +1347,23 @@ function ResignationMobileCard({ item, onView }) {
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <MobileMetric label="Type" value={item?.resignationType || item?.type} />
+
         <MobileMetric
           label="Date"
           value={formatDate(item?.resignationDate || getItemDate(item))}
         />
+
         <MobileMetric
           label="Last Working"
           value={formatDate(item?.lastWorkingDate || item?.last_working_date)}
         />
+
         <MobileMetric label="Filed By" value={item?.filedByName || "TL / OM"} />
       </div>
 
-      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+      <div
+        className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1`}
+      >
         <Eye size={16} />
         View Details
       </div>
@@ -1291,7 +1373,7 @@ function ResignationMobileCard({ item, onView }) {
 
 function MobileMetric({ label, value }) {
   return (
-    <div className="rounded-xl bg-[#F8FAFC] p-3">
+    <div className={`${EDGE} bg-[#F8FAFC] p-3`}>
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -1303,623 +1385,9 @@ function MobileMetric({ label, value }) {
   );
 }
 
-function EmployeePickerField({
-  label,
-  selectedSibsId,
-  selectedName,
-  employees = [],
-  loading = false,
-  search = "",
-  open = false,
-  onOpenChange,
-  onSearchChange,
-  onSelect,
-}) {
-  const anchorRef = useRef(null);
-
-  return (
-    <div className="relative">
-      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </label>
-
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={() => onOpenChange?.(!open)}
-        className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
-        }`}
-      >
-        <span className="min-w-0 truncate text-sibs-primary-1">
-          {selectedSibsId
-            ? `${selectedSibsId} - ${selectedName || "Selected employee"}`
-            : "Select employee under your management"}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <EmployeeDropdownPortal
-        open={open}
-        anchorRef={anchorRef}
-        onClose={() => onOpenChange?.(false)}
-      >
-        <div className="sticky top-0 z-10 border-b border-[#E6ECF2] bg-white p-3">
-          <div className="relative">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-
-            <input
-              value={search}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              placeholder="Search SIBS ID or employee name..."
-              className="h-10 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 pl-9 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-            />
-          </div>
-        </div>
-
-        <div className="max-h-[320px] overflow-y-auto py-2 sibs-scrollbar">
-          {loading ? (
-            <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-primary-1">
-              <Loader2 size={17} className="animate-spin" />
-              Loading employees...
-            </div>
-          ) : employees.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm font-bold text-sibs-tertiary-5">
-              No employees found under your management.
-            </div>
-          ) : (
-            employees.map((employee) => (
-              <button
-                key={employee.sibsId}
-                type="button"
-                onClick={() => onSelect?.(employee)}
-                className={`block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC] ${
-                  selectedSibsId === employee.sibsId
-                    ? "bg-[#EAF2FB]"
-                    : "bg-white"
-                }`}
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1/10 text-xs font-extrabold text-sibs-primary-1">
-                    {getInitials(employee.fullName || employee.sibsId || "E")}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold text-[#101828]">
-                      {employee.fullName || "Unnamed Employee"}
-                    </p>
-
-                    <p className="mt-0.5 truncate text-xs font-bold text-[#2F6CA5]">
-                      {employee.sibsId || "N/A"}
-                      {employee.department ? ` · ${employee.department}` : ""}
-                    </p>
-
-                    {employee.account && (
-                      <p className="mt-0.5 truncate text-xs font-semibold text-sibs-tertiary-5">
-                        {employee.account}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </EmployeeDropdownPortal>
-    </div>
-  );
-}
-
-function ResignationApplyModal({
-  open,
-  form,
-  submitting,
-  managedEmployees = [],
-  employeePickerLoading = false,
-  employeePickerSearch = "",
-  employeePickerOpen = false,
-  onEmployeePickerOpenChange,
-  onEmployeePickerSearchChange,
-  onSearchManagedEmployees,
-  onSelectManagedEmployee,
-  onClose,
-  onChange,
-  onSubmit,
-}) {
-  if (!open) return null;
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4"
-    >
-      <form
-        onSubmit={onSubmit}
-        className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-2xl"
-      >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DDE5EF] text-sibs-primary-1">
-                <FileText size={22} />
-              </div>
-
-              <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  New Resignation
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  File resignation after receiving the employee’s resignation
-                  email.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              aria-label="Close"
-            >
-              <X size={22} />
-            </button>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sibs-scrollbar">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Employee Information
-                </h3>
-
-                <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <EmployeePickerField
-                    label="Employee SIBS ID"
-                    selectedSibsId={form.employeeSibsId}
-                    selectedName={form.employeeName}
-                    employees={managedEmployees}
-                    loading={employeePickerLoading}
-                    search={employeePickerSearch}
-                    open={employeePickerOpen}
-                    onOpenChange={onEmployeePickerOpenChange}
-                    onSearchChange={(value) => {
-                      onEmployeePickerSearchChange?.(value);
-                      onSearchManagedEmployees?.(value);
-                    }}
-                    onSelect={onSelectManagedEmployee}
-                  />
-
-                  <FormInput
-                    label="Employee Name"
-                    name="employeeName"
-                    value={form.employeeName}
-                    onChange={onChange}
-                    placeholder="Employee name will auto-fill"
-                    readOnly
-                  />
-
-                  <FormInput
-                    label="Resignation Date"
-                    name="resignationDate"
-                    type="date"
-                    value={form.resignationDate}
-                    onChange={onChange}
-                  />
-
-                  <FormInput
-                    label="Last Working Date"
-                    name="lastWorkingDate"
-                    type="date"
-                    value={form.lastWorkingDate}
-                    onChange={onChange}
-                  />
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      Resignation Type
-                    </label>
-
-                    <select
-                      name="resignationType"
-                      value={form.resignationType}
-                      onChange={onChange}
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    >
-                      <option value="">Select type</option>
-                      {TYPE_OPTIONS.filter((type) => type !== "All").map(
-                        (type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      Email Attachment
-                    </label>
-
-                    <label className="flex h-12 cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]">
-                      <span className="min-w-0 truncate">
-                        {form.uploadedFile?.name ||
-                          "Upload resignation email/file"}
-                      </span>
-
-                      <UploadCloud size={17} className="shrink-0" />
-
-                      <input
-                        type="file"
-                        name="uploadedFile"
-                        onChange={onChange}
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FormTextarea
-                      label="Reason / Summary"
-                      name="reason"
-                      value={form.reason}
-                      onChange={onChange}
-                      rows={4}
-                      placeholder="Summarize the employee’s resignation reason based on the submitted email."
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FormTextarea
-                      label="TL / OM Remarks"
-                      name="remarks"
-                      value={form.remarks}
-                      onChange={onChange}
-                      rows={3}
-                      placeholder="Add remarks before sending the resignation request for approval."
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Filing Checklist
-                </h3>
-
-                <div className="mt-4 space-y-3">
-                  <ChecklistItem
-                    done={!!form.employeeSibsId}
-                    title="Employee selected"
-                    subtitle={form.employeeSibsId || "Waiting for SIBS ID"}
-                  />
-
-                  <ChecklistItem
-                    done={!!form.employeeName}
-                    title="Employee name"
-                    subtitle={form.employeeName || "Waiting for name"}
-                  />
-
-                  <ChecklistItem
-                    done={!!form.resignationDate && !!form.lastWorkingDate}
-                    title="Dates completed"
-                    subtitle={
-                      form.resignationDate && form.lastWorkingDate
-                        ? `${form.resignationDate} to ${form.lastWorkingDate}`
-                        : "Waiting for resignation and last working date"
-                    }
-                  />
-
-                  <ChecklistItem
-                    done={!!form.resignationType}
-                    title="Resignation type"
-                    subtitle={form.resignationType || "Waiting for type"}
-                  />
-
-                  <ChecklistItem
-                    done={!!String(form.reason || "").trim()}
-                    title="Reason summary"
-                    subtitle={
-                      form.reason || "Waiting for reason / email summary"
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Process Rule
-                </h3>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
-                  After submission, this resignation will appear in the
-                  Approval Request module for the assigned approver. Approval
-                  decisions should not be made on this page.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-95 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
-            >
-              {submitting ? (
-                <Loader2 size={17} className="animate-spin" />
-              ) : (
-                <Send size={17} />
-              )}
-              {submitting ? "Submitting..." : "Submit Resignation"}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>,
-    document.body,
-  );
-}
-
-function FormInput({
-  label,
-  name,
-  value,
-  onChange,
-  type = "text",
-  placeholder = "",
-  readOnly = false,
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={onChange}
-        readOnly={readOnly}
-        placeholder={placeholder}
-        className={`h-12 w-full rounded-xl border border-[#D0D5DD] px-4 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-          readOnly ? "cursor-not-allowed bg-[#F8FAFC]" : "bg-white"
-        }`}
-      />
-    </div>
-  );
-}
-
-function FormTextarea({
-  label,
-  name,
-  value,
-  onChange,
-  rows = 4,
-  placeholder = "",
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </label>
-
-      <textarea
-        name={name}
-        value={value}
-        onChange={onChange}
-        rows={rows}
-        placeholder={placeholder}
-        className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-      />
-    </div>
-  );
-}
-
-function ChecklistItem({ done = false, title, subtitle }) {
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-      <div className="flex items-start gap-3">
-        <div
-          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-            done
-              ? "border-emerald-500 bg-emerald-50 text-emerald-600"
-              : "border-amber-500 bg-amber-50 text-amber-600"
-          }`}
-        >
-          {done ? <CheckCircle2 size={14} /> : <Clock3 size={14} />}
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-sm font-extrabold text-[#101828]">{title}</p>
-
-          <p className="mt-1 line-clamp-2 text-xs font-bold text-[#2F6CA5]">
-            {subtitle || "—"}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ViewResignationModal({ open, item, onClose }) {
-  if (!open || !item) return null;
-
-  const status = getResignationStatus(item);
-  const StatusIcon = getStatusIcon(status);
-  const fileName = getFileName(item);
-
-  return createPortal(
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DDE5EF] text-sibs-primary-1">
-                <FileText size={22} />
-              </div>
-
-              <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  View Resignation
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  Resignation record details
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]"
-              aria-label="Close"
-            >
-              <X size={22} />
-            </button>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sibs-scrollbar">
-          <div className="space-y-5">
-            <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
-                    Employee
-                  </p>
-
-                  <h3 className="mt-2 text-xl font-extrabold text-[#101828]">
-                    {getFullName(item)}
-                  </h3>
-
-                  <p className="mt-1 text-sm font-bold text-[#2F6CA5]">
-                    {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
-                  </p>
-                </div>
-
-                <span
-                  className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                    status,
-                  )}`}
-                >
-                  <StatusIcon size={14} />
-                  {status}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <InfoBox
-                label="Resignation Type"
-                value={item?.resignationType || item?.type}
-              />
-              <InfoBox
-                label="Resignation Date"
-                value={formatDate(item?.resignationDate || getItemDate(item))}
-              />
-              <InfoBox
-                label="Last Working Date"
-                value={formatDate(
-                  item?.lastWorkingDate || item?.last_working_date,
-                )}
-              />
-              <InfoBox
-                label="Filed By"
-                value={
-                  item?.filedByName ||
-                  item?.encodedByName ||
-                  item?.createdByName ||
-                  item?.supervisorName ||
-                  "TL / OM"
-                }
-              />
-              <InfoBox label="Position" value={getEmployeePosition(item)} />
-              <InfoBox label="Uploaded File" value={fileName || "--"} />
-            </div>
-
-            <InfoBox label="Reason / Summary" value={item?.reason} large />
-            <InfoBox label="Remarks" value={item?.remarks} large />
-
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-              <h3 className="text-base font-extrabold text-sibs-primary-1">
-                Approval Reminder
-              </h3>
-
-              <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
-                Approval and decline actions for this resignation should be
-                handled in the Approval Request module.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-function InfoBox({ label, value, large = false }) {
-  return (
-    <div>
-      <p className="mb-2 text-sm font-bold text-sibs-primary-1">{label}</p>
-
-      <div
-        className={`rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-medium text-[#344054] ${
-          large ? "min-h-[92px] whitespace-pre-line" : "min-h-[43px]"
-        }`}
-      >
-        {safeText(value)}
-      </div>
-    </div>
-  );
-}
-
 export default function ResignationManagementPage() {
+  const { user } = useUser();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -1936,7 +1404,37 @@ export default function ResignationManagementPage() {
   const [employeePickerSearch, setEmployeePickerSearch] = useState("");
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
 
+  const [serverAccess, setServerAccess] = useState({
+    viewOnly: false,
+    canCreate: true,
+    viewAll: false,
+  });
+
   const mainScrollRef = useRef(null);
+
+  const userRole = normalizeRoleKey(
+    user?.role || user?.userRole || user?.adminRole || user?.position || "",
+  );
+
+  const userAdminAccess = Number(
+    user?.adminAccess || user?.admin_access || user?.admin_level || 0,
+  );
+
+  const isHrViewOnlyByUser =
+    userRole === "hr" || userRole === "hr_admin" || userAdminAccess === 4;
+
+  const isExecutiveViewOnlyByUser =
+    userRole === "executive" ||
+    userRole === "exec" ||
+    userRole === "executive_admin" ||
+    userRole === "executive_viewer" ||
+    userRole.includes("executive");
+
+  const isViewOnly = Boolean(
+    serverAccess.viewOnly || isHrViewOnlyByUser || isExecutiveViewOnlyByUser,
+  );
+
+  const canCreateResignation = Boolean(serverAccess.canCreate && !isViewOnly);
 
   const initialResignationForm = {
     employeeSibsId: "",
@@ -1949,6 +1447,14 @@ export default function ResignationManagementPage() {
     department: "",
     account: "",
     uploadedFile: null,
+    profilePictureUrl: "",
+    profile_picture_url: "",
+    profileFilename: "",
+    profile_filename: "",
+    profilePicture: "",
+    profile_picture: "",
+    profileImage: "",
+    profile_image: "",
   };
 
   const [resignationForm, setResignationForm] = useState(initialResignationForm);
@@ -2014,33 +1520,41 @@ export default function ResignationManagementPage() {
   const hasActiveFilters =
     search || statusFilter !== "All" || typeFilter !== "All";
 
-  const fetchManagedEmployees = useCallback(async (searchValue = "") => {
-    try {
-      setEmployeePickerLoading(true);
-
-      const result = await getManagedEmployees({
-        page: 1,
-        limit: 50,
-        search: searchValue,
-      });
-
-      if (!result?.success) {
+  const fetchManagedEmployees = useCallback(
+    async (searchValue = "") => {
+      if (!canCreateResignation) {
         setManagedEmployees([]);
         return [];
       }
 
-      const data = Array.isArray(result.data) ? result.data : [];
-      setManagedEmployees(data);
+      try {
+        setEmployeePickerLoading(true);
 
-      return data;
-    } catch (error) {
-      console.error("FETCH MANAGED EMPLOYEES ERROR:", error);
-      setManagedEmployees([]);
-      return [];
-    } finally {
-      setEmployeePickerLoading(false);
-    }
-  }, []);
+        const result = await getManagedEmployees({
+          page: 1,
+          limit: 50,
+          search: searchValue,
+        });
+
+        if (!result?.success) {
+          setManagedEmployees([]);
+          return [];
+        }
+
+        const data = Array.isArray(result.data) ? result.data : [];
+        setManagedEmployees(data);
+
+        return data;
+      } catch (error) {
+        console.error("FETCH MANAGED EMPLOYEES ERROR:", error);
+        setManagedEmployees([]);
+        return [];
+      } finally {
+        setEmployeePickerLoading(false);
+      }
+    },
+    [canCreateResignation],
+  );
 
   const fetchResignations = useCallback(async ({ showError = false } = {}) => {
     try {
@@ -2062,6 +1576,12 @@ export default function ResignationManagementPage() {
 
         return [];
       }
+
+      setServerAccess({
+        viewOnly: Boolean(result?.viewOnly),
+        canCreate: result?.canCreate !== false,
+        viewAll: Boolean(result?.viewAll),
+      });
 
       const data = Array.isArray(result.data) ? result.data : [];
       setResignations(data);
@@ -2137,6 +1657,17 @@ export default function ResignationManagementPage() {
   }
 
   function handleOpenAddResignation() {
+    if (!canCreateResignation) {
+      openStatus({
+        type: "error",
+        title: "View Only Access",
+        message:
+          "HR, HR Admin, and Executive can only view resignation requests.",
+      });
+
+      return;
+    }
+
     resetResignationForm();
     setEmployeePickerSearch("");
     setEmployeePickerOpen(false);
@@ -2161,6 +1692,16 @@ export default function ResignationManagementPage() {
       employeeName: employee?.fullName || "",
       department: employee?.department || "",
       account: employee?.account || "",
+      profilePictureUrl: employee?.profilePictureUrl || "",
+      profile_picture_url: employee?.profile_picture_url || "",
+      profileFilename:
+        employee?.profileFilename || employee?.profile_filename || "",
+      profile_filename:
+        employee?.profile_filename || employee?.profileFilename || "",
+      profilePicture: employee?.profilePicture || employee?.profile_picture || "",
+      profile_picture: employee?.profile_picture || employee?.profilePicture || "",
+      profileImage: employee?.profileImage || employee?.profile_image || "",
+      profile_image: employee?.profile_image || employee?.profileImage || "",
     }));
 
     setEmployeePickerOpen(false);
@@ -2217,6 +1758,17 @@ export default function ResignationManagementPage() {
 
   async function handleSubmitResignation(e) {
     e.preventDefault();
+
+    if (!canCreateResignation) {
+      openStatus({
+        type: "error",
+        title: "View Only Access",
+        message:
+          "HR, HR Admin, and Executive can only view resignation requests.",
+      });
+
+      return;
+    }
 
     const validationMessage = getResignationValidationError();
 
@@ -2293,7 +1845,7 @@ export default function ResignationManagementPage() {
   }
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
+    <div className={`flex h-screen flex-1 flex-col ${FLAT_BG} font-jakarta`}>
       <Header />
 
       <main
@@ -2312,8 +1864,9 @@ export default function ResignationManagementPage() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              File, monitor, analyze, and track resignation records. Approval
-              decisions are handled in Approval Request.
+              {isViewOnly
+                ? "View and monitor all resignation requests. HR, HR Admin, and Executive access is view-only."
+                : "File, monitor, analyze, and track resignation records. Approval decisions are handled in Approval Request."}
             </p>
           </div>
 
@@ -2322,7 +1875,7 @@ export default function ResignationManagementPage() {
               type="button"
               onClick={handleRefresh}
               disabled={resignationLoading}
-              className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className={`inline-flex h-11 w-fit items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {resignationLoading ? (
                 <Loader2 size={17} className="animate-spin" />
@@ -2332,18 +1885,20 @@ export default function ResignationManagementPage() {
               Refresh
             </button>
 
-            <button
-              type="button"
-              onClick={handleOpenAddResignation}
-              className="inline-flex h-11 w-fit items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98]"
-            >
-              <Plus size={17} />
-              New Resignation
-            </button>
+            {canCreateResignation && (
+              <button
+                type="button"
+                onClick={handleOpenAddResignation}
+                className={`inline-flex h-11 w-fit items-center justify-center gap-2 ${EDGE} bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-95 active:scale-[0.98]`}
+              >
+                <Plus size={17} />
+                New Resignation
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="relative z-[20] sibs-profile-tab-panel">
             <ResignationSummaryCards
               stats={stats}
@@ -2382,7 +1937,7 @@ export default function ResignationManagementPage() {
         </div>
       </main>
 
-      <ResignationApplyModal
+      <ResignationManagementModal
         open={openResignationForm}
         form={resignationForm}
         submitting={resignationSubmitting}

@@ -1,10 +1,12 @@
 import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+const EDGE = "rounded-[10px]";
+
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
     <div
-      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-200 ease-out ${
         open
           ? "grid-rows-[1fr] opacity-100"
           : "pointer-events-none grid-rows-[0fr] opacity-0"
@@ -12,8 +14,8 @@ function AnimatedDropdown({ open, children, className = "" }) {
     >
       <div className="min-h-0 overflow-hidden">
         <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          className={`overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
           }`}
         >
           {children}
@@ -31,6 +33,14 @@ function getOptionLabel(option) {
   return typeof option === "object" ? option.label : option;
 }
 
+function FieldLabel({ children }) {
+  return (
+    <label className="mb-1 block text-sm font-bold text-[#101828]">
+      {children}
+    </label>
+  );
+}
+
 export default function PaginationTable({
   title = "",
   subtitle = "",
@@ -41,6 +51,7 @@ export default function PaginationTable({
   onSearchChange,
   onSearchKeyDown,
   showSearch = true,
+  searchLabel = "",
 
   filters = [],
   dropdownFilters = [],
@@ -183,43 +194,59 @@ export default function PaginationTable({
     }));
   }
 
+  function toggleDropdown(filterKey) {
+    if (openDropdownKey === filterKey) {
+      closeDropdown(filterKey);
+    } else {
+      openDropdown(filterKey);
+    }
+  }
+
   function selectDropdownValue(filter, value) {
     filter.onChange?.(value);
     closeDropdown(filter.key);
   }
 
   return (
-    <div className={className}>
+    <div className={`relative overflow-visible ${className}`}>
       {hasTopControls && (
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="min-w-0">
-            {title && (
-              <h2 className="text-base font-bold text-[#101828]">{title}</h2>
-            )}
+        <div className="relative z-[50] overflow-visible">
+          {(title || subtitle) && (
+            <div className="mb-4 min-w-0">
+              {title && (
+                <h2 className="text-base font-extrabold text-sibs-primary-1">
+                  {title}
+                </h2>
+              )}
 
-            {subtitle && (
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                {subtitle}
-              </p>
-            )}
-          </div>
+              {subtitle && (
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+          )}
 
-          <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
+          <div className="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end lg:justify-end">
             {showSearch && (
-              <div className="relative w-full sm:w-[340px]">
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                />
+              <div className="relative w-full lg:w-[340px]">
+                {searchLabel && <FieldLabel>{searchLabel}</FieldLabel>}
 
-                <input
-                  type="text"
-                  value={searchValue}
-                  onChange={(e) => onSearchChange?.(e.target.value, e)}
-                  onKeyDown={onSearchKeyDown}
-                  placeholder={searchPlaceholder}
-                  className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                />
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    type="text"
+                    value={searchValue}
+                    onChange={(e) => onSearchChange?.(e.target.value, e)}
+                    onKeyDown={onSearchKeyDown}
+                    placeholder={searchPlaceholder}
+                    className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+                  />
+                </div>
               </div>
             )}
 
@@ -228,6 +255,7 @@ export default function PaginationTable({
               const options = getFilteredDropdownOptions(filter);
               const selectedLabel = getDropdownLabel(filter);
               const isSearchable = filter.searchable !== false;
+              const label = filter.label || filter.title || "";
 
               return (
                 <div
@@ -235,15 +263,12 @@ export default function PaginationTable({
                   ref={(node) => {
                     dropdownRefs.current[filter.key] = node;
                   }}
-                  className={`relative z-50 w-full ${filter.className}`}
+                  className={`relative z-[60] w-full overflow-visible ${filter.className}`}
                 >
-                  {isSearchable ? (
-                    <>
-                      <Search
-                        size={17}
-                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                      />
+                  {label && <FieldLabel>{label}</FieldLabel>}
 
+                  {isSearchable ? (
+                    <div className="relative overflow-visible">
                       <input
                         type="text"
                         value={
@@ -261,40 +286,35 @@ export default function PaginationTable({
                         onFocus={() => openDropdown(filter.key)}
                         placeholder={filter.placeholder || "Search..."}
                         autoComplete="off"
-                        className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-10 pr-10 text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                        className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
                       />
-                    </>
+
+                      <ChevronDown
+                        size={18}
+                        onClick={() => toggleDropdown(filter.key)}
+                        className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (isOpen) {
-                          closeDropdown(filter.key);
-                        } else {
-                          openDropdown(filter.key);
-                        }
-                      }}
-                      className="flex h-11 w-full items-center justify-between rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-5 pr-10 text-left text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      onClick={() => toggleDropdown(filter.key)}
+                      className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
                     >
                       <span className="block min-w-0 truncate">
                         {selectedLabel}
                       </span>
+
+                      <ChevronDown
+                        size={18}
+                        className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
                   )}
-
-                  <ChevronDown
-                    size={17}
-                    onClick={() => {
-                      if (isOpen) {
-                        closeDropdown(filter.key);
-                      } else {
-                        openDropdown(filter.key);
-                      }
-                    }}
-                    className={`absolute right-3.5 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
 
                   <AnimatedDropdown open={isOpen}>
                     <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
@@ -308,7 +328,9 @@ export default function PaginationTable({
                               : "text-[#344054] hover:bg-[#F8FAFC]"
                           }`}
                         >
-                          {filter.allLabel || "All"}
+                          <span className="block truncate">
+                            {filter.allLabel || "All"}
+                          </span>
                         </button>
                       )}
 
@@ -348,7 +370,11 @@ export default function PaginationTable({
               );
             })}
 
-            {rightContent}
+            {rightContent && (
+              <div className="flex w-full items-end lg:w-auto">
+                {rightContent}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -369,13 +395,15 @@ export default function PaginationTable({
               type="button"
               disabled={loading || !hasPreviousPage}
               onClick={handlePrevious}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className={`inline-flex h-10 items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
             >
               <ChevronLeft size={16} />
               Previous
             </button>
 
-            <span className="inline-flex h-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]">
+            <span
+              className={`inline-flex h-10 items-center justify-center ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]`}
+            >
               Page {safeCurrentPage}
             </span>
 
@@ -383,7 +411,7 @@ export default function PaginationTable({
               type="button"
               disabled={loading || !hasNextPage}
               onClick={handleNext}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className={`inline-flex h-10 items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
             >
               Next
               <ChevronRight size={16} />

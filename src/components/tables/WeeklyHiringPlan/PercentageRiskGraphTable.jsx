@@ -6,6 +6,8 @@ import {
   ClipboardList,
 } from "lucide-react";
 
+const EDGE = "rounded-[10px]";
+
 function formatGraphPercent(value) {
   const numberValue = Number(value || 0);
   return `${numberValue.toFixed(2)}%`;
@@ -46,7 +48,7 @@ function getOverallStatus(records = []) {
     records.every(
       (item) =>
         Number(item.actualHeadcount || 0) >=
-        Number(item.requiredHeadcount || 0)
+        Number(item.requiredHeadcount || 0),
     );
 
   if (completed) return "COMPLETED";
@@ -135,7 +137,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
   function scaleToDisplayPercent(actualPercent) {
     const safeActualPercent = Math.max(
       0,
-      Math.min(Number(actualPercent || 0), 100)
+      Math.min(Number(actualPercent || 0), 100),
     );
 
     return (safeActualPercent / maxActualPercent) * maxDisplayPercent;
@@ -150,8 +152,8 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
             ? Math.round(Number(item?.absenteeismCount || 0) / 6)
             : Number(item?.[metric.countKey] || 0);
 
-            return getNumberValue(item, metric.displayKeys, fallback);
-          }
+      return getNumberValue(item, metric.displayKeys, fallback);
+    }
 
     return Number(item?.[metric.countKey] || 0);
   }
@@ -175,19 +177,19 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
 
   const overallStatus = useMemo(
     () => getOverallStatus(filteredPlans),
-    [filteredPlans]
+    [filteredPlans],
   );
 
   const graphData = useMemo(() => {
     return percentageMetrics.map((metric) => {
       const totalCount = filteredPlans.reduce(
         (sum, item) => sum + Number(item?.[metric.countKey] || 0),
-        0
+        0,
       );
 
       const totalDisplayValue = filteredPlans.reduce(
         (sum, item) => sum + Number(getMetricDisplayValue(item, metric) || 0),
-        0
+        0,
       );
 
       let actualPercent = 0;
@@ -195,7 +197,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
       if (metric.denominatorKey) {
         const totalDenominator = filteredPlans.reduce(
           (sum, item) => sum + Number(item?.[metric.denominatorKey] || 0),
-          0
+          0,
         );
 
         actualPercent =
@@ -205,7 +207,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
           filteredPlans.length > 0
             ? filteredPlans.reduce(
                 (sum, item) => sum + Number(item?.[metric.percentKey] || 0),
-                0
+                0,
               ) / filteredPlans.length
             : 0;
       }
@@ -222,8 +224,8 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
   }, [filteredPlans]);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <div className="bg-white">
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -231,7 +233,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
               Risk Graph
             </div>
 
-            <h2 className="mt-3 text-base font-extrabold text-[#101828]">
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
               Percentage Risk Graph
             </h2>
 
@@ -242,14 +244,16 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
-            <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
+            <div
+              className={`inline-flex w-fit items-center gap-2 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
+            >
               <ClipboardList size={17} className="text-sibs-primary-1" />
               Accounts Included: {filteredPlans.length}
             </div>
 
             <div
-              className={`inline-flex w-fit items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold ${getOverallStatusClass(
-                overallStatus
+              className={`inline-flex w-fit items-center gap-2 ${EDGE} border px-4 py-3 text-sm font-bold ${getOverallStatusClass(
+                overallStatus,
               )}`}
             >
               <AlertTriangle size={17} />
@@ -259,23 +263,23 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="p-5">
         {filteredPlans.length > 0 ? (
           <div className="space-y-3">
             {graphData.map((metric) => {
               const isOpen = openMetric === metric.percentKey;
               const width = Math.min(
                 (metric.actualPercent / maxActualPercent) * 100,
-                100
+                100,
               );
 
               return (
                 <div
                   key={metric.percentKey}
-                  className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all duration-300 ease-out ${
+                  className={`overflow-hidden ${EDGE} border bg-white transition-all duration-300 ease-out ${
                     isOpen
-                      ? "border-sibs-primary-1/25 shadow-md"
-                      : "border-[#E6ECF2] hover:border-sibs-primary-1/20 hover:shadow-md"
+                      ? "border-sibs-primary-1/25 shadow-sm"
+                      : "border-[#E6ECF2] hover:border-sibs-primary-1/20 hover:bg-[#FAFBFC]"
                   }`}
                 >
                   <button
@@ -288,9 +292,9 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 items-start gap-3">
                         <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-all duration-300 ${
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} transition-all duration-300 ${
                             isOpen
-                              ? "bg-sibs-primary-1 text-white shadow-md"
+                              ? "bg-sibs-primary-1 text-white shadow-sm"
                               : "bg-[#F2F6FA] text-sibs-primary-1"
                           }`}
                         >
@@ -317,7 +321,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                             {metric.displayLabel &&
                               metric.displayLabel !== metric.countLabel &&
                               ` / ${metric.displayLabel}: ${formatNumber(
-                                metric.totalDisplayValue
+                                metric.totalDisplayValue,
                               )}`}
                             {metric.denominatorKey
                               ? ` / Scheduled: ${formatNumber(
@@ -325,17 +329,19 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                                     (sum, item) =>
                                       sum +
                                       Number(
-                                        item?.[metric.denominatorKey] || 0
+                                        item?.[metric.denominatorKey] || 0,
                                       ),
-                                    0
-                                  )
+                                    0,
+                                  ),
                                 )}`
                               : ""}
                           </p>
                         </div>
                       </div>
 
-                      <div className="shrink-0 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-left transition-all duration-300 sm:text-right">
+                      <div
+                        className={`shrink-0 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-left transition-all duration-300 sm:text-right`}
+                      >
                         <p className="text-lg font-extrabold text-sibs-primary-1">
                           {formatGraphPercent(metric.displayPercent)}
                         </p>
@@ -349,7 +355,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                     <div className="h-3 overflow-hidden rounded-full bg-[#E6ECF2]">
                       <div
                         className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor(
-                          metric.displayPercent
+                          metric.displayPercent,
                         )}`}
                         style={{ width: `${width}%` }}
                       />
@@ -372,12 +378,12 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                         }`}
                       >
                         <div className="overflow-x-auto">
-                          <table className="w-full min-w-[840px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                          <table
+                            className={`w-full min-w-[840px] border-separate border-spacing-0 overflow-hidden ${EDGE} border border-[#D9E2EC] text-left`}
+                          >
                             <thead>
                               <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                                <th className="px-5 py-4 first:rounded-tl-2xl">
-                                  Account
-                                </th>
+                                <th className="px-5 py-4">Account</th>
 
                                 <th className="px-5 py-4">Cluster</th>
 
@@ -398,7 +404,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                                   </th>
                                 )}
 
-                                <th className="px-5 py-4 text-center last:rounded-tr-2xl">
+                                <th className="px-5 py-4 text-center">
                                   Percentage
                                 </th>
                               </tr>
@@ -408,7 +414,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                               {filteredPlans.map((item) => {
                                 const rowActualPercent = getItemPercent(
                                   item,
-                                  metric
+                                  metric,
                                 );
 
                                 const rowDisplayPercent =
@@ -416,7 +422,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
 
                                 const rowDisplayValue = getMetricDisplayValue(
                                   item,
-                                  metric
+                                  metric,
                                 );
 
                                 return (
@@ -451,7 +457,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
                                     {metric.denominatorKey && (
                                       <td className="border-b border-[#E6ECF2] px-5 py-4 text-center text-sm font-semibold text-[#344054]">
                                         {formatNumber(
-                                          item?.[metric.denominatorKey]
+                                          item?.[metric.denominatorKey],
                                         )}
                                       </td>
                                     )}
@@ -483,11 +489,13 @@ export default function PercentageRiskGraphTable({ filteredPlans = [] }) {
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500">
+          <div
+            className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500`}
+          >
             No graph data available for the selected filter.
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
@@ -33,6 +33,14 @@ import {
   getSupervisorAttritions,
   getSupervisorResignations,
 } from "../../lib/axios/getEmployee";
+import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
+
+const APPROVAL_MODULES = [
+  "Attrition",
+  "Weekly Hiring Plan",
+  "Job Description",
+  "Hiring Needs",
+];
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
@@ -170,6 +178,42 @@ export default function Sidebar() {
   const [attritionNotificationCount, setAttritionNotificationCount] =
     useState(0);
 
+  const [approvalRequestNotificationCount, setApprovalRequestNotificationCount] =
+    useState(0);
+
+  const loadApprovalRequestNotifications = useCallback(async () => {
+    try {
+      const results = await Promise.all(
+        APPROVAL_MODULES.map((moduleName) =>
+          getApprovalRequestsByModule(moduleName, {
+            page: 1,
+            limit: 200,
+            search: "",
+            status: "",
+            type: moduleName === "Attrition" ? "Resignation" : "",
+          }),
+        ),
+      );
+
+      const totalPending = results.reduce((sum, result) => {
+        if (!result?.success) return sum;
+
+        const counts = result?.counts || {};
+
+        return (
+          sum +
+          Number(counts.pending || 0) +
+          Number(counts.forReview || 0)
+        );
+      }, 0);
+
+      setApprovalRequestNotificationCount(totalPending);
+    } catch (error) {
+      console.error("Sidebar approval request notification error:", error);
+      setApprovalRequestNotificationCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     setMounted(true);
 
@@ -301,6 +345,28 @@ export default function Sidebar() {
       isMounted = false;
     };
   }, [mounted, loading, user, pathname, ADMIN_ROLES]);
+
+  useEffect(() => {
+    if (!mounted || loading || !user) return;
+    if (!ADMIN_ROLES.includes(user.role)) return;
+
+    loadApprovalRequestNotifications();
+
+    const interval = window.setInterval(() => {
+      loadApprovalRequestNotifications();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [
+    mounted,
+    loading,
+    user,
+    pathname,
+    ADMIN_ROLES,
+    loadApprovalRequestNotifications,
+  ]);
 
   const employeeCoreMenu = [
     {
@@ -462,10 +528,11 @@ export default function Sidebar() {
 
   const communicationMenu = [
     {
-      name: "Approval Request",
+      name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      notificationCount: approvalRequestNotificationCount,
     },
     {
       name: "Email Logs",

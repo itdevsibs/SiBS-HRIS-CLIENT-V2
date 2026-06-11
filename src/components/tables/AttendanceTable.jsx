@@ -350,7 +350,11 @@ function isTalentAcquisitionUser(user) {
 }
 
 function canUseAttendanceFilters(user) {
-  return isHrAdminUser(user) || isSuperAdminUser(user) || isTalentAcquisitionUser(user);
+  return (
+    isHrAdminUser(user) ||
+    isSuperAdminUser(user) ||
+    isTalentAcquisitionUser(user)
+  );
 }
 
 function isManagerUser(user) {
@@ -499,6 +503,220 @@ function MobileMetric({ label, value, className = "" }) {
           {value}
         </strong>
       )}
+    </div>
+  );
+}
+
+function InlineDateRangeFilter({ visible }) {
+  if (!visible) return null;
+
+  return (
+    <div className="attendance-date-filter-inline w-full lg:w-auto">
+      <style>
+        {`
+          /* ===============================
+             FROM / TO DATE TRIGGERS
+             Same rectangular shape as the searchbar
+          =============================== */
+
+          .attendance-date-filter-inline {
+            width: 100%;
+          }
+
+          .attendance-date-filter-inline > div {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+          }
+
+          .attendance-date-filter-inline > div > button,
+          .attendance-date-filter-inline > div > div > button,
+          .attendance-date-filter-inline > div > div > div > button,
+          .attendance-date-filter-inline button[aria-haspopup="dialog"],
+          .attendance-date-filter-inline button[data-state] {
+            height: 44px !important;
+            min-height: 44px !important;
+            min-width: 220px !important;
+            border-radius: 10px !important;
+            border: 1px solid #D0D5DD !important;
+            background: #FFFFFF !important;
+            padding: 0 16px !important;
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            transition:
+              border-color 180ms ease,
+              background-color 180ms ease,
+              box-shadow 180ms ease,
+              transform 180ms ease !important;
+          }
+
+          .attendance-date-filter-inline > div > button:hover,
+          .attendance-date-filter-inline > div > div > button:hover,
+          .attendance-date-filter-inline > div > div > div > button:hover,
+          .attendance-date-filter-inline button[aria-haspopup="dialog"]:hover,
+          .attendance-date-filter-inline button[data-state]:hover {
+            border-color: rgba(13, 70, 118, 0.3) !important;
+            background: #F8FAFC !important;
+          }
+
+          .attendance-date-filter-inline > div > button:focus,
+          .attendance-date-filter-inline > div > div > button:focus,
+          .attendance-date-filter-inline > div > div > div > button:focus,
+          .attendance-date-filter-inline button[aria-haspopup="dialog"]:focus,
+          .attendance-date-filter-inline button[data-state="open"] {
+            border-color: #0D4676 !important;
+            box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
+          }
+
+          .attendance-date-filter-inline > div > button:active,
+          .attendance-date-filter-inline > div > div > button:active,
+          .attendance-date-filter-inline > div > div > div > button:active,
+          .attendance-date-filter-inline button[aria-haspopup="dialog"]:active {
+            transform: scale(0.98) !important;
+          }
+
+          .attendance-date-filter-inline > div > button svg,
+          .attendance-date-filter-inline > div > div > button svg,
+          .attendance-date-filter-inline > div > div > div > button svg,
+          .attendance-date-filter-inline button[aria-haspopup="dialog"] svg {
+            color: #0D4676 !important;
+          }
+
+          @media (max-width: 1023px) {
+            .attendance-date-filter-inline,
+            .attendance-date-filter-inline > div,
+            .attendance-date-filter-inline > div > button,
+            .attendance-date-filter-inline > div > div,
+            .attendance-date-filter-inline > div > div > button,
+            .attendance-date-filter-inline > div > div > div,
+            .attendance-date-filter-inline > div > div > div > button {
+              width: 100% !important;
+            }
+          }
+
+          /* ===============================
+             CALENDAR POPUP DESIGN
+             Keep date buttons circular and clean
+          =============================== */
+
+          .attendance-date-filter-inline [data-radix-popper-content-wrapper] {
+            z-index: 999999 !important;
+          }
+
+          .attendance-date-filter-inline .rdp,
+          .attendance-date-filter-inline [data-slot="calendar"],
+          .attendance-date-filter-inline [role="dialog"] {
+            border-radius: 16px !important;
+            border: 1px solid #D9E2EC !important;
+            background: #FFFFFF !important;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14) !important;
+            overflow: hidden !important;
+          }
+
+          .attendance-date-filter-inline .rdp-month_caption,
+          .attendance-date-filter-inline .rdp-caption_label,
+          .attendance-date-filter-inline [class*="caption_label"] {
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+          }
+
+          .attendance-date-filter-inline .rdp-weekday {
+            color: #174A7C !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+          }
+
+          .attendance-date-filter-inline .rdp-day_button,
+          .attendance-date-filter-inline [role="gridcell"] button {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            border: 0 !important;
+            border-radius: 9999px !important;
+            background: transparent !important;
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 800 !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            outline: none !important;
+          }
+
+          .attendance-date-filter-inline .rdp-day_button:hover,
+          .attendance-date-filter-inline [role="gridcell"] button:hover {
+            background: #EAF2FB !important;
+            color: #0D4676 !important;
+          }
+
+          .attendance-date-filter-inline .rdp-selected .rdp-day_button,
+          .attendance-date-filter-inline [aria-selected="true"] button,
+          .attendance-date-filter-inline [data-selected="true"] button {
+            background: #E7F0FA !important;
+            color: #0D4676 !important;
+          }
+
+          .attendance-date-filter-inline .rdp-outside .rdp-day_button,
+          .attendance-date-filter-inline [data-outside="true"] button {
+            color: #98A7BA !important;
+            background: transparent !important;
+          }
+
+          .attendance-date-filter-inline .rdp-nav button,
+          .attendance-date-filter-inline button.rdp-button_previous,
+          .attendance-date-filter-inline button.rdp-button_next,
+          .attendance-date-filter-inline .rdp-button_previous,
+          .attendance-date-filter-inline .rdp-button_next {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            border: 0 !important;
+            border-radius: 9999px !important;
+            background: transparent !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            color: #0D4676 !important;
+          }
+
+          .attendance-date-filter-inline .rdp-nav button:hover,
+          .attendance-date-filter-inline button.rdp-button_previous:hover,
+          .attendance-date-filter-inline button.rdp-button_next:hover,
+          .attendance-date-filter-inline .rdp-button_previous:hover,
+          .attendance-date-filter-inline .rdp-button_next:hover {
+            background: #EAF2FB !important;
+          }
+
+          .attendance-date-filter-inline .rdp-footer button,
+          .attendance-date-filter-inline [class*="footer"] button {
+            height: auto !important;
+            min-height: 0 !important;
+            min-width: auto !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+            padding: 8px 10px !important;
+            color: #0D4676 !important;
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            box-shadow: none !important;
+          }
+
+          .attendance-date-filter-inline .rdp-footer button:hover,
+          .attendance-date-filter-inline [class*="footer"] button:hover {
+            background: #F2F6FA !important;
+          }
+        `}
+      </style>
+
+      <PaginationDateRangeFilter
+        entity="attendance"
+        visible
+        className="m-0"
+      />
     </div>
   );
 }
@@ -1131,13 +1349,10 @@ export default function AttendanceTable() {
                 ]
               : []
           }
+          rightContent={
+            <InlineDateRangeFilter visible={attendanceDateRangeView} />
+          }
           showPagination={false}
-          className="mb-3"
-        />
-
-        <PaginationDateRangeFilter
-          entity="attendance"
-          visible={attendanceDateRangeView}
           className="mb-5"
         />
 
