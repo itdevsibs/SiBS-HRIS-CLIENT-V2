@@ -29,13 +29,14 @@ import {
 
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
+import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
+import ViewJobDescriptionDetailsModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
 
 import {
   getApprovalRequestsByModule,
   approveRequestByModule,
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
-import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
 
 const REQUEST_MODULES = [
   "Attrition",
@@ -71,7 +72,7 @@ const DEFAULT_COUNTS = {
 const EDGE = "rounded-[10px]";
 const PANEL_BORDER = "border border-[#E1E7EF]";
 const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
-const FLAT_BG = "bg-[#F6F8FB]";
+const FLAT_BG = "bg-inherit";
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -115,14 +116,8 @@ function formatDate(dateValue) {
   }).format(date);
 }
 
-<<<<<<< HEAD
 function normalizeStatus(status) {
   const cleanStatus = String(status || "").trim();
-=======
-function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef(null);
->>>>>>> 010a097 (fore rebase)
 
   if (cleanStatus === "Declined") return "Rejected";
   if (cleanStatus === "Retained") return "Rejected";
@@ -185,7 +180,9 @@ function getRawRequestId(request) {
 function isResignationRequest(request) {
   return (
     String(request?.type || "").toLowerCase() === "resignation" ||
-    String(request?.source || "").toLowerCase().includes("resignation") ||
+    String(request?.source || "")
+      .toLowerCase()
+      .includes("resignation") ||
     String(request?.id || "").startsWith("RES")
   );
 }
@@ -375,13 +372,7 @@ function DropdownPortal({
   );
 }
 
-function CustomSelect({
-  label,
-  value,
-  options = [],
-  onChange,
-  allLabel = "",
-}) {
+function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
 
@@ -389,7 +380,6 @@ function CustomSelect({
     value === "All" && allLabel ? allLabel : value || allLabel || "Select";
 
   return (
-<<<<<<< HEAD
     <div className="relative">
       <label className="mb-1 block text-sm font-bold text-[#101828]">
         {label}
@@ -444,13 +434,6 @@ function CustomSelect({
         })}
       </DropdownPortal>
     </div>
-=======
-    String(request?.type || "").toLowerCase() === "resignation" ||
-    String(request?.source || "")
-      .toLowerCase()
-      .includes("resignation") ||
-    String(request?.id || "").startsWith("RES")
->>>>>>> 010a097 (fore rebase)
   );
 }
 
@@ -471,6 +454,7 @@ export default function ApprovalRequest() {
 
   const [loading, setLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedJobDescription, setSelectedJobDescription] = useState(null);
 
   const [decisionModal, setDecisionModal] = useState({
     open: false,
@@ -590,10 +574,160 @@ export default function ApprovalRequest() {
     setStatusFilter("All");
     setTypeFilter(moduleName === "Attrition" ? "Resignation" : "All");
     setSelectedRequest(null);
+    setSelectedJobDescription(null);
   }
 
   function handleRefresh() {
     loadApprovalRequests({ showError: true });
+  }
+
+  function parseRevisionHistoryJson(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function mapJobDescriptionApprovalToModalItem(request) {
+    const raw = request?.raw || {};
+
+    const competencies = Array.isArray(request?.competencies)
+      ? request.competencies
+      : Array.isArray(request?.desiredCompetencies)
+        ? request.desiredCompetencies
+        : Array.isArray(raw?.competencies)
+          ? raw.competencies
+          : Array.isArray(raw?.desiredCompetencies)
+            ? raw.desiredCompetencies
+            : [];
+
+    return {
+      id: request?.rawId || raw?.id || request?.id,
+      jdCode: request?.jdCode || raw?.jdCode || request?.id || "—",
+
+      roleTitle:
+        request?.roleTitle ||
+        raw?.roleTitle ||
+        request?.title ||
+        "Job Description",
+
+      title:
+        request?.roleTitle ||
+        raw?.roleTitle ||
+        request?.title ||
+        "Job Description",
+
+      jdStatus: request?.jdStatus || raw?.jdStatus || request?.status,
+      status: request?.status,
+
+      department:
+        request?.departmentName ||
+        request?.department ||
+        raw?.departmentName ||
+        raw?.department ||
+        raw?.departmentId ||
+        "—",
+
+      account:
+        request?.accountName ||
+        request?.account ||
+        raw?.accountName ||
+        raw?.account ||
+        raw?.accountId ||
+        "—",
+
+      linkedHiringRequirement:
+        request?.linkedHiringRequirement || raw?.linkedHiringRequirement || "—",
+
+      dateRequested:
+        request?.dateRequested ||
+        request?.requestDate ||
+        raw?.dateRequested ||
+        raw?.createdAt ||
+        "",
+
+      createdBy:
+        request?.createdByName ||
+        request?.createdBy ||
+        raw?.createdByName ||
+        raw?.createdBy ||
+        raw?.createdBySibsId ||
+        request?.requester ||
+        "—",
+
+      owner:
+        request?.ownerName ||
+        request?.owner ||
+        raw?.ownerName ||
+        raw?.owner ||
+        raw?.ownerSibsId ||
+        request?.approver ||
+        "—",
+
+      preparedFor: request?.preparedFor || raw?.preparedFor || "—",
+      reportsTo: request?.reportsTo || raw?.reportsTo || "—",
+      supervisory: request?.supervisory || raw?.supervisory || "No",
+
+      version:
+        request?.version ||
+        request?.jdVersion ||
+        request?.currentVersion ||
+        raw?.version ||
+        raw?.jdVersion ||
+        raw?.currentVersion ||
+        "2.0",
+
+      currentVersion:
+        request?.currentVersion ||
+        request?.jdVersion ||
+        request?.version ||
+        raw?.currentVersion ||
+        raw?.jdVersion ||
+        raw?.version ||
+        "2.0",
+
+      effectiveDate: request?.effectiveDate || raw?.effectiveDate || "",
+
+      lastReviewed:
+        request?.approveDate ||
+        request?.updatedAt ||
+        raw?.approveDate ||
+        raw?.updatedAt ||
+        request?.dateRequested ||
+        "",
+
+      description: request?.description || raw?.description || "",
+      responsibilities:
+        request?.responsibilities || raw?.responsibilities || "",
+      qualifications: request?.qualifications || raw?.qualifications || "",
+      remarks: request?.jdRemarks || request?.remarks || raw?.remarks || "",
+
+      revisionHistory:
+        request?.revisionHistory ||
+        raw?.revisionHistory ||
+        parseRevisionHistoryJson(
+          request?.revisionHistoryJson || raw?.revisionHistoryJson,
+        ),
+
+      competencies,
+      desiredCompetencies: competencies,
+    };
+  }
+
+  function handleViewRequest(request) {
+    if (activeModule === "Job Description") {
+      setSelectedRequest(null);
+      setSelectedJobDescription(mapJobDescriptionApprovalToModalItem(request));
+      return;
+    }
+
+    setSelectedJobDescription(null);
+    setSelectedRequest(request);
   }
 
   function openStatus({ type = "success", title = "", message = "" }) {
@@ -853,13 +987,13 @@ export default function ApprovalRequest() {
         </div>
 
         <div className="space-y-5">
-          <div className="relative z-[20] sibs-profile-tab-panel">
+          {/* <div className="relative z-[20] sibs-profile-tab-panel">
             <ApprovalSummaryCards
               stats={counts}
               activeModule={activeModule}
               loading={loading}
             />
-          </div>
+          </div> */}
 
           <div className="relative z-[10] sibs-profile-tab-panel">
             <ApprovalSearchTable
@@ -882,19 +1016,28 @@ export default function ApprovalRequest() {
               totalRecords={pagination?.total || requests.length}
               moduleCounts={counts}
               loading={loading}
-              onView={setSelectedRequest}
+              onView={handleViewRequest}
               onChangeModule={handleChangeModule}
             />
           </div>
         </div>
       </main>
 
-      <ViewApprovalRequestModal
-        open={!!selectedRequest}
-        request={selectedRequest}
-        onClose={() => setSelectedRequest(null)}
-        onApprove={() => openDecisionModal(selectedRequest, "approve")}
-        onReject={() => openDecisionModal(selectedRequest, "reject")}
+      {activeModule !== "Job Description" && (
+        <ViewApprovalRequestModal
+          open={!!selectedRequest}
+          request={selectedRequest}
+          onClose={() => setSelectedRequest(null)}
+          onApprove={() => openDecisionModal(selectedRequest, "approve")}
+          onReject={() => openDecisionModal(selectedRequest, "reject")}
+        />
+      )}
+
+      <ViewJobDescriptionDetailsModal
+        open={!!selectedJobDescription}
+        item={selectedJobDescription}
+        approvalPage={true}
+        onClose={() => setSelectedJobDescription(null)}
       />
 
       <DecisionModal
@@ -1053,7 +1196,7 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
 
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
+      {/* <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1076,7 +1219,7 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
             Records: {normalizedStats.total}
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
@@ -1196,160 +1339,116 @@ function ApprovalRequestTable({
       />
 
       <div className="p-5">
-        <div className="hidden lg:block">
-<<<<<<< HEAD
-          <div className="overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar">
-            <table className="w-full min-w-[1300px] border-collapse bg-white text-left">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                    Request
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                    Requester
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Type
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Date Requested
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Priority
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Status
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                    Approver
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-=======
-          <div className="max-h-[670px] overflow-auto sibs-scrollbar">
-            {activeModule === "Job Description" ? (
-              <JobDescriptionRequestTable
-                requests={requests}
-                loading={loading}
-                totalRecords={totalRecords}
-                onView={onView}
-              />
-            ) : (
-              <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                    <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
-                      Request
-                    </th>
-                    <th className="px-5 py-4 text-left align-top">Requester</th>
-                    <th className="px-5 py-4 text-center align-top">Type</th>
-                    <th className="px-5 py-4 text-center align-top">
-                      Date Requested
-                    </th>
-                    <th className="px-5 py-4 text-center align-top">
-                      Priority
-                    </th>
-                    <th className="px-5 py-4 text-center align-top">Status</th>
-                    <th className="px-5 py-4 text-left align-top">Approver</th>
-                    <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
->>>>>>> 010a097 (fore rebase)
+        {activeModule === "Job Description" ? (
+          <JobDescriptionRequestTable
+            requests={requests}
+            loading={loading}
+            totalRecords={totalRecords}
+            onView={onView}
+          />
+        ) : (
+          <>
+            <div className="hidden lg:block">
+              <div className="max-h-[670px] overflow-auto sibs-scrollbar">
+                <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                        Request
+                      </th>
 
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        colSpan={8}
-                      >
-                        <Loader2
-                          size={28}
-                          className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                      <th className="px-5 py-4 text-left align-top">
+                        Requester
+                      </th>
+
+                      <th className="px-5 py-4 text-center align-top">Type</th>
+
+                      <th className="px-5 py-4 text-center align-top">
+                        Date Requested
+                      </th>
+
+                      <th className="px-5 py-4 text-center align-top">
+                        Priority
+                      </th>
+
+                      <th className="px-5 py-4 text-center align-top">
+                        Status
+                      </th>
+
+                      <th className="px-5 py-4 text-left align-top">
+                        Approver
+                      </th>
+
+                      <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td
+                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                          colSpan={8}
+                        >
+                          <Loader2
+                            size={28}
+                            className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                          />
+                          Loading approval requests...
+                        </td>
+                      </tr>
+                    ) : requests.length === 0 ? (
+                      <tr>
+                        <td
+                          className="px-5 py-16 text-center text-sm font-bold text-gray-500"
+                          colSpan={8}
+                        >
+                          No approval requests found for {activeModule}.
+                        </td>
+                      </tr>
+                    ) : (
+                      requests.map((request) => (
+                        <ApprovalRequestRow
+                          key={`${request.source || "request"}-${request.id}`}
+                          request={request}
+                          onView={() => onView(request)}
                         />
-                        Loading approval requests...
-                      </td>
-                    </tr>
-                  ) : requests.length === 0 ? (
-                    <tr>
-                      <td
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                        colSpan={8}
-                      >
-                        No approval requests found for {activeModule}.
-                      </td>
-                    </tr>
-                  ) : (
-                    requests.map((request) => (
-                      <ApprovalRequestRow
-                        key={`${request.source || "request"}-${request.id}`}
-                        request={request}
-                        onView={() => onView(request)}
-                      />
-<<<<<<< HEAD
-                      Loading approval requests...
-                    </td>
-                  </tr>
-                ) : requests.length === 0 ? (
-                  <tr>
-                    <td
-                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
-                      colSpan={8}
-                    >
-                      No approval requests found for {activeModule}.
-                    </td>
-                  </tr>
-                ) : (
-                  requests.map((request) => (
-                    <ApprovalRequestRow
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="block lg:hidden">
+              {loading ? (
+                <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+                  <Loader2
+                    size={28}
+                    className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                  />
+                  Loading approval requests...
+                </div>
+              ) : requests.length === 0 ? (
+                <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+                  No approval requests found for {activeModule}.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {requests.map((request) => (
+                    <ApprovalRequestMobileCard
                       key={`${request.source || "request"}-${request.id}`}
                       request={request}
                       onView={() => onView(request)}
                     />
-                  ))
-                )}
-              </tbody>
-            </table>
-=======
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
->>>>>>> 010a097 (fore rebase)
-          </div>
-        </div>
-
-        <div className="block lg:hidden">
-          {loading ? (
-            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-              <Loader2
-                size={28}
-                className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-              />
-              Loading approval requests...
+                  ))}
+                </div>
+              )}
             </div>
-          ) : requests.length === 0 ? (
-            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-              No approval requests found for {activeModule}.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {requests.map((request) => (
-                <ApprovalRequestMobileCard
-                  key={`${request.source || "request"}-${request.id}`}
-                  request={request}
-                  onView={() => onView(request)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </section>
   );

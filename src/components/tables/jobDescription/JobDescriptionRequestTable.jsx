@@ -169,7 +169,7 @@ function JobDescriptionMobileCard({ request, onView }) {
 
         <MobileMetric
           label="Department"
-          value={getRawValue(request, "departmentId", request.department)}
+          value={request.department || getRawValue(request, "department")}
         />
       </div>
 
@@ -266,34 +266,30 @@ const JobDescriptionRequestTable = ({ onView }) => {
       <div className="min-h-0 flex-1">
         <div className="hidden h-full lg:block">
           <div className="h-full overflow-auto sibs-scrollbar">
-            <table className="w-full min-w-[1180px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+            <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="w-[24%] px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                  <th className="w-[24%] px-5 py-4 text-left align-middle first:rounded-tl-2xl">
                     Job Description
                   </th>
 
-                  <th className="w-[12%] px-5 py-4 text-center align-top">
+                  <th className="w-[11%] px-4 py-4 text-center align-middle">
                     JD Code
                   </th>
 
-                  <th className="w-[16%] px-5 py-4 text-left align-top">
+                  <th className="w-[29%] px-5 py-4 text-left align-middle">
                     Requested By
                   </th>
 
-                  <th className="w-[16%] px-5 py-4 text-left align-top">
-                    Owner / Approver
-                  </th>
-
-                  <th className="w-[14%] px-5 py-4 text-center align-top">
+                  <th className="w-[13%] px-4 py-4 text-center align-middle">
                     Date Requested
                   </th>
 
-                  <th className="w-[13%] px-5 py-4 text-center align-top">
+                  <th className="w-[11%] px-4 py-4 text-center align-middle">
                     JD Status
                   </th>
 
-                  <th className="w-[10%] px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                  <th className="w-[12%] px-5 py-4 text-center align-middle last:rounded-tr-2xl">
                     Actions
                   </th>
                 </tr>
@@ -303,7 +299,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       <Loader2
@@ -316,7 +312,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                 ) : requests.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       No approval requests found for Job Description.
@@ -335,7 +331,6 @@ const JobDescriptionRequestTable = ({ onView }) => {
                     );
 
                     const StatusIcon = getStatusIcon(normalizedStatus);
-                    const JdStatusIcon = getJdStatusIcon(rawStatus);
 
                     return (
                       <tr
@@ -348,7 +343,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                           <div className="min-w-0">
                             <p
                               title={request.title}
-                              className="max-w-[300px] truncate text-sm font-extrabold text-[#101828]"
+                              className="max-w-[260px] truncate text-sm font-extrabold text-[#101828]"
                             >
                               {safeText(request.title)}
                             </p>
@@ -358,7 +353,7 @@ const JobDescriptionRequestTable = ({ onView }) => {
                                 request,
                                 "linkedHiringRequirement",
                               )}
-                              className="mt-1 max-w-[300px] truncate text-xs font-semibold text-sibs-tertiary-5"
+                              className="mt-1 max-w-[260px] truncate text-xs font-semibold text-sibs-tertiary-5"
                             >
                               Linked Hiring Requirement:{" "}
                               {safeText(
@@ -368,8 +363,8 @@ const JobDescriptionRequestTable = ({ onView }) => {
                           </div>
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-                          <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <span className="mx-auto inline-flex max-w-full items-center justify-center truncate rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
                             {safeText(
                               getRawValue(request, "jdCode", request.id),
                             )}
@@ -377,93 +372,72 @@ const JobDescriptionRequestTable = ({ onView }) => {
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-                          <p
-                            title={request.requester || request.employeeSibsId}
-                            className="max-w-[180px] truncate text-sm font-bold text-[#344054]"
-                          >
-                            {safeText(
-                              request.requester || request.employeeSibsId,
-                            )}
-                          </p>
-
-                          <p
-                            title={getRawValue(
-                              request,
-                              "createdBySibsId",
-                              request.employeeSibsId,
-                            )}
-                            className="mt-1 max-w-[180px] truncate text-xs font-semibold text-sibs-tertiary-5"
-                          >
-                            Created by:{" "}
-                            {safeText(
-                              getRawValue(
-                                request,
-                                "createdBySibsId",
-                                request.employeeSibsId,
-                              ),
-                            )}
-                          </p>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-                          <p
-                            title={getRawValue(
-                              request,
-                              "ownerSibsId",
-                              request.approver,
-                            )}
-                            className="max-w-[180px] truncate text-sm font-bold text-[#344054]"
-                          >
-                            {safeText(
-                              getRawValue(
-                                request,
-                                "ownerSibsId",
-                                request.approver,
-                              ),
-                            )}
-                          </p>
-
-                          <p
-                            title={request.approver}
-                            className="mt-1 max-w-[180px] truncate text-xs font-semibold text-sibs-tertiary-5"
-                          >
-                            Approved by: {safeText(request.approver)}
-                          </p>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle text-sm font-bold text-[#344054]">
-                          {formatDate(
-                            request.dateRequested || request.requestDate,
-                          )}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-                          <div className="flex flex-col items-center gap-2">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getJdStatusClass(
-                                rawStatus,
-                              )}`}
+                          <div className="min-w-0">
+                            <p
+                              title={
+                                request.requester || request.employeeSibsId
+                              }
+                              className="truncate text-sm font-bold text-[#344054]"
                             >
-                              <JdStatusIcon size={13} />
-                              {safeText(rawStatus)}
-                            </span>
+                              {safeText(
+                                request.requester || request.employeeSibsId,
+                              )}
+                            </p>
 
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                normalizedStatus,
-                              )}`}
+                            <p
+                              title={
+                                request.createdBy ||
+                                getRawValue(
+                                  request,
+                                  "createdBy",
+                                  request.employeeSibsId,
+                                )
+                              }
+                              className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
                             >
-                              <StatusIcon size={13} />
-                              {normalizedStatus}
-                            </span>
+                              Created by:{" "}
+                              {safeText(
+                                request.createdBy ||
+                                  getRawValue(
+                                    request,
+                                    "createdBy",
+                                    request.employeeSibsId,
+                                  ),
+                              )}
+                            </p>
                           </div>
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-right align-middle">
+                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <p
+                            title={formatDate(
+                              request.dateRequested || request.requestDate,
+                            )}
+                            className="truncate text-sm font-bold text-[#344054]"
+                          >
+                            {formatDate(
+                              request.dateRequested || request.requestDate,
+                            )}
+                          </p>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-4 py-5 text-center align-middle">
+                          <span
+                            title={normalizedStatus}
+                            className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 truncate rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                              normalizedStatus,
+                            )}`}
+                          >
+                            <StatusIcon size={13} className="shrink-0" />
+                            <span className="truncate">{normalizedStatus}</span>
+                          </span>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
                           <button
                             type="button"
                             onClick={() => onView?.(request)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                            className="mx-auto inline-flex h-10 min-w-[104px] items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
                           >
                             <Eye size={16} />
                             View

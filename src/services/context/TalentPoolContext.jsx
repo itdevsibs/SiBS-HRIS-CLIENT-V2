@@ -25,7 +25,6 @@ import {
 import {
   readLocalStorage,
   writeLocalStorage,
-  dispatchTalentPoolSync,
   getActiveAvailablePositions,
 } from "../../lib/utils/talentPool/talentPoolStorage";
 
@@ -36,7 +35,6 @@ import {
   candidateToForm,
   formatList,
   formatReferences,
-  generateApplicationId,
   generateCandidateId,
   getLoggedInUserName,
   getPrimaryExperienceSummary,
@@ -44,8 +42,6 @@ import {
   getTodayDate,
   normalizeCandidateRecord,
   normalizeTags,
-  mergeCandidateLists,
-  mergePipelineCandidatesIntoTalentPool,
   parseLeadUploadCsvText,
   parseUploadedLeadRow,
   readFileAsDataUrl,
@@ -53,6 +49,574 @@ import {
 } from "../../lib/utils/talentPool/talentPoolHelpers";
 
 const TalentPoolContext = createContext(null);
+
+function readStorage(key, fallback = []) {
+  try {
+    const value = localStorage.getItem(key);
+
+    if (!value) return fallback;
+
+    const parsed = JSON.parse(value);
+
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+}
+
+function isTemporaryPipelineId(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .startsWith("PIPE-");
+}
+
+function normalizeMergeValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function getCandidateAliasKeys(candidate = {}) {
+  const keys = [];
+
+  const candidateId = String(candidate.candidateId || "").trim();
+  const snapshotCandidateId = String(
+    candidate.candidateSnapshot?.candidateId || "",
+  ).trim();
+  const email = normalizeMergeValue(
+    candidate.email || candidate.candidateSnapshot?.email,
+  );
+  const name = normalizeMergeValue(
+    candidate.name ||
+      candidate.candidateName ||
+      candidate.candidateSnapshot?.name,
+  );
+
+  if (snapshotCandidateId) keys.push(`candidateId:${snapshotCandidateId}`);
+
+  if (candidateId && !isTemporaryPipelineId(candidateId)) {
+    keys.push(`candidateId:${candidateId}`);
+  }
+
+  if (email) keys.push(`email:${email}`);
+
+  if (name) keys.push(`name:${name}`);
+
+  if (candidate.id && !isTemporaryPipelineId(candidateId)) {
+    keys.push(`id:${candidate.id}`);
+  }
+
+  return [...new Set(keys)];
+}
+
+function isEmptyProfileValue(value) {
+  if (value === null || value === undefined) return true;
+
+  if (Array.isArray(value)) return value.length === 0;
+
+  const text = String(value).trim().toLowerCase();
+
+  return (
+    text === "" ||
+    text === "—" ||
+    text === "--" ||
+    text === "n/a" ||
+    text === "na" ||
+    text === "null" ||
+    text === "undefined"
+  );
+}
+
+function isEmptyObjectValue(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === 0
+  );
+}
+
+function dedupeHistoryByContent(history = []) {
+  const map = new Map();
+
+  history.filter(Boolean).forEach((item) => {
+    const key = [
+      item.stage || "",
+      item.outcome || "",
+      item.description || "",
+      item.reason || "",
+      item.remarks || "",
+      item.date || "",
+      item.createdAt || "",
+      item.timestamp || "",
+    ]
+      .join("|")
+      .toLowerCase()
+      .trim();
+
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, item);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function stripNestedCandidateSnapshot(candidate = {}) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return {};
+  }
+
+  const { candidateSnapshot, ...rest } = candidate;
+
+  return rest;
+}
+
+function mergeCandidateSnapshot(existingSnapshot = {}, incomingSnapshot = {}) {
+  const existingClean = stripNestedCandidateSnapshot(existingSnapshot);
+  const incomingClean = stripNestedCandidateSnapshot(incomingSnapshot);
+
+  const mergedSnapshot = {
+    ...existingClean,
+    ...incomingClean,
+  };
+
+  Object.keys(mergedSnapshot).forEach((key) => {
+    const existingValue = existingClean[key];
+    const incomingValue = incomingClean[key];
+
+    if (
+      isEmptyProfileValue(incomingValue) &&
+      !isEmptyProfileValue(existingValue)
+    ) {
+      mergedSnapshot[key] = existingValue;
+    }
+
+    if (
+      isEmptyObjectValue(incomingValue) &&
+      existingValue &&
+      !isEmptyObjectValue(existingValue)
+    ) {
+      mergedSnapshot[key] = existingValue;
+    }
+  });
+
+  return mergedSnapshot;
+}
+
+function mergeCandidateProfiles(
+  existingCandidate = {},
+  incomingCandidate = {},
+) {
+  const existingClean = stripNestedCandidateSnapshot(existingCandidate);
+  const incomingClean = stripNestedCandidateSnapshot(incomingCandidate);
+
+  const mergedCandidate = {
+    ...existingClean,
+    ...incomingClean,
+  };
+
+  const alwaysUseIncomingFields = new Set([
+    "status",
+    "pipelineStatus",
+    "currentPipelineStage",
+    "pipelineStage",
+    "currentStage",
+    "currentApplicationStatus",
+    "currentApplicationId",
+    "candidateApplicationId",
+    "applicationId",
+    "currentAppliedRole",
+    "currentAppliedAccount",
+    "currentTaOwner",
+    "movedToPipeline",
+    "lastActivity",
+    "updatedAt",
+    "dateMoved",
+    "prfStatus",
+    "prfReviewed",
+    "prfReviewedAt",
+    "assessmentStatus",
+    "assessmentResult",
+    "interviewStatus",
+    "interviewDate",
+    "interviewType",
+    "offerApprovalStatus",
+    "offerDecision",
+  ]);
+
+  Object.keys(mergedCandidate).forEach((key) => {
+    if (alwaysUseIncomingFields.has(key)) return;
+
+    const existingValue = existingClean[key];
+    const incomingValue = incomingClean[key];
+
+    if (
+      isEmptyProfileValue(incomingValue) &&
+      !isEmptyProfileValue(existingValue)
+    ) {
+      mergedCandidate[key] = existingValue;
+      return;
+    }
+
+    if (
+      isEmptyObjectValue(incomingValue) &&
+      existingValue &&
+      !isEmptyObjectValue(existingValue)
+    ) {
+      mergedCandidate[key] = existingValue;
+    }
+  });
+
+  mergedCandidate.candidateId =
+    existingClean.candidateId &&
+    !isTemporaryPipelineId(existingClean.candidateId)
+      ? existingClean.candidateId
+      : incomingClean.candidateId &&
+          !isTemporaryPipelineId(incomingClean.candidateId)
+        ? incomingClean.candidateId
+        : incomingCandidate.candidateSnapshot?.candidateId ||
+          existingCandidate.candidateSnapshot?.candidateId ||
+          existingClean.candidateId ||
+          incomingClean.candidateId;
+
+  mergedCandidate.applicationHistory = dedupeHistoryByContent([
+    ...(Array.isArray(existingClean.applicationHistory)
+      ? existingClean.applicationHistory
+      : []),
+    ...(Array.isArray(incomingClean.applicationHistory)
+      ? incomingClean.applicationHistory
+      : []),
+  ]);
+
+  mergedCandidate.timeline = dedupeHistoryByContent([
+    ...(Array.isArray(existingClean.timeline) ? existingClean.timeline : []),
+    ...(Array.isArray(incomingClean.timeline) ? incomingClean.timeline : []),
+  ]);
+
+  mergedCandidate.workExperiences =
+    Array.isArray(incomingClean.workExperiences) &&
+    incomingClean.workExperiences.length > 0
+      ? incomingClean.workExperiences
+      : existingClean.workExperiences;
+
+  mergedCandidate.references =
+    Array.isArray(incomingClean.references) &&
+    incomingClean.references.length > 0
+      ? incomingClean.references
+      : existingClean.references;
+
+  mergedCandidate.hearAboutUs =
+    Array.isArray(incomingClean.hearAboutUs) &&
+    incomingClean.hearAboutUs.length > 0
+      ? incomingClean.hearAboutUs
+      : existingClean.hearAboutUs;
+
+  mergedCandidate.affiliations =
+    Array.isArray(incomingClean.affiliations) &&
+    incomingClean.affiliations.length > 0
+      ? incomingClean.affiliations
+      : existingClean.affiliations;
+
+  mergedCandidate.candidateSnapshot = mergeCandidateSnapshot(
+    existingCandidate.candidateSnapshot || {},
+    incomingCandidate.candidateSnapshot || {},
+  );
+
+  return normalizeCandidateRecord(mergedCandidate);
+}
+
+function findMatchingCandidateInList(list = [], target = {}) {
+  const targetCandidateId = String(target.candidateId || "").trim();
+  const targetId = String(target.id || "").trim();
+  const targetEmail = normalizeMergeValue(target.email);
+  const targetName = normalizeMergeValue(target.name || target.candidateName);
+
+  return list.find((candidate) => {
+    const candidateId = String(candidate.candidateId || "").trim();
+    const candidateSnapshotId = String(
+      candidate.candidateSnapshot?.candidateId || "",
+    ).trim();
+    const id = String(candidate.id || "").trim();
+    const email = normalizeMergeValue(
+      candidate.email || candidate.candidateSnapshot?.email,
+    );
+    const name = normalizeMergeValue(
+      candidate.name ||
+        candidate.candidateName ||
+        candidate.candidateSnapshot?.name,
+    );
+
+    return (
+      (targetCandidateId &&
+        (candidateId === targetCandidateId ||
+          candidateSnapshotId === targetCandidateId)) ||
+      (targetId && id === targetId) ||
+      (targetEmail && email === targetEmail) ||
+      (targetName && name === targetName)
+    );
+  });
+}
+
+function mergeCandidatesByCandidateId(...candidateGroups) {
+  const mergedCandidates = [];
+  const aliasToIndex = new Map();
+
+  candidateGroups.flat().forEach((candidate) => {
+    if (!candidate) return;
+
+    const normalizedCandidate = normalizeCandidateRecord(candidate);
+    const aliasKeys = getCandidateAliasKeys(normalizedCandidate);
+
+    if (!aliasKeys.length) return;
+
+    const existingIndex = aliasKeys
+      .map((key) => aliasToIndex.get(key))
+      .find((index) => typeof index === "number");
+
+    if (typeof existingIndex === "number") {
+      const existingCandidate = mergedCandidates[existingIndex] || {};
+
+      mergedCandidates[existingIndex] = mergeCandidateProfiles(
+        existingCandidate,
+        normalizedCandidate,
+      );
+
+      getCandidateAliasKeys(mergedCandidates[existingIndex]).forEach((key) => {
+        aliasToIndex.set(key, existingIndex);
+      });
+
+      return;
+    }
+
+    const nextIndex = mergedCandidates.length;
+
+    mergedCandidates.push(normalizedCandidate);
+
+    aliasKeys.forEach((key) => {
+      aliasToIndex.set(key, nextIndex);
+    });
+  });
+
+  return mergedCandidates;
+}
+
+function normalizePipelineCandidateForTalentPool(pipelineCandidate = {}) {
+  const snapshot = pipelineCandidate.candidateSnapshot || {};
+
+  const preferredCandidateId =
+    snapshot.candidateId ||
+    (!isTemporaryPipelineId(pipelineCandidate.candidateId)
+      ? pipelineCandidate.candidateId
+      : "") ||
+    pipelineCandidate.candidateMasterId ||
+    pipelineCandidate.candidateId;
+
+  const currentStage =
+    pipelineCandidate.currentPipelineStage ||
+    pipelineCandidate.currentStage ||
+    pipelineCandidate.pipelineStage ||
+    pipelineCandidate.status ||
+    snapshot.currentPipelineStage ||
+    snapshot.currentStage ||
+    snapshot.status ||
+    "Initial Screening";
+
+  const pipelineStatus =
+    pipelineCandidate.pipelineStatus ||
+    pipelineCandidate.applicationStatus ||
+    snapshot.pipelineStatus ||
+    "Active";
+
+  const finalRole =
+    pipelineCandidate.currentAppliedRole ||
+    snapshot.currentAppliedRole ||
+    pipelineCandidate.roleTitle ||
+    snapshot.roleTitle ||
+    "Not assigned yet";
+
+  const finalAccount =
+    pipelineCandidate.currentAppliedAccount ||
+    snapshot.currentAppliedAccount ||
+    pipelineCandidate.account ||
+    snapshot.account ||
+    "Not assigned yet";
+
+  const taOwner =
+    pipelineCandidate.currentTaOwner ||
+    pipelineCandidate.taOwner ||
+    pipelineCandidate.owner ||
+    snapshot.currentTaOwner ||
+    snapshot.taOwner ||
+    snapshot.owner ||
+    "";
+
+  const timeline = Array.isArray(pipelineCandidate.timeline)
+    ? pipelineCandidate.timeline
+    : [];
+
+  const pipelineHistory = timeline.map((item) => ({
+    stage:
+      item.stage ||
+      item.currentStage ||
+      pipelineCandidate.currentStage ||
+      currentStage,
+    owner: item.owner || item.taOwner || taOwner,
+    date: item.date || item.createdAt || item.timestamp || item.updatedAt,
+    createdAt: item.createdAt || item.date || item.timestamp,
+    description:
+      item.description ||
+      item.reason ||
+      item.remarks ||
+      pipelineCandidate.reasonForMovement ||
+      "Candidate moved in Candidate Pipeline.",
+    remarks: item.remarks || "",
+    savedFormLink: item.savedFormLink || "",
+  }));
+
+  const profilePayload = mergeCandidateProfiles(snapshot, pipelineCandidate);
+
+  return normalizeCandidateRecord({
+    ...profilePayload,
+
+    id:
+      snapshot.id ||
+      pipelineCandidate.candidateMasterId ||
+      profilePayload.id ||
+      pipelineCandidate.id,
+
+    candidateId: preferredCandidateId,
+
+    name:
+      snapshot.name ||
+      pipelineCandidate.name ||
+      pipelineCandidate.candidateName ||
+      profilePayload.name ||
+      "",
+
+    email:
+      snapshot.email ||
+      pipelineCandidate.email ||
+      pipelineCandidate.candidateEmail ||
+      profilePayload.email ||
+      "",
+
+    contactNumber:
+      snapshot.contactNumber ||
+      snapshot.phoneNumber1 ||
+      pipelineCandidate.contactNumber ||
+      pipelineCandidate.phoneNumber1 ||
+      profilePayload.contactNumber ||
+      "",
+
+    phoneNumber1:
+      snapshot.phoneNumber1 ||
+      pipelineCandidate.phoneNumber1 ||
+      pipelineCandidate.contactNumber ||
+      profilePayload.phoneNumber1 ||
+      "",
+
+    openPosition:
+      snapshot.openPosition ||
+      profilePayload.openPosition ||
+      pipelineCandidate.openPosition ||
+      pipelineCandidate.roleCapability ||
+      "",
+
+    roleCapability:
+      snapshot.roleCapability ||
+      profilePayload.roleCapability ||
+      pipelineCandidate.roleCapability ||
+      pipelineCandidate.openPosition ||
+      "",
+
+    applyingLocation:
+      snapshot.applyingLocation ||
+      profilePayload.applyingLocation ||
+      pipelineCandidate.applyingLocation ||
+      "",
+
+    physicalAddress:
+      snapshot.physicalAddress ||
+      profilePayload.physicalAddress ||
+      pipelineCandidate.physicalAddress ||
+      "",
+
+    source:
+      snapshot.source ||
+      profilePayload.source ||
+      pipelineCandidate.source ||
+      formatList(snapshot.hearAboutUs) ||
+      "Talent Pool",
+
+    hearAboutUs:
+      Array.isArray(snapshot.hearAboutUs) && snapshot.hearAboutUs.length > 0
+        ? snapshot.hearAboutUs
+        : profilePayload.hearAboutUs,
+
+    status: currentStage,
+    pipelineStatus,
+    currentPipelineStage: currentStage,
+    pipelineStage: currentStage,
+    currentStage,
+
+    currentAppliedRole: finalRole,
+    currentAppliedAccount: finalAccount,
+    currentTaOwner: taOwner,
+
+    leadAccount:
+      pipelineCandidate.leadAccount ||
+      snapshot.leadAccount ||
+      profilePayload.leadAccount ||
+      pipelineCandidate.accountFit ||
+      snapshot.accountFit ||
+      "",
+
+    accountFit:
+      pipelineCandidate.accountFit ||
+      snapshot.accountFit ||
+      profilePayload.accountFit ||
+      pipelineCandidate.leadAccount ||
+      snapshot.leadAccount ||
+      "",
+
+    movedToPipeline: true,
+
+    candidateApplicationId:
+      pipelineCandidate.candidateApplicationId ||
+      pipelineCandidate.applicationId ||
+      snapshot.candidateApplicationId ||
+      "",
+
+    applicationHistory: dedupeHistoryByContent([
+      ...(Array.isArray(snapshot.applicationHistory)
+        ? snapshot.applicationHistory
+        : []),
+      ...(Array.isArray(profilePayload.applicationHistory)
+        ? profilePayload.applicationHistory
+        : []),
+      ...pipelineHistory,
+    ]),
+
+    lastActivity:
+      pipelineCandidate.lastActivity ||
+      pipelineCandidate.updatedAt ||
+      pipelineCandidate.dateMoved ||
+      snapshot.lastActivity ||
+      profilePayload.lastActivity ||
+      "",
+
+    isPublicSubmission:
+      snapshot.isPublicSubmission || profilePayload.isPublicSubmission || false,
+  });
+}
 
 export function useTalentPool() {
   const context = useContext(TalentPoolContext);
@@ -110,19 +674,15 @@ export function TalentPoolProvider({ children }) {
           ? savedCandidates
           : initialCandidates;
 
-      const mergedPublicCandidates = mergeCandidateLists(
+      const normalizedPipelineCandidates = Array.isArray(pipelineCandidates)
+        ? pipelineCandidates.map(normalizePipelineCandidateForTalentPool)
+        : [];
+
+      const normalizedCandidates = mergeCandidatesByCandidateId(
         baseCandidates,
-        publicSubmissions,
-      );
-
-      const mergedWithPipeline = mergePipelineCandidatesIntoTalentPool(
-        mergedPublicCandidates,
-        Array.isArray(pipelineCandidates) ? pipelineCandidates : [],
-      );
-
-      const normalizedCandidates = mergedWithPipeline.map(
-        normalizeCandidateRecord,
-      );
+        Array.isArray(publicSubmissions) ? publicSubmissions : [],
+        normalizedPipelineCandidates,
+      ).map(normalizeCandidateRecord);
 
       setCandidateList(normalizedCandidates);
       writeLocalStorage(INTERNAL_CANDIDATES_KEY, normalizedCandidates);
@@ -276,6 +836,20 @@ export function TalentPoolProvider({ children }) {
       ).length,
     };
   }, [candidateList]);
+
+  function closeAllTalentPoolModals() {
+    setShowAddModal(false);
+    setCandidateForm(emptyCandidateForm);
+
+    setEditCandidate(null);
+    setEditCandidateForm(emptyCandidateForm);
+
+    setStatusTarget(null);
+    setStatusForm(emptyStatusForm);
+
+    setPipelineTarget(null);
+    setMoveToPipelineForm({ ...emptyMoveToPipelineForm });
+  }
 
   function openPublicForm() {
     window.open(
@@ -431,6 +1005,14 @@ export function TalentPoolProvider({ children }) {
       source: form.hearAboutUs.join(", "),
       availability: form.availability,
       accountFit: baseCandidate?.accountFit || "Not assigned yet",
+      pipelineStatus: baseCandidate?.pipelineStatus || "",
+      currentPipelineStage: baseCandidate?.currentPipelineStage || "",
+      pipelineStage: baseCandidate?.pipelineStage || "",
+      currentStage: baseCandidate?.currentStage || "",
+      currentAppliedRole: baseCandidate?.currentAppliedRole || "",
+      currentAppliedAccount: baseCandidate?.currentAppliedAccount || "",
+      currentTaOwner: baseCandidate?.currentTaOwner || "",
+      movedToPipeline: Boolean(baseCandidate?.movedToPipeline),
       lastActivity: today,
       tags: normalizeTags(roleCapability, form.skillsLanguage),
       isPublicSubmission: baseCandidate?.isPublicSubmission || false,
@@ -464,10 +1046,12 @@ export function TalentPoolProvider({ children }) {
 
     if (!newCandidate) return;
 
-    setCandidateList((prev) => [newCandidate, ...prev]);
-    setSelectedCandidate(newCandidate);
-    setCandidateForm(emptyCandidateForm);
-    setShowAddModal(false);
+    setCandidateList((prev) =>
+      mergeCandidatesByCandidateId([newCandidate], prev),
+    );
+
+    setSelectedCandidate(null);
+    closeAllTalentPoolModals();
   }
 
   function openEditCandidate(candidate) {
@@ -504,13 +1088,19 @@ export function TalentPoolProvider({ children }) {
     if (!updatedCandidate) return;
 
     setCandidateList((prev) =>
-      prev.map((candidate) =>
-        candidate.id === editCandidate.id ? updatedCandidate : candidate,
+      mergeCandidatesByCandidateId(
+        prev.map((candidate) =>
+          candidate.id === editCandidate.id ||
+          candidate.candidateId === editCandidate.candidateId ||
+          candidate.email === editCandidate.email
+            ? updatedCandidate
+            : candidate,
+        ),
       ),
     );
 
-    setSelectedCandidate(updatedCandidate);
-    closeEditCandidate();
+    setSelectedCandidate(null);
+    closeAllTalentPoolModals();
   }
 
   function openStatus(candidate) {
@@ -556,13 +1146,19 @@ export function TalentPoolProvider({ children }) {
     });
 
     setCandidateList((prev) =>
-      prev.map((candidate) =>
-        candidate.id === statusTarget.id ? updatedCandidate : candidate,
+      mergeCandidatesByCandidateId(
+        prev.map((candidate) =>
+          candidate.id === statusTarget.id ||
+          candidate.candidateId === statusTarget.candidateId ||
+          candidate.email === statusTarget.email
+            ? updatedCandidate
+            : candidate,
+        ),
       ),
     );
 
-    setSelectedCandidate(updatedCandidate);
-    closeStatus();
+    setSelectedCandidate(null);
+    closeAllTalentPoolModals();
   }
 
   function openMoveToPipeline(candidate) {
@@ -571,9 +1167,11 @@ export function TalentPoolProvider({ children }) {
       ...emptyMoveToPipelineForm,
       roleTitle: "Not assigned yet",
       account: "Not assigned yet",
+      leadAccount: candidate.leadAccount || candidate.accountFit || "",
       hiringRequirementId: "",
       jobDescriptionId: "",
       taOwner: currentTaOwner,
+      initialStage: "Initial Screening",
     });
   }
 
@@ -583,83 +1181,177 @@ export function TalentPoolProvider({ children }) {
   }
 
   function submitMoveToPipeline(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
 
     if (!pipelineTarget) return;
 
-    if (pipelineTarget.status === "Do Not Reprocess") {
+    const savedInternalCandidates = readStorage(INTERNAL_CANDIDATES_KEY, []);
+    const savedPublicSubmissions = readStorage(PUBLIC_SUBMISSIONS_KEY, []);
+    const savedPipelineCandidates = readStorage(
+      PIPELINE_CANDIDATES_STORAGE_KEY,
+      [],
+    );
+    const savedApplications = readStorage(CANDIDATE_APPLICATIONS_KEY, []);
+
+    const savedInternalMatch = findMatchingCandidateInList(
+      savedInternalCandidates,
+      pipelineTarget,
+    );
+
+    const savedPublicMatch = findMatchingCandidateInList(
+      savedPublicSubmissions,
+      pipelineTarget,
+    );
+
+    const currentListMatch = findMatchingCandidateInList(
+      candidateList,
+      pipelineTarget,
+    );
+
+    const sourceCandidate = mergeCandidateProfiles(
+      mergeCandidateProfiles(
+        mergeCandidateProfiles(pipelineTarget, savedInternalMatch || {}),
+        savedPublicMatch || {},
+      ),
+      currentListMatch || {},
+    );
+
+    if (sourceCandidate.status === "Do Not Reprocess") {
       alert("This candidate is marked Do Not Reprocess.");
       return;
     }
 
-    const today = getTodayDate();
+    const now = new Date();
+    const nowIso = now.toISOString();
 
-    const existingApplications = readLocalStorage(
-      CANDIDATE_APPLICATIONS_KEY,
-      [],
-    );
+    const displayDate = now.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
 
-    const existingPipelineCandidates = readLocalStorage(
-      PIPELINE_CANDIDATES_STORAGE_KEY,
-      [],
-    );
+    const targetCandidateId =
+      sourceCandidate.candidateId &&
+      !isTemporaryPipelineId(sourceCandidate.candidateId)
+        ? sourceCandidate.candidateId
+        : sourceCandidate.candidateSnapshot?.candidateId ||
+          `CAND-${String(sourceCandidate.id || Date.now()).padStart(3, "0")}`;
 
-    const duplicateActiveApplication = existingApplications.some(
-      (application) =>
-        application.candidateId === pipelineTarget.candidateId &&
-        application.applicationStatus === "Active" &&
-        application.currentStage !== "Accepted" &&
-        application.currentStage !== "For NHO" &&
-        application.currentStage !== "Drop-off",
-    );
+    const existingApplicationId =
+      sourceCandidate.candidateApplicationId ||
+      sourceCandidate.applicationId ||
+      "";
 
-    if (duplicateActiveApplication) {
-      alert("This candidate already has an active pipeline application.");
-      return;
-    }
+    const pipelineApplicationId = existingApplicationId || `APP-${Date.now()}`;
+    const initialStage = moveToPipelineForm.initialStage || "Initial Screening";
+    const leadAccount = moveToPipelineForm.leadAccount || "";
 
-    const owner = toDisplayPersonName(
-      currentTaOwner || moveToPipelineForm.taOwner,
+    const ownerName = toDisplayPersonName(
+      moveToPipelineForm.taOwner || currentTaOwner,
       "Current User",
     );
 
-    const initialStage = "Initial Screening";
-
     const movementReason =
-      moveToPipelineForm.remarks.trim() ||
-      "Moved from Talent Pool to Candidate Pipeline. Hiring requirement, final role, and final account are not assigned yet.";
+      moveToPipelineForm.remarks?.trim() ||
+      "Candidate moved from Talent Pool without final assignment.";
 
-    const generatedApplicationId = generateApplicationId();
+    const historyEntry = {
+      stage: initialStage,
+      owner: ownerName,
+      date: nowIso,
+      createdAt: nowIso,
+      description: movementReason,
+    };
 
-    const newApplication = {
+    const updatedTalentPoolCandidate = normalizeCandidateRecord(
+      mergeCandidateProfiles(sourceCandidate, {
+        candidateId: targetCandidateId,
+
+        status: initialStage,
+        pipelineStatus: "Active",
+        currentPipelineStage: initialStage,
+        pipelineStage: initialStage,
+        currentStage: initialStage,
+
+        currentAppliedRole: "Not assigned yet",
+        currentAppliedAccount: "Not assigned yet",
+        currentTaOwner: ownerName,
+
+        leadAccount,
+        accountFit: leadAccount || sourceCandidate.accountFit || "",
+
+        movedToPipeline: true,
+        candidateApplicationId: pipelineApplicationId,
+        applicationId: pipelineApplicationId,
+        lastActivity: nowIso,
+
+        applicationHistory: dedupeHistoryByContent([
+          ...(Array.isArray(sourceCandidate.applicationHistory)
+            ? sourceCandidate.applicationHistory
+            : []),
+          historyEntry,
+        ]),
+      }),
+    );
+
+    const pipelineCandidate = {
       id: Date.now(),
-      applicationId: generatedApplicationId,
-      candidateApplicationId: generatedApplicationId,
+      candidateApplicationId: pipelineApplicationId,
+      applicationId: pipelineApplicationId,
 
-      candidateId: pipelineTarget.candidateId,
-      candidateMasterId: pipelineTarget.id,
-      candidateName: pipelineTarget.name,
-      name: pipelineTarget.name,
-      email: pipelineTarget.email,
-      candidateEmail: pipelineTarget.email,
+      candidateMasterId: sourceCandidate.id,
+      candidateId: targetCandidateId,
+
+      name: sourceCandidate.name,
+      candidateName: sourceCandidate.name,
+      email: sourceCandidate.email,
+      candidateEmail: sourceCandidate.email,
+
       contactNumber:
-        pipelineTarget.phoneNumber1 || pipelineTarget.contactNumber,
+        sourceCandidate.phoneNumber1 ||
+        sourceCandidate.contactNumber ||
+        sourceCandidate.phoneNumber2 ||
+        "",
 
-      hiringRequirementId: "",
-      jobDescriptionId: "",
-      jobDescription: "",
+      phoneNumber1:
+        sourceCandidate.phoneNumber1 || sourceCandidate.contactNumber || "",
+
+      openPosition:
+        sourceCandidate.openPosition || sourceCandidate.roleCapability || "",
+
+      roleCapability:
+        sourceCandidate.roleCapability || sourceCandidate.openPosition || "",
+
+      applyingLocation: sourceCandidate.applyingLocation || "",
+      physicalAddress: sourceCandidate.physicalAddress || "",
+
       roleTitle: "Not assigned yet",
       account: "Not assigned yet",
       roleAccount: "Not assigned yet - Not assigned yet",
 
-      taOwner: owner,
-      owner,
+      leadAccount,
+      accountFit: leadAccount || sourceCandidate.accountFit || "",
+
+      source:
+        sourceCandidate.source ||
+        formatList(sourceCandidate.hearAboutUs) ||
+        "Talent Pool",
+
+      hearAboutUs: sourceCandidate.hearAboutUs || [],
+
+      owner: ownerName,
+      taOwner: ownerName,
+      currentTaOwner: ownerName,
 
       currentStage: initialStage,
-      stage: initialStage,
+      currentPipelineStage: initialStage,
       pipelineStage: initialStage,
       previousStage: "Talent Pool",
+
       applicationStatus: "Active",
+      pipelineStatus: "Active",
 
       prfStatus: "Review",
       prfReviewed: false,
@@ -673,105 +1365,194 @@ export function TalentPoolProvider({ children }) {
       assessmentResult: "",
       assessmentEmailSent: false,
       assessmentEmailSentAt: null,
+      assessmentTakenAt: null,
+      assessmentTaggedAt: null,
+      assessmentRemarks: "",
 
-      offerDetails: null,
-      offerApprovalStatus: "For Review",
-      offerDecision: "",
+      dateMoved: nowIso,
+      updatedAt: nowIso,
+      lastActivity: nowIso,
 
-      dateMoved: today,
       reasonForMovement: movementReason,
-      source: pipelineTarget.source,
-      fromTalentPool: true,
-      remarks: moveToPipelineForm.remarks.trim(),
-      createdAt: today,
-      updatedAt: today,
 
-      stageHistory: [
-        {
-          fromStage: "Talent Pool",
-          toStage: initialStage,
-          owner,
-          reason: movementReason,
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      avatarColor: "bg-sibs-primary-1",
+
+      dropOffReason: null,
+      dropOffCategory: null,
+      dropOffRemarks: null,
+
+      candidateSnapshot: {
+        ...sourceCandidate,
+        ...updatedTalentPoolCandidate,
+        candidateId: targetCandidateId,
+        status: initialStage,
+        pipelineStatus: "Active",
+        currentPipelineStage: initialStage,
+        pipelineStage: initialStage,
+        currentStage: initialStage,
+        currentAppliedRole: "Not assigned yet",
+        currentAppliedAccount: "Not assigned yet",
+        currentTaOwner: ownerName,
+        leadAccount,
+        accountFit: leadAccount || sourceCandidate.accountFit || "",
+        movedToPipeline: true,
+        candidateApplicationId: pipelineApplicationId,
+        applicationId: pipelineApplicationId,
+      },
 
       timeline: [
         {
           stage: initialStage,
-          owner,
+          owner: ownerName,
           source: "Talent Pool",
+          timestamp: displayDate,
+          date: nowIso,
+          createdAt: nowIso,
           reason: movementReason,
-          timestamp: new Date().toLocaleString("en-PH", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          }),
+          description: movementReason,
+          remarks: moveToPipelineForm.remarks || "",
         },
       ],
-
-      candidateSnapshot: pipelineTarget,
     };
 
-    writeLocalStorage(CANDIDATE_APPLICATIONS_KEY, [
-      newApplication,
-      ...existingApplications,
-    ]);
+    const updateMatchingCandidate = (candidate) => {
+      const isMatch = Boolean(
+        findMatchingCandidateInList([candidate], {
+          ...sourceCandidate,
+          candidateId: targetCandidateId,
+        }),
+      );
 
-    writeLocalStorage(PIPELINE_CANDIDATES_STORAGE_KEY, [
-      newApplication,
-      ...existingPipelineCandidates,
-    ]);
+      if (!isMatch) return candidate;
 
-    const updatedCandidate = normalizeCandidateRecord({
-      ...pipelineTarget,
-      status: pipelineTarget.status,
-      pipelineStatus: "Active",
-      currentApplicationId: newApplication.applicationId,
-      currentCandidateApplicationId: newApplication.candidateApplicationId,
-      currentHiringRequirementId: "",
-      currentPipelineStage: initialStage,
-      currentApplicationStatus: "Active",
-      currentAppliedRole: "Not assigned yet",
-      currentAppliedAccount: "Not assigned yet",
-      currentTaOwner: owner,
-      currentPrfStatus: "Review",
-      currentAssessmentStatus: "Not Take",
-      currentAssessmentResult: "",
-      currentInterviewStatus: "For Assessment",
-      currentOfferStatus: "For Review",
-      currentOfferDecision: "",
-      lastPipelineUpdate: today,
-      lastActivity: today,
-      applicationHistory: [
-        ...(pipelineTarget.applicationHistory || []),
-        {
-          role: "Not assigned yet",
-          account: "Not assigned yet",
-          outcome: `Moved to Pipeline - ${initialStage}`,
-          date: today,
-        },
-      ],
-      remarks: moveToPipelineForm.remarks.trim()
-        ? `${pipelineTarget.remarks || ""}\n\nMoved to Pipeline (${today}): ${moveToPipelineForm.remarks.trim()}`
-        : pipelineTarget.remarks,
-    });
+      return mergeCandidateProfiles(candidate, updatedTalentPoolCandidate);
+    };
 
-    setCandidateList((prev) =>
-      prev.map((candidate) =>
-        candidate.id === pipelineTarget.id ? updatedCandidate : candidate,
+    const updatedInternalCandidates = savedInternalCandidates.map(
+      updateMatchingCandidate,
+    );
+
+    const updatedPublicSubmissions = savedPublicSubmissions.map(
+      updateMatchingCandidate,
+    );
+
+    const internalHasCandidate = updatedInternalCandidates.some((candidate) =>
+      Boolean(
+        findMatchingCandidateInList([candidate], {
+          ...sourceCandidate,
+          candidateId: targetCandidateId,
+        }),
       ),
     );
 
-    setSelectedCandidate(updatedCandidate);
-    closeMoveToPipeline();
-    dispatchTalentPoolSync();
-
-    alert(
-      "Candidate moved to Candidate Pipeline without hiring requirement, final role, or final account assignment.",
+    const publicHasCandidate = updatedPublicSubmissions.some((candidate) =>
+      Boolean(
+        findMatchingCandidateInList([candidate], {
+          ...sourceCandidate,
+          candidateId: targetCandidateId,
+        }),
+      ),
     );
+
+    const finalInternalCandidates =
+      internalHasCandidate || publicHasCandidate
+        ? updatedInternalCandidates
+        : [...updatedInternalCandidates, updatedTalentPoolCandidate];
+
+    const existingPipelineIndex = savedPipelineCandidates.findIndex(
+      (candidate) =>
+        Boolean(
+          findMatchingCandidateInList([candidate], {
+            ...sourceCandidate,
+            candidateId: targetCandidateId,
+          }),
+        ),
+    );
+
+    const finalPipelineCandidates =
+      existingPipelineIndex >= 0
+        ? savedPipelineCandidates.map((candidate, index) => {
+            if (index !== existingPipelineIndex) return candidate;
+
+            return {
+              ...candidate,
+              ...pipelineCandidate,
+              id: candidate.id,
+              candidateApplicationId:
+                candidate.candidateApplicationId ||
+                pipelineCandidate.candidateApplicationId,
+              applicationId:
+                candidate.applicationId || pipelineCandidate.applicationId,
+              candidateSnapshot: mergeCandidateProfiles(
+                candidate.candidateSnapshot || {},
+                pipelineCandidate.candidateSnapshot || {},
+              ),
+              timeline: dedupeHistoryByContent([
+                ...(Array.isArray(candidate.timeline)
+                  ? candidate.timeline
+                  : []),
+                ...pipelineCandidate.timeline,
+              ]),
+            };
+          })
+        : [...savedPipelineCandidates, pipelineCandidate];
+
+    const finalApplications = [
+      ...savedApplications.filter(
+        (application) =>
+          application.candidateId !== targetCandidateId &&
+          application.candidateMasterId !== sourceCandidate.id,
+      ),
+      {
+        id: pipelineApplicationId,
+        candidateApplicationId: pipelineApplicationId,
+        applicationId: pipelineApplicationId,
+        candidateId: targetCandidateId,
+        candidateMasterId: sourceCandidate.id,
+        candidateName: sourceCandidate.name,
+        currentStage: initialStage,
+        currentPipelineStage: initialStage,
+        pipelineStage: initialStage,
+        pipelineStatus: "Active",
+        applicationStatus: "Active",
+        leadAccount,
+        accountFit: leadAccount || sourceCandidate.accountFit || "",
+        taOwner: ownerName,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      },
+    ];
+
+    const normalizedPipelineForTalentPool = finalPipelineCandidates.map(
+      normalizePipelineCandidateForTalentPool,
+    );
+
+    const finalMergedInternalCandidates = mergeCandidatesByCandidateId(
+      finalInternalCandidates,
+      [updatedTalentPoolCandidate],
+      normalizedPipelineForTalentPool,
+    );
+
+    writeStorage(INTERNAL_CANDIDATES_KEY, finalMergedInternalCandidates);
+    writeStorage(PUBLIC_SUBMISSIONS_KEY, updatedPublicSubmissions);
+    writeStorage(PIPELINE_CANDIDATES_STORAGE_KEY, finalPipelineCandidates);
+    writeStorage(CANDIDATE_APPLICATIONS_KEY, finalApplications);
+
+    setCandidateList(
+      mergeCandidatesByCandidateId(
+        candidateList,
+        finalMergedInternalCandidates,
+        updatedPublicSubmissions,
+        normalizedPipelineForTalentPool,
+        [updatedTalentPoolCandidate],
+      ),
+    );
+
+    setSelectedCandidate(null);
+    closeAllTalentPoolModals();
+
+    window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
+    window.dispatchEvent(new Event("ta-public-submissions-updated"));
   }
 
   function clearFilters() {
@@ -843,7 +1624,12 @@ export function TalentPoolProvider({ children }) {
           return;
         }
 
-        setCandidateList((prev) => [...importedCandidates, ...prev]);
+        setCandidateList((prev) =>
+          mergeCandidatesByCandidateId(importedCandidates, prev),
+        );
+
+        closeAllTalentPoolModals();
+
         alert(`${importedCandidates.length} lead(s) imported successfully.`);
       } catch (error) {
         console.error("LEAD CSV UPLOAD ERROR:", error);
