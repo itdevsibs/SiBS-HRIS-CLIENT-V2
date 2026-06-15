@@ -34,6 +34,7 @@ import {
   getSupervisorResignations,
 } from "../../lib/axios/getEmployee";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
+import api from "../../lib/axios/api-template";
 
 const APPROVAL_MODULES = [
   "Attrition",
@@ -148,6 +149,104 @@ async function getApprovalNotificationCountByModule(moduleName) {
       Number(counts.forReview || 0)
     );
   }, 0);
+}
+
+
+function normalizeSidebarRoleValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isHrOrHrAdminUser(user = {}) {
+  const roleValues = [
+    user?.role,
+    user?.roleName,
+    user?.role_name,
+    user?.userRole,
+    user?.user_role,
+    user?.accountType,
+    user?.account_type,
+  ]
+    .map(normalizeSidebarRoleValue)
+    .filter(Boolean);
+
+  const adminAccess = Number(
+    user?.adminAccess ?? user?.admin_access ?? user?.admin_level ?? 0,
+  );
+
+  return (
+    roleValues.some((role) =>
+      [
+        "hr",
+        "hr_admin",
+        "hradmin",
+        "human_resource",
+        "human_resources",
+        "human_resource_admin",
+        "human_resources_admin",
+        "super_admin",
+      ].includes(role),
+    ) || [6, 7].includes(adminAccess)
+  );
+}
+
+function getResignationNotificationStatus(item = {}) {
+  return normalizeApprovalNotificationStatus(
+    item?.status ||
+      item?.resignationStatus ||
+      item?.resignation_status ||
+      item?.raw?.status ||
+      item?.raw?.resignationStatus ||
+      item?.raw?.resignation_status ||
+      "",
+  );
+}
+
+function getResignationNotificationKey(item = {}) {
+  return [
+    item?.source || "resignation-management",
+    item?.rawId || item?.raw_id || item?.id || "",
+    item?.resignationId || item?.resignation_id || "",
+    item?.attritionId || item?.attrition_id || "",
+    item?.sibsId || item?.sibs_id || item?.employeeSibsId || "",
+  ].join("::");
+}
+
+function countResignationManagementNotificationData(data = []) {
+  const uniqueItems = new Map();
+
+  data.forEach((item) => {
+    const key = getResignationNotificationKey(item);
+
+    if (!uniqueItems.has(key)) {
+      uniqueItems.set(key, item);
+    }
+  });
+
+  return Array.from(uniqueItems.values()).filter((item) => {
+    const status = getResignationNotificationStatus(item);
+
+    return status === "Pending" || status === "For Review";
+  }).length;
+}
+
+async function getResignationManagementNotificationCount() {
+  const res = await api.get("/api/resignation-management", {
+    params: {
+      page: 1,
+      limit: 500,
+      search: "",
+      status: "",
+      type: "",
+    },
+    withCredentials: true,
+  });
+
+  const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+
+  return countResignationManagementNotificationData(data);
 }
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
@@ -387,6 +486,17 @@ export default function Sidebar() {
 
     async function fetchAttritionNotifications() {
       try {
+        if (isHrOrHrAdminUser(user)) {
+          const allResignationCount =
+            await getResignationManagementNotificationCount();
+
+          if (isMounted) {
+            setAttritionNotificationCount(allResignationCount);
+          }
+
+          return;
+        }
+
         const [resignationResult, attritionResult] = await Promise.all([
           getSupervisorResignations(),
           getSupervisorAttritions(),
@@ -400,9 +510,11 @@ export default function Sidebar() {
           ? attritionResult.data || []
           : [];
 
-        const pendingResignationCount = resignationData.filter(
-          (item) => item.status === "Pending",
-        ).length;
+        const pendingResignationCount = resignationData.filter((item) => {
+          const status = normalizeApprovalNotificationStatus(item?.status);
+
+          return status === "Pending" || status === "For Review";
+        }).length;
 
         const pendingAttritionCount = attritionData.filter((item) => {
           const isDeclined =
@@ -436,8 +548,13 @@ export default function Sidebar() {
 
     fetchAttritionNotifications();
 
+    const interval = window.setInterval(() => {
+      fetchAttritionNotifications();
+    }, 30000);
+
     return () => {
       isMounted = false;
+      window.clearInterval(interval);
     };
   }, [mounted, loading, user, pathname, ADMIN_ROLES]);
 
