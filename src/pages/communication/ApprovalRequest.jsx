@@ -1374,31 +1374,6 @@ function ApprovalSummaryCards({ stats, activeModule, loading }) {
 
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
-      {/* <div className="border-b border-[#E6ECF2] px-5 py-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <FileCheck2 size={14} />
-              Approval Overview
-            </div>
-
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
-              {activeModule} Summary
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Quick overview of pending, reviewed, approved, and rejected
-              approval requests for the selected module.
-            </p>
-          </div>
-
-          <div className="inline-flex w-fit items-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            Records: {normalizedStats.total}
-          </div>
-        </div>
-      </div> */}
-
       <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
@@ -1530,37 +1505,49 @@ function ApprovalRequestTable({
         ) : (
           <>
             <div className="hidden lg:block">
-              <div className="max-h-[670px] overflow-auto sibs-scrollbar">
-                <table className="w-full min-w-[1300px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <div className="max-h-[670px] overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar">
+                <table
+                  className={`w-full ${
+                    isWeeklyModule ? "min-w-[1550px]" : "min-w-[1300px]"
+                  } border-collapse bg-white text-left`}
+                >
                   <thead className="sticky top-0 z-10">
-                    <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                      <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                    <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                         Request
                       </th>
-
-                      <th className="px-5 py-4 text-left align-top">
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                         Requester
                       </th>
-
-                      <th className="px-5 py-4 text-center align-top">Type</th>
-
-                      <th className="px-5 py-4 text-center align-top">
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                        Type
+                      </th>
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                         Date Requested
                       </th>
-
-                      <th className="px-5 py-4 text-center align-top">
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                         Priority
                       </th>
 
-                      <th className="px-5 py-4 text-center align-top">
-                        Status
-                      </th>
+                      {isWeeklyModule ? (
+                        <>
+                          <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                            Recruitment Settings Status
+                          </th>
+                          <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                            Update Headcount Status
+                          </th>
+                        </>
+                      ) : (
+                        <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                          Status
+                        </th>
+                      )}
 
-                      <th className="px-5 py-4 text-left align-top">
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                         Approver
                       </th>
-
-                      <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                      <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
                         Actions
                       </th>
                     </tr>
@@ -1571,7 +1558,7 @@ function ApprovalRequestTable({
                       <tr>
                         <td
                           className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                          colSpan={8}
+                          colSpan={colSpan}
                         >
                           <Loader2
                             size={28}
@@ -1584,7 +1571,7 @@ function ApprovalRequestTable({
                       <tr>
                         <td
                           className="px-5 py-16 text-center text-sm font-bold text-gray-500"
-                          colSpan={8}
+                          colSpan={colSpan}
                         >
                           No approval requests found for {activeModule}.
                         </td>
@@ -1594,6 +1581,7 @@ function ApprovalRequestTable({
                         <ApprovalRequestRow
                           key={`${request.source || "request"}-${request.id}`}
                           request={request}
+                          isWeeklyModule={isWeeklyModule}
                           onView={() => onView(request)}
                         />
                       ))
@@ -1622,6 +1610,7 @@ function ApprovalRequestTable({
                     <ApprovalRequestMobileCard
                       key={`${request.source || "request"}-${request.id}`}
                       request={request}
+                      isWeeklyModule={isWeeklyModule}
                       onView={() => onView(request)}
                     />
                   ))}
@@ -2384,7 +2373,10 @@ function DecisionModal({
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <DecisionInfoBox label="Request ID" value={request.id || "--"} />
-                <DecisionInfoBox label="Request Type" value={request.type || "--"} />
+                <DecisionInfoBox
+                  label="Request Type"
+                  value={getRequestType(request) || request.type || "--"}
+                />
                 <DecisionInfoBox
                   label="Requester"
                   value={request.requester || request.employeeName || "--"}
