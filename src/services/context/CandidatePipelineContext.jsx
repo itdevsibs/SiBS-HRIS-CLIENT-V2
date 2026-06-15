@@ -228,6 +228,9 @@ function mergeProfileSafe(existingCandidate = {}, incomingCandidate = {}) {
   const existingClean = stripNestedCandidateSnapshot(existingCandidate);
   const incomingClean = stripNestedCandidateSnapshot(incomingCandidate);
 
+  const existingSnapshot = existingCandidate.candidateSnapshot || {};
+  const incomingSnapshot = incomingCandidate.candidateSnapshot || {};
+
   const mergedCandidate = {
     ...existingClean,
     ...incomingClean,
@@ -264,6 +267,14 @@ function mergeProfileSafe(existingCandidate = {}, incomingCandidate = {}) {
     "assessmentTakenAt",
     "assessmentTaggedAt",
     "assessmentRemarks",
+    "assessmentFileName",
+    "assessmentFileUrl",
+    "assessmentFileType",
+    "assessmentFileSize",
+    "assessmentAttachmentName",
+    "assessmentAttachmentUrl",
+    "assessmentAttachmentType",
+    "assessmentAttachmentSize",
     "interviewStatus",
     "interviewDate",
     "interviewType",
@@ -294,6 +305,69 @@ function mergeProfileSafe(existingCandidate = {}, incomingCandidate = {}) {
       mergedCandidate[key] = existingValue;
     }
   });
+
+  const preservedLeadAccount =
+    incomingClean.leadAccount ||
+    incomingClean.initialAccount ||
+    incomingClean.accountFit ||
+    incomingSnapshot.leadAccount ||
+    incomingSnapshot.initialAccount ||
+    incomingSnapshot.accountFit ||
+    existingClean.leadAccount ||
+    existingClean.initialAccount ||
+    existingClean.accountFit ||
+    existingSnapshot.leadAccount ||
+    existingSnapshot.initialAccount ||
+    existingSnapshot.accountFit ||
+    "";
+
+  mergedCandidate.leadAccount =
+    incomingClean.leadAccount ||
+    incomingClean.initialAccount ||
+    incomingClean.accountFit ||
+    incomingSnapshot.leadAccount ||
+    incomingSnapshot.initialAccount ||
+    incomingSnapshot.accountFit ||
+    existingClean.leadAccount ||
+    existingClean.initialAccount ||
+    existingClean.accountFit ||
+    existingSnapshot.leadAccount ||
+    existingSnapshot.initialAccount ||
+    existingSnapshot.accountFit ||
+    preservedLeadAccount ||
+    "";
+
+  mergedCandidate.initialAccount =
+    incomingClean.initialAccount ||
+    incomingClean.leadAccount ||
+    incomingClean.accountFit ||
+    incomingSnapshot.initialAccount ||
+    incomingSnapshot.leadAccount ||
+    incomingSnapshot.accountFit ||
+    existingClean.initialAccount ||
+    existingClean.leadAccount ||
+    existingClean.accountFit ||
+    existingSnapshot.initialAccount ||
+    existingSnapshot.leadAccount ||
+    existingSnapshot.accountFit ||
+    preservedLeadAccount ||
+    "";
+
+  mergedCandidate.accountFit =
+    incomingClean.accountFit ||
+    incomingClean.leadAccount ||
+    incomingClean.initialAccount ||
+    incomingSnapshot.accountFit ||
+    incomingSnapshot.leadAccount ||
+    incomingSnapshot.initialAccount ||
+    existingClean.accountFit ||
+    existingClean.leadAccount ||
+    existingClean.initialAccount ||
+    existingSnapshot.accountFit ||
+    existingSnapshot.leadAccount ||
+    existingSnapshot.initialAccount ||
+    preservedLeadAccount ||
+    "";
 
   mergedCandidate.candidateId =
     existingClean.candidateId &&
@@ -481,6 +555,10 @@ export function CandidatePipelineProvider({ children }) {
     assessmentStatus: "Not Take",
     assessmentResult: "",
     assessmentRemarks: "",
+    assessmentFileName: "",
+    assessmentFileUrl: "",
+    assessmentFileType: "",
+    assessmentFileSize: "",
   });
 
   const [dropOffCandidate, setDropOffCandidate] = useState(null);
@@ -895,10 +973,12 @@ export function CandidatePipelineProvider({ children }) {
 
   function commitCandidateUpdate(updatedCandidate) {
     const storedPipelineCandidates = loadPipelineCandidateData();
+
     const storedInternalCandidates = readArrayStorage(
       INTERNAL_CANDIDATES_KEY,
       [],
     );
+
     const storedPublicSubmissions = readArrayStorage(
       PUBLIC_SUBMISSIONS_KEY,
       [],
@@ -929,13 +1009,60 @@ export function CandidatePipelineProvider({ children }) {
 
     const currentStage = getCandidateStage(mergedCandidate);
 
+    const preservedLeadAccount =
+      updatedCandidate.leadAccount ||
+      updatedCandidate.initialAccount ||
+      updatedCandidate.accountFit ||
+      updatedCandidate.candidateSnapshot?.leadAccount ||
+      updatedCandidate.candidateSnapshot?.initialAccount ||
+      updatedCandidate.candidateSnapshot?.accountFit ||
+      existingPipelineCandidate.leadAccount ||
+      existingPipelineCandidate.initialAccount ||
+      existingPipelineCandidate.accountFit ||
+      existingPipelineCandidate.candidateSnapshot?.leadAccount ||
+      existingPipelineCandidate.candidateSnapshot?.initialAccount ||
+      existingPipelineCandidate.candidateSnapshot?.accountFit ||
+      masterTalentCandidate.leadAccount ||
+      masterTalentCandidate.initialAccount ||
+      masterTalentCandidate.accountFit ||
+      masterTalentCandidate.candidateSnapshot?.leadAccount ||
+      masterTalentCandidate.candidateSnapshot?.initialAccount ||
+      masterTalentCandidate.candidateSnapshot?.accountFit ||
+      "";
+
     const normalizedCandidate = normalizePipelineCandidateForBoard({
       ...mergedCandidate,
+
+      leadAccount: preservedLeadAccount,
+      initialAccount: preservedLeadAccount,
+      accountFit: preservedLeadAccount || mergedCandidate.accountFit || "",
+
       currentStage,
       currentPipelineStage: currentStage,
       pipelineStage: currentStage,
       stage: currentStage,
     });
+
+    normalizedCandidate.leadAccount =
+      normalizedCandidate.leadAccount ||
+      normalizedCandidate.initialAccount ||
+      normalizedCandidate.accountFit ||
+      preservedLeadAccount ||
+      "";
+
+    normalizedCandidate.initialAccount =
+      normalizedCandidate.initialAccount ||
+      normalizedCandidate.leadAccount ||
+      normalizedCandidate.accountFit ||
+      preservedLeadAccount ||
+      "";
+
+    normalizedCandidate.accountFit =
+      normalizedCandidate.accountFit ||
+      normalizedCandidate.leadAccount ||
+      normalizedCandidate.initialAccount ||
+      preservedLeadAccount ||
+      "";
 
     normalizedCandidate.candidateSnapshot = mergeCandidateSnapshotSafe(
       masterTalentCandidate,
@@ -949,14 +1076,38 @@ export function CandidatePipelineProvider({ children }) {
           normalizedCandidate.candidateId ||
           masterTalentCandidate.candidateId ||
           existingPipelineCandidate.candidateId,
+
         name:
           normalizedCandidate.name ||
           masterTalentCandidate.name ||
           existingPipelineCandidate.name,
+
         email:
           normalizedCandidate.email ||
           masterTalentCandidate.email ||
           existingPipelineCandidate.email,
+
+        leadAccount:
+          normalizedCandidate.leadAccount ||
+          normalizedCandidate.initialAccount ||
+          normalizedCandidate.accountFit ||
+          preservedLeadAccount ||
+          "",
+
+        initialAccount:
+          normalizedCandidate.initialAccount ||
+          normalizedCandidate.leadAccount ||
+          normalizedCandidate.accountFit ||
+          preservedLeadAccount ||
+          "",
+
+        accountFit:
+          normalizedCandidate.accountFit ||
+          normalizedCandidate.leadAccount ||
+          normalizedCandidate.initialAccount ||
+          preservedLeadAccount ||
+          "",
+
         currentStage,
         currentPipelineStage: currentStage,
         pipelineStage: currentStage,
@@ -1897,6 +2048,27 @@ export function CandidatePipelineProvider({ children }) {
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
           remarks: assessmentForm.assessmentRemarks.trim(),
+          assessmentFiles:
+            assessmentForm.assessmentFileName ||
+            assessmentForm.assessmentFileUrl
+              ? [
+                  {
+                    id: `assessment-file-${Date.now()}`,
+                    fileName: assessmentForm.assessmentFileName,
+                    fileUrl: assessmentForm.assessmentFileUrl,
+                    fileType: assessmentForm.assessmentFileType,
+                    fileSize: assessmentForm.assessmentFileSize,
+                  },
+                ]
+              : [],
+          assessmentFileName: assessmentForm.assessmentFileName || "",
+          assessmentFileUrl: assessmentForm.assessmentFileUrl || "",
+          assessmentFileType: assessmentForm.assessmentFileType || "",
+          assessmentFileSize: assessmentForm.assessmentFileSize || "",
+          assessmentAttachmentName: assessmentForm.assessmentFileName || "",
+          assessmentAttachmentUrl: assessmentForm.assessmentFileUrl || "",
+          assessmentAttachmentType: assessmentForm.assessmentFileType || "",
+          assessmentAttachmentSize: assessmentForm.assessmentFileSize || "",
         },
       ],
     });

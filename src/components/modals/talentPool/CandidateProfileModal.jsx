@@ -12,6 +12,7 @@ import {
   FileText,
   ChevronDown,
   Network,
+  Eye,
 } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
@@ -30,6 +31,7 @@ import {
   StatusTile,
   ViewableFileRow,
 } from "../../recruitment/talentPool/TalentPoolShared";
+import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 
 function getNormalizedHistoryDate(value) {
   if (!value) return "";
@@ -1041,6 +1043,11 @@ export default function CandidateProfileModal() {
                                     {item.remarks}
                                   </div>
                                 )}
+
+                                <GetAssessmentTimelineFiles
+                                  item={item}
+                                  candidate={selectedCandidate}
+                                />
 
                                 {offerDetail && (
                                   <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054]">

@@ -10,6 +10,8 @@ import {
   getNextStage,
   getPrfStatusClass,
   getRoleTitle,
+  getPipelineAccountLabel,
+  getPipelineAccountValue,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import CandidateAvatar from "./CandidateAvatar";
 import {
@@ -26,11 +28,13 @@ import { useCandidatePipeline } from "../../../services/context/CandidatePipelin
 
 const PipelineCandidateCard = ({
   candidate,
+  accountLabel = "Initial Account",
   onViewCandidate,
   onOpenMoveModal,
   onOpenAssessmentModal,
   onOpenScheduleModal,
   onCancelInterview,
+  onCompleteInterview,
 }) => {
   const { handleStartInterview } = useCandidatePipeline();
 
@@ -118,11 +122,11 @@ const PipelineCandidateCard = ({
 
           <div className="rounded-md bg-[#F8FAFC] px-2 py-2">
             <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
-              Account
+              {getPipelineAccountLabel(candidate)}
             </p>
 
             <p className="mt-1 line-clamp-1 text-[11px] font-bold text-[#344054]">
-              {getAccount(candidate.roleAccount) || "Not assigned yet"}
+              {getPipelineAccountValue(candidate)}
             </p>
           </div>
         </div>

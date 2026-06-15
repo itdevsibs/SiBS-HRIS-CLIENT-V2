@@ -13,6 +13,7 @@ import {
   getCurrentTimestamp,
   formatCurrency,
 } from "./candidatePipelineFormatters";
+import { FileSpreadsheet, FileText, ImageIcon } from "lucide-react";
 
 export function inputClass(extra = "") {
   return `h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:placeholder:text-sibs-tertiary-6 disabled:shadow-none disabled:focus:border-[#E6ECF2] disabled:focus:ring-0 ${extra}`;
@@ -1038,4 +1039,60 @@ export function formatNhoScheduleDate(date) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+export function formatFileSize(bytes = 0) {
+  if (!bytes) return "0 KB";
+
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const index = Math.floor(Math.log(bytes) / Math.log(1024));
+
+  return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 2)} ${
+    sizes[index]
+  }`;
+}
+
+export function getUploadFileIcon(fileName = "") {
+  const ext = String(fileName).split(".").pop()?.toLowerCase();
+
+  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
+    return ImageIcon;
+  }
+
+  if (["xls", "xlsx", "csv"].includes(ext)) {
+    return FileSpreadsheet;
+  }
+
+  return FileText;
+}
+
+export const FINAL_ACCOUNT_STAGES = ["Offered", "Accepted", "For NHO", "Hired"];
+
+export function isFinalAccountStage(candidate = {}) {
+  return FINAL_ACCOUNT_STAGES.includes(getCandidateStage(candidate));
+}
+
+export function getPipelineAccountLabel(candidate = {}) {
+  return isFinalAccountStage(candidate) ? "Final Account" : "Initial Account";
+}
+
+export function getPipelineAccountValue(candidate = {}) {
+  if (isFinalAccountStage(candidate)) {
+    return (
+      candidate.currentAppliedAccount ||
+      candidate.finalAccount ||
+      candidate.account ||
+      "Not assigned yet"
+    );
+  }
+
+  return (
+    candidate.leadAccount ||
+    candidate.initialAccount ||
+    candidate.accountFit ||
+    candidate.candidateSnapshot?.leadAccount ||
+    candidate.candidateSnapshot?.initialAccount ||
+    candidate.candidateSnapshot?.accountFit ||
+    "Not assigned yet"
+  );
 }

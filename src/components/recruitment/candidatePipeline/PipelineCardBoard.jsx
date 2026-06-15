@@ -63,6 +63,14 @@ function getStageDescription(stage) {
   }
 }
 
+function getAccountLabelByStage(stage = "") {
+  const finalAccountStages = ["Offered", "Accepted", "For NHO", "Hired"];
+
+  return finalAccountStages.includes(stage)
+    ? "Final Account"
+    : "Initial Account";
+}
+
 export default function PipelineCardsBoard({
   candidates = [],
   stageCounts = {},
@@ -239,6 +247,7 @@ export default function PipelineCardsBoard({
                         >
                           <PipelineCandidateCard
                             candidate={candidate}
+                            accountLabel={getAccountLabelByStage(stage)}
                             onViewCandidate={onViewCandidate}
                             onOpenMoveModal={onOpenMoveModal}
                             onOpenAssessmentModal={onOpenAssessmentModal}
