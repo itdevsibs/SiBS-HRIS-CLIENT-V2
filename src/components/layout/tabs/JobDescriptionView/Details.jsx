@@ -14,8 +14,13 @@ const Details = ({
   onEditedChange,
   editedChangeDetails = [],
   setEditedChangeDetails,
+  approvalPage = false,
 }) => {
   const { user } = useUser();
+
+  useEffect(() => {
+    console.log("item from details:", item);
+  }, [item]);
 
   const canManageJdDetails = useMemo(() => {
     return [6, 7].includes(Number(user?.adminAccess));
@@ -108,7 +113,7 @@ const Details = ({
   }
 
   function openSectionComment(sectionKey, sectionTitle) {
-    if (disableCommentBecauseEdited) return;
+    if (approvalPage || disableCommentBecauseEdited) return;
 
     const selectedText = getSelectedText();
 
@@ -162,7 +167,7 @@ const Details = ({
   }
 
   function startEditSection(sectionKey) {
-    if (disableEditBecauseCommented) return;
+    if (approvalPage || disableEditBecauseCommented) return;
 
     setEditingSection(sectionKey);
     setEditingDraft(editableContent[sectionKey] || "");
@@ -304,6 +309,10 @@ const Details = ({
   }
 
   function getEditDisabledTitle(defaultTitle) {
+    if (approvalPage) {
+      return "Editing is disabled while viewing this job description from the approval page.";
+    }
+
     if (!canManageJdDetails) {
       return "Only admin access roles 6 and 7 can edit this JD.";
     }
@@ -316,6 +325,10 @@ const Details = ({
   }
 
   function getCommentDisabledTitle(defaultTitle) {
+    if (approvalPage) {
+      return "Commenting is disabled while viewing this job description from the approval page.";
+    }
+
     if (!canManageJdDetails) {
       return "Only admin access roles 6 and 7 can add revision comments.";
     }
@@ -352,7 +365,7 @@ const Details = ({
             </p>
           </div>
 
-          {!disableEditBecauseCommented && (
+          {!disableEditBecauseCommented && approvalPage && (
             <div className="flex shrink-0 items-center gap-2">
               {!editingRecordInfo ? (
                 <>
@@ -573,6 +586,7 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
         <DetailArticleSection
@@ -591,6 +605,7 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
         <DetailArticleSection
@@ -609,6 +624,7 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
         {String(editableContent.remarks || "").trim() && (
@@ -628,6 +644,7 @@ const Details = ({
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
             canManageJdDetails={canManageJdDetails}
+            approvalPage={approvalPage}
           />
         )}
 
@@ -638,7 +655,7 @@ const Details = ({
             onAddComment={openSectionComment}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
-            canManageActions={canManageJdDetails}
+            canManageActions={approvalPage && canManageJdDetails}
             onEditedChange={onEditedChange}
           />
 
@@ -675,19 +692,21 @@ const Details = ({
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenRevision?.(item)}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700"
-            >
-              <PencilLine size={16} />
-              Update Revision and Tag as Existing
-            </button>
+            {approvalPage && (
+              <button
+                type="button"
+                onClick={() => onOpenRevision?.(item)}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700"
+              >
+                <PencilLine size={16} />
+                Update Revision and Tag as Existing
+              </button>
+            )}
           </div>
         </section>
       )}
 
-      {commentModal.open && (
+      {commentModal.open && approvalPage && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
@@ -905,8 +924,13 @@ function DetailArticleSection({
   disableEdit = false,
   disableComment = false,
   canManageJdDetails = false,
+  approvalPage = false,
 }) {
   function getEditTitle() {
+    if (approvalPage) {
+      return "Editing is disabled while viewing this job description from the approval page.";
+    }
+
     if (!canManageJdDetails) {
       return "Only admin access roles 6 and 7 can edit this JD.";
     }
@@ -919,6 +943,10 @@ function DetailArticleSection({
   }
 
   function getCommentTitle() {
+    if (approvalPage) {
+      return "Commenting is disabled while viewing this job description from the approval page.";
+    }
+
     if (!canManageJdDetails) {
       return "Only admin access roles 6 and 7 can add revision comments.";
     }
@@ -943,7 +971,7 @@ function DetailArticleSection({
           )}
         </div>
 
-        {!isEditing && !disableEdit && (
+        {approvalPage && !isEditing && !disableEdit && (
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"

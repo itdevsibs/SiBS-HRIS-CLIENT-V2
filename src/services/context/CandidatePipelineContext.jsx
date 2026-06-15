@@ -34,7 +34,7 @@ import {
 
 import {
   normalizeCandidate,
-  isPrfReviewed,
+  getCandidateStage,
   getRoleTitle,
   getAccount,
   getNextStage,
@@ -56,9 +56,388 @@ import {
   formatNhoScheduleDate,
 } from "../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
+import {
+  INTERNAL_CANDIDATES_KEY,
+  PUBLIC_SUBMISSIONS_KEY,
+  CANDIDATE_APPLICATIONS_KEY as TALENT_POOL_APPLICATIONS_KEY,
+  initialCandidates as talentPoolInitialCandidates,
+} from "../../lib/utils/talentPool/talentPoolConstants";
+
+import { normalizeCandidateRecord } from "../../lib/utils/talentPool/talentPoolHelpers";
+
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 
 const CandidatePipelineContext = createContext(null);
+
+function normalizePipelineCandidateForBoard(candidate = {}) {
+  const currentStage = getCandidateStage(candidate);
+
+  return normalizeCandidate({
+    ...candidate,
+
+    currentStage,
+    currentPipelineStage: currentStage,
+    stage: currentStage,
+    pipelineStage: currentStage,
+
+    applicationStatus: candidate.applicationStatus || "Active",
+    pipelineStatus: candidate.pipelineStatus || "Active",
+
+    prfStatus: candidate.prfStatus || "Review",
+    prfReviewed: Boolean(candidate.prfReviewed),
+    prfReviewedAt: candidate.prfReviewedAt || null,
+
+    assessmentStatus: candidate.assessmentStatus || "Not Take",
+    assessmentResult: candidate.assessmentResult || "",
+    interviewStatus: candidate.interviewStatus || "For Assessment",
+
+    roleTitle: candidate.roleTitle || "Not assigned yet",
+    account: candidate.account || "Not assigned yet",
+    roleAccount:
+      candidate.roleAccount ||
+      `${candidate.roleTitle || "Not assigned yet"} - ${
+        candidate.account || "Not assigned yet"
+      }`,
+
+    candidateSnapshot: {
+      ...(candidate.candidateSnapshot || {}),
+      candidateId:
+        candidate.candidateId || candidate.candidateSnapshot?.candidateId,
+      name:
+        candidate.name ||
+        candidate.candidateName ||
+        candidate.candidateSnapshot?.name ||
+        "Unnamed Candidate",
+      email: candidate.email || candidate.candidateSnapshot?.email || "",
+      currentStage,
+      currentPipelineStage: currentStage,
+      pipelineStage: currentStage,
+      pipelineStatus: candidate.pipelineStatus || "Active",
+      movedToPipeline: true,
+    },
+  });
+}
+
+function readArrayStorage(key, fallback = []) {
+  try {
+    const rawValue = localStorage.getItem(key);
+    if (!rawValue) return fallback;
+
+    const parsedValue = JSON.parse(rawValue);
+    return Array.isArray(parsedValue) ? parsedValue : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function isTemporaryPipelineId(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .startsWith("PIPE-");
+}
+
+function isBlankProfileValue(value) {
+  if (value === null || value === undefined) return true;
+
+  if (Array.isArray(value)) return value.length === 0;
+
+  const text = String(value).trim().toLowerCase();
+
+  return (
+    text === "" ||
+    text === "—" ||
+    text === "--" ||
+    text === "n/a" ||
+    text === "na" ||
+    text === "null" ||
+    text === "undefined" ||
+    text === "not assigned yet"
+  );
+}
+
+function stripNestedCandidateSnapshot(candidate = {}) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    return {};
+  }
+
+  const { candidateSnapshot, ...rest } = candidate;
+  return rest;
+}
+
+function getCandidateIdentity(candidate = {}) {
+  return {
+    id: String(candidate.id || "").trim(),
+    candidateId: String(candidate.candidateId || "").trim(),
+    snapshotCandidateId: String(
+      candidate.candidateSnapshot?.candidateId || "",
+    ).trim(),
+    candidateApplicationId: String(
+      candidate.candidateApplicationId || candidate.applicationId || "",
+    ).trim(),
+    email: String(candidate.email || candidate.candidateEmail || "")
+      .trim()
+      .toLowerCase(),
+    snapshotEmail: String(candidate.candidateSnapshot?.email || "")
+      .trim()
+      .toLowerCase(),
+    name: String(candidate.name || candidate.candidateName || "")
+      .trim()
+      .toLowerCase(),
+    snapshotName: String(candidate.candidateSnapshot?.name || "")
+      .trim()
+      .toLowerCase(),
+  };
+}
+
+function isSamePipelineCandidate(candidateA = {}, candidateB = {}) {
+  const left = getCandidateIdentity(candidateA);
+  const right = getCandidateIdentity(candidateB);
+
+  return Boolean(
+    (left.candidateId &&
+      right.candidateId &&
+      !isTemporaryPipelineId(left.candidateId) &&
+      !isTemporaryPipelineId(right.candidateId) &&
+      left.candidateId === right.candidateId) ||
+    (left.candidateId &&
+      right.snapshotCandidateId &&
+      !isTemporaryPipelineId(left.candidateId) &&
+      left.candidateId === right.snapshotCandidateId) ||
+    (left.snapshotCandidateId &&
+      right.candidateId &&
+      !isTemporaryPipelineId(right.candidateId) &&
+      left.snapshotCandidateId === right.candidateId) ||
+    (left.candidateApplicationId &&
+      right.candidateApplicationId &&
+      left.candidateApplicationId === right.candidateApplicationId) ||
+    (left.email && right.email && left.email === right.email) ||
+    (left.email && right.snapshotEmail && left.email === right.snapshotEmail) ||
+    (left.snapshotEmail && right.email && left.snapshotEmail === right.email) ||
+    (left.name && right.name && left.name === right.name) ||
+    (left.name && right.snapshotName && left.name === right.snapshotName) ||
+    (left.snapshotName && right.name && left.snapshotName === right.name),
+  );
+}
+
+function findMatchingCandidate(list = [], target = {}) {
+  return list.find((candidate) => isSamePipelineCandidate(candidate, target));
+}
+
+function mergeProfileSafe(existingCandidate = {}, incomingCandidate = {}) {
+  const existingClean = stripNestedCandidateSnapshot(existingCandidate);
+  const incomingClean = stripNestedCandidateSnapshot(incomingCandidate);
+
+  const mergedCandidate = {
+    ...existingClean,
+    ...incomingClean,
+  };
+
+  const alwaysUseIncomingFields = new Set([
+    "status",
+    "pipelineStatus",
+    "applicationStatus",
+    "currentStage",
+    "currentPipelineStage",
+    "pipelineStage",
+    "stage",
+    "previousStage",
+    "currentApplicationStatus",
+    "currentApplicationId",
+    "candidateApplicationId",
+    "applicationId",
+    "currentAppliedRole",
+    "currentAppliedAccount",
+    "currentTaOwner",
+    "movedToPipeline",
+    "lastActivity",
+    "updatedAt",
+    "dateMoved",
+    "reasonForMovement",
+    "prfStatus",
+    "prfReviewed",
+    "prfReviewedAt",
+    "assessmentStatus",
+    "assessmentResult",
+    "assessmentEmailSent",
+    "assessmentEmailSentAt",
+    "assessmentTakenAt",
+    "assessmentTaggedAt",
+    "assessmentRemarks",
+    "interviewStatus",
+    "interviewDate",
+    "interviewType",
+    "onlineInterviewLink",
+    "offerDetails",
+    "offerApprovals",
+    "offerApprovalStatus",
+    "offerDecision",
+    "offerEmailSent",
+    "offerEmailSentAt",
+    "candidateResponse",
+    "dropOffCategory",
+    "dropOffReason",
+    "dropOffRemarks",
+    "timeline",
+  ]);
+
+  Object.keys(mergedCandidate).forEach((key) => {
+    if (alwaysUseIncomingFields.has(key)) return;
+
+    const existingValue = existingClean[key];
+    const incomingValue = incomingClean[key];
+
+    if (
+      isBlankProfileValue(incomingValue) &&
+      !isBlankProfileValue(existingValue)
+    ) {
+      mergedCandidate[key] = existingValue;
+    }
+  });
+
+  mergedCandidate.candidateId =
+    existingClean.candidateId &&
+    !isTemporaryPipelineId(existingClean.candidateId)
+      ? existingClean.candidateId
+      : incomingClean.candidateId &&
+          !isTemporaryPipelineId(incomingClean.candidateId)
+        ? incomingClean.candidateId
+        : existingCandidate.candidateSnapshot?.candidateId ||
+          incomingCandidate.candidateSnapshot?.candidateId ||
+          existingClean.candidateId ||
+          incomingClean.candidateId;
+
+  mergedCandidate.timeline = dedupePipelineTimeline([
+    ...(Array.isArray(existingClean.timeline) ? existingClean.timeline : []),
+    ...(Array.isArray(incomingClean.timeline) ? incomingClean.timeline : []),
+  ]);
+
+  mergedCandidate.applicationHistory = dedupePipelineTimeline([
+    ...(Array.isArray(existingClean.applicationHistory)
+      ? existingClean.applicationHistory
+      : []),
+    ...(Array.isArray(incomingClean.applicationHistory)
+      ? incomingClean.applicationHistory
+      : []),
+  ]);
+
+  mergedCandidate.workExperiences =
+    Array.isArray(incomingClean.workExperiences) &&
+    incomingClean.workExperiences.length > 0
+      ? incomingClean.workExperiences
+      : existingClean.workExperiences;
+
+  mergedCandidate.references =
+    Array.isArray(incomingClean.references) &&
+    incomingClean.references.length > 0
+      ? incomingClean.references
+      : existingClean.references;
+
+  mergedCandidate.hearAboutUs =
+    Array.isArray(incomingClean.hearAboutUs) &&
+    incomingClean.hearAboutUs.length > 0
+      ? incomingClean.hearAboutUs
+      : existingClean.hearAboutUs;
+
+  mergedCandidate.affiliations =
+    Array.isArray(incomingClean.affiliations) &&
+    incomingClean.affiliations.length > 0
+      ? incomingClean.affiliations
+      : existingClean.affiliations;
+
+  return mergedCandidate;
+}
+
+function mergeCandidateSnapshotSafe(...candidates) {
+  return candidates.reduce((mergedSnapshot, candidate) => {
+    const cleanCandidate = stripNestedCandidateSnapshot(candidate || {});
+
+    const nextSnapshot = {
+      ...mergedSnapshot,
+      ...cleanCandidate,
+    };
+
+    Object.keys(nextSnapshot).forEach((key) => {
+      const existingValue = mergedSnapshot[key];
+      const incomingValue = cleanCandidate[key];
+
+      if (
+        isBlankProfileValue(incomingValue) &&
+        !isBlankProfileValue(existingValue)
+      ) {
+        nextSnapshot[key] = existingValue;
+      }
+    });
+
+    return nextSnapshot;
+  }, {});
+}
+
+function normalizeHistoryDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).trim();
+  }
+
+  return date.toISOString().slice(0, 16);
+}
+
+function dedupePipelineTimeline(timeline = []) {
+  const map = new Map();
+
+  timeline.filter(Boolean).forEach((item) => {
+    const key = [
+      item.stage || "",
+      item.source || "",
+      item.reason || "",
+      item.description || "",
+      item.remarks || "",
+      item.savedFormLink || "",
+      normalizeHistoryDate(
+        item.date || item.createdAt || item.updatedAt || item.timestamp,
+      ),
+    ]
+      .join("|")
+      .toLowerCase()
+      .trim();
+
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, item);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function buildUpdatedPipelineList(list = [], updatedCandidate = {}) {
+  const normalizedCandidate =
+    normalizePipelineCandidateForBoard(updatedCandidate);
+
+  const normalizedList = Array.isArray(list)
+    ? list.map(normalizePipelineCandidateForBoard)
+    : [];
+
+  const existingIndex = normalizedList.findIndex((candidate) =>
+    isSamePipelineCandidate(candidate, normalizedCandidate),
+  );
+
+  if (existingIndex === -1) {
+    return [normalizedCandidate, ...normalizedList];
+  }
+
+  return normalizedList.map((candidate, index) => {
+    if (index !== existingIndex) return candidate;
+
+    return normalizePipelineCandidateForBoard(
+      mergeProfileSafe(candidate, normalizedCandidate),
+    );
+  });
+}
 
 export function CandidatePipelineProvider({ children }) {
   const { user } = useUser();
@@ -135,11 +514,46 @@ export function CandidatePipelineProvider({ children }) {
         ? storedCandidates
         : defaultPipelineCandidates;
 
-    const normalizedCandidates = baseCandidates.map(normalizeCandidate);
+    const normalizedCandidates = baseCandidates.map(
+      normalizePipelineCandidateForBoard,
+    );
 
     setCandidateList(normalizedCandidates);
     savePipelineCandidateData(normalizedCandidates);
     setHasLoadedStorage(true);
+  }, []);
+
+  useEffect(() => {
+    function syncPipelineCandidatesFromStorage() {
+      const storedCandidates = loadPipelineCandidateData();
+
+      const baseCandidates =
+        storedCandidates.length > 0
+          ? storedCandidates
+          : defaultPipelineCandidates;
+
+      const normalizedCandidates = baseCandidates.map(
+        normalizePipelineCandidateForBoard,
+      );
+
+      setCandidateList(normalizedCandidates);
+    }
+
+    window.addEventListener(
+      "ta-pipeline-candidates-updated",
+      syncPipelineCandidatesFromStorage,
+    );
+    window.addEventListener("focus", syncPipelineCandidatesFromStorage);
+    window.addEventListener("storage", syncPipelineCandidatesFromStorage);
+
+    return () => {
+      window.removeEventListener(
+        "ta-pipeline-candidates-updated",
+        syncPipelineCandidatesFromStorage,
+      );
+      window.removeEventListener("focus", syncPipelineCandidatesFromStorage);
+      window.removeEventListener("storage", syncPipelineCandidatesFromStorage);
+    };
   }, []);
 
   useEffect(() => {
@@ -156,6 +570,8 @@ export function CandidatePipelineProvider({ children }) {
     let changed = false;
 
     const nextCandidates = candidateList.map((candidate) => {
+      const currentStage = getCandidateStage(candidate);
+
       const event = syncEvents.find(
         (item) =>
           String(item.candidateApplicationId || "") ===
@@ -184,7 +600,7 @@ export function CandidatePipelineProvider({ children }) {
           event.currentStage ||
           event.stage ||
           event.pipelineStage ||
-          (approvalStatus === "Approved" ? "Accepted" : candidate.currentStage);
+          (approvalStatus === "Approved" ? "Accepted" : currentStage);
 
         const nextCandidateResponse =
           event.candidateResponse ||
@@ -193,15 +609,14 @@ export function CandidatePipelineProvider({ children }) {
             ? "Accepted"
             : candidate.candidateResponse);
 
-        return normalizeCandidate({
+        return normalizePipelineCandidateForBoard({
           ...candidate,
 
           previousStage:
-            nextStage !== candidate.currentStage
-              ? candidate.currentStage
-              : candidate.previousStage,
+            nextStage !== currentStage ? currentStage : candidate.previousStage,
 
           currentStage: nextStage,
+          currentPipelineStage: nextStage,
           stage: nextStage,
           pipelineStage: nextStage,
 
@@ -211,7 +626,7 @@ export function CandidatePipelineProvider({ children }) {
           candidateResponse: nextCandidateResponse,
 
           dateMoved:
-            nextStage !== candidate.currentStage
+            nextStage !== currentStage
               ? event.dateMoved || getCurrentDate()
               : candidate.dateMoved,
 
@@ -239,7 +654,7 @@ export function CandidatePipelineProvider({ children }) {
       }
 
       if (event.type === "offer_contract_sent") {
-        return normalizeCandidate({
+        return normalizePipelineCandidateForBoard({
           ...candidate,
           offerEmailSent: true,
           offerEmailSentAt: event.timestamp || getCurrentTimestamp(),
@@ -249,7 +664,7 @@ export function CandidatePipelineProvider({ children }) {
           timeline: [
             ...(candidate.timeline || []),
             {
-              stage: candidate.currentStage || "Offered",
+              stage: currentStage || "Offered",
               owner: event.owner || currentUserName,
               source: "Offer Contract",
               timestamp: event.timestamp || getCurrentTimestamp(),
@@ -264,7 +679,7 @@ export function CandidatePipelineProvider({ children }) {
       }
 
       if (event.status === "Negotiate" || event.status === "Negotiation") {
-        return normalizeCandidate({
+        return normalizePipelineCandidateForBoard({
           ...candidate,
           offerDecision: "Negotiate",
           offerDecisionAt: event.timestamp || getCurrentTimestamp(),
@@ -273,7 +688,7 @@ export function CandidatePipelineProvider({ children }) {
           timeline: [
             ...(candidate.timeline || []),
             {
-              stage: candidate.currentStage || "Offered",
+              stage: currentStage || "Offered",
               owner: event.owner || currentUserName,
               source: "Offer Contract",
               timestamp: event.timestamp || getCurrentTimestamp(),
@@ -287,15 +702,12 @@ export function CandidatePipelineProvider({ children }) {
         });
       }
 
-      if (
-        event.status === "Accepted" ||
-        event.toStage === "Accepted" ||
-        event.toStage === "Accepted"
-      ) {
-        return normalizeCandidate({
+      if (event.status === "Accepted" || event.toStage === "Accepted") {
+        return normalizePipelineCandidateForBoard({
           ...candidate,
-          previousStage: candidate.currentStage,
+          previousStage: currentStage,
           currentStage: "Accepted",
+          currentPipelineStage: "Accepted",
           stage: "Accepted",
           pipelineStage: "Accepted",
           offerApprovalStatus: "Approved",
@@ -327,10 +739,11 @@ export function CandidatePipelineProvider({ children }) {
         event.toStage === "Drop-off" ||
         event.toStage === "Drop-offs"
       ) {
-        return normalizeCandidate({
+        return normalizePipelineCandidateForBoard({
           ...candidate,
-          previousStage: candidate.currentStage,
+          previousStage: currentStage,
           currentStage: "Drop-off",
+          currentPipelineStage: "Drop-off",
           stage: "Drop-off",
           pipelineStage: "Drop-off",
           offerDecision: "Rejected",
@@ -374,44 +787,295 @@ export function CandidatePipelineProvider({ children }) {
     }
   }, [candidateList, currentUserName, hasLoadedStorage]);
 
-  function syncSelectedCandidate(updatedCandidate) {
-    setSelectedCandidate((prev) =>
-      prev?.id === updatedCandidate.id ? updatedCandidate : prev,
-    );
+  function getCandidateIdentity(candidate = {}) {
+    return {
+      id: String(candidate.id || "").trim(),
+      candidateId: String(candidate.candidateId || "").trim(),
+      candidateApplicationId: String(
+        candidate.candidateApplicationId || candidate.applicationId || "",
+      ).trim(),
+      email: String(candidate.email || candidate.candidateEmail || "")
+        .trim()
+        .toLowerCase(),
+      name: String(candidate.name || candidate.candidateName || "")
+        .trim()
+        .toLowerCase(),
+    };
+  }
 
-    setMoveCandidate((prev) =>
-      prev?.id === updatedCandidate.id ? updatedCandidate : prev,
-    );
+  function isSamePipelineCandidate(a = {}, b = {}) {
+    const left = getCandidateIdentity(a);
+    const right = getCandidateIdentity(b);
 
-    setScheduleCandidate((prev) =>
-      prev?.id === updatedCandidate.id ? updatedCandidate : prev,
-    );
-
-    setAssessmentCandidate((prev) =>
-      prev?.id === updatedCandidate.id ? updatedCandidate : prev,
-    );
-
-    setOfferCandidate((prev) =>
-      prev?.id === updatedCandidate.id ? updatedCandidate : prev,
+    return Boolean(
+      (left.id && right.id && left.id === right.id) ||
+      (left.candidateId &&
+        right.candidateId &&
+        left.candidateId === right.candidateId) ||
+      (left.candidateApplicationId &&
+        right.candidateApplicationId &&
+        left.candidateApplicationId === right.candidateApplicationId) ||
+      (left.email && right.email && left.email === right.email) ||
+      (left.name && right.name && left.name === right.name),
     );
   }
 
-  function updateCandidateRecord(updatedCandidate) {
-    const normalizedCandidate = normalizeCandidate(updatedCandidate);
+  function syncSelectedCandidate(updatedCandidate) {
+    setSelectedCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
 
-    setCandidateList((prev) => {
-      const next = prev.map((candidate) =>
-        candidate.id === normalizedCandidate.id
-          ? normalizedCandidate
-          : candidate,
-      );
+    setMoveCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
 
-      savePipelineCandidateData(next);
-      return next;
+    setScheduleCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
+
+    setAssessmentCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
+
+    setOfferCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
+
+    setDropOffCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, updatedCandidate)
+        ? updatedCandidate
+        : prev,
+    );
+  }
+
+  function buildUpdatedPipelineList(list = [], updatedCandidate = {}) {
+    const normalizedCandidate =
+      normalizePipelineCandidateForBoard(updatedCandidate);
+
+    const normalizedList = Array.isArray(list)
+      ? list.map(normalizePipelineCandidateForBoard)
+      : [];
+
+    const existingIndex = normalizedList.findIndex((candidate) =>
+      isSamePipelineCandidate(candidate, normalizedCandidate),
+    );
+
+    if (existingIndex === -1) {
+      return [normalizedCandidate, ...normalizedList];
+    }
+
+    return normalizedList.map((candidate, index) => {
+      if (index !== existingIndex) return candidate;
+
+      return normalizePipelineCandidateForBoard({
+        ...candidate,
+        ...normalizedCandidate,
+        id: candidate.id || normalizedCandidate.id,
+        candidateApplicationId:
+          candidate.candidateApplicationId ||
+          normalizedCandidate.candidateApplicationId,
+        applicationId:
+          candidate.applicationId || normalizedCandidate.applicationId,
+        timeline: Array.isArray(normalizedCandidate.timeline)
+          ? normalizedCandidate.timeline
+          : candidate.timeline || [],
+      });
+    });
+  }
+
+  function commitCandidateUpdate(updatedCandidate) {
+    const storedPipelineCandidates = loadPipelineCandidateData();
+    const storedInternalCandidates = readArrayStorage(
+      INTERNAL_CANDIDATES_KEY,
+      [],
+    );
+    const storedPublicSubmissions = readArrayStorage(
+      PUBLIC_SUBMISSIONS_KEY,
+      [],
+    );
+
+    const existingPipelineCandidate =
+      findMatchingCandidate(storedPipelineCandidates, updatedCandidate) ||
+      findMatchingCandidate(candidateList, updatedCandidate) ||
+      {};
+
+    const masterTalentCandidate =
+      findMatchingCandidate(storedInternalCandidates, updatedCandidate) ||
+      findMatchingCandidate(storedPublicSubmissions, updatedCandidate) ||
+      findMatchingCandidate(
+        storedInternalCandidates,
+        existingPipelineCandidate.candidateSnapshot || {},
+      ) ||
+      findMatchingCandidate(
+        storedPublicSubmissions,
+        existingPipelineCandidate.candidateSnapshot || {},
+      ) ||
+      {};
+
+    const mergedCandidate = mergeProfileSafe(
+      mergeProfileSafe(masterTalentCandidate, existingPipelineCandidate),
+      updatedCandidate,
+    );
+
+    const currentStage = getCandidateStage(mergedCandidate);
+
+    const normalizedCandidate = normalizePipelineCandidateForBoard({
+      ...mergedCandidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      pipelineStage: currentStage,
+      stage: currentStage,
     });
 
-    syncSelectedCandidate(normalizedCandidate);
+    normalizedCandidate.candidateSnapshot = mergeCandidateSnapshotSafe(
+      masterTalentCandidate,
+      existingPipelineCandidate.candidateSnapshot || {},
+      existingPipelineCandidate,
+      updatedCandidate.candidateSnapshot || {},
+      updatedCandidate,
+      normalizedCandidate,
+      {
+        candidateId:
+          normalizedCandidate.candidateId ||
+          masterTalentCandidate.candidateId ||
+          existingPipelineCandidate.candidateId,
+        name:
+          normalizedCandidate.name ||
+          masterTalentCandidate.name ||
+          existingPipelineCandidate.name,
+        email:
+          normalizedCandidate.email ||
+          masterTalentCandidate.email ||
+          existingPipelineCandidate.email,
+        currentStage,
+        currentPipelineStage: currentStage,
+        pipelineStage: currentStage,
+        stage: currentStage,
+        pipelineStatus: normalizedCandidate.pipelineStatus || "Active",
+        applicationStatus: normalizedCandidate.applicationStatus || "Active",
+        movedToPipeline: true,
+      },
+    );
+
+    normalizedCandidate.timeline = dedupePipelineTimeline(
+      normalizedCandidate.timeline || [],
+    );
+
+    normalizedCandidate.applicationHistory = dedupePipelineTimeline(
+      normalizedCandidate.applicationHistory || [],
+    );
+
+    const sourceList =
+      storedPipelineCandidates.length > 0
+        ? storedPipelineCandidates
+        : candidateList;
+
+    const nextCandidates = buildUpdatedPipelineList(
+      sourceList,
+      normalizedCandidate,
+    );
+
+    savePipelineCandidateData(nextCandidates);
+    setCandidateList(nextCandidates);
+
+    setSelectedCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
+    setMoveCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
+    setScheduleCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
+    setAssessmentCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
+    setOfferCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
+    setDropOffCandidate((prev) =>
+      prev && isSamePipelineCandidate(prev, normalizedCandidate)
+        ? normalizedCandidate
+        : prev,
+    );
+
     syncTalentPoolFromPipelineApplication(normalizedCandidate);
+
+    window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
+    window.dispatchEvent(new Event("ta-public-submissions-updated"));
+
+    return normalizedCandidate;
+  }
+
+  function updateCandidateRecord(updatedCandidate) {
+    return commitCandidateUpdate(updatedCandidate);
+  }
+
+  function closeAllPipelineModals() {
+    setSelectedCandidate(null);
+
+    setMoveCandidate(null);
+    setMoveForm({
+      reason: "",
+      remarks: "",
+    });
+
+    setScheduleCandidate(null);
+    setScheduleForm({
+      interviewDate: "",
+      interviewType: "",
+      onlineInterviewLink: "",
+      remarks: "",
+    });
+
+    setAssessmentCandidate(null);
+    setAssessmentForm({
+      assessmentStatus: "Not Take",
+      assessmentResult: "",
+      assessmentRemarks: "",
+    });
+
+    setDropOffCandidate(null);
+    setDropOffForm({
+      category: "",
+      reason: "",
+      remarks: "",
+    });
+
+    setOfferCandidate(null);
+    setOfferForm({
+      hiringRequirementId: "",
+      roleTitle: "",
+      account: "",
+      basicPay: "",
+      deminimisDailyRate: "",
+      remarks: "",
+    });
   }
 
   async function handleUpdatePrfStatus(candidate, nextPrfStatus) {
@@ -423,64 +1087,92 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    const movementReason = `PRF status set to ${nextPrfStatus}.`;
+    const currentStage = getCandidateStage(candidate);
 
-    const updatedCandidate = {
+    const movementReason =
+      nextPrfStatus === "Matched"
+        ? "PRF status changed to Matched. Candidate is ready to move to Online Assessment."
+        : `PRF status set to ${nextPrfStatus}.`;
+
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
+
       prfStatus: nextPrfStatus,
       prfReviewed: true,
       prfReviewedAt: getCurrentTimestamp(),
+
+      previousStage: currentStage,
       currentStage: "Initial Screening",
+      currentPipelineStage: "Initial Screening",
+      stage: "Initial Screening",
+      pipelineStage: "Initial Screening",
+
       interviewDate: null,
       interviewType: "-",
       interviewStatus: "For Assessment",
+
       dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
+
       timeline: [
-        ...(candidate.timeline || []),
+        ...(Array.isArray(candidate.timeline) ? candidate.timeline : []),
         {
           stage: "Initial Screening",
           owner: currentUserName,
           source: "PRF Review",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
-          remarks: `Match Type: ${nextPrfStatus}`,
+          remarks: `PRF Status: ${nextPrfStatus}`,
         },
       ],
-    };
+    });
 
-    updateCandidateRecord(updatedCandidate);
-    setSelectedCandidate(updatedCandidate);
+    const committedCandidate = commitCandidateUpdate(updatedCandidate);
+
+    setSelectedCandidate(committedCandidate);
     setActiveStage("Initial Screening");
   }
 
   async function handleOpenScheduleInterview(candidate) {
-    const isUpdatingSchedule = candidate.currentStage === "Interview Scheduled";
+    const currentStage = getCandidateStage(candidate);
+    const normalizedCandidate = normalizePipelineCandidateForBoard({
+      ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
+    });
 
-    if (!isUpdatingSchedule && !canScheduleInterview(candidate)) {
+    const isUpdatingSchedule = currentStage === "Interview Scheduled";
+
+    if (!isUpdatingSchedule && !canScheduleInterview(normalizedCandidate)) {
       alert(
         "Candidate must be Assessment Taken and Assessment Fit before interview scheduling.",
       );
       return;
     }
 
-    if (isUpdatingSchedule && !canUpdateInterviewSchedule(candidate)) {
+    if (
+      isUpdatingSchedule &&
+      !canUpdateInterviewSchedule(normalizedCandidate)
+    ) {
       alert("This interview schedule cannot be updated.");
       return;
     }
 
-    setScheduleCandidate(candidate);
+    setScheduleCandidate(normalizedCandidate);
     setScheduleForm({
       interviewDate: isUpdatingSchedule
-        ? toDateInputValue(candidate.interviewDate)
+        ? toDateInputValue(normalizedCandidate.interviewDate)
         : "",
       interviewType:
-        isUpdatingSchedule && candidate.interviewType !== "-"
-          ? candidate.interviewType
+        isUpdatingSchedule && normalizedCandidate.interviewType !== "-"
+          ? normalizedCandidate.interviewType
           : "",
       onlineInterviewLink:
-        isUpdatingSchedule && candidate.interviewType === "Online"
-          ? candidate.onlineInterviewLink || ""
+        isUpdatingSchedule && normalizedCandidate.interviewType === "Online"
+          ? normalizedCandidate.onlineInterviewLink || ""
           : "",
       remarks: "",
     });
@@ -501,8 +1193,8 @@ export function CandidatePipelineProvider({ children }) {
 
     if (!scheduleCandidate) return;
 
-    const isUpdatingSchedule =
-      scheduleCandidate.currentStage === "Interview Scheduled";
+    const currentStage = getCandidateStage(scheduleCandidate);
+    const isUpdatingSchedule = currentStage === "Interview Scheduled";
 
     if (!isUpdatingSchedule && !canScheduleInterview(scheduleCandidate)) {
       alert(
@@ -547,8 +1239,12 @@ export function CandidatePipelineProvider({ children }) {
         scheduleForm.interviewDate,
       )} (${scheduleForm.interviewType}).`;
 
-      const updatedCandidate = {
+      const updatedCandidate = normalizePipelineCandidateForBoard({
         ...scheduleCandidate,
+        currentStage,
+        currentPipelineStage: currentStage,
+        stage: currentStage,
+        pipelineStage: currentStage,
         interviewDate: scheduleForm.interviewDate,
         interviewType: scheduleForm.interviewType,
         onlineInterviewLink:
@@ -559,6 +1255,7 @@ export function CandidatePipelineProvider({ children }) {
           scheduleCandidate.interviewStatus === "Completed"
             ? "Completed"
             : "Rescheduled",
+        updatedAt: getCurrentDate(),
         reasonForMovement: movementReason,
         timeline: [
           ...(scheduleCandidate.timeline || []),
@@ -571,23 +1268,27 @@ export function CandidatePipelineProvider({ children }) {
             remarks: scheduleForm.remarks.trim(),
           },
         ],
-      };
+      });
 
       updateCandidateRecord(updatedCandidate);
       setSelectedCandidate(updatedCandidate);
       setActiveStage("Interview Scheduled");
-      handleCloseScheduleInterview();
+      closeAllPipelineModals();
       return;
     }
 
     const movementReason =
       "Candidate passed online assessment. Interview schedule has been set and candidate moved to Interview Scheduled.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...scheduleCandidate,
       previousStage: "Online Assessment",
       currentStage: "Interview Scheduled",
+      currentPipelineStage: "Interview Scheduled",
+      stage: "Interview Scheduled",
+      pipelineStage: "Interview Scheduled",
       dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
       interviewDate: scheduleForm.interviewDate,
       interviewType: scheduleForm.interviewType,
       onlineInterviewLink:
@@ -611,16 +1312,18 @@ export function CandidatePipelineProvider({ children }) {
             )}, Type: ${scheduleForm.interviewType}`,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
     setActiveStage("Interview Scheduled");
-    handleCloseScheduleInterview();
+    closeAllPipelineModals();
   }
 
   async function handleCancelInterview(candidate) {
-    if (candidate.currentStage !== "Interview Scheduled") {
+    const currentStage = getCandidateStage(candidate);
+
+    if (currentStage !== "Interview Scheduled") {
       alert("Only scheduled interviews can be cancelled.");
       return;
     }
@@ -646,9 +1349,12 @@ export function CandidatePipelineProvider({ children }) {
 
     const movementReason = `Interview was cancelled. Reason: ${cleanedReason}`;
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
       currentStage: "Interview Scheduled",
+      currentPipelineStage: "Interview Scheduled",
+      stage: "Interview Scheduled",
+      pipelineStage: "Interview Scheduled",
       previousStage: candidate.previousStage || "Online Assessment",
       dateMoved: getCurrentDate(),
       updatedAt: getCurrentDate(),
@@ -659,14 +1365,14 @@ export function CandidatePipelineProvider({ children }) {
         ...(candidate.timeline || []),
         {
           stage: "Interview Scheduled",
-          owner: candidate.owner,
+          owner: candidate.owner || currentUserName,
           source: "Interview Cancellation",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
           remarks: cleanedReason,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
@@ -674,6 +1380,8 @@ export function CandidatePipelineProvider({ children }) {
   }
 
   async function handleCompleteInterview(candidate) {
+    const currentStage = getCandidateStage(candidate);
+
     if (!hasInterviewSchedule(candidate)) {
       alert("Create the interview schedule first.");
       return;
@@ -687,39 +1395,40 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    const shouldMoveToInterviewed =
-      candidate.currentStage === "Interview Scheduled";
+    const shouldMoveToInterviewed = currentStage === "Interview Scheduled";
 
     const movementReason = shouldMoveToInterviewed
       ? "Interview completed. Candidate moved from Interview Scheduled to Interviewed."
       : "Interview marked as completed.";
 
-    const updatedCandidate = {
+    const nextStage = shouldMoveToInterviewed ? "Interviewed" : currentStage;
+
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
       previousStage: shouldMoveToInterviewed
         ? "Interview Scheduled"
         : candidate.previousStage,
-      currentStage: shouldMoveToInterviewed
-        ? "Interviewed"
-        : candidate.currentStage,
+      currentStage: nextStage,
+      currentPipelineStage: nextStage,
+      stage: nextStage,
+      pipelineStage: nextStage,
       dateMoved: shouldMoveToInterviewed
         ? getCurrentDate()
         : candidate.dateMoved,
+      updatedAt: getCurrentDate(),
       interviewStatus: "Completed",
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: shouldMoveToInterviewed
-            ? "Interviewed"
-            : candidate.currentStage,
+          stage: nextStage,
           owner: currentUserName,
           source: "Interview",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
@@ -734,15 +1443,21 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    const updatedCandidate = {
+    const currentStage = getCandidateStage(candidate);
+
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
       interviewNotes: String(notes || "").trim(),
       interviewNotesUpdatedAt: getCurrentTimestamp(),
       interviewNotesUpdatedBy: currentUserName,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: candidate.currentStage,
+          stage: currentStage,
           owner: currentUserName,
           source: "Interview Notes",
           timestamp: getCurrentTimestamp(),
@@ -750,28 +1465,40 @@ export function CandidatePipelineProvider({ children }) {
           remarks: String(notes || "").trim(),
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
   }
 
   async function handleOpenOfferModal(candidate) {
-    if (candidate.currentStage !== "Interviewed") {
+    const currentStage = getCandidateStage(candidate);
+
+    if (currentStage !== "Interviewed") {
       alert(
         "Offer details can only be prepared after the interview is completed.",
       );
       return;
     }
 
-    const offerDetails = candidate.offerDetails || {};
-    const currentRoleTitle = getRoleTitle(candidate.roleAccount);
-    const currentAccount = getAccount(candidate.roleAccount);
+    const normalizedCandidate = normalizePipelineCandidateForBoard({
+      ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
+    });
 
-    setOfferCandidate(candidate);
+    const offerDetails = normalizedCandidate.offerDetails || {};
+    const currentRoleTitle = getRoleTitle(normalizedCandidate.roleAccount);
+    const currentAccount = getAccount(normalizedCandidate.roleAccount);
+
+    setOfferCandidate(normalizedCandidate);
     setOfferForm({
       hiringRequirementId:
-        offerDetails.hiringRequirementId || candidate.hiringRequirementId || "",
+        offerDetails.hiringRequirementId ||
+        normalizedCandidate.hiringRequirementId ||
+        "",
       roleTitle:
         offerDetails.roleTitle ||
         (currentRoleTitle === "Not assigned yet" ? "" : currentRoleTitle),
@@ -801,6 +1528,8 @@ export function CandidatePipelineProvider({ children }) {
 
     if (!offerCandidate) return;
 
+    const currentStage = getCandidateStage(offerCandidate);
+
     if (
       !offerForm.hiringRequirementId ||
       !offerForm.roleTitle ||
@@ -825,13 +1554,15 @@ export function CandidatePipelineProvider({ children }) {
     const movementReason =
       "Interview completed. Offer details prepared and sent for approval.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...offerCandidate,
-      previousStage: offerCandidate.currentStage,
+      previousStage: currentStage,
       currentStage: "Offered",
+      currentPipelineStage: "Offered",
       stage: "Offered",
       pipelineStage: "Offered",
       dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
       hiringRequirementId: offerForm.hiringRequirementId,
       roleTitle: offerForm.roleTitle,
       account: offerForm.account,
@@ -871,43 +1602,52 @@ export function CandidatePipelineProvider({ children }) {
             )}`,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     upsertOfferEligibleCandidate(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
     setActiveStage("Offered");
-    handleCloseOfferModal();
+    closeAllPipelineModals();
   }
 
   async function handleOpenMoveModal(candidate) {
-    const nextStage = getNextStage(candidate.currentStage);
+    const currentStage = getCandidateStage(candidate);
+    const nextStage = getNextStage(currentStage);
 
     if (!nextStage) return;
 
-    if (candidate.currentStage === "Initial Screening") {
-      if (!canMoveToOnlineAssessment(candidate)) {
+    const normalizedCandidate = normalizePipelineCandidateForBoard({
+      ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
+    });
+
+    if (currentStage === "Initial Screening") {
+      if (!canMoveToOnlineAssessment(normalizedCandidate)) {
         alert("Only PRF Matched candidates can move to Online Assessment.");
         return;
       }
     }
 
-    if (candidate.currentStage === "Online Assessment") {
-      handleOpenScheduleInterview(candidate);
+    if (currentStage === "Online Assessment") {
+      handleOpenScheduleInterview(normalizedCandidate);
       return;
     }
 
     if (nextStage === "Offered") {
-      handleOpenOfferModal(candidate);
+      handleOpenOfferModal(normalizedCandidate);
       return;
     }
 
-    setMoveCandidate(candidate);
+    setMoveCandidate(normalizedCandidate);
     setMoveForm({
       reason:
         nextStage === "Online Assessment"
           ? "PRF matched. Candidate moved from Initial Screening to Online Assessment and assessment email will be sent."
-          : `Candidate moved from ${candidate.currentStage} to ${nextStage}.`,
+          : `Candidate moved from ${currentStage} to ${nextStage}.`,
       remarks: "",
     });
   }
@@ -925,14 +1665,15 @@ export function CandidatePipelineProvider({ children }) {
 
     if (!moveCandidate) return;
 
-    const nextStage = getNextStage(moveCandidate.currentStage);
+    const currentStage = getCandidateStage(moveCandidate);
+    const nextStage = getNextStage(currentStage);
 
     if (!nextStage) {
       alert("This candidate cannot be moved forward.");
       return;
     }
 
-    if (moveCandidate.currentStage === "Initial Screening") {
+    if (currentStage === "Initial Screening") {
       if (!canMoveToOnlineAssessment(moveCandidate)) {
         alert("Only PRF Matched candidates can move to Online Assessment.");
         return;
@@ -946,7 +1687,7 @@ export function CandidatePipelineProvider({ children }) {
 
     if (
       !(await confirmAction(
-        `Move ${moveCandidate.name} from ${moveCandidate.currentStage} to ${nextStage}?`,
+        `Move ${moveCandidate.name} from ${currentStage} to ${nextStage}?`,
       ))
     ) {
       return;
@@ -956,41 +1697,56 @@ export function CandidatePipelineProvider({ children }) {
     const movingToOffered = nextStage === "Offered";
     const movementReason = moveForm.reason.trim();
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...moveCandidate,
-      previousStage: moveCandidate.currentStage,
+
+      previousStage: currentStage,
       currentStage: nextStage,
+      currentPipelineStage: nextStage,
+      stage: nextStage,
+      pipelineStage: nextStage,
+
       dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
+
       assessmentStatus: movingToOnlineAssessment
         ? "Not Take"
         : moveCandidate.assessmentStatus || "Not Take",
+
       assessmentResult: movingToOnlineAssessment
         ? ""
         : moveCandidate.assessmentResult || "",
+
       assessmentEmailSent: movingToOnlineAssessment
         ? true
         : moveCandidate.assessmentEmailSent,
+
       assessmentEmailSentAt: movingToOnlineAssessment
         ? getCurrentTimestamp()
         : moveCandidate.assessmentEmailSentAt,
+
       interviewDate: movingToOnlineAssessment
         ? null
         : moveCandidate.interviewDate,
       interviewType: movingToOnlineAssessment
         ? "-"
         : moveCandidate.interviewType,
+
       interviewStatus: movingToOnlineAssessment
         ? "For Assessment"
         : moveCandidate.interviewStatus,
+
       timeline: [
-        ...(moveCandidate.timeline || []),
+        ...(Array.isArray(moveCandidate.timeline)
+          ? moveCandidate.timeline
+          : []),
         {
           stage: nextStage,
           owner: currentUserName,
           source: movingToOnlineAssessment
             ? "Online Assessment"
-            : moveCandidate.source,
+            : moveCandidate.source || "Candidate Pipeline",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
           remarks: movingToOnlineAssessment
@@ -999,36 +1755,47 @@ export function CandidatePipelineProvider({ children }) {
             : moveForm.remarks.trim(),
         },
       ],
-    };
+    });
 
-    updateCandidateRecord(updatedCandidate);
+    const committedCandidate = commitCandidateUpdate(updatedCandidate);
 
     if (movingToOnlineAssessment) {
-      await triggerAssessmentEmail(updatedCandidate);
       setActiveStage("Online Assessment");
+
+      // Do not await this. If fetch/mailto fails, it should not block the board update.
+      triggerAssessmentEmail(committedCandidate);
     }
 
     if (movingToOffered) {
-      upsertOfferEligibleCandidate(updatedCandidate);
+      upsertOfferEligibleCandidate(committedCandidate);
     } else {
-      removeOfferEligibleCandidate(updatedCandidate);
+      removeOfferEligibleCandidate(committedCandidate);
     }
 
-    setSelectedCandidate(updatedCandidate);
-    handleCloseMoveModal();
+    closeAllPipelineModals();
   }
 
   async function handleOpenAssessmentModal(candidate) {
-    if (candidate.currentStage !== "Online Assessment") {
+    const currentStage = getCandidateStage(candidate);
+
+    if (currentStage !== "Online Assessment") {
       alert("Assessment update is only available in Online Assessment stage.");
       return;
     }
 
-    setAssessmentCandidate(candidate);
+    const normalizedCandidate = normalizePipelineCandidateForBoard({
+      ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
+    });
+
+    setAssessmentCandidate(normalizedCandidate);
     setAssessmentForm({
-      assessmentStatus: candidate.assessmentStatus || "Not Take",
-      assessmentResult: candidate.assessmentResult || "",
-      assessmentRemarks: candidate.assessmentRemarks || "",
+      assessmentStatus: normalizedCandidate.assessmentStatus || "Not Take",
+      assessmentResult: normalizedCandidate.assessmentResult || "",
+      assessmentRemarks: normalizedCandidate.assessmentRemarks || "",
     });
   }
 
@@ -1046,14 +1813,21 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    const updatedCandidate = {
+    const currentStage = getCandidateStage(candidate);
+
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
       assessmentEmailSent: true,
       assessmentEmailSentAt: getCurrentTimestamp(),
+      updatedAt: getCurrentDate(),
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: candidate.currentStage,
+          stage: currentStage,
           owner: currentUserName,
           source: "Online Assessment",
           timestamp: getCurrentTimestamp(),
@@ -1061,7 +1835,7 @@ export function CandidatePipelineProvider({ children }) {
           remarks: buildAssessmentLink(candidate),
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
@@ -1101,13 +1875,18 @@ export function CandidatePipelineProvider({ children }) {
       ? `Assessment marked as Taken and tagged as ${assessmentForm.assessmentResult}.`
       : "Assessment marked as Not Take.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...assessmentCandidate,
+      currentStage: "Online Assessment",
+      currentPipelineStage: "Online Assessment",
+      stage: "Online Assessment",
+      pipelineStage: "Online Assessment",
       assessmentStatus: assessmentForm.assessmentStatus,
       assessmentResult: isTaken ? assessmentForm.assessmentResult : "",
       assessmentRemarks: assessmentForm.assessmentRemarks.trim(),
       assessmentTakenAt: isTaken ? getCurrentTimestamp() : null,
       assessmentTaggedAt: isTaken ? getCurrentTimestamp() : null,
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
       timeline: [
         ...(assessmentCandidate.timeline || []),
@@ -1120,7 +1899,7 @@ export function CandidatePipelineProvider({ children }) {
           remarks: assessmentForm.assessmentRemarks.trim(),
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
@@ -1156,6 +1935,8 @@ export function CandidatePipelineProvider({ children }) {
 
     if (!dropOffCandidate) return;
 
+    const currentStage = getCandidateStage(dropOffCandidate);
+
     if (!dropOffForm.category.trim()) {
       alert("Drop-off category is required.");
       return;
@@ -1170,17 +1951,17 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
-    const movementReason = `Candidate moved from ${
-      dropOffCandidate.currentStage
-    } to Drop-off. Reason: ${dropOffForm.reason.trim()}`;
+    const movementReason = `Candidate moved from ${currentStage} to Drop-off. Reason: ${dropOffForm.reason.trim()}`;
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...dropOffCandidate,
-      previousStage: dropOffCandidate.currentStage,
+      previousStage: currentStage,
       currentStage: "Drop-off",
+      currentPipelineStage: "Drop-off",
       stage: "Drop-off",
       pipelineStage: "Drop-off",
       dateMoved: getCurrentDate(),
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
       dropOffCategory: dropOffForm.category.trim(),
       dropOffReason: dropOffForm.reason.trim(),
@@ -1190,7 +1971,7 @@ export function CandidatePipelineProvider({ children }) {
         {
           stage: "Drop-off",
           owner: currentUserName,
-          source: dropOffCandidate.source,
+          source: dropOffCandidate.source || "Candidate Pipeline",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
           dropOffReason: dropOffForm.reason.trim(),
@@ -1198,16 +1979,19 @@ export function CandidatePipelineProvider({ children }) {
           remarks: dropOffForm.remarks.trim(),
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     removeOfferEligibleCandidate(dropOffCandidate);
     setSelectedCandidate(updatedCandidate);
-    handleCloseDropOffModal();
+    setActiveStage("Drop-off");
+    closeAllPipelineModals();
   }
 
   async function handleUpdateOfferApproval(candidate, approver, status) {
-    if (candidate.currentStage !== "Offered") return;
+    const currentStage = getCandidateStage(candidate);
+
+    if (currentStage !== "Offered") return;
 
     if (
       !(await confirmAction(
@@ -1238,19 +2022,17 @@ export function CandidatePipelineProvider({ children }) {
         ? `${approver} approved the offer. Candidate moved from Offered to Accepted.`
         : `${approver} tagged the offer as ${status}. Overall offer approval status: ${approvalSummary}.`;
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
       previousStage:
-        nextStage !== candidate.currentStage
-          ? candidate.currentStage
-          : candidate.previousStage,
+        nextStage !== currentStage ? currentStage : candidate.previousStage,
       currentStage: nextStage,
+      currentPipelineStage: nextStage,
       stage: nextStage,
       pipelineStage: nextStage,
       dateMoved:
-        nextStage !== candidate.currentStage
-          ? getCurrentDate()
-          : candidate.dateMoved,
+        nextStage !== currentStage ? getCurrentDate() : candidate.dateMoved,
+      updatedAt: getCurrentDate(),
       offerApprovals: nextApprovals,
       offerApprovalStatus: approvalSummary,
       offerDecision: approvalSummary === "Approved" ? "Accepted" : "Pending",
@@ -1267,7 +2049,7 @@ export function CandidatePipelineProvider({ children }) {
           reason: movementReason,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
 
@@ -1298,15 +2080,16 @@ export function CandidatePipelineProvider({ children }) {
     const movementReason =
       "Offer contract email was sent to the lead for contract review and response.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
       offerEmailSent: true,
       offerEmailSentAt: getCurrentTimestamp(),
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: "Offered",
+          stage: getCandidateStage(candidate),
           owner: currentUserName,
           source: "Offer Contract",
           timestamp: getCurrentTimestamp(),
@@ -1314,7 +2097,7 @@ export function CandidatePipelineProvider({ children }) {
           remarks: buildOfferContractLink(candidate),
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     upsertOfferEligibleCandidate(updatedCandidate);
@@ -1338,17 +2121,21 @@ export function CandidatePipelineProvider({ children }) {
       return;
     }
 
+    const currentStage = getCandidateStage(candidate);
+
     if (decision === "Accepted") {
       const movementReason =
         "Lead accepted the offer contract. Candidate moved to Accepted.";
 
-      const updatedCandidate = {
+      const updatedCandidate = normalizePipelineCandidateForBoard({
         ...candidate,
-        previousStage: "Offered",
+        previousStage: currentStage,
         currentStage: "Accepted",
+        currentPipelineStage: "Accepted",
         stage: "Accepted",
         pipelineStage: "Accepted",
         dateMoved: getCurrentDate(),
+        updatedAt: getCurrentDate(),
         offerDecision: "Accepted",
         candidateResponse: "Accepted",
         offerDecisionAt: getCurrentTimestamp(),
@@ -1357,13 +2144,13 @@ export function CandidatePipelineProvider({ children }) {
           ...(candidate.timeline || []),
           {
             stage: "Accepted",
-            owner: candidate.owner,
+            owner: candidate.owner || currentUserName,
             source: "Offer Contract",
             timestamp: getCurrentTimestamp(),
             reason: movementReason,
           },
         ],
-      };
+      });
 
       updateCandidateRecord(updatedCandidate);
       upsertOfferRecordFromPipeline(updatedCandidate);
@@ -1377,13 +2164,15 @@ export function CandidatePipelineProvider({ children }) {
       const movementReason =
         "Lead rejected the offer contract. Candidate moved to Drop-off.";
 
-      const updatedCandidate = {
+      const updatedCandidate = normalizePipelineCandidateForBoard({
         ...candidate,
-        previousStage: "Offered",
+        previousStage: currentStage,
         currentStage: "Drop-off",
+        currentPipelineStage: "Drop-off",
         stage: "Drop-off",
         pipelineStage: "Drop-off",
         dateMoved: getCurrentDate(),
+        updatedAt: getCurrentDate(),
         offerDecision: "Rejected",
         candidateResponse: "Rejected",
         offerDecisionAt: getCurrentTimestamp(),
@@ -1395,14 +2184,14 @@ export function CandidatePipelineProvider({ children }) {
           ...(candidate.timeline || []),
           {
             stage: "Drop-off",
-            owner: candidate.owner,
+            owner: candidate.owner || currentUserName,
             source: "Offer Contract",
             timestamp: getCurrentTimestamp(),
             reason: movementReason,
             remarks: "Offer response: Rejected",
           },
         ],
-      };
+      });
 
       updateCandidateRecord(updatedCandidate);
       upsertOfferRecordFromPipeline(updatedCandidate);
@@ -1414,122 +2203,280 @@ export function CandidatePipelineProvider({ children }) {
 
     const movementReason = "Lead requested offer negotiation.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
       offerDecision: "Negotiate",
       candidateResponse: "Negotiate",
       offerDecisionAt: getCurrentTimestamp(),
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: "Offered",
+          stage: currentStage,
           owner: currentUserName,
           source: "Offer Contract",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     upsertOfferEligibleCandidate(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
   }
 
-  function handleResetSampleData() {
-    localStorage.removeItem(CANDIDATE_APPLICATIONS_STORAGE_KEY);
-    localStorage.removeItem(PIPELINE_CANDIDATES_STORAGE_KEY);
-    localStorage.removeItem(OFFER_ELIGIBLE_STORAGE_KEY);
-    localStorage.removeItem(OFFER_RECORDS_STORAGE_KEY);
-    localStorage.removeItem(PIPELINE_SYNC_EVENTS_KEY);
+  function sanitizeTalentPoolResetCandidate(candidate = {}) {
+    const cleanedCandidate = {
+      ...candidate,
 
-    const normalizedCandidates =
-      defaultPipelineCandidates.map(normalizeCandidate);
+      status:
+        candidate.status === "Do Not Reprocess"
+          ? candidate.status
+          : "New Applicant",
 
-    setCandidateList(normalizedCandidates);
-    savePipelineCandidateData(normalizedCandidates);
+      pipelineStatus: "",
+      applicationStatus: "",
+      currentPipelineStage: "",
+      pipelineStage: "",
+      currentStage: "",
+      stage: "",
+      previousStage: "",
 
-    localStorage.setItem(
+      currentApplicationStatus: "",
+      currentApplicationId: "",
+      candidateApplicationId: "",
+      applicationId: "",
+
+      currentAppliedRole: "",
+      currentAppliedAccount: "",
+      currentTaOwner: "",
+
+      movedToPipeline: false,
+
+      prfStatus: "",
+      prfReviewed: false,
+      prfReviewedAt: "",
+
+      assessmentStatus: "",
+      assessmentResult: "",
+      assessmentEmailSent: false,
+      assessmentEmailSentAt: "",
+      assessmentTakenAt: "",
+      assessmentTaggedAt: "",
+      assessmentRemarks: "",
+
+      interviewStatus: "",
+      interviewDate: "",
+      interviewType: "",
+      onlineInterviewLink: "",
+
+      offerDetails: null,
+      offerApprovals: null,
+      offerApprovalStatus: "",
+      offerDecision: "",
+      offerEmailSent: false,
+      offerEmailSentAt: "",
+      candidateResponse: "",
+
+      dropOffCategory: "",
+      dropOffReason: "",
+      dropOffRemarks: "",
+
+      reasonForMovement: "",
+      dateMoved: "",
+
+      timeline: [],
+      movementTimeline: [],
+      movementHistory: [],
+      pipelineHistory: [],
+      stageHistory: [],
+
+      candidateSnapshot: undefined,
+    };
+
+    return normalizeCandidateRecord
+      ? normalizeCandidateRecord(cleanedCandidate)
+      : cleanedCandidate;
+  }
+
+  function clearRecruitmentSampleStorage() {
+    const exactKeysToRemove = [
+      CANDIDATE_APPLICATIONS_STORAGE_KEY,
+      PIPELINE_CANDIDATES_STORAGE_KEY,
       OFFER_ELIGIBLE_STORAGE_KEY,
-      JSON.stringify(normalizedCandidates),
-    );
+      OFFER_RECORDS_STORAGE_KEY,
+      PIPELINE_SYNC_EVENTS_KEY,
 
-    setActiveStage("Initial Screening");
-    setPageView("pipeline");
-    setSelectedCandidate(null);
+      INTERNAL_CANDIDATES_KEY,
+      PUBLIC_SUBMISSIONS_KEY,
+      TALENT_POOL_APPLICATIONS_KEY,
 
-    window.dispatchEvent(new Event("storage"));
+      "ta_candidate_applications",
+      "ta_pipeline_candidates",
+      "ta_offer_eligible_candidates",
+      "ta_offer_records",
+      "ta_pipeline_sync_events",
+      "ta_internal_candidates",
+      "ta_public_candidate_submissions",
+    ];
 
-    confirmAction("Sample candidate pipeline data has been reset.", {
-      title: "Reset Complete",
-      confirmText: "OK",
-      variant: "default",
+    exactKeysToRemove.forEach((key) => {
+      if (key) localStorage.removeItem(key);
+    });
+
+    Object.keys(localStorage).forEach((key) => {
+      const shouldRemove =
+        key.startsWith("ta_pipeline_") ||
+        key.startsWith("ta_offer_") ||
+        key === "ta_candidate_applications" ||
+        key === "ta_internal_candidates" ||
+        key === "ta_public_candidate_submissions";
+
+      if (shouldRemove) {
+        localStorage.removeItem(key);
+      }
     });
   }
 
+  function handleResetSampleData() {
+    const confirmed = window.confirm(
+      "Reset Candidate Pipeline and Talent Pool sample data? This will remove saved local changes.",
+    );
+
+    if (!confirmed) return;
+
+    clearRecruitmentSampleStorage();
+
+    const normalizedPipelineCandidates = defaultPipelineCandidates.map(
+      normalizePipelineCandidateForBoard,
+    );
+
+    const normalizedTalentPoolCandidates = talentPoolInitialCandidates.map(
+      sanitizeTalentPoolResetCandidate,
+    );
+
+    savePipelineCandidateData(normalizedPipelineCandidates);
+
+    localStorage.setItem(
+      INTERNAL_CANDIDATES_KEY,
+      JSON.stringify(normalizedTalentPoolCandidates),
+    );
+
+    localStorage.setItem(PUBLIC_SUBMISSIONS_KEY, JSON.stringify([]));
+    localStorage.setItem(TALENT_POOL_APPLICATIONS_KEY, JSON.stringify([]));
+
+    const offerEligibleCandidates = normalizedPipelineCandidates.filter(
+      (candidate) => {
+        const currentStage =
+          candidate.currentStage ||
+          candidate.currentPipelineStage ||
+          candidate.pipelineStage ||
+          candidate.stage;
+
+        return currentStage === "Offered";
+      },
+    );
+
+    localStorage.setItem(
+      OFFER_ELIGIBLE_STORAGE_KEY,
+      JSON.stringify(offerEligibleCandidates),
+    );
+
+    localStorage.setItem(OFFER_RECORDS_STORAGE_KEY, JSON.stringify([]));
+    localStorage.setItem(PIPELINE_SYNC_EVENTS_KEY, JSON.stringify([]));
+
+    setCandidateList(normalizedPipelineCandidates);
+    setActiveStage("Initial Screening");
+    setPageView("pipeline");
+
+    setSelectedCandidate(null);
+    setMoveCandidate(null);
+    setScheduleCandidate(null);
+    setAssessmentCandidate(null);
+    setDropOffCandidate(null);
+    setOfferCandidate(null);
+
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
+    window.dispatchEvent(new Event("ta-public-submissions-updated"));
+
+    confirmAction(
+      "Candidate Pipeline and Talent Pool sample data have been reset.",
+      {
+        title: "Reset Complete",
+        confirmText: "OK",
+        variant: "default",
+      },
+    );
+  }
   const filteredCandidates = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return candidateList.map(normalizeCandidate).filter((candidate) => {
-      const role = getRoleTitle(candidate.roleAccount);
-      const account = getAccount(candidate.roleAccount);
+    return candidateList
+      .map(normalizePipelineCandidateForBoard)
+      .filter((candidate) => {
+        const role = getRoleTitle(candidate.roleAccount);
+        const account = getAccount(candidate.roleAccount);
 
-      const matchesSearch =
-        !keyword ||
-        String(candidate.name || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.email || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.candidateId || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.roleAccount || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.source || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.prfStatus || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.assessmentStatus || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.assessmentResult || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.offerApprovalStatus || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.offerDecision || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        String(candidate.offerDetails?.account || "")
-          .toLowerCase()
-          .includes(keyword);
+        const matchesSearch =
+          !keyword ||
+          String(candidate.name || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.email || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.candidateId || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.roleAccount || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.source || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.prfStatus || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.assessmentStatus || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.assessmentResult || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.offerApprovalStatus || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.offerDecision || "")
+            .toLowerCase()
+            .includes(keyword) ||
+          String(candidate.offerDetails?.account || "")
+            .toLowerCase()
+            .includes(keyword);
 
-      const matchesRole = roleFilter === "All Roles" || role === roleFilter;
-      const matchesAccount =
-        accountFilter === "All Accounts" || account === accountFilter;
+        const matchesRole = roleFilter === "All Roles" || role === roleFilter;
+        const matchesAccount =
+          accountFilter === "All Accounts" || account === accountFilter;
 
-      return matchesSearch && matchesRole && matchesAccount;
-    });
+        return matchesSearch && matchesRole && matchesAccount;
+      });
   }, [candidateList, search, roleFilter, accountFilter]);
 
   const stageVisibleCandidates = useMemo(() => {
     return filteredCandidates.filter((candidate) => {
-      if (candidate.currentStage === "Initial Screening") {
-        return isPrfReviewed(candidate);
+      const currentStage = getCandidateStage(candidate);
+
+      if (currentStage === "Initial Screening") {
+        return true;
       }
 
-      if (candidate.currentStage === "Online Assessment") {
+      if (currentStage === "Online Assessment") {
         return candidate.prfStatus === "Matched";
       }
 
-      if (candidate.currentStage === "Interview Scheduled") {
+      if (currentStage === "Interview Scheduled") {
         return (
           candidate.assessmentStatus === "Taken" &&
           candidate.assessmentResult === "Assessment Fit" &&
@@ -1545,7 +2492,7 @@ export function CandidatePipelineProvider({ children }) {
   const stageCounts = useMemo(() => {
     return pipelineStages.reduce((acc, stage) => {
       acc[stage] = stageVisibleCandidates.filter(
-        (candidate) => candidate.currentStage === stage,
+        (candidate) => getCandidateStage(candidate) === stage,
       ).length;
 
       return acc;
@@ -1565,7 +2512,7 @@ export function CandidatePipelineProvider({ children }) {
 
   const stageFilteredCandidates = useMemo(() => {
     return stageVisibleCandidates.filter(
-      (candidate) => candidate.currentStage === activeStage,
+      (candidate) => getCandidateStage(candidate) === activeStage,
     );
   }, [stageVisibleCandidates, activeStage]);
 
@@ -1577,24 +2524,31 @@ export function CandidatePipelineProvider({ children }) {
   function handleStartInterview(candidate) {
     if (!candidate?.id) return;
 
+    const currentStage = getCandidateStage(candidate);
+
     const movementReason =
       "Final interview has been started and is currently in progress.";
 
-    const updatedCandidate = {
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
+      currentStage,
+      currentPipelineStage: currentStage,
+      stage: currentStage,
+      pipelineStage: currentStage,
       interviewStatus: "Interview in Progress",
+      updatedAt: getCurrentDate(),
       reasonForMovement: movementReason,
       timeline: [
         ...(candidate.timeline || []),
         {
-          stage: candidate.currentStage || "Interview Scheduled",
+          stage: currentStage || "Interview Scheduled",
           owner: currentUserName,
           source: "Final Interview",
           timestamp: getCurrentTimestamp(),
           reason: movementReason,
         },
       ],
-    };
+    });
 
     updateCandidateRecord(updatedCandidate);
     setSelectedCandidate(updatedCandidate);
@@ -1630,6 +2584,7 @@ export function CandidatePipelineProvider({ children }) {
       return false;
     }
 
+    const currentStage = getCandidateStage(matchedCandidate);
     const submissionId = `final-interview-${Date.now()}`;
 
     const savedFormLink = `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
@@ -1662,10 +2617,13 @@ export function CandidatePipelineProvider({ children }) {
     const movementReason =
       "Final interview form was submitted. Candidate moved from Interview Scheduled to Interviewed.";
 
-    const updatedCandidateRecord = normalizeCandidate({
+    const updatedCandidateRecord = normalizePipelineCandidateForBoard({
       ...matchedCandidate,
-      previousStage: matchedCandidate.currentStage || "Interview Scheduled",
+      previousStage: currentStage || "Interview Scheduled",
       currentStage: "Interviewed",
+      currentPipelineStage: "Interviewed",
+      stage: "Interviewed",
+      pipelineStage: "Interviewed",
       dateMoved: getCurrentDate(),
       updatedAt: getCurrentDate(),
       interviewStatus: "Completed",
@@ -1719,25 +2677,33 @@ export function CandidatePipelineProvider({ children }) {
     setSelectedCandidate(updatedCandidateRecord);
     setActiveStage("Interviewed");
 
+    window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
+    window.dispatchEvent(new Event("ta-public-submissions-updated"));
+
     return true;
   }
 
   function resetConnectedRecruitmentStorage(sampleCandidates = []) {
     try {
+      const normalizedSampleCandidates = sampleCandidates.map(
+        normalizePipelineCandidateForBoard,
+      );
+
       localStorage.setItem(
         PIPELINE_CANDIDATES_STORAGE_KEY,
-        JSON.stringify(sampleCandidates),
+        JSON.stringify(normalizedSampleCandidates),
       );
 
       localStorage.setItem(
         OFFER_ELIGIBLE_STORAGE_KEY,
-        JSON.stringify(sampleCandidates),
+        JSON.stringify(normalizedSampleCandidates),
       );
 
       localStorage.removeItem(OFFER_RECORDS_STORAGE_KEY);
       localStorage.removeItem(PIPELINE_SYNC_EVENTS_KEY);
 
       window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
     } catch (error) {
       console.error("RESET CONNECTED RECRUITMENT STORAGE ERROR:", error);
     }
@@ -1784,13 +2750,15 @@ export function CandidatePipelineProvider({ children }) {
           return candidate;
         }
 
+        const currentStage = getCandidateStage(candidate);
+
         const nextStage =
           updatedCandidatePayload.currentStage ||
           updatedCandidatePayload.stage ||
           updatedCandidatePayload.pipelineStage ||
-          candidate.currentStage;
+          currentStage;
 
-        const stageChanged = nextStage !== candidate.currentStage;
+        const stageChanged = nextStage !== currentStage;
 
         const movementReason =
           updatedCandidatePayload.reasonForMovement ||
@@ -1811,15 +2779,14 @@ export function CandidatePipelineProvider({ children }) {
           },
         ];
 
-        return normalizeCandidate({
+        return normalizePipelineCandidateForBoard({
           ...candidate,
           ...updatedCandidatePayload,
 
-          previousStage: stageChanged
-            ? candidate.currentStage
-            : candidate.previousStage,
+          previousStage: stageChanged ? currentStage : candidate.previousStage,
 
           currentStage: nextStage,
+          currentPipelineStage: nextStage,
           stage: nextStage,
           pipelineStage: nextStage,
 
@@ -1866,15 +2833,16 @@ export function CandidatePipelineProvider({ children }) {
     ) {
       setActiveStage("Accepted");
     }
+
+    window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
   }
 
   async function handleScheduleNhoAuto(candidate) {
     if (!candidate) return;
 
-    if (
-      candidate.currentStage !== "Accepted" &&
-      candidate.currentStage !== "Accepted (For NHO)"
-    ) {
+    const currentStage = getCandidateStage(candidate);
+
+    if (currentStage !== "Accepted" && currentStage !== "Accepted (For NHO)") {
       alert("Only accepted candidates can be scheduled for NHO.");
       return;
     }
@@ -1915,13 +2883,14 @@ export function CandidatePipelineProvider({ children }) {
 
     const movementReason = `NHO automatically scheduled for ${formatNhoScheduleDate(
       fridaySchedule,
-    )}. Candidate moved from ${candidate.currentStage} to For NHO.`;
+    )}. Candidate moved from ${currentStage} to For NHO.`;
 
-    const updatedCandidate = normalizeCandidate({
+    const updatedCandidate = normalizePipelineCandidateForBoard({
       ...candidate,
 
-      previousStage: candidate.currentStage,
+      previousStage: currentStage,
       currentStage: "For NHO",
+      currentPipelineStage: "For NHO",
       stage: "For NHO",
       pipelineStage: "For NHO",
 

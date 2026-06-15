@@ -1,11 +1,68 @@
 import { X, ArrowRight } from "lucide-react";
+import { useMemo } from "react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import {
   inputClass,
   textareaClass,
   toDisplayPersonName,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
+import {
+  AVAILABLE_POSITIONS_STORAGE_KEY,
+  PIPELINE_CANDIDATES_STORAGE_KEY,
+} from "../../../lib/utils/talentPool/talentPoolConstants";
 import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
+
+function safeJsonParse(value, fallback = []) {
+  try {
+    const parsedValue = JSON.parse(value);
+    return Array.isArray(parsedValue) ? parsedValue : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeAccountName(value) {
+  const text = String(value || "").trim();
+
+  if (
+    !text ||
+    text === "—" ||
+    text === "--" ||
+    text.toLowerCase() === "not assigned yet" ||
+    text.toLowerCase() === "n/a" ||
+    text.toLowerCase() === "na"
+  ) {
+    return "";
+  }
+
+  return text;
+}
+
+function getUniqueAccountOptions(items = []) {
+  const accountSet = new Set();
+
+  items.forEach((item) => {
+    [
+      item.account,
+      item.accountName,
+      item.accountFit,
+      item.appliedAccount,
+      item.currentAppliedAccount,
+      item.finalAccount,
+      item.leadAccount,
+      item.clientAccount,
+      item.department,
+    ].forEach((value) => {
+      const normalizedValue = normalizeAccountName(value);
+
+      if (normalizedValue) {
+        accountSet.add(normalizedValue);
+      }
+    });
+  });
+
+  return Array.from(accountSet).sort((a, b) => a.localeCompare(b));
+}
 
 export default function MoveToPipeLineModal() {
   const {
@@ -17,6 +74,23 @@ export default function MoveToPipeLineModal() {
     submitMoveToPipeline,
   } = useTalentPool();
 
+  const accountOptions = useMemo(() => {
+    const availablePositions = safeJsonParse(
+      localStorage.getItem(AVAILABLE_POSITIONS_STORAGE_KEY),
+      [],
+    );
+
+    const pipelineCandidates = safeJsonParse(
+      localStorage.getItem(PIPELINE_CANDIDATES_STORAGE_KEY),
+      [],
+    );
+
+    return getUniqueAccountOptions([
+      ...availablePositions,
+      ...pipelineCandidates,
+    ]);
+  }, [pipelineTarget]);
+
   if (!pipelineTarget) return null;
 
   const ownerName = toDisplayPersonName(
@@ -24,13 +98,21 @@ export default function MoveToPipeLineModal() {
     "Current User",
   );
 
+  const selectedLeadAccount =
+    moveToPipelineForm.leadAccount ||
+    pipelineTarget.leadAccount ||
+    pipelineTarget.accountFit ||
+    pipelineTarget.appliedAccount ||
+    pipelineTarget.currentAppliedAccount ||
+    "";
+
   return (
     <div
       className="fixed inset-0 z-[10002] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
       onClick={closeMoveToPipeline}
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
@@ -56,8 +138,9 @@ export default function MoveToPipeLineModal() {
         <form onSubmit={submitMoveToPipeline} className="space-y-4 p-5">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
             This will create a pipeline application directly under Initial
-            Screening. Hiring requirement, final role, and final account will be
-            assigned later during the Offered stage.
+            Screening. The lead account will be captured for tracking, while
+            final role and final account will still be assigned later during the
+            Offered stage.
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -84,6 +167,33 @@ export default function MoveToPipeLineModal() {
                 Match tagging starts in Candidate Pipeline.
               </p>
             </div>
+          </div>
+
+          <div>
+            <FieldLabel>Lead Account</FieldLabel>
+            <select
+              value={selectedLeadAccount}
+              onChange={(event) =>
+                setMoveToPipelineForm({
+                  ...moveToPipelineForm,
+                  leadAccount: event.target.value,
+                })
+              }
+              className={inputClass()}
+            >
+              <option value="">Select lead account</option>
+
+              {accountOptions.map((account) => (
+                <option key={account} value={account}>
+                  {account}
+                </option>
+              ))}
+            </select>
+
+            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+              This is the lead/prospect account for tracking. Final account can
+              still be changed during the Offered stage.
+            </p>
           </div>
 
           <div>

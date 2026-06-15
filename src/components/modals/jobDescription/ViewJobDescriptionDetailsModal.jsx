@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AlertTriangle, Eye } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
@@ -6,17 +6,13 @@ import Approvals from "../../layout/tabs/JobDescriptionView/Approvals";
 import RevisionHistory from "../../layout/tabs/JobDescriptionView/RevisionHistory";
 import LinkedERCases from "../../layout/tabs/JobDescriptionView/LinkedERCases";
 
-const detailTabs = [
-  "Details",
-  "Approvals",
-  "Revision History",
-  "Linked ER Cases",
-];
+const detailTabs = ["Details", "Revision History", "Linked ER Cases"];
 
 export default function ViewJobDescriptionDetailsModal({
   open,
   item,
   onClose,
+  approvalPage = false,
 }) {
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
   const [revisionComments, setRevisionComments] = useState([]);
@@ -57,7 +53,13 @@ export default function ViewJobDescriptionDetailsModal({
     }
   }
 
+  useEffect(() => {
+    console.log(item);
+  }, [item]);
+
   useLayoutEffect(() => {
+    if (approvalPage) return;
+
     const activeButton = tabRefs.current[activeDetailTab];
 
     if (!activeButton) return;
@@ -66,7 +68,7 @@ export default function ViewJobDescriptionDetailsModal({
       left: activeButton.offsetLeft,
       width: activeButton.offsetWidth,
     });
-  }, [activeDetailTab, open]);
+  }, [activeDetailTab, open, approvalPage]);
 
   if (!open || !item) return null;
 
@@ -77,6 +79,8 @@ export default function ViewJobDescriptionDetailsModal({
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
+
+  const shouldShowDetails = approvalPage || activeDetailTab === "Details";
 
   return (
     <div
@@ -90,8 +94,16 @@ export default function ViewJobDescriptionDetailsModal({
         className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-gray-200 px-5 pt-6 sm:px-6">
-          <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div
+          className={`border-b border-gray-200 px-5 sm:px-6 ${
+            approvalPage ? "py-6" : "pt-6"
+          }`}
+        >
+          <div
+            className={`flex flex-col justify-between gap-4 md:flex-row md:items-start ${
+              approvalPage ? "" : "mb-5"
+            }`}
+          >
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wide text-sibs-primary-1/80">
                 Job Description Overview
@@ -118,41 +130,43 @@ export default function ViewJobDescriptionDetailsModal({
             </span>
           </div>
 
-          <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054]">
-            <span
-              className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
-              style={{
-                left: `${tabIndicator.left}px`,
-                width: `${tabIndicator.width}px`,
-              }}
-            />
+          {!approvalPage && (
+            <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054]">
+              <span
+                className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
+                style={{
+                  left: `${tabIndicator.left}px`,
+                  width: `${tabIndicator.width}px`,
+                }}
+              />
 
-            {detailTabs.map((tab) => {
-              const isActive = activeDetailTab === tab;
+              {detailTabs.map((tab) => {
+                const isActive = activeDetailTab === tab;
 
-              return (
-                <button
-                  key={tab}
-                  ref={(el) => {
-                    tabRefs.current[tab] = el;
-                  }}
-                  type="button"
-                  onClick={() => setActiveDetailTab(tab)}
-                  className={`relative z-10 whitespace-nowrap px-4 pb-3 transition ${
-                    isActive
-                      ? "text-blue-600"
-                      : "text-[#344054] hover:text-blue-600"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={tab}
+                    ref={(el) => {
+                      tabRefs.current[tab] = el;
+                    }}
+                    type="button"
+                    onClick={() => setActiveDetailTab(tab)}
+                    className={`relative z-10 whitespace-nowrap px-4 pb-3 transition ${
+                      isActive
+                        ? "text-blue-600"
+                        : "text-[#344054] hover:text-blue-600"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {activeDetailTab === "Details" && (
+          {shouldShowDetails && (
             <Details
               item={item}
               revisionComments={revisionComments}
@@ -161,16 +175,17 @@ export default function ViewJobDescriptionDetailsModal({
               onEditedChange={setHasEditedChanges}
               editedChangeDetails={editedChangeDetails}
               setEditedChangeDetails={setEditedChangeDetails}
+              approvalPage={approvalPage}
             />
           )}
 
-          {activeDetailTab === "Approvals" && <Approvals />}
-
-          {activeDetailTab === "Revision History" && (
+          {!approvalPage && activeDetailTab === "Revision History" && (
             <RevisionHistory revisionHistory={revisionHistory} item={item} />
           )}
 
-          {activeDetailTab === "Linked ER Cases" && <LinkedERCases />}
+          {!approvalPage && activeDetailTab === "Linked ER Cases" && (
+            <LinkedERCases />
+          )}
         </div>
 
         <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
@@ -208,28 +223,20 @@ export default function ViewJobDescriptionDetailsModal({
               Cancel
             </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              title={
-                hasRevisionComments
-                  ? "Save this job description as tagged for revision."
-                  : hasEditedChanges
-                    ? "Save the edited job description as a new version."
-                    : "Approve job description."
-              }
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
-                hasRevisionComments
-                  ? "bg-sibs-primary-2 hover:opacity-90"
-                  : "bg-sibs-primary-1 hover:opacity-90"
-              }`}
-            >
-              {hasRevisionComments
-                ? "Save"
-                : hasEditedChanges
-                  ? "Save as New Version"
-                  : "Approve"}
-            </button>
+            {approvalPage && (
+              <button
+                type="button"
+                onClick={onClose}
+                title={primaryButtonTitle}
+                className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
+                  hasRevisionComments
+                    ? "bg-sibs-primary-2 hover:opacity-90"
+                    : "bg-sibs-primary-1 hover:opacity-90"
+                }`}
+              >
+                {primaryButtonLabel}
+              </button>
+            )}
           </div>
         </div>
       </div>
