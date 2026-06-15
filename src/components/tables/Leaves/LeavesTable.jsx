@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Eye, X } from "lucide-react";
+import { Eye, Search, X } from "lucide-react";
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
@@ -615,19 +615,37 @@ export default function LeavesTable({
 }) {
   const tableScrollRef = useRef(null);
   const [selectedLeave, setSelectedLeave] = useState(null);
+  const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
 
   const dateFrom = filterValues?.dateFrom || "";
   const dateTo = filterValues?.dateTo || "";
 
   function runSearch() {
-    setSearchKeyword(searchInput.trim());
+    const cleanSearch = String(searchInput || "").trim();
+    const currentSearch = String(searchKeyword || "").trim();
+
     setPage(1);
+    setSearchSubmitVersion((prev) => prev + 1);
+
+    if (cleanSearch === currentSearch) {
+      setSearchKeyword("");
+
+      window.setTimeout(() => {
+        setPage(1);
+        setSearchKeyword(cleanSearch);
+      }, 0);
+
+      return;
+    }
+
+    setSearchKeyword(cleanSearch);
   }
 
   function handleSearchKeyDown(e) {
-    if (e.key === "Enter") {
-      runSearch();
-    }
+    if (e.key !== "Enter") return;
+
+    e.preventDefault();
+    runSearch();
   }
 
   function handlePreviousPage() {
@@ -650,7 +668,15 @@ export default function LeavesTable({
       left: 0,
       behavior: "smooth",
     });
-  }, [page, searchKeyword, statusFilter, accountFilter, dateFrom, dateTo]);
+  }, [
+    page,
+    searchKeyword,
+    searchSubmitVersion,
+    statusFilter,
+    accountFilter,
+    dateFrom,
+    dateTo,
+  ]);
 
   const currentPaginationPage = Number(pagination.currentPage || page || 1);
   const totalPages = pagination.hasNextPage
@@ -673,7 +699,7 @@ export default function LeavesTable({
             }
             loading={loading}
             searchValue={searchInput}
-            searchPlaceholder="Search then press Enter"
+            searchPlaceholder="Search name"
             onSearchChange={(value) => setSearchInput(value)}
             onSearchKeyDown={handleSearchKeyDown}
             dropdownFilters={
@@ -710,8 +736,20 @@ export default function LeavesTable({
             ]}
             rightContent={<InlineDateRangeFilter visible />}
             showPagination={false}
-            className="mb-5"
+            className="mb-3"
           />
+
+          <div className="mb-5 block sm:hidden">
+            <button
+              type="button"
+              onClick={runSearch}
+              disabled={loading}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Search size={17} />
+              Search
+            </button>
+          </div>
 
           <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
             <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
@@ -765,7 +803,7 @@ export default function LeavesTable({
                 </thead>
 
                 <tbody
-                  key={`${page}-${searchKeyword}-${statusFilter}-${accountFilter}-${dateFrom}-${dateTo}-${loading}`}
+                  key={`${page}-${searchKeyword}-${searchSubmitVersion}-${statusFilter}-${accountFilter}-${dateFrom}-${dateTo}-${loading}`}
                 >
                   {loading ? (
                     Array.from({ length: PAGE_LIMIT }).map((_, index) => (

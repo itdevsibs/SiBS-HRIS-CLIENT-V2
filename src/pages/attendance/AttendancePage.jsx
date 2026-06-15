@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
@@ -13,16 +13,8 @@ export default function AttendancePage() {
 
   const [tableReady, setTableReady] = useState(false);
 
-  const {
-    page,
-    search,
-    searchInput,
-    setSearchInput,
-    handleSearchKeyDown,
-    setPage,
-    setCurrentPage,
-    handlePageChange,
-  } = usePagination("attendance");
+  const { page, search, setPage, setCurrentPage, handlePageChange } =
+    usePagination("attendance");
 
   const isEmployee = user?.role === "employee";
   const pageTitle = isEmployee ? "My Attendance" : "Attendance";
@@ -63,14 +55,6 @@ export default function AttendancePage() {
     });
   }
 
-  function handleAttendanceSearchKeyDown(e) {
-    handleSearchKeyDown(e);
-
-    if (e.key === "Enter") {
-      scrollPageToTop();
-    }
-  }
-
   useEffect(() => {
     if (didResetPageOnMountRef.current) return;
 
@@ -82,6 +66,7 @@ export default function AttendancePage() {
     }
 
     setTableReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -124,24 +109,6 @@ export default function AttendancePage() {
                   ? "View your attendance records and details"
                   : "View attendance records of all employees"}
               </p>
-            </div>
-
-            <div className="sibs-profile-tab-panel relative w-full shrink-0 lg:w-80">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
-
-              <input
-                type="text"
-                placeholder={
-                  isEmployee ? "Search records..." : "Search employee..."
-                }
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleAttendanceSearchKeyDown}
-                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
             </div>
           </section>
 

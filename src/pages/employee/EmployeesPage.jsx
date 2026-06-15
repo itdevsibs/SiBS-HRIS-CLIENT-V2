@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Search,
   Users,
   UserRoundCheck,
   ShieldCheck,
@@ -36,13 +35,7 @@ function SummaryCard({ label, value, icon: Icon }) {
 }
 
 export default function EmployeesPage() {
-  const {
-    searchInput,
-    setSearch,
-    setSearchInput,
-    handleSearchKeyDown,
-    setPage,
-  } = usePagination("employees");
+  const { setSearch, setSearchInput, setPage } = usePagination("employees");
 
   const [activeEmployeeTab, setActiveEmployeeTab] = useState("Employees");
 
@@ -57,7 +50,7 @@ export default function EmployeesPage() {
 
   const activeTabIndex = Math.max(
     0,
-    employeeTabs.findIndex((tab) => tab.label === activeEmployeeTab)
+    employeeTabs.findIndex((tab) => tab.label === activeEmployeeTab),
   );
 
   useEffect(() => {
@@ -148,7 +141,7 @@ export default function EmployeesPage() {
           <SummaryCard label="CHWCP" value="2" icon={FileCheck2} />
         </section>
 
-        <section className="mb-6 grid min-w-0 grid-cols-1 items-center gap-4 lg:grid-cols-[1fr_auto]">
+        <section className="mb-6 min-w-0">
           <div className="min-w-0 overflow-x-auto no-scrollbar">
             <div
               className="relative grid min-w-[520px] overflow-hidden rounded-full bg-[#f2f4f7] p-1 shadow-sm sm:w-max"
@@ -196,24 +189,6 @@ export default function EmployeesPage() {
               })}
             </div>
           </div>
-
-          {activeEmployeeTab === "Employees" && (
-            <div className="relative w-full shrink-0 lg:w-80 sibs-profile-tab-panel">
-              <Search
-                size={18}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
-
-              <input
-                type="text"
-                placeholder="Search employees..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                className="h-11 w-full rounded-full border border-[#e6ecf2] bg-white px-4 pl-11 text-sm font-normal text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
-            </div>
-          )}
         </section>
 
         <div key={activeEmployeeTab} className="sibs-profile-tab-panel">

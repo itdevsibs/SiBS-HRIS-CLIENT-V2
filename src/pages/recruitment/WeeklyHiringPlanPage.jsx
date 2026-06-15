@@ -18,7 +18,23 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 
-const FULL_WEEKLY_ACCESS_ROLES = ["ta", "hr", "hr_admin", "super_admin"];
+const FULL_WEEKLY_ACCESS_ROLES = [
+  "ta",
+  "talent_acquisition",
+  "recruitment",
+  "recruiter",
+  "hr",
+  "hr_admin",
+  "hradmin",
+  "hr_manager",
+  "hr_staff",
+  "human_resources",
+  "human_resource",
+  "human_resources_admin",
+  "human_resource_admin",
+  "super_admin",
+  "superadmin",
+];
 
 const FLAT_PAGE_BG = "bg-[#F6F8FB]";
 const APPROVAL_EDGE =
@@ -43,12 +59,154 @@ function normalizeRoleKey(value) {
     .replace(/[\s-]+/g, "_");
 }
 
-function canManageHiringPlanByRole(user) {
-  const role = normalizeRoleKey(
-    user?.role || user?.userRole || user?.adminRole || "",
-  );
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
 
-  return role === "hr" || role === "hr_admin";
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getFirstFilledValue(values = []) {
+  for (const value of values) {
+    const cleanValue = String(value ?? "").trim();
+
+    if (cleanValue) return cleanValue;
+  }
+
+  return "";
+}
+
+function getUserRoleCandidates(user) {
+  return [
+    user?.role,
+    user?.userRole,
+    user?.user_role,
+    user?.adminRole,
+    user?.admin_role,
+    user?.roleName,
+    user?.role_name,
+    user?.userRoleName,
+    user?.user_role_name,
+    user?.position,
+    user?.positionName,
+    user?.position_name,
+    user?.jobTitle,
+    user?.job_title,
+    user?.designation,
+    user?.employeeRole,
+    user?.employee_role,
+    user?.department,
+    user?.departmentName,
+    user?.department_name,
+    user?.deptName,
+    user?.dept_name,
+    getLocalStorageValue([
+      "role",
+      "userRole",
+      "user_role",
+      "adminRole",
+      "admin_role",
+      "roleName",
+      "role_name",
+      "userRoleName",
+      "user_role_name",
+      "position",
+      "positionName",
+      "position_name",
+      "jobTitle",
+      "job_title",
+      "designation",
+      "employeeRole",
+      "employee_role",
+      "department",
+      "departmentName",
+      "department_name",
+      "deptName",
+      "dept_name",
+    ]),
+  ].filter((value) => String(value ?? "").trim() !== "");
+}
+
+function getCurrentRoleKey(user) {
+  return normalizeRoleKey(getFirstFilledValue(getUserRoleCandidates(user)));
+}
+
+function getCurrentAdminAccess(user) {
+  const value =
+    user?.adminAccess ??
+    user?.admin_access ??
+    user?.gy_user_access ??
+    user?.access ??
+    user?.adminLevel ??
+    user?.admin_level ??
+    user?.adminAccessLevel ??
+    user?.admin_access_level ??
+    user?.isAdmin ??
+    user?.is_admin ??
+    getLocalStorageValue([
+      "adminAccess",
+      "admin_access",
+      "gy_user_access",
+      "access",
+      "adminLevel",
+      "admin_level",
+      "adminAccessLevel",
+      "admin_access_level",
+      "isAdmin",
+      "is_admin",
+    ]) ??
+    0;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function isHrRoleValue(value) {
+  const role = normalizeRoleKey(value);
+
+  if (!role) return false;
+
+  if (
+    [
+      "hr",
+      "hr_admin",
+      "hradmin",
+      "hr_manager",
+      "hr_staff",
+      "human_resources",
+      "human_resource",
+      "human_resources_admin",
+      "human_resource_admin",
+      "super_admin",
+      "superadmin",
+    ].includes(role)
+  ) {
+    return true;
+  }
+
+  if (role.includes("human_resource")) return true;
+  if (role.includes("human_resources")) return true;
+
+  return role.startsWith("hr_") || role.endsWith("_hr");
+}
+
+function isHrEditorByUser(user) {
+  const roleCandidates = getUserRoleCandidates(user);
+  const adminAccess = getCurrentAdminAccess(user);
+
+  return roleCandidates.some(isHrRoleValue) || adminAccess === 7;
+}
+
+function canManageHiringPlanByRole(user) {
+  return isHrEditorByUser(user);
 }
 
 function getAccountIdFromAny(item) {
@@ -133,21 +291,104 @@ function getBackendNumber(record, keys, fallback = 0) {
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
 }
 
-function getHeadcountApprovalStatus(record) {
-  return String(
-    record?.headcountStatus ||
-      record?.headcount_status ||
-      record?.approvalStatus ||
-      record?.approval_status ||
-      record?.headcountApprovalStatus ||
-      record?.headcount_approval_status ||
-      record?.status ||
-      "Kronos",
-  ).trim();
+function normalizeStatusValue(value, fallback = "") {
+  const rawValue = String(value ?? "").trim();
+
+  if (!rawValue) return fallback;
+
+  const normalized = rawValue.toLowerCase();
+
+  if (normalized === "approved") return "Approved";
+  if (normalized === "rejected" || normalized === "declined") return "Rejected";
+  if (normalized === "pending") return "Pending";
+
+  return rawValue;
 }
 
-function getDisplayRequiredHeadcount(record) {
-  const status = getHeadcountApprovalStatus(record);
+function getRecruitmentSettingsStatus(record = {}) {
+  return normalizeStatusValue(
+    record?.recruitmentSettingsStatus ||
+      record?.recruitment_settings_status ||
+      record?.recruitmentStatus ||
+      record?.recruitment_status ||
+      record?.baseHeadcountStatus ||
+      record?.base_headcount_status ||
+      record?.status ||
+      "Kronos",
+    "Kronos",
+  );
+}
+
+function getUpdateHeadcountStatus(record = {}) {
+  const rawStatus =
+    record?.updateHeadcountStatus ||
+    record?.update_headcount_status ||
+    record?.managerUpdateStatus ||
+    record?.manager_update_status ||
+    "";
+
+  if (!rawStatus) return "";
+
+  return normalizeStatusValue(rawStatus, "");
+}
+
+function hasPendingUpdateHeadcountRequest(record = {}) {
+  return String(getUpdateHeadcountStatus(record)).toLowerCase() === "pending";
+}
+
+function getHeadcountApprovalStatus(record = {}) {
+  return (
+    getUpdateHeadcountStatus(record) ||
+    getRecruitmentSettingsStatus(record) ||
+    "Kronos"
+  );
+}
+
+function isApprovedRecruitmentSettingsRequest(item = {}) {
+  return (
+    String(getRecruitmentSettingsStatus(item)).trim().toLowerCase() ===
+    "approved"
+  );
+}
+
+function hasActiveRecruitmentSettingsRequest(items = []) {
+  return (items || []).some((item) => {
+    const recruitmentStatus = String(getRecruitmentSettingsStatus(item))
+      .trim()
+      .toLowerCase();
+
+    const updateStatus = String(getUpdateHeadcountStatus(item))
+      .trim()
+      .toLowerCase();
+
+    return recruitmentStatus === "pending" || updateStatus === "pending";
+  });
+}
+
+function canManagerUpdateApprovedHeadcount({
+  item,
+  canEditRequiredHeadcount,
+  weeklyAccess,
+}) {
+  if (!canEditRequiredHeadcount) return false;
+
+  /*
+    Important:
+    HR / HR Admin have full weekly access, but they should NOT see the
+    Update Headcount button in the Weekly Hiring Plan modal.
+    The parent selectedPlanCanEditRequiredHeadcount check already blocks HR.
+    This function only validates that the selected account has an approved
+    Recruitment Settings base request.
+  */
+  if (!item || weeklyAccess?.hasFullAccess) {
+    return false;
+  }
+
+  return isApprovedRecruitmentSettingsRequest(item);
+}
+
+function getDisplayRequiredHeadcount(record = {}) {
+  const recruitmentStatus = getRecruitmentSettingsStatus(record);
 
   const kronosRequiredHeadcount = getBackendNumber(
     record,
@@ -169,7 +410,13 @@ function getDisplayRequiredHeadcount(record) {
     "required_headcount",
   ]);
 
-  if (status === "Approved") {
+  /*
+    required_headcount is the live/approved value.
+    requested_required_headcount is only the pending manager request value.
+    So while update_headcount_status is Pending, the table still shows the
+    approved required_headcount.
+  */
+  if (String(recruitmentStatus).trim().toLowerCase() === "approved") {
     return approvedRequiredHeadcount;
   }
 
@@ -182,6 +429,7 @@ function getLoggedInOwnerDisplay(user) {
       user?.sibsId ||
       user?.sibs_id ||
       user?.gy_user_code ||
+      getLocalStorageValue(["username", "sibsId", "sibs_id", "userCode"]) ||
       "",
   ).trim();
 
@@ -197,11 +445,12 @@ function getLoggedInOwnerDisplay(user) {
     user?.gy_emp_mname || user?.middleName || user?.middle_name || "",
   ).trim();
 
-  const fullName = `${lastName}, ${firstName}${
-    middleName ? ` ${middleName}` : ""
-  }`
-    .replace(/\s+/g, " ")
-    .trim();
+  const fallbackFullName = getLocalStorageValue(["fullName", "full_name"]);
+
+  const fullName =
+    `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ""}`
+      .replace(/\s+/g, " ")
+      .trim() || fallbackFullName;
 
   if (!sibsId && !fullName) return "-";
   if (!fullName) return sibsId.toUpperCase();
@@ -323,7 +572,7 @@ async function openWeeklyHiringPlanFile({ sibsId, filename }) {
 }
 
 function buildWeeklyAccess(user) {
-  const role = String(user?.role || "").toLowerCase();
+  const role = getCurrentRoleKey(user);
   const hasFullAccess = FULL_WEEKLY_ACCESS_ROLES.includes(role);
 
   const assignedAccounts = Array.isArray(user?.assignedAccounts)
@@ -369,13 +618,7 @@ export default function WeeklyHiringPlanPage() {
   const accountDropdownRef = useRef(null);
   const editedRequiredInputsRef = useRef(new Set());
 
-  const adminAccessValue = Number(
-    user?.adminAccess ??
-      user?.admin_access ??
-      user?.gy_user_access ??
-      user?.access ??
-      0,
-  );
+  const adminAccessValue = getCurrentAdminAccess(user);
 
   const assignedAccountAccessValues = Array.isArray(user?.assignedAccounts)
     ? user.assignedAccounts.map((account) =>
@@ -386,18 +629,12 @@ export default function WeeklyHiringPlanPage() {
     : [];
 
   const hasManagerAssignedAccess = assignedAccountAccessValues.includes(5);
+  const userRoleValue = getCurrentRoleKey(user);
 
-  const userRoleValue = String(
-    user?.role ||
-      user?.userRole ||
-      user?.adminRole ||
-      user?.position ||
-      user?.jobTitle ||
-      "",
-  ).toLowerCase();
+  const isHrOrHrAdmin = isHrEditorByUser(user);
 
-  const canEditRequiredHeadcount =
-    [5, 7].includes(adminAccessValue) ||
+  const isManagerOrOps =
+    adminAccessValue === 5 ||
     hasManagerAssignedAccess ||
     userRoleValue.includes("manager") ||
     userRoleValue === "om" ||
@@ -405,6 +642,8 @@ export default function WeeklyHiringPlanPage() {
     userRoleValue === "operation_manager" ||
     userRoleValue === "operations_manager" ||
     userRoleValue === "senior_operations_manager";
+
+  const canEditRequiredHeadcount = Boolean(isHrOrHrAdmin || isManagerOrOps);
 
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
@@ -471,10 +710,7 @@ export default function WeeklyHiringPlanPage() {
   );
 
   const isHiringPlanSnapshotLocked = Boolean(
-    activeWeek?.lockedByDatabase ||
-      activeWeek?.hasSavedSnapshot ||
-      activeWeek?.lockedByInheritedLatestRate ||
-      databaseLockedWeekKeys.has(activeWeekKey),
+    activeWeek?.lockedByDatabase || databaseLockedWeekKeys.has(activeWeekKey),
   );
 
   const activeWeekStartDate = activeWeek?.startDate || "";
@@ -483,9 +719,11 @@ export default function WeeklyHiringPlanPage() {
   const weeklyAccess = useMemo(() => buildWeeklyAccess(user), [user]);
 
   const userAccessReady = useMemo(() => {
-    if (!user) return false;
+    if (!user && !getLocalStorageValue(["role", "userRole", "adminRole"])) {
+      return false;
+    }
 
-    const role = String(user?.role || "").toLowerCase();
+    const role = getCurrentRoleKey(user);
 
     if (FULL_WEEKLY_ACCESS_ROLES.includes(role)) {
       return true;
@@ -559,7 +797,27 @@ export default function WeeklyHiringPlanPage() {
           const startDate = week?.startDate || week?.weekStart || "";
           const endDate = week?.endDate || week?.weekEnd || "";
           const weekKey = `${startDate}__${endDate}`;
-          const hiringPlanPercent = getWeekHiringPlanPercent(week);
+
+          const rawHiringPlanPercent = week?.hiring_plan_percent ?? null;
+
+          const hasHiringPlanPercent =
+            rawHiringPlanPercent !== null &&
+            rawHiringPlanPercent !== undefined &&
+            rawHiringPlanPercent !== "" &&
+            Number(rawHiringPlanPercent) > 0;
+
+          const displayHiringPlanPercent =
+            week?.displayHiringPlanPercent ??
+            week?.display_hiring_plan_percent ??
+            week?.hiringPlanPercent ??
+            week?.hiringRate ??
+            5;
+
+          const hiringPlanPercent = hasHiringPlanPercent
+            ? Number(rawHiringPlanPercent)
+            : getWeekHiringPlanPercent({
+                hiringPlanPercent: displayHiringPlanPercent,
+              });
 
           return {
             ...week,
@@ -573,22 +831,41 @@ export default function WeeklyHiringPlanPage() {
             locked: Boolean(week?.locked),
 
             lockedByDatabase: Boolean(
-              week?.lockedByDatabase || week?.hasSavedSnapshot,
+              hasHiringPlanPercent ||
+                week?.locked_by_database ||
+                week?.is_hiring_plan_locked,
             ),
+
+            isHiringPlanLocked: Boolean(
+              hasHiringPlanPercent || week?.is_hiring_plan_locked,
+            ),
+
+            is_hiring_plan_locked: Boolean(
+              hasHiringPlanPercent || week?.is_hiring_plan_locked,
+            ),
+
+            hasHiringPlanPercent,
+            has_hiring_plan_percent: hasHiringPlanPercent,
+
             hasSavedSnapshot: Boolean(
-              week?.hasSavedSnapshot || week?.lockedByDatabase,
+              week?.hasSavedSnapshot ||
+                week?.has_saved_snapshot ||
+                Number(
+                  week?.savedSnapshotCount || week?.saved_snapshot_count || 0,
+                ) > 0,
             ),
 
             hiringPlanPercent,
-            hiring_plan_percent: hiringPlanPercent,
             hiringRate: hiringPlanPercent,
             hiring_rate: hiringPlanPercent,
+
+            hiring_plan_percent: hasHiringPlanPercent ? hiringPlanPercent : null,
           };
         });
 
         const initialDatabaseLockedWeekKeys = new Set(
           formattedWeeks
-            .filter((week) => week.lockedByDatabase || week.hasSavedSnapshot)
+            .filter((week) => week.lockedByDatabase)
             .map((week) => buildWeekKey(week))
             .filter((key) => key && key !== "__"),
         );
@@ -701,6 +978,10 @@ export default function WeeklyHiringPlanPage() {
           ...week,
           locked: true,
           lockedByDatabase: true,
+          isHiringPlanLocked: true,
+          is_hiring_plan_locked: true,
+          hasHiringPlanPercent: true,
+          has_hiring_plan_percent: true,
           hasSavedSnapshot: true,
           hiringPlanPercent: cleanHiringPlanPercent,
           hiring_plan_percent: cleanHiringPlanPercent,
@@ -791,6 +1072,9 @@ export default function WeeklyHiringPlanPage() {
         }-${accountName.toLowerCase()}-${clusterName.toLowerCase()}`;
 
         if (!uniqueAccountsMap.has(key)) {
+          const recruitmentSettingsStatus =
+            getRecruitmentSettingsStatus(account);
+          const updateHeadcountStatus = getUpdateHeadcountStatus(account);
           const headcountStatus = getHeadcountApprovalStatus(account);
 
           const kronosRequiredHeadcount = getBackendNumber(
@@ -843,8 +1127,21 @@ export default function WeeklyHiringPlanPage() {
             requestedRequiredHeadcount,
             requested_required_headcount: requestedRequiredHeadcount,
 
+            recruitmentSettingsStatus,
+            recruitment_settings_status: recruitmentSettingsStatus,
+
+            updateHeadcountStatus,
+            update_headcount_status: updateHeadcountStatus,
+
             headcountStatus,
             headcount_status: headcountStatus,
+
+            canManagerUpdateHeadcount: isApprovedRecruitmentSettingsRequest({
+              recruitmentSettingsStatus,
+            }),
+            can_manager_update_headcount: isApprovedRecruitmentSettingsRequest({
+              recruitmentSettingsStatus,
+            }),
           });
         }
       });
@@ -955,6 +1252,8 @@ export default function WeeklyHiringPlanPage() {
             ? selectedClusters[0]
             : "Unassigned");
 
+      const recruitmentSettingsStatus = getRecruitmentSettingsStatus(account);
+      const updateHeadcountStatus = getUpdateHeadcountStatus(account);
       const headcountStatus = getHeadcountApprovalStatus(account);
 
       const kronosRequiredHeadcount = getBackendNumber(
@@ -1115,8 +1414,21 @@ export default function WeeklyHiringPlanPage() {
         requestedRequiredHeadcount,
         requested_required_headcount: requestedRequiredHeadcount,
 
+        recruitmentSettingsStatus,
+        recruitment_settings_status: recruitmentSettingsStatus,
+
+        updateHeadcountStatus,
+        update_headcount_status: updateHeadcountStatus,
+
         headcountStatus,
         headcount_status: headcountStatus,
+
+        canManagerUpdateHeadcount: isApprovedRecruitmentSettingsRequest({
+          recruitmentSettingsStatus,
+        }),
+        can_manager_update_headcount: isApprovedRecruitmentSettingsRequest({
+          recruitmentSettingsStatus,
+        }),
 
         actualHeadcount,
         actual_headcount: actualHeadcount,
@@ -1356,8 +1668,17 @@ export default function WeeklyHiringPlanPage() {
           requestedRequiredHeadcount: 0,
           requested_required_headcount: 0,
 
+          recruitmentSettingsStatus: "Kronos",
+          recruitment_settings_status: "Kronos",
+
+          updateHeadcountStatus: "",
+          update_headcount_status: "",
+
           headcountStatus: "Kronos",
           headcount_status: "Kronos",
+
+          canManagerUpdateHeadcount: false,
+          can_manager_update_headcount: false,
 
           actualHeadcount: 0,
           actual_headcount: 0,
@@ -1379,6 +1700,8 @@ export default function WeeklyHiringPlanPage() {
           attrition_past_six_weeks_average: 0,
 
           opsPrf: 0,
+          ops_prf: 0,
+
           projectedEmployeeNeeds: 0,
           projected_employee_needs: 0,
 
@@ -1387,23 +1710,22 @@ export default function WeeklyHiringPlanPage() {
 
           attritionFstToPstCount: 0,
           attritionFstToPstPercent: 0,
-
           attritionNhoToFstPstCount: 0,
           attritionNhoToFstPstPercent: 0,
-
           attritionInterviewToNhoCount: 0,
           attritionInterviewToNhoPercent: 0,
 
           leadsToInterview: 0,
           leads_to_interview: 0,
 
-          hiringPlanPercent: activeHiringPlanPercent,
-          hiring_plan_percent: activeHiringPlanPercent,
           hiringRate: activeHiringPlanPercent,
           hiring_rate: activeHiringPlanPercent,
+          hiringPlanPercent: activeHiringPlanPercent,
+          hiring_plan_percent: activeHiringPlanPercent,
 
           pipelineStatus: "Pending",
-          statusNote: ghlName || "No weekly hiring plan record yet.",
+          statusNote: ghlName || "-",
+
           owner: "-",
 
           actionItem: "",
@@ -1420,7 +1742,7 @@ export default function WeeklyHiringPlanPage() {
           action_item_remarks: "",
           actionItems: [],
 
-          departmentName: account.departmentName || account.department || "",
+          departmentName: "",
           priorityLevel: "",
           headcountRemarks: "",
           uploadedFile: "",
@@ -1433,105 +1755,105 @@ export default function WeeklyHiringPlanPage() {
 
     return [...hiringPlanAdjustedData, ...emptyAssignedRows];
   }, [
-    hiringPlanAdjustedData,
-    weeklyAccess,
     activeWeek,
     activeWeekId,
-    selectedHiringPlanPercent,
+    hiringPlanAdjustedData,
     isHiringPlanSnapshotLocked,
+    selectedHiringPlanPercent,
+    weeklyAccess,
   ]);
 
   useEffect(() => {
     setRequiredInputs((prev) => {
-      const nextInputs = {};
+      const next = { ...prev };
 
       managerDisplayData.forEach((item) => {
-        const hasUserTypedValue =
-          editedRequiredInputsRef.current.has(item.id) &&
-          prev[item.id] !== undefined &&
-          prev[item.id] !== null &&
-          prev[item.id] !== "";
+        if (editedRequiredInputsRef.current.has(item.id)) return;
 
-        nextInputs[item.id] = hasUserTypedValue
-          ? prev[item.id]
-          : String(item.requiredHeadcount ?? item.required_headcount ?? 0);
+        next[item.id] = String(
+          item.requiredHeadcount ?? item.required_headcount ?? 0,
+        );
       });
 
-      return nextInputs;
+      return next;
     });
   }, [managerDisplayData]);
 
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
-    return managerDisplayData.filter((item) => {
-      const cluster = item.cluster || "Unassigned Cluster";
-      const account = item.account || "Unassigned Account";
-      const accountId = getAccountIdFromAny(item);
+    const plans = managerDisplayData.filter((item) => {
+      if (!isAllAccountsSelected()) {
+        const accountName = item.account || item.accountName || "";
 
-      const matchesAssignedAccount =
-        weeklyAccess.hasFullAccess ||
-        weeklyAccess.assignedAccountNames.has(account) ||
-        (accountId && weeklyAccess.assignedAccountIds.has(accountId));
+        if (!selectedAccounts.includes(accountName)) {
+          return false;
+        }
+      }
 
-      const matchesAssignedCluster =
-        weeklyAccess.hasFullAccess ||
-        weeklyAccess.assignedClusterNames.has(cluster);
+      if (!keyword) return true;
 
-      const matchesUserAccess =
-        weeklyAccess.hasFullAccess ||
-        (matchesAssignedAccount && matchesAssignedCluster);
+      const searchableText = [
+        item.account,
+        item.accountName,
+        item.cluster,
+        item.clusterName,
+        item.pipelineStatus,
+        item.statusNote,
+        item.departmentName,
+        item.recruitmentSettingsStatus,
+        item.recruitment_settings_status,
+        item.updateHeadcountStatus,
+        item.update_headcount_status,
+        item.headcountStatus,
+        item.headcount_status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-      const matchesCluster =
-        isAllClustersSelected() || selectedClusters.includes(cluster);
-
-      const matchesAccount =
-        isAllAccountsSelected() || selectedAccounts.includes(account);
-
-      const matchesKeyword =
-        !keyword ||
-        String(item.week || activeWeek?.label || "")
-          .toLowerCase()
-          .includes(keyword) ||
-        cluster.toLowerCase().includes(keyword) ||
-        account.toLowerCase().includes(keyword) ||
-        String(item.pipelineStatus || "").toLowerCase().includes(keyword) ||
-        String(item.statusNote || "").toLowerCase().includes(keyword) ||
-        String(item.owner || "").toLowerCase().includes(keyword) ||
-        String(item.actionItem || "").toLowerCase().includes(keyword) ||
-        String(item.actionItemOwner || "").toLowerCase().includes(keyword) ||
-        String(item.actionItemStatus || "").toLowerCase().includes(keyword) ||
-        String(item.headcountStatus || "").toLowerCase().includes(keyword);
-
-      return (
-        matchesUserAccess &&
-        matchesCluster &&
-        matchesAccount &&
-        matchesKeyword
-      );
+      return searchableText.includes(keyword);
     });
-  }, [
-    managerDisplayData,
-    activeWeek?.label,
-    search,
-    selectedClusters,
-    selectedAccounts,
-    weeklyAccess,
-  ]);
 
-  const activeWeekIndex = weeklyVersions.findIndex(
-    (week) => week.id === activeWeekId,
-  );
+    return plans;
+  }, [managerDisplayData, search, selectedAccounts]);
 
-  const previousWeek = weeklyVersions[activeWeekIndex + 1];
+  const previousWeekData = useMemo(() => {
+    if (!weeklyVersions.length || !activeWeek) return [];
+
+    const currentIndex = weeklyVersions.findIndex(
+      (week) => week.id === activeWeek.id,
+    );
+
+    const previousWeek = weeklyVersions[currentIndex + 1];
+
+    if (!previousWeek) return [];
+
+    return previousWeek.records || [];
+  }, [weeklyVersions, activeWeek]);
 
   const previousSelectedPlan = selectedPlan
-    ? previousWeek?.records?.find(
+    ? previousWeekData.find(
         (record) =>
           record.account === selectedPlan.account &&
           record.cluster === selectedPlan.cluster,
       )
     : null;
+
+  useEffect(() => {
+    if (!selectedPlan) return;
+
+    const refreshedPlan = filteredPlans.find(
+      (plan) => String(plan.id) === String(selectedPlan.id),
+    );
+
+    if (refreshedPlan) {
+      setSelectedPlan((prev) => ({
+        ...prev,
+        ...refreshedPlan,
+      }));
+    }
+  }, [filteredPlans, selectedPlan]);
 
   function openStatusModal({
     type = "success",
@@ -1544,18 +1866,22 @@ export default function WeeklyHiringPlanPage() {
       type,
       title,
       message,
+      closeViewModalOnSuccess,
     });
-
-    if (type === "success" && closeViewModalOnSuccess) {
-      setSelectedPlan(null);
-    }
   }
 
   function closeStatusModal() {
-    setStatusModal((current) => ({
-      ...current,
+    const shouldCloseViewModal =
+      statusModal.type === "success" && statusModal.closeViewModalOnSuccess;
+
+    setStatusModal((prev) => ({
+      ...prev,
       open: false,
     }));
+
+    if (shouldCloseViewModal) {
+      setSelectedPlan(null);
+    }
   }
 
   async function handleLockWeeklyHiringPlan() {
@@ -1568,77 +1894,84 @@ export default function WeeklyHiringPlanPage() {
       return;
     }
 
-    if (lockingWeeklyPlan || accountsLoading || weeksLoading) return;
+    if (hasActiveRecruitmentSettingsRequest(filteredPlans)) {
+      openStatusModal({
+        type: "error",
+        title: "Pending Headcount Request",
+        message:
+          "Please approve or reject pending Recruitment Settings or Update Headcount requests before locking the hiring plan percentage.",
+      });
+      return;
+    }
 
     if (isHiringPlanSnapshotLocked) {
       openStatusModal({
         type: "error",
         title: "Already Locked",
         message:
-          "This weekly hiring plan already has a saved snapshot. You cannot lock the same week again.",
-      });
-      return;
-    }
-
-    if (!activeWeek || !activeWeekStartDate || !activeWeekEndDate) {
-      openStatusModal({
-        type: "error",
-        title: "Missing Weekly Version",
-        message: "Please select a valid weekly version first.",
-      });
-      return;
-    }
-
-    if (!selectedHiringPlanPercent) {
-      openStatusModal({
-        type: "error",
-        title: "Missing Hiring Plan",
-        message: "Please select a hiring plan percentage first.",
+          "This weekly hiring plan percentage is already locked for the selected week.",
       });
       return;
     }
 
     const recordsToSave = (filteredPlans || [])
-      .filter((item) => getText(item.account || item.accountName))
-      .map((item) => ({
-        clusterName: item.cluster || item.clusterName || item.cluster_name || "",
-        accountName: item.account || item.accountName || item.account_name || "",
-
-        requiredHeadcount: Number(
+      .filter((item) => item.account)
+      .map((item) => {
+        const cleanRequiredHeadcount = Number(
           item.requiredHeadcount || item.required_headcount || 0,
-        ),
+        );
 
-        actualHeadcount: Number(
+        const cleanActualHeadcount = Number(
           item.actualHeadcount || item.actual_headcount || 0,
-        ),
+        );
 
-        opsPrf: Number(item.opsPrf || item.ops_prf || 0),
+        const cleanOpsPrf = Number(item.opsPrf || item.ops_prf || 0);
 
-        actualHeadcountNeeds: Number(
+        const cleanActualHeadcountNeeds = Number(
           item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
-        ),
+        );
 
-        leadsToInterview: Number(
+        const cleanLeadsToInterview = Number(
           item.leadsToInterview || item.leads_to_interview || 0,
-        ),
+        );
 
-        hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
-        hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
+        const recruitmentStatus = getRecruitmentSettingsStatus(item);
 
-        priorityLevel: item.priorityLevel || item.priority_level || "",
+        return {
+          weekNumber: activeWeek?.weekNumber || null,
+          weekLabel: activeWeek?.label || null,
+          weekStart: activeWeekStartDate,
+          weekEnd: activeWeekEndDate,
+          clusterName: item.cluster || item.clusterName || "",
+          accountName: item.account || item.accountName || "",
 
-        remarks:
-          item.headcountRemarks ||
-          item.remarks ||
-          item.statusNote ||
-          `Locked hiring plan at ${selectedHiringPlanPercent}%`,
+          requiredHeadcount: cleanRequiredHeadcount,
+          actualHeadcount: cleanActualHeadcount,
+          opsPrf: cleanOpsPrf,
+          actualHeadcountNeeds: cleanActualHeadcountNeeds,
+          leadsToInterview: cleanLeadsToInterview,
 
-        uploadedFile: item.uploadedFile || item.uploaded_file || "",
-        uploadedBySibsId:
-          item.uploadedBySibsId || item.uploaded_by_sibs_id || "",
+          hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
+          hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
 
-        status: item.status === "Approved" ? "Approved" : "Pending",
-      }));
+          priorityLevel: item.priorityLevel || item.priority_level || "",
+
+          remarks:
+            item.headcountRemarks ||
+            item.remarks ||
+            item.statusNote ||
+            `Locked hiring plan at ${selectedHiringPlanPercent}%`,
+
+          uploadedFile: item.uploadedFile || item.uploaded_file || "",
+          uploadedBySibsId:
+            item.uploadedBySibsId || item.uploaded_by_sibs_id || "",
+
+          status:
+            String(recruitmentStatus).toLowerCase() === "approved"
+              ? "Approved"
+              : "Pending",
+        };
+      });
 
     if (!recordsToSave.length) {
       openStatusModal({
@@ -1736,14 +2069,25 @@ export default function WeeklyHiringPlanPage() {
   async function handleSaveRequiredHeadcount(item, options = {}) {
     const { silent = false, overrideRequiredHeadcount } = options;
 
-    if (!canEditRequiredHeadcount) {
+    const canUpdateThisRequest =
+      !isHrOrHrAdmin &&
+      isManagerOrOps &&
+      canManagerUpdateApprovedHeadcount({
+        item,
+        canEditRequiredHeadcount,
+        weeklyAccess,
+      });
+
+    if (!canUpdateThisRequest) {
       if (!silent) {
         openStatusModal({
           type: "error",
-          title: "Permission Denied",
-          message: "You do not have permission to edit required headcount.",
+          title: "Approval Required",
+          message:
+            "Manager updates are allowed only after the Recruitment Settings headcount request is approved.",
         });
       }
+
       return;
     }
 
@@ -1800,9 +2144,6 @@ export default function WeeklyHiringPlanPage() {
         actualHeadcountNeeds: Number(
           item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
         ),
-        leadsToInterview: Number(
-          item.leadsToInterview || item.leads_to_interview || 0,
-        ),
         priorityLevel: item.priorityLevel || item.priority_level || null,
         remarks:
           item.headcountRemarks || item.remarks || item.statusNote || null,
@@ -1821,8 +2162,8 @@ export default function WeeklyHiringPlanPage() {
       if (!silent) {
         openStatusModal({
           type: "success",
-          title: "Required Headcount Submitted",
-          message: `Required headcount update for ${item.account} was submitted for approval. The table will continue showing Kronos-based headcount until approved.`,
+          title: "Update Headcount Submitted",
+          message: `Update Headcount request for ${item.account} was submitted for approval. The table will continue showing the approved headcount until the update is approved.`,
           closeViewModalOnSuccess: true,
         });
       }
@@ -1847,13 +2188,23 @@ export default function WeeklyHiringPlanPage() {
   }
 
   async function handleUpdateWeeklyPlanFile(item, overrideRequiredHeadcount) {
-    if (!canEditRequiredHeadcount) {
+    const canUpdateThisRequest =
+      !isHrOrHrAdmin &&
+      isManagerOrOps &&
+      canManagerUpdateApprovedHeadcount({
+        item,
+        canEditRequiredHeadcount,
+        weeklyAccess,
+      });
+
+    if (!canUpdateThisRequest) {
       openStatusModal({
         type: "error",
-        title: "Permission Denied",
+        title: "Approval Required",
         message:
-          "You do not have permission to update the weekly hiring plan file.",
+          "Manager file updates are allowed only after the Recruitment Settings headcount request is approved.",
       });
+
       return;
     }
 
@@ -1918,9 +2269,6 @@ export default function WeeklyHiringPlanPage() {
         actualHeadcountNeeds: Number(
           item.actualHeadcountNeeds || item.actual_headcount_needs || 0,
         ),
-        leadsToInterview: Number(
-          item.leadsToInterview || item.leads_to_interview || 0,
-        ),
         priorityLevel: item.priorityLevel || item.priority_level || null,
         remarks:
           item.headcountRemarks || item.remarks || item.statusNote || null,
@@ -1946,7 +2294,7 @@ export default function WeeklyHiringPlanPage() {
       openStatusModal({
         type: "success",
         title: "Update Submitted",
-        message: `Weekly hiring plan update for ${item.account} was submitted for approval. The table will continue showing Kronos-based headcount until approved.`,
+        message: `Weekly hiring plan update for ${item.account} was submitted for approval. The table will continue showing the approved headcount until the new update is approved.`,
         closeViewModalOnSuccess: true,
       });
     } catch (error) {
@@ -2168,14 +2516,12 @@ export default function WeeklyHiringPlanPage() {
       });
 
       setRemoteAccounts((prev) =>
-        (prev || []).map((account) => {
+        prev.map((account) => {
           const sameAccount =
             String(account.accountName || account.account || "")
               .trim()
               .toLowerCase() ===
-            String(actionItemTarget.account || "")
-              .trim()
-              .toLowerCase();
+            String(actionItemTarget.account || "").trim().toLowerCase();
 
           if (!sameAccount) return account;
 
@@ -2191,7 +2537,7 @@ export default function WeeklyHiringPlanPage() {
       openStatusModal({
         type: "success",
         title: "Action Item Saved",
-        message: "The action item was saved successfully.",
+        message: "The weekly hiring action item was saved successfully.",
       });
     } catch (error) {
       console.error("SAVE ACTION ITEM ERROR:", error);
@@ -2233,8 +2579,26 @@ export default function WeeklyHiringPlanPage() {
       });
   }, [accountOptions, accountSearch]);
 
+  const selectedPlanCanEditRequiredHeadcount = selectedPlan
+    ? !isHrOrHrAdmin &&
+      isManagerOrOps &&
+      canManagerUpdateApprovedHeadcount({
+        item: selectedPlan,
+        canEditRequiredHeadcount,
+        weeklyAccess,
+      })
+    : false;
+
+  const hasPendingRecruitmentSettingsRequest =
+    hasActiveRecruitmentSettingsRequest(filteredPlans);
+
+  const canEditHiringPlanPercentNow =
+    canManageHiringPlanPercent && !hasPendingRecruitmentSettingsRequest;
+
   return (
-    <div className={`flex h-screen flex-1 flex-col ${FLAT_PAGE_BG} font-jakarta`}>
+    <div
+      className={`flex h-screen flex-1 flex-col ${FLAT_PAGE_BG} font-jakarta`}
+    >
       <Header />
 
       <main
@@ -2252,21 +2616,18 @@ export default function WeeklyHiringPlanPage() {
               Weekly Hiring Plan
             </h1>
 
-            <p className="mt-1 max-w-3xl text-sm font-medium text-sibs-tertiary-5">
+            <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
               Manage weekly manpower requirement, OPS PRF, hiring plan
               percentage, leads needed, and action items.
             </p>
-
-            {!weeklyAccess.hasFullAccess && (
-              <p className="mt-2 inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                Manager View: showing assigned accounts only.
-              </p>
-            )}
           </div>
         </div>
 
-        <div className="space-y-5">
-          <section className="relative z-[80] overflow-visible rounded-[10px] border border-[#E1E7EF] bg-white shadow-sm">
+        <div className="space-y-4">
+          <section
+            className={`relative z-[50] ${APPROVAL_EDGE}`}
+            style={{ animationDelay: "0ms" }}
+          >
             <WeeklyVersionTable
               weekDropdownRef={weekDropdownRef}
               clusterDropdownRef={clusterDropdownRef}
@@ -2296,7 +2657,7 @@ export default function WeeklyHiringPlanPage() {
               setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
               isLocked={isWeekLockedForDisplay}
               isHiringPlanSnapshotLocked={isHiringPlanSnapshotLocked}
-              canManageHiringPlanPercent={canManageHiringPlanPercent}
+              canManageHiringPlanPercent={canEditHiringPlanPercentNow}
               canEditRequiredHeadcount={canEditRequiredHeadcount}
               isAllClustersSelected={isAllClustersSelected}
               isAllAccountsSelected={isAllAccountsSelected}
@@ -2355,7 +2716,7 @@ export default function WeeklyHiringPlanPage() {
         open={!!selectedPlan}
         item={selectedPlan}
         locked={isHiringPlanSnapshotLocked}
-        canEditRequiredHeadcount={canEditRequiredHeadcount}
+        canEditRequiredHeadcount={selectedPlanCanEditRequiredHeadcount}
         previousWeekItem={previousSelectedPlan}
         requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}
         savingRequiredId={savingRequiredId}

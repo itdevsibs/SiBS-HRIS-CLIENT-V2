@@ -34,6 +34,7 @@ import {
   getSupervisorResignations,
 } from "../../lib/axios/getEmployee";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
+import api from "../../lib/axios/api-template";
 
 const APPROVAL_MODULES = [
   "Attrition",
@@ -41,6 +42,212 @@ const APPROVAL_MODULES = [
   "Job Description",
   "Hiring Needs",
 ];
+
+const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
+  Attrition: ["Resignation", "Attrition"],
+  "Weekly Hiring Plan": [
+    "Recruitment Settings",
+    "Update Headcount",
+    "Weekly Hiring Plan",
+  ],
+  "Job Description": ["Job Description"],
+  "Hiring Needs": ["Hiring Needs"],
+};
+
+function normalizeApprovalNotificationStatus(value) {
+  const cleanValue = String(value || "").trim().toLowerCase();
+
+  if (cleanValue === "approved") return "Approved";
+  if (cleanValue === "for review") return "For Review";
+  if (cleanValue === "rejected") return "Rejected";
+  if (cleanValue === "declined") return "Rejected";
+  if (cleanValue === "retained") return "Rejected";
+  if (cleanValue === "pending") return "Pending";
+
+  return "Pending";
+}
+
+function getApprovalNotificationStatus(item = {}) {
+  const raw = item.raw || {};
+
+  return normalizeApprovalNotificationStatus(
+    item.status ||
+      item.recruitmentSettingsStatus ||
+      item.recruitment_settings_status ||
+      item.updateHeadcountStatus ||
+      item.update_headcount_status ||
+      raw.status ||
+      raw.recruitmentSettingsStatus ||
+      raw.recruitment_settings_status ||
+      raw.updateHeadcountStatus ||
+      raw.update_headcount_status ||
+      "",
+  );
+}
+
+function getApprovalNotificationKey(moduleName, item = {}) {
+  return [
+    moduleName,
+    item.source || item.module || "approval",
+    item.rawId || item.raw_id || item.id || "",
+    item.type || item.requestType || item.request_type || "",
+  ].join("::");
+}
+
+function countApprovalNotificationData(moduleName, data = []) {
+  const uniqueItems = new Map();
+
+  data.forEach((item) => {
+    const key = getApprovalNotificationKey(moduleName, item);
+
+    if (!uniqueItems.has(key)) {
+      uniqueItems.set(key, item);
+    }
+  });
+
+  return Array.from(uniqueItems.values()).filter((item) => {
+    const status = getApprovalNotificationStatus(item);
+
+    return status === "Pending" || status === "For Review";
+  }).length;
+}
+
+async function getApprovalNotificationCountByModule(moduleName) {
+  const types = APPROVAL_NOTIFICATION_TYPES_BY_MODULE[moduleName] || [""];
+
+  const results = await Promise.allSettled(
+    types.map((type) =>
+      getApprovalRequestsByModule(moduleName, {
+        page: 1,
+        limit: 500,
+        search: "",
+        status: "",
+        type,
+      }),
+    ),
+  );
+
+  const fulfilledResults = results
+    .filter((item) => item.status === "fulfilled")
+    .map((item) => item.value)
+    .filter((result) => result?.success);
+
+  const mergedData = fulfilledResults.flatMap((result) =>
+    Array.isArray(result?.data) ? result.data : [],
+  );
+
+  if (mergedData.length > 0) {
+    return countApprovalNotificationData(moduleName, mergedData);
+  }
+
+  return fulfilledResults.reduce((sum, result) => {
+    const counts = result?.counts || {};
+
+    return (
+      sum +
+      Number(counts.pending || 0) +
+      Number(counts.forReview || 0)
+    );
+  }, 0);
+}
+
+
+function normalizeSidebarRoleValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isHrOrHrAdminUser(user = {}) {
+  const roleValues = [
+    user?.role,
+    user?.roleName,
+    user?.role_name,
+    user?.userRole,
+    user?.user_role,
+    user?.accountType,
+    user?.account_type,
+  ]
+    .map(normalizeSidebarRoleValue)
+    .filter(Boolean);
+
+  const adminAccess = Number(
+    user?.adminAccess ?? user?.admin_access ?? user?.admin_level ?? 0,
+  );
+
+  return (
+    roleValues.some((role) =>
+      [
+        "hr",
+        "hr_admin",
+        "hradmin",
+        "human_resource",
+        "human_resources",
+        "human_resource_admin",
+        "human_resources_admin",
+        "super_admin",
+      ].includes(role),
+    ) || [6, 7].includes(adminAccess)
+  );
+}
+
+function getResignationNotificationStatus(item = {}) {
+  return normalizeApprovalNotificationStatus(
+    item?.status ||
+      item?.resignationStatus ||
+      item?.resignation_status ||
+      item?.raw?.status ||
+      item?.raw?.resignationStatus ||
+      item?.raw?.resignation_status ||
+      "",
+  );
+}
+
+function getResignationNotificationKey(item = {}) {
+  return [
+    item?.source || "resignation-management",
+    item?.rawId || item?.raw_id || item?.id || "",
+    item?.resignationId || item?.resignation_id || "",
+    item?.attritionId || item?.attrition_id || "",
+    item?.sibsId || item?.sibs_id || item?.employeeSibsId || "",
+  ].join("::");
+}
+
+function countResignationManagementNotificationData(data = []) {
+  const uniqueItems = new Map();
+
+  data.forEach((item) => {
+    const key = getResignationNotificationKey(item);
+
+    if (!uniqueItems.has(key)) {
+      uniqueItems.set(key, item);
+    }
+  });
+
+  return Array.from(uniqueItems.values()).filter((item) => {
+    const status = getResignationNotificationStatus(item);
+
+    return status === "Pending" || status === "For Review";
+  }).length;
+}
+
+async function getResignationManagementNotificationCount() {
+  const res = await api.get("/api/resignation-management", {
+    params: {
+      page: 1,
+      limit: 500,
+      search: "",
+      status: "",
+      type: "",
+    },
+    withCredentials: true,
+  });
+
+  const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+
+  return countResignationManagementNotificationData(data);
+}
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
@@ -183,29 +390,16 @@ export default function Sidebar() {
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
-      const results = await Promise.all(
+      const moduleCounts = await Promise.all(
         APPROVAL_MODULES.map((moduleName) =>
-          getApprovalRequestsByModule(moduleName, {
-            page: 1,
-            limit: 200,
-            search: "",
-            status: "",
-            type: moduleName === "Attrition" ? "Resignation" : "",
-          }),
+          getApprovalNotificationCountByModule(moduleName),
         ),
       );
 
-      const totalPending = results.reduce((sum, result) => {
-        if (!result?.success) return sum;
-
-        const counts = result?.counts || {};
-
-        return (
-          sum +
-          Number(counts.pending || 0) +
-          Number(counts.forReview || 0)
-        );
-      }, 0);
+      const totalPending = moduleCounts.reduce(
+        (sum, count) => sum + Number(count || 0),
+        0,
+      );
 
       setApprovalRequestNotificationCount(totalPending);
     } catch (error) {
@@ -292,6 +486,17 @@ export default function Sidebar() {
 
     async function fetchAttritionNotifications() {
       try {
+        if (isHrOrHrAdminUser(user)) {
+          const allResignationCount =
+            await getResignationManagementNotificationCount();
+
+          if (isMounted) {
+            setAttritionNotificationCount(allResignationCount);
+          }
+
+          return;
+        }
+
         const [resignationResult, attritionResult] = await Promise.all([
           getSupervisorResignations(),
           getSupervisorAttritions(),
@@ -305,9 +510,11 @@ export default function Sidebar() {
           ? attritionResult.data || []
           : [];
 
-        const pendingResignationCount = resignationData.filter(
-          (item) => item.status === "Pending",
-        ).length;
+        const pendingResignationCount = resignationData.filter((item) => {
+          const status = normalizeApprovalNotificationStatus(item?.status);
+
+          return status === "Pending" || status === "For Review";
+        }).length;
 
         const pendingAttritionCount = attritionData.filter((item) => {
           const isDeclined =
@@ -341,8 +548,13 @@ export default function Sidebar() {
 
     fetchAttritionNotifications();
 
+    const interval = window.setInterval(() => {
+      fetchAttritionNotifications();
+    }, 30000);
+
     return () => {
       isMounted = false;
+      window.clearInterval(interval);
     };
   }, [mounted, loading, user, pathname, ADMIN_ROLES]);
 
@@ -531,7 +743,8 @@ export default function Sidebar() {
       name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
-      allowedUsers: [6, 7],
+      allowedUsers: [3, 4, 6, 7],
+      notificationCount: approvalRequestNotificationCount,
     },
     {
       name: "Email Logs",
@@ -681,7 +894,7 @@ export default function Sidebar() {
         />
       )}
 
-      {isMobile && (
+      {isMobile && !mobileOpen && (
         <button
           type="button"
           onClick={() => setMobileOpen(true)}

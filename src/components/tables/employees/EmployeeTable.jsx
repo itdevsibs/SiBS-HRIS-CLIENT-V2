@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Search,
   Mail,
   Phone,
   Briefcase,
@@ -332,6 +333,7 @@ export default function EmployeeTable() {
     page = 1,
     search = "",
     searchInput = "",
+    setSearch,
     setSearchInput,
     handleSearchKeyDown,
     loading,
@@ -566,6 +568,14 @@ export default function EmployeeTable() {
     goToPage(currentPage + 1);
   }
 
+  function handleEmployeeSearchSubmit() {
+    goToPage(1);
+
+    if (typeof setSearch === "function") {
+      setSearch(searchInput);
+    }
+  }
+
   function handleEmployeeSearchKeyDown(e) {
     if (typeof handleSearchKeyDown === "function") {
       handleSearchKeyDown(e);
@@ -659,7 +669,7 @@ export default function EmployeeTable() {
           subtitle="Only 15 employee records are loaded from the backend per page."
           loading={loading}
           searchValue={searchInput}
-          searchPlaceholder="Search employee then press Enter"
+          searchPlaceholder="Search employee..."
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleEmployeeSearchKeyDown}
           dropdownFilters={
@@ -691,8 +701,20 @@ export default function EmployeeTable() {
               : []
           }
           showPagination={false}
-          className="mb-5"
+          className="mb-3"
         />
+
+        <div className="mb-5 block sm:hidden">
+          <button
+            type="button"
+            onClick={handleEmployeeSearchSubmit}
+            disabled={loading}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Search size={17} />
+            Search
+          </button>
+        </div>
 
         <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
           <div
@@ -701,7 +723,7 @@ export default function EmployeeTable() {
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`max-h-[670px] overflow-auto select-none ${
+            className={`max-h-[670px] select-none overflow-auto ${
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >

@@ -88,6 +88,23 @@ function getNumberValue(...values) {
   return 0;
 }
 
+function normalizeStatusValue(value, fallback = "") {
+  const rawValue = String(value ?? "").trim();
+
+  if (!rawValue) return fallback;
+
+  const normalized = rawValue.toLowerCase();
+
+  if (normalized === "approved") return "Approved";
+  if (normalized === "rejected" || normalized === "declined") {
+    return "Rejected";
+  }
+  if (normalized === "pending") return "Pending";
+  if (normalized === "kronos") return "Kronos";
+
+  return rawValue;
+}
+
 function getStatusClass(status) {
   switch (status) {
     case "Approved":
@@ -108,30 +125,73 @@ function getStatusClass(status) {
       return "border-amber-200 bg-amber-50 text-amber-700";
     case "Not Started":
       return "border-slate-200 bg-slate-50 text-slate-700";
+    case "Kronos":
+      return "border-slate-200 bg-slate-50 text-slate-700";
+    case "No Request":
+      return "border-slate-200 bg-slate-50 text-slate-600";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
-function getHeadcountStatusText(item) {
-  const rawStatus = String(
-    getSafeValue(
-      item?.headcountStatus,
-      item?.headcount_status,
-      item?.approvalStatus,
-      item?.approval_status,
-      item?.headcountApprovalStatus,
-      item?.headcount_approval_status,
-      item?.status,
-      ""
-    )
-  ).trim();
+function getRecruitmentSettingsStatusText(item) {
+  const rawStatus = getSafeValue(
+    item?.recruitmentSettingsStatus,
+    item?.recruitment_settings_status,
+    item?.recruitmentStatus,
+    item?.recruitment_status,
+    item?.baseHeadcountStatus,
+    item?.base_headcount_status,
+    item?.status,
+    "Kronos",
+  );
 
-  if (!rawStatus || rawStatus.toLowerCase() === "kronos") {
+  return normalizeStatusValue(rawStatus, "Kronos");
+}
+
+function getUpdateHeadcountStatusText(item) {
+  const rawStatus = getSafeValue(
+    item?.updateHeadcountStatus,
+    item?.update_headcount_status,
+    item?.managerUpdateStatus,
+    item?.manager_update_status,
+    "",
+  );
+
+  if (!rawStatus) return "";
+
+  return normalizeStatusValue(rawStatus, "");
+}
+
+function getHeadcountStatusText(item) {
+  const updateHeadcountStatus = getUpdateHeadcountStatusText(item);
+
+  if (updateHeadcountStatus) return updateHeadcountStatus;
+
+  const recruitmentSettingsStatus = getRecruitmentSettingsStatusText(item);
+
+  if (
+    !recruitmentSettingsStatus ||
+    recruitmentSettingsStatus.toLowerCase() === "kronos"
+  ) {
     return "";
   }
 
-  return rawStatus;
+  return recruitmentSettingsStatus;
+}
+
+function StatusBadge({ status, emptyText = "--" }) {
+  const displayStatus = status || emptyText;
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+        displayStatus,
+      )}`}
+    >
+      {displayStatus}
+    </span>
+  );
 }
 
 function getFileExtension(filename) {
@@ -182,7 +242,7 @@ function FileTypeIcon({ filename }) {
 
       <div
         className={`absolute -left-2 bottom-1 rounded-md px-2 py-1 text-[9px] font-bold text-white shadow ${getFileTypeIconClass(
-          filename
+          filename,
         )}`}
       >
         {label}
@@ -318,28 +378,28 @@ function normalizeActionItems(item) {
   const directOwner = getSafeValue(
     item?.actionItemOwner,
     item?.action_item_owner,
-    item?.owner
+    item?.owner,
   );
   const directOwnerSibsId = getSafeValue(
     item?.actionItemOwnerSibsId,
     item?.action_item_owner_sibs_id,
     item?.ownerSibsId,
-    item?.owner_sibs_id
+    item?.owner_sibs_id,
   );
   const directDeadline = getSafeValue(
     item?.actionItemDeadline,
     item?.action_item_deadline,
-    item?.deadline
+    item?.deadline,
   );
   const directStatus = getSafeValue(
     item?.actionItemStatus,
     item?.action_item_status,
-    item?.status
+    "Pending",
   );
   const directRemarks = getSafeValue(
     item?.actionItemRemarks,
     item?.action_item_remarks,
-    item?.remarks
+    item?.remarks,
   );
 
   if (Array.isArray(item?.actionItems) && item.actionItems.length > 0) {
@@ -350,29 +410,29 @@ function normalizeActionItems(item) {
         owner: getSafeValue(
           action.owner,
           action.actionItemOwner,
-          action.action_item_owner
+          action.action_item_owner,
         ),
         ownerSibsId: getSafeValue(
           action.ownerSibsId,
           action.owner_sibs_id,
           action.actionItemOwnerSibsId,
-          action.action_item_owner_sibs_id
+          action.action_item_owner_sibs_id,
         ),
         deadline: getSafeValue(
           action.deadline,
           action.actionItemDeadline,
-          action.action_item_deadline
+          action.action_item_deadline,
         ),
         status: getSafeValue(
           action.status,
           action.actionItemStatus,
           action.action_item_status,
-          "Pending"
+          "Pending",
         ),
         remarks: getSafeValue(
           action.actionItemRemarks,
           action.action_item_remarks,
-          action.remarks
+          action.remarks,
         ),
       }))
       .filter((action) => action.actionItem);
@@ -463,13 +523,7 @@ function ActionItemsSection({ item }) {
                   </div>
                 </div>
 
-                <span
-                  className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                    action.status || "Pending"
-                  )}`}
-                >
-                  {action.status || "Pending"}
-                </span>
+                <StatusBadge status={action.status || "Pending"} />
               </div>
 
               {action.remarks && (
@@ -699,8 +753,8 @@ export default function ViewPlanModal({
         item?.projected_employee_needs,
         item?.opsPrf,
         item?.ops_prf,
-        0
-      )
+        0,
+      ),
     );
 
     const hiringPlanPercent = Number(
@@ -709,8 +763,8 @@ export default function ViewPlanModal({
         item?.hiring_plan_percent,
         item?.hiringRate,
         item?.hiring_rate,
-        5
-      )
+        5,
+      ),
     );
 
     const hiringPlanDecimal =
@@ -722,15 +776,17 @@ export default function ViewPlanModal({
         item?.leads_to_interview,
         hiringPlanDecimal > 0
           ? Math.round(projectedEmployeeNeeds / hiringPlanDecimal)
-          : 0
-      )
+          : 0,
+      ),
     );
 
+    const recruitmentSettingsStatus = getRecruitmentSettingsStatusText(item);
+    const updateHeadcountStatus = getUpdateHeadcountStatusText(item);
     const headcountStatus = getHeadcountStatusText(item);
 
     const requiredHeadcount = getNumberValue(
       item?.requiredHeadcount,
-      item?.required_headcount
+      item?.required_headcount,
     );
 
     const requestedRequiredHeadcount = getNumberValue(
@@ -739,44 +795,44 @@ export default function ViewPlanModal({
       item?.savedRequiredHeadcount,
       item?.saved_required_headcount,
       item?.pendingRequiredHeadcount,
-      item?.pending_required_headcount
+      item?.pending_required_headcount,
     );
 
     const actualHeadcount = getNumberValue(
       item?.actualHeadcount,
-      item?.actual_headcount
+      item?.actual_headcount,
     );
 
     const requiredBufferHeadcount = getNumberValue(
       item?.requiredBufferHeadcount,
       item?.required_buffer_headcount,
       item?.bufferHeadcount,
-      item?.buffer_headcount
+      item?.buffer_headcount,
     );
 
     const requiredBufferPercent = getNumberValue(
       item?.requiredBufferPercent,
       item?.required_buffer_percent,
       item?.bufferPercent,
-      item?.buffer_percent
+      item?.buffer_percent,
     );
 
     const actualBufferCount = getNumberValue(
       item?.actualBufferCount,
       item?.actual_buffer_count,
       item?.missingHeadcount,
-      item?.missing_headcount
+      item?.missing_headcount,
     );
 
     const actualBufferPercent = getNumberValue(
       item?.actualBufferPercent,
-      item?.actual_buffer_percent
+      item?.actual_buffer_percent,
     );
 
     const requiredActualHeadcountWithBuffer = getNumberValue(
       item?.requiredActualHeadcountWithBuffer,
       item?.required_actual_headcount_with_buffer,
-      requiredHeadcount + requiredBufferHeadcount
+      requiredHeadcount + requiredBufferHeadcount,
     );
 
     const absenteeismPastSixWeeksAverage = getNumberValue(
@@ -785,14 +841,14 @@ export default function ViewPlanModal({
       item?.absenteeismOpsCount,
       item?.absenteeism_ops_count,
       item?.absenteeismCount,
-      item?.absenteeism_count
+      item?.absenteeism_count,
     );
 
     const attritionPastSixWeeksAverage = getNumberValue(
       item?.attritionPastSixWeeksAverage,
       item?.attrition_past_six_weeks_average,
       item?.attritionPastCount,
-      item?.attrition_past_count
+      item?.attrition_past_count,
     );
 
     const opsPrf = getNumberValue(item?.opsPrf, item?.ops_prf);
@@ -803,7 +859,7 @@ export default function ViewPlanModal({
       requiredBufferHeadcount +
         absenteeismPastSixWeeksAverage +
         attritionPastSixWeeksAverage +
-        opsPrf
+        opsPrf,
     );
 
     return {
@@ -811,7 +867,10 @@ export default function ViewPlanModal({
       hiringPlanPercent,
       leadsToInterview,
 
+      recruitmentSettingsStatus,
+      updateHeadcountStatus,
       headcountStatus,
+
       requiredHeadcount,
       requestedRequiredHeadcount,
 
@@ -841,8 +900,18 @@ export default function ViewPlanModal({
   const isSavingFile = savingFileId === item.id;
   const isSubmitting = submitting || isSavingRequired || isSavingFile;
 
+  const isUpdateHeadcountPending = computed.updateHeadcountStatus === "Pending";
+  const isUpdateHeadcountRejected =
+    computed.updateHeadcountStatus === "Rejected";
+  const isRecruitmentSettingsPending =
+    !computed.updateHeadcountStatus &&
+    computed.recruitmentSettingsStatus === "Pending";
+  const isRecruitmentSettingsRejected =
+    !computed.updateHeadcountStatus &&
+    computed.recruitmentSettingsStatus === "Rejected";
+
   const hasPendingRequestedHeadcount =
-    computed.headcountStatus === "Pending" &&
+    isUpdateHeadcountPending &&
     Number.isFinite(Number(computed.requestedRequiredHeadcount)) &&
     Number(computed.requestedRequiredHeadcount) > 0;
 
@@ -897,22 +966,6 @@ export default function ViewPlanModal({
     }
   }
 
-  function renderHeadcountApprovalStatus() {
-    if (!computed.headcountStatus) {
-      return "--";
-    }
-
-    return (
-      <span
-        className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-          computed.headcountStatus
-        )}`}
-      >
-        {computed.headcountStatus}
-      </span>
-    );
-  }
-
   return (
     <div
       className={`fixed inset-0 z-[1000] flex items-center justify-center bg-sibs-primary-1/45 px-4 py-6 ${
@@ -944,23 +997,16 @@ export default function ViewPlanModal({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {computed.headcountStatus && (
-              <span
-                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                  computed.headcountStatus
-                )}`}
-              >
-                {computed.headcountStatus}
-              </span>
+            {computed.recruitmentSettingsStatus &&
+              computed.recruitmentSettingsStatus !== "Kronos" && (
+                <StatusBadge status={computed.recruitmentSettingsStatus} />
+              )}
+
+            {computed.updateHeadcountStatus && (
+              <StatusBadge status={computed.updateHeadcountStatus} />
             )}
 
-            <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                item.pipelineStatus
-              )}`}
-            >
-              {item.pipelineStatus || "Pending"}
-            </span>
+            <StatusBadge status={item.pipelineStatus || "Pending"} />
 
             <button
               type="button"
@@ -987,10 +1033,10 @@ export default function ViewPlanModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sibs-scrollbar">
-          {computed.headcountStatus === "Pending" && (
+          {isUpdateHeadcountPending && (
             <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
               <p className="text-sm font-extrabold text-amber-800">
-                Required headcount update is pending approval.
+                Update Headcount request is pending approval.
               </p>
 
               <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
@@ -1000,10 +1046,10 @@ export default function ViewPlanModal({
             </div>
           )}
 
-          {computed.headcountStatus === "Rejected" && (
+          {isUpdateHeadcountRejected && (
             <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
               <p className="text-sm font-extrabold text-red-800">
-                Required headcount update was rejected.
+                Update Headcount request was rejected.
               </p>
 
               <p className="mt-1 text-sm font-semibold leading-6 text-red-700">
@@ -1012,15 +1058,37 @@ export default function ViewPlanModal({
             </div>
           )}
 
+          {isRecruitmentSettingsPending && (
+            <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+              <p className="text-sm font-extrabold text-amber-800">
+                Recruitment Settings request is pending approval.
+              </p>
+
+              <p className="mt-1 text-sm font-semibold leading-6 text-amber-700">
+                Managers can update headcount only after this request is
+                approved.
+              </p>
+            </div>
+          )}
+
+          {isRecruitmentSettingsRejected && (
+            <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-5 py-4">
+              <p className="text-sm font-extrabold text-red-800">
+                Recruitment Settings request was rejected.
+              </p>
+
+              <p className="mt-1 text-sm font-semibold leading-6 text-red-700">
+                Manager update headcount requests are not available for this
+                account until the base request is approved.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               title="Required Headcount"
               value={formatNumber(computed.requiredHeadcount)}
-              subtitle={
-                computed.headcountStatus === "Approved"
-                  ? "Approved requirement"
-                  : "Current requirement"
-              }
+              subtitle="Current approved requirement"
               icon={ClipboardList}
             />
 
@@ -1089,18 +1157,31 @@ export default function ViewPlanModal({
               <InfoBox label="Week" value={item.week || "--"} />
 
               <InfoBox
-                label="Headcount Approval Status"
-                value={renderHeadcountApprovalStatus()}
+                label="Recruitment Settings Status"
+                value={
+                  computed.recruitmentSettingsStatus === "Kronos" ? (
+                    "--"
+                  ) : (
+                    <StatusBadge status={computed.recruitmentSettingsStatus} />
+                  )
+                }
+              />
+
+              <InfoBox
+                label="Update Headcount Status"
+                value={
+                  computed.updateHeadcountStatus ? (
+                    <StatusBadge status={computed.updateHeadcountStatus} />
+                  ) : (
+                    <StatusBadge status="No Request" />
+                  )
+                }
               />
 
               <InfoBox
                 label="Required Headcount"
                 value={formatNumber(computed.requiredHeadcount)}
-                valueClassName={
-                  computed.headcountStatus === "Approved"
-                    ? "text-emerald-700"
-                    : "text-sibs-primary-1"
-                }
+                valueClassName="text-sibs-primary-1"
               />
 
               {hasPendingRequestedHeadcount && (
@@ -1151,7 +1232,7 @@ export default function ViewPlanModal({
                 label="Required Actual HC with Buffer"
                 value={formatNumber(
                   computed.requiredActualHeadcountWithBuffer,
-                  2
+                  2,
                 )}
                 valueClassName="text-sibs-primary-1"
               />
@@ -1190,15 +1271,7 @@ export default function ViewPlanModal({
 
               <InfoBox
                 label="Status"
-                value={
-                  <span
-                    className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                      item.pipelineStatus
-                    )}`}
-                  >
-                    {item.pipelineStatus || "--"}
-                  </span>
-                }
+                value={<StatusBadge status={item.pipelineStatus || "--"} />}
               />
 
               <InfoBox label="Status Note" value={item.statusNote || "--"} />
@@ -1279,8 +1352,8 @@ export default function ViewPlanModal({
                       previousWeekItem.hiring_plan_percent,
                       previousWeekItem.hiringRate,
                       previousWeekItem.hiring_rate,
-                      5
-                    )
+                      5,
+                    ),
                   )}
                 />
 
@@ -1290,8 +1363,8 @@ export default function ViewPlanModal({
                     getSafeValue(
                       previousWeekItem.leadsToInterview,
                       previousWeekItem.leads_to_interview,
-                      0
-                    )
+                      0,
+                    ),
                   )}
                 />
               </div>
