@@ -47,37 +47,15 @@ import {
   getOfferApprovalSummary,
   isOfferApproved,
   buildOfferContractLink,
+  getUploadFileIcon,
+  formatFileSize,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 import { useNavigate } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 import NhoUploadModal from "./NhoUploadModal";
+import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 
 const PRE_EMPLOYMENT_REQUIREMENTS_TOTAL = 14;
-
-function formatFileSize(bytes = 0) {
-  if (!bytes) return "0 KB";
-
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const index = Math.floor(Math.log(bytes) / Math.log(1024));
-
-  return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 2)} ${
-    sizes[index]
-  }`;
-}
-
-function getUploadFileIcon(fileName = "") {
-  const ext = String(fileName).split(".").pop()?.toLowerCase();
-
-  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
-    return ImageIcon;
-  }
-
-  if (["xls", "xlsx", "csv"].includes(ext)) {
-    return FileSpreadsheet;
-  }
-
-  return FileText;
-}
 
 const CandidatePipelineModal = ({
   open,
@@ -611,6 +589,11 @@ const CandidatePipelineModal = ({
                                 {item.remarks}
                               </p>
                             )}
+
+                            <GetAssessmentTimelineFiles
+                              item={item}
+                              candidate={candidate}
+                            />
 
                             {item.savedFormLink && (
                               <div className="mt-3">

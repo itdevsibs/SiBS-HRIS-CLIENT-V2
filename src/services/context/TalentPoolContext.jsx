@@ -1394,6 +1394,7 @@ export function TalentPoolProvider({ children }) {
         currentAppliedAccount: "Not assigned yet",
         currentTaOwner: ownerName,
         leadAccount,
+        initialAccount: leadAccount,
         accountFit: leadAccount || sourceCandidate.accountFit || "",
         movedToPipeline: true,
         candidateApplicationId: pipelineApplicationId,
