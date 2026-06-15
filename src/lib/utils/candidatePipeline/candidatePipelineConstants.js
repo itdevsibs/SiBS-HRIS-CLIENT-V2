@@ -14,7 +14,6 @@ export const pipelineStages = [
   "Offered",
   "Accepted",
   "For NHO",
-  // "Drop-off",
 ];
 
 export const normalStageFlow = [
@@ -98,7 +97,7 @@ export const offerApprovalStatusOptions = [
 
 export const offerDecisionOptions = ["Negotiate", "Rejected", "Accepted"];
 
-export const prfStatusOptions = ["Review", "Matched", "Unmatched"];
+export const prfStatusOptions = ["Unmatched", "Matched"];
 
 export const assessmentStatusOptions = ["Not Take", "Taken"];
 
@@ -120,71 +119,6 @@ export const dropOffCategoryOptions = [
 ];
 
 export const defaultPipelineCandidates = [
-  {
-    id: 1,
-    candidateApplicationId: "APP-001",
-    applicationId: "APP-001",
-    candidateMasterId: 1,
-    candidateId: "CAND-001",
-    name: "Juan Santos Dela Cruz",
-    candidateName: "Juan Santos Dela Cruz",
-    email: "juan.delacruz@email.com",
-    contactNumber: "09123456789",
-    roleTitle: "Not assigned yet",
-    account: "Not assigned yet",
-    roleAccount: "Not assigned yet - Not assigned yet",
-    source: "Employee Referral Program",
-    owner: "Maria Reyes",
-    taOwner: "Maria Reyes",
-    currentStage: "Initial Screening",
-    previousStage: null,
-    applicationStatus: "Active",
-    prfStatus: "Review",
-    prfReviewed: false,
-    prfReviewedAt: null,
-    interviewDate: null,
-    interviewType: "-",
-    interviewStatus: "For Assessment",
-    assessmentStatus: "Not Take",
-    assessmentResult: "",
-    assessmentEmailSent: false,
-    assessmentEmailSentAt: null,
-    assessmentTakenAt: null,
-    assessmentTaggedAt: null,
-    assessmentRemarks: "",
-    dateMoved: "2026-05-02",
-    updatedAt: "2026-05-02",
-    reasonForMovement:
-      "Candidate moved from Talent Pool without final role, account, or hiring requirement assignment.",
-    avatarColor: "bg-blue-600",
-    dropOffReason: null,
-    dropOffCategory: null,
-    dropOffRemarks: null,
-    candidateSnapshot: {
-      id: 1,
-      candidateId: "CAND-001",
-      name: "Juan Santos Dela Cruz",
-      firstName: "Juan",
-      middleName: "Santos",
-      lastName: "Dela Cruz",
-      email: "juan.delacruz@email.com",
-      phoneNumber1: "09123456789",
-      openPosition: "Customer Service Representative",
-      applyingLocation: "Davao Site",
-      source: "Employee Referral Program",
-      skillsLanguage: "English, Chat Support, Customer Service",
-    },
-    timeline: [
-      {
-        stage: "Initial Screening",
-        owner: "Maria Reyes",
-        source: "Talent Pool",
-        timestamp: "May 2, 2026, 9:00 AM",
-        reason:
-          "Candidate moved from Talent Pool. Final role/account assignment is pending until Offered stage.",
-      },
-    ],
-  },
   {
     id: 2,
     candidateApplicationId: "APP-002",

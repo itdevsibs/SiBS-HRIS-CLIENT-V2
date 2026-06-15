@@ -22,12 +22,35 @@ export function textareaClass(extra = "") {
   return `w-full resize-none rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
+export function getCandidateStage(candidate = {}) {
+  const stage =
+    candidate.currentStage ||
+    candidate.currentPipelineStage ||
+    candidate.pipelineStage ||
+    candidate.stage ||
+    "Initial Screening";
+
+  return stage === "QA Certified" ? "Interviewed" : stage;
+}
+
 export function getRoleTitle(roleAccount = "") {
-  return roleAccount.split(" - ")?.[0] || roleAccount || "";
+  const text = String(roleAccount || "").trim();
+
+  if (!text) return "Not assigned yet";
+
+  const parts = text.split(" - ");
+
+  return parts?.[0]?.trim() || text || "Not assigned yet";
 }
 
 export function getAccount(roleAccount = "") {
-  return roleAccount.split(" - ")?.[1] || "Not assigned yet";
+  const text = String(roleAccount || "").trim();
+
+  if (!text) return "Not assigned yet";
+
+  const parts = text.split(" - ");
+
+  return parts?.[1]?.trim() || "Not assigned yet";
 }
 
 export function hasInterviewSchedule(candidate) {
@@ -41,18 +64,21 @@ export function hasInterviewSchedule(candidate) {
 }
 
 export function isPrfReviewed(candidate) {
+  const currentStage = getCandidateStage(candidate);
+
   return Boolean(
     candidate?.prfReviewed ||
     candidate?.prfReviewedAt ||
-    candidate?.currentStage !== "Initial Screening",
+    currentStage !== "Initial Screening",
   );
 }
 
 export function getNextStage(currentStage) {
-  const currentIndex = normalStageFlow.indexOf(currentStage);
+  const normalizedStage = String(currentStage || "").trim();
+  const currentIndex = normalStageFlow.indexOf(normalizedStage);
 
-  if (currentIndex === -1) return null;
-  if (currentIndex === normalStageFlow.length - 1) return null;
+  if (currentIndex === -1) return "";
+  if (currentIndex === normalStageFlow.length - 1) return "";
 
   return normalStageFlow[currentIndex + 1];
 }
@@ -68,9 +94,11 @@ export function getAssessmentResult(candidate) {
 export function getDisplayInterviewStatus(candidate) {
   if (!candidate) return "—";
 
-  if (candidate.currentStage === "Initial Screening") return "For Assessment";
+  const currentStage = getCandidateStage(candidate);
 
-  if (candidate.currentStage === "Online Assessment") {
+  if (currentStage === "Initial Screening") return "For Assessment";
+
+  if (currentStage === "Online Assessment") {
     return getAssessmentResult(candidate) ? "" : "For Assessment";
   }
 
@@ -80,9 +108,11 @@ export function getDisplayInterviewStatus(candidate) {
 export function getDisplayInterviewType(candidate) {
   if (!candidate) return "—";
 
+  const currentStage = getCandidateStage(candidate);
+
   if (
-    candidate.currentStage === "Initial Screening" ||
-    candidate.currentStage === "Online Assessment"
+    currentStage === "Initial Screening" ||
+    currentStage === "Online Assessment"
   ) {
     return "—";
   }
@@ -90,24 +120,29 @@ export function getDisplayInterviewType(candidate) {
   return candidate.interviewType || "—";
 }
 
-export function canMoveToOnlineAssessment(candidate) {
-  return (
-    candidate?.currentStage === "Initial Screening" &&
-    candidate?.prfStatus === "Matched"
-  );
+export function canMoveToOnlineAssessment(candidate = {}) {
+  const prfStatus = String(candidate.prfStatus || "")
+    .trim()
+    .toLowerCase();
+
+  return prfStatus === "matched";
 }
 
 export function canScheduleInterview(candidate) {
+  const currentStage = getCandidateStage(candidate);
+
   return (
-    candidate?.currentStage === "Online Assessment" &&
+    currentStage === "Online Assessment" &&
     candidate?.assessmentStatus === "Taken" &&
     candidate?.assessmentResult === "Assessment Fit"
   );
 }
 
 export function canUpdateInterviewSchedule(candidate) {
+  const currentStage = getCandidateStage(candidate);
+
   return (
-    candidate?.currentStage === "Interview Scheduled" &&
+    currentStage === "Interview Scheduled" &&
     candidate?.interviewStatus !== "Completed" &&
     candidate?.interviewStatus !== "Cancelled"
   );
@@ -127,6 +162,8 @@ export function getStageClass(stage) {
       return "border-amber-100 bg-amber-50 text-amber-700";
     case "Accepted":
       return "border-emerald-100 bg-emerald-50 text-emerald-700";
+    case "For NHO":
+      return "border-teal-100 bg-teal-50 text-teal-700";
     case "Drop-off":
       return "border-red-100 bg-red-50 text-sibs-primary-1";
     default:
@@ -386,14 +423,13 @@ export function getPipelineApplicationRoleAccount(candidate) {
 }
 
 export function getCandidateMasterStatusFromPipeline(candidate) {
-  if (
-    candidate?.currentStage === "Accepted" ||
-    candidate?.offerDecision === "Accepted"
-  ) {
+  const currentStage = getCandidateStage(candidate);
+
+  if (currentStage === "Accepted" || candidate?.offerDecision === "Accepted") {
     return "Hired / Active";
   }
 
-  if (candidate?.currentStage === "Drop-off") {
+  if (currentStage === "Drop-off") {
     if (
       candidate?.dropOffCategory === "Failed Assessment" ||
       candidate?.dropOffCategory === "Failed Interview" ||
@@ -417,33 +453,31 @@ export function getCandidateMasterStatusFromPipeline(candidate) {
 }
 
 export function buildPipelineSummaryForTalentPool(candidate) {
+  const currentStage = getCandidateStage(candidate);
   const roleAccount = getPipelineApplicationRoleAccount(candidate);
 
   return {
     pipelineStatus:
-      candidate?.currentStage === "Accepted" ||
-      candidate?.currentStage === "Drop-off"
+      currentStage === "Accepted" || currentStage === "Drop-off"
         ? "Closed"
-        : candidate?.applicationStatus || "Active",
+        : candidate?.applicationStatus || candidate?.pipelineStatus || "Active",
     currentApplicationId:
       candidate?.applicationId ||
       candidate?.candidateApplicationId ||
       candidate?.id ||
       "",
     currentHiringRequirementId: candidate?.hiringRequirementId || "",
-    currentPipelineStage: candidate?.currentStage || "Initial Screening",
+    currentPipelineStage: currentStage,
     currentApplicationStatus: candidate?.applicationStatus || "Active",
     currentAppliedRole:
-      candidate?.currentStage === "Offered" ||
-      candidate?.currentStage === "Accepted"
+      currentStage === "Offered" || currentStage === "Accepted"
         ? candidate?.offerDetails?.roleTitle ||
           candidate?.roleTitle ||
           getRoleTitle(roleAccount) ||
           "Not assigned yet"
         : "Not assigned yet",
     currentAppliedAccount:
-      candidate?.currentStage === "Offered" ||
-      candidate?.currentStage === "Accepted"
+      currentStage === "Offered" || currentStage === "Accepted"
         ? candidate?.offerDetails?.account ||
           candidate?.account ||
           getAccount(roleAccount) ||
@@ -471,7 +505,8 @@ export function buildTalentPoolApplicationHistoryEntry(candidate, summary) {
       ? candidate.timeline[candidate.timeline.length - 1]
       : null;
 
-  const isDropOff = candidate?.currentStage === "Drop-off";
+  const currentStage = getCandidateStage(candidate);
+  const isDropOff = currentStage === "Drop-off";
   const role = summary.currentAppliedRole || "Not assigned yet";
   const account = summary.currentAppliedAccount || "Not assigned yet";
   const date = summary.lastPipelineUpdate || getCurrentDate();
@@ -501,6 +536,7 @@ export function buildTalentPoolApplicationHistoryEntry(candidate, summary) {
       account,
       outcome:
         latestTimeline.reason ||
+        latestTimeline.description ||
         `Pipeline Update: ${summary.currentPipelineStage}`,
       date,
     };
@@ -561,14 +597,14 @@ export function syncTalentPoolFromPipelineApplication(candidate) {
     return {
       ...item,
       ...summary,
-      status: masterStatus || item.status || "New Applicant",
+      status: masterStatus || summary.currentPipelineStage || item.status,
       accountFit:
-        candidate.currentStage === "Offered" ||
-        candidate.currentStage === "Accepted"
+        getCandidateStage(candidate) === "Offered" ||
+        getCandidateStage(candidate) === "Accepted"
           ? summary.currentAppliedAccount ||
             item.accountFit ||
             "Not assigned yet"
-          : item.accountFit || "Not assigned yet",
+          : item.accountFit || candidate.leadAccount || "Not assigned yet",
       lastActivity: getCurrentDate(),
       applicationHistory: upsertTalentPoolApplicationHistory(
         item.applicationHistory,
@@ -588,10 +624,7 @@ export function normalizeCandidate(candidate) {
 
   const candidateSnapshot = candidate.candidateSnapshot || {};
 
-  const currentStage =
-    candidate.currentStage === "QA Certified"
-      ? "Interviewed"
-      : candidate.currentStage || "Initial Screening";
+  const currentStage = getCandidateStage(candidate);
 
   const roleAccount = getPipelineApplicationRoleAccount(candidate);
 
@@ -612,11 +645,13 @@ export function normalizeCandidate(candidate) {
     candidateApplicationId:
       candidate.candidateApplicationId ||
       candidate.applicationId ||
-      candidate.id,
+      candidate.id ||
+      `APP-${Date.now()}`,
     candidateMasterId:
       candidate.candidateMasterId ||
       candidate.masterCandidateId ||
       candidateSnapshot.id,
+    candidateId: candidate.candidateId || candidateSnapshot.candidateId || "",
     name: candidateName,
     candidateName,
     email:
@@ -625,6 +660,12 @@ export function normalizeCandidate(candidate) {
       candidateSnapshot.email ||
       "",
     contactNumber:
+      candidate.contactNumber ||
+      candidateSnapshot.phoneNumber1 ||
+      candidateSnapshot.contactNumber ||
+      "",
+    phoneNumber1:
+      candidate.phoneNumber1 ||
       candidate.contactNumber ||
       candidateSnapshot.phoneNumber1 ||
       candidateSnapshot.contactNumber ||
@@ -640,21 +681,52 @@ export function normalizeCandidate(candidate) {
       candidate.account ||
       getAccount(roleAccount) ||
       "Not assigned yet",
+    leadAccount:
+      candidate.leadAccount ||
+      candidate.accountFit ||
+      candidateSnapshot.leadAccount ||
+      candidateSnapshot.accountFit ||
+      "",
+    accountFit:
+      candidate.accountFit ||
+      candidate.leadAccount ||
+      candidateSnapshot.accountFit ||
+      candidateSnapshot.leadAccount ||
+      "",
     owner:
       candidate.owner ||
       candidate.taOwner ||
+      candidate.currentTaOwner ||
       candidateSnapshot.taOwner ||
+      candidateSnapshot.currentTaOwner ||
       candidateSnapshot.createdBy ||
       "Current User",
     taOwner:
       candidate.taOwner ||
       candidate.owner ||
+      candidate.currentTaOwner ||
+      candidateSnapshot.taOwner ||
+      candidateSnapshot.currentTaOwner ||
+      candidateSnapshot.createdBy ||
+      "Current User",
+    currentTaOwner:
+      candidate.currentTaOwner ||
+      candidate.taOwner ||
+      candidate.owner ||
+      candidateSnapshot.currentTaOwner ||
       candidateSnapshot.taOwner ||
       candidateSnapshot.createdBy ||
       "Current User",
     source: candidate.source || candidateSnapshot.source || "Talent Pool",
     currentStage,
+    currentPipelineStage: currentStage,
+    stage: currentStage,
+    pipelineStage: currentStage,
+    pipelineStatus: candidate.pipelineStatus || "Active",
     applicationStatus: candidate.applicationStatus || "Active",
+    prfStatus: candidate.prfStatus || "Review",
+    prfReviewed: Boolean(candidate.prfReviewed),
+    prfReviewedAt: candidate.prfReviewedAt || null,
     assessmentStatus: candidate.assessmentStatus || "Not Take",
     assessmentResult: candidate.assessmentResult || "",
     assessmentEmailSent: Boolean(candidate.assessmentEmailSent),
@@ -676,6 +748,21 @@ export function normalizeCandidate(candidate) {
     offerDecisionAt: candidate.offerDecisionAt || null,
     offerDecisionRemarks: candidate.offerDecisionRemarks || "",
     timeline: Array.isArray(candidate.timeline) ? candidate.timeline : [],
+    candidateSnapshot: {
+      ...candidateSnapshot,
+      candidateId: candidate.candidateId || candidateSnapshot.candidateId || "",
+      name: candidateName,
+      email:
+        candidate.email ||
+        candidate.candidateEmail ||
+        candidateSnapshot.email ||
+        "",
+      currentStage,
+      currentPipelineStage: currentStage,
+      pipelineStage: currentStage,
+      pipelineStatus: candidate.pipelineStatus || "Active",
+      movedToPipeline: true,
+    },
   };
 
   if (currentStage === "Initial Screening") {
@@ -702,17 +789,13 @@ export function normalizeCandidate(candidate) {
 }
 
 export function getOfferRecordStatusFromCandidate(candidate) {
-  if (
-    candidate?.offerDecision === "Accepted" ||
-    candidate?.currentStage === "Accepted"
-  ) {
+  const currentStage = getCandidateStage(candidate);
+
+  if (candidate?.offerDecision === "Accepted" || currentStage === "Accepted") {
     return "Accepted";
   }
 
-  if (
-    candidate?.offerDecision === "Rejected" ||
-    candidate?.currentStage === "Drop-off"
-  ) {
+  if (candidate?.offerDecision === "Rejected" || currentStage === "Drop-off") {
     return "Declined";
   }
 
@@ -827,6 +910,7 @@ export function upsertOfferRecordFromPipeline(candidate) {
 
 export function upsertOfferEligibleCandidate(candidate) {
   const current = safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY);
+  const currentStage = getCandidateStage(candidate);
 
   const payload = {
     candidateApplicationId: candidate.candidateApplicationId || candidate.id,
@@ -841,7 +925,7 @@ export function upsertOfferEligibleCandidate(candidate) {
     account: getAccount(candidate.roleAccount),
     roleAccount: candidate.roleAccount,
     owner: candidate.owner,
-    currentStage: "Offered",
+    currentStage: currentStage || "Offered",
     source: candidate.source,
     assessmentStatus: candidate.assessmentStatus,
     assessmentResult: candidate.assessmentResult,
@@ -908,12 +992,13 @@ export function findTalentPoolProfile(candidate) {
   const candidateApplicationId =
     candidate.candidateApplicationId || candidate.id;
 
+  const candidateEmail = String(candidate.email || "").toLowerCase();
+
   const matchedInternal = internalCandidates.find((item) => {
     return (
       String(item.id) === String(candidateMasterId) ||
       String(item.candidateId) === String(candidate.candidateId) ||
-      String(item.email || "").toLowerCase() ===
-        String(candidate.email || "").toLowerCase()
+      String(item.email || "").toLowerCase() === candidateEmail
     );
   });
 
@@ -921,8 +1006,7 @@ export function findTalentPoolProfile(candidate) {
     return (
       String(item.id) === String(candidateApplicationId) ||
       String(item.candidateId) === String(candidate.candidateId) ||
-      String(item.email || "").toLowerCase() ===
-        String(candidate.email || "").toLowerCase()
+      String(item.email || "").toLowerCase() === candidateEmail
     );
   });
 
@@ -935,7 +1019,7 @@ export function findTalentPoolProfile(candidate) {
 
 export function getFridayOfCurrentWeek() {
   const today = new Date();
-  const day = today.getDay(); // Sunday = 0, Monday = 1, Friday = 5
+  const day = today.getDay();
 
   const friday = new Date(today);
   friday.setDate(today.getDate() + (5 - day));

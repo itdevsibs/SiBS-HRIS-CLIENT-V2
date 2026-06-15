@@ -596,6 +596,7 @@ export default function JobDescriptionPage() {
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         onOpenRevision={handleOpenRevision}
+        approvalPage={false}
       />
 
       <ReviseJobDescriptionModal

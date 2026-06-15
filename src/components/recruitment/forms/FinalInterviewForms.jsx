@@ -92,6 +92,100 @@ function safeReadSettings() {
   }
 }
 
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeId(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function getCandidatePositionName(candidate = {}) {
+  return (
+    candidate.openPosition ||
+    candidate.roleCapability ||
+    candidate.currentAppliedRole ||
+    candidate.roleTitle ||
+    candidate.positionTitle ||
+    candidate.candidateSnapshot?.openPosition ||
+    candidate.candidateSnapshot?.roleCapability ||
+    candidate.candidateSnapshot?.currentAppliedRole ||
+    candidate.candidateSnapshot?.roleTitle ||
+    ""
+  );
+}
+
+function getCandidatePositionId(candidate = {}) {
+  return (
+    candidate.positionId ||
+    candidate.currentPositionId ||
+    candidate.appliedPositionId ||
+    candidate.jobPositionId ||
+    candidate.hiringRequirementPositionId ||
+    candidate.availablePositionId ||
+    candidate.candidateSnapshot?.positionId ||
+    candidate.candidateSnapshot?.currentPositionId ||
+    candidate.candidateSnapshot?.appliedPositionId ||
+    candidate.candidateSnapshot?.jobPositionId ||
+    candidate.candidateSnapshot?.hiringRequirementPositionId ||
+    candidate.candidateSnapshot?.availablePositionId ||
+    ""
+  );
+}
+
+function getFormPositionId(form = {}) {
+  return (
+    form.positionId ||
+    form.position_id ||
+    form.availablePositionId ||
+    form.available_position_id ||
+    form.selectedPositionId ||
+    form.roleId ||
+    ""
+  );
+}
+
+function getFormPositionName(form = {}) {
+  return (
+    form.positionTitle ||
+    form.positionName ||
+    form.roleTitle ||
+    form.roleName ||
+    form.selectedPositionTitle ||
+    form.selectedPositionName ||
+    form.availablePositionTitle ||
+    form.availablePositionName ||
+    form.formPosition ||
+    form.name ||
+    ""
+  );
+}
+
+function formMatchesPosition(form = {}, target = {}) {
+  const targetPositionId = normalizeId(target.positionId);
+  const targetPositionName = normalizeText(target.positionName);
+
+  const formPositionId = normalizeId(getFormPositionId(form));
+  const formPositionName = normalizeText(getFormPositionName(form));
+
+  if (targetPositionId && formPositionId && targetPositionId === formPositionId) {
+    return true;
+  }
+
+  if (!targetPositionName || !formPositionName) {
+    return false;
+  }
+
+  return (
+    formPositionName === targetPositionName ||
+    formPositionName.includes(targetPositionName) ||
+    targetPositionName.includes(formPositionName)
+  );
+}
+
 function groupFieldsBySection(fields = []) {
   const groups = new Map();
 
@@ -542,18 +636,9 @@ function ScoreSummaryCard({
           subtitle="Score distribution by default JE sections."
           type="score"
           items={[
-            {
-              label: "Education",
-              value: jobEvaluationScore.educationScore,
-            },
-            {
-              label: "Experience",
-              value: jobEvaluationScore.experienceScore,
-            },
-            {
-              label: "Location",
-              value: jobEvaluationScore.locationScore,
-            },
+            { label: "Education", value: jobEvaluationScore.educationScore },
+            { label: "Experience", value: jobEvaluationScore.experienceScore },
+            { label: "Location", value: jobEvaluationScore.locationScore },
             {
               label: "Duties and Responsibilities",
               value: jobEvaluationScore.dutiesScore,
@@ -596,24 +681,16 @@ function ScoreSummaryCard({
           subtitle="Scoring basis used in this evaluation."
           type="note"
           items={[
-            {
-              label: "Job Evaluation",
-              value: "Default JE criteria",
-            },
-            {
-              label: "Final Interview",
-              value: "Rating questions only",
-            },
-            {
-              label: "Passing Rule",
-              value: `${passingScore}% minimum`,
-            },
+            { label: "Job Evaluation", value: "Default JE criteria" },
+            { label: "Final Interview", value: "Rating questions only" },
+            { label: "Passing Rule", value: `${passingScore}% minimum` },
           ]}
         />
       </div>
     </section>
   );
 }
+
 function FieldInput({ field, value, onChange, readOnly = false }) {
   const disabledClass =
     "disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#475467]";
@@ -627,11 +704,11 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
         className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
       >
         <option value="">Select rating</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
+        <option value="1">1 - Poor</option>
+        <option value="2">2 - Fair</option>
+        <option value="3">3 - Good</option>
+        <option value="4">4 - Very Good</option>
+        <option value="5">5 - Excellent</option>
       </select>
     );
   }
@@ -811,8 +888,8 @@ export default function FinalInterviewForms() {
   const candidateId = searchParams.get("candidateId") || "—";
   const candidateApplicationId =
     searchParams.get("candidateApplicationId") || "—";
-  const positionId = searchParams.get("positionId");
-  const formId = searchParams.get("formId");
+  const positionId = searchParams.get("positionId") || "";
+  const formId = searchParams.get("formId") || "";
   const submissionId = searchParams.get("submissionId");
   const mode = searchParams.get("mode");
 
@@ -825,6 +902,8 @@ export default function FinalInterviewForms() {
     return candidateList.find((candidate) => {
       return (
         String(candidate.candidateId || "") === String(candidateId || "") ||
+        String(candidate.candidateSnapshot?.candidateId || "") ===
+          String(candidateId || "") ||
         String(candidate.candidateApplicationId || "") ===
           String(candidateApplicationId || "") ||
         String(candidate.applicationId || "") ===
@@ -858,33 +937,51 @@ export default function FinalInterviewForms() {
 
     const forms = settings.forms;
 
-    const formById = forms.find((form) => String(form.id) === String(formId));
+    const candidatePositionId = getCandidatePositionId(currentCandidate);
+    const candidatePositionName = getCandidatePositionName(currentCandidate);
 
-    if (formById) return formById;
+    const targetPositionId = positionId || candidatePositionId;
+    const targetPositionName = candidatePositionName;
 
-    const formByPositionId = forms.find(
-      (form) => String(form.positionId) === String(positionId),
+    const hasTarget = Boolean(targetPositionId || targetPositionName);
+
+    const formByExactId = forms.find(
+      (form) => String(form.id) === String(formId),
     );
 
-    if (formByPositionId) return formByPositionId;
+    if (
+      formByExactId &&
+      (!hasTarget ||
+        formMatchesPosition(formByExactId, {
+          positionId: targetPositionId,
+          positionName: targetPositionName,
+        }))
+    ) {
+      return formByExactId;
+    }
 
-    const activeFormWithFields = forms.find(
-      (form) =>
-        form.status === "Active" &&
-        Array.isArray(form.fields) &&
-        form.fields.length > 0,
+    const activeFormForPosition = forms.find((form) => {
+      if (form.status !== "Active") return false;
+
+      return formMatchesPosition(form, {
+        positionId: targetPositionId,
+        positionName: targetPositionName,
+      });
+    });
+
+    if (activeFormForPosition) return activeFormForPosition;
+
+    const formByPosition = forms.find((form) =>
+      formMatchesPosition(form, {
+        positionId: targetPositionId,
+        positionName: targetPositionName,
+      }),
     );
 
-    if (activeFormWithFields) return activeFormWithFields;
+    if (formByPosition) return formByPosition;
 
-    const anyFormWithFields = forms.find(
-      (form) => Array.isArray(form.fields) && form.fields.length > 0,
-    );
-
-    if (anyFormWithFields) return anyFormWithFields;
-
-    return forms[0];
-  }, [settings, formId, positionId, savedSubmission]);
+    return null;
+  }, [settings, formId, positionId, savedSubmission, currentCandidate]);
 
   const jobEvaluationFormName = useMemo(() => {
     return getJobEvaluationTitle(activeForm?.name);
@@ -1004,6 +1101,15 @@ export default function FinalInterviewForms() {
 
     if (isSubmitting) return;
 
+    if (!activeForm) {
+      alert(
+        `No final interview form is configured for ${
+          getCandidatePositionName(currentCandidate) || "this candidate position"
+        }.`,
+      );
+      return;
+    }
+
     if (!validateRequiredFields()) return;
 
     setIsSubmitting(true);
@@ -1011,7 +1117,7 @@ export default function FinalInterviewForms() {
     const didUpdateCandidate = handleSubmitFinalInterview({
       candidateId,
       candidateApplicationId,
-      positionId,
+      positionId: positionId || getCandidatePositionId(currentCandidate),
       formId: formId || activeForm?.id || "",
       formName: jobEvaluationFormName || "Job Evaluation Form",
       passingScore,
@@ -1023,7 +1129,7 @@ export default function FinalInterviewForms() {
     console.log("Job Evaluation Answers:", {
       candidateId,
       candidateApplicationId,
-      positionId,
+      positionId: positionId || getCandidatePositionId(currentCandidate),
       formId: formId || activeForm?.id || "",
       formName: jobEvaluationFormName || "Job Evaluation Form",
       passingScore,
@@ -1061,6 +1167,12 @@ export default function FinalInterviewForms() {
             Candidate ID: {candidateId} · Application ID:{" "}
             {candidateApplicationId}
           </p>
+
+          {currentCandidate && (
+            <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
+              Position: {getCandidatePositionName(currentCandidate) || "—"}
+            </p>
+          )}
 
           {savedSubmission && (
             <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
@@ -1191,7 +1303,12 @@ export default function FinalInterviewForms() {
                 <p className="text-sm font-extrabold text-sibs-tertiary-5">
                   {isViewMode
                     ? "No saved final interview questions found."
-                    : "No final interview questions available."}
+                    : currentCandidate
+                      ? `No final interview questions configured for ${
+                          getCandidatePositionName(currentCandidate) ||
+                          "this position"
+                        }.`
+                      : "No matching candidate or final interview questions found."}
                 </p>
               </div>
             )}

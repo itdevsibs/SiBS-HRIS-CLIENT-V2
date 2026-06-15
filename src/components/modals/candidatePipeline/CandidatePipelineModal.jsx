@@ -680,7 +680,7 @@ const CandidatePipelineModal = ({
                       />
                     </div>
 
-                    {isOnlineAssessment && (
+                    {/* {isOnlineAssessment && (
                       <>
                         <button
                           type="button"
@@ -700,7 +700,7 @@ const CandidatePipelineModal = ({
                           Resend Assessment Email
                         </button>
                       </>
-                    )}
+                    )} */}
                   </div>
 
                   <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
@@ -765,7 +765,7 @@ const CandidatePipelineModal = ({
                       )}
                     </div>
 
-                    {isOnlineAssessment && canScheduleInterview(candidate) && (
+                    {/* {isOnlineAssessment && canScheduleInterview(candidate) && (
                       <button
                         type="button"
                         onClick={() => onOpenScheduleModal(candidate)}
@@ -774,7 +774,7 @@ const CandidatePipelineModal = ({
                         <CalendarDays size={16} />
                         Schedule Interview
                       </button>
-                    )}
+                    )} */}
 
                     {isInterviewScheduled && candidateHasSchedule && (
                       <div className="mt-4 grid grid-cols-1 gap-2">
@@ -797,7 +797,7 @@ const CandidatePipelineModal = ({
                           Cancel Interview
                         </button>
 
-                        {candidate.interviewStatus !== "Completed" && (
+                        {/* {candidate.interviewStatus !== "Completed" && (
                           <button
                             type="button"
                             disabled={isInterviewInProgress}
@@ -806,7 +806,7 @@ const CandidatePipelineModal = ({
                           >
                             Mark Interview Completed
                           </button>
-                        )}
+                        )} */}
                       </div>
                     )}
                   </div>
@@ -1101,14 +1101,28 @@ const CandidatePipelineModal = ({
               )}
 
               {isOnlineAssessment && (
-                <button
-                  type="button"
-                  onClick={() => onOpenAssessmentModal(candidate)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 text-sm font-bold text-white transition hover:bg-cyan-700"
-                >
-                  <ClipboardCheck size={16} />
-                  Update Assessment
-                </button>
+                <div className="flex items-center gap-2 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => onSendAssessmentEmail(candidate)}
+                    className="inline-flex h-11 items-center justify-center
+                      gap-2 rounded-xl px-5 border border-cyan-100 bg-white text-sm font-bold
+                      text-cyan-700 transition hover:bg-cyan-50"
+                  >
+                    <Mail size={16} />
+                    Resend Assessment Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenAssessmentModal(candidate)}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl
+                     bg-cyan-600 px-5 text-sm font-bold text-white transition
+                      hover:bg-cyan-700"
+                  >
+                    <ClipboardCheck size={16} />
+                    Update Assessment
+                  </button>
+                </div>
               )}
 
               {isOnlineAssessment && canScheduleInterview(candidate) && (

@@ -202,8 +202,16 @@ export const emptyCandidateForm = {
   appliedRole: "",
   appliedAccount: "",
   applicationOutcome: "Initial Entry",
-};
 
+  pipelineStatus: "",
+  currentPipelineStage: "",
+  pipelineStage: "",
+  currentStage: "",
+  currentAppliedRole: "",
+  currentAppliedAccount: "",
+  currentTaOwner: "",
+  movedToPipeline: false,
+};
 export const emptyStatusForm = {
   status: "",
   remarks: "",
@@ -214,6 +222,7 @@ export const emptyMoveToPipelineForm = {
   jobDescriptionId: "",
   roleTitle: "",
   account: "",
+  leadAccount: "",
   taOwner: "",
   initialStage: "Initial Screening",
   remarks: "",
@@ -222,7 +231,7 @@ export const emptyMoveToPipelineForm = {
 export const initialCandidates = [
   {
     id: 1,
-    candidateId: "CAND-001",
+    candidateId: "",
     hearAboutUs: ["Employee Referral Program"],
     openPosition: "Customer Service Representative",
     nickname: "Juan",
@@ -276,7 +285,15 @@ export const initialCandidates = [
     audioFileName: "",
     attachmentFileName: "",
     consent: true,
-    status: "Silver Pool",
+    status: "New Applicant",
+    pipelineStatus: "",
+    currentPipelineStage: "",
+    pipelineStage: "",
+    currentStage: "",
+    currentAppliedRole: "",
+    currentAppliedAccount: "",
+    currentTaOwner: "",
+    movedToPipeline: false,
     source: "Employee Referral Program",
     availability: "Available",
     lastActivity: "2026-05-02",
