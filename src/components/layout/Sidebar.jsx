@@ -42,6 +42,114 @@ const APPROVAL_MODULES = [
   "Hiring Needs",
 ];
 
+const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
+  Attrition: ["Resignation", "Attrition"],
+  "Weekly Hiring Plan": [
+    "Recruitment Settings",
+    "Update Headcount",
+    "Weekly Hiring Plan",
+  ],
+  "Job Description": ["Job Description"],
+  "Hiring Needs": ["Hiring Needs"],
+};
+
+function normalizeApprovalNotificationStatus(value) {
+  const cleanValue = String(value || "").trim().toLowerCase();
+
+  if (cleanValue === "approved") return "Approved";
+  if (cleanValue === "for review") return "For Review";
+  if (cleanValue === "rejected") return "Rejected";
+  if (cleanValue === "declined") return "Rejected";
+  if (cleanValue === "retained") return "Rejected";
+  if (cleanValue === "pending") return "Pending";
+
+  return "Pending";
+}
+
+function getApprovalNotificationStatus(item = {}) {
+  const raw = item.raw || {};
+
+  return normalizeApprovalNotificationStatus(
+    item.status ||
+      item.recruitmentSettingsStatus ||
+      item.recruitment_settings_status ||
+      item.updateHeadcountStatus ||
+      item.update_headcount_status ||
+      raw.status ||
+      raw.recruitmentSettingsStatus ||
+      raw.recruitment_settings_status ||
+      raw.updateHeadcountStatus ||
+      raw.update_headcount_status ||
+      "",
+  );
+}
+
+function getApprovalNotificationKey(moduleName, item = {}) {
+  return [
+    moduleName,
+    item.source || item.module || "approval",
+    item.rawId || item.raw_id || item.id || "",
+    item.type || item.requestType || item.request_type || "",
+  ].join("::");
+}
+
+function countApprovalNotificationData(moduleName, data = []) {
+  const uniqueItems = new Map();
+
+  data.forEach((item) => {
+    const key = getApprovalNotificationKey(moduleName, item);
+
+    if (!uniqueItems.has(key)) {
+      uniqueItems.set(key, item);
+    }
+  });
+
+  return Array.from(uniqueItems.values()).filter((item) => {
+    const status = getApprovalNotificationStatus(item);
+
+    return status === "Pending" || status === "For Review";
+  }).length;
+}
+
+async function getApprovalNotificationCountByModule(moduleName) {
+  const types = APPROVAL_NOTIFICATION_TYPES_BY_MODULE[moduleName] || [""];
+
+  const results = await Promise.allSettled(
+    types.map((type) =>
+      getApprovalRequestsByModule(moduleName, {
+        page: 1,
+        limit: 500,
+        search: "",
+        status: "",
+        type,
+      }),
+    ),
+  );
+
+  const fulfilledResults = results
+    .filter((item) => item.status === "fulfilled")
+    .map((item) => item.value)
+    .filter((result) => result?.success);
+
+  const mergedData = fulfilledResults.flatMap((result) =>
+    Array.isArray(result?.data) ? result.data : [],
+  );
+
+  if (mergedData.length > 0) {
+    return countApprovalNotificationData(moduleName, mergedData);
+  }
+
+  return fulfilledResults.reduce((sum, result) => {
+    const counts = result?.counts || {};
+
+    return (
+      sum +
+      Number(counts.pending || 0) +
+      Number(counts.forReview || 0)
+    );
+  }, 0);
+}
+
 function SibsLogo({ collapsed = false, isMobile = false }) {
   const showText = !collapsed || isMobile;
 
@@ -183,29 +291,16 @@ export default function Sidebar() {
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
-      const results = await Promise.all(
+      const moduleCounts = await Promise.all(
         APPROVAL_MODULES.map((moduleName) =>
-          getApprovalRequestsByModule(moduleName, {
-            page: 1,
-            limit: 200,
-            search: "",
-            status: "",
-            type: moduleName === "Attrition" ? "Resignation" : "",
-          }),
+          getApprovalNotificationCountByModule(moduleName),
         ),
       );
 
-      const totalPending = results.reduce((sum, result) => {
-        if (!result?.success) return sum;
-
-        const counts = result?.counts || {};
-
-        return (
-          sum +
-          Number(counts.pending || 0) +
-          Number(counts.forReview || 0)
-        );
-      }, 0);
+      const totalPending = moduleCounts.reduce(
+        (sum, count) => sum + Number(count || 0),
+        0,
+      );
 
       setApprovalRequestNotificationCount(totalPending);
     } catch (error) {
@@ -531,7 +626,8 @@ export default function Sidebar() {
       name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
-      allowedUsers: [6, 7],
+      allowedUsers: [3, 4, 6, 7],
+      notificationCount: approvalRequestNotificationCount,
     },
     {
       name: "Email Logs",

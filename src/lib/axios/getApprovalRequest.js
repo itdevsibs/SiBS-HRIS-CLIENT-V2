@@ -226,26 +226,58 @@ export async function getWeeklyHiringPlanApprovalRequests({
   type = "",
   limit = 200,
 } = {}) {
+  const params = cleanParams({
+    page,
+    search,
+    status,
+    type,
+    limit,
+  });
+
   try {
     const res = await api.get("/api/approval-requests/weekly-hiring-plan", {
-      params: cleanParams({
-        page,
-        search,
-        status,
-        type,
-        limit,
-      }),
+      params,
       withCredentials: true,
     });
 
-    return res.data;
-  } catch (error) {
-    console.error("GET WEEKLY HIRING PLAN APPROVAL REQUESTS ERROR:", error);
+    if (res.data?.success && Array.isArray(res.data?.data)) {
+      return res.data;
+    }
 
-    return normalizeError(
-      error,
-      "Failed to load Weekly Hiring Plan approval requests.",
+    throw new Error(
+      res.data?.message || "Weekly Hiring Plan module endpoint returned no data.",
     );
+  } catch (moduleError) {
+    console.error(
+      "GET WEEKLY HIRING PLAN MODULE ENDPOINT ERROR:",
+      moduleError,
+    );
+
+    try {
+      const fallbackRes = await api.get("/api/approval-requests", {
+        params: cleanParams({
+          page,
+          search,
+          module: "Weekly Hiring Plan",
+          status,
+          type,
+          limit,
+        }),
+        withCredentials: true,
+      });
+
+      return fallbackRes.data;
+    } catch (fallbackError) {
+      console.error(
+        "GET WEEKLY HIRING PLAN FALLBACK APPROVAL REQUESTS ERROR:",
+        fallbackError,
+      );
+
+      return normalizeError(
+        fallbackError,
+        "Failed to load Weekly Hiring Plan approval requests.",
+      );
+    }
   }
 }
 
@@ -633,10 +665,46 @@ export async function rejectAttritionModuleRequest(id, payload = {}) {
 
 export async function approveWeeklyHiringPlanRequest(id, payload = {}) {
   try {
+    if (!id) {
+      return {
+        success: false,
+        message: "Approval request ID is required.",
+        status: 400,
+      };
+    }
+
+    const approvedRequiredHeadcount =
+      payload.approvedRequiredHeadcount ??
+      payload.approved_required_headcount ??
+      payload.finalRequiredHeadcount ??
+      payload.final_required_headcount ??
+      payload.hrEditedRequiredHeadcount ??
+      payload.hr_edited_required_headcount ??
+      "";
+
     const res = await api.patch(
       `/api/approval-requests/weekly-hiring-plan/${id}/approve`,
       {
         remarks: payload.remarks || "",
+
+        module: payload.module || "Weekly Hiring Plan",
+        type: payload.type || "",
+        requestType: payload.requestType || payload.type || "",
+        source: payload.source || "",
+
+        requiredHeadcount: payload.requiredHeadcount ?? "",
+        requestedRequiredHeadcount: payload.requestedRequiredHeadcount ?? "",
+        requested_required_headcount:
+          payload.requested_required_headcount ??
+          payload.requestedRequiredHeadcount ??
+          "",
+
+        approvedRequiredHeadcount,
+        approved_required_headcount: approvedRequiredHeadcount,
+        finalRequiredHeadcount: approvedRequiredHeadcount,
+        final_required_headcount: approvedRequiredHeadcount,
+        hrEditedRequiredHeadcount: approvedRequiredHeadcount,
+        hr_edited_required_headcount: approvedRequiredHeadcount,
       },
       {
         withCredentials: true,
