@@ -47,7 +47,12 @@ const STATUS_OPTIONS = ["All", "Pending", "For Review", "Approved", "Rejected"];
 
 const TYPE_OPTIONS_BY_MODULE = {
   Attrition: ["All", "Resignation", "Attrition"],
-  "Weekly Hiring Plan": ["All", "Headcount Update", "Weekly Hiring Plan"],
+  "Weekly Hiring Plan": [
+    "All",
+    "Recruitment Settings",
+    "Update Headcount",
+    "Weekly Hiring Plan",
+  ],
   "Job Description": ["All", "Job Description"],
   "Hiring Needs": ["All", "Hiring Needs"],
 };
@@ -78,8 +83,14 @@ const API_URL =
   "http://localhost:5000";
 
 function safeText(value, fallback = "--") {
-  const text = String(value || "").trim();
+  const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 0,
+  });
 }
 
 function getFileUrl(url) {
@@ -114,9 +125,10 @@ function formatDate(dateValue) {
   }).format(date);
 }
 
-function normalizeStatus(status) {
+function normalizeStatus(status, fallback = "Pending") {
   const cleanStatus = String(status || "").trim();
 
+  if (!cleanStatus) return fallback;
   if (cleanStatus === "Declined") return "Rejected";
   if (cleanStatus === "Retained") return "Rejected";
   if (cleanStatus === "Rejected") return "Rejected";
@@ -124,7 +136,41 @@ function normalizeStatus(status) {
   if (cleanStatus === "For Review") return "For Review";
   if (cleanStatus === "Pending") return "Pending";
 
-  return "Pending";
+  const lower = cleanStatus.toLowerCase();
+
+  if (lower === "declined") return "Rejected";
+  if (lower === "rejected") return "Rejected";
+  if (lower === "approved") return "Approved";
+  if (lower === "for review") return "For Review";
+  if (lower === "pending") return "Pending";
+
+  return fallback;
+}
+
+function normalizeRequestType(value) {
+  const raw = String(value || "").trim();
+  const lower = raw.toLowerCase();
+
+  if (!raw) return "";
+  if (lower.includes("update headcount")) return "Update Headcount";
+  if (lower.includes("headcount update")) return "Update Headcount";
+  if (lower.includes("recruitment settings")) return "Recruitment Settings";
+  if (lower.includes("weekly hiring")) return "Weekly Hiring Plan";
+  if (lower.includes("resignation")) return "Resignation";
+  if (lower.includes("attrition")) return "Attrition";
+
+  return raw;
+}
+
+function getRequestType(request) {
+  return normalizeRequestType(
+    request?.requestType ||
+      request?.request_type ||
+      request?.type ||
+      request?.raw?.requestType ||
+      request?.raw?.request_type ||
+      "",
+  );
 }
 
 function getStatusClass(status) {
@@ -137,6 +183,8 @@ function getStatusClass(status) {
       return "border-blue-200 bg-blue-50 text-blue-700";
     case "Pending":
       return "border-amber-200 bg-amber-50 text-amber-700";
+    case "No Request":
+      return "border-slate-200 bg-slate-50 text-slate-600";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
@@ -166,12 +214,29 @@ function getStatusIcon(status) {
   }
 }
 
+function StatusBadge({ status, emptyText = "--" }) {
+  const displayStatus = status || emptyText;
+  const StatusIcon = getStatusIcon(displayStatus);
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+        displayStatus,
+      )}`}
+    >
+      {displayStatus !== "No Request" && <StatusIcon size={14} />}
+      {displayStatus}
+    </span>
+  );
+}
+
 function getRawRequestId(request) {
   return (
     request?.attritionId ||
     request?.raw?.id ||
     request?.rawId ||
-    String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-/, "")
+    request?.raw_id ||
+    String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-|^WHP-/, "")
   );
 }
 
@@ -183,6 +248,94 @@ function isResignationRequest(request) {
   );
 }
 
+function isWeeklyHiringPlanRequest(request) {
+  return (
+    String(request?.module || "").toLowerCase() === "weekly hiring plan" ||
+    String(request?.source || "").toLowerCase().includes("weekly") ||
+    String(request?.source || "").toLowerCase().includes("headcount") ||
+    String(request?.id || "").startsWith("WHP") ||
+    getRequestType(request).toLowerCase().includes("headcount") ||
+    getRequestType(request).toLowerCase().includes("recruitment settings")
+  );
+}
+
+function getRecruitmentSettingsStatus(request) {
+  const raw = request?.raw || {};
+
+  return normalizeStatus(
+    request?.recruitmentSettingsStatus ||
+      request?.recruitment_settings_status ||
+      request?.recruitmentStatus ||
+      request?.recruitment_status ||
+      raw?.recruitmentSettingsStatus ||
+      raw?.recruitment_settings_status ||
+      raw?.recruitmentStatus ||
+      raw?.recruitment_status ||
+      request?.baseHeadcountStatus ||
+      request?.base_headcount_status ||
+      raw?.baseHeadcountStatus ||
+      raw?.base_headcount_status ||
+      request?.status ||
+      raw?.status,
+    "Pending",
+  );
+}
+
+function getUpdateHeadcountStatus(request) {
+  const raw = request?.raw || {};
+
+  const value =
+    request?.updateHeadcountStatus ||
+    request?.update_headcount_status ||
+    request?.managerUpdateStatus ||
+    request?.manager_update_status ||
+    raw?.updateHeadcountStatus ||
+    raw?.update_headcount_status ||
+    raw?.managerUpdateStatus ||
+    raw?.manager_update_status ||
+    "";
+
+  if (!value) return "";
+
+  return normalizeStatus(value, "");
+}
+
+function getNormalizedRequestStatus(request) {
+  if (isWeeklyHiringPlanRequest(request)) {
+    return getUpdateHeadcountStatus(request) || getRecruitmentSettingsStatus(request);
+  }
+
+  return normalizeStatus(request?.status);
+}
+
+function getRequestedRequiredHeadcount(request) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.requestedRequiredHeadcount ??
+    request?.requested_required_headcount ??
+    request?.pendingRequiredHeadcount ??
+    request?.pending_required_headcount ??
+    raw?.requestedRequiredHeadcount ??
+    raw?.requested_required_headcount ??
+    raw?.pendingRequiredHeadcount ??
+    raw?.pending_required_headcount ??
+    null
+  );
+}
+
+function getRequiredHeadcount(request) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.requiredHeadcount ??
+    request?.required_headcount ??
+    raw?.requiredHeadcount ??
+    raw?.required_headcount ??
+    0
+  );
+}
+
 function buildApprovalPayload(request, action, remarks = "", extra = {}) {
   const raw = request?.raw || {};
   const meta = request?.meta || {};
@@ -190,7 +343,7 @@ function buildApprovalPayload(request, action, remarks = "", extra = {}) {
   return {
     module: request?.module || "",
     type: request?.type || "",
-    requestType: request?.type || "",
+    requestType: getRequestType(request),
     source: request?.source || "",
     remarks: remarks || "",
     action,
@@ -205,6 +358,10 @@ function buildApprovalPayload(request, action, remarks = "", extra = {}) {
       raw?.sibs_id ||
       raw?.employeeSibsId ||
       "",
+
+    recruitmentSettingsStatus: getRecruitmentSettingsStatus(request),
+    updateHeadcountStatus: getUpdateHeadcountStatus(request),
+    requestedRequiredHeadcount: getRequestedRequiredHeadcount(request),
 
     tlIsApproved: Number(meta.tlIsApproved || raw.tlIsApproved || 0),
     tlIsDeclined: Number(meta.tlIsDeclined || raw.tlIsDeclined || 0),
@@ -489,7 +646,12 @@ export default function ApprovalRequest() {
           page: 1,
           search,
           status: statusFilter === "All" ? "" : statusFilter,
-          type: typeFilter === "All" ? "" : typeFilter,
+          type:
+            typeFilter === "All"
+              ? ""
+              : activeModule === "Weekly Hiring Plan"
+                ? normalizeRequestType(typeFilter)
+                : typeFilter,
           limit: 200,
         });
 
@@ -701,11 +863,16 @@ export default function ApprovalRequest() {
         loading: true,
       }));
 
-      const payload = buildApprovalPayload(request, action, decisionModal.remarks, {
-        personallySpoken: decisionModal.personallySpoken,
-        employeeRetained: decisionModal.employeeRetained,
-        actionTaken: decisionModal.actionTaken,
-      });
+      const payload = buildApprovalPayload(
+        request,
+        action,
+        decisionModal.remarks,
+        {
+          personallySpoken: decisionModal.personallySpoken,
+          employeeRetained: decisionModal.employeeRetained,
+          actionTaken: decisionModal.actionTaken,
+        },
+      );
 
       const result =
         action === "approve"
@@ -765,11 +932,15 @@ export default function ApprovalRequest() {
     const keyword = search.trim().toLowerCase();
 
     return requests.filter((request) => {
-      const status = normalizeStatus(request.status);
+      const status = getNormalizedRequestStatus(request);
+      const requestType = getRequestType(request);
+      const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
+      const updateHeadcountStatus = getUpdateHeadcountStatus(request);
 
       const searchableText = [
         request.id,
         request.rawId,
+        request.raw_id,
         request.module,
         request.title,
         request.requester,
@@ -777,11 +948,20 @@ export default function ApprovalRequest() {
         request.employeeSibsId,
         request.department,
         request.type,
+        requestType,
         request.priority,
         status,
+        recruitmentSettingsStatus,
+        updateHeadcountStatus,
         request.approver,
         request.reason,
         request.remarks,
+        request.accountName,
+        request.account_name,
+        request.clusterName,
+        request.cluster_name,
+        request.weekLabel,
+        request.week_label,
       ]
         .filter(Boolean)
         .join(" ")
@@ -789,7 +969,10 @@ export default function ApprovalRequest() {
 
       const matchesSearch = !keyword || searchableText.includes(keyword);
       const matchesStatus = statusFilter === "All" || status === statusFilter;
-      const matchesType = typeFilter === "All" || request.type === typeFilter;
+
+      const normalizedTypeFilter = normalizeRequestType(typeFilter);
+      const matchesType =
+        typeFilter === "All" || requestType === normalizedTypeFilter;
 
       return matchesSearch && matchesStatus && matchesType;
     });
@@ -812,8 +995,8 @@ export default function ApprovalRequest() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review resignation approvals filed by direct supervisors and
-              manage other HRIS module approvals.
+              Review resignation approvals, weekly hiring plan requests, job
+              descriptions, and hiring needs approvals.
             </p>
           </div>
 
@@ -1142,6 +1325,9 @@ function ApprovalRequestTable({
   onView,
   onChangeModule,
 }) {
+  const isWeeklyModule = activeModule === "Weekly Hiring Plan";
+  const colSpan = isWeeklyModule ? 9 : 8;
+
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
       <div className="border-b border-[#E6ECF2] px-5 py-4">
@@ -1178,7 +1364,11 @@ function ApprovalRequestTable({
       <div className="p-5">
         <div className="hidden lg:block">
           <div className="overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar">
-            <table className="w-full min-w-[1300px] border-collapse bg-white text-left">
+            <table
+              className={`w-full ${
+                isWeeklyModule ? "min-w-[1550px]" : "min-w-[1300px]"
+              } border-collapse bg-white text-left`}
+            >
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                   <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
@@ -1196,9 +1386,22 @@ function ApprovalRequestTable({
                   <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
                     Priority
                   </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Status
-                  </th>
+
+                  {isWeeklyModule ? (
+                    <>
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                        Recruitment Settings Status
+                      </th>
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                        Update Headcount Status
+                      </th>
+                    </>
+                  ) : (
+                    <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                      Status
+                    </th>
+                  )}
+
                   <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                     Approver
                   </th>
@@ -1213,7 +1416,7 @@ function ApprovalRequestTable({
                   <tr>
                     <td
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={8}
+                      colSpan={colSpan}
                     >
                       <Loader2
                         size={28}
@@ -1226,7 +1429,7 @@ function ApprovalRequestTable({
                   <tr>
                     <td
                       className="px-5 py-16 text-center text-sm font-bold text-gray-500"
-                      colSpan={8}
+                      colSpan={colSpan}
                     >
                       No approval requests found for {activeModule}.
                     </td>
@@ -1236,6 +1439,7 @@ function ApprovalRequestTable({
                     <ApprovalRequestRow
                       key={`${request.source || "request"}-${request.id}`}
                       request={request}
+                      isWeeklyModule={isWeeklyModule}
                       onView={() => onView(request)}
                     />
                   ))
@@ -1264,6 +1468,7 @@ function ApprovalRequestTable({
                 <ApprovalRequestMobileCard
                   key={`${request.source || "request"}-${request.id}`}
                   request={request}
+                  isWeeklyModule={isWeeklyModule}
                   onView={() => onView(request)}
                 />
               ))}
@@ -1275,9 +1480,12 @@ function ApprovalRequestTable({
   );
 }
 
-function ApprovalRequestRow({ request, onView }) {
-  const status = normalizeStatus(request.status);
+function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
+  const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
+  const requestType = getRequestType(request);
+  const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
+  const updateHeadcountStatus = getUpdateHeadcountStatus(request);
 
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
@@ -1303,7 +1511,7 @@ function ApprovalRequestRow({ request, onView }) {
 
       <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
         <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
-          {request.type || "--"}
+          {requestType || request.type || "--"}
         </span>
       </td>
 
@@ -1321,16 +1529,31 @@ function ApprovalRequestRow({ request, onView }) {
         </span>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
-        <span
-          className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-            status,
-          )}`}
-        >
-          <StatusIcon size={14} />
-          {status || "--"}
-        </span>
-      </td>
+      {isWeeklyModule ? (
+        <>
+          <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+            <StatusBadge status={recruitmentSettingsStatus} />
+          </td>
+
+          <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+            <StatusBadge
+              status={updateHeadcountStatus || "No Request"}
+              emptyText="No Request"
+            />
+          </td>
+        </>
+      ) : (
+        <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+          <span
+            className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+              status,
+            )}`}
+          >
+            <StatusIcon size={14} />
+            {status || "--"}
+          </span>
+        </td>
+      )}
 
       <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
@@ -1352,9 +1575,12 @@ function ApprovalRequestRow({ request, onView }) {
   );
 }
 
-function ApprovalRequestMobileCard({ request, onView }) {
-  const status = normalizeStatus(request.status);
+function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
+  const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
+  const requestType = getRequestType(request);
+  const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
+  const updateHeadcountStatus = getUpdateHeadcountStatus(request);
 
   return (
     <button
@@ -1373,15 +1599,27 @@ function ApprovalRequestMobileCard({ request, onView }) {
           </p>
         </div>
 
-        <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            status,
-          )}`}
-        >
-          <StatusIcon size={12} />
-          {status || "--"}
-        </span>
+        {!isWeeklyModule && (
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
+              status,
+            )}`}
+          >
+            <StatusIcon size={12} />
+            {status || "--"}
+          </span>
+        )}
       </div>
+
+      {isWeeklyModule && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <StatusBadge status={recruitmentSettingsStatus} />
+          <StatusBadge
+            status={updateHeadcountStatus || "No Request"}
+            emptyText="No Request"
+          />
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <MobileMetric
@@ -1391,7 +1629,7 @@ function ApprovalRequestMobileCard({ request, onView }) {
         <MobileMetric label="SIBS ID" value={request.employeeSibsId} />
         <MobileMetric label="Department" value={request.department} />
         <MobileMetric label="Module" value={request.module} />
-        <MobileMetric label="Type" value={request.type} />
+        <MobileMetric label="Type" value={requestType || request.type} />
         <MobileMetric label="Priority" value={request.priority || "Normal"} />
         <MobileMetric
           label="Date Requested"
@@ -1431,13 +1669,14 @@ function ViewApprovalRequestModal({
 }) {
   if (!open || !request) return null;
 
-  const status = normalizeStatus(request.status);
+  const status = getNormalizedRequestStatus(request);
   const canReview = request.canReview === true || request.raw?.canEdit === true;
   const isResignation = isResignationRequest(request);
+  const isWeekly = isWeeklyHiringPlanRequest(request);
 
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl">
         <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
@@ -1447,13 +1686,17 @@ function ViewApprovalRequestModal({
 
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  {isResignation ? "View Resignation Approval" : request.title}
+                  {isResignation
+                    ? "View Resignation Approval"
+                    : request.title || "Approval Request"}
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  {isResignation
-                    ? "Resignation approval request details"
-                    : `${request.title || "Approval Request"} details`}
+                  {isWeekly
+                    ? "Weekly hiring plan approval request details"
+                    : isResignation
+                      ? "Resignation approval request details"
+                      : `${request.title || "Approval Request"} details`}
                 </p>
               </div>
             </div>
@@ -1471,26 +1714,47 @@ function ViewApprovalRequestModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sibs-scrollbar">
           <div className="space-y-5">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FormLikeBox
-                label={isResignation ? "Resignation Date" : "Notice Date"}
-                value={formatDate(request.dateRequested || request.requestDate)}
+            {isWeekly ? (
+              <WeeklyHiringPlanRequestDetails request={request} />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <FormLikeBox
+                    label={isResignation ? "Resignation Date" : "Notice Date"}
+                    value={formatDate(
+                      request.dateRequested || request.requestDate,
+                    )}
+                  />
+
+                  <FormLikeBox
+                    label="Last Working Date"
+                    value={formatDate(request.lastWorkingDate)}
+                  />
+                </div>
+
+                <ApprovalProcessCards
+                  request={request}
+                  canReview={canReview}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                />
+
+                <FormLikeBox
+                  label="Reason"
+                  value={request.reason || "--"}
+                  large
+                />
+              </>
+            )}
+
+            {isWeekly && (
+              <ApprovalProcessCards
+                request={request}
+                canReview={canReview}
+                onApprove={onApprove}
+                onReject={onReject}
               />
-
-              <FormLikeBox
-                label="Last Working Date"
-                value={formatDate(request.lastWorkingDate)}
-              />
-            </div>
-
-            <ApprovalProcessCards
-              request={request}
-              canReview={canReview}
-              onApprove={onApprove}
-              onReject={onReject}
-            />
-
-            <FormLikeBox label="Reason" value={request.reason || "--"} large />
+            )}
 
             {request.uploadedFileUrl && (
               <div>
@@ -1543,6 +1807,143 @@ function ViewApprovalRequestModal({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function WeeklyHiringPlanRequestDetails({ request }) {
+  const raw = request?.raw || {};
+  const requestType = getRequestType(request);
+  const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
+  const updateHeadcountStatus = getUpdateHeadcountStatus(request);
+  const requiredHeadcount = getRequiredHeadcount(request);
+  const requestedRequiredHeadcount = getRequestedRequiredHeadcount(request);
+
+  const accountName =
+    request?.accountName ||
+    request?.account_name ||
+    raw?.accountName ||
+    raw?.account_name ||
+    "--";
+
+  const clusterName =
+    request?.clusterName ||
+    request?.cluster_name ||
+    raw?.clusterName ||
+    raw?.cluster_name ||
+    "--";
+
+  const weekLabel =
+    request?.weekLabel ||
+    request?.week_label ||
+    raw?.weekLabel ||
+    raw?.week_label ||
+    "--";
+
+  const weekStart =
+    request?.weekStart || request?.week_start || raw?.weekStart || raw?.week_start;
+
+  const weekEnd =
+    request?.weekEnd || request?.week_end || raw?.weekEnd || raw?.week_end;
+
+  const actualHeadcount =
+    request?.actualHeadcount ??
+    request?.actual_headcount ??
+    raw?.actualHeadcount ??
+    raw?.actual_headcount ??
+    0;
+
+  const opsPrf =
+    request?.opsPrf ?? request?.ops_prf ?? raw?.opsPrf ?? raw?.ops_prf ?? 0;
+
+  const actualHeadcountNeeds =
+    request?.actualHeadcountNeeds ??
+    request?.actual_headcount_needs ??
+    raw?.actualHeadcountNeeds ??
+    raw?.actual_headcount_needs ??
+    0;
+
+  return (
+    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h3 className="text-base font-extrabold text-sibs-primary-1">
+            Weekly Hiring Plan Request
+          </h3>
+
+          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            Recruitment Settings approval and Manager Update Headcount approval
+            are displayed separately.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <StatusBadge status={recruitmentSettingsStatus} />
+          <StatusBadge
+            status={updateHeadcountStatus || "No Request"}
+            emptyText="No Request"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <FormLikeBox label="Request Type" value={requestType || "--"} />
+        <FormLikeBox label="Account" value={accountName} />
+        <FormLikeBox label="Cluster" value={clusterName} />
+        <FormLikeBox label="Week" value={weekLabel} />
+        <FormLikeBox label="Week Start" value={formatDate(weekStart)} />
+        <FormLikeBox label="Week End" value={formatDate(weekEnd)} />
+        <FormLikeBox
+          label="Recruitment Settings Status"
+          value={recruitmentSettingsStatus}
+        />
+        <FormLikeBox
+          label="Update Headcount Status"
+          value={updateHeadcountStatus || "No Request"}
+        />
+        <FormLikeBox
+          label="Current Required HC"
+          value={formatNumber(requiredHeadcount)}
+        />
+        <FormLikeBox
+          label="Requested Required HC"
+          value={
+            requestedRequiredHeadcount === null ||
+            requestedRequiredHeadcount === undefined ||
+            requestedRequiredHeadcount === ""
+              ? "--"
+              : formatNumber(requestedRequiredHeadcount)
+          }
+        />
+        <FormLikeBox
+          label="Actual HC"
+          value={formatNumber(actualHeadcount)}
+        />
+        <FormLikeBox label="OPS PRF" value={formatNumber(opsPrf)} />
+        <FormLikeBox
+          label="Actual Headcount Needs"
+          value={formatNumber(actualHeadcountNeeds)}
+        />
+        <FormLikeBox
+          label="Requested By"
+          value={request.requester || request.employeeName || "--"}
+        />
+        <FormLikeBox label="Approver" value={request.approver || "--"} />
+        <FormLikeBox
+          label="Date Requested"
+          value={formatDate(request.dateRequested || request.requestDate)}
+        />
+      </div>
+
+      {(request.reason || request.remarks) && (
+        <div className="mt-4">
+          <FormLikeBox
+            label="Remarks / Reason"
+            value={request.reason || request.remarks || "--"}
+            large
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1746,8 +2147,9 @@ function DecisionModal({
   if (!open || !request) return null;
 
   const isApprove = action === "approve";
-  const requestStatus = normalizeStatus(request.status);
+  const requestStatus = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
+  const isWeekly = isWeeklyHiringPlanRequest(request);
 
   return createPortal(
     <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4">
@@ -1798,19 +2200,10 @@ function DecisionModal({
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                          requestStatus,
-                        )}`}
-                      >
-                        {React.createElement(getStatusIcon(requestStatus), {
-                          size: 14,
-                        })}
-                        {requestStatus}
-                      </span>
+                      <StatusBadge status={requestStatus} />
 
                       <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-[#174A7C]">
-                        {request.type || "--"}
+                        {getRequestType(request) || request.type || "--"}
                       </span>
                     </div>
                   </div>
@@ -1833,7 +2226,10 @@ function DecisionModal({
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <DecisionInfoBox label="Request ID" value={request.id || "--"} />
-                <DecisionInfoBox label="Request Type" value={request.type || "--"} />
+                <DecisionInfoBox
+                  label="Request Type"
+                  value={getRequestType(request) || request.type || "--"}
+                />
                 <DecisionInfoBox
                   label="Requester"
                   value={request.requester || request.employeeName || "--"}
@@ -1859,6 +2255,29 @@ function DecisionModal({
                   value={request.priority || "Normal"}
                 />
                 <DecisionInfoBox label="Source" value={request.source || "--"} />
+
+                {isWeekly && (
+                  <>
+                    <DecisionInfoBox
+                      label="Recruitment Settings Status"
+                      value={getRecruitmentSettingsStatus(request)}
+                    />
+                    <DecisionInfoBox
+                      label="Update Headcount Status"
+                      value={getUpdateHeadcountStatus(request) || "No Request"}
+                    />
+                    <DecisionInfoBox
+                      label="Requested Required HC"
+                      value={
+                        getRequestedRequiredHeadcount(request) === null ||
+                        getRequestedRequiredHeadcount(request) === undefined ||
+                        getRequestedRequiredHeadcount(request) === ""
+                          ? "--"
+                          : formatNumber(getRequestedRequiredHeadcount(request))
+                      }
+                    />
+                  </>
+                )}
               </div>
 
               {isResignation && (
@@ -2038,7 +2457,7 @@ function DecisionModal({
                 </h3>
 
                 <p className="mt-3 whitespace-pre-line text-sm font-medium leading-6 text-[#344054]">
-                  {request.reason || "--"}
+                  {request.reason || request.remarks || "--"}
                 </p>
               </div>
             </div>

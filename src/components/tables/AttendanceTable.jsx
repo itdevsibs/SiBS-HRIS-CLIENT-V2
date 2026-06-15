@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Search,
   CalendarDays,
   CircleCheckBig,
   CircleX,
@@ -514,11 +515,6 @@ function InlineDateRangeFilter({ visible }) {
     <div className="attendance-date-filter-inline w-full lg:w-auto">
       <style>
         {`
-          /* ===============================
-             FROM / TO DATE TRIGGERS
-             Same rectangular shape as the searchbar
-          =============================== */
-
           .attendance-date-filter-inline {
             width: 100%;
           }
@@ -597,11 +593,6 @@ function InlineDateRangeFilter({ visible }) {
               width: 100% !important;
             }
           }
-
-          /* ===============================
-             CALENDAR POPUP DESIGN
-             Keep date buttons circular and clean
-          =============================== */
 
           .attendance-date-filter-inline [data-radix-popper-content-wrapper] {
             z-index: 999999 !important;
@@ -734,6 +725,7 @@ export default function AttendanceTable() {
   const loadedAccountOptionsKeyRef = useRef("");
 
   const [isDraggingTable, setIsDraggingTable] = useState(false);
+  const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
 
   const paginationContext = usePagination("attendance");
 
@@ -741,8 +733,8 @@ export default function AttendanceTable() {
     page = 1,
     search = "",
     searchInput = "",
+    setSearch,
     setSearchInput,
-    handleSearchKeyDown,
     loading,
     setLoading,
     setPagination,
@@ -880,6 +872,18 @@ export default function AttendanceTable() {
     goToPage(currentPage + 1);
   }
 
+  function handleAttendanceSearchSubmit() {
+    const cleanSearch = String(searchInput || "").trim();
+
+    goToPage(1);
+
+    if (typeof setSearch === "function") {
+      setSearch(cleanSearch);
+    }
+
+    setSearchSubmitVersion((prev) => prev + 1);
+  }
+
   function handleDepartmentSelect(departmentId) {
     const cleanDepartment = departmentId || "All";
 
@@ -897,13 +901,10 @@ export default function AttendanceTable() {
   }
 
   function handleAttendanceSearchKeyDown(e) {
-    if (typeof handleSearchKeyDown === "function") {
-      handleSearchKeyDown(e);
-    }
+    if (e.key !== "Enter") return;
 
-    if (e.key === "Enter") {
-      goToPage(1);
-    }
+    e.preventDefault();
+    handleAttendanceSearchSubmit();
   }
 
   function handleDragStart(e) {
@@ -982,7 +983,15 @@ export default function AttendanceTable() {
         behavior: "smooth",
       });
     }
-  }, [page, search, dateFrom, dateTo, departmentFilter, accountFilter]);
+  }, [
+    page,
+    search,
+    searchSubmitVersion,
+    dateFrom,
+    dateTo,
+    departmentFilter,
+    accountFilter,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1098,6 +1107,7 @@ export default function AttendanceTable() {
   }, [
     page,
     search,
+    searchSubmitVersion,
     dateFrom,
     dateTo,
     departmentFilter,
@@ -1314,11 +1324,7 @@ export default function AttendanceTable() {
           }
           loading={loading}
           searchValue={searchInput}
-          searchPlaceholder={
-            adminView
-              ? "Search employee then press Enter"
-              : "Search then press Enter"
-          }
+          searchPlaceholder={adminView ? "Search employee..." : "Search..."}
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleAttendanceSearchKeyDown}
           dropdownFilters={
@@ -1353,8 +1359,20 @@ export default function AttendanceTable() {
             <InlineDateRangeFilter visible={attendanceDateRangeView} />
           }
           showPagination={false}
-          className="mb-5"
+          className="mb-3"
         />
+
+        <div className="mb-5 block sm:hidden">
+          <button
+            type="button"
+            onClick={handleAttendanceSearchSubmit}
+            disabled={loading}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Search size={17} />
+            Search
+          </button>
+        </div>
 
         <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
           <div
@@ -1363,7 +1381,7 @@ export default function AttendanceTable() {
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`max-h-[580px] overflow-auto select-none ${
+            className={`max-h-[580px] select-none overflow-auto ${
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
@@ -1443,7 +1461,7 @@ export default function AttendanceTable() {
               </thead>
 
               <tbody
-                key={`${page}-${search}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
+                key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
               >
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
@@ -1602,7 +1620,7 @@ export default function AttendanceTable() {
               </div>
             ) : (
               <div
-                key={`${page}-${search}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
+                key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
                 className="flex flex-col gap-3"
               >
                 {attendance.map((item, index) => {

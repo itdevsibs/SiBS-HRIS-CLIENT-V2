@@ -682,7 +682,7 @@ export default function Sidebar() {
         />
       )}
 
-      {isMobile && (
+      {isMobile && !mobileOpen && (
         <button
           type="button"
           onClick={() => setMobileOpen(true)}

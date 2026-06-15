@@ -11,12 +11,10 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock3,
-  Copy,
   ExternalLink,
   Eye,
   FileCheck2,
   Loader2,
-  Mail,
   Paperclip,
   RefreshCcw,
   RotateCcw,
@@ -27,6 +25,7 @@ import {
   SlidersHorizontal,
   X,
   XCircle,
+  Mail,
 } from "lucide-react";
 
 import FormBuilderCard from "../../components/recruitment/settings/FormBuilderCard";
@@ -36,16 +35,20 @@ import RelatedRecruitmentSettingsCard from "../../components/recruitment/setting
 import SettingsInfoCards from "../../components/recruitment/settings/SettingsInfoCards";
 import ApprovalRulesSettings from "@/components/recruitment/settings/ApprovalRulesSettings";
 import StatusModal from "../../components/modals/StatusModal";
+import PaginationTable from "@/services/pagination/PaginationTable";
 
 import {
   approveHeadcountUpdateRequest,
   getHeadcountUpdateRequests,
   rejectHeadcountUpdateRequest,
-  updateHeadcountRequestStatus,
 } from "../../lib/axios/getRecruitment";
 
+import api from "../../lib/axios/api-template";
+import { useUser } from "../../services/context/UserContext";
 import { useRecruitmentSettings } from "../../services/context/RecruitmentSettingsContext";
 import Header from "../../components/layout/Header";
+
+const HEADCOUNT_PAGE_LIMIT = 15;
 
 const tabIconMap = {
   "Update Headcounts": ClipboardList,
@@ -56,21 +59,221 @@ const tabIconMap = {
   "Approval Rules": ShieldCheck,
 };
 
-function useLockBodyScroll(open) {
-  useEffect(() => {
-    if (!open) return undefined;
+function normalizeRoleKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
 
-    /*
-      Important:
-      Do not set body/html overflow here.
-      This page uses an internal <main> scroller. Changing body/html overflow
-      can force the browser to recalculate layout and jump to the top.
-      The modal is already rendered through createPortal with fixed positioning,
-      so it can cover the whole screen without moving the page.
-    */
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
 
-    return undefined;
-  }, [open]);
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getFirstFilledValue(values = []) {
+  for (const value of values) {
+    const cleanValue = String(value ?? "").trim();
+
+    if (cleanValue) return cleanValue;
+  }
+
+  return "";
+}
+
+function getUserRoleCandidates(user) {
+  return [
+    user?.role,
+    user?.userRole,
+    user?.user_role,
+    user?.adminRole,
+    user?.admin_role,
+    user?.roleName,
+    user?.role_name,
+    user?.userRoleName,
+    user?.user_role_name,
+    user?.position,
+    user?.positionName,
+    user?.position_name,
+    user?.jobTitle,
+    user?.job_title,
+    user?.designation,
+    user?.employeeRole,
+    user?.employee_role,
+    user?.department,
+    user?.departmentName,
+    user?.department_name,
+    user?.deptName,
+    user?.dept_name,
+    getLocalStorageValue([
+      "role",
+      "userRole",
+      "user_role",
+      "adminRole",
+      "admin_role",
+      "roleName",
+      "role_name",
+      "userRoleName",
+      "user_role_name",
+      "position",
+      "positionName",
+      "position_name",
+      "jobTitle",
+      "job_title",
+      "designation",
+      "employeeRole",
+      "employee_role",
+      "department",
+      "departmentName",
+      "department_name",
+      "deptName",
+      "dept_name",
+    ]),
+  ].filter((value) => String(value ?? "").trim() !== "");
+}
+
+function getCurrentAdminAccess(user) {
+  const value =
+    user?.adminAccess ??
+    user?.admin_access ??
+    user?.gy_user_access ??
+    user?.access ??
+    user?.adminLevel ??
+    user?.admin_level ??
+    user?.adminAccessLevel ??
+    user?.admin_access_level ??
+    user?.isAdmin ??
+    user?.is_admin ??
+    getLocalStorageValue([
+      "adminAccess",
+      "admin_access",
+      "gy_user_access",
+      "access",
+      "adminLevel",
+      "admin_level",
+      "adminAccessLevel",
+      "admin_access_level",
+      "isAdmin",
+      "is_admin",
+    ]) ??
+    0;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function isHrRoleValue(value) {
+  const role = normalizeRoleKey(value);
+
+  if (!role) return false;
+
+  if (
+    [
+      "hr",
+      "hr_admin",
+      "hradmin",
+      "hr_manager",
+      "hr_staff",
+      "human_resources",
+      "human_resource",
+      "human_resources_admin",
+      "human_resource_admin",
+      "super_admin",
+      "superadmin",
+    ].includes(role)
+  ) {
+    return true;
+  }
+
+  if (role.includes("human_resource")) return true;
+  if (role.includes("human_resources")) return true;
+
+  return role.startsWith("hr_") || role.endsWith("_hr");
+}
+
+function canEditRequiredHeadcountByRole(user) {
+  const roleCandidates = getUserRoleCandidates(user);
+  const adminAccess = getCurrentAdminAccess(user);
+
+  return roleCandidates.some(isHrRoleValue) || adminAccess === 7;
+}
+
+function normalizeStatusValue(value, fallback = "Pending") {
+  const rawValue = String(value ?? "").trim();
+
+  if (!rawValue) return fallback;
+
+  const normalized = rawValue.toLowerCase();
+
+  if (normalized === "approved") return "Approved";
+  if (normalized === "rejected" || normalized === "declined") return "Rejected";
+  if (normalized === "pending") return "Pending";
+  if (normalized === "for review") return "For Review";
+  if (normalized === "no request") return "No Request";
+
+  return rawValue;
+}
+
+function getRecruitmentSettingsStatus(item = {}) {
+  return normalizeStatusValue(
+    item?.recruitmentSettingsStatus ||
+      item?.recruitment_settings_status ||
+      item?.recruitmentStatus ||
+      item?.recruitment_status ||
+      item?.baseHeadcountStatus ||
+      item?.base_headcount_status ||
+      item?.status ||
+      "Pending",
+    "Pending",
+  );
+}
+
+function getUpdateHeadcountStatus(item = {}) {
+  const value =
+    item?.updateHeadcountStatus ||
+    item?.update_headcount_status ||
+    item?.managerUpdateStatus ||
+    item?.manager_update_status ||
+    "";
+
+  if (!value) return "";
+
+  return normalizeStatusValue(value, "");
+}
+
+function getDisplayHeadcountStatus(item = {}) {
+  return getUpdateHeadcountStatus(item) || getRecruitmentSettingsStatus(item);
+}
+
+function getRequestType(item = {}) {
+  const rawType = String(
+    item?.requestType ||
+      item?.request_type ||
+      item?.type ||
+      item?.headcountRequestType ||
+      item?.headcount_request_type ||
+      "",
+  ).trim();
+
+  const lower = rawType.toLowerCase();
+
+  if (lower.includes("update headcount")) return "Update Headcount";
+  if (lower.includes("headcount update")) return "Update Headcount";
+  if (lower.includes("recruitment settings")) return "Recruitment Settings";
+
+  if (getUpdateHeadcountStatus(item)) return "Update Headcount";
+
+  return rawType || "Recruitment Settings";
 }
 
 function formatNumber(value) {
@@ -121,9 +324,61 @@ function getStatusClass(status) {
       return "border-red-200 bg-red-50 text-red-700";
     case "Pending":
       return "border-amber-200 bg-amber-50 text-amber-700";
+    case "For Review":
+      return "border-blue-200 bg-blue-50 text-blue-700";
+    case "No Request":
+      return "border-slate-200 bg-slate-50 text-slate-600";
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
+}
+
+function StatusPill({ status, fallback = "Pending" }) {
+  const displayStatus = status || fallback;
+
+  return (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+        displayStatus,
+      )}`}
+    >
+      {displayStatus}
+    </span>
+  );
+}
+
+function getRequiredHeadcount(item) {
+  return item?.requiredHeadcount ?? item?.required_headcount ?? 0;
+}
+
+function getRequestedRequiredHeadcount(item) {
+  return (
+    item?.requestedRequiredHeadcount ??
+    item?.requested_required_headcount ??
+    item?.pendingRequiredHeadcount ??
+    item?.pending_required_headcount ??
+    null
+  );
+}
+
+function getDisplayRequestedRequiredHeadcount(item) {
+  const value = getRequestedRequiredHeadcount(item);
+
+  if (value === null || value === undefined || value === "") return "—";
+
+  return formatNumber(value);
+}
+
+function getActualHeadcount(item) {
+  return item?.actualHeadcount ?? item?.actual_headcount ?? 0;
+}
+
+function getOpsPrf(item) {
+  return item?.opsPrf ?? item?.ops_prf ?? 0;
+}
+
+function getActualHeadcountNeeds(item) {
+  return item?.actualHeadcountNeeds ?? item?.actual_headcount_needs ?? 0;
 }
 
 function DetailBox({ label, value, className = "" }) {
@@ -227,6 +482,40 @@ function buildWeeklyHiringPlanFileUrl({ sibsId, filename, fileUrl }) {
   const baseUrl = String(import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
   return baseUrl ? `${baseUrl}${relativeUrl}` : relativeUrl;
+}
+
+async function saveRequiredHeadcountOverride(item, requiredHeadcount) {
+  const cleanRequiredHeadcount = Number(requiredHeadcount);
+
+  if (!Number.isFinite(cleanRequiredHeadcount) || cleanRequiredHeadcount < 0) {
+    throw new Error("Invalid required headcount.");
+  }
+
+  const payload = {
+    weekNumber: item?.weekNumber || item?.week_number || null,
+    weekLabel: item?.weekLabel || item?.week_label || null,
+    weekStart: item?.weekStart || item?.week_start || null,
+    weekEnd: item?.weekEnd || item?.week_end || null,
+    clusterName: item?.clusterName || item?.cluster || item?.cluster_name,
+    accountName: item?.accountName || item?.account || item?.account_name,
+    requiredHeadcount: cleanRequiredHeadcount,
+    actualHeadcount: Number(getActualHeadcount(item)),
+    opsPrf: Number(getOpsPrf(item)),
+    actualHeadcountNeeds: Number(getActualHeadcountNeeds(item)),
+    priorityLevel: item?.priorityLevel || item?.priority_level || null,
+    remarks:
+      item?.remarks ||
+      item?.headcountRemarks ||
+      item?.headcount_remarks ||
+      null,
+    status: "Pending",
+  };
+
+  const res = await api.post("/api/weekly-hiring-plan/headcount", payload, {
+    withCredentials: true,
+  });
+
+  return res?.data || res;
 }
 
 function ViewOnlyFileBox({ fileName, fileUrl, sibsId, openingFile, onOpen }) {
@@ -352,20 +641,25 @@ function HeadcountDetailsModal({
   open,
   item,
   actionLoadingId,
+  savingRequiredId,
+  canEditRequiredHeadcount,
+  requiredDrafts,
+  onRequiredDraftChange,
   onClose,
   onApprove,
   onReject,
-  onSetPending,
 }) {
   const [openingFile, setOpeningFile] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
-  useLockBodyScroll(open);
-
   if (!open || !item) return null;
 
-  const currentStatus = item.status || "Pending";
+  const recruitmentSettingsStatus = getRecruitmentSettingsStatus(item);
+  const updateHeadcountStatus = getUpdateHeadcountStatus(item);
+  const currentStatus = getDisplayHeadcountStatus(item);
+
   const isRowLoading = actionLoadingId === item.id;
+  const isSavingRequired = savingRequiredId === item.id;
 
   const uploadedFileName =
     item.uploadedFile ||
@@ -383,8 +677,46 @@ function HeadcountDetailsModal({
     item.last_edit_sibs_id ||
     "";
 
+  const requestedBy =
+    item.requestedByName ||
+    item.requested_by_name ||
+    item.lastEditName ||
+    item.last_edit_name ||
+    item.lastEditSibsId ||
+    item.last_edit_sibs_id ||
+    "—";
+
+  const requestedBySibsId = item.lastEditSibsId || item.last_edit_sibs_id || "";
+
+  const editedBy =
+    item.editedByName ||
+    item.edited_by_name ||
+    item.updatedByName ||
+    item.updated_by_name ||
+    item.lastEditName ||
+    item.last_edit_name ||
+    item.editedBySibsId ||
+    item.edited_by_sibs_id ||
+    item.lastEditSibsId ||
+    item.last_edit_sibs_id ||
+    "—";
+
+  const editedBySibsId =
+    item.editedBySibsId ||
+    item.edited_by_sibs_id ||
+    item.updatedBySibsId ||
+    item.updated_by_sibs_id ||
+    item.lastEditSibsId ||
+    item.last_edit_sibs_id ||
+    "";
+
+  const requiredDraft =
+    requiredDrafts[item.id] ?? String(getRequiredHeadcount(item) || 0);
+
+  const requestType = getRequestType(item);
+
   function handleAnimatedClose() {
-    if (isClosing || isRowLoading) return;
+    if (isClosing || isRowLoading || isSavingRequired) return;
 
     setIsClosing(true);
 
@@ -411,6 +743,65 @@ function HeadcountDetailsModal({
     }, 600);
   }
 
+  const detailItems = [
+    ["Request ID", item.id],
+    ["Request Type", requestType],
+    [
+      "Recruitment Settings Status",
+      <StatusPill key="rs" status={recruitmentSettingsStatus} />,
+    ],
+    [
+      "Update Headcount Status",
+      <StatusPill
+        key="uh"
+        status={updateHeadcountStatus || "No Request"}
+        fallback="No Request"
+      />,
+    ],
+    ["Account", item.accountName || item.account],
+    ["Cluster", item.clusterName || item.cluster],
+    ["Week Number", item.weekNumber || item.week_number],
+    ["Week Label", item.weekLabel || item.week_label],
+    ["Week Start", formatDateOnly(item.weekStart || item.week_start)],
+    ["Week End", formatDateOnly(item.weekEnd || item.week_end)],
+    ["Current Required HC", formatNumber(getRequiredHeadcount(item))],
+    ["Requested Required HC", getDisplayRequestedRequiredHeadcount(item)],
+    ["Actual HC", formatNumber(getActualHeadcount(item))],
+    ["OPS PRF", formatNumber(getOpsPrf(item))],
+    ["Actual HC Needs", formatNumber(getActualHeadcountNeeds(item))],
+    ["Priority Level", item.priorityLevel || item.priority_level],
+    [
+      "Uploaded By",
+      item.uploadedByName ||
+        item.uploaded_by_name ||
+        item.uploadedBySibsId ||
+        item.uploaded_by_sibs_id,
+    ],
+    ["Uploaded By SIBS ID", item.uploadedBySibsId || item.uploaded_by_sibs_id],
+    ["Requested By", requestedBy],
+    ["Requested By SIBS ID", requestedBySibsId],
+    ["Edited By", editedBy],
+    ["Edited By SIBS ID", editedBySibsId],
+    [
+      "Approver",
+      item.approverName ||
+        item.approver_name ||
+        item.sibsIdApprover ||
+        item.sibs_id_approver ||
+        item.approverSibsId ||
+        item.approver_sibs_id,
+    ],
+    [
+      "Approver SIBS ID",
+      item.sibsIdApprover ||
+        item.sibs_id_approver ||
+        item.approverSibsId ||
+        item.approver_sibs_id,
+    ],
+    ["Created At", formatDateTime(item.createdAt || item.created_at)],
+    ["Updated At", formatDateTime(item.updatedAt || item.updated_at)],
+  ];
+
   return createPortal(
     <div
       className={`fixed inset-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center bg-sibs-primary-1/45 px-4 py-6 ${
@@ -428,7 +819,7 @@ function HeadcountDetailsModal({
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <ClipboardList size={14} />
-              Headcount Update Details
+              Headcount Request Details
             </div>
 
             <h2 className="mt-3 truncate text-xl font-extrabold text-[#101828]">
@@ -442,13 +833,7 @@ function HeadcountDetailsModal({
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                currentStatus,
-              )}`}
-            >
-              {currentStatus}
-            </span>
+            <StatusPill status={currentStatus} />
 
             <button
               type="button"
@@ -463,17 +848,36 @@ function HeadcountDetailsModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5 sibs-scrollbar">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="sibs-page-card-in rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div
+              className="sibs-page-card-in rounded-2xl border border-blue-100 bg-blue-50 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={{ animationDelay: "40ms" }}
+            >
               <p className="text-xs font-extrabold uppercase tracking-wide text-blue-700">
-                Kronos HC
+                Current Required HC
               </p>
 
-              <p className="mt-2 text-3xl font-extrabold text-blue-700">
-                {formatNumber(
-                  item.kronosRequiredHeadcount ||
-                    item.kronos_required_headcount,
-                )}
-              </p>
+              {canEditRequiredHeadcount &&
+              requestType === "Recruitment Settings" ? (
+                <div className="mt-3">
+                  <input
+                    type="number"
+                    min="0"
+                    value={requiredDraft}
+                    onChange={(e) =>
+                      onRequiredDraftChange?.(item.id, e.target.value)
+                    }
+                    className="h-11 w-full rounded-xl border border-blue-200 bg-white px-3 text-lg font-extrabold text-blue-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  />
+
+                  <p className="mt-2 text-xs font-bold text-blue-700/70">
+                    Click Approve below to save and approve this request.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 text-3xl font-extrabold text-blue-700">
+                  {formatNumber(getRequiredHeadcount(item))}
+                </p>
+              )}
             </div>
 
             <div
@@ -485,36 +889,33 @@ function HeadcountDetailsModal({
               </p>
 
               <p className="mt-2 text-3xl font-extrabold text-amber-700">
-                {formatNumber(
-                  item.requestedRequiredHeadcount ||
-                    item.requested_required_headcount,
-                )}
+                {getDisplayRequestedRequiredHeadcount(item)}
               </p>
             </div>
 
             <div
               className="sibs-page-card-in rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-              style={{ animationDelay: "120ms" }}
+              style={{ animationDelay: "80ms" }}
             >
               <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 Actual HC
               </p>
 
               <p className="mt-2 text-3xl font-extrabold text-[#344054]">
-                {formatNumber(item.actualHeadcount || item.actual_headcount)}
+                {formatNumber(getActualHeadcount(item))}
               </p>
             </div>
 
             <div
               className="sibs-page-card-in rounded-2xl border border-violet-100 bg-violet-50 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-              style={{ animationDelay: "180ms" }}
+              style={{ animationDelay: "120ms" }}
             >
               <p className="text-xs font-extrabold uppercase tracking-wide text-violet-700">
                 OPS PRF
               </p>
 
               <p className="mt-2 text-3xl font-extrabold text-violet-700">
-                {formatNumber(item.opsPrf || item.ops_prf)}
+                {formatNumber(getOpsPrf(item))}
               </p>
             </div>
           </div>
@@ -528,43 +929,9 @@ function HeadcountDetailsModal({
             </h3>
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <DetailBox label="Request ID" value={item.id} />
-              <DetailBox label="Status" value={currentStatus} />
-
-              <DetailBox
-                label="Account"
-                value={item.accountName || item.account}
-              />
-
-              <DetailBox
-                label="Cluster"
-                value={item.clusterName || item.cluster}
-              />
-
-              <DetailBox
-                label="Week Number"
-                value={item.weekNumber || item.week_number}
-              />
-
-              <DetailBox
-                label="Week Label"
-                value={item.weekLabel || item.week_label}
-              />
-
-              <DetailBox
-                label="Week Start"
-                value={formatDateOnly(item.weekStart || item.week_start)}
-              />
-
-              <DetailBox
-                label="Week End"
-                value={formatDateOnly(item.weekEnd || item.week_end)}
-              />
-
-              <DetailBox
-                label="Priority Level"
-                value={item.priorityLevel || item.priority_level}
-              />
+              {detailItems.map(([label, value]) => (
+                <DetailBox key={label} label={label} value={value} />
+              ))}
 
               <ViewOnlyFileBox
                 fileName={uploadedFileName}
@@ -572,70 +939,6 @@ function HeadcountDetailsModal({
                 sibsId={uploadedFileSibsId}
                 openingFile={openingFile}
                 onOpen={handleOpenUploadedFile}
-              />
-
-              <DetailBox
-                label="Uploaded By"
-                value={
-                  item.uploadedByName ||
-                  item.uploaded_by_name ||
-                  item.uploadedBySibsId ||
-                  item.uploaded_by_sibs_id
-                }
-              />
-
-              <DetailBox
-                label="Uploaded By SIBS ID"
-                value={item.uploadedBySibsId || item.uploaded_by_sibs_id}
-              />
-
-              <DetailBox
-                label="Requested By"
-                value={
-                  item.requestedByName ||
-                  item.requested_by_name ||
-                  item.lastEditName ||
-                  item.last_edit_name ||
-                  item.lastEditSibsId ||
-                  item.last_edit_sibs_id
-                }
-              />
-
-              <DetailBox
-                label="Requested By SIBS ID"
-                value={item.lastEditSibsId || item.last_edit_sibs_id}
-              />
-
-              <DetailBox
-                label="Approver"
-                value={
-                  item.approverName ||
-                  item.approver_name ||
-                  item.sibsIdApprover ||
-                  item.sibs_id_approver ||
-                  item.approverSibsId ||
-                  item.approver_sibs_id
-                }
-              />
-
-              <DetailBox
-                label="Approver SIBS ID"
-                value={
-                  item.sibsIdApprover ||
-                  item.sibs_id_approver ||
-                  item.approverSibsId ||
-                  item.approver_sibs_id
-                }
-              />
-
-              <DetailBox
-                label="Created At"
-                value={formatDateTime(item.createdAt || item.created_at)}
-              />
-
-              <DetailBox
-                label="Updated At"
-                value={formatDateTime(item.updatedAt || item.updated_at)}
               />
             </div>
           </section>
@@ -662,25 +965,11 @@ function HeadcountDetailsModal({
         <div className="flex flex-col gap-3 border-t border-[#D9E2EC] bg-white px-5 py-4 sm:flex-row sm:justify-end">
           <button
             type="button"
-            onClick={() => onSetPending(item)}
-            disabled={isRowLoading || currentStatus === "Pending"}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-amber-100 bg-amber-50 px-5 text-sm font-extrabold text-amber-700 transition hover:-translate-y-0.5 hover:bg-amber-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isRowLoading ? (
-              <Loader2 size={17} className="animate-spin" />
-            ) : (
-              <Clock3 size={17} />
-            )}
-            Set Pending
-          </button>
-
-          <button
-            type="button"
             onClick={() => onApprove(item)}
-            disabled={isRowLoading || currentStatus === "Approved"}
+            disabled={isRowLoading || isSavingRequired || currentStatus === "Approved"}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-5 text-sm font-extrabold text-emerald-700 transition hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isRowLoading ? (
+            {isRowLoading || isSavingRequired ? (
               <Loader2 size={17} className="animate-spin" />
             ) : (
               <CheckCircle2 size={17} />
@@ -691,7 +980,7 @@ function HeadcountDetailsModal({
           <button
             type="button"
             onClick={() => onReject(item)}
-            disabled={isRowLoading || currentStatus === "Rejected"}
+            disabled={isRowLoading || isSavingRequired || currentStatus === "Rejected"}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-5 text-sm font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isRowLoading ? (
@@ -705,7 +994,8 @@ function HeadcountDetailsModal({
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+            disabled={isSavingRequired || isRowLoading}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Close
           </button>
@@ -717,6 +1007,9 @@ function HeadcountDetailsModal({
 }
 
 function UpdateHeadcountsPanel() {
+  const { user } = useUser();
+  const canEditRequiredHeadcount = canEditRequiredHeadcountByRole(user);
+
   const [requests, setRequests] = useState([]);
   const [counts, setCounts] = useState({
     Pending: 0,
@@ -726,9 +1019,22 @@ function UpdateHeadcountsPanel() {
 
   const [activeStatus, setActiveStatus] = useState("Pending");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState("");
+  const [savingRequiredId, setSavingRequiredId] = useState("");
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [requiredDrafts, setRequiredDrafts] = useState({});
+  const [isDraggingTable, setIsDraggingTable] = useState(false);
+
+  const tableScrollRef = useRef(null);
+
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
 
   const pageScrollRef = useRef({
     windowX: 0,
@@ -743,6 +1049,16 @@ function UpdateHeadcountsPanel() {
     title: "",
     message: "",
   });
+
+  const totalRecords = requests.length;
+  const totalPages = Math.max(Math.ceil(totalRecords / HEADCOUNT_PAGE_LIMIT), 1);
+
+  const paginatedRequests = useMemo(() => {
+    const startIndex = (currentPage - 1) * HEADCOUNT_PAGE_LIMIT;
+    const endIndex = startIndex + HEADCOUNT_PAGE_LIMIT;
+
+    return requests.slice(startIndex, endIndex);
+  }, [requests, currentPage]);
 
   function getPageScroller() {
     return document.querySelector("[data-recruitment-settings-main='true']");
@@ -774,8 +1090,69 @@ function UpdateHeadcountsPanel() {
     });
   }
 
+  function getRequestedBy(item) {
+    return (
+      item.requestedByName ||
+      item.requested_by_name ||
+      item.lastEditName ||
+      item.last_edit_name ||
+      item.lastEditSibsId ||
+      item.last_edit_sibs_id ||
+      "—"
+    );
+  }
+
+  function getRequestedBySibsId(item) {
+    return item.lastEditSibsId || item.last_edit_sibs_id || "";
+  }
+
+  function getEditedBy(item) {
+    return (
+      item.editedByName ||
+      item.edited_by_name ||
+      item.updatedByName ||
+      item.updated_by_name ||
+      item.lastEditName ||
+      item.last_edit_name ||
+      item.editedBySibsId ||
+      item.edited_by_sibs_id ||
+      item.lastEditSibsId ||
+      item.last_edit_sibs_id ||
+      "—"
+    );
+  }
+
+  function getEditedBySibsId(item) {
+    return (
+      item.editedBySibsId ||
+      item.edited_by_sibs_id ||
+      item.updatedBySibsId ||
+      item.updated_by_sibs_id ||
+      item.lastEditSibsId ||
+      item.last_edit_sibs_id ||
+      ""
+    );
+  }
+
+  function handleRequiredDraftChange(id, value) {
+    setRequiredDrafts((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  }
+
   function openHeadcountDetails(item) {
     savePageScrollPosition();
+
+    setRequiredDrafts((prev) => {
+      if (prev[item.id] !== undefined) return prev;
+
+      return {
+        ...prev,
+        [item.id]: String(getRequiredHeadcount(item) || 0),
+      };
+    });
+
     setSelectedRequest(item);
 
     requestAnimationFrame(() => {
@@ -808,6 +1185,62 @@ function UpdateHeadcountsPanel() {
     }));
   }
 
+  function handleDragStart(e) {
+    if (e.button !== 0) return;
+
+    const target = e.target;
+    const isInteractiveElement = target.closest(
+      "button, a, input, select, textarea, [data-no-table-drag='true']",
+    );
+
+    if (isInteractiveElement) return;
+
+    const container = tableScrollRef.current;
+    if (!container) return;
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: e.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+      moved: false,
+    };
+
+    setIsDraggingTable(true);
+  }
+
+  function handleDragMove(e) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!dragState.isDown || !container) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
+    }
+
+    container.scrollLeft = dragState.scrollLeft - walk;
+  }
+
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
+
+    window.setTimeout(() => {
+      setIsDraggingTable(false);
+      dragStateRef.current.moved = false;
+    }, 0);
+  }
+
+  function handleTableRowClick(item) {
+    if (dragStateRef.current.moved) return;
+
+    openHeadcountDetails(item);
+  }
+
   async function fetchRequests(statusOverride = activeStatus, options = {}) {
     const { showErrorModal = true } = options;
 
@@ -820,7 +1253,9 @@ function UpdateHeadcountsPanel() {
         limit: 200,
       });
 
-      setRequests(Array.isArray(result?.data) ? result.data : []);
+      const nextRequests = Array.isArray(result?.data) ? result.data : [];
+
+      setRequests(nextRequests);
       setCounts(
         result?.counts || {
           Pending: 0,
@@ -828,6 +1263,28 @@ function UpdateHeadcountsPanel() {
           Rejected: 0,
         },
       );
+
+      setRequiredDrafts((prev) => {
+        const next = { ...prev };
+
+        nextRequests.forEach((item) => {
+          if (next[item.id] === undefined) {
+            next[item.id] = String(getRequiredHeadcount(item) || 0);
+          }
+        });
+
+        return next;
+      });
+
+      if (selectedRequest?.id) {
+        const refreshedSelected = nextRequests.find(
+          (item) => String(item.id) === String(selectedRequest.id),
+        );
+
+        if (refreshedSelected) {
+          setSelectedRequest(refreshedSelected);
+        }
+      }
     } catch (error) {
       console.error("FETCH UPDATE HEADCOUNTS ERROR:", error);
 
@@ -854,53 +1311,84 @@ function UpdateHeadcountsPanel() {
   }
 
   useEffect(() => {
+    setCurrentPage(1);
     fetchRequests(activeStatus, { showErrorModal: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStatus]);
 
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (!tableScrollRef.current) return;
+
+    tableScrollRef.current.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
+  }, [currentPage, activeStatus]);
+
+  function handlePreviousPage() {
+    if (loading || currentPage <= 1) return;
+    setCurrentPage((prev) => Math.max(Number(prev || 1) - 1, 1));
+  }
+
+  function handleNextPage() {
+    if (loading || currentPage >= totalPages) return;
+    setCurrentPage((prev) => Math.min(Number(prev || 1) + 1, totalPages));
+  }
+
   async function handleSearchSubmit(e) {
     e.preventDefault();
+    setCurrentPage(1);
     await fetchRequests(activeStatus);
   }
 
-  async function handleSetPending(item) {
-    if (!item?.id || actionLoadingId) return;
-
-    try {
-      setActionLoadingId(item.id);
-
-      await updateHeadcountRequestStatus(item.id, "Pending");
-
-      closeHeadcountDetails();
-
-      openStatusModal({
-        type: "success",
-        title: "Headcount Set to Pending",
-        message: "The headcount update was returned to pending successfully.",
-      });
-
-      await fetchRequests(activeStatus, { showErrorModal: false });
-    } catch (error) {
-      console.error("SET PENDING UPDATE HEADCOUNT ERROR:", error);
-
-      openStatusModal({
-        type: "error",
-        title: "Update Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "Failed to set headcount update to pending.",
-      });
-    } finally {
-      setActionLoadingId("");
-    }
-  }
-
   async function handleApprove(item) {
-    if (!item?.id || actionLoadingId) return;
+    if (!item?.id || actionLoadingId || savingRequiredId) return;
+
+    const requestType = getRequestType(item);
+
+    const shouldSaveRequiredHeadcountBeforeApprove =
+      canEditRequiredHeadcount && requestType === "Recruitment Settings";
+
+    let requiredHeadcount = null;
+
+    if (shouldSaveRequiredHeadcountBeforeApprove) {
+      const rawValue =
+        requiredDrafts[item.id] !== undefined
+          ? requiredDrafts[item.id]
+          : getRequiredHeadcount(item);
+
+      requiredHeadcount = Number(rawValue);
+
+      if (!Number.isFinite(requiredHeadcount) || requiredHeadcount < 0) {
+        openStatusModal({
+          type: "error",
+          title: "Invalid Required HC",
+          message: "Please enter a valid required headcount before approving.",
+        });
+        return;
+      }
+    }
 
     try {
       setActionLoadingId(item.id);
+
+      if (shouldSaveRequiredHeadcountBeforeApprove) {
+        setSavingRequiredId(item.id);
+
+        await saveRequiredHeadcountOverride(item, requiredHeadcount);
+
+        setRequiredDrafts((prev) => ({
+          ...prev,
+          [item.id]: String(requiredHeadcount),
+        }));
+      }
 
       await approveHeadcountUpdateRequest(item.id);
 
@@ -909,12 +1397,14 @@ function UpdateHeadcountsPanel() {
       openStatusModal({
         type: "success",
         title: "Headcount Approved",
-        message: "The headcount update was approved successfully.",
+        message: shouldSaveRequiredHeadcountBeforeApprove
+          ? "The required headcount was updated and approved successfully."
+          : "The headcount request was approved successfully.",
       });
 
       await fetchRequests(activeStatus, { showErrorModal: false });
     } catch (error) {
-      console.error("APPROVE UPDATE HEADCOUNT ERROR:", error);
+      console.error("APPROVE HEADCOUNT REQUEST ERROR:", error);
 
       openStatusModal({
         type: "error",
@@ -922,15 +1412,17 @@ function UpdateHeadcountsPanel() {
         message:
           error?.response?.data?.message ||
           error?.response?.data?.error ||
-          "Failed to approve headcount update.",
+          error?.message ||
+          "Failed to approve headcount request.",
       });
     } finally {
       setActionLoadingId("");
+      setSavingRequiredId("");
     }
   }
 
   async function handleReject(item) {
-    if (!item?.id || actionLoadingId) return;
+    if (!item?.id || actionLoadingId || savingRequiredId) return;
 
     try {
       setActionLoadingId(item.id);
@@ -942,7 +1434,7 @@ function UpdateHeadcountsPanel() {
       openStatusModal({
         type: "success",
         title: "Headcount Rejected",
-        message: "The headcount update was rejected successfully.",
+        message: "The headcount request was rejected successfully.",
       });
 
       await fetchRequests(activeStatus, { showErrorModal: false });
@@ -955,7 +1447,7 @@ function UpdateHeadcountsPanel() {
         message:
           error?.response?.data?.message ||
           error?.response?.data?.error ||
-          "Failed to reject headcount update.",
+          "Failed to reject headcount request.",
       });
     } finally {
       setActionLoadingId("");
@@ -979,16 +1471,18 @@ function UpdateHeadcountsPanel() {
             </h3>
 
             <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Review manager-submitted required headcount updates before they
-              become visible in the Weekly Hiring Plan headcount table. Pending
-              updates will continue showing Kronos-based headcount until
-              approved.
+              Review Recruitment Settings requests and Manager Update Headcount
+              requests separately. Current Required HC stays unchanged until
+              approval when the request is from a manager.
             </p>
           </div>
 
           <button
             type="button"
-            onClick={() => fetchRequests(activeStatus)}
+            onClick={() => {
+              setCurrentPage(1);
+              fetchRequests(activeStatus);
+            }}
             disabled={loading}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -1005,33 +1499,42 @@ function UpdateHeadcountsPanel() {
           <StatusMetricCard
             label="Pending"
             value={counts.Pending}
-            description="Updates waiting for review."
+            description="Requests waiting for review."
             icon={Clock3}
             active={activeStatus === "Pending"}
             variant="pending"
-            onClick={() => setActiveStatus("Pending")}
+            onClick={() => {
+              setCurrentPage(1);
+              setActiveStatus("Pending");
+            }}
             delay={0}
           />
 
           <StatusMetricCard
             label="Approved"
             value={counts.Approved}
-            description="Approved updates applied to the table."
+            description="Approved requests applied to the table."
             icon={CheckCircle2}
             active={activeStatus === "Approved"}
             variant="approved"
-            onClick={() => setActiveStatus("Approved")}
+            onClick={() => {
+              setCurrentPage(1);
+              setActiveStatus("Approved");
+            }}
             delay={60}
           />
 
           <StatusMetricCard
             label="Rejected"
             value={counts.Rejected}
-            description="Updates rejected by reviewer."
+            description="Requests rejected by reviewer."
             icon={XCircle}
             active={activeStatus === "Rejected"}
             variant="rejected"
-            onClick={() => setActiveStatus("Rejected")}
+            onClick={() => {
+              setCurrentPage(1);
+              setActiveStatus("Rejected");
+            }}
             delay={120}
           />
         </div>
@@ -1050,7 +1553,7 @@ function UpdateHeadcountsPanel() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search account, cluster, week, or editor..."
+              placeholder="Search account, cluster, week, requester, or editor..."
               className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-10 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             />
           </div>
@@ -1069,28 +1572,41 @@ function UpdateHeadcountsPanel() {
           className="sibs-profile-tab-panel mt-6 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
           style={{ animationDelay: "180ms" }}
         >
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1160px] table-fixed border-collapse">
+          <div
+            ref={tableScrollRef}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            className={`max-h-[670px] select-none overflow-auto ${
+              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
+            <table className="w-full min-w-[1680px] table-fixed border-collapse">
               <colgroup>
-                <col className="w-[240px]" />
+                <col className="w-[280px]" />
                 <col className="w-[170px]" />
-                <col className="w-[140px]" />
+                <col className="w-[180px]" />
+                <col className="w-[180px]" />
                 <col className="w-[150px]" />
-                <col className="w-[140px]" />
-                <col className="w-[140px]" />
+                <col className="w-[220px]" />
+                <col className="w-[220px]" />
+                <col className="w-[220px]" />
                 <col className="w-[220px]" />
                 <col className="w-[180px]" />
               </colgroup>
 
-              <thead className="bg-[#F5F7FA]">
+              <thead className="sticky top-0 z-10 bg-[#F5F7FA]">
                 <tr className="text-left text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
                   <th className="px-5 py-3">Account</th>
                   <th className="px-5 py-3">Cluster</th>
-                  <th className="px-5 py-3">Kronos HC</th>
+                  <th className="px-5 py-3">Current Required HC</th>
                   <th className="px-5 py-3">Requested HC</th>
                   <th className="px-5 py-3">Actual HC</th>
-                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Recruitment Settings Status</th>
+                  <th className="px-5 py-3">Update Headcount Status</th>
                   <th className="px-5 py-3">Requested By</th>
+                  <th className="px-5 py-3">Edited By</th>
                   <th className="px-5 py-3">Date Created</th>
                 </tr>
               </thead>
@@ -1098,111 +1614,128 @@ function UpdateHeadcountsPanel() {
               <tbody className="divide-y divide-[#EEF2F6] bg-white">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center">
+                    <td colSpan={10} className="px-5 py-12 text-center">
                       <Loader2
                         size={28}
                         className="mx-auto mb-3 animate-spin text-sibs-primary-1"
                       />
 
                       <p className="text-sm font-extrabold text-[#344054]">
-                        Loading headcount updates...
+                        Loading headcount requests...
                       </p>
                     </td>
                   </tr>
-                ) : requests.length > 0 ? (
-                  requests.map((item) => (
-                    <tr
-                      key={item.id}
-                      onClick={() => openHeadcountDetails(item)}
-                      className="cursor-pointer text-sm transition hover:bg-[#F8FAFC] active:scale-[0.995]"
-                    >
-                      <td className="px-5 py-4">
-                        <p className="truncate font-extrabold text-[#101828]">
-                          {item.accountName || item.account || "—"}
-                        </p>
+                ) : paginatedRequests.length > 0 ? (
+                  paginatedRequests.map((item) => {
+                    const requestedBy = getRequestedBy(item);
+                    const requestedBySibsId = getRequestedBySibsId(item);
+                    const editedBy = getEditedBy(item);
+                    const editedBySibsId = getEditedBySibsId(item);
+                    const recruitmentSettingsStatus =
+                      getRecruitmentSettingsStatus(item);
+                    const updateHeadcountStatus = getUpdateHeadcountStatus(item);
 
-                        <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                          {item.weekLabel || item.week_label || "—"} ·{" "}
-                          {formatDateOnly(item.weekStart || item.week_start)} -{" "}
-                          {formatDateOnly(item.weekEnd || item.week_end)}
-                        </p>
-                      </td>
+                    return (
+                      <tr
+                        key={item.id}
+                        onClick={() => handleTableRowClick(item)}
+                        className="cursor-pointer text-sm transition hover:bg-[#F8FAFC] active:scale-[0.995]"
+                      >
+                        <td className="px-5 py-4">
+                          <p className="truncate font-extrabold text-[#101828]">
+                            {item.accountName || item.account || "—"}
+                          </p>
 
-                      <td className="px-5 py-4">
-                        <p className="truncate font-bold text-[#344054]">
-                          {item.clusterName || item.cluster || "—"}
-                        </p>
-                      </td>
+                          <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                            {item.weekLabel || item.week_label || "—"} ·{" "}
+                            {formatDateOnly(item.weekStart || item.week_start)}{" "}
+                            - {formatDateOnly(item.weekEnd || item.week_end)}
+                          </p>
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <p className="font-extrabold text-blue-700">
-                          {formatNumber(
-                            item.kronosRequiredHeadcount ||
-                              item.kronos_required_headcount,
+                        <td className="px-5 py-4">
+                          <p className="truncate font-bold text-[#344054]">
+                            {item.clusterName || item.cluster || "—"}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="font-extrabold text-sibs-primary-1">
+                            {formatNumber(getRequiredHeadcount(item))}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="font-extrabold text-amber-700">
+                            {getDisplayRequestedRequiredHeadcount(item)}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="font-extrabold text-[#344054]">
+                            {formatNumber(getActualHeadcount(item))}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <StatusPill status={recruitmentSettingsStatus} />
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <StatusPill
+                            status={updateHeadcountStatus || "No Request"}
+                            fallback="No Request"
+                          />
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="truncate font-bold text-[#344054]">
+                            {requestedBy}
+                          </p>
+
+                          {requestedBySibsId && (
+                            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                              {requestedBySibsId}
+                            </p>
                           )}
-                        </p>
-                      </td>
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <p className="font-extrabold text-amber-700">
-                          {formatNumber(
-                            item.requestedRequiredHeadcount ||
-                              item.requested_required_headcount,
+                        <td className="px-5 py-4">
+                          <p className="truncate font-bold text-[#344054]">
+                            {editedBy}
+                          </p>
+
+                          {editedBySibsId && (
+                            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                              {editedBySibsId}
+                            </p>
                           )}
-                        </p>
-                      </td>
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <p className="font-extrabold text-[#344054]">
-                          {formatNumber(
-                            item.actualHeadcount || item.actual_headcount,
-                          )}
-                        </p>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                            item.status,
-                          )}`}
-                        >
-                          {item.status || "Pending"}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-4">
-                        <p className="truncate font-bold text-[#344054]">
-                          {item.lastEditName ||
-                            item.last_edit_name ||
-                            item.requestedByName ||
-                            item.requested_by_name ||
-                            item.lastEditSibsId ||
-                            item.last_edit_sibs_id ||
-                            "—"}
-                        </p>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="truncate font-bold text-[#344054]">
-                          {formatDateTime(item.createdAt || item.created_at)}
-                        </p>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-5 py-4">
+                          <p className="truncate font-bold text-[#344054]">
+                            {formatDateTime(item.createdAt || item.created_at)}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="px-5 py-12 text-center">
+                    <td colSpan={10} className="px-5 py-12 text-center">
                       <ClipboardList
                         size={28}
                         className="mx-auto mb-3 text-sibs-tertiary-5"
                       />
 
                       <p className="text-sm font-extrabold text-[#344054]">
-                        No {activeStatus.toLowerCase()} headcount updates found.
+                        No {activeStatus.toLowerCase()} headcount requests
+                        found.
                       </p>
 
                       <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                        Pending manager updates from Weekly Hiring Plan will
-                        appear here.
+                        Recruitment Settings requests and manager Update
+                        Headcount requests will appear here.
                       </p>
                     </td>
                   </tr>
@@ -1210,17 +1743,37 @@ function UpdateHeadcountsPanel() {
               </tbody>
             </table>
           </div>
+
+          <p className="border-t border-[#EEF2F6] bg-white px-5 py-2 text-xs font-semibold text-sibs-tertiary-5">
+            Hold left click and drag left or right to scroll the table.
+          </p>
         </div>
+
+        <PaginationTable
+          loading={loading}
+          showSearch={false}
+          showPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadedCount={paginatedRequests.length}
+          totalRecords={totalRecords}
+          recordLabel="headcount requests"
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+        />
       </div>
 
       <HeadcountDetailsModal
         open={!!selectedRequest}
         item={selectedRequest}
         actionLoadingId={actionLoadingId}
+        savingRequiredId={savingRequiredId}
+        canEditRequiredHeadcount={canEditRequiredHeadcount}
+        requiredDrafts={requiredDrafts}
+        onRequiredDraftChange={handleRequiredDraftChange}
         onClose={closeHeadcountDetails}
         onApprove={handleApprove}
         onReject={handleReject}
-        onSetPending={handleSetPending}
       />
 
       <StatusModal
@@ -1372,48 +1925,36 @@ export default function RecruitmentSettingsPage() {
             style={{ animationDelay: "120ms" }}
           >
             <div className="border-b border-[#E6ECF2] bg-white px-4 sm:px-5">
-              <div className="flex flex-col gap-3 pt-4">
-                <div>
-                  <h2 className="text-base font-extrabold text-[#101828]">
-                    Settings Modules
-                  </h2>
+              <div className="flex min-w-0 gap-8 overflow-x-auto">
+                {settingsTabs.map((tab) => {
+                  const isActive = activeTab === tab;
+                  const TabIcon = tabIconMap[tab] || Settings;
 
-                  <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                    Manage recruitment workflows and form setup from one place.
-                  </p>
-                </div>
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(tab);
+                      }}
+                      className={`relative inline-flex h-12 shrink-0 items-center justify-center gap-2 border-b-2 px-1 text-sm font-extrabold transition ${
+                        isActive
+                          ? "border-blue-600 text-blue-600"
+                          : "border-transparent text-[#344054] hover:border-[#D0D5DD] hover:text-sibs-primary-1"
+                      }`}
+                    >
+                      <TabIcon
+                        size={16}
+                        strokeWidth={2.4}
+                        className={
+                          isActive ? "text-blue-600" : "text-sibs-tertiary-5"
+                        }
+                      />
 
-                <div className="flex min-w-0 gap-8 overflow-x-auto">
-                  {settingsTabs.map((tab) => {
-                    const isActive = activeTab === tab;
-                    const TabIcon = tabIconMap[tab] || Settings;
-
-                    return (
-                      <button
-                        key={tab}
-                        type="button"
-                        onClick={() => {
-                          setActiveTab(tab);
-                        }}
-                        className={`relative inline-flex h-12 shrink-0 items-center justify-center gap-2 border-b-2 px-1 text-sm font-extrabold transition ${
-                          isActive
-                            ? "border-blue-600 text-blue-600"
-                            : "border-transparent text-[#344054] hover:border-[#D0D5DD] hover:text-sibs-primary-1"
-                        }`}
-                      >
-                        <TabIcon
-                          size={16}
-                          strokeWidth={2.4}
-                          className={
-                            isActive ? "text-blue-600" : "text-sibs-tertiary-5"
-                          }
-                        />
-
-                        {tab}
-                      </button>
-                    );
-                  })}
-                </div>
+                      {tab}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -1435,67 +1976,6 @@ export default function RecruitmentSettingsPage() {
             ) : (
               <PlaceholderSettingsPanel activeTab={activeTab} />
             )}
-          </section>
-
-          <section className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-            <div
-              className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-              style={{ animationDelay: "180ms" }}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Interview Form Link
-                </h3>
-
-                <Copy size={18} className="text-sibs-tertiary-5" />
-              </div>
-
-              <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                Used by the Start Interview button in Candidate Pipeline.
-              </p>
-
-              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-xs font-bold text-sibs-primary-1">
-                /recruitment/final-interview-form
-              </div>
-            </div>
-
-            <div
-              className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-              style={{ animationDelay: "240ms" }}
-            >
-              <h3 className="text-base font-extrabold text-[#101828]">
-                Required URL Parameters
-              </h3>
-
-              <div className="mt-4 space-y-2">
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-                  candidateId
-                </div>
-
-                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-                  candidateApplicationId
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-              style={{ animationDelay: "300ms" }}
-            >
-              <h3 className="text-base font-extrabold text-[#101828]">
-                Recommended Next Setup
-              </h3>
-
-              <div className="mt-4 space-y-2">
-                <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-sibs-primary-1">
-                  Create final interview save logic.
-                </p>
-
-                <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-sibs-primary-1">
-                  Connect interview result to Candidate Pipeline.
-                </p>
-              </div>
-            </div>
           </section>
         </div>
       </main>
