@@ -1,4 +1,11 @@
-import { ExternalLink, Download, Upload, Plus, UsersRound } from "lucide-react";
+import {
+  ExternalLink,
+  Download,
+  Upload,
+  Plus,
+  UsersRound,
+  RefreshCw,
+} from "lucide-react";
 
 import Header from "../../../components/layout/Header";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
@@ -13,26 +20,17 @@ import UpdateStatusModal from "../../../components/modals/talentPool/UpdateStatu
 import MoveToPipeLineModal from "../../../components/modals/talentPool/MoveToPipeLineModal";
 
 export default function TalentPoolPage() {
-  const { uploadInputRef, openPublicForm, openAddCandidateModal } =
-    useTalentPool();
-
-  function handleDownloadLeadTemplate() {
-    const csv =
-      "candidateId,firstName,middleName,lastName,suffix,nickname,email,phoneNumber1,phoneNumber2,dateOfBirth,physicalAddress,openPosition,applyingLocation,hearAboutUs,referredBy,employeeId,workExperience,educationalAttainment,skillsLanguage,status,availability,remarks\n,Ana,,Santos,,Ana,ana.santos@email.com,09171234567,,1999-04-14,Davao City,Customer Service Representative,Davao Site,Social Media Ads,N/A,N/A,Has work Experience (at least 6 months relevant work experience),Tertiary (College Level or College Degree Holder),English Chat,New Applicant,Available,Imported sample lead";
-
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = "talent-pool-leads-template.csv";
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
-  }
+  const {
+    uploadInputRef,
+    openPublicForm,
+    openAddCandidateModal,
+    downloadLeadTemplate,
+    uploadLeadsFile,
+    refreshTalentPool,
+    isLoading,
+    isSaving,
+    loadError,
+  } = useTalentPool();
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
@@ -40,9 +38,9 @@ export default function TalentPoolPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                 <UsersRound size={14} />
                 Recruitment
               </div>
@@ -60,8 +58,21 @@ export default function TalentPoolPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
+                onClick={refreshTalentPool}
+                disabled={isLoading || isSaving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw
+                  size={18}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+
+              <button
+                type="button"
                 onClick={openPublicForm}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
               >
                 <ExternalLink size={18} />
                 Public Form
@@ -69,8 +80,9 @@ export default function TalentPoolPage() {
 
               <button
                 type="button"
-                onClick={handleDownloadLeadTemplate}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                onClick={downloadLeadTemplate}
+                disabled={isLoading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download size={18} />
                 CSV Template
@@ -79,23 +91,26 @@ export default function TalentPoolPage() {
               <button
                 type="button"
                 onClick={() => uploadInputRef.current?.click()}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                disabled={isSaving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Upload size={18} />
-                Upload CSV Leads
+                {isSaving ? "Uploading..." : "Upload CSV Leads"}
               </button>
 
               <input
                 ref={uploadInputRef}
                 type="file"
                 accept=".csv,text/csv"
+                onChange={uploadLeadsFile}
                 className="hidden"
               />
 
               <button
                 type="button"
                 onClick={openAddCandidateModal}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+                disabled={isSaving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus size={18} />
                 Add Candidate
@@ -103,22 +118,33 @@ export default function TalentPoolPage() {
             </div>
           </div>
 
-          <TalentPoolStats />
+          {loadError && (
+            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {loadError}
+            </section>
+          )}
 
-          <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+          <div className="sibs-profile-tab-panel">
+            <TalentPoolStats />
+          </div>
+
+          <section className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <TalentPoolFilters />
-            <TalentPoolTable />
+
+            <div className="relative z-[1] overflow-hidden rounded-b-2xl">
+              <TalentPoolTable />
+            </div>
           </section>
 
-          <section className="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
+          <section className="sibs-profile-tab-panel mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
             <h3 className="text-sm font-bold text-sibs-primary-1">
               Talent Pool Design Note
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              Talent Pool is the candidate master profile source. Move to
-              Pipeline creates the first candidate application under Initial
-              Screening.
+              Talent Pool is now database-driven. Public entries, manually added
+              candidates, CSV imports, status updates, and pipeline movements
+              should be saved through the backend API.
             </p>
           </section>
         </div>
