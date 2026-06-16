@@ -26,7 +26,7 @@ function StatCard({
           <p
             className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}
           >
-            {value}
+            {value ?? 0}
           </p>
 
           {description && (
@@ -45,20 +45,28 @@ function StatCard({
 }
 
 export default function TalentPoolStats() {
-  const { stats } = useTalentPool();
+  const { stats, isLoading } = useTalentPool();
 
   return (
     <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="text-base font-bold text-[#101828]">
-        Talent Pool Summary
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-bold text-[#101828]">
+          Talent Pool Summary
+        </h2>
+
+        {isLoading && (
+          <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+            Loading database data...
+          </span>
+        )}
+      </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard
           title="Total Candidates"
           value={stats.total}
           icon={UsersRound}
-          description="Persistent profiles"
+          description="Database profiles"
         />
         <StatCard
           title="Silver Pool"

@@ -1,6 +1,5 @@
 import { X, Save } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
-import { statusOptions } from "../../../lib/utils/talentPool/talentPoolConstants";
 import {
   inputClass,
   textareaClass,
@@ -8,8 +7,15 @@ import {
 import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
 
 export default function UpdateStatusModal() {
-  const { statusTarget, statusForm, setStatusForm, closeStatus, submitStatus } =
-    useTalentPool();
+  const {
+    statusTarget,
+    statusForm,
+    setStatusForm,
+    closeStatus,
+    submitStatus,
+    statusOptions,
+    isSaving,
+  } = useTalentPool();
 
   if (!statusTarget) return null;
 
@@ -102,7 +108,8 @@ export default function UpdateStatusModal() {
             <button
               type="button"
               onClick={closeStatus}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC]"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
@@ -110,10 +117,11 @@ export default function UpdateStatusModal() {
             <button
               type="submit"
               form="update-status-form"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
-              Save Status
+              {isSaving ? "Saving..." : "Save Status"}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -7,11 +8,11 @@ import React, {
 } from "react";
 import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
+import StatusModal from "../../components/modals/StatusModal";
 import {
   Plus,
   Search,
   Filter,
-  Eye,
   Pencil,
   X,
   Save,
@@ -24,122 +25,36 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
+import {
+  createAvailablePosition,
+  getAvailablePositionMeta,
+  getAvailablePositions,
+  updateAvailablePosition,
+  updateAvailablePositionStatus,
+} from "../../lib/axios/getAvailablePosition";
 
-export const AVAILABLE_POSITIONS_STORAGE_KEY = "ta_available_positions";
 const POSITIONS_PER_PAGE = 8;
 
-const statusOptions = ["All", "Active", "Inactive", "Draft", "Archived"];
-
-const departmentOptions = [
-  "Operations",
-  "Talent Acquisition",
-  "Quality Assurance",
-  "Learning and Development",
-  "Human Resources",
-  "Information Technology",
-  "Finance",
-  "Accounting",
-  "Administration",
-];
-
-const locationOptions = ["Davao Site", "Tagum Site", "Mabini Site", "Any Site"];
-
-const defaultPositions = [
-  {
-    id: 1,
-    positionId: "POS-001",
-    positionTitle: "Customer Service Representative",
-    department: "Operations",
-    description:
-      "Handles customer inquiries, provides support, and ensures a quality customer experience.",
-    preferredSkills: "English, Customer Service, Chat Support, Voice Support",
-    locationSite: "Davao Site",
-    status: "Active",
-    createdBy: "Alena Batacan",
-    createdAt: "2026-05-01",
-    updatedBy: "Alena Batacan",
-    updatedAt: "2026-05-01",
-    remarks: "Shown in Public Form and Talent Pool form.",
-  },
-  {
-    id: 2,
-    positionId: "POS-002",
-    positionTitle: "QA Specialist",
-    department: "Quality Assurance",
-    description:
-      "Monitors quality, audits work output, provides feedback, and supports calibration.",
-    preferredSkills: "QA, Documentation, Coaching, English",
-    locationSite: "Davao Site",
-    status: "Active",
-    createdBy: "Alena Batacan",
-    createdAt: "2026-05-01",
-    updatedBy: "Alena Batacan",
-    updatedAt: "2026-05-01",
-    remarks: "Active position.",
-  },
-  {
-    id: 3,
-    positionId: "POS-003",
-    positionTitle: "RCM Analyst",
-    department: "Operations",
-    description:
-      "Supports revenue cycle management, claims review, billing documentation, and healthcare process tasks.",
-    preferredSkills: "RCM, Healthcare, Documentation, Excel",
-    locationSite: "Tagum Site",
-    status: "Active",
-    createdBy: "Alena Batacan",
-    createdAt: "2026-05-01",
-    updatedBy: "Alena Batacan",
-    updatedAt: "2026-05-01",
-    remarks: "Active for recruitment.",
-  },
-  {
-    id: 4,
-    positionId: "POS-004",
-    positionTitle: "IT Support",
-    department: "Information Technology",
-    description:
-      "Provides technical support, troubleshooting, hardware/software assistance, and user support.",
-    preferredSkills: "Technical Support, Troubleshooting, Hardware, Networking",
-    locationSite: "Any Site",
-    status: "Inactive",
-    createdBy: "Alena Batacan",
-    createdAt: "2026-05-01",
-    updatedBy: "Alena Batacan",
-    updatedAt: "2026-05-01",
-    remarks: "Not currently shown in Public Form.",
-  },
-  {
-    id: 5,
-    positionId: "POS-005",
-    positionTitle: "Accounting Staff",
-    department: "Accounting",
-    description:
-      "Supports accounting documentation, bookkeeping tasks, reconciliation, and reporting.",
-    preferredSkills: "Accounting, Excel, Documentation, Reconciliation",
-    locationSite: "Davao Site",
-    status: "Draft",
-    createdBy: "Alena Batacan",
-    createdAt: "2026-05-01",
-    updatedBy: "Alena Batacan",
-    updatedAt: "2026-05-01",
-    remarks: "Draft position. Not visible to applicants yet.",
-  },
-];
+const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Both Davao and Tagum"];
 
 const emptyForm = {
   positionTitle: "",
+  departmentId: "",
   department: "",
+  accountId: "",
+  accountName: "",
+  accountGhlName: "",
   description: "",
   preferredSkills: "",
-  locationSite: "Davao Site",
-  status: "Active",
+  locationSite: "",
+  status: "",
   remarks: "",
 };
 
-function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
 function formatDate(date) {
@@ -183,47 +98,27 @@ function getUserDisplayName(user) {
       user?.displayName ||
       user?.username ||
       user?.email ||
-      "Alena Batacan",
+      "Current User",
   );
 }
 
-function readPositions() {
-  if (typeof window === "undefined") return defaultPositions;
+function getStatusOption(meta, keyword) {
+  const options = Array.isArray(meta?.statusOptions) ? meta.statusOptions : [];
+  const lowerKeyword = String(keyword || "").toLowerCase();
 
-  try {
-    const raw = window.localStorage.getItem(AVAILABLE_POSITIONS_STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : null;
-    return Array.isArray(parsed) ? parsed : defaultPositions;
-  } catch {
-    return defaultPositions;
-  }
+  return (
+    options.find(
+      (item) => String(item || "").trim().toLowerCase() === lowerKeyword,
+    ) ||
+    options.find((item) =>
+      String(item || "").trim().toLowerCase().includes(lowerKeyword),
+    ) ||
+    ""
+  );
 }
 
-function writePositions(value) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.setItem(
-      AVAILABLE_POSITIONS_STORAGE_KEY,
-      JSON.stringify(value),
-    );
-  } catch {
-    // localStorage only
-  }
-}
-
-export function getActiveAvailablePositions() {
-  return readPositions().filter((item) => item.status === "Active");
-}
-
-export function getActivePositionTitles() {
-  return getActiveAvailablePositions()
-    .map((item) => item.positionTitle)
-    .filter(Boolean);
-}
-
-function generatePositionId(nextNumber) {
-  return `POS-${String(nextNumber).padStart(3, "0")}`;
+function getInitialStatus(meta) {
+  return getStatusOption(meta, "active") || meta?.statusOptions?.[0] || "";
 }
 
 function inputClass(extra = "") {
@@ -234,25 +129,103 @@ function textareaClass(extra = "") {
   return `w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
-function AnimatedDropdown({ open, children, className = "" }) {
+function getStatusTone(status) {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (normalizedStatus.includes("inactive")) {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  if (normalizedStatus.includes("draft")) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+
+  if (normalizedStatus.includes("archive")) {
+    return "border-gray-200 bg-gray-50 text-gray-600";
+  }
+
+  return "border-blue-200 bg-blue-50 text-sibs-primary-1";
+}
+
+function getStatusIcon(status) {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
+    return CheckCircle2;
+  }
+
+  if (normalizedStatus.includes("inactive")) {
+    return XCircle;
+  }
+
+  if (normalizedStatus.includes("draft")) {
+    return Clock3;
+  }
+
+  if (normalizedStatus.includes("archive")) {
+    return Archive;
+  }
+
+  return BriefcaseBusiness;
+}
+
+function getStatusValueClass(status) {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
+    return "text-emerald-600";
+  }
+
+  if (normalizedStatus.includes("inactive")) {
+    return "text-red-600";
+  }
+
+  if (normalizedStatus.includes("draft")) {
+    return "text-amber-500";
+  }
+
+  if (normalizedStatus.includes("archive")) {
+    return "text-gray-600";
+  }
+
+  return "text-sibs-primary-1";
+}
+
+function getStatusIconClass(status) {
+  const normalizedStatus = String(status || "").toLowerCase();
+
+  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
+    return "bg-emerald-50 text-emerald-600";
+  }
+
+  if (normalizedStatus.includes("inactive")) {
+    return "bg-red-50 text-red-600";
+  }
+
+  if (normalizedStatus.includes("draft")) {
+    return "bg-amber-50 text-amber-600";
+  }
+
+  if (normalizedStatus.includes("archive")) {
+    return "bg-gray-50 text-gray-600";
+  }
+
+  return "bg-[#F2F6FA] text-sibs-primary-1";
+}
+
+function StatusBadge({ status }) {
   return (
-    <div
-      className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-300 ease-out ${
-        open
-          ? "grid-rows-[1fr] opacity-100"
-          : "pointer-events-none grid-rows-[0fr] opacity-0"
-      } ${className}`}
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusTone(
+        status,
+      )}`}
     >
-      <div className="min-h-0 overflow-hidden">
-        <div
-          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
-          }`}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
+      {status || "—"}
+    </span>
   );
 }
 
@@ -265,205 +238,153 @@ function FieldLabel({ children, required = false }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const className =
-    status === "Active"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : status === "Inactive"
-        ? "border-red-200 bg-red-50 text-red-700"
-        : status === "Draft"
-          ? "border-amber-200 bg-amber-50 text-amber-700"
-          : status === "Archived"
-            ? "border-gray-200 bg-gray-50 text-gray-600"
-            : "border-gray-200 bg-gray-50 text-gray-600";
+function normalizeDropdownOptions(options = []) {
+  return options
+    .map((option) => {
+      if (typeof option === "string" || typeof option === "number") {
+        return {
+          id: option,
+          value: option,
+          label: String(option),
+        };
+      }
+
+      const value = option?.value ?? option?.id ?? "";
+      const label = option?.label ?? option?.name ?? option?.value ?? "";
+
+      if (!cleanText(value) && !cleanText(label)) return null;
+
+      return {
+        id: option?.id ?? value ?? label,
+        value: value || label,
+        label: label || String(value),
+      };
+    })
+    .filter(Boolean);
+}
+
+function DropdownField({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+  required = false,
+  zIndex = "z-[100]",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const normalizedOptions = normalizeDropdownOptions(options);
+
+  const selectedOption = normalizedOptions.find(
+    (option) => String(option.value) === String(value ?? ""),
+  );
+
+  const displayLabel = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange?.(nextValue);
+    setOpen(false);
+  }
 
   return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
-      {status || "—"}
-    </span>
-  );
-}
-
-function CustomSelect({
-  label,
-  value,
-  options = [],
-  onChange,
-  placeholder = "Select",
-  allLabel,
-  required = false,
-  zIndex = "z-30",
-}) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  const displayValue =
-    value === "All" && allLabel ? allLabel : value || placeholder;
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </label>
+      {label && <FieldLabel required={required}>{label}</FieldLabel>}
 
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-      >
-        <span className="truncate">{displayValue}</span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      <AnimatedDropdown open={open}>
-        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-          {options.map((option) => {
-            const optionLabel =
-              option === "All" && allLabel ? allLabel : option || placeholder;
-            const selected = value === option;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                }}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  selected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
-              >
-                <span className="block truncate">{optionLabel}</span>
-              </button>
-            );
-          })}
-        </div>
-      </AnimatedDropdown>
-    </div>
-  );
-}
-
-function FormSelect({
-  label,
-  value,
-  options = [],
-  onChange,
-  placeholder = "Select",
-  required = false,
-  zIndex = "z-30",
-}) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  const displayValue = value || placeholder;
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div ref={dropdownRef} className={`relative isolate ${zIndex}`}>
-      <FieldLabel required={required}>{label}</FieldLabel>
-
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-semibold text-sibs-primary-1 outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-[#344054]"
+        }`}
       >
         <span
-          className={`truncate ${
-            value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
           }`}
         >
-          {displayValue}
+          {displayLabel}
         </span>
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      <AnimatedDropdown open={open}>
-        <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-          {placeholder && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange("");
-                setOpen(false);
-              }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                !value
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
-              }`}
-            >
-              <span className="block truncate">{placeholder}</span>
-            </button>
-          )}
+      {open && !disabled && (
+        <div
+          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+        >
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.length > 0 ? (
+              normalizedOptions.map((option) => {
+                const active = String(option.value) === String(value ?? "");
 
-          {options.map((option) => {
-            const selected = value === option;
-
-            return (
-              <button
-                key={option}
-                type="button"
-                onClick={() => {
-                  onChange(option);
-                  setOpen(false);
-                }}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  selected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
-              >
-                <span className="block truncate">{option}</span>
-              </button>
-            );
-          })}
+                return (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
+                No options found.
+              </div>
+            )}
+          </div>
         </div>
-      </AnimatedDropdown>
+      )}
     </div>
   );
 }
@@ -493,7 +414,7 @@ function SummaryCard({
               valueClassName || "text-sibs-primary-1"
             }`}
           >
-            {value}
+            {value ?? 0}
           </p>
 
           {description && (
@@ -515,20 +436,6 @@ function SummaryCard({
   );
 }
 
-function DetailRow({ label, value }) {
-  return (
-    <div className="grid grid-cols-1 gap-1 border-b border-[#EEF2F6] py-3 last:border-b-0 sm:grid-cols-[220px_1fr]">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-[#174A7C]">
-        {label}
-      </p>
-
-      <p className="whitespace-pre-line break-words text-sm font-bold text-[#344054]">
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
 function ConfirmationModal({
   open,
   title,
@@ -536,13 +443,14 @@ function ConfirmationModal({
   confirmLabel,
   onCancel,
   onConfirm,
+  isSaving = false,
 }) {
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-slate-950/40 px-4 py-4 backdrop-blur-[1px]"
-      onClick={onCancel}
+      onClick={isSaving ? undefined : onCancel}
     >
       <div
         className="sibs-profile-tab-panel w-full max-w-md overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-2xl"
@@ -562,7 +470,8 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white px-5 text-sm font-bold text-[#344054] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#B8C4D2] hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+            disabled={isSaving}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white px-5 text-sm font-bold text-[#344054] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#B8C4D2] hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -570,9 +479,11 @@ function ConfirmationModal({
           <button
             type="button"
             onClick={onConfirm}
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98]"
+            disabled={isSaving}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {confirmLabel || "Continue"}
+            {isSaving && <Loader2 size={16} className="animate-spin" />}
+            {isSaving ? "Saving..." : confirmLabel || "Continue"}
           </button>
         </div>
       </div>
@@ -588,21 +499,85 @@ function PositionFormModal({
   onClose,
   onSubmit,
   onReset,
+  meta,
+  isSaving,
 }) {
   if (!open) return null;
 
   const title =
     mode === "edit" ? "Edit Available Position" : "Add Available Position";
 
+  const departments = Array.isArray(meta.departments) ? meta.departments : [];
+  const accounts = Array.isArray(meta.accounts) ? meta.accounts : [];
+  const statusOptions = Array.isArray(meta.statusOptions)
+    ? meta.statusOptions
+    : [];
+
+  const filteredAccounts = accounts.filter(
+    (account) => String(account.departmentId) === String(form.departmentId || ""),
+  );
+
+  const departmentDropdownOptions = departments.map((department) => ({
+    id: department.departmentId,
+    value: department.departmentId,
+    label: department.departmentName,
+  }));
+
+  const accountDropdownOptions = filteredAccounts.map((account) => ({
+    id: account.accountId,
+    value: account.accountId,
+    label: account.accountName,
+  }));
+
+  const statusDropdownOptions = statusOptions.map((status) => ({
+    id: status,
+    value: status,
+    label: status,
+  }));
+
+  const locationDropdownOptions = LOCATION_SITE_OPTIONS.map((location) => ({
+    id: location,
+    value: location,
+    label: location,
+  }));
+
+  function handleDepartmentChange(departmentId) {
+    const selectedDepartment = departments.find(
+      (department) => String(department.departmentId) === String(departmentId),
+    );
+
+    setForm({
+      ...form,
+      departmentId,
+      department: selectedDepartment?.departmentName || "",
+      accountId: "",
+      accountName: "",
+      accountGhlName: "",
+    });
+  }
+
+  function handleAccountChange(accountId) {
+    const selectedAccount = accounts.find(
+      (account) => String(account.accountId) === String(accountId),
+    );
+
+    setForm({
+      ...form,
+      accountId,
+      accountName: selectedAccount?.accountName || "",
+      accountGhlName: selectedAccount?.accountGhlName || "",
+    });
+  }
+
   return (
     <div
       className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
+      onClick={isSaving ? undefined : onClose}
     >
       <form
         onSubmit={onSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-visible rounded-2xl bg-white shadow-2xl"
+        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
           <div>
@@ -611,23 +586,24 @@ function PositionFormModal({
             </h2>
 
             <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Active positions will be shown in the Public Form and Talent Pool
-              form.
+              Select a department first, then choose the matching account under
+              that department.
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
+            disabled={isSaving}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
             aria-label="Close"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-visible p-5 sm:p-6">
-          <section className="relative z-[40] overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-5">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <FieldLabel required>Position Title</FieldLabel>
@@ -638,54 +614,68 @@ function PositionFormModal({
                   onChange={(e) =>
                     setForm({ ...form, positionTitle: e.target.value })
                   }
-                  placeholder="Example: Customer Service Representative"
+                  placeholder="Enter position title"
                   className={inputClass()}
                 />
               </div>
 
-              <div>
-                <FormSelect
-                  label="Department"
-                  required
-                  value={form.department}
-                  options={departmentOptions}
-                  placeholder="Select department"
-                  zIndex="z-50"
-                  onChange={(value) => setForm({ ...form, department: value })}
-                />
-              </div>
+              <DropdownField
+                label="Department"
+                required
+                value={form.departmentId}
+                onChange={handleDepartmentChange}
+                options={departmentDropdownOptions}
+                placeholder="Select department"
+                disabled={isSaving}
+                zIndex="z-[180]"
+              />
 
               <div>
-                <FormSelect
-                  label="Location / Site"
+                <DropdownField
+                  label="Account"
                   required
-                  value={form.locationSite}
-                  options={locationOptions}
-                  placeholder="Select location"
-                  zIndex="z-40"
-                  onChange={(value) =>
-                    setForm({ ...form, locationSite: value })
+                  value={form.accountId}
+                  onChange={handleAccountChange}
+                  options={accountDropdownOptions}
+                  placeholder={
+                    form.departmentId
+                      ? "Select account"
+                      : "Select department first"
                   }
-                />
-              </div>
-
-              <div>
-                <FormSelect
-                  label="Status"
-                  required
-                  value={form.status}
-                  options={statusOptions.filter((item) => item !== "All")}
-                  placeholder="Select status"
-                  zIndex="z-30"
-                  onChange={(value) => setForm({ ...form, status: value })}
+                  disabled={isSaving || !form.departmentId}
+                  zIndex="z-[170]"
                 />
 
-                <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                  Only Active positions are visible to applicants.
-                </p>
+                {form.departmentId && filteredAccounts.length === 0 && (
+                  <p className="mt-1 text-xs font-bold text-red-600">
+                    No available accounts found under this department.
+                  </p>
+                )}
               </div>
 
-              <div>
+              <DropdownField
+                label="Status"
+                required
+                value={form.status}
+                onChange={(value) => setForm({ ...form, status: value })}
+                options={statusDropdownOptions}
+                placeholder="Select status"
+                disabled={isSaving}
+                zIndex="z-[160]"
+              />
+
+              <DropdownField
+                label="Location / Site"
+                required
+                value={form.locationSite}
+                onChange={(value) => setForm({ ...form, locationSite: value })}
+                options={locationDropdownOptions}
+                placeholder="Select location / site"
+                disabled={isSaving}
+                zIndex="z-[150]"
+              />
+
+              <div className="md:col-span-2">
                 <FieldLabel>Preferred Skills</FieldLabel>
 
                 <input
@@ -693,7 +683,7 @@ function PositionFormModal({
                   onChange={(e) =>
                     setForm({ ...form, preferredSkills: e.target.value })
                   }
-                  placeholder="English, Chat, RCM, QA"
+                  placeholder="Enter preferred skills"
                   className={inputClass()}
                 />
               </div>
@@ -734,7 +724,8 @@ function PositionFormModal({
             <button
               type="button"
               onClick={onReset}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RotateCcw size={16} />
               Reset
@@ -743,17 +734,27 @@ function PositionFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Save size={16} />
-              {mode === "edit" ? "Update Position" : "Save Position"}
+              {isSaving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <Save size={16} />
+              )}
+              {isSaving
+                ? "Saving..."
+                : mode === "edit"
+                  ? "Update Position"
+                  : "Save Position"}
             </button>
           </div>
         </div>
@@ -762,182 +763,88 @@ function PositionFormModal({
   );
 }
 
-function ViewPositionModal({ open, position, onClose, onEdit }) {
-  if (!open || !position) return null;
-
+function PositionMobileCard({
+  position,
+  onEdit,
+  onSetStatus,
+  isSaving,
+  activeStatus,
+  inactiveStatus,
+}) {
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
-    >
-      <div
-        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div>
-            <h2 className="text-lg font-extrabold text-sibs-primary-1">
-              Position Details
-            </h2>
+    <div className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-sibs-primary-1">
+            {position.positionId}
+          </p>
 
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              {position.positionId} / {position.positionTitle}
-            </p>
-          </div>
+          <h3 className="mt-1 text-sm font-bold text-[#101828]">
+            {position.positionTitle}
+          </h3>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
-          >
-            <X size={20} />
-          </button>
+          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+            {position.department}
+          </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-xs font-bold text-sibs-primary-1">
-                  {position.positionId}
-                </p>
-
-                <h3 className="mt-1 text-2xl font-extrabold text-[#101828]">
-                  {position.positionTitle}
-                </h3>
-
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                  {position.department}
-                </p>
-              </div>
-
-              <StatusBadge status={position.status} />
-            </div>
-
-            <DetailRow label="Department" value={position.department} />
-            <DetailRow label="Location / Site" value={position.locationSite} />
-            <DetailRow
-              label="Preferred Skills"
-              value={position.preferredSkills}
-            />
-            <DetailRow label="Description" value={position.description} />
-            <DetailRow label="Status" value={position.status} />
-            <DetailRow
-              label="Visibility"
-              value={
-                position.status === "Active"
-                  ? "Shown in Public Form and Talent Pool"
-                  : "Hidden from applicant forms"
-              }
-            />
-            <DetailRow
-              label="Created By"
-              value={formatPersonName(position.createdBy)}
-            />
-            <DetailRow
-              label="Created Date"
-              value={formatDate(position.createdAt)}
-            />
-            <DetailRow
-              label="Last Updated"
-              value={formatDate(position.updatedAt)}
-            />
-            <DetailRow
-              label="Updated By"
-              value={formatPersonName(position.updatedBy || position.createdBy)}
-            />
-            <DetailRow label="Remarks" value={position.remarks} />
-          </section>
-        </div>
-
-        <div className="border-t border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => onEdit(position)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-            >
-              <Pencil size={16} />
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <StatusBadge status={position.status} />
       </div>
-    </div>
-  );
-}
-
-function PositionMobileCard({ position, onView, onSetStatus }) {
-  return (
-    <div className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md">
-      <button type="button" onClick={onView} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-sibs-primary-1">
-              {position.positionId}
-            </p>
-
-            <h3 className="mt-1 text-sm font-bold text-[#101828]">
-              {position.positionTitle}
-            </h3>
-
-            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-              {position.department}
-            </p>
-          </div>
-
-          <StatusBadge status={position.status} />
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Location
-            </p>
-
-            <p className="mt-1 text-xs font-bold text-[#344054]">
-              {position.locationSite}
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-[#F8FAFC] p-3">
-            <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-              Visibility
-            </p>
-
-            <p className="mt-1 text-xs font-bold text-[#344054]">
-              {position.status === "Active" ? "Shown in forms" : "Hidden"}
-            </p>
-          </div>
-        </div>
-      </button>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+            Account
+          </p>
+
+          <p className="mt-1 text-xs font-bold text-[#344054]">
+            {position.accountName || "—"}
+          </p>
+        </div>
+
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
+            Location
+          </p>
+
+          <p className="mt-1 text-xs font-bold text-[#344054]">
+            {position.locationSite || "—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button
           type="button"
-          onClick={() => onSetStatus(position, "Active")}
-          disabled={position.status === "Active"}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+          onClick={() => onEdit(position)}
+          disabled={isSaving}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Activate
+          <Pencil size={14} />
+          Edit
         </button>
 
-        <button
-          type="button"
-          onClick={() => onSetStatus(position, "Inactive")}
-          disabled={position.status === "Inactive"}
-          className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-xs font-bold text-red-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-        >
-          Deactivate
-        </button>
+        {activeStatus && (
+          <button
+            type="button"
+            onClick={() => onSetStatus(position, activeStatus)}
+            disabled={isSaving || position.status === activeStatus}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Set {activeStatus}
+          </button>
+        )}
+
+        {inactiveStatus && (
+          <button
+            type="button"
+            onClick={() => onSetStatus(position, inactiveStatus)}
+            disabled={isSaving || position.status === inactiveStatus}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-xs font-bold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Set {inactiveStatus}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -948,18 +855,138 @@ export default function AvailablePositionsPage() {
   const { user } = useUser();
   const currentUserName = getUserDisplayName(user);
 
-  const [positionList, setPositionList] = useState(defaultPositions);
-  const [hasLoaded, setHasLoaded] = useState(false);
+  const [positionList, setPositionList] = useState([]);
+  const [meta, setMeta] = useState({
+    statusOptions: [],
+    departments: [],
+    accounts: [],
+  });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [locationFilter, setLocationFilter] = useState("All");
+
   const [showFormModal, setShowFormModal] = useState(false);
   const [formMode, setFormMode] = useState("add");
   const [positionForm, setPositionForm] = useState(emptyForm);
   const [editTarget, setEditTarget] = useState(null);
-  const [selectedPosition, setSelectedPosition] = useState(null);
   const [confirmState, setConfirmState] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  function openStatusModal(type, title, message) {
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  }
+
+  function closeStatusModal() {
+    setStatusModal((prev) => ({
+      ...prev,
+      open: false,
+    }));
+  }
+
+  const databaseStatusOptions = useMemo(() => {
+    return Array.isArray(meta.statusOptions)
+      ? meta.statusOptions.filter(Boolean)
+      : [];
+  }, [meta.statusOptions]);
+
+  const activeStatus = useMemo(() => getStatusOption(meta, "active"), [meta]);
+
+  const inactiveStatus = useMemo(
+    () => getStatusOption(meta, "inactive"),
+    [meta],
+  );
+
+  const statusOptions = useMemo(() => {
+    return ["All", ...databaseStatusOptions.filter((item) => item !== "All")];
+  }, [databaseStatusOptions]);
+
+  const departmentOptions = useMemo(() => {
+    return Array.isArray(meta.departments) ? meta.departments : [];
+  }, [meta.departments]);
+
+  const accountOptions = useMemo(() => {
+    return Array.isArray(meta.accounts) ? meta.accounts : [];
+  }, [meta.accounts]);
+
+  const filteredAccountOptions = useMemo(() => {
+    if (departmentFilter === "All") return accountOptions;
+
+    return accountOptions.filter(
+      (account) => String(account.departmentId) === String(departmentFilter),
+    );
+  }, [accountOptions, departmentFilter]);
+
+  const statusFilterOptions = useMemo(() => {
+    return statusOptions.map((status) => ({
+      id: status,
+      value: status,
+      label: status === "All" ? "All Statuses" : status,
+    }));
+  }, [statusOptions]);
+
+  const departmentFilterOptions = useMemo(() => {
+    return [
+      {
+        id: "All",
+        value: "All",
+        label: "All Departments",
+      },
+      ...departmentOptions.map((department) => ({
+        id: department.departmentId,
+        value: department.departmentId,
+        label: department.departmentName,
+      })),
+    ];
+  }, [departmentOptions]);
+
+  const accountFilterOptions = useMemo(() => {
+    return [
+      {
+        id: "All",
+        value: "All",
+        label: "All Accounts",
+      },
+      ...filteredAccountOptions.map((account) => ({
+        id: account.accountId,
+        value: account.accountId,
+        label: account.accountName,
+      })),
+    ];
+  }, [filteredAccountOptions]);
+
+  const locationFilterOptions = useMemo(() => {
+    return [
+      {
+        id: "All",
+        value: "All",
+        label: "All Locations",
+      },
+      ...LOCATION_SITE_OPTIONS.map((location) => ({
+        id: location,
+        value: location,
+        label: location,
+      })),
+    ];
+  }, []);
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -986,6 +1013,70 @@ export default function AvailablePositionsPage() {
     });
   }
 
+  const refreshPositions = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      const [metaResponse, positionsResponse] = await Promise.all([
+        getAvailablePositionMeta(),
+        getAvailablePositions({
+          page: 1,
+          limit: 500,
+          search: "",
+          status: "All",
+          departmentId: "All",
+          accountId: "All",
+        }),
+      ]);
+
+      if (!metaResponse?.success) {
+        throw new Error(
+          metaResponse?.message || "Failed to load position metadata.",
+        );
+      }
+
+      if (!positionsResponse?.success) {
+        throw new Error(
+          positionsResponse?.message || "Failed to load available positions.",
+        );
+      }
+
+      setMeta({
+        statusOptions: Array.isArray(metaResponse.data?.statusOptions)
+          ? metaResponse.data.statusOptions.filter(Boolean)
+          : [],
+        departments: Array.isArray(metaResponse.data?.departments)
+          ? metaResponse.data.departments.filter(Boolean)
+          : [],
+        accounts: Array.isArray(metaResponse.data?.accounts)
+          ? metaResponse.data.accounts.filter(Boolean)
+          : [],
+      });
+
+      setPositionList(
+        Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
+      );
+    } catch (error) {
+      console.error("Load available positions error:", error);
+      setLoadError(error?.message || "Failed to load available positions.");
+      setPositionList([]);
+      setMeta({
+        statusOptions: [],
+        departments: [],
+        accounts: [],
+      });
+
+      openStatusModal(
+        "error",
+        "Unable to load positions",
+        error?.message || "Failed to load available positions.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useLayoutEffect(() => {
     if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -1003,56 +1094,50 @@ export default function AvailablePositionsPage() {
   }, []);
 
   useEffect(() => {
-    const saved = readPositions();
-    setPositionList(saved);
-    writePositions(saved);
-    setHasLoaded(true);
-    setCurrentPage(1);
-    scrollToTop("auto");
-
-    const timer = window.setTimeout(() => {
-      scrollToTop("auto");
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!hasLoaded) return;
-    writePositions(positionList);
-  }, [positionList, hasLoaded]);
+    refreshPositions();
+  }, [refreshPositions]);
 
   function requestConfirm({ title, message, confirmLabel, onConfirm }) {
     setConfirmState({ title, message, confirmLabel, onConfirm });
   }
 
   function closeConfirm() {
+    if (isSaving) return;
     setConfirmState(null);
+  }
+
+  function buildAddForm() {
+    return {
+      ...emptyForm,
+      status: getInitialStatus(meta),
+    };
   }
 
   function resetForm() {
     if (formMode === "edit" && editTarget) {
       setPositionForm({
         positionTitle: editTarget.positionTitle || "",
+        departmentId: editTarget.departmentId || "",
         department: editTarget.department || "",
+        accountId: editTarget.accountId || "",
+        accountName: editTarget.accountName || "",
+        accountGhlName: editTarget.accountGhlName || "",
         description: editTarget.description || "",
         preferredSkills: editTarget.preferredSkills || "",
-        locationSite: editTarget.locationSite || "Davao Site",
-        status: editTarget.status || "Active",
+        locationSite: editTarget.locationSite || "",
+        status: editTarget.status || "",
         remarks: editTarget.remarks || "",
       });
       return;
     }
 
-    setPositionForm(emptyForm);
+    setPositionForm(buildAddForm());
   }
 
   function openAddModal() {
     setFormMode("add");
     setEditTarget(null);
-    setPositionForm(emptyForm);
+    setPositionForm(buildAddForm());
     setShowFormModal(true);
   }
 
@@ -1061,150 +1146,229 @@ export default function AvailablePositionsPage() {
     setEditTarget(position);
     setPositionForm({
       positionTitle: position.positionTitle || "",
+      departmentId: position.departmentId || "",
       department: position.department || "",
+      accountId: position.accountId || "",
+      accountName: position.accountName || "",
+      accountGhlName: position.accountGhlName || "",
       description: position.description || "",
       preferredSkills: position.preferredSkills || "",
-      locationSite: position.locationSite || "Davao Site",
-      status: position.status || "Active",
+      locationSite: position.locationSite || "",
+      status: position.status || "",
       remarks: position.remarks || "",
     });
-    setSelectedPosition(null);
     setShowFormModal(true);
   }
 
   function closeFormModal() {
+    if (isSaving) return;
+
     setShowFormModal(false);
     setFormMode("add");
     setEditTarget(null);
     setPositionForm(emptyForm);
   }
 
-  function savePosition() {
-    const today = getTodayDate();
+  function closeFormAfterSave() {
+    setShowFormModal(false);
+    setFormMode("add");
+    setEditTarget(null);
+    setPositionForm(emptyForm);
+  }
 
-    if (formMode === "edit" && editTarget) {
-      const updated = {
-        ...editTarget,
+  async function savePosition() {
+    setIsSaving(true);
+
+    try {
+      const payload = {
         positionTitle: positionForm.positionTitle.trim(),
-        department: positionForm.department,
+        departmentId: positionForm.departmentId,
+        accountId: positionForm.accountId,
         description: positionForm.description.trim(),
         preferredSkills: positionForm.preferredSkills.trim(),
         locationSite: positionForm.locationSite,
         status: positionForm.status,
         remarks: positionForm.remarks.trim(),
-        updatedAt: today,
+        createdBy: currentUserName,
         updatedBy: currentUserName,
       };
 
-      setPositionList((prev) =>
-        prev.map((item) => (item.id === editTarget.id ? updated : item)),
-      );
-      setSelectedPosition(updated);
-      closeFormModal();
+      const response =
+        formMode === "edit" && editTarget
+          ? await updateAvailablePosition(editTarget.id, payload)
+          : await createAvailablePosition(payload);
+
+      if (!response?.success) {
+        openStatusModal(
+          "error",
+          "Position not saved",
+          response?.message || "Failed to save available position.",
+        );
+        return;
+      }
+
+      await refreshPositions();
+
+      closeFormAfterSave();
       scrollToTop("auto");
 
       window.setTimeout(() => {
         scrollToTop("auto");
       }, 0);
 
-      return;
+      openStatusModal(
+        "success",
+        formMode === "edit" ? "Position updated" : "Position saved",
+        formMode === "edit"
+          ? "The available position was updated successfully."
+          : "The available position was saved successfully.",
+      );
+    } catch (error) {
+      console.error("Save available position error:", error);
+      openStatusModal(
+        "error",
+        "Position not saved",
+        error?.message || "Failed to save available position.",
+      );
+    } finally {
+      setIsSaving(false);
     }
-
-    const nextId =
-      positionList.length > 0
-        ? Math.max(...positionList.map((item) => Number(item.id) || 0)) + 1
-        : 1;
-
-    const newPosition = {
-      id: nextId,
-      positionId: generatePositionId(nextId),
-      positionTitle: positionForm.positionTitle.trim(),
-      department: positionForm.department,
-      description: positionForm.description.trim(),
-      preferredSkills: positionForm.preferredSkills.trim(),
-      locationSite: positionForm.locationSite,
-      status: positionForm.status,
-      createdBy: currentUserName,
-      createdAt: today,
-      updatedAt: today,
-      updatedBy: currentUserName,
-      remarks: positionForm.remarks.trim(),
-    };
-
-    setPositionList((prev) => [newPosition, ...prev]);
-    setSelectedPosition(newPosition);
-    setCurrentPage(1);
-    closeFormModal();
-    scrollToTop("auto");
-
-    window.setTimeout(() => {
-      scrollToTop("auto");
-    }, 0);
   }
 
   function handleSubmitPosition(e) {
     e.preventDefault();
 
     if (!positionForm.positionTitle.trim()) {
-      alert("Position Title is required.");
+      openStatusModal(
+        "error",
+        "Required field missing",
+        "Position Title is required.",
+      );
       return;
     }
 
-    if (!positionForm.department) {
-      alert("Department is required.");
+    if (!positionForm.departmentId) {
+      openStatusModal(
+        "error",
+        "Required field missing",
+        "Department is required.",
+      );
+      return;
+    }
+
+    if (!positionForm.accountId) {
+      openStatusModal(
+        "error",
+        "Required field missing",
+        "Account is required.",
+      );
+      return;
+    }
+
+    if (!positionForm.status) {
+      openStatusModal(
+        "error",
+        "Required field missing",
+        "Status is required.",
+      );
+      return;
+    }
+
+    if (!positionForm.locationSite) {
+      openStatusModal(
+        "error",
+        "Required field missing",
+        "Location / Site is required.",
+      );
       return;
     }
 
     requestConfirm({
       title: formMode === "edit" ? "Update Position" : "Save Position",
       message:
-        positionForm.status === "Active"
+        positionForm.status === activeStatus
           ? `${positionForm.positionTitle} will be visible in the Public Form and Talent Pool form.`
-          : `${positionForm.positionTitle} will not be visible to applicants unless status is Active.`,
+          : `${positionForm.positionTitle} will not be visible to applicants unless status is ${
+              activeStatus || "configured as visible"
+            }.`,
       confirmLabel: formMode === "edit" ? "Update" : "Save",
       onConfirm: savePosition,
     });
   }
 
   function handleSetStatus(position, nextStatus) {
+    if (!nextStatus) {
+      openStatusModal(
+        "error",
+        "Status option missing",
+        "Status option is missing from the database.",
+      );
+      return;
+    }
+
     requestConfirm({
       title: "Update Position Status",
       message:
-        nextStatus === "Active"
+        nextStatus === activeStatus
           ? `${position.positionTitle} will be shown in the Public Form and Talent Pool form.`
           : `${position.positionTitle} will be hidden from applicant-facing forms.`,
-      confirmLabel: nextStatus === "Active" ? "Activate" : "Deactivate",
-      onConfirm: () => {
-        const today = getTodayDate();
+      confirmLabel: `Set ${nextStatus}`,
+      onConfirm: async () => {
+        setIsSaving(true);
 
-        const updated = {
-          ...position,
-          status: nextStatus,
-          updatedAt: today,
-          updatedBy: currentUserName,
-        };
+        try {
+          const response = await updateAvailablePositionStatus(position.id, {
+            status: nextStatus,
+            updatedBy: currentUserName,
+          });
 
-        setPositionList((prev) =>
-          prev.map((item) => (item.id === position.id ? updated : item)),
-        );
+          if (!response?.success) {
+            openStatusModal(
+              "error",
+              "Status not updated",
+              response?.message || "Failed to update position status.",
+            );
+            return;
+          }
 
-        if (selectedPosition?.id === position.id) {
-          setSelectedPosition(updated);
-        }
+          await refreshPositions();
 
-        scrollToTop("auto");
-
-        window.setTimeout(() => {
           scrollToTop("auto");
-        }, 0);
+
+          window.setTimeout(() => {
+            scrollToTop("auto");
+          }, 0);
+
+          openStatusModal(
+            "success",
+            "Status updated",
+            `The position status was updated to ${nextStatus}.`,
+          );
+        } catch (error) {
+          console.error("Update position status error:", error);
+          openStatusModal(
+            "error",
+            "Status not updated",
+            error?.message || "Failed to update position status.",
+          );
+        } finally {
+          setIsSaving(false);
+        }
       },
     });
+  }
+
+  function handleDepartmentFilterChange(value) {
+    setDepartmentFilter(value);
+    setAccountFilter("All");
   }
 
   function handleClearFilters() {
     setSearch("");
     setStatusFilter("All");
     setDepartmentFilter("All");
+    setAccountFilter("All");
+    setLocationFilter("All");
     setCurrentPage(1);
     scrollToTop("auto");
 
@@ -1221,6 +1385,8 @@ export default function AvailablePositionsPage() {
         position.positionId,
         position.positionTitle,
         position.department,
+        position.accountName,
+        position.accountGhlName,
         position.description,
         position.preferredSkills,
         position.locationSite,
@@ -1236,11 +1402,30 @@ export default function AvailablePositionsPage() {
       const matchesStatus =
         statusFilter === "All" || position.status === statusFilter;
       const matchesDepartment =
-        departmentFilter === "All" || position.department === departmentFilter;
+        departmentFilter === "All" ||
+        String(position.departmentId) === String(departmentFilter);
+      const matchesAccount =
+        accountFilter === "All" ||
+        String(position.accountId) === String(accountFilter);
+      const matchesLocation =
+        locationFilter === "All" || position.locationSite === locationFilter;
 
-      return matchesSearch && matchesStatus && matchesDepartment;
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesDepartment &&
+        matchesAccount &&
+        matchesLocation
+      );
     });
-  }, [positionList, search, statusFilter, departmentFilter]);
+  }, [
+    positionList,
+    search,
+    statusFilter,
+    departmentFilter,
+    accountFilter,
+    locationFilter,
+  ]);
 
   const totalPages = Math.max(
     1,
@@ -1276,7 +1461,7 @@ export default function AvailablePositionsPage() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [search, statusFilter, departmentFilter]);
+  }, [search, statusFilter, departmentFilter, accountFilter, locationFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -1306,19 +1491,22 @@ export default function AvailablePositionsPage() {
     }, 0);
   }
 
-  const stats = useMemo(() => {
-    return {
-      total: positionList.length,
-      active: positionList.filter((item) => item.status === "Active").length,
-      inactive: positionList.filter((item) => item.status === "Inactive").length,
-      draft: positionList.filter((item) => item.status === "Draft").length,
-      archived: positionList.filter((item) => item.status === "Archived")
-        .length,
-    };
-  }, [positionList]);
+  const statusCounts = useMemo(() => {
+    return databaseStatusOptions.map((status) => ({
+      status,
+      count: positionList.filter((item) => item.status === status).length,
+      Icon: getStatusIcon(status),
+      valueClassName: getStatusValueClass(status),
+      iconClassName: getStatusIconClass(status),
+    }));
+  }, [databaseStatusOptions, positionList]);
 
   const hasActiveFilters =
-    search.trim() || statusFilter !== "All" || departmentFilter !== "All";
+    search.trim() ||
+    statusFilter !== "All" ||
+    departmentFilter !== "All" ||
+    accountFilter !== "All" ||
+    locationFilter !== "All";
 
   return (
     <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
@@ -1331,7 +1519,7 @@ export default function AvailablePositionsPage() {
         <div className="mx-auto max-w-[1600px] space-y-6">
           <div className="sibs-page-header-in min-w-0 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                 <BriefcaseBusiness size={14} />
                 Recruitment Setup
               </div>
@@ -1341,82 +1529,100 @@ export default function AvailablePositionsPage() {
               </h1>
 
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Manage positions shown in the Public Form and Talent Pool form.
-                Only Active positions are visible to candidates.
+                Departments and accounts are loaded from the database. Accounts
+                are filtered based on the selected department.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Position
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={refreshPositions}
+                disabled={isLoading || isSaving}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RotateCcw
+                  size={17}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+
+              <button
+                type="button"
+                onClick={openAddModal}
+                disabled={
+                  isSaving ||
+                  !databaseStatusOptions.length ||
+                  !departmentOptions.length ||
+                  !accountOptions.length
+                }
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Plus size={18} />
+                Add Position
+              </button>
+            </div>
           </div>
 
+          {loadError && (
+            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {loadError}
+            </section>
+          )}
+
+          {!isLoading && !loadError && !departmentOptions.length && (
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
+              No departments found.
+            </section>
+          )}
+
+          {!isLoading && !loadError && !accountOptions.length && (
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
+              No available accounts found.
+            </section>
+          )}
+
           <section className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="text-base font-bold text-[#101828]">
-              Position Summary
-            </h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-base font-bold text-[#101828]">
+                Position Summary
+              </h2>
+
+              {isLoading && (
+                <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                  <Loader2 size={13} className="animate-spin" />
+                  Loading database data...
+                </span>
+              )}
+            </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
               <SummaryCard
                 title="Total Positions"
-                value={stats.total}
+                value={positionList.length}
                 icon={BriefcaseBusiness}
-                description="All listed positions"
+                description="All database records"
                 delay={0}
               />
 
-              <SummaryCard
-                title="Active"
-                value={stats.active}
-                icon={CheckCircle2}
-                description="Visible in forms"
-                valueClassName="text-emerald-600"
-                iconClassName="bg-emerald-50 text-emerald-600"
-                delay={60}
-              />
-
-              <SummaryCard
-                title="Inactive"
-                value={stats.inactive}
-                icon={XCircle}
-                description="Hidden from forms"
-                valueClassName="text-red-600"
-                iconClassName="bg-red-50 text-red-600"
-                delay={120}
-              />
-
-              <SummaryCard
-                title="Draft"
-                value={stats.draft}
-                icon={Clock3}
-                description="Not yet published"
-                valueClassName="text-amber-500"
-                iconClassName="bg-amber-50 text-amber-600"
-                delay={180}
-              />
-
-              <SummaryCard
-                title="Archived"
-                value={stats.archived}
-                icon={Archive}
-                description="Historical positions"
-                valueClassName="text-gray-600"
-                iconClassName="bg-gray-50 text-gray-600"
-                delay={240}
-              />
+              {statusCounts.map((item, index) => (
+                <SummaryCard
+                  key={item.status}
+                  title={item.status}
+                  value={item.count}
+                  icon={item.Icon}
+                  description="Database status"
+                  valueClassName={item.valueClassName}
+                  iconClassName={item.iconClassName}
+                  delay={(index + 1) * 60}
+                />
+              ))}
             </div>
           </section>
 
-          <section
-            className="relative z-[80] sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
-            style={{ animationDelay: "120ms" }}
-          >
-            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+          <section className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="relative z-[90] border-b border-[#E6ECF2] p-4 sm:p-5">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1429,7 +1635,7 @@ export default function AvailablePositionsPage() {
                   </h2>
 
                   <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    Search position, status, department, skills, and site.
+                    Accounts are filtered based on the selected department.
                   </p>
                 </div>
 
@@ -1438,7 +1644,7 @@ export default function AvailablePositionsPage() {
                 </span>
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_260px_auto] xl:items-end">
+              <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-[1fr_170px_210px_210px_210px_auto] xl:items-end">
                 <div>
                   <label className="mb-1 block text-sm font-bold text-[#101828]">
                     Search
@@ -1453,35 +1659,61 @@ export default function AvailablePositionsPage() {
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search position, department, skills, site..."
-                      className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      placeholder="Search position, department, account, skills..."
+                      className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
                   </div>
                 </div>
 
-                <CustomSelect
+                <DropdownField
                   label="Status"
                   value={statusFilter}
-                  options={statusOptions}
-                  allLabel="All Statuses"
                   onChange={setStatusFilter}
-                  zIndex="z-50"
+                  options={statusFilterOptions}
+                  placeholder="All Statuses"
+                  disabled={isLoading}
+                  zIndex="z-[140]"
                 />
 
-                <CustomSelect
+                <DropdownField
                   label="Department"
                   value={departmentFilter}
-                  options={["All", ...departmentOptions]}
-                  allLabel="All Departments"
-                  onChange={setDepartmentFilter}
-                  zIndex="z-40"
+                  onChange={handleDepartmentFilterChange}
+                  options={departmentFilterOptions}
+                  placeholder="All Departments"
+                  disabled={isLoading}
+                  zIndex="z-[130]"
+                />
+
+                <DropdownField
+                  label="Account"
+                  value={accountFilter}
+                  onChange={setAccountFilter}
+                  options={accountFilterOptions}
+                  placeholder="All Accounts"
+                  disabled={
+                    isLoading ||
+                    (departmentFilter !== "All" &&
+                      !filteredAccountOptions.length)
+                  }
+                  zIndex="z-[120]"
+                />
+
+                <DropdownField
+                  label="Location / Site"
+                  value={locationFilter}
+                  onChange={setLocationFilter}
+                  options={locationFilterOptions}
+                  placeholder="All Locations"
+                  disabled={isLoading}
+                  zIndex="z-[110]"
                 />
 
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  disabled={!hasActiveFilters}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+                  disabled={!hasActiveFilters || isLoading}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <RotateCcw size={17} />
                   Clear
@@ -1489,218 +1721,234 @@ export default function AvailablePositionsPage() {
               </div>
             </div>
 
-            <div className="p-4 sm:p-6">
-              <div className="space-y-3 lg:hidden">
-                {paginatedPositions.length > 0 ? (
-                  paginatedPositions.map((position) => (
-                    <PositionMobileCard
-                      key={position.id}
-                      position={position}
-                      onView={() => setSelectedPosition(position)}
-                      onSetStatus={handleSetStatus}
-                    />
-                  ))
-                ) : (
-                  <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                    No positions found.
+            <div className="relative z-[1] p-4 sm:p-6">
+              {isLoading ? (
+                <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-12 text-center text-sm font-bold text-sibs-primary-1">
+                  Loading available positions from database...
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3 lg:hidden">
+                    {paginatedPositions.length > 0 ? (
+                      paginatedPositions.map((position) => (
+                        <PositionMobileCard
+                          key={position.id}
+                          position={position}
+                          onEdit={openEditModal}
+                          onSetStatus={handleSetStatus}
+                          isSaving={isSaving}
+                          activeStatus={activeStatus}
+                          inactiveStatus={inactiveStatus}
+                        />
+                      ))
+                    ) : (
+                      <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+                        No positions found.
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div className="hidden lg:block">
-                <div className="overflow-x-auto p-0">
-                  <table className="w-full min-w-[1350px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-                    <thead>
-                      <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                        <th className="px-5 py-4 first:rounded-tl-2xl">
-                          Position
-                        </th>
-                        <th className="px-5 py-4">Department</th>
-                        <th className="px-5 py-4">Location / Site</th>
-                        <th className="px-5 py-4">Preferred Skills</th>
-                        <th className="px-5 py-4">Status</th>
-                        <th className="px-5 py-4">Visibility</th>
-                        <th className="px-5 py-4">Last Updated</th>
-                        <th className="px-5 py-4 text-right last:rounded-tr-2xl">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {paginatedPositions.length > 0 ? (
-                        paginatedPositions.map((position) => (
-                          <tr
-                            key={position.id}
-                            className="transition-all duration-200 hover:bg-[#FAFBFC]"
-                          >
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <p className="text-sm font-bold text-[#101828]">
-                                {position.positionTitle}
-                              </p>
-
-                              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                                {position.positionId}
-                              </p>
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              {position.department || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              {position.locationSite || "—"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              <p className="max-w-[300px]">
-                                {position.preferredSkills || "—"}
-                              </p>
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5">
-                              <StatusBadge status={position.status} />
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              {position.status === "Active"
-                                ? "Shown in Public Form / Talent Pool"
-                                : "Hidden from applicant forms"}
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                              <p>{formatDate(position.updatedAt)}</p>
-
-                              <p className="mt-1 text-xs text-sibs-tertiary-5">
-                                By:{" "}
-                                {formatPersonName(
-                                  position.updatedBy || position.createdBy,
-                                )}
-                              </p>
-                            </td>
-
-                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                              <div className="inline-flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleSetStatus(position, "Active")
-                                  }
-                                  disabled={position.status === "Active"}
-                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                                >
-                                  Activate
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleSetStatus(position, "Inactive")
-                                  }
-                                  disabled={position.status === "Inactive"}
-                                  className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 transition-all duration-200 hover:-translate-y-0.5 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                                >
-                                  Deactivate
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => openEditModal(position)}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-                                  title="Edit"
-                                >
-                                  <Pencil size={15} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedPosition(position)}
-                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-                                  title="View"
-                                >
-                                  <Eye size={15} />
-                                </button>
-                              </div>
-                            </td>
+                  <div className="hidden lg:block">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1500px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+                        <thead>
+                          <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                            <th className="px-5 py-4 first:rounded-tl-2xl">
+                              Position
+                            </th>
+                            <th className="px-5 py-4">Department</th>
+                            <th className="px-5 py-4">Account</th>
+                            <th className="px-5 py-4">GHL Name</th>
+                            <th className="px-5 py-4">Location / Site</th>
+                            <th className="px-5 py-4">Preferred Skills</th>
+                            <th className="px-5 py-4">Status</th>
+                            <th className="px-5 py-4">Last Updated</th>
+                            <th className="px-5 py-4 text-right last:rounded-tr-2xl">
+                              Actions
+                            </th>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                          >
-                            No positions found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                        </thead>
 
-              <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-                <p className="text-sm font-semibold text-sibs-tertiary-5">
-                  Showing {showingFrom} to {showingTo} of{" "}
-                  {filteredPositions.length} positions
-                </p>
+                        <tbody>
+                          {paginatedPositions.length > 0 ? (
+                            paginatedPositions.map((position) => (
+                              <tr
+                                key={position.id}
+                                className="transition hover:bg-[#FAFBFC]"
+                              >
+                                <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                  <p className="text-sm font-bold text-[#101828]">
+                                    {position.positionTitle}
+                                  </p>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
+                                  <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                                    {position.positionId}
+                                  </p>
+                                </td>
 
-                  {Array.from({ length: totalPages }).map((_, index) => {
-                    const pageNumber = index + 1;
-                    const active = currentPage === pageNumber;
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  {position.department || "—"}
+                                </td>
 
-                    return (
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  {position.accountName || "—"}
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  {position.accountGhlName || "—"}
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  {position.locationSite || "—"}
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  <p className="max-w-[300px]">
+                                    {position.preferredSkills || "—"}
+                                  </p>
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5">
+                                  <StatusBadge status={position.status} />
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
+                                  <p>{formatDate(position.updatedAt)}</p>
+
+                                  <p className="mt-1 text-xs text-sibs-tertiary-5">
+                                    By:{" "}
+                                    {formatPersonName(
+                                      position.updatedBy || position.createdBy,
+                                    )}
+                                  </p>
+                                </td>
+
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                                  <div className="inline-flex items-center gap-2">
+                                    {activeStatus && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleSetStatus(position, activeStatus)
+                                        }
+                                        disabled={
+                                          isSaving ||
+                                          position.status === activeStatus
+                                        }
+                                        className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        Set {activeStatus}
+                                      </button>
+                                    )}
+
+                                    {inactiveStatus && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleSetStatus(
+                                            position,
+                                            inactiveStatus,
+                                          )
+                                        }
+                                        disabled={
+                                          isSaving ||
+                                          position.status === inactiveStatus
+                                        }
+                                        className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                      >
+                                        Set {inactiveStatus}
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditModal(position)}
+                                      disabled={isSaving}
+                                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                                      title="Edit"
+                                    >
+                                      <Pencil size={15} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan={9}
+                                className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                              >
+                                No positions found.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                    <p className="text-sm font-semibold text-sibs-tertiary-5">
+                      Showing {showingFrom} to {showingTo} of{" "}
+                      {filteredPositions.length} positions
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
-                        key={pageNumber}
                         type="button"
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
-                          active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
-                            : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
-                        }`}
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {pageNumber}
+                        <ChevronLeft size={16} />
                       </button>
-                    );
-                  })}
 
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
+                      {Array.from({ length: totalPages }).map((_, index) => {
+                        const pageNumber = index + 1;
+                        const active = currentPage === pageNumber;
+
+                        return (
+                          <button
+                            key={pageNumber}
+                            type="button"
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition ${
+                              active
+                                ? "bg-sibs-primary-1 text-white shadow-sm"
+                                : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        type="button"
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
-          <section
-            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
-            style={{ animationDelay: "180ms" }}
-          >
+          <section className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5">
             <h3 className="text-sm font-bold text-sibs-primary-1">
-              Visibility Rule
+              Database Rule
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              Only positions with Active status will be shown in the Public Form
-              and Talent Pool Add/Edit Candidate form. Inactive, Draft, and
-              Archived positions remain available for internal tracking but are
-              hidden from applicant-facing selection lists.
+              This page does not use localStorage. Departments and accounts are
+              loaded from the database, and accounts are filtered based on the
+              selected department. Location / Site is limited to Davao, Tagum,
+              or Both Davao and Tagum.
             </p>
           </section>
         </div>
@@ -1714,13 +1962,8 @@ export default function AvailablePositionsPage() {
         onClose={closeFormModal}
         onSubmit={handleSubmitPosition}
         onReset={resetForm}
-      />
-
-      <ViewPositionModal
-        open={!!selectedPosition}
-        position={selectedPosition}
-        onClose={() => setSelectedPosition(null)}
-        onEdit={openEditModal}
+        meta={meta}
+        isSaving={isSaving}
       />
 
       <ConfirmationModal
@@ -1728,12 +1971,23 @@ export default function AvailablePositionsPage() {
         title={confirmState?.title}
         message={confirmState?.message}
         confirmLabel={confirmState?.confirmLabel}
+        isSaving={isSaving}
         onCancel={closeConfirm}
         onConfirm={() => {
           const action = confirmState?.onConfirm;
-          closeConfirm();
+          setConfirmState(null);
           if (typeof action === "function") action();
         }}
+      />
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+        variant="center"
+        lockScroll
       />
     </div>
   );

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   X,
   Save,
@@ -11,38 +12,162 @@ import {
   ShieldCheck,
   Users,
   Mic,
+  ChevronDown,
 } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 
 import {
-  affiliationOptions,
-  educationalAttainmentOptions,
-  employmentInterestOptions,
-  emptyExperience,
-  hearAboutUsOptions,
-  lengthOfWorkExperienceOptions,
-  locationOptions,
-  workExperienceOptions,
-  yesNoOptions,
-} from "../../../lib/utils/talentPool/talentPoolConstants";
-
-import {
-  getActiveOpenPositionOptions,
   inputClass,
   textareaClass,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 
-import {
-  FieldLabel,
-  MultiCheckGroup,
-} from "../../recruitment/talentPool/TalentPoolShared";
+import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
 
 const ACCEPTED_DOCUMENT_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif";
 
 function RequiredMark() {
   return <span className="text-red-500">*</span>;
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizePositionOption(position) {
+  if (!position) return null;
+
+  if (typeof position === "string") {
+    const title = cleanText(position);
+
+    if (!title) return null;
+
+    return {
+      id: title,
+      positionKey: title,
+      positionId: "",
+      positionTitle: title,
+      departmentId: "",
+      department: "",
+      accountId: "",
+      accountName: "",
+      accountGhlName: "",
+      locationSite: "",
+      status: "",
+    };
+  }
+
+  const positionId =
+    position.positionId ||
+    position.position_id ||
+    position.positionCode ||
+    position.position_code ||
+    position.id ||
+    "";
+
+  const positionTitle =
+    position.positionTitle ||
+    position.position_title ||
+    position.title ||
+    position.position ||
+    position.name ||
+    position.label ||
+    position.value ||
+    "";
+
+  const departmentId =
+    position.departmentId ||
+    position.department_id ||
+    position.gy_dept_id ||
+    position.id_department ||
+    "";
+
+  const department =
+    position.department ||
+    position.departmentName ||
+    position.department_name ||
+    position.name_department ||
+    "";
+
+  const accountId =
+    position.accountId ||
+    position.account_id ||
+    position.gy_acc_id ||
+    "";
+
+  const accountName =
+    position.accountName ||
+    position.account_name ||
+    position.gy_acc_name ||
+    position.account ||
+    "";
+
+  const accountGhlName =
+    position.accountGhlName ||
+    position.account_ghl_name ||
+    position.gy_acc_ghl_name ||
+    "";
+
+  const locationSite =
+    position.locationSite ||
+    position.location_site ||
+    position.location ||
+    position.site ||
+    "";
+
+  const status =
+    position.status ||
+    position.positionStatus ||
+    position.position_status ||
+    "";
+
+  const finalTitle = cleanText(positionTitle);
+  const finalId = cleanText(positionId);
+
+  if (!finalTitle && !finalId) return null;
+
+  return {
+    id: cleanText(position.id || finalId || finalTitle),
+    positionKey: cleanText(finalId || finalTitle),
+    positionId: finalId,
+    positionTitle: finalTitle || finalId,
+    departmentId: cleanText(departmentId),
+    department: cleanText(department),
+    accountId: cleanText(accountId),
+    accountName: cleanText(accountName),
+    accountGhlName: cleanText(accountGhlName),
+    locationSite: cleanText(locationSite),
+    status: cleanText(status),
+  };
+}
+
+function getUniquePositionOptions(positions = []) {
+  const map = new Map();
+
+  positions.forEach((position) => {
+    const normalizedPosition = normalizePositionOption(position);
+
+    if (!normalizedPosition) return;
+
+    const key = cleanText(
+      normalizedPosition.positionId || normalizedPosition.positionTitle,
+    ).toLowerCase();
+
+    if (!key) return;
+
+    if (!map.has(key)) {
+      map.set(key, normalizedPosition);
+    }
+  });
+
+  return Array.from(map.values()).sort((a, b) =>
+    a.positionTitle.localeCompare(b.positionTitle),
+  );
 }
 
 function SectionCard({ icon: Icon, title, description, children }) {
@@ -71,6 +196,218 @@ function SectionCard({ icon: Icon, title, description, children }) {
   );
 }
 
+function PositionInfoItem({ label, value }) {
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function getOptionValue(option) {
+  if (typeof option === "string") return option;
+  return option?.value || "";
+}
+
+function getOptionLabel(option) {
+  if (typeof option === "string") return option;
+  return option?.label || option?.value || "";
+}
+
+function normalizeDropdownOptions(options = []) {
+  return toArray(options)
+    .map((option) => {
+      const value = getOptionValue(option);
+      const label = getOptionLabel(option);
+
+      if (!cleanText(value) && !cleanText(label)) return null;
+
+      return {
+        id: option?.id || value || label,
+        value: value || label,
+        label: label || value,
+      };
+    })
+    .filter(Boolean);
+}
+
+function HiringNeedsDropdown({
+  label,
+  value,
+  onValueChange,
+  options = [],
+  placeholder = "Select",
+  required = false,
+  disabled = false,
+  zIndex = "z-[120]",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const normalizedOptions = normalizeDropdownOptions(options);
+
+  const selectedOption = normalizedOptions.find(
+    (option) => String(option.value) === String(value || ""),
+  );
+
+  const displayLabel = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onValueChange(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      <FieldLabel>
+        {label} {required && <RequiredMark />}
+      </FieldLabel>
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-[#344054]"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayLabel}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.length > 0 ? (
+              normalizedOptions.map((option) => {
+                const active = String(option.value) === String(value || "");
+
+                return (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
+                No options found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MultiCheckGroup({ options = [], value = [], onChange }) {
+  function toggle(optionValue) {
+    if (value.includes(optionValue)) {
+      onChange(value.filter((item) => item !== optionValue));
+      return;
+    }
+
+    onChange([...value, optionValue]);
+  }
+
+  if (!options.length) {
+    return (
+      <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
+        No database options configured.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {options.map((option) => {
+        const optionValue = getOptionValue(option);
+        const optionLabel = getOptionLabel(option);
+
+        return (
+          <label
+            key={option?.id || optionValue}
+            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+          >
+            <input
+              type="checkbox"
+              checked={value.includes(optionValue)}
+              onChange={() => toggle(optionValue)}
+              className="h-4 w-4"
+            />
+
+            <span className="text-sm font-semibold text-gray-700">
+              {optionLabel}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 function SelectField({
   label,
   value,
@@ -78,28 +415,24 @@ function SelectField({
   options = [],
   placeholder = "Select",
   required = false,
+  disabled = false,
 }) {
   return (
-    <div>
-      <FieldLabel>
-        {label} {required && <RequiredMark />}
-      </FieldLabel>
-
-      <select
-        value={value || ""}
-        onChange={onChange}
-        required={required}
-        className={inputClass()}
-      >
-        <option value="">{placeholder}</option>
-
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </div>
+    <HiringNeedsDropdown
+      label={label}
+      value={value}
+      options={options}
+      placeholder={placeholder}
+      required={required}
+      disabled={disabled}
+      onValueChange={(nextValue) =>
+        onChange?.({
+          target: {
+            value: nextValue,
+          },
+        })
+      }
+    />
   );
 }
 
@@ -130,22 +463,22 @@ function TextField({
   );
 }
 
-function YesNoSelect({ label, value, onChange, required = true }) {
+function YesNoSelect({ label, value, onChange, options, required = true }) {
   return (
     <SelectField
       label={label}
       value={value}
       onChange={onChange}
-      options={yesNoOptions}
+      options={options}
       placeholder="Select answer"
       required={required}
     />
   );
 }
 
-function createEmptyExperience() {
+function createEmptyExperience(baseExperience) {
   return {
-    ...emptyExperience,
+    ...baseExperience,
     id: Date.now(),
     industry: "",
     industryRelevantExperience: "",
@@ -181,6 +514,7 @@ function ExperienceFields({
   index,
   title,
   onChange,
+  lengthOptions,
   showRemove = false,
   onRemove,
 }) {
@@ -240,7 +574,7 @@ function ExperienceFields({
           onChange={(event) =>
             updateExperienceField("lengthOfWorkExperience", event.target.value)
           }
-          options={lengthOfWorkExperienceOptions}
+          options={lengthOptions}
           placeholder="Select length"
           required
         />
@@ -310,14 +644,62 @@ export default function AddCandidateModal() {
     resetCandidateForm,
     addCandidate,
     handleCandidateFileChange,
+    formOptions,
+    activePositionOptions,
+    emptyExperience,
+    isRelevantWorkExperience,
+    isSaving,
   } = useTalentPool();
 
   if (!showAddModal) return null;
 
-  const openPositionOptions = getActiveOpenPositionOptions();
+  const safeFormOptions = {
+    hearAboutUs: toArray(formOptions?.hearAboutUs),
+    locations: toArray(formOptions?.locations),
+    workExperience: toArray(formOptions?.workExperience),
+    lengthOfExperience: toArray(formOptions?.lengthOfExperience),
+    educationalAttainment: toArray(formOptions?.educationalAttainment),
+    affiliationCertification: toArray(formOptions?.affiliationCertification),
+    yesNo: toArray(formOptions?.yesNo),
+    employmentInterest: toArray(formOptions?.employmentInterest),
+    audioQuestions: toArray(formOptions?.audioQuestions),
+  };
 
-  const hasRelevantExperience =
-    candidateForm.workExperience === workExperienceOptions[0];
+  const positionOptions = getUniquePositionOptions(activePositionOptions);
+
+  const positionDropdownOptions = positionOptions.map((position) => ({
+    id: position.positionKey,
+    value: position.positionKey,
+    label: position.positionTitle,
+  }));
+
+  const selectedPosition =
+    positionOptions.find(
+      (position) =>
+        cleanText(position.positionId) &&
+        cleanText(position.positionId) ===
+          cleanText(candidateForm.openPositionId),
+    ) ||
+    positionOptions.find(
+      (position) =>
+        cleanText(position.positionKey) === cleanText(candidateForm.openPosition),
+    ) ||
+    positionOptions.find(
+      (position) =>
+        cleanText(position.positionTitle).toLowerCase() ===
+        cleanText(candidateForm.openPosition).toLowerCase(),
+    ) ||
+    null;
+
+  const selectedPositionValue =
+    selectedPosition?.positionKey ||
+    candidateForm.openPositionId ||
+    candidateForm.openPosition ||
+    "";
+
+  const hasRelevantExperience = isRelevantWorkExperience(
+    candidateForm.workExperience,
+  );
 
   const hasOtherExperience =
     hasRelevantExperience && candidateForm.workExperiences?.length > 1;
@@ -326,6 +708,32 @@ export default function AddCandidateModal() {
     setCandidateForm({
       ...candidateForm,
       [field]: value,
+    });
+  }
+
+  function handleOpenPositionChange(value) {
+    const selected =
+      positionOptions.find(
+        (position) => cleanText(position.positionKey) === cleanText(value),
+      ) ||
+      positionOptions.find(
+        (position) => cleanText(position.positionTitle) === cleanText(value),
+      ) ||
+      null;
+
+    setCandidateForm({
+      ...candidateForm,
+      openPosition: selected?.positionTitle || value,
+      openPositionId: selected?.positionId || selected?.positionKey || "",
+      appliedPosition: selected?.positionTitle || value,
+      positionId: selected?.positionId || selected?.positionKey || "",
+      positionDepartmentId: selected?.departmentId || "",
+      positionDepartment: selected?.department || "",
+      positionAccountId: selected?.accountId || "",
+      positionAccountName: selected?.accountName || "",
+      positionAccountGhlName: selected?.accountGhlName || "",
+      positionLocationSite: selected?.locationSite || "",
+      positionStatus: selected?.status || "",
     });
   }
 
@@ -349,7 +757,7 @@ export default function AddCandidateModal() {
   function updateExperience(index, nextExperience) {
     const currentExperiences = Array.isArray(candidateForm.workExperiences)
       ? candidateForm.workExperiences
-      : [createEmptyExperience()];
+      : [createEmptyExperience(emptyExperience)];
 
     setCandidateForm({
       ...candidateForm,
@@ -379,17 +787,16 @@ export default function AddCandidateModal() {
 
     if (currentExperiences.length > 0) return currentExperiences;
 
-    return [createEmptyExperience()];
+    return [createEmptyExperience(emptyExperience)];
   }
 
   function handleWorkExperienceChange(value) {
     setCandidateForm({
       ...candidateForm,
       workExperience: value,
-      workExperiences:
-        value === workExperienceOptions[0]
-          ? ensurePrimaryExperience()
-          : [{ ...emptyExperience }],
+      workExperiences: isRelevantWorkExperience(value)
+        ? ensurePrimaryExperience()
+        : [{ ...emptyExperience }],
     });
   }
 
@@ -401,7 +808,7 @@ export default function AddCandidateModal() {
       workExperiences: [
         ...currentExperiences,
         {
-          ...createEmptyExperience(),
+          ...createEmptyExperience(emptyExperience),
           id: Date.now(),
           hasOtherExperience: "No",
         },
@@ -421,7 +828,7 @@ export default function AddCandidateModal() {
       workExperiences:
         nextExperiences.length > 0
           ? nextExperiences
-          : [createEmptyExperience()],
+          : [createEmptyExperience(emptyExperience)],
     });
   }
 
@@ -437,7 +844,7 @@ export default function AddCandidateModal() {
             : [
                 currentExperiences[0],
                 {
-                  ...createEmptyExperience(),
+                  ...createEmptyExperience(emptyExperience),
                   id: Date.now(),
                 },
               ],
@@ -478,15 +885,16 @@ export default function AddCandidateModal() {
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Create a reusable Talent Pool candidate profile using the same
-              content as the public application form.
+              Create a reusable Talent Pool candidate profile using database
+              options and backend storage.
             </p>
           </div>
 
           <button
             type="button"
             onClick={closeAddCandidateModal}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            disabled={isSaving}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <X size={20} />
           </button>
@@ -509,22 +917,22 @@ export default function AddCandidateModal() {
                 </FieldLabel>
 
                 <MultiCheckGroup
-                  options={hearAboutUsOptions}
+                  options={safeFormOptions.hearAboutUs}
                   value={candidateForm.hearAboutUs}
                   onChange={(value) => updateField("hearAboutUs", value)}
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <SelectField
+                <HiringNeedsDropdown
                   label="Check our open positions"
-                  value={candidateForm.openPosition}
-                  onChange={(event) =>
-                    updateField("openPosition", event.target.value)
-                  }
-                  options={openPositionOptions}
+                  value={selectedPositionValue}
+                  onValueChange={handleOpenPositionChange}
+                  options={positionDropdownOptions}
                   placeholder="Select open position"
                   required
+                  disabled={isSaving}
+                  zIndex="z-[180]"
                 />
 
                 <TextField
@@ -542,7 +950,7 @@ export default function AddCandidateModal() {
                   onChange={(event) =>
                     updateField("applyingLocation", event.target.value)
                   }
-                  options={locationOptions}
+                  options={safeFormOptions.locations}
                   placeholder="Select location"
                   required
                 />
@@ -567,6 +975,60 @@ export default function AddCandidateModal() {
                   required
                 />
               </div>
+
+              {!positionOptions.length && (
+                <p className="mt-1 text-xs font-bold text-amber-700">
+                  No active positions found from the database.
+                </p>
+              )}
+
+              {selectedPosition && (
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        Selected Position Details
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
+                        These details are loaded from Available Positions.
+                      </p>
+                    </div>
+
+                    {selectedPosition.status && (
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                        {selectedPosition.status}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <PositionInfoItem
+                      label="Position"
+                      value={selectedPosition.positionTitle}
+                    />
+                    <PositionInfoItem
+                      label="Department"
+                      value={selectedPosition.department}
+                    />
+                    <PositionInfoItem
+                      label="Account"
+                      value={selectedPosition.accountName}
+                    />
+                    <PositionInfoItem
+                      label="Account GHL Name"
+                      value={selectedPosition.accountGhlName}
+                    />
+                    <PositionInfoItem
+                      label="Location / Site"
+                      value={selectedPosition.locationSite}
+                    />
+                    <PositionInfoItem
+                      label="Position ID"
+                      value={selectedPosition.positionId}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </SectionCard>
 
@@ -674,7 +1136,7 @@ export default function AddCandidateModal() {
                 onChange={(event) =>
                   handleWorkExperienceChange(event.target.value)
                 }
-                options={workExperienceOptions}
+                options={safeFormOptions.workExperience}
                 placeholder="Select work experience"
                 required
               />
@@ -686,6 +1148,7 @@ export default function AddCandidateModal() {
                     title="Industry or Relevant Experience"
                     experience={workExperiences[0]}
                     onChange={updateExperience}
+                    lengthOptions={safeFormOptions.lengthOfExperience}
                   />
 
                   <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
@@ -696,7 +1159,7 @@ export default function AddCandidateModal() {
                         onChange={(event) =>
                           handleOtherExperienceAnswer(event.target.value)
                         }
-                        options={yesNoOptions}
+                        options={safeFormOptions.yesNo}
                         placeholder="Select answer"
                       />
 
@@ -724,6 +1187,7 @@ export default function AddCandidateModal() {
                           title={`Other Experience ${itemIndex + 1}`}
                           experience={experience}
                           onChange={updateExperience}
+                          lengthOptions={safeFormOptions.lengthOfExperience}
                           showRemove
                           onRemove={() => removeExperience(actualIndex)}
                         />
@@ -746,7 +1210,7 @@ export default function AddCandidateModal() {
                 onChange={(event) =>
                   updateField("educationalAttainment", event.target.value)
                 }
-                options={educationalAttainmentOptions}
+                options={safeFormOptions.educationalAttainment}
                 placeholder="Select educational attainment"
                 required
               />
@@ -755,7 +1219,7 @@ export default function AddCandidateModal() {
                 <FieldLabel>Affiliations and Certifications</FieldLabel>
 
                 <MultiCheckGroup
-                  options={affiliationOptions}
+                  options={safeFormOptions.affiliationCertification}
                   value={candidateForm.affiliations}
                   onChange={(value) => updateField("affiliations", value)}
                 />
@@ -786,6 +1250,7 @@ export default function AddCandidateModal() {
               <YesNoSelect
                 label="Are you fully vaccinated?"
                 value={candidateForm.fullyVaccinated}
+                options={safeFormOptions.yesNo}
                 onChange={(event) =>
                   updateField("fullyVaccinated", event.target.value)
                 }
@@ -794,6 +1259,7 @@ export default function AddCandidateModal() {
               <YesNoSelect
                 label="Are you comfortable working on site?"
                 value={candidateForm.comfortableOnSite}
+                options={safeFormOptions.yesNo}
                 onChange={(event) =>
                   updateField("comfortableOnSite", event.target.value)
                 }
@@ -802,6 +1268,7 @@ export default function AddCandidateModal() {
               <YesNoSelect
                 label="Are you willing to work in graveyard shift?"
                 value={candidateForm.willingGraveyard}
+                options={safeFormOptions.yesNo}
                 onChange={(event) =>
                   updateField("willingGraveyard", event.target.value)
                 }
@@ -813,7 +1280,7 @@ export default function AddCandidateModal() {
                 onChange={(event) =>
                   updateField("employmentInterest", event.target.value)
                 }
-                options={employmentInterestOptions}
+                options={safeFormOptions.employmentInterest}
                 placeholder="Select employment preference"
                 required
               />
@@ -822,6 +1289,7 @@ export default function AddCandidateModal() {
                 <YesNoSelect
                   label="If this is a remote position, do you have access to a computer, Internet connection, and a private space to work remotely?"
                   value={candidateForm.remoteWorkAccess}
+                  options={safeFormOptions.yesNo}
                   onChange={(event) =>
                     updateField("remoteWorkAccess", event.target.value)
                   }
@@ -831,6 +1299,7 @@ export default function AddCandidateModal() {
               <YesNoSelect
                 label="Are you willing to undertake a drug test as part of this hiring process?"
                 value={candidateForm.willingDrugTest}
+                options={safeFormOptions.yesNo}
                 onChange={(event) =>
                   updateField("willingDrugTest", event.target.value)
                 }
@@ -839,6 +1308,7 @@ export default function AddCandidateModal() {
               <YesNoSelect
                 label="Are you willing to allow SiBS to undergo a background check as part of this hiring process?"
                 value={candidateForm.willingBackgroundCheck}
+                options={safeFormOptions.yesNo}
                 onChange={(event) =>
                   updateField("willingBackgroundCheck", event.target.value)
                 }
@@ -888,14 +1358,19 @@ export default function AddCandidateModal() {
                   The audio file may answer these questions:
                 </p>
 
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  <li>Why did you apply for this position?</li>
-                  <li>Why would you like to work with our company?</li>
-                  <li>
-                    How does this position fit in with your long-term goals?
-                  </li>
-                  <li>How did you learn about this job or source card?</li>
-                </ul>
+                {safeFormOptions.audioQuestions.length > 0 ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {safeFormOptions.audioQuestions.map((question) => (
+                      <li key={question.id || getOptionValue(question)}>
+                        {getOptionLabel(question)}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2">
+                    No audio questions configured in the database.
+                  </p>
+                )}
               </div>
 
               <div>
@@ -999,7 +1474,8 @@ export default function AddCandidateModal() {
             <button
               type="button"
               onClick={resetCandidateForm}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RotateCcw size={16} />
               Reset
@@ -1008,10 +1484,11 @@ export default function AddCandidateModal() {
             <button
               type="submit"
               form="add-candidate-form"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              disabled={isSaving}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={16} />
-              Save Candidate
+              {isSaving ? "Saving..." : "Save Candidate"}
             </button>
           </div>
         </div>
