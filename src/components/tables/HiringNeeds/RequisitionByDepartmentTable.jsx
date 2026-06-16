@@ -50,11 +50,11 @@ function DonutChart({ data = [] }) {
    );
 }
 
-export default function ReasonForHiringTable({ data = [] , delay = 0}) {
+export default function RequisitionByDepartmentTable({ data = [] , delay = 0}) {
   return (
     <section className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5" style={{animationDelay: `${delay}ms`}}>
       <h2 className="text-base font-bold text-[#101828]">
-        Requisition by Reason for Hiring
+        Requisition by Department
       </h2>
 
       <div className="mt-5">

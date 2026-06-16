@@ -10,6 +10,9 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
+import { useUser } from "../../../services/context/UserContext";
+import { createHiringNeed } from "../../../lib/axios/getHiringNeeds";
 
 function FieldLabel({ children, required = false }) {
   return (
@@ -479,70 +482,127 @@ function DateDropdown({
   );
 }
 
-export default function AddHiringNeedsModal({
-  open,
-  form,
-  setForm,
-  jobDescriptions = [],
-  jobDescriptionLoading = false,
-  reasonForHiringOptions = [],
-  onClose,
-  onSubmit,
-  onReset,
-}) {
-  if (!open) return null;
 
-  function updateField(field, value) {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  }
+const initialForm = {
+    jobDescriptionDbId: "",
+    positionTitle: "",
+    departmentAccount: "",
+    accountId: "",
+    departmentId: "",
+    jobDescriptionId: "",
+    jobDescriptionCode: "",
+    jobDescriptionTitle: "",
+    headcount: "",
+    reasonForHiring: "",
+    assignment: "Probationary",
+    assignmentOther: "",
+    locationSite: "Davao Site",
+    dateNeeded: "",
+    preparedBy: "",
+    preparedById: "",
+    approvalStatus: "For Approval",
+};
 
-  function handleJobDescriptionChange(jobDescriptionDbId) {
-    const selectedJd = jobDescriptions.find((item) => {
-      return String(item.id) === String(jobDescriptionDbId);
-    });
+export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
+   const { user } = useUser();
+   const { jobDescriptions, fetchList, jobDescriptionLoading, reasonForHiringOptions } = useHiringNeeds();
 
-    if (!selectedJd) {
-      setForm((prev) => ({
-        ...prev,
-        jobDescriptionDbId: "",
-        positionTitle: "",
-        departmentAccount: "",
-        accountId: "",
-        departmentId: "",
-        jobDescriptionId: "",
-        jobDescriptionCode: "",
-        jobDescriptionTitle: "",
-      }));
-      return;
-    }
+   const [form, setForm] = useState(initialForm);
+   const [isSubmitting, setIsSubmitting] = useState(false);
 
-    setForm((prev) => ({
-      ...prev,
-      jobDescriptionDbId: selectedJd.id || "",
-      positionTitle: selectedJd.roleTitle || "",
-      departmentAccount:
-        selectedJd.departmentAccount ||
-        (selectedJd.department && selectedJd.account
-          ? `${selectedJd.department} / ${selectedJd.account}`
-          : selectedJd.department || selectedJd.account || ""),
-      accountId: selectedJd.accountId || "",
-      departmentId: selectedJd.departmentId || "",
-      jobDescriptionId: selectedJd.id || "",
-      jobDescriptionCode: selectedJd.jdCode || "",
-      jobDescriptionTitle: selectedJd.roleTitle || "",
-    }));
-  }
+   // Auto-fill user info when modal opens
+   useEffect(() => {
+     if (open && user) {
+       const name = user.fullName || user.username || "System User";
+       setForm(prev => ({
+         ...prev,
+         preparedBy: name,
+         preparedById: user.id || user.userId || ""
+       }));
+     }
+   }, [open, user]);
 
-  function handleAssignmentChange(value) {
-    setForm((prev) => ({
+   if (!open) return null;
+
+   function updateField(field, value) {
+     setForm(prev => ({ ...prev, [field]: value }));
+   }
+
+   function handleReset() {
+     setForm({
+       ...initialForm,
+       preparedBy: user?.fullName || user?.username || "",
+       preparedById: user?.id || ""
+     });
+   }
+
+   function handleJobDescriptionChange(jobDescriptionDbId) {
+     const selectedJd = jobDescriptions.find(jd => String(jd.id) === String(jobDescriptionDbId));
+     if (!selectedJd) {
+       handleReset();
+       return;
+     }
+     setForm(prev => ({
+       ...prev,
+       jobDescriptionDbId: selectedJd.id || "",
+       positionTitle: selectedJd.roleTitle || "",
+       departmentAccount: selectedJd.departmentAccount || (selectedJd.department && selectedJd.account ? `${selectedJd.department} / ${selectedJd.account}` : ""),
+       accountId: selectedJd.accountId || "",
+       departmentId: selectedJd.departmentId || "",
+       jobDescriptionId: selectedJd.id || "",
+       jobDescriptionCode: selectedJd.jdCode || "",
+       jobDescriptionTitle: selectedJd.roleTitle || "",
+     }));
+   }
+
+   const handleSubmit = async (e) => {
+     e.preventDefault();
+
+     // 1. Validation
+     if (!form.jobDescriptionDbId) {
+       onStatus?.({ type: "error", title: "Required", message: "Position Title is required." });
+       return;
+     }
+     if (!form.headcount || Number(form.headcount) <= 0) {
+       onStatus?.({ type: "error", title: "Invalid", message: "Headcount must be greater than 0." });
+       return;
+     }
+     if (!form.reasonForHiring) {
+       onStatus?.({ type: "error", title: "Required", message: "Reason for Hiring is required." });
+       return;
+     }
+     if (!form.dateNeeded) {
+       onStatus?.({ type: "error", title: "Required", message: "Date Needed is required." });
+       return;
+     }
+
+     // 2. Submit
+     setIsSubmitting(true);
+     try {
+       const res = await createHiringNeed(form);
+       if (res?.success || res?.id) {
+         onStatus?.({ type: "success", title: "Submitted", message: "Personnel Requisition submitted successfully." });
+         fetchList(); // Refresh the main table
+         handleReset();
+         onClose();
+       } else {
+         throw new Error(res?.message || "Failed to submit request.");
+       }
+     } catch (err) {
+       onStatus?.({ type: "error", title: "Submission Failed", message: err.message });
+     } finally {
+       setIsSubmitting(false);
+     }
+   };
+
+   const handleAssignmentChange = (value) => {
+    setForm(prev => ({
       ...prev,
       assignment: value,
       assignmentOther: value === "Other" ? prev.assignmentOther : "",
     }));
-  }
+   }
+
 
   const jobDescriptionOptions = [
     {
@@ -612,7 +672,7 @@ export default function AddHiringNeedsModal({
       onClick={onClose}
     >
       <form
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
       >
@@ -820,7 +880,7 @@ export default function AddHiringNeedsModal({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
-              onClick={onReset}
+              onClick={handleReset}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
             >
               Reset

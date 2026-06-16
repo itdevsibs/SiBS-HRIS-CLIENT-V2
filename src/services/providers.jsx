@@ -10,6 +10,7 @@ import { CandidatePipelineProvider } from "./context/CandidatePipelineContext";
 import { RecruitmentSettingsProvider } from "./context/RecruitmentSettingsContext";
 import { OffersProvider } from "./context/OffersContext";
 import { TalentPoolProvider } from "./context/TalentPoolContext";
+import { HiringNeedsProvider } from "./context/HiringNeedsContext";
 
 export default function Providers({ children }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -26,7 +27,9 @@ export default function Providers({ children }) {
                     <CandidatePipelineProvider>
                       <OffersProvider>
                         <ResignationListProvider>
-                          {children}
+                          <HiringNeedsProvider>
+                            {children}
+                            </HiringNeedsProvider>
                         </ResignationListProvider>
                       </OffersProvider>
                     </CandidatePipelineProvider>
