@@ -1,8 +1,5 @@
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
-import {
-  getOfferApprovalSummary,
-  getStatusClass,
-} from "../../../lib/utils/offers/offerHelpers";
+import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { useOffers } from "../../../services/context/OffersContext";
 
 export default function OfferRecordsTable() {
@@ -12,6 +9,7 @@ export default function OfferRecordsTable() {
     setSelectedOffer,
     handleApproval,
     canCurrentUserApproveOffer,
+    getOfferApprovalStatus,
   } = useOffers();
 
   return (
@@ -41,7 +39,10 @@ export default function OfferRecordsTable() {
           <tbody>
             {filteredOffers.length > 0 ? (
               filteredOffers.map((offer, index) => {
-                const approvalStatus = getOfferApprovalSummary(offer);
+                const approvalStatus = getOfferApprovalStatus
+                  ? getOfferApprovalStatus(offer)
+                  : offer.offerApprovalStatus || offer.status || "For Review";
+
                 const isLastRow = index === filteredOffers.length - 1;
 
                 const isAuthorizedApprover =

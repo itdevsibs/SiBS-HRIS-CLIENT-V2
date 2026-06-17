@@ -1800,6 +1800,13 @@ export default function RecruitmentSettingsPage() {
     handleSaveSettings,
   } = useRecruitmentSettings();
 
+  const [pageStatusModal, setPageStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
   const settingsTabs = useMemo(() => {
     const tabs = Array.isArray(recruitmentTabs) ? recruitmentTabs : [];
 
@@ -1810,6 +1817,91 @@ export default function RecruitmentSettingsPage() {
       ),
     ];
   }, [recruitmentTabs]);
+
+  function openPageStatusModal({
+    type = "success",
+    title = "",
+    message = "",
+  }) {
+    setPageStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+    });
+  }
+
+  function closePageStatusModal() {
+    setPageStatusModal((previous) => ({
+      ...previous,
+      open: false,
+    }));
+  }
+
+  async function handlePageResetFields() {
+    try {
+      const result = handleResetFields?.();
+
+      if (result && typeof result.then === "function") {
+        await result;
+      }
+
+      openPageStatusModal({
+        type: "success",
+        title: "Settings Reset",
+        message: "Recruitment settings fields were reset successfully.",
+      });
+    } catch (error) {
+      console.error("RESET RECRUITMENT SETTINGS ERROR:", error);
+
+      openPageStatusModal({
+        type: "error",
+        title: "Reset Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to reset recruitment settings.",
+      });
+    }
+  }
+
+  async function handlePageSaveSettings() {
+    try {
+      const result = handleSaveSettings?.();
+
+      if (result && typeof result.then === "function") {
+        await result;
+      }
+
+      openPageStatusModal({
+        type: "success",
+        title: "Settings Saved",
+        message: "Recruitment settings were saved successfully.",
+      });
+    } catch (error) {
+      console.error("SAVE RECRUITMENT SETTINGS ERROR:", error);
+
+      openPageStatusModal({
+        type: "error",
+        title: "Save Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to save recruitment settings.",
+      });
+    }
+  }
+
+  function handlePreviewForm() {
+    openPageStatusModal({
+      type: "error",
+      title: "Preview Not Available",
+      message:
+        "Preview Form is not configured yet. Please finish the form setup first.",
+    });
+  }
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -1887,7 +1979,7 @@ export default function RecruitmentSettingsPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={handleResetFields}
+                onClick={handlePageResetFields}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
               >
                 <RotateCcw size={18} />
@@ -1896,6 +1988,7 @@ export default function RecruitmentSettingsPage() {
 
               <button
                 type="button"
+                onClick={handlePreviewForm}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
               >
                 <Eye size={18} />
@@ -1904,7 +1997,7 @@ export default function RecruitmentSettingsPage() {
 
               <button
                 type="button"
-                onClick={handleSaveSettings}
+                onClick={handlePageSaveSettings}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98]"
               >
                 <Save size={18} />
@@ -1979,6 +2072,16 @@ export default function RecruitmentSettingsPage() {
           </section>
         </div>
       </main>
+
+      <StatusModal
+        open={pageStatusModal.open}
+        type={pageStatusModal.type}
+        title={pageStatusModal.title}
+        message={pageStatusModal.message}
+        variant="center"
+        onClose={closePageStatusModal}
+        lockScroll
+      />
     </div>
   );
 }

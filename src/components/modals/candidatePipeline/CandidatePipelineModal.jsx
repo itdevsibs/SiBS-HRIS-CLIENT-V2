@@ -11,8 +11,6 @@ import {
   CirclePlay,
   UploadCloud,
   FileText,
-  Image as ImageIcon,
-  FileSpreadsheet,
 } from "lucide-react";
 
 import DetailRow from "../../layout/common/DetailRow";
@@ -37,7 +35,6 @@ import {
   getDisplayInterviewStatus,
   getDisplayInterviewType,
   canScheduleInterview,
-  canUpdateInterviewSchedule,
   getStageClass,
   getPrfStatusClass,
   getInterviewStatusClass,
@@ -50,12 +47,64 @@ import {
   getUploadFileIcon,
   formatFileSize,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
+
 import { useNavigate } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 import NhoUploadModal from "./NhoUploadModal";
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 
 const PRE_EMPLOYMENT_REQUIREMENTS_TOTAL = 14;
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizePrfStatus(value) {
+  const text = cleanText(value);
+
+  if (!text) return "Review";
+
+  const key = text.toLowerCase();
+
+  if (
+    key === "matched" ||
+    key === "match" ||
+    key === "prf matched" ||
+    key === "approved"
+  ) {
+    return "Matched";
+  }
+
+  if (
+    key === "not matched" ||
+    key === "unmatched" ||
+    key === "not_match" ||
+    key === "not-match"
+  ) {
+    return "Not Matched";
+  }
+
+  if (
+    key === "review" ||
+    key === "for review" ||
+    key === "pending" ||
+    key === "prf review"
+  ) {
+    return "Review";
+  }
+
+  return text;
+}
+
+function getCurrentTimestamp() {
+  return new Date().toLocaleString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 const CandidatePipelineModal = ({
   open,
@@ -66,33 +115,52 @@ const CandidatePipelineModal = ({
   onOpenMoveModal,
   onOpenAssessmentModal,
   onOpenDropOffModal,
-  onCompleteInterview,
   onSendAssessmentEmail,
   onCancelInterview,
-  onUpdateOfferApproval,
   onSendOfferEmail,
   onOfferDecision,
-  onOpenNhoScheduleModal,
 }) => {
   const [showTalentPoolDetails, setShowTalentPoolDetails] = useState(false);
   const [interviewNotesDraft, setInterviewNotesDraft] = useState("");
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [candidateFilesById, setCandidateFilesById] = useState({});
+  const [localCandidate, setLocalCandidate] = useState(null);
 
   const { handleStartInterview, handleScheduleNhoAuto } =
     useCandidatePipeline();
+
   const navigate = useNavigate();
 
   useEffect(() => {
     setShowTalentPoolDetails(false);
     setInterviewNotesDraft(candidate?.interviewNotes || "");
     setShowFileUploadModal(false);
-  }, [candidate?.id, open]);
+    setLocalCandidate(candidate || null);
+  }, [
+    candidate?.id,
+    candidate?.candidateId,
+    candidate?.candidateApplicationId,
+    candidate?.prfStatus,
+    candidate?.prf_status,
+    candidate?.currentStage,
+    open,
+  ]);
+
+  const activeCandidate = useMemo(() => {
+    return {
+      ...(candidate || {}),
+      ...(localCandidate || {}),
+    };
+  }, [candidate, localCandidate]);
+
+  const activePrfStatus = normalizePrfStatus(
+    activeCandidate.prfStatus || activeCandidate.prf_status,
+  );
 
   const candidateUploadKey =
-    candidate?.candidateId ||
-    candidate?.candidateApplicationId ||
-    candidate?.id;
+    activeCandidate?.candidateId ||
+    activeCandidate?.candidateApplicationId ||
+    activeCandidate?.id;
 
   const candidateFiles = useMemo(() => {
     if (!candidateUploadKey) return [];
@@ -123,52 +191,68 @@ const CandidatePipelineModal = ({
 
   const latestUploadedFile = candidateFiles?.[0] || null;
 
+  const candidateNhoUploadId =
+    activeCandidate?.dbId ||
+    activeCandidate?.id ||
+    activeCandidate?.candidateId ||
+    activeCandidate?.candidateApplicationId ||
+    "";
+
+  const previousEmploymentEnabledForUpload = Boolean(
+    activeCandidate?.metadata?.previousEmploymentEnabled ||
+      activeCandidate?.previousEmploymentEnabled ||
+      activeCandidate?.nhoPreviousEmploymentEnabled,
+  );
+
   const nhoScheduleDetails = useMemo(() => {
-    const schedule = candidate?.nhoSchedule || {};
+    const schedule = activeCandidate?.nhoSchedule || {};
 
     return {
       startDate:
         schedule.startDate ||
         schedule.date ||
-        candidate?.nhoStartDate ||
-        candidate?.nhoDate ||
+        activeCandidate?.nhoStartDate ||
+        activeCandidate?.nhoDate ||
         "",
       account:
         schedule.account ||
-        candidate?.nhoAccount ||
-        candidate?.offerDetails?.account ||
-        candidate?.roleAccount ||
+        activeCandidate?.nhoAccount ||
+        activeCandidate?.offerDetails?.account ||
+        activeCandidate?.roleAccount ||
         "—",
       trainer:
-        schedule.trainer || candidate?.nhoTrainer || candidate?.trainer || "—",
+        schedule.trainer ||
+        activeCandidate?.nhoTrainer ||
+        activeCandidate?.trainer ||
+        "—",
       updatedShiftSchedule:
         schedule.updatedShiftSchedule ||
         schedule.shiftSchedule ||
-        candidate?.updatedShiftSchedule ||
-        candidate?.nhoShiftSchedule ||
+        activeCandidate?.updatedShiftSchedule ||
+        activeCandidate?.nhoShiftSchedule ||
         "—",
       endorsementStatus:
         schedule.endorsementStatus ||
-        candidate?.endorsementStatus ||
-        candidate?.nhoEndorsementStatus ||
+        activeCandidate?.endorsementStatus ||
+        activeCandidate?.nhoEndorsementStatus ||
         "Pending",
       location:
         schedule.location ||
-        candidate?.nhoLocation ||
-        candidate?.workLocation ||
+        activeCandidate?.nhoLocation ||
+        activeCandidate?.workLocation ||
         "—",
-      remarks: schedule.remarks || candidate?.nhoRemarks || "",
+      remarks: schedule.remarks || activeCandidate?.nhoRemarks || "",
       status:
         schedule.status ||
-        candidate?.nhoStatus ||
+        activeCandidate?.nhoStatus ||
         (schedule.startDate ||
         schedule.date ||
-        candidate?.nhoStartDate ||
-        candidate?.nhoDate
+        activeCandidate?.nhoStartDate ||
+        activeCandidate?.nhoDate
           ? "Scheduled"
           : "Not Scheduled"),
     };
-  }, [candidate]);
+  }, [activeCandidate]);
 
   const hasNhoSchedule = useMemo(() => {
     return Boolean(
@@ -178,27 +262,121 @@ const CandidatePipelineModal = ({
 
   if (!open || !candidate) return null;
 
-  const nextStage = getNextStage(candidate.currentStage);
+  const nextStage = getNextStage(activeCandidate.currentStage);
 
   const isLeadStage = false;
-  const isInitialScreening = candidate.currentStage === "Initial Screening";
-  const isOnlineAssessment = candidate.currentStage === "Online Assessment";
-  const isInterviewScheduled = candidate.currentStage === "Interview Scheduled";
-  const isOffered = candidate.currentStage === "Offered";
+  const isInitialScreening =
+    activeCandidate.currentStage === "Initial Screening";
+  const isOnlineAssessment =
+    activeCandidate.currentStage === "Online Assessment";
+  const isInterviewScheduled =
+    activeCandidate.currentStage === "Interview Scheduled";
+  const isOffered = activeCandidate.currentStage === "Offered";
   const isAccepted =
-    candidate.currentStage === "Accepted" ||
-    candidate.currentStage === "Accepted (For NHO)";
-  const forNHO = candidate.currentStage === "For NHO";
+    activeCandidate.currentStage === "Accepted" ||
+    activeCandidate.currentStage === "Accepted (For NHO)";
+  const forNHO = activeCandidate.currentStage === "For NHO";
 
   const canShowNhoUploads = forNHO;
 
-  const candidateHasSchedule = hasInterviewSchedule(candidate);
-  const modalStatus = getDisplayInterviewStatus(candidate);
+  const candidateHasSchedule = hasInterviewSchedule(activeCandidate);
+  const modalStatus = getDisplayInterviewStatus(activeCandidate);
   const isInterviewInProgress =
     isInterviewScheduled && modalStatus === "Interview in Progress";
 
-  const disabledActionClass =
-    "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:opacity-50";
+  async function handleLocalPrfStatusUpdate(firstArg, secondArg) {
+    const nextPrfStatus =
+      secondArg ||
+      firstArg?.prfStatus ||
+      firstArg?.prf_status ||
+      firstArg ||
+      "Review";
+
+    const normalizedStatus = normalizePrfStatus(nextPrfStatus);
+
+    const currentTimeline = Array.isArray(activeCandidate.timeline)
+      ? activeCandidate.timeline
+      : [];
+
+    const movementReason =
+      normalizedStatus === "Matched"
+        ? "PRF status changed to Matched. Candidate is ready to move to Online Assessment."
+        : `PRF status set to ${normalizedStatus}.`;
+
+    const nextCandidate = {
+      ...activeCandidate,
+      ...(typeof firstArg === "object" && firstArg !== null ? firstArg : {}),
+      prfStatus: normalizedStatus,
+      prf_status: normalizedStatus,
+      prfReviewed: normalizedStatus === "Matched",
+      prf_reviewed: normalizedStatus === "Matched",
+      prfReviewedAt:
+        normalizedStatus === "Matched"
+          ? new Date().toISOString()
+          : activeCandidate.prfReviewedAt,
+      prf_reviewed_at:
+        normalizedStatus === "Matched"
+          ? new Date().toISOString()
+          : activeCandidate.prf_reviewed_at,
+      currentStage: "Initial Screening",
+      currentPipelineStage: "Initial Screening",
+      pipelineStage: "Initial Screening",
+      stage: "Initial Screening",
+      reasonForMovement: movementReason,
+      timeline: [
+        ...currentTimeline,
+        {
+          stage: "Initial Screening",
+          owner: "Current User",
+          source: "PRF Review",
+          timestamp: getCurrentTimestamp(),
+          reason: movementReason,
+          remarks: `PRF Status: ${normalizedStatus}`,
+        },
+      ],
+    };
+
+    setLocalCandidate(nextCandidate);
+
+    try {
+      const response = await onUpdatePrfStatus?.(
+        nextCandidate,
+        normalizedStatus,
+      );
+
+      if (response === null || response?.success === false) {
+        setLocalCandidate(activeCandidate);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Update PRF status from modal error:", error);
+      setLocalCandidate(activeCandidate);
+      return null;
+    }
+  }
+
+  function handleMoveToNextStage() {
+    const candidateForMove = {
+      ...activeCandidate,
+      prfStatus: activePrfStatus,
+      prf_status: activePrfStatus,
+      prfReviewed: activePrfStatus === "Matched",
+      prf_reviewed: activePrfStatus === "Matched",
+      currentStage: activeCandidate.currentStage || "Initial Screening",
+      currentPipelineStage:
+        activeCandidate.currentPipelineStage ||
+        activeCandidate.currentStage ||
+        "Initial Screening",
+      pipelineStage:
+        activeCandidate.pipelineStage ||
+        activeCandidate.currentStage ||
+        "Initial Screening",
+      stage: activeCandidate.stage || activeCandidate.currentStage,
+    };
+
+    onOpenMoveModal?.(candidateForMove);
+  }
 
   const handleSaveCandidateFiles = ({ files }) => {
     if (!candidateUploadKey) return;
@@ -212,7 +390,7 @@ const CandidatePipelineModal = ({
   const handleTagAsIncomplete = () => {
     onOpenMoveModal?.(
       {
-        ...candidate,
+        ...activeCandidate,
         requestedStage: "Incomplete Requirements",
         targetStage: "Incomplete Requirements",
         reasonForMovement:
@@ -225,7 +403,7 @@ const CandidatePipelineModal = ({
   const handleMoveToOnboarding = () => {
     onOpenMoveModal?.(
       {
-        ...candidate,
+        ...activeCandidate,
         requestedStage: "Onboarding",
         targetStage: "Onboarding",
         reasonForMovement:
@@ -236,8 +414,50 @@ const CandidatePipelineModal = ({
   };
 
   const handleScheduleNhoClick = async () => {
-    await handleScheduleNhoAuto(candidate);
+    await handleScheduleNhoAuto(activeCandidate);
     onClose?.();
+  };
+
+  const handleStartOrContinueInterview = async () => {
+    if (!isInterviewInProgress) {
+      await handleStartInterview(activeCandidate);
+    }
+
+    if (activeCandidate.onlineInterviewLink) {
+      window.open(
+        activeCandidate.onlineInterviewLink,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }
+
+    onClose?.();
+
+    const positionId =
+      activeCandidate.positionId ||
+      activeCandidate.finalInterviewPositionId ||
+      activeCandidate.offerDetails?.positionId ||
+      activeCandidate.hiringRequirementId ||
+      "";
+
+    const formId =
+      activeCandidate.finalInterviewFormId ||
+      (positionId ? `final-interview-${positionId}` : "");
+
+    navigate(
+      `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
+        activeCandidate.candidateId || "",
+      )}&candidateApplicationId=${encodeURIComponent(
+        activeCandidate.candidateApplicationId || activeCandidate.id || "",
+      )}&positionId=${encodeURIComponent(positionId)}&formId=${encodeURIComponent(
+        formId,
+      )}`,
+      {
+        state: {
+          candidate: activeCandidate,
+        },
+      },
+    );
   };
 
   const uploadedFilesSection = (
@@ -426,13 +646,14 @@ const CandidatePipelineModal = ({
       >
         <div
           className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
             <div>
               <h2 className="text-lg font-bold text-sibs-primary-1 sm:text-xl">
                 Candidate Pipeline Details
               </h2>
+
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
                 View candidate movement, online assessment, and interview
                 status.
@@ -447,6 +668,7 @@ const CandidatePipelineModal = ({
               <X size={20} />
             </button>
           </div>
+
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div
               className={`grid grid-cols-1 gap-5 ${
@@ -458,16 +680,17 @@ const CandidatePipelineModal = ({
               <div className="min-w-0 space-y-5">
                 <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
                   <div className="flex items-start gap-4">
-                    <CandidateAvatar candidate={candidate} />
+                    <CandidateAvatar candidate={activeCandidate} />
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <h3 className="break-words text-xl font-bold text-[#101828]">
-                            {candidate.name}
+                            {activeCandidate.name}
                           </h3>
+
                           <p className="mt-1 break-words text-sm font-semibold text-sibs-tertiary-5">
-                            {candidate.email}
+                            {activeCandidate.email}
                           </p>
                         </div>
 
@@ -491,18 +714,18 @@ const CandidatePipelineModal = ({
                       <div className="mt-3 flex flex-wrap gap-2">
                         <span
                           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                            candidate.currentStage,
+                            activeCandidate.currentStage,
                           )}`}
                         >
-                          {candidate.currentStage}
+                          {activeCandidate.currentStage}
                         </span>
 
                         <span
                           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPrfStatusClass(
-                            candidate.prfStatus || "Review",
+                            activePrfStatus,
                           )}`}
                         >
-                          PRF: {candidate.prfStatus || "Review"}
+                          PRF: {activePrfStatus}
                         </span>
 
                         {modalStatus && (
@@ -515,13 +738,13 @@ const CandidatePipelineModal = ({
                           </span>
                         )}
 
-                        {!isLeadStage && candidate.assessmentResult && (
+                        {!isLeadStage && activeCandidate.assessmentResult && (
                           <span
                             className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
-                              candidate.assessmentResult,
+                              activeCandidate.assessmentResult,
                             )}`}
                           >
-                            {candidate.assessmentResult}
+                            {activeCandidate.assessmentResult}
                           </span>
                         )}
                       </div>
@@ -530,13 +753,19 @@ const CandidatePipelineModal = ({
                 </div>
 
                 {showTalentPoolDetails && (
-                  <CandidateTalentPoolDetailsPanel candidate={candidate} />
+                  <CandidateTalentPoolDetailsPanel
+                    candidate={activeCandidate}
+                  />
                 )}
 
                 {isInitialScreening && (
                   <LeadPrfReviewCard
-                    candidate={candidate}
-                    onUpdatePrfStatus={onUpdatePrfStatus}
+                    candidate={{
+                      ...activeCandidate,
+                      prfStatus: activePrfStatus,
+                      prf_status: activePrfStatus,
+                    }}
+                    onUpdatePrfStatus={handleLocalPrfStatusUpdate}
                   />
                 )}
 
@@ -546,7 +775,7 @@ const CandidatePipelineModal = ({
                   </h3>
 
                   <div className="mt-5 space-y-4">
-                    {(candidate.timeline || []).map((item, index) => {
+                    {(activeCandidate.timeline || []).map((item, index) => {
                       const savedFormFullLink = item.savedFormLink
                         ? `${window.location.origin}${item.savedFormLink}`
                         : "";
@@ -592,7 +821,7 @@ const CandidatePipelineModal = ({
 
                             <GetAssessmentTimelineFiles
                               item={item}
-                              candidate={candidate}
+                              candidate={activeCandidate}
                             />
 
                             {item.savedFormLink && (
@@ -601,7 +830,7 @@ const CandidatePipelineModal = ({
                                   Job Evaluation Link
                                 </p>
 
-                                <div
+                                <button
                                   type="button"
                                   title={savedFormFullLink}
                                   onClick={() => {
@@ -611,14 +840,10 @@ const CandidatePipelineModal = ({
                                       "noopener,noreferrer",
                                     );
                                   }}
-                                  className="mt-2 block w-full min-w-0 truncate rounded-lg border
-                                    border-blue-100 bg-white px-3 py-2 text-left text-xs
-                                    font-semibold text-blue-600 underline transition
-                                    hover:border-blue-200 hover:bg-blue-50
-                                    hover:text-blue-700 hover:cursor-pointer"
+                                  className="mt-2 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:cursor-pointer hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                 >
                                   {savedFormFullLink}
-                                </div>
+                                </button>
                               </div>
                             )}
                           </div>
@@ -635,7 +860,7 @@ const CandidatePipelineModal = ({
                     </h3>
 
                     <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                      {candidate.reasonForMovement || "—"}
+                      {activeCandidate.reasonForMovement || "—"}
                     </p>
                   </div>
                 )}
@@ -651,39 +876,19 @@ const CandidatePipelineModal = ({
                     <div className="mt-4 rounded-xl bg-white p-4">
                       <DetailRow
                         label="Assessment Result"
-                        value={getAssessmentResult(candidate) || "—"}
+                        value={getAssessmentResult(activeCandidate) || "—"}
                       />
                       <DetailRow
                         label="Email Sent"
-                        value={candidate.assessmentEmailSent ? "Yes" : "No"}
+                        value={
+                          activeCandidate.assessmentEmailSent ? "Yes" : "No"
+                        }
                       />
                       <DetailRow
                         label="Email Sent At"
-                        value={candidate.assessmentEmailSentAt}
+                        value={activeCandidate.assessmentEmailSentAt}
                       />
                     </div>
-
-                    {/* {isOnlineAssessment && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => onOpenAssessmentModal(candidate)}
-                          className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 text-sm font-bold text-white transition hover:bg-cyan-700"
-                        >
-                          <ClipboardCheck size={16} />
-                          Update Assessment
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => onSendAssessmentEmail(candidate)}
-                          className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-cyan-100 bg-white text-sm font-bold text-cyan-700 transition hover:bg-cyan-50"
-                        >
-                          <Mail size={16} />
-                          Resend Assessment Email
-                        </button>
-                      </>
-                    )} */}
                   </div>
 
                   <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
@@ -694,23 +899,23 @@ const CandidatePipelineModal = ({
                     <div className="mt-4 rounded-xl bg-white p-4">
                       <DetailRow
                         label="Candidate ID"
-                        value={candidate.candidateId}
+                        value={activeCandidate.candidateId}
                       />
                       <DetailRow
                         label="Role / Account"
-                        value={candidate.roleAccount}
+                        value={activeCandidate.roleAccount}
                       />
                       <DetailRow
                         label="Interview Date"
-                        value={formatDateTime(candidate.interviewDate)}
+                        value={formatDateTime(activeCandidate.interviewDate)}
                       />
                       <DetailRow
                         label="Interview Type"
-                        value={getDisplayInterviewType(candidate)}
+                        value={getDisplayInterviewType(activeCandidate)}
                       />
                       <DetailRow
                         label="Interview Status"
-                        value={getDisplayInterviewStatus(candidate) || "—"}
+                        value={getDisplayInterviewStatus(activeCandidate) || "—"}
                       />
 
                       <div className="mt-4 flex items-center justify-between gap-4 text-[12px]">
@@ -719,53 +924,41 @@ const CandidatePipelineModal = ({
                         </span>
 
                         <span
-                          title={candidate.onlineInterviewLink}
+                          title={activeCandidate.onlineInterviewLink}
                           className={`block max-w-[60%] min-w-0 overflow-hidden truncate text-right ${
-                            candidate.onlineInterviewLink
+                            activeCandidate.onlineInterviewLink
                               ? "text-blue-600 underline hover:cursor-pointer"
                               : "text-sm font-bold text-[#344054]"
                           }`}
                           onClick={() => {
-                            if (candidate.onlineInterviewLink) {
+                            if (activeCandidate.onlineInterviewLink) {
                               window.open(
-                                candidate.onlineInterviewLink,
+                                activeCandidate.onlineInterviewLink,
                                 "_blank",
                               );
                             }
                           }}
                         >
                           <span className="inline-block max-w-full overflow-hidden truncate align-bottom">
-                            {candidate.onlineInterviewLink || "—"}
+                            {activeCandidate.onlineInterviewLink || "—"}
                           </span>
                         </span>
                       </div>
 
-                      {candidate.interviewStatus === "Cancelled" && (
+                      {activeCandidate.interviewStatus === "Cancelled" && (
                         <DetailRow
                           label="Cancellation Reason"
-                          value={candidate.cancellationReason || "—"}
+                          value={activeCandidate.cancellationReason || "—"}
                         />
                       )}
                     </div>
-
-                    {/* {isOnlineAssessment && canScheduleInterview(candidate) && (
-                      <button
-                        type="button"
-                        onClick={() => onOpenScheduleModal(candidate)}
-                        className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
-                      >
-                        <CalendarDays size={16} />
-                        Schedule Interview
-                      </button>
-                    )} */}
 
                     {isInterviewScheduled && candidateHasSchedule && (
                       <div className="mt-4 grid grid-cols-1 gap-2">
                         <button
                           type="button"
-                          disabled={isInterviewInProgress}
-                          onClick={() => onOpenScheduleModal(candidate)}
-                          className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 ${disabledActionClass}`}
+                          onClick={() => onOpenScheduleModal(activeCandidate)}
+                          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
                         >
                           <CalendarDays size={16} />
                           Update Interview Schedule
@@ -773,23 +966,11 @@ const CandidatePipelineModal = ({
 
                         <button
                           type="button"
-                          disabled={isInterviewInProgress}
-                          onClick={() => onCancelInterview(candidate)}
-                          className={`inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100 ${disabledActionClass}`}
+                          onClick={() => onCancelInterview(activeCandidate)}
+                          className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-red-100 bg-red-50 text-sm font-bold text-sibs-primary-1 transition hover:bg-red-100"
                         >
                           Cancel Interview
                         </button>
-
-                        {/* {candidate.interviewStatus !== "Completed" && (
-                          <button
-                            type="button"
-                            disabled={isInterviewInProgress}
-                            onClick={() => onCompleteInterview(candidate)}
-                            className={`inline-flex h-10 w-full items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100 ${disabledActionClass}`}
-                          >
-                            Mark Interview Completed
-                          </button>
-                        )} */}
                       </div>
                     )}
                   </div>
@@ -804,54 +985,54 @@ const CandidatePipelineModal = ({
                         <DetailRow
                           label="Offer Role"
                           value={
-                            candidate.offerDetails?.roleTitle ||
-                            candidate.roleTitle
+                            activeCandidate.offerDetails?.roleTitle ||
+                            activeCandidate.roleTitle
                           }
                         />
                         <DetailRow
                           label="Hiring Requirement"
                           value={
-                            candidate.offerDetails?.hiringRequirementId ||
-                            candidate.hiringRequirementId
+                            activeCandidate.offerDetails?.hiringRequirementId ||
+                            activeCandidate.hiringRequirementId
                           }
                         />
                         <DetailRow
                           label="Final Role"
                           value={
-                            candidate.offerDetails?.roleTitle ||
-                            candidate.roleTitle
+                            activeCandidate.offerDetails?.roleTitle ||
+                            activeCandidate.roleTitle
                           }
                         />
                         <DetailRow
                           label="Final Account"
-                          value={candidate.offerDetails?.account}
+                          value={activeCandidate.offerDetails?.account}
                         />
                         <DetailRow
                           label="Basic Pay"
                           value={formatCurrency(
-                            candidate.offerDetails?.basicPay,
+                            activeCandidate.offerDetails?.basicPay,
                           )}
                         />
                         <DetailRow
                           label="Deminimis / Daily Rate"
                           value={formatCurrency(
-                            candidate.offerDetails?.deminimisDailyRate,
+                            activeCandidate.offerDetails?.deminimisDailyRate,
                           )}
                         />
                         <DetailRow
                           label="Approval Status"
                           value={
-                            candidate.offerApprovalStatus ||
-                            getOfferApprovalSummary(candidate)
+                            activeCandidate.offerApprovalStatus ||
+                            getOfferApprovalSummary(activeCandidate)
                           }
                         />
                         <DetailRow
                           label="Offer Email Sent"
-                          value={candidate.offerEmailSent ? "Yes" : "No"}
+                          value={activeCandidate.offerEmailSent ? "Yes" : "No"}
                         />
                         <DetailRow
                           label="Candidate Response"
-                          value={candidate.offerDecision || "—"}
+                          value={activeCandidate.offerDecision || "—"}
                         />
                       </div>
 
@@ -869,7 +1050,7 @@ const CandidatePipelineModal = ({
                             const approvedBy = offerApprovers.filter(
                               (approver) => {
                                 const approval =
-                                  candidate.offerApprovals?.[approver];
+                                  activeCandidate.offerApprovals?.[approver];
                                 return approval?.status === "Approved";
                               },
                             );
@@ -877,14 +1058,14 @@ const CandidatePipelineModal = ({
                             const isRejected = offerApprovers.some(
                               (approver) => {
                                 const approval =
-                                  candidate.offerApprovals?.[approver];
+                                  activeCandidate.offerApprovals?.[approver];
                                 return approval?.status === "Rejected";
                               },
                             );
 
                             const approvalStatus =
-                              candidate.offerApprovalStatus ||
-                              getOfferApprovalSummary(candidate);
+                              activeCandidate.offerApprovalStatus ||
+                              getOfferApprovalSummary(activeCandidate);
 
                             return (
                               <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
@@ -944,11 +1125,13 @@ const CandidatePipelineModal = ({
                             );
                           })()}
 
-                          {isOfferApproved(candidate) &&
-                            !candidate.offerEmailSent && (
+                          {isOfferApproved(activeCandidate) &&
+                            !activeCandidate.offerEmailSent && (
                               <button
                                 type="button"
-                                onClick={() => onSendOfferEmail(candidate)}
+                                onClick={() =>
+                                  onSendOfferEmail(activeCandidate)
+                                }
                                 className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
                               >
                                 <Mail size={16} />
@@ -956,12 +1139,12 @@ const CandidatePipelineModal = ({
                               </button>
                             )}
 
-                          {isOfferApproved(candidate) && (
+                          {isOfferApproved(activeCandidate) && (
                             <button
                               type="button"
                               onClick={() =>
                                 window.open(
-                                  buildOfferContractLink(candidate),
+                                  buildOfferContractLink(activeCandidate),
                                   "_blank",
                                   "noopener,noreferrer",
                                 )
@@ -973,7 +1156,7 @@ const CandidatePipelineModal = ({
                             </button>
                           )}
 
-                          {candidate.offerEmailSent && (
+                          {activeCandidate.offerEmailSent && (
                             <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
                               <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
                                 Candidate Offer Response
@@ -989,7 +1172,7 @@ const CandidatePipelineModal = ({
                                     key={decision}
                                     type="button"
                                     onClick={() =>
-                                      onOfferDecision(candidate, decision)
+                                      onOfferDecision(activeCandidate, decision)
                                     }
                                     className={`inline-flex h-9 items-center justify-center rounded-xl border px-3 text-xs font-bold transition ${getOfferDecisionClass(
                                       decision,
@@ -1012,25 +1195,25 @@ const CandidatePipelineModal = ({
                 </div>
               )}
             </div>
-            <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm mt-4">
+
+            <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
               <h3 className="text-sm font-bold text-[#101828]">
                 Reason for Movement
               </h3>
 
               <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                {candidate.reasonForMovement || "—"}
+                {activeCandidate.reasonForMovement || "—"}
               </p>
             </div>
           </div>
 
           <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
             <div className="flex flex-col justify-end gap-2 sm:flex-row">
-              {candidate.currentStage !== "Drop-off" && (
+              {activeCandidate.currentStage !== "Drop-off" && (
                 <button
                   type="button"
-                  disabled={isInterviewInProgress}
-                  onClick={() => onOpenDropOffModal(candidate)}
-                  className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-500 transition hover:bg-red-100 ${disabledActionClass}`}
+                  onClick={() => onOpenDropOffModal(activeCandidate)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-500 transition hover:bg-red-100"
                 >
                   <UserX size={16} />
                   Mark Drop-off
@@ -1084,23 +1267,20 @@ const CandidatePipelineModal = ({
               )}
 
               {isOnlineAssessment && (
-                <div className="flex items-center gap-2 justify-center">
+                <div className="flex justify-center gap-2">
                   <button
                     type="button"
-                    onClick={() => onSendAssessmentEmail(candidate)}
-                    className="inline-flex h-11 items-center justify-center
-                      gap-2 rounded-xl px-5 border border-cyan-100 bg-white text-sm font-bold
-                      text-cyan-700 transition hover:bg-cyan-50"
+                    onClick={() => onSendAssessmentEmail(activeCandidate)}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-cyan-100 bg-white px-5 text-sm font-bold text-cyan-700 transition hover:bg-cyan-50"
                   >
                     <Mail size={16} />
                     Resend Assessment Email
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => onOpenAssessmentModal(candidate)}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl
-                     bg-cyan-600 px-5 text-sm font-bold text-white transition
-                      hover:bg-cyan-700"
+                    onClick={() => onOpenAssessmentModal(activeCandidate)}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-cyan-600 px-5 text-sm font-bold text-white transition hover:bg-cyan-700"
                   >
                     <ClipboardCheck size={16} />
                     Update Assessment
@@ -1108,10 +1288,10 @@ const CandidatePipelineModal = ({
                 </div>
               )}
 
-              {isOnlineAssessment && canScheduleInterview(candidate) && (
+              {isOnlineAssessment && canScheduleInterview(activeCandidate) && (
                 <button
                   type="button"
-                  onClick={() => onOpenScheduleModal(candidate)}
+                  onClick={() => onOpenScheduleModal(activeCandidate)}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
                 >
                   <CalendarDays size={16} />
@@ -1119,60 +1299,18 @@ const CandidatePipelineModal = ({
                 </button>
               )}
 
-              {isInterviewScheduled &&
-                canUpdateInterviewSchedule(candidate) && (
-                  <button
-                    type="button"
-                    disabled={isInterviewInProgress}
-                    onClick={() => {
-                      if (isInterviewInProgress) return;
-
-                      handleStartInterview(candidate);
-
-                      if (candidate.onlineInterviewLink) {
-                        window.open(
-                          candidate.onlineInterviewLink,
-                          "_blank",
-                          "noopener,noreferrer",
-                        );
-                      }
-
-                      onClose?.();
-
-                      const positionId =
-                        candidate.positionId ||
-                        candidate.finalInterviewPositionId ||
-                        candidate.offerDetails?.positionId ||
-                        candidate.hiringRequirementId ||
-                        "";
-
-                      const formId =
-                        candidate.finalInterviewFormId ||
-                        (positionId ? `final-interview-${positionId}` : "");
-
-                      navigate(
-                        `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
-                          candidate.candidateId || "",
-                        )}&candidateApplicationId=${encodeURIComponent(
-                          candidate.candidateApplicationId ||
-                            candidate.id ||
-                            "",
-                        )}&positionId=${encodeURIComponent(
-                          positionId,
-                        )}&formId=${encodeURIComponent(formId)}`,
-                        {
-                          state: {
-                            candidate,
-                          },
-                        },
-                      );
-                    }}
-                    className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 ${disabledActionClass}`}
-                  >
-                    <CirclePlay size={16} />
-                    Start Interview
-                  </button>
-                )}
+              {isInterviewScheduled && candidateHasSchedule && (
+                <button
+                  type="button"
+                  onClick={handleStartOrContinueInterview}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                >
+                  <CirclePlay size={16} />
+                  {isInterviewInProgress
+                    ? "Continue Interview"
+                    : "Start Interview"}
+                </button>
+              )}
 
               {!isLeadStage &&
                 !isInitialScreening &&
@@ -1184,7 +1322,7 @@ const CandidatePipelineModal = ({
                 nextStage && (
                   <button
                     type="button"
-                    onClick={() => onOpenMoveModal(candidate)}
+                    onClick={handleMoveToNextStage}
                     className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
                   >
                     <ArrowRight size={16} />
@@ -1195,7 +1333,7 @@ const CandidatePipelineModal = ({
               {isInitialScreening && nextStage && (
                 <button
                   type="button"
-                  onClick={() => onOpenMoveModal(candidate)}
+                  onClick={handleMoveToNextStage}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
                 >
                   <ArrowRight size={16} />
@@ -1211,10 +1349,12 @@ const CandidatePipelineModal = ({
         <NhoUploadModal
           open={showFileUploadModal}
           onClose={() => setShowFileUploadModal(false)}
-          candidateName={candidate?.name || "Candidate"}
-          candidateEmail={candidate?.email || ""}
+          candidateId={candidateNhoUploadId}
+          candidateName={activeCandidate?.name || "Candidate"}
+          candidateEmail={activeCandidate?.email || ""}
           initialFiles={candidateFiles}
           currentFile={latestUploadedFile}
+          previousEmploymentEnabled={previousEmploymentEnabledForUpload}
           onSave={handleSaveCandidateFiles}
         />
       )}

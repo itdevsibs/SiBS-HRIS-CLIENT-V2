@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import { useCandidatePipeline } from "../../services/context/CandidatePipelineContext";
 
@@ -10,18 +10,13 @@ import {
   Filter,
   CalendarDays,
   ClipboardCheck,
-  RotateCcw,
   SlidersHorizontal,
   ChevronDown,
   ChevronUp,
   AlertTriangle,
   Eye,
+  RefreshCw,
 } from "lucide-react";
-
-import {
-  roleOptions,
-  accountOptions,
-} from "../../lib/utils/candidatePipeline/candidatePipelineConstants";
 
 import DashboardMetric from "../../components/layout/common/DashboardMetric";
 import MoveStageModal from "../../components/modals/candidatePipeline/MoveStageModal";
@@ -32,6 +27,10 @@ import OfferDetailsModal from "../../components/modals/candidatePipeline/OfferDe
 import CandidatePipelineModal from "../../components/modals/candidatePipeline/CandidatePipelineModal";
 import PipelineCardsBoard from "../../components/recruitment/candidatePipeline/PipelineCardBoard";
 import InterviewCalendar from "../../components/recruitment/candidatePipeline/InterviewCalendar";
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
 
 function getCandidateStage(candidate = {}) {
   return (
@@ -63,10 +62,6 @@ function getCandidateName(candidate = {}) {
   return candidate.name || candidate.candidateName || "Unnamed Candidate";
 }
 
-function getCandidateEmail(candidate = {}) {
-  return candidate.email || candidate.candidateEmail || "No email saved";
-}
-
 function getCandidateId(candidate = {}) {
   return (
     candidate.candidateId ||
@@ -94,6 +89,155 @@ function getCandidateAccount(candidate = {}) {
     candidate.leadAccount ||
     candidate.accountFit ||
     "Not assigned yet"
+  );
+}
+
+function normalizeDropdownOptions(options = []) {
+  return options
+    .map((option) => {
+      if (typeof option === "string" || typeof option === "number") {
+        return {
+          id: option,
+          value: option,
+          label: String(option),
+        };
+      }
+
+      const value = option?.value ?? option?.id ?? "";
+      const label = option?.label ?? option?.name ?? option?.value ?? "";
+
+      if (!cleanText(value) && !cleanText(label)) return null;
+
+      return {
+        id: option?.id ?? value ?? label,
+        value: value || label,
+        label: label || String(value),
+      };
+    })
+    .filter(Boolean);
+}
+
+function FilterDropdown({
+  label,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+  zIndex = "z-[100]",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const normalizedOptions = normalizeDropdownOptions(options);
+
+  const selectedOption = normalizedOptions.find(
+    (option) => String(option.value) === String(value ?? ""),
+  );
+
+  const displayLabel = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange?.(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-[#344054]"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {displayLabel}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.length > 0 ? (
+              normalizedOptions.map((option) => {
+                const active = String(option.value) === String(value ?? "");
+
+                return (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
+                No options found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -160,7 +304,9 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                 <table className="w-full table-fixed text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      <th className="w-[18%] px-6 py-4 text-left">Candidate</th>
+                      <th className="w-[18%] px-6 py-4 text-left">
+                        Candidate
+                      </th>
 
                       <th className="w-[22%] px-6 py-4 text-left">
                         Applied Position
@@ -178,7 +324,9 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                         Last Activity
                       </th>
 
-                      <th className="w-[8%] px-6 py-4 text-center">Actions</th>
+                      <th className="w-[8%] px-6 py-4 text-center">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
 
@@ -366,6 +514,10 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
 
 export default function CandidatePipelinePage() {
   const {
+    isLoading,
+    loadError,
+    refreshCandidatePipeline,
+
     search,
     setSearch,
     roleFilter,
@@ -376,6 +528,9 @@ export default function CandidatePipelinePage() {
     setActiveStage,
     pageView,
     setPageView,
+
+    roleOptions,
+    accountOptions,
 
     selectedCandidate,
     setSelectedCandidate,
@@ -404,8 +559,6 @@ export default function CandidatePipelinePage() {
     stageVisibleCandidates,
     stageCounts,
     metrics,
-
-    handleResetSampleData,
 
     handleUpdatePrfStatus,
 
@@ -445,6 +598,17 @@ export default function CandidatePipelinePage() {
     });
   }, [filteredCandidates]);
 
+  const hasActiveFilters =
+    cleanText(search) ||
+    roleFilter !== "All Roles" ||
+    accountFilter !== "All Accounts";
+
+  function clearFilters() {
+    setSearch("");
+    setRoleFilter("All Roles");
+    setAccountFilter("All Accounts");
+  }
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -472,6 +636,19 @@ export default function CandidatePipelinePage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
+                onClick={refreshCandidatePipeline}
+                disabled={isLoading}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw
+                  size={18}
+                  className={isLoading ? "animate-spin" : ""}
+                />
+                Refresh
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setPageView("pipeline")}
                 className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-90 ${
                   pageView === "pipeline"
@@ -495,17 +672,14 @@ export default function CandidatePipelinePage() {
                 <CalendarDays size={18} />
                 Calendar View
               </button>
-
-              <button
-                type="button"
-                onClick={handleResetSampleData}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md"
-              >
-                <RotateCcw size={18} />
-                Reset Sample Data
-              </button>
             </div>
           </div>
+
+          {loadError && (
+            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+              {loadError}
+            </section>
+          )}
 
           <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
             <h2 className="text-base font-bold text-[#101828]">
@@ -555,8 +729,8 @@ export default function CandidatePipelinePage() {
 
           {pageView === "pipeline" && (
             <div className="space-y-5">
-              <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-                <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+              <section className="relative z-[90] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+                <div className="relative z-[90] border-b border-[#E6ECF2] p-4 sm:p-5">
                   <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
                     <div>
                       <label className="mb-1 block text-sm font-bold text-[#101828]">
@@ -573,55 +747,34 @@ export default function CandidatePipelinePage() {
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
                           placeholder="Search candidate, PRF, assessment, role, account..."
-                          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                         />
                       </div>
                     </div>
 
-                    <div>
-                      <label className="mb-1 block text-sm font-bold text-[#101828]">
-                        Role
-                      </label>
+                    <FilterDropdown
+                      label="Role"
+                      value={roleFilter}
+                      onChange={setRoleFilter}
+                      options={roleOptions}
+                      placeholder="All Roles"
+                      zIndex="z-[120]"
+                    />
 
-                      <select
-                        value={roleFilter}
-                        onChange={(e) => setRoleFilter(e.target.value)}
-                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      >
-                        {roleOptions.map((role) => (
-                          <option key={role} value={role}>
-                            {role}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="mb-1 block text-sm font-bold text-[#101828]">
-                        Account
-                      </label>
-
-                      <select
-                        value={accountFilter}
-                        onChange={(e) => setAccountFilter(e.target.value)}
-                        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      >
-                        {accountOptions.map((account) => (
-                          <option key={account} value={account}>
-                            {account}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <FilterDropdown
+                      label="Account"
+                      value={accountFilter}
+                      onChange={setAccountFilter}
+                      options={accountOptions}
+                      placeholder="All Accounts"
+                      zIndex="z-[110]"
+                    />
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setSearch("");
-                        setRoleFilter("All Roles");
-                        setAccountFilter("All Accounts");
-                      }}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                      onClick={clearFilters}
+                      disabled={!hasActiveFilters}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Filter size={17} />
                       Clear

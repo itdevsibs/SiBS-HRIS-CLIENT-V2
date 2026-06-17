@@ -1,27 +1,43 @@
 import { X } from "lucide-react";
+
 import DetailRow from "../../recruitment/offers/common/DetailRow";
-import {
-  getOfferApprovalSummary,
-  getStatusClass,
-} from "../../../lib/utils/offers/offerHelpers";
+
+import { getStatusClass } from "../../../lib/utils/offers/offerHelpers";
 import { formatCurrency } from "../../../lib/utils/offers/offerFormatters";
-import { getOfferApprovalUsers } from "../../../lib/utils/offers/offerApprovalSettings";
-// import { offerApprovers } from "../../../lib/utils/offers/offerConstants";
+import { useOffers } from "../../../services/context/OffersContext";
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function getApprovalLabel(user = {}) {
+  return cleanText(user.displayName || user.display_name || user.name).toUpperCase();
+}
 
 export default function OfferDetailsModal({ open, offer, onClose }) {
+  const {
+    approvalUsers = [],
+    getOfferApprovalStatus,
+    getApprovalRecordForUser,
+  } = useOffers();
+
   if (!open || !offer) return null;
 
-  const approvalStatus = getOfferApprovalSummary(offer);
+  const approvalStatus = getOfferApprovalStatus
+    ? getOfferApprovalStatus(offer)
+    : offer.offerApprovalStatus || offer.status || "For Review";
 
-  const approvalUsers = getOfferApprovalUsers();
+  const approvedBy = approvalUsers.filter((approver) => {
+    const approval = getApprovalRecordForUser?.(offer, approver);
 
-  const approvedBy = approvalUsers.filter(
-    (approver) => offer.approvals?.[approver]?.status === "Approved",
-  );
+    return approval?.status === "Approved";
+  });
 
-  const rejectedBy = approvalUsers.filter(
-    (approver) => offer.approvals?.[approver]?.status === "Rejected",
-  );
+  const rejectedBy = approvalUsers.filter((approver) => {
+    const approval = getApprovalRecordForUser?.(offer, approver);
+
+    return approval?.status === "Rejected";
+  });
 
   return (
     <div
@@ -73,10 +89,10 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
                   <span
                     className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                      offer.status,
+                      approvalStatus,
                     )}`}
                   >
-                    {offer.status}
+                    {approvalStatus}
                   </span>
                 </div>
               </section>
@@ -89,7 +105,8 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                     </h3>
 
                     <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                      Managed by required approvers.
+                      Managed by database approval users from Recruitment
+                      Settings.
                     </p>
                   </div>
 
@@ -104,12 +121,24 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
                 <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
                   <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                    Required Approvers
+                  </p>
+
+                  <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
+                    {approvalUsers.length > 0
+                      ? approvalUsers.map(getApprovalLabel).join(", ")
+                      : "No approval users configured"}
+                  </p>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
                     Approved By
                   </p>
 
                   <p className="mt-2 text-sm font-bold leading-6 text-sibs-primary-1">
                     {approvedBy.length > 0
-                      ? approvedBy.join(", ")
+                      ? approvedBy.map(getApprovalLabel).join(", ")
                       : "Waiting for approval"}
                   </p>
 
@@ -120,7 +149,7 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
                       </p>
 
                       <p className="mt-2 text-sm font-bold leading-6 text-red-600">
-                        {rejectedBy.join(", ")}
+                        {rejectedBy.map(getApprovalLabel).join(", ")}
                       </p>
                     </>
                   )}
@@ -146,32 +175,41 @@ export default function OfferDetailsModal({ open, offer, onClose }) {
 
                 <div className="mt-4">
                   <DetailRow label="Candidate ID" value={offer.candidateId} />
+
                   <DetailRow
                     label="Hiring Requirement"
                     value={offer.hiringRequirementId}
                   />
+
                   <DetailRow label="Final Role" value={offer.roleTitle} />
+
                   <DetailRow label="Final Account" value={offer.account} />
+
                   <DetailRow
                     label="Basic Pay"
                     value={formatCurrency(offer.basicPay)}
                   />
+
                   <DetailRow
                     label="Deminimis / Daily Rate"
                     value={formatCurrency(offer.deminimisDailyRate)}
                   />
+
                   <DetailRow
                     label="Total Daily Rate"
                     value={formatCurrency(offer.dailyRate)}
                   />
+
                   <DetailRow
                     label="Contract Sent"
                     value={offer.contractSent ? "Yes" : "No"}
                   />
+
                   <DetailRow
                     label="Candidate Response"
                     value={offer.candidateResponse}
                   />
+
                   <DetailRow label="Owner" value={offer.owner} />
                 </div>
               </section>
