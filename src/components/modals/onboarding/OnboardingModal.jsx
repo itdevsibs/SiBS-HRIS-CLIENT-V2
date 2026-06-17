@@ -106,6 +106,7 @@ function getCalendarDays(viewDate) {
   });
 }
 
+// Determines if two distinct JavaScript date instances align calendar days
 function isSameDate(firstDate, secondDate) {
   if (!firstDate || !secondDate) return false;
 
@@ -270,11 +271,7 @@ function DateDropdown({
                   className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
                     active
                       ? "bg-sibs-primary-1 text-white shadow-sm"
-                      : isToday
-                        ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
-                        : currentMonth
-                          ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
-                          : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
+                      : "border border-blue-200 bg-blue-50 text-sibs-primary-1"
                   }`}
                 >
                   {date.getDate()}
@@ -530,7 +527,8 @@ export function CreateOnboardingModal({
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Updated explicit form identification to capture submit events safely */}
+        <form id="create-onboarding-form" onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
             <div className="space-y-5">
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
@@ -665,8 +663,7 @@ export function CreateOnboardingModal({
                     </h3>
 
                     <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      Set the expected start date, location, and onboarding
-                      notes.
+                      Set the expected start date, location, and onboarding notes.
                     </p>
                   </div>
 
@@ -734,8 +731,7 @@ export function CreateOnboardingModal({
 
                     <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                       Onboarding should normally be created when an offer is
-                      accepted. This page reads accepted offers from the Offers
-                      module.
+                      accepted. This page reads accepted offers from the Offers module.
                     </p>
                   </div>
                 </div>
@@ -750,10 +746,7 @@ export function CreateOnboardingModal({
                   <DetailRow label="Show Status" value="Pending" />
                   <DetailRow label="Final Outcome" value="Pending Start" />
                   <DetailRow label="Pre-start Withdrawal" value="No" />
-                  <DetailRow
-                    label="Actual Start Date"
-                    value="Not yet started"
-                  />
+                  <DetailRow label="Actual Start Date" value="Not yet started" />
                 </div>
               </div>
 
@@ -763,8 +756,7 @@ export function CreateOnboardingModal({
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-amber-700/90">
-                  Later, the accepted offer endpoint should automatically insert
-                  a Pending Start onboarding record.
+                  Later, the accepted offer endpoint should automatically insert a Pending Start onboarding record.
                 </p>
               </div>
             </div>
@@ -790,10 +782,12 @@ export function CreateOnboardingModal({
               Cancel
             </button>
 
+            {/* Implemented type change, form connector, and field dependencies */}
             <button
-              type="button"
-              onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              type="submit"
+              form="create-onboarding-form"
+              disabled={!form.offerId || !form.expectedStartDate}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
             >
               <Plus size={17} />
               Save Onboarding
