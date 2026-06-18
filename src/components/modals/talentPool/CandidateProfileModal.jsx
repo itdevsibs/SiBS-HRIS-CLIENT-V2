@@ -30,9 +30,101 @@ import {
   StatusTile,
   ViewableFileRow,
 } from "../../recruitment/talentPool/TalentPoolShared";
+
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import api from "../../../lib/axios/api-template";
+
+const OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS = [
+  "Transcript of Records and/or Diploma",
+  "Medical Records",
+  "NBI Clearance",
+  "Birth Certificate",
+  "Valid ID",
+  "ID picture (2 pcs passport size)",
+  "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
+  "TIN Verification Slip",
+  "SSS E1 Form",
+  "PhilHealth MDR",
+  "Pag-IBIG MDF",
+  "Vaccination Card",
+  "BIR 2316 Form",
+  "Employment Certificate",
+];
+
+function safeArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function safeObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function getApiErrorMessage(error, fallback = "Request failed.") {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
+function normalizeRequirementKey(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getOfficialRequirementMatch(value = "") {
+  const key = normalizeRequirementKey(value);
+
+  if (!key) return "";
+
+  return (
+    OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.find((requirement) => {
+      const requirementKey = normalizeRequirementKey(requirement);
+
+      return (
+        key === requirementKey ||
+        key.startsWith(`${requirementKey}_`) ||
+        key.includes(requirementKey)
+      );
+    }) || ""
+  );
+}
+
+function getNormalizedPreEmploymentRequirement(file = {}) {
+  const directRequirement =
+    file.requirement || file.label || file.title || file.category || "";
+
+  const directMatch = getOfficialRequirementMatch(directRequirement);
+
+  if (directMatch) return directMatch;
+
+  const filename =
+    file.savedFileName ||
+    file.filename ||
+    file.saved_file_name ||
+    file.fileName ||
+    file.name ||
+    file.originalName ||
+    file.originalname ||
+    "";
+
+  return getOfficialRequirementMatch(filename);
+}
+
+function isOfficialPreEmploymentFile(file = {}) {
+  return Boolean(getNormalizedPreEmploymentRequirement(file));
+}
 
 function getNormalizedHistoryDate(value) {
   if (!value) return "";
@@ -67,29 +159,6 @@ function isCandidateLinkedToPipeline(candidate = {}) {
       candidate?.pipelineCandidate ||
       candidate?.pipelineId ||
       candidate?.pipelineDbId,
-  );
-}
-
-function safeArray(value) {
-  return Array.isArray(value) ? value.filter(Boolean) : [];
-}
-
-function safeObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : {};
-}
-
-function cleanText(value) {
-  return String(value ?? "").trim();
-}
-
-function getApiErrorMessage(error, fallback = "Request failed.") {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
-    fallback
   );
 }
 
@@ -144,6 +213,7 @@ function getResolvedFileUrl(fileUrl = "") {
 
 function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
   const lookupId = getCandidatePipelineLookupId(candidate);
+
   const filename =
     file.savedFileName ||
     file.filename ||
@@ -160,6 +230,9 @@ function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
 }
 
 function normalizeCandidateFile(file = {}, candidate = {}) {
+  const savedFileName =
+    file.savedFileName || file.filename || file.saved_file_name || "";
+
   const fileName =
     file.fileName ||
     file.name ||
@@ -167,10 +240,14 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
     file.originalname ||
     file.attachmentFileName ||
     file.audioFileName ||
+    savedFileName ||
     "";
 
-  const savedFileName =
-    file.savedFileName || file.filename || file.saved_file_name || "";
+  const normalizedRequirement = getNormalizedPreEmploymentRequirement({
+    ...file,
+    fileName,
+    savedFileName,
+  });
 
   const fileUrl =
     file.fileUrl ||
@@ -178,19 +255,18 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
     file.dataUrl ||
     file.attachmentFileUrl ||
     file.audioFileUrl ||
-    buildCandidatePipelineFileUrl(candidate, file);
+    buildCandidatePipelineFileUrl(candidate, {
+      ...file,
+      fileName,
+      savedFileName,
+    });
 
   return {
     id:
       file.id ||
       file.fileId ||
-      `${file.requirement || file.label || "file"}-${fileName}-${savedFileName}`,
-    requirement:
-      file.requirement ||
-      file.label ||
-      file.title ||
-      file.category ||
-      "Uploaded File",
+      `${normalizedRequirement || "file"}-${fileName}-${savedFileName}`,
+    requirement: normalizedRequirement,
     fileName,
     savedFileName,
     filename: file.filename || savedFileName,
@@ -215,28 +291,38 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
   };
 }
 
-function dedupeCandidateFiles(files = []) {
+function dedupeCandidateFiles(files = [], candidate = {}) {
   const map = new Map();
 
-  files.filter(Boolean).forEach((file) => {
-    const key = [
-      file.requirement,
-      file.fileName,
-      file.savedFileName,
-      file.filename,
-      file.fileUrl,
-    ]
-      .map((value) => cleanText(value).toLowerCase())
-      .join("|");
+  files
+    .filter(Boolean)
+    .filter(isOfficialPreEmploymentFile)
+    .forEach((file) => {
+      const normalizedFile = normalizeCandidateFile(file, candidate);
+      const requirementKey = normalizeRequirementKey(
+        normalizedFile.requirement,
+      );
 
-    if (!key.replace(/\|/g, "")) return;
+      if (!requirementKey) return;
 
-    if (!map.has(key)) {
-      map.set(key, file);
-    }
-  });
+      const currentFile = map.get(requirementKey);
 
-  return Array.from(map.values());
+      if (!currentFile) {
+        map.set(requirementKey, normalizedFile);
+        return;
+      }
+
+      const currentDate = new Date(currentFile.uploadedAt || 0).getTime();
+      const nextDate = new Date(normalizedFile.uploadedAt || 0).getTime();
+
+      if (!Number.isFinite(currentDate) || nextDate >= currentDate) {
+        map.set(requirementKey, normalizedFile);
+      }
+    });
+
+  return Array.from(map.values()).sort((a, b) =>
+    cleanText(a.requirement).localeCompare(cleanText(b.requirement)),
+  );
 }
 
 function getCandidatePreEmploymentFiles(candidate = {}) {
@@ -250,22 +336,26 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     safeCandidate.nho_files,
     safeCandidate.preEmploymentFiles,
     safeCandidate.pre_employment_files,
-    safeCandidate.uploadedFiles,
-    safeCandidate.files,
+
     metadata.nhoFiles,
     metadata.nho_files,
     metadata.preEmploymentFiles,
+    metadata.pre_employment_files,
+
     candidateSnapshot.nhoFiles,
+    candidateSnapshot.nho_files,
     candidateSnapshot.preEmploymentFiles,
+    candidateSnapshot.pre_employment_files,
+
     pipelineCandidate.nhoFiles,
     pipelineCandidate.nho_files,
     pipelineCandidate.preEmploymentFiles,
+    pipelineCandidate.pre_employment_files,
   ];
 
   return dedupeCandidateFiles(
-    sources
-      .flatMap((source) => safeArray(source))
-      .map((file) => normalizeCandidateFile(file, safeCandidate)),
+    sources.flatMap((source) => safeArray(source)),
+    safeCandidate,
   );
 }
 
@@ -580,7 +670,9 @@ export default function CandidateProfileModal() {
   useEffect(() => {
     let isActive = true;
 
-    setCandidatePipelineFiles(profilePreEmploymentFiles);
+    const localProfileFiles = profilePreEmploymentFiles;
+
+    setCandidatePipelineFiles(localProfileFiles);
     setCandidatePipelineFilesError("");
 
     if (
@@ -589,6 +681,7 @@ export default function CandidateProfileModal() {
       !isPipelineLinkedForFiles
     ) {
       setCandidatePipelineFilesLoading(false);
+
       return () => {
         isActive = false;
       };
@@ -603,6 +696,9 @@ export default function CandidateProfileModal() {
         )}/nho/files`,
         {
           withCredentials: true,
+          params: {
+            _t: Date.now(),
+          },
         },
       )
       .then((response) => {
@@ -611,22 +707,23 @@ export default function CandidateProfileModal() {
         const responseFiles =
           response?.data?.data?.files || response?.data?.files || [];
 
-        const normalizedFiles = safeArray(responseFiles).map((file) =>
-          normalizeCandidateFile(file, selectedCandidate),
+        const normalizedFiles = dedupeCandidateFiles(
+          safeArray(responseFiles),
+          selectedCandidate,
         );
 
         setCandidatePipelineFiles(
-          dedupeCandidateFiles([
-            ...profilePreEmploymentFiles,
-            ...normalizedFiles,
-          ]),
+          dedupeCandidateFiles(
+            [...localProfileFiles, ...normalizedFiles],
+            selectedCandidate,
+          ),
         );
       })
       .catch((error) => {
         if (!isActive) return;
 
-        if (profilePreEmploymentFiles.length > 0) {
-          setCandidatePipelineFiles(profilePreEmploymentFiles);
+        if (localProfileFiles.length > 0) {
+          setCandidatePipelineFiles(localProfileFiles);
           setCandidatePipelineFilesError("");
           return;
         }
@@ -655,8 +752,8 @@ export default function CandidateProfileModal() {
   ]);
 
   const displayedPreEmploymentFiles = useMemo(
-    () => dedupeCandidateFiles(candidatePipelineFiles),
-    [candidatePipelineFiles],
+    () => dedupeCandidateFiles(candidatePipelineFiles, selectedCandidate),
+    [candidatePipelineFiles, selectedCandidate],
   );
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
@@ -712,7 +809,6 @@ export default function CandidateProfileModal() {
     applicationHistory.length > collapsedHistoryLimit;
 
   const currentStage = getCandidateStageValue(selectedCandidate);
-
   const isAlreadyInPipeline = isPipelineLinkedForFiles;
 
   function handleCloseCandidateProfile() {
@@ -1344,8 +1440,8 @@ export default function CandidateProfileModal() {
                         </h4>
 
                         <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                          Files uploaded from Candidate Pipeline are displayed
-                          here for quick review.
+                          Only official pre-employment requirements from
+                          Candidate Pipeline are displayed here.
                         </p>
                       </div>
 
@@ -1373,12 +1469,12 @@ export default function CandidateProfileModal() {
                       </div>
                     ) : displayedPreEmploymentFiles.length > 0 ? (
                       <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                        {displayedPreEmploymentFiles.map((file, index) => (
+                        {displayedPreEmploymentFiles.map((file) => (
                           <ViewableFileRow
-                            key={`${file.id || file.fileName}-${index}`}
-                            label={
-                              file.requirement || `Uploaded File ${index + 1}`
-                            }
+                            key={`${file.requirement}-${
+                              file.savedFileName || file.fileName
+                            }`}
+                            label={file.requirement}
                             fileName={file.fileName || file.savedFileName}
                             fileUrl={file.fileUrl}
                             fileType={file.fileType}
