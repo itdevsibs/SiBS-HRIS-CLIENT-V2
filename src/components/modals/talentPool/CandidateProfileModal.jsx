@@ -196,12 +196,23 @@ function getApiErrorMessage(error, fallback = "Request failed.") {
   );
 }
 
-function normalizeRequirementKey(value = "") {
-  return cleanText(value)
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
+function isCandidateLinkedToPipeline(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+
+  return Boolean(
+    safeCandidate.pipelineStatus ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.currentTaOwner ||
+      safeCandidate.pipelineStage ||
+      safeCandidate.currentStage ||
+      safeCandidate.movedToPipeline ||
+      safeCandidate.pipelineCandidate ||
+      safeCandidate.pipelineId ||
+      safeCandidate.pipelineDbId ||
+      pipelineCandidate.id ||
+      pipelineCandidate.dbId,
+  );
 }
 
 function getOfficialRequirementMatch(value = "") {
@@ -236,69 +247,653 @@ function getNormalizedPreEmploymentRequirement(file = {}) {
     file.saved_file_name ||
     file.fileName ||
     file.name ||
-    file.originalName ||
-    file.originalname ||
     "";
 
-  return getOfficialRequirementMatch(filename);
+  if (!lookupId || !filename) return "";
+
+  return `/api/candidate-pipeline/file/${encodeURIComponent(
+    lookupId,
+  )}/${encodeURIComponent(filename)}`;
 }
 
-function isOfficialPreEmploymentFile(file = {}) {
-  return Boolean(getNormalizedPreEmploymentRequirement(file));
+function normalizeCandidateFile(file = {}, candidate = {}) {
+  const safeFile = safeObject(file);
+
+  const savedFileName =
+    safeFile.savedFileName || safeFile.filename || safeFile.saved_file_name || "";
+
+  const fileName =
+    safeFile.fileName ||
+    safeFile.name ||
+    safeFile.originalName ||
+    safeFile.originalname ||
+    safeFile.attachmentFileName ||
+    safeFile.audioFileName ||
+    savedFileName ||
+    "";
+
+  const normalizedRequirement = getNormalizedPreEmploymentRequirement({
+    ...safeFile,
+    fileName,
+    savedFileName,
+  });
+
+  const fileUrl =
+    safeFile.fileUrl ||
+    safeFile.url ||
+    safeFile.dataUrl ||
+    safeFile.attachmentFileUrl ||
+    safeFile.audioFileUrl ||
+    buildCandidatePipelineFileUrl(candidate, {
+      ...safeFile,
+      fileName,
+      savedFileName,
+    });
+
+  return {
+    id:
+      safeFile.id ||
+      safeFile.fileId ||
+      `${normalizedRequirement || "file"}-${fileName}-${savedFileName}`,
+    requirement: normalizedRequirement,
+    fileName,
+    savedFileName,
+    filename: safeFile.filename || savedFileName,
+    fileUrl: getResolvedFileUrl(fileUrl),
+    fileType:
+      safeFile.fileType ||
+      safeFile.type ||
+      safeFile.mimetype ||
+      safeFile.mimeType ||
+      safeFile.attachmentFileType ||
+      safeFile.audioFileType ||
+      "",
+    fileSize:
+      safeFile.fileSize ||
+      safeFile.size ||
+      safeFile.attachmentFileSize ||
+      safeFile.audioFileSize ||
+      0,
+    uploadedAt: safeFile.uploadedAt || safeFile.createdAt || safeFile.updatedAt || "",
+    uploadedBy: safeFile.uploadedBy || safeFile.createdBy || safeFile.updatedBy || "",
+    applicantFolderName: safeFile.applicantFolderName || "",
+  };
 }
 
-function CompactInfoRow({ label, value }) {
-  return (
-    <div className="grid grid-cols-1 gap-2 border-b border-[#E6ECF2] py-4 last:border-b-0 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </p>
+function dedupeCandidateFiles(files = [], candidate = {}) {
+  const map = new Map();
 
-      <p className="min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828] sm:text-right">
-        {value || "—"}
-      </p>
-    </div>
+  files
+    .filter(Boolean)
+    .filter(isOfficialPreEmploymentFile)
+    .forEach((file) => {
+      const normalizedFile = normalizeCandidateFile(file, candidate);
+      const requirementKey = normalizeRequirementKey(normalizedFile.requirement);
+
+      if (!requirementKey) return;
+
+      const currentFile = map.get(requirementKey);
+
+      if (!currentFile) {
+        map.set(requirementKey, normalizedFile);
+        return;
+      }
+
+      const currentDate = new Date(currentFile.uploadedAt || 0).getTime();
+      const nextDate = new Date(normalizedFile.uploadedAt || 0).getTime();
+
+      if (!Number.isFinite(currentDate) || nextDate >= currentDate) {
+        map.set(requirementKey, normalizedFile);
+      }
+    });
+
+  return Array.from(map.values()).sort((a, b) =>
+    cleanText(a.requirement).localeCompare(cleanText(b.requirement)),
   );
 }
 
-function ProfileInfoCard({ label, value, wide = false }) {
-  return (
-    <div
-      className={`rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm ${
-        wide ? "md:col-span-2" : ""
-      }`}
-    >
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </p>
+function getCandidatePreEmploymentFiles(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const pipelineMetadata = safeObject(pipelineCandidate.metadata);
 
-      <p className="mt-2 min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828]">
-        {value || "—"}
-      </p>
-    </div>
+  const sources = [
+    safeCandidate.nhoFiles,
+    safeCandidate.nho_files,
+    safeCandidate.preEmploymentFiles,
+    safeCandidate.pre_employment_files,
+    safeCandidate.uploadedFiles,
+    safeCandidate.files,
+
+    metadata.nhoFiles,
+    metadata.nho_files,
+    metadata.preEmploymentFiles,
+
+    candidateSnapshot.nhoFiles,
+    candidateSnapshot.nho_files,
+    candidateSnapshot.preEmploymentFiles,
+
+    pipelineCandidate.nhoFiles,
+    pipelineCandidate.nho_files,
+    pipelineCandidate.preEmploymentFiles,
+    pipelineCandidate.pre_employment_files,
+
+    pipelineDetails.nhoFiles,
+    pipelineDetails.nho_files,
+    pipelineDetails.preEmploymentFiles,
+    pipelineDetails.pre_employment_files,
+
+    pipelineMetadata.nhoFiles,
+    pipelineMetadata.nho_files,
+    pipelineMetadata.preEmploymentFiles,
+  ];
+
+  return dedupeCandidateFiles(
+    sources
+      .flatMap((source) => safeArray(source))
+      .map((file) => normalizeCandidateFile(file, safeCandidate)),
+    safeCandidate,
+  );
+}
+
+function getPipelineCandidateFromResponse(response) {
+  return (
+    response?.data?.data?.candidate ||
+    response?.data?.candidate ||
+    response?.data?.data ||
+    response?.data ||
+    null
+  );
+}
+
+function mergeHistoryArrays(...sources) {
+  return sources.flatMap((source) => safeArray(source));
+}
+
+function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const safePipelineCandidate = safeObject(pipelineCandidate);
+
+  if (!Object.keys(safePipelineCandidate).length) {
+    return safeCandidate;
+  }
+
+  const candidateMetadata = safeObject(safeCandidate.metadata);
+  const pipelineMetadata = safeObject(safePipelineCandidate.metadata);
+  const existingPipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+
+  const pipelineTimeline = mergeHistoryArrays(
+    safePipelineCandidate.timeline,
+    safePipelineCandidate.movementTimeline,
+    safePipelineCandidate.movementHistory,
+    safePipelineCandidate.pipelineHistory,
+    safePipelineCandidate.stageHistory,
+    safePipelineCandidate.history,
+    safePipelineCandidate.activityHistory,
+    pipelineMetadata.timeline,
+    pipelineMetadata.movementTimeline,
+    pipelineMetadata.movementHistory,
+    pipelineMetadata.pipelineHistory,
+  );
+
+  const applicationHistory = mergeHistoryArrays(
+    safeCandidate.applicationHistory,
+    safeCandidate.movementTimeline,
+    safeCandidate.movementHistory,
+    safeCandidate.pipelineHistory,
+    safeCandidate.stageHistory,
+    safeCandidate.timeline,
+    safeCandidate.history,
+    safeCandidate.activityHistory,
+
+    candidateSnapshot.applicationHistory,
+    candidateSnapshot.timeline,
+    candidateSnapshot.movementTimeline,
+
+    candidateMetadata.applicationHistory,
+    candidateMetadata.timeline,
+    candidateMetadata.movementTimeline,
+    candidateMetadata.pipelineHistory,
+
+    pipelineTimeline,
+  );
+
+  const pipelineNhoFiles = mergeHistoryArrays(
+    safePipelineCandidate.nhoFiles,
+    safePipelineCandidate.nho_files,
+    safePipelineCandidate.preEmploymentFiles,
+    safePipelineCandidate.pre_employment_files,
+    pipelineMetadata.nhoFiles,
+    pipelineMetadata.nho_files,
+    pipelineMetadata.preEmploymentFiles,
+  );
+
+  return {
+    ...safeCandidate,
+
+    pipelineCandidate: {
+      ...existingPipelineCandidate,
+      ...safePipelineCandidate,
+    },
+
+    pipelineDetails: safePipelineCandidate,
+
+    pipelineStatus:
+      safePipelineCandidate.pipelineStatus ||
+      safePipelineCandidate.pipeline_status ||
+      safeCandidate.pipelineStatus ||
+      (safePipelineCandidate.currentStage ? "Active" : safeCandidate.pipelineStatus),
+
+    currentPipelineStage:
+      safePipelineCandidate.currentPipelineStage ||
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.stage ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.currentStage ||
+      safeCandidate.pipelineStage,
+
+    currentStage:
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.currentPipelineStage ||
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.stage ||
+      safeCandidate.currentStage ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.pipelineStage,
+
+    pipelineStage:
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.currentPipelineStage ||
+      safeCandidate.pipelineStage,
+
+    currentAppliedRole:
+      safePipelineCandidate.currentAppliedRole ||
+      safePipelineCandidate.roleTitle ||
+      safePipelineCandidate.openPosition ||
+      safePipelineCandidate.roleCapability ||
+      safeCandidate.currentAppliedRole,
+
+    currentAppliedAccount:
+      safePipelineCandidate.currentAppliedAccount ||
+      safePipelineCandidate.account ||
+      safePipelineCandidate.leadAccount ||
+      safeCandidate.currentAppliedAccount,
+
+    currentTaOwner:
+      safePipelineCandidate.currentTaOwner ||
+      safePipelineCandidate.updatedBySibsId ||
+      safePipelineCandidate.updated_by_sibs_id ||
+      safeCandidate.currentTaOwner,
+
+    nhoFiles: dedupeCandidateFiles(
+      [
+        ...getCandidatePreEmploymentFiles(safeCandidate),
+        ...pipelineNhoFiles.map((file) =>
+          normalizeCandidateFile(file, safePipelineCandidate),
+        ),
+      ],
+      safePipelineCandidate,
+    ),
+
+    applicationHistory,
+    timeline: pipelineTimeline.length ? pipelineTimeline : safeCandidate.timeline,
+
+    finalInterviewSubmittedForms:
+      safePipelineCandidate.finalInterviewSubmittedForms ||
+      safeCandidate.finalInterviewSubmittedForms,
+
+    final_interview_submitted_forms:
+      safePipelineCandidate.final_interview_submitted_forms ||
+      safeCandidate.final_interview_submitted_forms,
+
+    metadata: {
+      ...candidateMetadata,
+      pipeline: safePipelineCandidate,
+      pipelineTimeline,
+      applicationHistory,
+    },
+  };
+}
+
+function isValidTimelineValue(value) {
+  const text = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  return (
+    text &&
+    text !== "—" &&
+    text !== "--" &&
+    text !== "not assigned yet" &&
+    text !== "n/a" &&
+    text !== "na" &&
+    text !== "null" &&
+    text !== "undefined"
+  );
+}
+
+function getHistoryTitle(item = {}) {
+  const rawTitle =
+    item.stage ||
+    item.pipelineStage ||
+    item.currentStage ||
+    item.outcome ||
+    item.title ||
+    "Application Update";
+
+  const title = String(rawTitle || "").trim();
+
+  if (title.includes("PRF status changed")) return "Initial Screening";
+  if (title.includes("PRF status updated")) return "Initial Screening";
+  if (title.includes("Assessment marked")) return "Online Assessment";
+  if (title.includes("Assessment updated")) return "Online Assessment";
+  if (title.includes("interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview started")) return "Interview Scheduled";
+  if (title.includes("Interview completed")) return "Interviewed";
+  if (title.includes("Final interview")) return "Interviewed";
+  if (title.includes("Offer details")) return "Offered";
+  if (title.includes("Offer approved")) return "Accepted";
+  if (title.includes("NHO schedule")) return "For NHO";
+
+  return title || "Application Update";
+}
+
+function getHistoryDate(item = {}) {
+  return (
+    item.date ||
+    item.createdAt ||
+    item.created_at ||
+    item.updatedAt ||
+    item.updated_at ||
+    item.activityDate ||
+    item.timestamp ||
+    item.submittedAt ||
+    item.submittedAtIso ||
+    ""
   );
 }
 
 function TabSectionHeader({ icon: Icon, title, description }) {
   return (
-    <div className="mb-5 flex items-start gap-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F8] text-sibs-primary-1">
-        <Icon size={19} />
-      </div>
-
-      <div className="min-w-0">
-        <h3 className="text-base font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          {title}
-        </h3>
-
-        {description && (
-          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
-            {description}
-          </p>
-        )}
-      </div>
-    </div>
+    item.owner ||
+    item.taOwner ||
+    item.updatedBy ||
+    item.createdBy ||
+    item.updatedBySibsId ||
+    item.createdBySibsId ||
+    candidate.currentTaOwner ||
+    candidate.taOwner ||
+    candidate.owner ||
+    fallbackOwner ||
+    "—"
   );
+}
+
+function getHistoryDescription(item = {}) {
+  const directDescription =
+    item.description ||
+    item.reason ||
+    item.message ||
+    item.note ||
+    item.outcome ||
+    "";
+
+  if (directDescription) return directDescription;
+
+  const title = getHistoryTitle(item);
+
+  if (title === "Initial Screening") {
+    return "PRF status changed to Matched. Candidate is ready to move to Online Assessment.";
+  }
+
+  if (title === "Online Assessment") {
+    return "Assessment marked as Taken and tagged as Assessment Fit.";
+  }
+
+  if (title === "Interview Scheduled") {
+    return "Candidate passed assessment and interview schedule was set.";
+  }
+
+  if (title === "Interviewed") {
+    return "Final interview form was submitted. Candidate moved from Interview Scheduled to Interviewed.";
+  }
+
+  if (title === "Offered") {
+    return "Interview completed. Offer details prepared and sent for approval.";
+  }
+
+  if (title === "Accepted") {
+    return "Candidate accepted the offer and moved to Accepted.";
+  }
+
+  if (title === "For NHO") {
+    return "Candidate moved to For NHO.";
+  }
+
+  if (title === "Drop-off" || title === "Drop-offs") {
+    return "Candidate was moved to Drop-off.";
+  }
+
+  return "Candidate application record updated.";
+}
+
+function getOfferDetail(item = {}) {
+  const role =
+    item.offerRole ||
+    item.finalRole ||
+    item.currentAppliedRole ||
+    item.appliedRole ||
+    item.role ||
+    item.roleTitle ||
+    item.offerDetails?.roleTitle ||
+    item.extra?.offerDetails?.roleTitle ||
+    "";
+
+  const account =
+    item.offerAccount ||
+    item.finalAccount ||
+    item.currentAppliedAccount ||
+    item.appliedAccount ||
+    item.account ||
+    item.offerDetails?.account ||
+    item.extra?.offerDetails?.account ||
+    "";
+
+  const basicPay =
+    item.basicPay ||
+    item.offerDetails?.basicPay ||
+    item.extra?.offerDetails?.basicPay ||
+    item.compensation ||
+    "";
+
+  const deminimisDailyRate =
+    item.deminimisDailyRate ||
+    item.offerDetails?.deminimisDailyRate ||
+    item.extra?.offerDetails?.deminimisDailyRate ||
+    "";
+
+  const hiringRequirement =
+    item.hiringRequirementId ||
+    item.offerDetails?.hiringRequirementId ||
+    item.extra?.offerDetails?.hiringRequirementId ||
+    "";
+
+  const details = [];
+
+  if (isValidTimelineValue(hiringRequirement)) {
+    details.push(`Hiring Requirement: ${hiringRequirement}`);
+  }
+
+  if (isValidTimelineValue(role)) {
+    details.push(`Final Role: ${role}`);
+  }
+
+  if (isValidTimelineValue(account)) {
+    details.push(`Final Account: ${account}`);
+  }
+
+  if (isValidTimelineValue(basicPay)) {
+    details.push(
+      `Basic Pay: ${
+        String(basicPay).includes("₱") ? basicPay : formatCurrency(basicPay)
+      }`,
+    );
+  }
+
+  if (isValidTimelineValue(deminimisDailyRate)) {
+    details.push(
+      `Deminimis / Daily Rate: ${
+        String(deminimisDailyRate).includes("₱")
+          ? deminimisDailyRate
+          : formatCurrency(deminimisDailyRate)
+      }`,
+    );
+  }
+
+  return details.join(", ");
+}
+
+function getHistoryRemarks(item = {}) {
+  return (
+    item.remarks ||
+    item.dropOffReason ||
+    item.dropOffCategory ||
+    item.extra?.remarks ||
+    ""
+  );
+}
+
+function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") {
+  const historyTitle = getHistoryTitle(item);
+  const historyDate = getHistoryDate(item);
+  const historyDescription = getHistoryDescription(item);
+  const historyRemarks = getHistoryRemarks(item);
+  const offerDetail = getOfferDetail(item);
+  const savedFormLink =
+    item.savedFormLink ||
+    item.jobEvaluationLink ||
+    item.extra?.savedFormLink ||
+    item.extra?.jobEvaluationLink ||
+    "";
+  const sortDate = getNormalizedHistoryDate(historyDate);
+
+  return {
+    ...item,
+    stage: historyTitle,
+    date: historyDate,
+    owner: getHistoryOwner(item, candidate, fallbackOwner),
+    description: historyDescription,
+    remarks: historyRemarks,
+    offerDetail,
+    savedFormLink,
+    _dedupeKey: [
+      historyTitle,
+      sortDate,
+      historyDescription,
+      historyRemarks,
+      offerDetail,
+      savedFormLink,
+    ]
+      .join("|")
+      .toLowerCase()
+      .trim(),
+    _sortDate: sortDate,
+  };
+}
+
+function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+
+  const sources = [
+    safeCandidate.applicationHistory,
+    safeCandidate.movementTimeline,
+    safeCandidate.movementHistory,
+    safeCandidate.pipelineHistory,
+    safeCandidate.stageHistory,
+    safeCandidate.timeline,
+    safeCandidate.history,
+    safeCandidate.activityHistory,
+
+    candidateSnapshot.applicationHistory,
+    candidateSnapshot.timeline,
+    candidateSnapshot.movementTimeline,
+
+    metadata.applicationHistory,
+    metadata.timeline,
+    metadata.movementTimeline,
+    metadata.pipelineHistory,
+    metadata.pipelineTimeline,
+
+    pipelineCandidate.timeline,
+    pipelineCandidate.movementTimeline,
+    pipelineCandidate.movementHistory,
+    pipelineCandidate.pipelineHistory,
+    pipelineCandidate.stageHistory,
+    pipelineCandidate.history,
+    pipelineCandidate.activityHistory,
+
+    pipelineDetails.timeline,
+    pipelineDetails.movementTimeline,
+    pipelineDetails.movementHistory,
+    pipelineDetails.pipelineHistory,
+    pipelineDetails.stageHistory,
+    pipelineDetails.history,
+    pipelineDetails.activityHistory,
+  ];
+
+  const merged = sources
+    .filter(Array.isArray)
+    .flat()
+    .filter(Boolean)
+    .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
+    .filter((item) => item.stage || item.description);
+
+  const uniqueMap = new Map();
+
+  merged.forEach((item) => {
+    const key = item._dedupeKey;
+
+    if (!key) return;
+
+    const existing = uniqueMap.get(key);
+
+    if (!existing) {
+      uniqueMap.set(key, item);
+      return;
+    }
+
+    const existingDate = new Date(existing.date || 0).getTime();
+    const itemDate = new Date(item.date || 0).getTime();
+
+    if (
+      Number.isFinite(itemDate) &&
+      (!Number.isFinite(existingDate) || itemDate > existingDate)
+    ) {
+      uniqueMap.set(key, item);
+    }
+  });
+
+  return Array.from(uniqueMap.values()).sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+
+    if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
+    if (Number.isNaN(dateA)) return -1;
+    if (Number.isNaN(dateB)) return 1;
+
+    return dateA - dateB;
+  });
 }
 
 export default function CandidateProfileModal() {
@@ -323,6 +918,12 @@ export default function CandidateProfileModal() {
     message: "",
   });
 
+  const [pipelineCandidateDetails, setPipelineCandidateDetails] = useState(null);
+  const [pipelineCandidateDetailsLoading, setPipelineCandidateDetailsLoading] =
+    useState(false);
+  const [pipelineCandidateDetailsError, setPipelineCandidateDetailsError] =
+    useState("");
+
   const [candidatePipelineFiles, setCandidatePipelineFiles] = useState([]);
   const [candidatePipelineFilesLoading, setCandidatePipelineFilesLoading] =
     useState(false);
@@ -334,20 +935,76 @@ export default function CandidateProfileModal() {
     [selectedCandidate],
   );
 
-  const profilePreEmploymentFiles = useMemo(
-    () => getCandidatePreEmploymentFiles(selectedCandidate),
-    [selectedCandidate],
-  );
-
   const isPipelineLinkedForFiles = useMemo(
     () => isCandidateLinkedToPipeline(selectedCandidate),
     [selectedCandidate],
   );
 
   useEffect(() => {
-    setActiveTab("personal");
-    setShowFullApplicationHistory(false);
-  }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
+    let isActive = true;
+
+    setPipelineCandidateDetails(null);
+    setPipelineCandidateDetailsError("");
+
+    if (
+      !selectedCandidate ||
+      !candidatePipelineLookupId ||
+      !isPipelineLinkedForFiles
+    ) {
+      setPipelineCandidateDetailsLoading(false);
+
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setPipelineCandidateDetailsLoading(true);
+
+    api
+      .get(`/api/candidate-pipeline/${encodeURIComponent(candidatePipelineLookupId)}`, {
+        withCredentials: true,
+        params: {
+          _t: Date.now(),
+        },
+      })
+      .then((response) => {
+        if (!isActive) return;
+
+        const pipelineCandidate = getPipelineCandidateFromResponse(response);
+
+        setPipelineCandidateDetails(safeObject(pipelineCandidate));
+      })
+      .catch((error) => {
+        if (!isActive) return;
+
+        setPipelineCandidateDetails(null);
+        setPipelineCandidateDetailsError(
+          getApiErrorMessage(
+            error,
+            "Unable to load Candidate Pipeline process history.",
+          ),
+        );
+      })
+      .finally(() => {
+        if (isActive) {
+          setPipelineCandidateDetailsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedCandidate, candidatePipelineLookupId, isPipelineLinkedForFiles]);
+
+  const profileCandidate = useMemo(
+    () => mergeCandidateWithPipelineDetails(selectedCandidate, pipelineCandidateDetails),
+    [selectedCandidate, pipelineCandidateDetails],
+  );
+
+  const profilePreEmploymentFiles = useMemo(
+    () => getCandidatePreEmploymentFiles(profileCandidate),
+    [profileCandidate],
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -391,13 +1048,13 @@ export default function CandidateProfileModal() {
 
         const normalizedFiles = dedupeCandidateFiles(
           safeArray(responseFiles),
-          selectedCandidate,
+          profileCandidate,
         );
 
         setCandidatePipelineFiles(
           dedupeCandidateFiles(
             [...localProfileFiles, ...normalizedFiles],
-            selectedCandidate,
+            profileCandidate,
           ),
         );
       })
@@ -428,14 +1085,15 @@ export default function CandidateProfileModal() {
     };
   }, [
     selectedCandidate,
+    profileCandidate,
     candidatePipelineLookupId,
     isPipelineLinkedForFiles,
     profilePreEmploymentFiles,
   ]);
 
   const displayedPreEmploymentFiles = useMemo(
-    () => dedupeCandidateFiles(candidatePipelineFiles, selectedCandidate),
-    [candidatePipelineFiles, selectedCandidate],
+    () => dedupeCandidateFiles(candidatePipelineFiles, profileCandidate),
+    [candidatePipelineFiles, profileCandidate],
   );
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
@@ -456,28 +1114,30 @@ export default function CandidateProfileModal() {
 
   if (!selectedCandidate) return null;
 
-  const encodedBy = getEncodedByName(selectedCandidate, currentTaOwner);
-  const isDoNotReprocess = selectedCandidate.status === "Do Not Reprocess";
+  const activeCandidate = profileCandidate || selectedCandidate;
+
+  const encodedBy = getEncodedByName(activeCandidate, currentTaOwner);
+  const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
 
   const candidateInitials =
-    selectedCandidate.name
+    activeCandidate.name
       ?.split(" ")
       .map((part) => part[0])
       .slice(0, 2)
       .join("") || "C";
 
-  const validReferences = Array.isArray(selectedCandidate.references)
-    ? selectedCandidate.references.filter(
+  const validReferences = Array.isArray(activeCandidate.references)
+    ? activeCandidate.references.filter(
         (reference) => reference?.name || reference?.phone,
       )
     : [];
 
-  const workExperiences = Array.isArray(selectedCandidate.workExperiences)
-    ? selectedCandidate.workExperiences.filter(Boolean)
+  const workExperiences = Array.isArray(activeCandidate.workExperiences)
+    ? activeCandidate.workExperiences.filter(Boolean)
     : [];
 
   const applicationHistory = getCandidateApplicationHistory(
-    selectedCandidate,
+    activeCandidate,
     encodedBy,
   );
 
@@ -490,7 +1150,7 @@ export default function CandidateProfileModal() {
   const hasMoreApplicationHistory =
     applicationHistory.length > collapsedHistoryLimit;
 
-  const currentStage = getCandidateStageValue(selectedCandidate);
+  const currentStage = getCandidateStageValue(activeCandidate);
   const isAlreadyInPipeline = isPipelineLinkedForFiles;
 
   const profileTabs = [
@@ -613,201 +1273,349 @@ export default function CandidateProfileModal() {
     openMoveToPipeline(selectedCandidate);
   }
 
-  function renderTabContent() {
-    if (activeTab === "personal") {
-      const personalRows = [
-        {
-          label: "Date of Birth",
-          value: formatDate(selectedCandidate.dateOfBirth),
-        },
-        {
-          label: "Age",
-          value: selectedCandidate.ageAsOfApplication
-            ? `${selectedCandidate.ageAsOfApplication}`
-            : "—",
-        },
-        {
-          label: "Encoded By",
-          value: encodedBy || "—",
-        },
-        {
-          label: "Created At",
-          value: formatDate(selectedCandidate.createdAt),
-        },
-        {
-          label: "Address",
-          value: selectedCandidate.physicalAddress || "—",
-          wide: true,
-        },
-      ];
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+        onClick={handleCloseCandidateProfile}
+      >
+        <div
+          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 sm:px-6">
+            <div className="min-w-0">
+              <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
+                Candidate Profile
+              </h2>
 
-      return (
-        <>
-          <TabSectionHeader
-            icon={UserRound}
-            title="Personal Information"
-            description="Additional candidate profile details."
-          />
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                View the master candidate profile before moving to the pipeline.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {personalRows.map((item) => (
-              <ProfileInfoCard
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                wide={item.wide}
-              />
-            ))}
+            <button
+              type="button"
+              onClick={handleCloseCandidateProfile}
+              className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
           </div>
-        </>
-      );
-    }
 
-    if (activeTab === "applicationSource") {
-      const sourceRows = [
-        {
-          label: "Applied Position",
-          value:
-            selectedCandidate.openPosition ||
-            selectedCandidate.roleCapability ||
-            "—",
-        },
-        {
-          label: "How Heard About Us",
-          value: formatList(selectedCandidate.hearAboutUs),
-        },
-        {
-          label: "Source",
-          value: selectedCandidate.source || "—",
-        },
-        {
-          label: "Referred By",
-          value: selectedCandidate.referredBy || "—",
-        },
-        {
-          label: "Employee ID",
-          value: selectedCandidate.employeeId || "—",
-        },
-      ];
+          <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-6">
+            <div className="grid grid-cols-1 gap-5">
+              <div className="min-w-0 space-y-5">
+                <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+                  <div className="border-b border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sibs-primary-1 text-lg font-extrabold text-white shadow-sm">
+                          {candidateInitials}
+                        </div>
 
-      return (
-        <>
-          <TabSectionHeader
-            icon={BriefcaseBusiness}
-            title="Application Source"
-            description="Source information and referral details."
-          />
+                        <div className="min-w-0">
+                          <h3 className="truncate text-xl font-extrabold text-[#101828]">
+                            {activeCandidate.name || "Unnamed Candidate"}
+                          </h3>
 
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            {sourceRows.map((item) => (
-              <CompactInfoRow
-                key={item.label}
-                label={item.label}
-                value={item.value}
-              />
-            ))}
-          </div>
-        </>
-      );
-    }
+                          <p className="mt-1 truncate text-sm font-semibold text-sibs-primary-1">
+                            {activeCandidate.email || "No email provided"}
+                          </p>
 
-    if (activeTab === "pipeline") {
-      const pipelineRows = [
-        {
-          label: "Pipeline Status",
-          value: selectedCandidate.pipelineStatus || "—",
-        },
-        {
-          label: "Current Stage",
-          value:
-            selectedCandidate.currentPipelineStage ||
-            selectedCandidate.currentStage ||
-            selectedCandidate.pipelineStage ||
-            "—",
-        },
-        {
-          label: "Final Role",
-          value: selectedCandidate.currentAppliedRole || "Not assigned yet",
-        },
-        {
-          label: "Final Account",
-          value: selectedCandidate.currentAppliedAccount || "Not assigned yet",
-        },
-        {
-          label: "TA Owner",
-          value: selectedCandidate.currentTaOwner || "—",
-        },
-      ];
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                              {activeCandidate.candidateId || "—"}
+                            </span>
 
-      return (
-        <>
-          <TabSectionHeader
-            icon={Network}
-            title="Pipeline Link"
-            description="Current pipeline status, assignment, and TA ownership."
-          />
+                            <span
+                              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                                activeCandidate.status,
+                              )}`}
+                            >
+                              {activeCandidate.status || "—"}
+                            </span>
 
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            {pipelineRows.map((item) => (
-              <CompactInfoRow
-                key={item.label}
-                label={item.label}
-                value={item.value}
-              />
-            ))}
-          </div>
-        </>
-      );
-    }
+                            {currentStage && (
+                              <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
+                                {currentStage}
+                              </span>
+                            )}
 
-    if (activeTab === "qualifications") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={GraduationCap}
-            title="Qualifications"
-            description="Education, work experience, skills, and certifications."
-          />
+                            {activeCandidate.isPublicSubmission && (
+                              <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
+                                Public Submission
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <ProfileInfoCard
-              label="Educational Attainment"
-              value={selectedCandidate.educationalAttainment || "—"}
-            />
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:items-center">
+                        <button
+                          type="button"
+                          onClick={handleEditCandidate}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                        >
+                          <Pencil size={16} />
+                          Edit Profile
+                        </button>
 
-            <ProfileInfoCard
-              label="Skills / Language"
-              value={selectedCandidate.skillsLanguage || "—"}
-            />
+                        <button
+                          type="button"
+                          onClick={handleUpdateCandidateStatus}
+                          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm"
+                        >
+                          <RefreshCcw size={16} />
+                          Update Status
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-            <ProfileInfoCard
-              label="Affiliations"
-              value={formatList(selectedCandidate.affiliations)}
-            />
+                  <div className="grid grid-cols-1 divide-y divide-[#E6ECF2] md:grid-cols-3 md:divide-x md:divide-y-0">
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Applied Position
+                      </p>
 
-            <ProfileInfoCard
-              label="Training Attended"
-              value={selectedCandidate.trainingAttended || "—"}
-            />
-          </div>
-        </>
-      );
-    }
+                      <p
+                        title={
+                          activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
+                          "—"
+                        }
+                        className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                      >
+                        {activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
+                          "—"}
+                      </p>
+                    </div>
 
-    if (activeTab === "workExperience") {
-      return (
-        <>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <TabSectionHeader
-              icon={BriefcaseBusiness}
-              title="Work Experience"
-              description="Candidate employment background and compensation."
-            />
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Preferred Location
+                      </p>
 
-            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-              {selectedCandidate.workExperience || "—"}
-            </span>
-          </div>
+                      <p
+                        title={activeCandidate.applyingLocation || "—"}
+                        className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                      >
+                        {activeCandidate.applyingLocation || "—"}
+                      </p>
+                    </div>
+
+                    <div className="px-5 py-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Last Activity
+                      </p>
+
+                      <p
+                        title={formatDate(activeCandidate.lastActivity)}
+                        className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                      >
+                        {formatDate(activeCandidate.lastActivity)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {isDoNotReprocess && (
+                    <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                      This candidate is marked as Do Not Reprocess and cannot be
+                      moved to the pipeline unless the status is updated.
+                    </div>
+                  )}
+                </section>
+
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={UserRound}
+                    title="Personal Information"
+                    description="Candidate master profile and contact information."
+                  />
+
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    <div className="rounded-xl bg-[#F8FAFC] p-4">
+                      <DetailRow label="First Name" value={activeCandidate.firstName} />
+                      <DetailRow label="Middle Name" value={activeCandidate.middleName} />
+                      <DetailRow label="Last Name" value={activeCandidate.lastName} />
+                      <DetailRow label="Suffix" value={activeCandidate.suffix} />
+                      <DetailRow label="Nickname" value={activeCandidate.nickname} />
+                      <DetailRow
+                        label="Date of Birth"
+                        value={formatDate(activeCandidate.dateOfBirth)}
+                      />
+                      <DetailRow
+                        label="Age"
+                        value={
+                          activeCandidate.ageAsOfApplication
+                            ? `${activeCandidate.ageAsOfApplication}`
+                            : "—"
+                        }
+                      />
+                    </div>
+
+                    <div className="rounded-xl bg-[#F8FAFC] p-4">
+                      <DetailRow label="Email" value={activeCandidate.email} />
+                      <DetailRow
+                        label="Phone 1"
+                        value={
+                          activeCandidate.phoneNumber1 ||
+                          activeCandidate.contactNumber ||
+                          activeCandidate.phone
+                        }
+                      />
+                      <DetailRow
+                        label="Phone 2"
+                        value={activeCandidate.phoneNumber2}
+                      />
+                      <DetailRow
+                        label="Address"
+                        value={activeCandidate.physicalAddress}
+                      />
+                      <DetailRow
+                        label="Preferred Location"
+                        value={activeCandidate.applyingLocation}
+                      />
+                      <DetailRow label="Encoded By" value={encodedBy} />
+                      <DetailRow
+                        label="Created At"
+                        value={formatDate(activeCandidate.createdAt)}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={BriefcaseBusiness}
+                    title="Application Source"
+                    description="Candidate source information and referral details."
+                  />
+
+                  <div className="rounded-xl bg-[#F8FAFC] p-4">
+                    <DetailRow
+                      label="Applied Position"
+                      value={
+                        activeCandidate.openPosition || activeCandidate.roleCapability
+                      }
+                    />
+                    <DetailRow
+                      label="How Heard About Us"
+                      value={formatList(activeCandidate.hearAboutUs)}
+                    />
+                    <DetailRow label="Source" value={activeCandidate.source} />
+                    <DetailRow label="Referred By" value={activeCandidate.referredBy} />
+                    <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={Network}
+                    title="Pipeline Link"
+                    description="Current pipeline status, assignment, and TA ownership."
+                  />
+
+                  <div className="rounded-xl bg-[#F8FAFC] p-4">
+                    <DetailRow
+                      label="Pipeline Status"
+                      value={activeCandidate.pipelineStatus || "—"}
+                    />
+                    <DetailRow
+                      label="Current Stage"
+                      value={
+                        activeCandidate.currentPipelineStage ||
+                        activeCandidate.currentStage ||
+                        activeCandidate.pipelineStage ||
+                        "—"
+                      }
+                    />
+                    <DetailRow
+                      label="Final Role"
+                      value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+                    />
+                    <DetailRow
+                      label="Final Account"
+                      value={
+                        activeCandidate.currentAppliedAccount || "Not assigned yet"
+                      }
+                    />
+                    <DetailRow
+                      label="TA Owner"
+                      value={activeCandidate.currentTaOwner || "—"}
+                    />
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={GraduationCap}
+                    title="Qualifications"
+                    description="Education, work experience, skills, and certifications."
+                  />
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                          Educational Attainment
+                        </p>
+
+                        <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
+                          {activeCandidate.educationalAttainment || "—"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                          Skills / Language
+                        </p>
+
+                        <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
+                          {activeCandidate.skillsLanguage || "—"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                          Affiliations
+                        </p>
+
+                        <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
+                          {formatList(activeCandidate.affiliations)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                          Training Attended
+                        </p>
+
+                        <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
+                          {activeCandidate.trainingAttended || "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white">
+                      <div className="flex flex-col gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <h4 className="text-sm font-extrabold text-[#101828]">
+                            Work Experience
+                          </h4>
+
+                          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                            Candidate employment background, previous role,
+                            company, and compensation.
+                          </p>
+                        </div>
+
+                        <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                          {activeCandidate.workExperience || "—"}
+                        </span>
+                      </div>
 
           {workExperiences.length > 0 ? (
             <div className="space-y-4">
@@ -868,81 +1676,83 @@ export default function CandidateProfileModal() {
                       </p>
                     </div>
 
-                    <div className="rounded-xl bg-[#F8FAFC] p-3 md:col-span-3">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Reason for Leaving
-                      </p>
-                      <p className="mt-1 whitespace-pre-line break-words text-sm font-bold leading-6 text-[#344054]">
-                        {experience.reasonForLeaving || "—"}
-                      </p>
+                                  <div className="rounded-xl bg-white p-3 md:col-span-3">
+                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                                      Reason for Leaving
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-bold leading-6 text-[#344054]">
+                                      {experience.reasonForLeaving || "—"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-gray-500">
+                            {activeCandidate.workExperience ||
+                              "No work experience provided."}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] px-4 py-4 text-center text-sm font-bold text-gray-500">
-              {selectedCandidate.workExperience ||
-                "No work experience provided."}
-            </div>
-          )}
-        </>
-      );
-    }
+                </section>
 
-    if (activeTab === "readiness") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={ShieldCheck}
-            title="Readiness and Compliance"
-            description="Availability, work setup, and compliance readiness."
-          />
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={ShieldCheck}
+                    title="Readiness and Compliance"
+                    description="Availability, work setup, and compliance readiness."
+                  />
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <StatusTile
-              label="Vaccinated"
-              value={selectedCandidate.fullyVaccinated}
-            />
-            <StatusTile
-              label="On-site Ready"
-              value={selectedCandidate.comfortableOnSite}
-            />
-            <StatusTile
-              label="Graveyard Shift"
-              value={selectedCandidate.willingGraveyard}
-            />
-            <StatusTile
-              label="Employment Type"
-              value={selectedCandidate.employmentInterest}
-            />
-            <StatusTile
-              label="Remote Access"
-              value={selectedCandidate.remoteWorkAccess}
-            />
-            <StatusTile
-              label="Drug Test"
-              value={selectedCandidate.willingDrugTest}
-            />
-            <div className="sm:col-span-2 xl:col-span-3">
-              <StatusTile
-                label="Background Check"
-                value={selectedCandidate.willingBackgroundCheck}
-              />
-            </div>
-          </div>
-        </>
-      );
-    }
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <StatusTile
+                      label="Vaccinated"
+                      value={activeCandidate.fullyVaccinated}
+                    />
 
-    if (activeTab === "references") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={Phone}
-            title="References"
-            description="Candidate character or work references."
-          />
+                    <StatusTile
+                      label="On-site Ready"
+                      value={activeCandidate.comfortableOnSite}
+                    />
+
+                    <StatusTile
+                      label="Graveyard Shift"
+                      value={activeCandidate.willingGraveyard}
+                    />
+
+                    <StatusTile
+                      label="Employment Type"
+                      value={activeCandidate.employmentInterest}
+                    />
+
+                    <StatusTile
+                      label="Remote Access"
+                      value={activeCandidate.remoteWorkAccess}
+                    />
+
+                    <StatusTile
+                      label="Drug Test"
+                      value={activeCandidate.willingDrugTest}
+                    />
+
+                    <div className="sm:col-span-2 xl:col-span-3">
+                      <StatusTile
+                        label="Background Check"
+                        value={activeCandidate.willingBackgroundCheck}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <SectionTitle
+                    icon={Phone}
+                    title="References"
+                    description="Candidate character or work references."
+                  />
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {validReferences.length > 0 ? (
@@ -972,35 +1782,35 @@ export default function CandidateProfileModal() {
             description="Uploaded audio and supporting attachments."
           />
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <ViewableFileRow
-              label="Audio Recording"
-              fileName={selectedCandidate.audioFileName}
-              fileUrl={selectedCandidate.audioFileUrl}
-              fileType={selectedCandidate.audioFileType}
-              audio
-            />
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <ViewableFileRow
+                      label="Audio Recording"
+                      fileName={activeCandidate.audioFileName}
+                      fileUrl={activeCandidate.audioFileUrl}
+                      fileType={activeCandidate.audioFileType}
+                      audio
+                    />
 
-            <ViewableFileRow
-              label="Attachment"
-              fileName={selectedCandidate.attachmentFileName}
-              fileUrl={selectedCandidate.attachmentFileUrl}
-              fileType={selectedCandidate.attachmentFileType}
-            />
-          </div>
-        </>
-      );
-    }
+                    <ViewableFileRow
+                      label="Attachment"
+                      fileName={activeCandidate.attachmentFileName}
+                      fileUrl={activeCandidate.attachmentFileUrl}
+                      fileType={activeCandidate.attachmentFileType}
+                    />
+                  </div>
 
-    if (activeTab === "preEmploymentFiles") {
-      return (
-        <>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <TabSectionHeader
-              icon={FileText}
-              title="Pre-Employment / NHO Files"
-              description="Files uploaded from Candidate Pipeline."
-            />
+                  <div className="mt-5 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-[#101828]">
+                          Pre-Employment / NHO Files
+                        </h4>
+
+                        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                          Only official pre-employment requirements from
+                          Candidate Pipeline are displayed here.
+                        </p>
+                      </div>
 
             <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
               {candidatePipelineFilesLoading
@@ -1017,60 +1827,80 @@ export default function CandidateProfileModal() {
             </div>
           )}
 
-          {candidatePipelineFilesLoading &&
-          displayedPreEmploymentFiles.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-gray-500">
-              Loading pre-employment files...
-            </div>
-          ) : displayedPreEmploymentFiles.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {displayedPreEmploymentFiles.map((file, index) => (
-                <ViewableFileRow
-                  key={`${file.id || file.fileName}-${index}`}
-                  label={file.requirement || `Uploaded File ${index + 1}`}
-                  fileName={file.fileName || file.savedFileName}
-                  fileUrl={file.fileUrl}
-                  fileType={file.fileType}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-gray-500">
-              No pre-employment files uploaded yet.
-            </div>
-          )}
-        </>
-      );
-    }
+                    {candidatePipelineFilesLoading &&
+                    displayedPreEmploymentFiles.length === 0 ? (
+                      <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white p-5 text-center text-sm font-bold text-gray-500">
+                        Loading pre-employment files...
+                      </div>
+                    ) : displayedPreEmploymentFiles.length > 0 ? (
+                      <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                        {displayedPreEmploymentFiles.map((file) => (
+                          <ViewableFileRow
+                            key={`${file.requirement}-${
+                              file.savedFileName || file.fileName
+                            }`}
+                            label={file.requirement}
+                            fileName={file.fileName || file.savedFileName}
+                            fileUrl={file.fileUrl}
+                            fileType={file.fileType}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white p-5 text-center text-sm font-bold text-gray-500">
+                        No pre-employment files uploaded yet.
+                      </div>
+                    )}
+                  </div>
+                </section>
 
-    if (activeTab === "applicationHistory") {
-      return (
-        <>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <TabSectionHeader
-              icon={Network}
-              title="Application History"
-              description="Candidate movement and application timeline."
-            />
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#101828]">
+                        Application History
+                      </h3>
 
-            {applicationHistory.length > 0 && (
-              <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                {applicationHistory.length} record
-                {applicationHistory.length > 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
+                      <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                        Candidate movement and application timeline, including
+                        Candidate Pipeline process.
+                      </p>
+                    </div>
 
-          {applicationHistory.length > 0 ? (
-            <>
-              <div className="relative space-y-4">
-                {visibleApplicationHistory.map((item, index) => {
-                  const historyTitle = item.stage || "Application Update";
-                  const historyDate =
-                    item.date || selectedCandidate.lastActivity;
-                  const historyOwner = item.owner || encodedBy || "—";
-                  const historyDescription = item.description;
-                  const offerDetail = item.offerDetail;
+                    {applicationHistory.length > 0 && (
+                      <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                        {applicationHistory.length} record
+                        {applicationHistory.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+
+                  {pipelineCandidateDetailsError && (
+                    <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                      {pipelineCandidateDetailsError}
+                    </div>
+                  )}
+
+                  {pipelineCandidateDetailsLoading && (
+                    <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+                      Loading Candidate Pipeline process history...
+                    </div>
+                  )}
+
+                  <div className="mt-5">
+                    {applicationHistory.length > 0 ? (
+                      <>
+                        <div className="relative space-y-4">
+                          {visibleApplicationHistory.map((item, index) => {
+                            const historyTitle =
+                              item.stage || "Application Update";
+
+                            const historyDate =
+                              item.date || activeCandidate.lastActivity;
+
+                            const historyOwner = item.owner || encodedBy || "—";
+                            const historyDescription = item.description;
+                            const offerDetail = item.offerDetail;
 
                   const absoluteHistoryIndex = applicationHistory.findIndex(
                     (historyItem) =>
@@ -1080,8 +1910,11 @@ export default function CandidateProfileModal() {
                   const safeHistoryIndex =
                     absoluteHistoryIndex >= 0 ? absoluteHistoryIndex : index;
 
-                  const isRealLastNode =
-                    safeHistoryIndex === applicationHistory.length - 1;
+                            const isRealLastNode =
+                              safeHistoryIndex === applicationHistory.length - 1;
+
+                            const isLastVisibleNode =
+                              index === visibleApplicationHistory.length - 1;
 
                   const shouldShowLine = !isRealLastNode;
 
@@ -1133,10 +1966,10 @@ export default function CandidateProfileModal() {
                           </div>
                         )}
 
-                        <GetAssessmentTimelineFiles
-                          item={item}
-                          candidate={selectedCandidate}
-                        />
+                                  <GetAssessmentTimelineFiles
+                                    item={item}
+                                    candidate={activeCandidate}
+                                  />
 
                         {offerDetail && (
                           <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054]">
@@ -1150,24 +1983,25 @@ export default function CandidateProfileModal() {
                               Job Evaluation Link
                             </p>
 
-                            <a
-                              href={item.savedFormLink}
-                              target="_blank"
-                              rel="noreferrer"
-                              title={item.savedFormLink}
-                              dir="ltr"
-                              className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-[#D9E2EC] bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
-                            >
-                              {window.location.origin}
-                              {item.savedFormLink}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                                      <a
+                                        href={item.savedFormLink}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title={item.savedFormLink}
+                                        dir="ltr"
+                                        className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-[#D9E2EC] bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
+                                      >
+                                        {item.savedFormLink.startsWith("http")
+                                          ? item.savedFormLink
+                                          : `${window.location.origin}${item.savedFormLink}`}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
 
               {hasMoreApplicationHistory && (
                 <div className="mt-5 flex justify-center border-t border-[#E6ECF2] pt-4">
@@ -1269,172 +2103,11 @@ export default function CandidateProfileModal() {
                         {selectedCandidate.name || "Unnamed Candidate"}
                       </h3>
 
-                      <p className="mt-2 line-clamp-2 text-sm font-extrabold text-[#101828] sm:text-base">
-                        {selectedCandidate.openPosition ||
-                          selectedCandidate.roleCapability ||
-                          selectedCandidate.currentAppliedRole ||
-                          "No applied role"}
-                      </p>
-
-                      <div className="mt-4 flex flex-col gap-2 text-sm font-semibold text-[#344054] sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Nickname:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {selectedCandidate.nickname || "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Email:
-                          </span>
-                          <span className="min-w-0 break-all">
-                            {selectedCandidate.email || "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Phone 1:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {selectedCandidate.phoneNumber1 ||
-                              selectedCandidate.contactNumber ||
-                              "—"}
-                          </span>
-                        </span>
-
-                        {selectedCandidate.phoneNumber2 && (
-                          <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                            <span className="shrink-0 text-sibs-primary-1">
-                              Phone 2:
-                            </span>
-                            <span className="min-w-0 break-words">
-                              {selectedCandidate.phoneNumber2}
-                            </span>
-                          </span>
-                        )}
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Location:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {selectedCandidate.applyingLocation ||
-                              selectedCandidate.physicalAddress ||
-                              "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Last Activity:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {formatDate(selectedCandidate.lastActivity)}
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-                        <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                          {selectedCandidate.candidateId || "—"}
-                        </span>
-
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                            selectedCandidate.status,
-                          )}`}
-                        >
-                          {selectedCandidate.status || "—"}
-                        </span>
-
-                        {currentStage && (
-                          <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-extrabold text-cyan-700">
-                            {currentStage}
-                          </span>
-                        )}
-
-                        {selectedCandidate.isPublicSubmission && (
-                          <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
-                            Public Submission
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row xl:pt-2">
-                    <button
-                      type="button"
-                      onClick={handleEditCandidate}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
-                    >
-                      <Pencil size={16} />
-                      Edit Profile
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm sm:w-auto"
-                    >
-                      <RefreshCcw size={16} />
-                      Update Status
-                    </button>
-                  </div>
-                </div>
-
-                {isDoNotReprocess && (
-                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
-                    This candidate is marked as Do Not Reprocess and cannot be
-                    moved to the pipeline unless the status is updated.
-                  </div>
-                )}
-              </section>
-
-              {/* TABBED CONTENT */}
-              <section className="grid grid-cols-1 gap-0 border-t border-[#E6ECF2] lg:grid-cols-[240px_minmax(0,1fr)]">
-                {/* LEFT TABS */}
-                <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
-                  <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                    {profileTabs.map((tab) => {
-                      const Icon = tab.icon;
-                      const isActive = activeTab === tab.id;
-
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition lg:min-w-0 ${
-                            isActive
-                              ? "bg-[#EEF3F8] text-sibs-primary-1"
-                              : "text-[#667085] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-                          }`}
-                        >
-                          <Icon
-                            size={18}
-                            className={
-                              isActive
-                                ? "text-sibs-primary-1"
-                                : "text-[#98A2B3]"
-                            }
-                          />
-                          <span>{tab.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </aside>
-
-                {/* RIGHT TAB PANEL */}
-                <div className="min-w-0 bg-white p-5 sm:p-7">
-                  {renderTabContent()}
-                </div>
-              </section>
+                  <p className="mt-3 whitespace-pre-line rounded-xl bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
+                    {activeCandidate.remarks || "—"}
+                  </p>
+                </section>
+              </div>
             </div>
           </div>
 
