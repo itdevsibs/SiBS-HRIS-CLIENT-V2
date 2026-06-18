@@ -2117,7 +2117,7 @@ export default function PublicTalentPoolApplicationPage() {
                     onChange={(e) =>
                       updateFormField("firstName", e.target.value)
                     }
-                    placeholder="Juan"
+                    placeholder="Enter first name"
                     className={inputClass()}
                   />
                 </div>
@@ -2131,7 +2131,7 @@ export default function PublicTalentPoolApplicationPage() {
                     onChange={(e) =>
                       updateFormField("lastName", e.target.value)
                     }
-                    placeholder="Dela Cruz"
+                    placeholder="Enter last name"
                     className={inputClass()}
                   />
                 </div>
@@ -2143,7 +2143,7 @@ export default function PublicTalentPoolApplicationPage() {
                     onChange={(e) =>
                       updateFormField("middleName", e.target.value)
                     }
-                    placeholder="Santos"
+                    placeholder="Enter middle name"
                     className={inputClass()}
                   />
                 </div>
@@ -2192,7 +2192,7 @@ export default function PublicTalentPoolApplicationPage() {
                     type="email"
                     value={form.email}
                     onChange={(e) => updateFormField("email", e.target.value)}
-                    placeholder="candidate@email.com"
+                    placeholder="Enter email"
                     className={inputClass()}
                   />
                 </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 
 import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
@@ -50,6 +50,22 @@ export default function Router() {
       {/* AUTH / PUBLIC */}
       <Route path="/" element={<LoginPage />} />
       <Route path="/login" element={<LoginPage />} />
+
+      {/* ROUTE ALIASES */}
+      <Route
+        path="/candidate-pipeline"
+        element={<Navigate to="/recruitment/candidate-pipeline" replace />}
+      />
+
+      <Route
+        path="/talent-pool"
+        element={<Navigate to="/recruitment/talent-pool" replace />}
+      />
+
+      <Route
+        path="/offers"
+        element={<Navigate to="/recruitment/offers" replace />}
+      />
 
       {/* PUBLIC RECRUITMENT FORM */}
       <Route

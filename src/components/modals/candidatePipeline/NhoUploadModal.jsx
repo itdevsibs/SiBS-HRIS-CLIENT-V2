@@ -1,662 +1,919 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  X,
-  UploadCloud,
-  FileText,
-  Image as ImageIcon,
+  Check,
+  FileImage,
   FileSpreadsheet,
-  FileArchive,
+  FileText,
+  Loader2,
   Trash2,
-  Eye,
-  Download,
-  CheckCircle2,
-  AlertCircle,
+  UploadCloud,
+  X,
 } from "lucide-react";
 
-const ACCEPTED_FILE_TYPES =
-  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif";
+import api from "../../../lib/axios/api-template";
 
-const DEFAULT_REQUIREMENTS = [
-  "ID picture (2 pcs passport size)",
-  "Transcript of Records and/or Diploma",
-  "Medical Records",
-  "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-Ray and Hepa B",
-  "NBI Clearance",
+const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
   "BIR 2316 Form",
-  "TIN Verification Slip",
-  "SSS E1 Form",
-  "PhilHealth Member's Data Record / PMRF",
-  "Pag-IBIG Member's Data Form",
-  "Birth Certificate / Marriage Certificate / Children's Birth Certificate",
   "Employment Certificate",
-  "Occupational Permit",
-  "1 Valid ID",
 ];
 
-function formatFileSize(bytes = 0) {
-  if (!bytes) return "0 KB";
+const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
+  {
+    id: "major",
+    title: "Major Requirements",
+    requirements: [
+      "Transcript of Records and/or Diploma",
+      "Medical Records",
+      "NBI Clearance",
+      "Birth Certificate",
+      "Valid ID",
+    ],
+  },
+  {
+    id: "other",
+    title: "Other Requirements",
+    requirements: [
+      "ID picture (2 pcs passport size)",
+      "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
+      "TIN Verification Slip",
+      "SSS E1 Form",
+      "PhilHealth MDR",
+      "Pag-IBIG MDF",
+      "Vaccination Card",
+    ],
+  },
+  {
+    id: "previous-employment",
+    title: "Previous Employment",
+    requirements: PREVIOUS_EMPLOYMENT_REQUIREMENTS,
+  },
+];
 
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const index = Math.floor(Math.log(bytes) / Math.log(1024));
+const ACCEPTED_FILE_TYPES =
+  ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
 
-  return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 2)} ${
-    sizes[index]
-  }`;
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeRequirement(value) {
+  return cleanText(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+function isPreviousEmploymentRequirement(requirement) {
+  const requirementKey = normalizeRequirement(requirement);
+
+  return PREVIOUS_EMPLOYMENT_REQUIREMENTS.some(
+    (item) => normalizeRequirement(item) === requirementKey,
+  );
+}
+
+function getActiveRequirementGroups(previousEmploymentEnabled) {
+  return PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
+    if (group.id !== "previous-employment") return group;
+
+    return {
+      ...group,
+      requirements: previousEmploymentEnabled ? group.requirements : [],
+    };
+  });
+}
+
+function getActiveRequirements(previousEmploymentEnabled) {
+  return getActiveRequirementGroups(previousEmploymentEnabled).flatMap(
+    (group) => group.requirements,
+  );
+}
+
+function formatFileSize(size = 0) {
+  const numberSize = Number(size || 0);
+
+  if (!numberSize) return "—";
+
+  const kb = numberSize / 1024;
+
+  if (kb < 1024) {
+    return `${kb.toFixed(1)} KB`;
+  }
+
+  return `${(kb / 1024).toFixed(1)} MB`;
 }
 
 function getFileIcon(fileName = "") {
-  const ext = fileName.split(".").pop()?.toLowerCase();
+  const value = String(fileName || "").toLowerCase();
 
-  if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext)) {
-    return ImageIcon;
+  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) {
+    return FileImage;
   }
 
-  if (["xls", "xlsx", "csv"].includes(ext)) {
+  if (/\.(xls|xlsx|csv)$/i.test(value)) {
     return FileSpreadsheet;
-  }
-
-  if (["zip", "rar", "7z"].includes(ext)) {
-    return FileArchive;
   }
 
   return FileText;
 }
 
-function getFileTypeLabel(fileName = "") {
-  const ext = fileName.split(".").pop()?.toUpperCase();
-  return ext || "FILE";
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
 }
 
-const NhoUploadModal = ({
+function normalizeUploadedFile(file = {}) {
+  return {
+    id:
+      file.id ||
+      `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    requirement: file.requirement || "",
+    fileName: file.fileName || file.name || "",
+    savedFileName: file.savedFileName || file.filename || "",
+    filename: file.filename || file.savedFileName || "",
+    fileSize: file.fileSize || file.size || 0,
+    fileType: file.fileType || file.type || "",
+    fileUrl: file.fileUrl || file.url || file.dataUrl || "",
+    filePath: file.filePath || file.storedPath || file.path || "",
+    storedPath: file.storedPath || file.filePath || file.path || "",
+    uploadedAt: file.uploadedAt || new Date().toISOString(),
+    uploadedBy: file.uploadedBy || "",
+    applicantFolderName: file.applicantFolderName || "",
+    rawFile: file.rawFile || null,
+  };
+}
+
+function getApiErrorMessage(error, fallback = "Request failed.") {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
+function getResolvedFileUrl(fileUrl = "") {
+  const value = cleanText(fileUrl);
+
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  const apiBaseUrl = cleanText(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
+
+  if (value.startsWith("/api/") && apiBaseUrl) {
+    return `${apiBaseUrl}${value}`;
+  }
+
+  return value;
+}
+
+function ToggleSwitch({ checked, disabled = false, onChange }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange?.(!checked)}
+      className={`inline-flex h-8 items-center gap-2 rounded-full border px-2 text-xs font-extrabold transition ${
+        checked
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-slate-200 bg-slate-50 text-slate-600"
+      } disabled:cursor-not-allowed disabled:opacity-60`}
+    >
+      <span
+        className={`relative h-5 w-9 rounded-full transition ${
+          checked ? "bg-emerald-500" : "bg-slate-300"
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${
+            checked ? "left-4" : "left-0.5"
+          }`}
+        />
+      </span>
+
+      {checked ? "Enabled" : "Disabled"}
+    </button>
+  );
+}
+
+function RequirementCard({
+  requirement,
+  uploadedFile,
+  disabled = false,
+  onUpload,
+  onSelect,
+  onRemove,
+}) {
+  const inputRef = useRef(null);
+
+  const hasFile = Boolean(uploadedFile?.fileName);
+  const FileIcon = getFileIcon(uploadedFile?.fileName);
+
+  async function handleFileChange(event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      const fileUrl = await readFileAsDataUrl(file);
+
+      onUpload(requirement, {
+        id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        requirement,
+        fileName: file.name,
+        savedFileName: "",
+        filename: "",
+        fileSize: file.size,
+        fileType: file.type || "application/octet-stream",
+        fileUrl,
+        filePath: "",
+        storedPath: "",
+        uploadedAt: new Date().toISOString(),
+        rawFile: file,
+      });
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  return (
+    <div
+      className={`rounded-xl border p-4 transition ${
+        hasFile
+          ? "border-emerald-200 bg-emerald-50/50"
+          : "border-[#D9E2EC] bg-[#F8FAFC]"
+      }`}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <button
+          type="button"
+          disabled={!hasFile || disabled}
+          onClick={() => {
+            if (hasFile) onSelect(uploadedFile);
+          }}
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition disabled:cursor-not-allowed ${
+            hasFile
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-[#B9C7D6] bg-white"
+          }`}
+          title={hasFile ? "View uploaded file" : "No file uploaded"}
+        >
+          {hasFile && <Check size={14} strokeWidth={3} />}
+        </button>
+
+        <div className="min-w-0 flex-1">
+          <p
+            title={requirement}
+            className="truncate text-sm font-extrabold text-[#101828]"
+          >
+            {requirement}
+          </p>
+
+          {hasFile && (
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelect(uploadedFile)}
+              className="mt-2 flex w-full min-w-0 items-center gap-2 rounded-xl border border-emerald-100 bg-white px-3 py-2 text-left transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <FileIcon size={17} className="shrink-0 text-emerald-700" />
+
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-xs font-extrabold text-emerald-800">
+                  {uploadedFile.fileName}
+                </span>
+
+                <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
+                  {formatFileSize(uploadedFile.fileSize)}
+                </span>
+              </span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => inputRef.current?.click()}
+          className={`flex h-11 min-w-0 flex-1 items-center justify-between rounded-xl border border-dashed px-3 text-left text-xs font-extrabold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+            hasFile
+              ? "border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"
+              : "border-[#B9C7D6] bg-white text-sibs-primary-1 hover:bg-[#F3F8FF]"
+          }`}
+        >
+          <span className="truncate">
+            {hasFile
+              ? "Replace uploaded file"
+              : "Upload file for this requirement"}
+          </span>
+
+          <UploadCloud size={17} className="shrink-0" />
+        </button>
+
+        {hasFile && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onRemove(requirement)}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+            title="Remove file"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPTED_FILE_TYPES}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+    </div>
+  );
+}
+
+function FilePreviewPanel({ file }) {
+  if (!file) {
+    return (
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
+          <FileText size={27} />
+        </div>
+
+        <p className="mt-4 text-base font-extrabold text-[#101828]">
+          No file selected
+        </p>
+
+        <p className="mt-2 max-w-xs text-sm font-semibold leading-6 text-sibs-tertiary-5">
+          Select an uploaded file from the list to preview its details here.
+        </p>
+      </div>
+    );
+  }
+
+  const FileIcon = getFileIcon(file.fileName);
+  const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
+
+  const isImage =
+    resolvedFileUrl &&
+    String(file.fileType || "").startsWith("image/") &&
+    !String(resolvedFileUrl).startsWith("blob:");
+
+  return (
+    <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+          <FileIcon size={24} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            Selected File
+          </p>
+
+          <h3
+            title={file.fileName}
+            className="mt-1 break-words text-base font-extrabold text-[#101828]"
+          >
+            {file.fileName}
+          </h3>
+
+          <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+            {formatFileSize(file.fileSize)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            Requirement
+          </p>
+
+          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+            {file.requirement || "—"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            Uploaded At
+          </p>
+
+          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+            {file.uploadedAt
+              ? new Date(file.uploadedAt).toLocaleString("en-PH", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
+              : "—"}
+          </p>
+        </div>
+
+        {file.applicantFolderName && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+              Server Folder
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+              {file.applicantFolderName}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {isImage && (
+        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+          <img
+            src={resolvedFileUrl}
+            alt={file.fileName}
+            className="max-h-[280px] w-full object-contain"
+          />
+        </div>
+      )}
+
+      {resolvedFileUrl && (
+        <a
+          href={resolvedFileUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+        >
+          Open File
+        </a>
+      )}
+    </div>
+  );
+}
+
+export default function NhoUploadModal({
   open,
   onClose,
+  candidateId = "",
   candidateName = "Candidate",
   candidateEmail = "",
-  title = "Pre-Employment File Uploads",
-  subtitle = "Upload, review, and monitor candidate pre-employment requirements.",
-  requirements = DEFAULT_REQUIREMENTS,
   initialFiles = [],
   currentFile = null,
+  previousEmploymentEnabled: initialPreviousEmploymentEnabled = false,
   onSave,
-}) => {
-  const requirementFileInputRefs = useRef({});
-
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [viewingFile, setViewingFile] = useState(null);
-  const [checkedRequirements, setCheckedRequirements] = useState({});
+}) {
+  const [files, setFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previousEmploymentEnabled, setPreviousEmploymentEnabled] =
+    useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    if (open) {
-      setUploadedFiles(initialFiles || []);
-      setViewingFile(currentFile || initialFiles?.[0] || null);
+    if (!open) return;
 
-      const checks = {};
-      (initialFiles || []).forEach((file) => {
-        if (file.requirement) checks[file.requirement] = true;
-      });
+    const normalizedFiles = Array.isArray(initialFiles)
+      ? initialFiles.map(normalizeUploadedFile)
+      : [];
 
-      setCheckedRequirements(checks);
-    }
-  }, [open, initialFiles, currentFile]);
+    const hasPreviousEmploymentFile = normalizedFiles.some((file) =>
+      isPreviousEmploymentRequirement(file.requirement),
+    );
 
-  const filesByRequirement = useMemo(() => {
-    const map = {};
+    const nextPreviousEmploymentEnabled =
+      Boolean(initialPreviousEmploymentEnabled) || hasPreviousEmploymentFile;
 
-    uploadedFiles.forEach((file) => {
-      if (file.requirement) {
-        map[file.requirement] = file;
+    setPreviousEmploymentEnabled(nextPreviousEmploymentEnabled);
+
+    const nextFiles = nextPreviousEmploymentEnabled
+      ? normalizedFiles
+      : normalizedFiles.filter(
+          (file) => !isPreviousEmploymentRequirement(file.requirement),
+        );
+
+    setFiles(nextFiles);
+
+    const normalizedCurrentFile = currentFile
+      ? normalizeUploadedFile(currentFile)
+      : nextFiles[0] || null;
+
+    setSelectedFile(
+      normalizedCurrentFile &&
+        !nextPreviousEmploymentEnabled &&
+        isPreviousEmploymentRequirement(normalizedCurrentFile.requirement)
+        ? nextFiles[0] || null
+        : normalizedCurrentFile,
+    );
+
+    setSaveError("");
+    setIsSaving(false);
+  }, [open, initialFiles, currentFile, initialPreviousEmploymentEnabled]);
+
+  const activeRequirementGroups = useMemo(() => {
+    return getActiveRequirementGroups(previousEmploymentEnabled);
+  }, [previousEmploymentEnabled]);
+
+  const activeRequirements = useMemo(() => {
+    return getActiveRequirements(previousEmploymentEnabled);
+  }, [previousEmploymentEnabled]);
+
+  const uploadedRequirementMap = useMemo(() => {
+    const map = new Map();
+
+    files.forEach((file) => {
+      const key = normalizeRequirement(file.requirement);
+
+      if (key) {
+        map.set(key, file);
       }
     });
 
     return map;
-  }, [uploadedFiles]);
+  }, [files]);
 
-  const completion = useMemo(() => {
-    const total = requirements.length || 0;
-    const completed = Object.values(checkedRequirements).filter(Boolean).length;
+  const completedRequirements = useMemo(() => {
+    return activeRequirements.filter((requirement) =>
+      uploadedRequirementMap.has(normalizeRequirement(requirement)),
+    ).length;
+  }, [activeRequirements, uploadedRequirementMap]);
 
-    return {
-      total,
-      completed,
-      percent: total ? Math.round((completed / total) * 100) : 0,
-    };
-  }, [requirements, checkedRequirements]);
+  const progressPercent = activeRequirements.length
+    ? Math.round((completedRequirements / activeRequirements.length) * 100)
+    : 0;
 
   if (!open) return null;
 
-  const handleRequirementFileUpload = (requirement, event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  function handlePreviousEmploymentToggle(enabled) {
+    setPreviousEmploymentEnabled(enabled);
 
-    const newFile = {
-      id: `file-${Date.now()}-${requirement}`,
-      file,
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      requirement,
-      uploadedAt: new Date().toISOString(),
-      previewUrl: URL.createObjectURL(file),
-      status: "Uploaded",
-    };
+    if (!enabled) {
+      setFiles((previous) => {
+        const nextFiles = previous.filter(
+          (file) => !isPreviousEmploymentRequirement(file.requirement),
+        );
 
-    setUploadedFiles((prev) => {
-      const withoutSameRequirement = prev.filter(
-        (item) => item.requirement !== requirement,
+        setSelectedFile((current) => {
+          if (isPreviousEmploymentRequirement(current?.requirement)) {
+            return nextFiles[0] || null;
+          }
+
+          return current;
+        });
+
+        return nextFiles;
+      });
+    }
+  }
+
+  function handleUpload(requirement, filePayload) {
+    setFiles((previous) => {
+      const requirementKey = normalizeRequirement(requirement);
+
+      const withoutCurrentRequirement = previous.filter(
+        (item) => normalizeRequirement(item.requirement) !== requirementKey,
       );
 
-      return [newFile, ...withoutSameRequirement];
+      const nextFiles = [filePayload, ...withoutCurrentRequirement];
+
+      setSelectedFile(filePayload);
+
+      return nextFiles;
     });
+  }
 
-    setViewingFile(newFile);
+  function handleRemove(requirement) {
+    const requirementKey = normalizeRequirement(requirement);
 
-    setCheckedRequirements((prev) => ({
-      ...prev,
-      [requirement]: true,
-    }));
-
-    if (requirementFileInputRefs.current[requirement]) {
-      requirementFileInputRefs.current[requirement].value = "";
-    }
-  };
-
-  const handleRemoveFile = (fileId) => {
-    const targetFile = uploadedFiles.find((item) => item.id === fileId);
-    const nextFiles = uploadedFiles.filter((item) => item.id !== fileId);
-
-    setUploadedFiles(nextFiles);
-
-    if (targetFile?.requirement) {
-      setCheckedRequirements((prev) => ({
-        ...prev,
-        [targetFile.requirement]: false,
-      }));
-    }
-
-    if (viewingFile?.id === fileId) {
-      setViewingFile(nextFiles[0] || null);
-    }
-  };
-
-  const handleSave = () => {
-    onSave?.({
-      files: uploadedFiles,
-      checkedRequirements,
-      completion,
-    });
-
-    onClose?.();
-  };
-
-  const renderPreview = () => {
-    if (!viewingFile) {
-      return (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#C9D6E4] bg-[#F8FBFF] px-6 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#1E5A91] shadow-sm">
-            <FileText size={28} />
-          </div>
-
-          <h4 className="text-base font-extrabold text-[#101828]">
-            No file selected
-          </h4>
-
-          <p className="mt-2 max-w-[260px] text-sm leading-6 text-[#667085]">
-            Select an uploaded file from the list to preview its details here.
-          </p>
-        </div>
+    setFiles((previous) => {
+      const nextFiles = previous.filter(
+        (item) => normalizeRequirement(item.requirement) !== requirementKey,
       );
-    }
 
-    const Icon = getFileIcon(viewingFile.fileName);
-    const isImage =
-      viewingFile.previewUrl &&
-      /\.(jpg|jpeg|png|gif|webp)$/i.test(viewingFile.fileName || "");
+      setSelectedFile((current) => {
+        if (normalizeRequirement(current?.requirement) === requirementKey) {
+          return nextFiles[0] || null;
+        }
 
-    return (
-      <div className="overflow-hidden rounded-2xl border border-[#D9E4EF] bg-white">
-        <div className="border-b border-[#E6ECF2] px-5 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-extrabold uppercase tracking-wide text-[#1E5A91]">
-                Current File
-              </p>
+        return current;
+      });
 
-              <h4
-                title={viewingFile.fileName}
-                className="mt-1 truncate text-base font-extrabold text-[#101828]"
-              >
-                {viewingFile.fileName}
-              </h4>
-            </div>
+      return nextFiles;
+    });
+  }
 
-            <span className="shrink-0 rounded-full bg-[#ECFDF3] px-3 py-1 text-xs font-extrabold text-[#027A48]">
-              {viewingFile.status || "Uploaded"}
-            </span>
-          </div>
-        </div>
+  async function saveUploadsToBackend() {
+    const formData = new FormData();
 
-        <div className="p-5">
-          <div className="mb-4 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-[#F8FBFF]">
-            {isImage ? (
-              <img
-                src={viewingFile.previewUrl}
-                alt={viewingFile.fileName}
-                className="h-[220px] w-full object-contain sm:h-[260px]"
-              />
-            ) : (
-              <div className="flex h-[220px] flex-col items-center justify-center px-6 text-center sm:h-[260px]">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-[#1E5A91] shadow-sm">
-                  <Icon size={34} />
-                </div>
+    const filePayloads = files.map((file) => {
+      const hasNewFile = Boolean(file.rawFile);
 
-                <p className="text-sm font-extrabold text-[#101828]">
-                  {getFileTypeLabel(viewingFile.fileName)} File Preview
-                </p>
+      if (hasNewFile) {
+        formData.append("nhoFiles", file.rawFile, file.fileName);
+      }
 
-                <p className="mt-2 text-xs text-[#667085]">
-                  Preview is available for image files. Other file types can be
-                  viewed or downloaded.
-                </p>
-              </div>
-            )}
-          </div>
+      return {
+        id: file.id,
+        requirement: file.requirement,
+        fileName: file.fileName,
+        savedFileName: file.savedFileName,
+        filename: file.filename,
+        fileUrl: hasNewFile ? "" : file.fileUrl,
+        filePath: file.filePath,
+        storedPath: file.storedPath,
+        fileType: file.fileType,
+        fileSize: file.fileSize,
+        uploadedAt: file.uploadedAt,
+        uploadedBy: file.uploadedBy,
+        applicantFolderName: file.applicantFolderName,
+        hasNewFile,
+      };
+    });
 
-          <div className="space-y-3 rounded-2xl bg-[#F8FBFF] p-4">
-            <div className="flex items-center justify-between gap-4">
-              <span className="shrink-0 text-xs font-extrabold uppercase text-[#1E5A91]">
-                Requirement
-              </span>
-
-              <span
-                title={viewingFile.requirement || "Not assigned"}
-                className="min-w-0 truncate text-right text-sm font-bold text-[#344054]"
-              >
-                {viewingFile.requirement || "Not assigned"}
-              </span>
-            </div>
-
-            <div className="h-px bg-[#E6ECF2]" />
-
-            <div className="flex items-center justify-between gap-4">
-              <span className="shrink-0 text-xs font-extrabold uppercase text-[#1E5A91]">
-                File Size
-              </span>
-
-              <span className="text-sm font-bold text-[#344054]">
-                {formatFileSize(viewingFile.fileSize)}
-              </span>
-            </div>
-
-            <div className="h-px bg-[#E6ECF2]" />
-
-            <div className="flex items-center justify-between gap-4">
-              <span className="shrink-0 text-xs font-extrabold uppercase text-[#1E5A91]">
-                Uploaded At
-              </span>
-
-              <span className="text-right text-sm font-bold text-[#344054]">
-                {viewingFile.uploadedAt
-                  ? new Date(viewingFile.uploadedAt).toLocaleString()
-                  : "—"}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            {viewingFile.previewUrl && (
-              <a
-                href={viewingFile.previewUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#C9D6E4] bg-white px-4 py-3 text-sm font-extrabold text-[#042C51] transition hover:bg-[#F8FBFF]"
-              >
-                <Eye size={16} />
-                View
-              </a>
-            )}
-
-            {viewingFile.previewUrl && (
-              <a
-                href={viewingFile.previewUrl}
-                download={viewingFile.fileName}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 py-3 text-sm font-extrabold text-white transition hover:bg-[#06406F]"
-              >
-                <Download size={16} />
-                Download
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
+    formData.append("filePayloads", JSON.stringify(filePayloads));
+    formData.append("completed", String(completedRequirements));
+    formData.append("total", String(activeRequirements.length));
+    formData.append("percent", String(progressPercent));
+    formData.append(
+      "previousEmploymentEnabled",
+      String(previousEmploymentEnabled),
     );
-  };
+
+    const response = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+
+    return response?.data;
+  }
+
+  async function handleSaveUploads() {
+    setSaveError("");
+
+    try {
+      setIsSaving(true);
+
+      if (candidateId) {
+        const response = await saveUploadsToBackend();
+
+        if (!response?.success) {
+          throw new Error(response?.message || "Failed to save uploads.");
+        }
+
+        const savedFiles = Array.isArray(response.files)
+          ? response.files.map(normalizeUploadedFile)
+          : Array.isArray(response?.data?.files)
+            ? response.data.files.map(normalizeUploadedFile)
+            : files;
+
+        onSave?.({
+          files: savedFiles,
+          completed:
+            response?.data?.progress?.completed ?? completedRequirements,
+          total: response?.data?.progress?.total ?? activeRequirements.length,
+          percent: response?.data?.progress?.percent ?? progressPercent,
+          previousEmploymentEnabled:
+            response?.data?.previousEmploymentEnabled ??
+            previousEmploymentEnabled,
+          response,
+        });
+
+        onClose?.();
+        return;
+      }
+
+      onSave?.({
+        files,
+        completed: completedRequirements,
+        total: activeRequirements.length,
+        percent: progressPercent,
+        previousEmploymentEnabled,
+      });
+
+      onClose?.();
+    } catch (error) {
+      setSaveError(getApiErrorMessage(error, "Failed to save uploads."));
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-3 py-4 sm:px-4 sm:py-6">
-      <div className="flex max-h-[94vh] w-[min(96vw,1360px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-6 border-b border-[#E6ECF2] px-4 py-5 sm:px-6 lg:px-7 lg:py-6">
+    <div
+      className="fixed inset-0 z-[10010] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+      onClick={() => {
+        if (!isSaving) onClose?.();
+      }}
+    >
+      <div
+        className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-7">
           <div className="min-w-0">
-            <h2 className="truncate text-xl font-extrabold text-[#042C51] sm:text-2xl">
-              {title}
+            <h2 className="text-xl font-extrabold text-sibs-primary-1 sm:text-2xl">
+              Pre-Employment File Uploads
             </h2>
 
-            <p className="mt-1 truncate text-sm font-medium text-[#1E5A91]">
-              {subtitle}
+            <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
+              Upload, review, and monitor candidate pre-employment requirements.
             </p>
           </div>
 
           <button
             type="button"
+            disabled={isSaving}
             onClick={onClose}
-            className="shrink-0 rounded-xl p-2 text-[#98A2B3] transition hover:bg-[#F2F4F7] hover:text-[#101828]"
+            className="rounded-xl p-2 text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <X size={22} />
           </button>
         </div>
 
-        <div className="grid flex-1 grid-cols-1 gap-5 overflow-y-auto overflow-x-hidden bg-white px-4 py-5 sm:px-6 lg:grid-cols-[70fr_30fr] xl:px-7">
-          <div className="min-w-0 space-y-5">
-            <div className="rounded-2xl border border-[#D9E4EF] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h3
-                    title={candidateName}
-                    className="truncate text-lg font-extrabold text-[#101828]"
-                  >
-                    {candidateName}
-                  </h3>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0 space-y-5">
+              <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-lg font-extrabold text-[#101828]">
+                      {candidateName}
+                    </h3>
 
-                  {candidateEmail && (
-                    <p
-                      title={candidateEmail}
-                      className="mt-1 truncate text-sm font-semibold text-[#1E5A91]"
-                    >
-                      {candidateEmail}
+                    <p className="mt-1 truncate text-sm font-bold text-sibs-primary-1">
+                      {candidateEmail || "No email provided"}
                     </p>
-                  )}
+                  </div>
+
+                  <div className="flex shrink-0 flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-[#344054]">
+                      Pre-Employment
+                    </span>
+
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                      {completedRequirements} / {activeRequirements.length}{" "}
+                      Submitted
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <span className="rounded-full bg-[#F2F4F7] px-3 py-1 text-xs font-extrabold text-[#344054]">
-                    Pre-Employment
-                  </span>
+                <div className="mt-5">
+                  <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <span>Completion</span>
+                    <span>{progressPercent}%</span>
+                  </div>
 
-                  <span className="rounded-full bg-[#ECFDF3] px-3 py-1 text-xs font-extrabold text-[#027A48]">
-                    {completion.completed} / {completion.total} Submitted
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-[#1E5A91]">
-                  <span>Completion</span>
-                  <span>{completion.percent}%</span>
+                  <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
+                    <div
+                      className="h-full rounded-full bg-sibs-primary-1 transition-all duration-300"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
                 </div>
 
-                <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
-                  <div
-                    className="h-full rounded-full bg-[#042C51] transition-all duration-300"
-                    style={{ width: `${completion.percent}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+                {saveError && (
+                  <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+                    {saveError}
+                  </div>
+                )}
 
-            <div className="rounded-2xl border border-[#D9E4EF] bg-white p-4 sm:p-5">
-              <div className="mb-4">
-                <h3 className="text-base font-extrabold text-[#101828]">
+                {!candidateId && (
+                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                    Candidate ID is missing. Uploads will only be saved through
+                    the parent component fallback.
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+                <h3 className="text-lg font-extrabold text-[#101828]">
                   Pre-Employment Requirements
                 </h3>
 
-                <p className="mt-1 text-sm text-[#667085]">
-                  Upload the supporting file under each requirement. The item is
-                  automatically checked once a file is uploaded.
-                </p>
-              </div>
+                <div className="mt-5 space-y-6">
+                  {activeRequirementGroups.map((group) => {
+                    const groupCompleted = group.requirements.filter(
+                      (requirement) =>
+                        uploadedRequirementMap.has(
+                          normalizeRequirement(requirement),
+                        ),
+                    ).length;
 
-              <div className="grid gap-3 xl:grid-cols-2">
-                {requirements.map((item) => {
-                  const uploadedFile = filesByRequirement[item];
-                  const checked = !!checkedRequirements[item];
-
-                  return (
-                    <div
-                      key={item}
-                      className={`min-w-0 rounded-xl border px-4 py-3 transition ${
-                        checked
-                          ? "border-[#A6F4C5] bg-[#ECFDF3]"
-                          : "border-[#E6ECF2] bg-[#F8FBFF]"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-                            checked
-                              ? "border-[#12B76A] bg-[#12B76A] text-white"
-                              : "border-[#C9D6E4] bg-white"
-                          }`}
-                        >
-                          {checked && <CheckCircle2 size={14} />}
-                        </div>
-
-                        <span
-                          title={item}
-                          className={`block min-w-0 flex-1 truncate text-sm font-semibold ${
-                            checked ? "text-[#027A48]" : "text-[#344054]"
-                          }`}
-                        >
-                          {item}
-                        </span>
-                      </div>
-
-                      {uploadedFile ? (
-                        <div className="mt-3 rounded-xl border border-[#D9E4EF] bg-white p-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F8FBFF] text-[#1E5A91]">
-                              {React.createElement(
-                                getFileIcon(uploadedFile.fileName),
-                                {
-                                  size: 19,
-                                },
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => setViewingFile(uploadedFile)}
-                              className="min-w-0 flex-1 text-left"
-                            >
-                              <p
-                                title={uploadedFile.fileName}
-                                className="truncate text-xs font-extrabold text-[#101828]"
-                              >
-                                {uploadedFile.fileName}
-                              </p>
-
-                              <p className="mt-0.5 text-[11px] font-semibold text-[#667085]">
-                                {formatFileSize(uploadedFile.fileSize)}
-                              </p>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setViewingFile(uploadedFile)}
-                              className="shrink-0 rounded-lg p-2 text-[#1E5A91] transition hover:bg-[#F8FBFF]"
-                              title="View file"
-                            >
-                              <Eye size={16} />
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveFile(uploadedFile.id)}
-                              className="shrink-0 rounded-lg p-2 text-[#F04438] transition hover:bg-[#FEF3F2]"
-                              title="Remove file"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="mt-3 flex h-11 min-w-0 cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 text-xs font-bold text-[#1E5A91] transition hover:bg-[#F8FBFF]">
-                          <span className="min-w-0 flex-1 truncate">
-                            Upload file for this requirement
-                          </span>
-
-                          <UploadCloud size={17} className="shrink-0" />
-
-                          <input
-                            ref={(el) => {
-                              requirementFileInputRefs.current[item] = el;
-                            }}
-                            type="file"
-                            accept={ACCEPTED_FILE_TYPES}
-                            onChange={(event) =>
-                              handleRequirementFileUpload(item, event)
-                            }
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <p className="mt-4 text-xs font-medium text-[#667085]">
-                Accepted file types: PDF, Word, Excel, CSV, JPG, JPEG, PNG, and
-                GIF.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#D9E4EF] bg-white p-4 sm:p-5">
-              <div className="mb-4">
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Uploaded Files
-                </h3>
-
-                <p className="mt-1 text-sm text-[#667085]">
-                  Click a file to view it on the current file section.
-                </p>
-              </div>
-
-              {uploadedFiles.length === 0 ? (
-                <div className="flex min-h-[160px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#C9D6E4] bg-[#F8FBFF] px-6 text-center">
-                  <AlertCircle size={28} className="text-[#98A2B3]" />
-
-                  <p className="mt-3 text-sm font-extrabold text-[#344054]">
-                    No uploaded files yet
-                  </p>
-
-                  <p className="mt-1 text-xs text-[#667085]">
-                    Uploaded requirements will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {uploadedFiles.map((file) => {
-                    const Icon = getFileIcon(file.fileName);
-                    const active = viewingFile?.id === file.id;
+                    const isPreviousEmployment =
+                      group.id === "previous-employment";
 
                     return (
                       <div
-                        key={file.id}
-                        className={`flex min-w-0 items-center gap-4 rounded-2xl border p-4 transition ${
-                          active
-                            ? "border-[#1E5A91] bg-[#F0F7FF]"
-                            : "border-[#E6ECF2] bg-white hover:bg-[#F8FBFF]"
-                        }`}
+                        key={group.id}
+                        className="border-t border-[#E6ECF2] pt-5 first:border-t-0 first:pt-0"
                       >
-                        <button
-                          type="button"
-                          onClick={() => setViewingFile(file)}
-                          className="flex min-w-0 flex-1 items-center gap-4 text-left"
-                        >
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#F2F4F7] text-[#1E5A91]">
-                            <Icon size={22} />
+                        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <h4 className="text-base font-extrabold text-sibs-primary-1">
+                              {group.title}
+                            </h4>
+
+                            <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                              {groupCompleted} / {group.requirements.length}
+                            </span>
                           </div>
 
-                          <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                              <p
-                                title={file.fileName}
-                                className="min-w-0 truncate text-sm font-extrabold text-[#101828]"
-                              >
-                                {file.fileName}
-                              </p>
-
-                              <span className="shrink-0 rounded-full bg-[#EEF4FA] px-2.5 py-1 text-[11px] font-extrabold text-[#1E5A91]">
-                                {getFileTypeLabel(file.fileName)}
-                              </span>
-                            </div>
-
-                            <p
-                              title={file.requirement}
-                              className="mt-1 truncate text-xs font-medium text-[#667085]"
-                            >
-                              {file.requirement}
-                            </p>
-                          </div>
-                        </button>
-
-                        <div className="hidden shrink-0 text-right md:block">
-                          <p className="text-xs font-bold text-[#344054]">
-                            {formatFileSize(file.fileSize)}
-                          </p>
-
-                          <p className="mt-1 text-[11px] text-[#667085]">
-                            {file.uploadedAt
-                              ? new Date(file.uploadedAt).toLocaleDateString()
-                              : "—"}
-                          </p>
+                          {isPreviousEmployment && (
+                            <ToggleSwitch
+                              checked={previousEmploymentEnabled}
+                              disabled={isSaving}
+                              onChange={handlePreviousEmploymentToggle}
+                            />
+                          )}
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(file.id)}
-                          className="shrink-0 rounded-xl p-2 text-[#F04438] transition hover:bg-[#FEF3F2]"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {isPreviousEmployment && !previousEmploymentEnabled ? (
+                          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-5 text-sm font-bold text-sibs-tertiary-5">
+                            Previous employment requirements are disabled for
+                            this candidate.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {group.requirements.map((requirement) => {
+                              const uploadedFile = uploadedRequirementMap.get(
+                                normalizeRequirement(requirement),
+                              );
+
+                              return (
+                                <RequirementCard
+                                  key={requirement}
+                                  requirement={requirement}
+                                  uploadedFile={uploadedFile}
+                                  disabled={isSaving}
+                                  onUpload={handleUpload}
+                                  onSelect={setSelectedFile}
+                                  onRemove={handleRemove}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
-              )}
+              </section>
             </div>
-          </div>
 
-          <div className="min-w-0 space-y-5 lg:sticky lg:top-0 lg:self-start">
-            {renderPreview()}
+            <aside className="xl:sticky xl:top-0 xl:self-start">
+              <FilePreviewPanel file={selectedFile} />
+            </aside>
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between xl:px-7">
-          <div className="text-sm font-semibold text-[#667085]">
-            {completion.completed} of {completion.total} requirements submitted.
-          </div>
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-7">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-bold text-sibs-tertiary-5">
+              {completedRequirements} of {activeRequirements.length}{" "}
+              requirements submitted.
+            </p>
 
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full rounded-xl border border-[#C9D6E4] bg-white px-5 py-3 text-sm font-extrabold text-[#344054] transition hover:bg-[#F8FBFF] sm:w-auto"
-            >
-              Cancel
-            </button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={onClose}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
 
-            <button
-              type="button"
-              onClick={handleSave}
-              className="w-full rounded-xl bg-[#042C51] px-5 py-3 text-sm font-extrabold text-white transition hover:bg-[#06406F] sm:w-auto"
-            >
-              Save Uploads
-            </button>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveUploads}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSaving && <Loader2 size={17} className="animate-spin" />}
+                {isSaving ? "Saving..." : "Save Uploads"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default NhoUploadModal;
+}

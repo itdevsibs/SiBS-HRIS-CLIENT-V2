@@ -2,7 +2,16 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 
+import {
+  deleteFinalInterviewDraft,
+  getFinalInterviewDraft,
+  saveFinalInterviewDraft,
+} from "../../../lib/axios/getFinalInterviewDraft";
+
+import StatusModal from "../../../components/modals/StatusModal";
+
 const RECRUITMENT_SETTINGS_STORAGE_KEY = "sibs_recruitment_settings_temp";
+const DEFAULT_JOB_EVALUATION_FORM_ID = "default-job-evaluation";
 
 const JOB_EVALUATION_FIELDS = {
   education: "je_education",
@@ -563,9 +572,6 @@ function ScoreSummaryCard({
     finalInterviewHasScore &&
     finalInterviewRatingScore.percentageScore >= passingScore;
 
-  const overallPassed = jobEvaluationPassed && finalInterviewPassed;
-  const overallStatusLabel = overallPassed ? "Passed" : "Needs Review";
-
   const finalInterviewPercent = finalInterviewHasScore
     ? finalInterviewRatingScore.percentageScore.toFixed(0)
     : "—";
@@ -897,6 +903,102 @@ export default function FinalInterviewForms() {
 
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState("");
+  const [draftSaveStatus, setDraftSaveStatus] = useState("");
+
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "error",
+    title: "",
+    message: "",
+    afterClose: null,
+  });
+
+  function showStatusModal({
+    type = "error",
+    title = "Something went wrong",
+    message = "Please try again.",
+    afterClose = null,
+  }) {
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
+      afterClose,
+    });
+  }
+
+  function closeStatusModal() {
+    const afterClose = statusModal.afterClose;
+
+    setStatusModal({
+      open: false,
+      type: "error",
+      title: "",
+      message: "",
+      afterClose: null,
+    });
+
+    if (typeof afterClose === "function") {
+      window.setTimeout(afterClose, 0);
+    }
+  }
+
+  useEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    function scrollToTop() {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      const scrollContainers = document.querySelectorAll(
+        "main, #root, .overflow-y-auto, .overflow-auto",
+      );
+
+      scrollContainers.forEach((container) => {
+        if (container && typeof container.scrollTo === "function") {
+          container.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto",
+          });
+        }
+      });
+    }
+
+    scrollToTop();
+
+    const animationFrameId = window.requestAnimationFrame(scrollToTop);
+    const timeoutId = window.setTimeout(scrollToTop, 100);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.clearTimeout(timeoutId);
+
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = previousScrollRestoration;
+      }
+    };
+  }, [
+    candidateId,
+    candidateApplicationId,
+    positionId,
+    formId,
+    submissionId,
+    mode,
+  ]);
 
   const currentCandidate = useMemo(() => {
     return candidateList.find((candidate) => {
@@ -913,26 +1015,9 @@ export default function FinalInterviewForms() {
     });
   }, [candidateList, candidateId, candidateApplicationId]);
 
-  const savedSubmission = useMemo(() => {
-    if (!isViewMode || !submissionId || !currentCandidate) return null;
-
-    return (currentCandidate.finalInterviewSubmittedForms || []).find(
-      (item) => String(item.id) === String(submissionId),
-    );
-  }, [isViewMode, submissionId, currentCandidate]);
-
   const settings = useMemo(() => safeReadSettings(), []);
 
   const activeForm = useMemo(() => {
-    if (savedSubmission) {
-      return {
-        id: savedSubmission.formId,
-        name: savedSubmission.formName,
-        passingScore: savedSubmission.passingScore,
-        fields: savedSubmission.fieldsSnapshot || [],
-      };
-    }
-
     if (!settings?.forms?.length) return null;
 
     const forms = settings.forms;
@@ -981,27 +1066,48 @@ export default function FinalInterviewForms() {
     if (formByPosition) return formByPosition;
 
     return null;
-  }, [settings, formId, positionId, savedSubmission, currentCandidate]);
+  }, [settings, formId, positionId, currentCandidate]);
+
+  const effectivePositionId = useMemo(() => {
+    return positionId || getCandidatePositionId(currentCandidate);
+  }, [positionId, currentCandidate]);
+
+  const effectiveFormId = useMemo(() => {
+    return formId || activeForm?.id || DEFAULT_JOB_EVALUATION_FORM_ID;
+  }, [formId, activeForm]);
+
+  const savedSubmission = useMemo(() => {
+    if (!isViewMode || !submissionId || !currentCandidate) return null;
+
+    return (currentCandidate.finalInterviewSubmittedForms || []).find(
+      (item) => String(item.id) === String(submissionId),
+    );
+  }, [isViewMode, submissionId, currentCandidate]);
 
   const jobEvaluationFormName = useMemo(() => {
-    return getJobEvaluationTitle(activeForm?.name);
-  }, [activeForm?.name]);
+    return getJobEvaluationTitle(activeForm?.name || savedSubmission?.formName);
+  }, [activeForm?.name, savedSubmission?.formName]);
 
   const groupedFields = useMemo(() => {
-    return groupFieldsBySection(activeForm?.fields || []);
-  }, [activeForm]);
+    return groupFieldsBySection(
+      savedSubmission?.fieldsSnapshot || activeForm?.fields || [],
+    );
+  }, [activeForm, savedSubmission]);
 
   const passingScore = useMemo(() => {
-    return getPassingScore(activeForm);
-  }, [activeForm]);
+    return getPassingScore(savedSubmission || activeForm);
+  }, [activeForm, savedSubmission]);
 
   const jobEvaluationScore = useMemo(() => {
     return calculateJobEvaluationScore(answers);
   }, [answers]);
 
   const finalInterviewRatingScore = useMemo(() => {
-    return calculateRatingScore(activeForm?.fields || [], answers);
-  }, [activeForm, answers]);
+    return calculateRatingScore(
+      savedSubmission?.fieldsSnapshot || activeForm?.fields || [],
+      answers,
+    );
+  }, [activeForm, savedSubmission, answers]);
 
   const scoreSummary = useMemo(() => {
     const jobEvaluationPassed =
@@ -1029,10 +1135,128 @@ export default function FinalInterviewForms() {
   }, [jobEvaluationScore, finalInterviewRatingScore, passingScore]);
 
   useEffect(() => {
-    if (savedSubmission?.answers) {
-      setAnswers(savedSubmission.answers);
+    let active = true;
+
+    async function loadDatabaseDraft() {
+      setDraftHydrated(false);
+      setDraftSaveStatus("");
+
+      if (savedSubmission?.answers) {
+        setAnswers(savedSubmission.answers);
+        setDraftHydrated(true);
+        return;
+      }
+
+      if (isViewMode) {
+        setDraftHydrated(true);
+        return;
+      }
+
+      if (!candidateId || !candidateApplicationId || candidateId === "—") {
+        setAnswers({});
+        setDraftSavedAt("");
+        setDraftHydrated(true);
+        return;
+      }
+
+      try {
+        const response = await getFinalInterviewDraft({
+          candidateId,
+          candidateApplicationId,
+          formId: effectiveFormId,
+        });
+
+        if (!active) return;
+
+        if (
+          response?.data?.answers &&
+          typeof response.data.answers === "object"
+        ) {
+          setAnswers(response.data.answers);
+          setDraftSavedAt(response.data.savedAt || "");
+        } else {
+          setAnswers({});
+          setDraftSavedAt("");
+        }
+      } catch (error) {
+        if (!active) return;
+
+        console.error(
+          "Load final interview database draft error:",
+          error?.response?.data || error?.message,
+        );
+
+        setAnswers({});
+        setDraftSavedAt("");
+      } finally {
+        if (active) {
+          setDraftHydrated(true);
+        }
+      }
     }
-  }, [savedSubmission]);
+
+    loadDatabaseDraft();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    candidateId,
+    candidateApplicationId,
+    effectiveFormId,
+    isViewMode,
+    savedSubmission,
+  ]);
+
+  useEffect(() => {
+    if (isViewMode || !draftHydrated) return;
+    if (!candidateId || !candidateApplicationId || candidateId === "—") return;
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setDraftSaveStatus("Saving...");
+
+        const response = await saveFinalInterviewDraft({
+          candidateId,
+          candidateApplicationId,
+          positionId: effectivePositionId,
+          formId: effectiveFormId,
+          formName: jobEvaluationFormName || "Job Evaluation Form",
+          answers,
+          scoreSummary,
+          fieldsSnapshot: activeForm?.fields || [],
+        });
+
+        const savedAt =
+          response?.data?.savedAt ||
+          response?.data?.updatedAt ||
+          new Date().toISOString();
+
+        setDraftSavedAt(savedAt);
+        setDraftSaveStatus("Draft saved to database.");
+      } catch (error) {
+        console.error(
+          "Save final interview database draft error:",
+          error?.response?.data || error?.message,
+        );
+
+        setDraftSaveStatus("Draft save failed.");
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    answers,
+    scoreSummary,
+    draftHydrated,
+    isViewMode,
+    candidateId,
+    candidateApplicationId,
+    effectivePositionId,
+    effectiveFormId,
+    activeForm,
+    jobEvaluationFormName,
+  ]);
 
   function handleAnswerChange(fieldId, value) {
     if (isViewMode) return;
@@ -1084,14 +1308,19 @@ export default function FinalInterviewForms() {
     });
 
     if (missingField) {
-      alert(`Please answer required question: ${missingField.label}`);
+      showStatusModal({
+        type: "error",
+        title: "Required Question",
+        message: `Please answer required question: ${missingField.label}`,
+      });
+
       return false;
     }
 
     return true;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (isViewMode) {
@@ -1101,234 +1330,283 @@ export default function FinalInterviewForms() {
 
     if (isSubmitting) return;
 
-    if (!activeForm) {
-      alert(
-        `No final interview form is configured for ${
-          getCandidatePositionName(currentCandidate) || "this candidate position"
-        }.`,
-      );
-      return;
-    }
-
     if (!validateRequiredFields()) return;
 
     setIsSubmitting(true);
 
-    const didUpdateCandidate = handleSubmitFinalInterview({
-      candidateId,
-      candidateApplicationId,
-      positionId: positionId || getCandidatePositionId(currentCandidate),
-      formId: formId || activeForm?.id || "",
-      formName: jobEvaluationFormName || "Job Evaluation Form",
-      passingScore,
-      answers,
-      fieldsSnapshot: activeForm?.fields || [],
-      scoreSummary,
-    });
+    const finalFormId = effectiveFormId || DEFAULT_JOB_EVALUATION_FORM_ID;
+    const finalFormName = jobEvaluationFormName || "Job Evaluation Form";
 
-    console.log("Job Evaluation Answers:", {
-      candidateId,
-      candidateApplicationId,
-      positionId: positionId || getCandidatePositionId(currentCandidate),
-      formId: formId || activeForm?.id || "",
-      formName: jobEvaluationFormName || "Job Evaluation Form",
-      passingScore,
-      answers,
-      scoreSummary,
-      didUpdateCandidate,
-    });
+    try {
+      const didUpdateCandidate = await handleSubmitFinalInterview({
+        candidateId,
+        candidateApplicationId,
+        positionId: effectivePositionId,
+        formId: finalFormId,
+        formName: finalFormName,
+        passingScore,
+        answers,
+        fieldsSnapshot: activeForm?.fields || [],
+        scoreSummary,
+      });
 
-    if (!didUpdateCandidate) {
-      alert(
-        "Job evaluation form submitted, but the candidate record was not found in the pipeline.",
+      if (!didUpdateCandidate) {
+        showStatusModal({
+          type: "error",
+          title: "Candidate Not Found",
+          message:
+            "Job evaluation form submitted, but the candidate record was not found in the pipeline.",
+        });
+
+        setIsSubmitting(false);
+        return;
+      }
+
+      await deleteFinalInterviewDraft({
+        candidateId,
+        candidateApplicationId,
+        formId: finalFormId,
+      });
+
+      showStatusModal({
+        type: "success",
+        title: "Job Evaluation Submitted",
+        message: "Candidate moved to Interviewed.",
+        afterClose: () => navigate(-1),
+      });
+    } catch (error) {
+      console.error(
+        "Submit job evaluation form error:",
+        error?.response?.data || error?.message,
       );
+
+      showStatusModal({
+        type: "error",
+        title: "Submit Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit job evaluation form.",
+      });
+
       setIsSubmitting(false);
-      return;
     }
-
-    alert("Job evaluation form submitted. Candidate moved to Interviewed.");
-
-    navigate(-1);
   }
 
   return (
-    <div className="min-h-screen bg-[#E9EEF5] px-4 py-8 font-jakarta text-sibs-primary-1">
-      <div className="mx-auto max-w-[1180px] space-y-5">
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
-          <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            {isViewMode ? "Submitted Job Evaluation" : "Job Evaluation"}
-          </div>
+    <>
+      <div className="min-h-screen bg-[#E9EEF5] px-4 py-8 font-jakarta text-sibs-primary-1">
+        <div className="mx-auto max-w-[1180px] space-y-5">
+          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
+            <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              {isViewMode ? "Submitted Job Evaluation" : "Job Evaluation"}
+            </div>
 
-          <h1 className="mt-4 text-2xl font-extrabold text-sibs-primary-1">
-            {jobEvaluationFormName || "Job Evaluation Form"}
-          </h1>
+            <h1 className="mt-4 text-2xl font-extrabold text-sibs-primary-1">
+              {jobEvaluationFormName || "Job Evaluation Form"}
+            </h1>
 
-          <p className="mt-2 text-sm font-semibold text-sibs-primary-1">
-            Candidate ID: {candidateId} · Application ID:{" "}
-            {candidateApplicationId}
-          </p>
-
-          {currentCandidate && (
-            <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-              Position: {getCandidatePositionName(currentCandidate) || "—"}
+            <p className="mt-2 text-sm font-semibold text-sibs-primary-1">
+              Candidate ID: {candidateId} · Application ID:{" "}
+              {candidateApplicationId}
             </p>
-          )}
 
-          {savedSubmission && (
-            <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-              Submitted by {savedSubmission.submittedBy} ·{" "}
-              {savedSubmission.submittedAt}
-            </p>
-          )}
-        </section>
-
-        {isViewMode && (
-          <ScoreSummaryCard
-            jobEvaluationScore={jobEvaluationScore}
-            finalInterviewRatingScore={finalInterviewRatingScore}
-            passingScore={passingScore}
-          />
-        )}
-
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border border-[#E6ECF2] bg-white p-8 shadow-sm"
-        >
-          <section>
-            <div>
-              <h2 className="text-base font-extrabold text-[#101828]">
-                Default Job Evaluation Contents
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                These default fields follow the standard job evaluation scoring
-                computation.
+            {currentCandidate && (
+              <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
+                Position: {getCandidatePositionName(currentCandidate) || "—"}
               </p>
-            </div>
+            )}
 
-            <div className="mt-6 grid grid-cols-1 gap-5">
-              <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                <JobEvaluationSelect
-                  label="Education"
-                  fieldKey={JOB_EVALUATION_FIELDS.education}
-                  options={educationOptions}
-                  value={answers[JOB_EVALUATION_FIELDS.education]}
-                  onChange={handleJobEvaluationChange}
-                  readOnly={isViewMode}
-                />
+            {!isViewMode && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {draftSaveStatus && (
+                  <p
+                    className={`text-xs font-bold ${
+                      draftSaveStatus.includes("failed")
+                        ? "text-red-500"
+                        : draftSaveStatus.includes("Saving")
+                          ? "text-amber-600"
+                          : "text-emerald-600"
+                    }`}
+                  >
+                    {draftSaveStatus}
+                  </p>
+                )}
 
-                <JobEvaluationSelect
-                  label="Experience"
-                  fieldKey={JOB_EVALUATION_FIELDS.experience}
-                  options={experienceOptions}
-                  value={answers[JOB_EVALUATION_FIELDS.experience]}
-                  onChange={handleJobEvaluationChange}
-                  readOnly={isViewMode}
-                />
-
-                <JobEvaluationSelect
-                  label="Location"
-                  fieldKey={JOB_EVALUATION_FIELDS.location}
-                  options={locationOptions}
-                  value={answers[JOB_EVALUATION_FIELDS.location]}
-                  onChange={handleJobEvaluationChange}
-                  readOnly={isViewMode}
-                />
+                {draftSavedAt && (
+                  <p className="text-xs font-bold text-sibs-tertiary-5">
+                    Last saved: {new Date(draftSavedAt).toLocaleString("en-PH")}
+                  </p>
+                )}
               </div>
+            )}
 
-              <JobEvaluationCheckboxGroup
-                title="Duties and Responsibilities"
-                fieldKey={JOB_EVALUATION_FIELDS.duties}
-                options={dutiesOptions}
-                values={answers[JOB_EVALUATION_FIELDS.duties]}
-                onToggle={handleJobEvaluationToggle}
-                readOnly={isViewMode}
-              />
-
-              <JobEvaluationCheckboxGroup
-                title="Competencies"
-                fieldKey={JOB_EVALUATION_FIELDS.competencies}
-                options={competenciesOptions}
-                values={answers[JOB_EVALUATION_FIELDS.competencies]}
-                onToggle={handleJobEvaluationToggle}
-                readOnly={isViewMode}
-              />
-            </div>
-          </section>
-
-          <section className="mt-10 border-t border-[#E6ECF2] pt-8">
-            <div>
-              <h2 className="text-base font-extrabold text-[#101828]">
-                Final Interview Form
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                Additional role-based questions configured from Recruitment
-                Settings.
+            {savedSubmission && (
+              <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
+                Submitted by {savedSubmission.submittedBy} ·{" "}
+                {savedSubmission.submittedAt}
               </p>
-            </div>
-
-            {groupedFields.length > 0 ? (
-              <div className="mt-6 space-y-8">
-                {groupedFields.map((group) => (
-                  <section key={group.section}>
-                    <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
-                      {group.section}:
-                    </h3>
-
-                    <div className="mt-6 space-y-6">
-                      {group.questions.map((field) => (
-                        <div key={field.id}>
-                          <label className="block text-base font-medium leading-8 text-sibs-primary-1">
-                            {field.label}
-                            {field.required && (
-                              <span className="text-red-500"> *</span>
-                            )}
-                          </label>
-
-                          <FieldInput
-                            field={field}
-                            value={answers[field.id]}
-                            readOnly={isViewMode}
-                            onChange={(value) =>
-                              handleAnswerChange(field.id, value)
-                            }
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-6 rounded-xl border border-dashed border-[#D6DEE8] bg-white px-4 py-10 text-center">
-                <p className="text-sm font-extrabold text-sibs-tertiary-5">
-                  {isViewMode
-                    ? "No saved final interview questions found."
-                    : currentCandidate
-                      ? `No final interview questions configured for ${
-                          getCandidatePositionName(currentCandidate) ||
-                          "this position"
-                        }.`
-                      : "No matching candidate or final interview questions found."}
-                </p>
-              </div>
             )}
           </section>
 
-          <div className="mt-8 flex justify-end">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
-            >
-              {isViewMode
-                ? "Back"
-                : isSubmitting
-                  ? "Submitting..."
-                  : "Submit Job Evaluation Form"}
-            </button>
-          </div>
-        </form>
+          {isViewMode && (
+            <ScoreSummaryCard
+              jobEvaluationScore={jobEvaluationScore}
+              finalInterviewRatingScore={finalInterviewRatingScore}
+              passingScore={passingScore}
+            />
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-2xl border border-[#E6ECF2] bg-white p-8 shadow-sm"
+          >
+            <section>
+              <div>
+                <h2 className="text-base font-extrabold text-[#101828]">
+                  Default Job Evaluation Contents
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                  These default fields follow the standard job evaluation
+                  scoring computation.
+                </p>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-5">
+                <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                  <JobEvaluationSelect
+                    label="Education"
+                    fieldKey={JOB_EVALUATION_FIELDS.education}
+                    options={educationOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.education]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isViewMode}
+                  />
+
+                  <JobEvaluationSelect
+                    label="Experience"
+                    fieldKey={JOB_EVALUATION_FIELDS.experience}
+                    options={experienceOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.experience]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isViewMode}
+                  />
+
+                  <JobEvaluationSelect
+                    label="Location"
+                    fieldKey={JOB_EVALUATION_FIELDS.location}
+                    options={locationOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.location]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isViewMode}
+                  />
+                </div>
+
+                <JobEvaluationCheckboxGroup
+                  title="Duties and Responsibilities"
+                  fieldKey={JOB_EVALUATION_FIELDS.duties}
+                  options={dutiesOptions}
+                  values={answers[JOB_EVALUATION_FIELDS.duties]}
+                  onToggle={handleJobEvaluationToggle}
+                  readOnly={isViewMode}
+                />
+
+                <JobEvaluationCheckboxGroup
+                  title="Competencies"
+                  fieldKey={JOB_EVALUATION_FIELDS.competencies}
+                  options={competenciesOptions}
+                  values={answers[JOB_EVALUATION_FIELDS.competencies]}
+                  onToggle={handleJobEvaluationToggle}
+                  readOnly={isViewMode}
+                />
+              </div>
+            </section>
+
+            <section className="mt-10 border-t border-[#E6ECF2] pt-8">
+              <div>
+                <h2 className="text-base font-extrabold text-[#101828]">
+                  Final Interview Form
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                  Additional role-based questions configured from Recruitment
+                  Settings.
+                </p>
+              </div>
+
+              {groupedFields.length > 0 ? (
+                <div className="mt-6 space-y-8">
+                  {groupedFields.map((group) => (
+                    <section key={group.section}>
+                      <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
+                        {group.section}:
+                      </h3>
+
+                      <div className="mt-6 space-y-6">
+                        {group.questions.map((field) => (
+                          <div key={field.id}>
+                            <label className="block text-base font-medium leading-8 text-sibs-primary-1">
+                              {field.label}
+                              {field.required && (
+                                <span className="text-red-500"> *</span>
+                              )}
+                            </label>
+
+                            <FieldInput
+                              field={field}
+                              value={answers[field.id]}
+                              readOnly={isViewMode}
+                              onChange={(value) =>
+                                handleAnswerChange(field.id, value)
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-6 rounded-xl border border-dashed border-[#D6DEE8] bg-white px-4 py-10 text-center">
+                  <p className="text-sm font-extrabold text-sibs-tertiary-5">
+                    {isViewMode
+                      ? "No saved final interview questions found."
+                      : currentCandidate
+                        ? `No final interview questions configured for ${
+                            getCandidatePositionName(currentCandidate) ||
+                            "this position"
+                          }.`
+                        : "No matching candidate or final interview questions found."}
+                  </p>
+                </div>
+              )}
+            </section>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+              >
+                {isViewMode
+                  ? "Back"
+                  : isSubmitting
+                    ? "Submitting..."
+                    : "Submit Job Evaluation Form"}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+        variant="center"
+        lockScroll
+      />
+    </>
   );
 }

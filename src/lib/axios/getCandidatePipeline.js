@@ -1,392 +1,563 @@
-// src/lib/axios/getCandidatePipeline.js
-import api from "./api";
+import api from "./api-template";
 
-/* =========================================
-   CANDIDATE PIPELINE API
-========================================= */
+function unwrapResponse(response) {
+  return response?.data ?? response;
+}
 
-/**
- * Get all candidate pipeline records
- */
-export async function getCandidatePipeline(params = {}) {
+function getErrorMessage(err, fallback) {
+  return (
+    err?.response?.data?.message ||
+    err?.response?.data?.error ||
+    err?.message ||
+    fallback
+  );
+}
+
+function errorResponse(err, fallback, data = null) {
+  return {
+    success: false,
+    data,
+    candidate: null,
+    message: getErrorMessage(err, fallback),
+  };
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function isApprovedHiringNeed(item = {}) {
+  const approvalStatus = cleanText(
+    item.approval_status ||
+      item.approvalStatus ||
+      item.status ||
+      item.hiringNeedStatus,
+  ).toLowerCase();
+
+  return approvalStatus === "approved";
+}
+
+function normalizeHiringNeed(item = {}) {
+  return {
+    ...item,
+    id: item.id,
+
+    account: item.account || "",
+    accountName: item.accountName || item.account_name || item.account || "",
+    account_name: item.account_name || item.accountName || item.account || "",
+
+    department: item.department || "",
+    departmentName:
+      item.departmentName || item.department_name || item.department || "",
+    department_name:
+      item.department_name || item.departmentName || item.department || "",
+
+    role_title: item.role_title || item.roleTitle || "",
+    roleTitle: item.roleTitle || item.role_title || "",
+
+    job_description_id: item.job_description_id ?? item.jobDescriptionId ?? "",
+    jobDescriptionId: item.jobDescriptionId ?? item.job_description_id ?? "",
+
+    jd_status: item.jd_status || item.jdStatus || "",
+    jdStatus: item.jdStatus || item.jd_status || "",
+
+    approved_requirement:
+      item.approved_requirement ?? item.approvedRequirement ?? "",
+    approvedRequirement:
+      item.approvedRequirement ?? item.approved_requirement ?? "",
+
+    reason: item.reason || "",
+
+    requested_start_date:
+      item.requested_start_date || item.requestedStartDate || "",
+    requestedStartDate:
+      item.requestedStartDate || item.requested_start_date || "",
+
+    due_date: item.due_date || item.dueDate || "",
+    dueDate: item.dueDate || item.due_date || "",
+
+    hiring_manager: item.hiring_manager || item.hiringManager || "",
+    hiringManager: item.hiringManager || item.hiring_manager || "",
+
+    priority: item.priority || "",
+
+    location_site: item.location_site || item.locationSite || "",
+    locationSite: item.locationSite || item.location_site || "",
+
+    approval_status: item.approval_status || item.approvalStatus || "",
+    approvalStatus: item.approvalStatus || item.approval_status || "",
+
+    approval_remarks: item.approval_remarks || item.approvalRemarks || "",
+    approvalRemarks: item.approvalRemarks || item.approval_remarks || "",
+
+    approved_by: item.approved_by || item.approvedBy || "",
+    approvedBy: item.approvedBy || item.approved_by || "",
+
+    approval_date: item.approval_date || item.approvalDate || "",
+    approvalDate: item.approvalDate || item.approval_date || "",
+
+    created_at: item.created_at || item.createdAt || "",
+    createdAt: item.createdAt || item.created_at || "",
+
+    updated_at: item.updated_at || item.updatedAt || "",
+    updatedAt: item.updatedAt || item.updated_at || "",
+  };
+}
+
+export async function getApprovedHiringNeeds() {
   try {
-    const response = await api.get("/api/candidate-pipeline", {
-      params,
+    const response = await api.get("/api/hiring-needs", {
+      withCredentials: true,
     });
 
-    return response.data;
-  } catch (error) {
-    console.error("Get candidate pipeline error:", error);
+    const payload = unwrapResponse(response);
 
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to fetch candidate pipeline.",
-      }
+    const rows = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.hiringNeeds)
+          ? payload.hiringNeeds
+          : Array.isArray(payload?.rows)
+            ? payload.rows
+            : Array.isArray(payload?.items)
+              ? payload.items
+              : [];
+
+    const approvedRows = rows
+      .map(normalizeHiringNeed)
+      .filter(isApprovedHiringNeed);
+
+    return {
+      success: true,
+      data: approvedRows,
+      hiringNeeds: approvedRows,
+      rows: approvedRows,
+    };
+  } catch (err) {
+    console.error(
+      "Axios getApprovedHiringNeeds API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return {
+      success: false,
+      data: [],
+      hiringNeeds: [],
+      rows: [],
+      message: getErrorMessage(err, "Failed to fetch approved hiring needs."),
+    };
   }
 }
 
-/**
- * Get one candidate pipeline record by ID
- */
-export async function getCandidatePipelineById(id) {
+export async function getCandidatePipelineCandidates(params = {}) {
   try {
-    const response = await api.get(`/api/candidate-pipeline/${id}`);
+    const res = await api.get("/api/candidate-pipeline", {
+      params: {
+        _t: Date.now(),
+        ...params,
+      },
+      withCredentials: true,
+    });
 
-    return response.data;
-  } catch (error) {
-    console.error("Get candidate pipeline by ID error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to fetch candidate pipeline record.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios getCandidatePipelineCandidates API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return {
+      success: false,
+      data: [],
+      candidates: [],
+      stageCounts: {},
+      metrics: {},
+      message: getErrorMessage(err, "Failed to load candidate pipeline."),
+    };
   }
 }
 
-/**
- * Create candidate pipeline record
- */
-export async function createCandidatePipeline(payload) {
+export async function getCandidatePipelineCandidate(id) {
   try {
-    const response = await api.post("/api/candidate-pipeline", payload);
+    const res = await api.get(`/api/candidate-pipeline/${id}`, {
+      withCredentials: true,
+    });
 
-    return response.data;
-  } catch (error) {
-    console.error("Create candidate pipeline error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to create candidate pipeline record.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios getCandidatePipelineCandidate API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to load candidate.");
   }
 }
 
-/**
- * Update candidate pipeline record
- */
-export async function updateCandidatePipeline(id, payload) {
+export async function updateCandidatePipelineCandidate(id, payload = {}) {
   try {
-    const response = await api.put(`/api/candidate-pipeline/${id}`, payload);
+    const res = await api.patch(`/api/candidate-pipeline/${id}`, payload, {
+      withCredentials: true,
+    });
 
-    return response.data;
-  } catch (error) {
-    console.error("Update candidate pipeline error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to update candidate pipeline record.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios updateCandidatePipelineCandidate API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to update candidate.");
   }
 }
 
-/**
- * Delete candidate pipeline record
- */
-export async function deleteCandidatePipeline(id) {
+export async function moveCandidatePipelineStage(id, payload = {}) {
   try {
-    const response = await api.delete(`/api/candidate-pipeline/${id}`);
+    const res = await api.post(`/api/candidate-pipeline/${id}/move`, payload, {
+      withCredentials: true,
+    });
 
-    return response.data;
-  } catch (error) {
-    console.error("Delete candidate pipeline error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to delete candidate pipeline record.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios moveCandidatePipelineStage API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to move candidate.");
   }
 }
 
-/* =========================================
-   PIPELINE MOVEMENT
-========================================= */
-
-/**
- * Move candidate to next pipeline stage
- */
-export async function moveCandidatePipelineStage(id, payload) {
+export async function updateCandidatePipelinePrfStatus(id, payload = {}) {
   try {
-    const response = await api.patch(
-      `/api/candidate-pipeline/${id}/move-stage`,
-      payload
-    );
-
-    return response.data;
-  } catch (error) {
-    console.error("Move candidate pipeline stage error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to move candidate pipeline stage.",
-      }
-    );
-  }
-}
-
-/**
- * Update PRF status
- */
-export async function updateCandidatePrfStatus(id, payload) {
-  try {
-    const response = await api.patch(
+    const res = await api.post(
       `/api/candidate-pipeline/${id}/prf-status`,
-      payload
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Update candidate PRF status error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to update PRF status.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios updateCandidatePipelinePrfStatus API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to update PRF status.");
   }
 }
 
-/**
- * Schedule interview
- */
-export async function scheduleCandidateInterview(id, payload) {
+export async function scheduleCandidatePipelineInterview(id, payload = {}) {
   try {
-    const response = await api.patch(
+    const res = await api.post(
       `/api/candidate-pipeline/${id}/schedule-interview`,
-      payload
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Schedule candidate interview error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to schedule interview.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios scheduleCandidatePipelineInterview API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to schedule interview.");
   }
 }
 
-/**
- * Complete interview
- */
-export async function completeCandidateInterview(id, payload = {}) {
+export async function startCandidatePipelineInterview(id, payload = {}) {
   try {
-    const response = await api.patch(
-      `/api/candidate-pipeline/${id}/complete-interview`,
-      payload
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/interview/start`,
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Complete candidate interview error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to complete interview.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios startCandidatePipelineInterview API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to start interview.");
   }
 }
 
-/**
- * Cancel interview
- */
-export async function cancelCandidateInterview(id, payload = {}) {
+export async function completeCandidatePipelineInterview(id, payload = {}) {
   try {
-    const response = await api.patch(
-      `/api/candidate-pipeline/${id}/cancel-interview`,
-      payload
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/interview/complete`,
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Cancel candidate interview error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to cancel interview.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios completeCandidatePipelineInterview API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to complete interview.");
   }
 }
 
-/* =========================================
-   ONLINE ASSESSMENT
-========================================= */
-
-/**
- * Move candidate to Online Assessment and trigger assessment email
- */
-export async function moveCandidateToOnlineAssessment(id, payload = {}) {
+export async function cancelCandidatePipelineInterview(id, payload = {}) {
   try {
-    const response = await api.patch(
-      `/api/candidate-pipeline/${id}/move-online-assessment`,
-      payload
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/interview/cancel`,
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Move candidate to online assessment error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to move candidate to Online Assessment.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios cancelCandidatePipelineInterview API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to cancel interview.");
   }
 }
 
-/**
- * Send or resend online assessment email
- */
-export async function sendCandidateAssessmentEmail(payload) {
+export async function saveCandidatePipelineInterviewNotes(id, payload = {}) {
   try {
-    const response = await api.post("/api/assessment/send-invite", payload);
-
-    return response.data;
-  } catch (error) {
-    console.error("Send candidate assessment email error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to send assessment email.",
-      }
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/interview/notes`,
+      payload,
+      {
+        withCredentials: true,
+      },
     );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveCandidatePipelineInterviewNotes API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to save interview notes.");
   }
 }
 
-/**
- * Update assessment status:
- * Assessment: Not Take / Taken
- * Result: Assessment Fit / Assessment Not Fit
- */
-export async function updateCandidateAssessment(id, payload) {
+export async function sendCandidatePipelineAssessmentEmail(id, payload = {}) {
   try {
-    const response = await api.patch(
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/assessment/send-email`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios sendCandidatePipelineAssessmentEmail API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to send assessment email.");
+  }
+}
+
+export async function saveCandidatePipelineAssessment(id, payload = {}) {
+  try {
+    const res = await api.post(
       `/api/candidate-pipeline/${id}/assessment`,
-      payload
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Update candidate assessment error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to update assessment.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveCandidatePipelineAssessment API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to save assessment.");
   }
 }
 
-/**
- * Mark assessment as Not Take
- */
-export async function markAssessmentNotTake(id, payload = {}) {
-  return updateCandidateAssessment(id, {
-    assessmentStatus: "Not Take",
-    assessmentResult: "",
-    ...payload,
-  });
-}
-
-/**
- * Mark assessment as Taken and tag result
- */
-export async function markAssessmentTaken(id, assessmentResult, payload = {}) {
-  return updateCandidateAssessment(id, {
-    assessmentStatus: "Taken",
-    assessmentResult,
-    ...payload,
-  });
-}
-
-/**
- * Tag candidate as Assessment Fit
- */
-export async function tagAssessmentFit(id, payload = {}) {
-  return markAssessmentTaken(id, "Assessment Fit", payload);
-}
-
-/**
- * Tag candidate as Assessment Not Fit
- */
-export async function tagAssessmentNotFit(id, payload = {}) {
-  return markAssessmentTaken(id, "Assessment Not Fit", payload);
-}
-
-/* =========================================
-   DROP-OFF
-========================================= */
-
-/**
- * Mark candidate as drop-off
- */
-export async function markCandidateDropOff(id, payload) {
+export async function dropOffCandidatePipelineCandidate(id, payload = {}) {
   try {
-    const response = await api.patch(
+    const res = await api.post(
       `/api/candidate-pipeline/${id}/drop-off`,
-      payload
+      payload,
+      {
+        withCredentials: true,
+      },
     );
 
-    return response.data;
-  } catch (error) {
-    console.error("Mark candidate drop-off error:", error);
-
-    throw (
-      error?.response?.data || {
-        success: false,
-        message: "Failed to mark candidate as drop-off.",
-      }
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios dropOffCandidatePipelineCandidate API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
+
+    return errorResponse(err, "Failed to mark candidate as drop-off.");
   }
 }
 
-/* =========================================
-   DEFAULT EXPORT
-========================================= */
+export async function saveCandidatePipelineOffer(id, payload = {}) {
+  try {
+    const res = await api.post(`/api/candidate-pipeline/${id}/offer`, payload, {
+      withCredentials: true,
+    });
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveCandidatePipelineOffer API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to save offer details.");
+  }
+}
+
+export async function updateCandidatePipelineOfferApproval(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/offer-approval`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios updateCandidatePipelineOfferApproval API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to update offer approval.");
+  }
+}
+
+export async function sendCandidatePipelineOfferEmail(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/offer-send-email`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios sendCandidatePipelineOfferEmail API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to send offer email.");
+  }
+}
+
+export async function saveCandidatePipelineOfferDecision(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/offer-decision`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveCandidatePipelineOfferDecision API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to save offer decision.");
+  }
+}
+
+export async function scheduleCandidatePipelineNho(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/nho/schedule`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios scheduleCandidatePipelineNho API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to schedule NHO.");
+  }
+}
 
 const candidatePipelineApi = {
-  getCandidatePipeline,
-  getCandidatePipelineById,
-  createCandidatePipeline,
-  updateCandidatePipeline,
-  deleteCandidatePipeline,
-
+  getApprovedHiringNeeds,
+  getCandidatePipelineCandidates,
+  getCandidatePipelineCandidate,
+  updateCandidatePipelineCandidate,
   moveCandidatePipelineStage,
-  updateCandidatePrfStatus,
-  scheduleCandidateInterview,
-  completeCandidateInterview,
-  cancelCandidateInterview,
-
-  moveCandidateToOnlineAssessment,
-  sendCandidateAssessmentEmail,
-  updateCandidateAssessment,
-  markAssessmentNotTake,
-  markAssessmentTaken,
-  tagAssessmentFit,
-  tagAssessmentNotFit,
-
-  markCandidateDropOff,
+  updateCandidatePipelinePrfStatus,
+  scheduleCandidatePipelineInterview,
+  startCandidatePipelineInterview,
+  completeCandidatePipelineInterview,
+  cancelCandidatePipelineInterview,
+  saveCandidatePipelineInterviewNotes,
+  sendCandidatePipelineAssessmentEmail,
+  saveCandidatePipelineAssessment,
+  dropOffCandidatePipelineCandidate,
+  saveCandidatePipelineOffer,
+  updateCandidatePipelineOfferApproval,
+  sendCandidatePipelineOfferEmail,
+  saveCandidatePipelineOfferDecision,
+  scheduleCandidatePipelineNho,
 };
 
 export default candidatePipelineApi;
