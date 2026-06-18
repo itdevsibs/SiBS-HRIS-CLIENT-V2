@@ -149,16 +149,21 @@ function getCandidateStageValue(candidate = {}) {
 }
 
 function isCandidateLinkedToPipeline(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+
   return Boolean(
-    candidate?.pipelineStatus ||
-      candidate?.currentPipelineStage ||
-      candidate?.currentTaOwner ||
-      candidate?.pipelineStage ||
-      candidate?.currentStage ||
-      candidate?.movedToPipeline ||
-      candidate?.pipelineCandidate ||
-      candidate?.pipelineId ||
-      candidate?.pipelineDbId,
+    safeCandidate.pipelineStatus ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.currentTaOwner ||
+      safeCandidate.pipelineStage ||
+      safeCandidate.currentStage ||
+      safeCandidate.movedToPipeline ||
+      safeCandidate.pipelineCandidate ||
+      safeCandidate.pipelineId ||
+      safeCandidate.pipelineDbId ||
+      pipelineCandidate.id ||
+      pipelineCandidate.dbId,
   );
 }
 
@@ -230,64 +235,66 @@ function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
 }
 
 function normalizeCandidateFile(file = {}, candidate = {}) {
+  const safeFile = safeObject(file);
+
   const savedFileName =
-    file.savedFileName || file.filename || file.saved_file_name || "";
+    safeFile.savedFileName || safeFile.filename || safeFile.saved_file_name || "";
 
   const fileName =
-    file.fileName ||
-    file.name ||
-    file.originalName ||
-    file.originalname ||
-    file.attachmentFileName ||
-    file.audioFileName ||
+    safeFile.fileName ||
+    safeFile.name ||
+    safeFile.originalName ||
+    safeFile.originalname ||
+    safeFile.attachmentFileName ||
+    safeFile.audioFileName ||
     savedFileName ||
     "";
 
   const normalizedRequirement = getNormalizedPreEmploymentRequirement({
-    ...file,
+    ...safeFile,
     fileName,
     savedFileName,
   });
 
   const fileUrl =
-    file.fileUrl ||
-    file.url ||
-    file.dataUrl ||
-    file.attachmentFileUrl ||
-    file.audioFileUrl ||
+    safeFile.fileUrl ||
+    safeFile.url ||
+    safeFile.dataUrl ||
+    safeFile.attachmentFileUrl ||
+    safeFile.audioFileUrl ||
     buildCandidatePipelineFileUrl(candidate, {
-      ...file,
+      ...safeFile,
       fileName,
       savedFileName,
     });
 
   return {
     id:
-      file.id ||
-      file.fileId ||
+      safeFile.id ||
+      safeFile.fileId ||
       `${normalizedRequirement || "file"}-${fileName}-${savedFileName}`,
     requirement: normalizedRequirement,
     fileName,
     savedFileName,
-    filename: file.filename || savedFileName,
+    filename: safeFile.filename || savedFileName,
     fileUrl: getResolvedFileUrl(fileUrl),
     fileType:
-      file.fileType ||
-      file.type ||
-      file.mimetype ||
-      file.mimeType ||
-      file.attachmentFileType ||
-      file.audioFileType ||
+      safeFile.fileType ||
+      safeFile.type ||
+      safeFile.mimetype ||
+      safeFile.mimeType ||
+      safeFile.attachmentFileType ||
+      safeFile.audioFileType ||
       "",
     fileSize:
-      file.fileSize ||
-      file.size ||
-      file.attachmentFileSize ||
-      file.audioFileSize ||
+      safeFile.fileSize ||
+      safeFile.size ||
+      safeFile.attachmentFileSize ||
+      safeFile.audioFileSize ||
       0,
-    uploadedAt: file.uploadedAt || file.createdAt || file.updatedAt || "",
-    uploadedBy: file.uploadedBy || file.createdBy || file.updatedBy || "",
-    applicantFolderName: file.applicantFolderName || "",
+    uploadedAt: safeFile.uploadedAt || safeFile.createdAt || safeFile.updatedAt || "",
+    uploadedBy: safeFile.uploadedBy || safeFile.createdBy || safeFile.updatedBy || "",
+    applicantFolderName: safeFile.applicantFolderName || "",
   };
 }
 
@@ -299,9 +306,7 @@ function dedupeCandidateFiles(files = [], candidate = {}) {
     .filter(isOfficialPreEmploymentFile)
     .forEach((file) => {
       const normalizedFile = normalizeCandidateFile(file, candidate);
-      const requirementKey = normalizeRequirementKey(
-        normalizedFile.requirement,
-      );
+      const requirementKey = normalizeRequirementKey(normalizedFile.requirement);
 
       if (!requirementKey) return;
 
@@ -330,33 +335,208 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
   const metadata = safeObject(safeCandidate.metadata);
   const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
   const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const pipelineMetadata = safeObject(pipelineCandidate.metadata);
 
   const sources = [
     safeCandidate.nhoFiles,
     safeCandidate.nho_files,
     safeCandidate.preEmploymentFiles,
     safeCandidate.pre_employment_files,
+    safeCandidate.uploadedFiles,
+    safeCandidate.files,
 
     metadata.nhoFiles,
     metadata.nho_files,
     metadata.preEmploymentFiles,
-    metadata.pre_employment_files,
 
     candidateSnapshot.nhoFiles,
     candidateSnapshot.nho_files,
     candidateSnapshot.preEmploymentFiles,
-    candidateSnapshot.pre_employment_files,
 
     pipelineCandidate.nhoFiles,
     pipelineCandidate.nho_files,
     pipelineCandidate.preEmploymentFiles,
     pipelineCandidate.pre_employment_files,
+
+    pipelineDetails.nhoFiles,
+    pipelineDetails.nho_files,
+    pipelineDetails.preEmploymentFiles,
+    pipelineDetails.pre_employment_files,
+
+    pipelineMetadata.nhoFiles,
+    pipelineMetadata.nho_files,
+    pipelineMetadata.preEmploymentFiles,
   ];
 
   return dedupeCandidateFiles(
-    sources.flatMap((source) => safeArray(source)),
+    sources
+      .flatMap((source) => safeArray(source))
+      .map((file) => normalizeCandidateFile(file, safeCandidate)),
     safeCandidate,
   );
+}
+
+function getPipelineCandidateFromResponse(response) {
+  return (
+    response?.data?.data?.candidate ||
+    response?.data?.candidate ||
+    response?.data?.data ||
+    response?.data ||
+    null
+  );
+}
+
+function mergeHistoryArrays(...sources) {
+  return sources.flatMap((source) => safeArray(source));
+}
+
+function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const safePipelineCandidate = safeObject(pipelineCandidate);
+
+  if (!Object.keys(safePipelineCandidate).length) {
+    return safeCandidate;
+  }
+
+  const candidateMetadata = safeObject(safeCandidate.metadata);
+  const pipelineMetadata = safeObject(safePipelineCandidate.metadata);
+  const existingPipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+
+  const pipelineTimeline = mergeHistoryArrays(
+    safePipelineCandidate.timeline,
+    safePipelineCandidate.movementTimeline,
+    safePipelineCandidate.movementHistory,
+    safePipelineCandidate.pipelineHistory,
+    safePipelineCandidate.stageHistory,
+    safePipelineCandidate.history,
+    safePipelineCandidate.activityHistory,
+    pipelineMetadata.timeline,
+    pipelineMetadata.movementTimeline,
+    pipelineMetadata.movementHistory,
+    pipelineMetadata.pipelineHistory,
+  );
+
+  const applicationHistory = mergeHistoryArrays(
+    safeCandidate.applicationHistory,
+    safeCandidate.movementTimeline,
+    safeCandidate.movementHistory,
+    safeCandidate.pipelineHistory,
+    safeCandidate.stageHistory,
+    safeCandidate.timeline,
+    safeCandidate.history,
+    safeCandidate.activityHistory,
+
+    candidateSnapshot.applicationHistory,
+    candidateSnapshot.timeline,
+    candidateSnapshot.movementTimeline,
+
+    candidateMetadata.applicationHistory,
+    candidateMetadata.timeline,
+    candidateMetadata.movementTimeline,
+    candidateMetadata.pipelineHistory,
+
+    pipelineTimeline,
+  );
+
+  const pipelineNhoFiles = mergeHistoryArrays(
+    safePipelineCandidate.nhoFiles,
+    safePipelineCandidate.nho_files,
+    safePipelineCandidate.preEmploymentFiles,
+    safePipelineCandidate.pre_employment_files,
+    pipelineMetadata.nhoFiles,
+    pipelineMetadata.nho_files,
+    pipelineMetadata.preEmploymentFiles,
+  );
+
+  return {
+    ...safeCandidate,
+
+    pipelineCandidate: {
+      ...existingPipelineCandidate,
+      ...safePipelineCandidate,
+    },
+
+    pipelineDetails: safePipelineCandidate,
+
+    pipelineStatus:
+      safePipelineCandidate.pipelineStatus ||
+      safePipelineCandidate.pipeline_status ||
+      safeCandidate.pipelineStatus ||
+      (safePipelineCandidate.currentStage ? "Active" : safeCandidate.pipelineStatus),
+
+    currentPipelineStage:
+      safePipelineCandidate.currentPipelineStage ||
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.stage ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.currentStage ||
+      safeCandidate.pipelineStage,
+
+    currentStage:
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.currentPipelineStage ||
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.stage ||
+      safeCandidate.currentStage ||
+      safeCandidate.currentPipelineStage ||
+      safeCandidate.pipelineStage,
+
+    pipelineStage:
+      safePipelineCandidate.pipelineStage ||
+      safePipelineCandidate.currentStage ||
+      safePipelineCandidate.currentPipelineStage ||
+      safeCandidate.pipelineStage,
+
+    currentAppliedRole:
+      safePipelineCandidate.currentAppliedRole ||
+      safePipelineCandidate.roleTitle ||
+      safePipelineCandidate.openPosition ||
+      safePipelineCandidate.roleCapability ||
+      safeCandidate.currentAppliedRole,
+
+    currentAppliedAccount:
+      safePipelineCandidate.currentAppliedAccount ||
+      safePipelineCandidate.account ||
+      safePipelineCandidate.leadAccount ||
+      safeCandidate.currentAppliedAccount,
+
+    currentTaOwner:
+      safePipelineCandidate.currentTaOwner ||
+      safePipelineCandidate.updatedBySibsId ||
+      safePipelineCandidate.updated_by_sibs_id ||
+      safeCandidate.currentTaOwner,
+
+    nhoFiles: dedupeCandidateFiles(
+      [
+        ...getCandidatePreEmploymentFiles(safeCandidate),
+        ...pipelineNhoFiles.map((file) =>
+          normalizeCandidateFile(file, safePipelineCandidate),
+        ),
+      ],
+      safePipelineCandidate,
+    ),
+
+    applicationHistory,
+    timeline: pipelineTimeline.length ? pipelineTimeline : safeCandidate.timeline,
+
+    finalInterviewSubmittedForms:
+      safePipelineCandidate.finalInterviewSubmittedForms ||
+      safeCandidate.finalInterviewSubmittedForms,
+
+    final_interview_submitted_forms:
+      safePipelineCandidate.final_interview_submitted_forms ||
+      safeCandidate.final_interview_submitted_forms,
+
+    metadata: {
+      ...candidateMetadata,
+      pipeline: safePipelineCandidate,
+      pipelineTimeline,
+      applicationHistory,
+    },
+  };
 }
 
 function isValidTimelineValue(value) {
@@ -388,10 +568,17 @@ function getHistoryTitle(item = {}) {
   const title = String(rawTitle || "").trim();
 
   if (title.includes("PRF status changed")) return "Initial Screening";
+  if (title.includes("PRF status updated")) return "Initial Screening";
   if (title.includes("Assessment marked")) return "Online Assessment";
+  if (title.includes("Assessment updated")) return "Online Assessment";
   if (title.includes("interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview started")) return "Interview Scheduled";
+  if (title.includes("Interview completed")) return "Interviewed";
   if (title.includes("Final interview")) return "Interviewed";
   if (title.includes("Offer details")) return "Offered";
+  if (title.includes("Offer approved")) return "Accepted";
+  if (title.includes("NHO schedule")) return "For NHO";
 
   return title || "Application Update";
 }
@@ -400,9 +587,13 @@ function getHistoryDate(item = {}) {
   return (
     item.date ||
     item.createdAt ||
+    item.created_at ||
     item.updatedAt ||
+    item.updated_at ||
     item.activityDate ||
     item.timestamp ||
+    item.submittedAt ||
+    item.submittedAtIso ||
     ""
   );
 }
@@ -413,6 +604,8 @@ function getHistoryOwner(item = {}, candidate = {}, fallbackOwner = "—") {
     item.taOwner ||
     item.updatedBy ||
     item.createdBy ||
+    item.updatedBySibsId ||
+    item.createdBySibsId ||
     candidate.currentTaOwner ||
     candidate.taOwner ||
     candidate.owner ||
@@ -478,6 +671,7 @@ function getOfferDetail(item = {}) {
     item.role ||
     item.roleTitle ||
     item.offerDetails?.roleTitle ||
+    item.extra?.offerDetails?.roleTitle ||
     "";
 
   const account =
@@ -487,16 +681,27 @@ function getOfferDetail(item = {}) {
     item.appliedAccount ||
     item.account ||
     item.offerDetails?.account ||
+    item.extra?.offerDetails?.account ||
     "";
 
   const basicPay =
-    item.basicPay || item.offerDetails?.basicPay || item.compensation || "";
+    item.basicPay ||
+    item.offerDetails?.basicPay ||
+    item.extra?.offerDetails?.basicPay ||
+    item.compensation ||
+    "";
 
   const deminimisDailyRate =
-    item.deminimisDailyRate || item.offerDetails?.deminimisDailyRate || "";
+    item.deminimisDailyRate ||
+    item.offerDetails?.deminimisDailyRate ||
+    item.extra?.offerDetails?.deminimisDailyRate ||
+    "";
 
   const hiringRequirement =
-    item.hiringRequirementId || item.offerDetails?.hiringRequirementId || "";
+    item.hiringRequirementId ||
+    item.offerDetails?.hiringRequirementId ||
+    item.extra?.offerDetails?.hiringRequirementId ||
+    "";
 
   const details = [];
 
@@ -534,7 +739,13 @@ function getOfferDetail(item = {}) {
 }
 
 function getHistoryRemarks(item = {}) {
-  return item.remarks || item.dropOffReason || item.dropOffCategory || "";
+  return (
+    item.remarks ||
+    item.dropOffReason ||
+    item.dropOffCategory ||
+    item.extra?.remarks ||
+    ""
+  );
 }
 
 function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") {
@@ -543,7 +754,13 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
   const historyDescription = getHistoryDescription(item);
   const historyRemarks = getHistoryRemarks(item);
   const offerDetail = getOfferDetail(item);
-  const savedFormLink = item.savedFormLink || item.jobEvaluationLink || "";
+  const savedFormLink =
+    item.savedFormLink ||
+    item.jobEvaluationLink ||
+    item.extra?.savedFormLink ||
+    item.extra?.jobEvaluationLink ||
+    "";
+  const sortDate = getNormalizedHistoryDate(historyDate);
 
   return {
     ...item,
@@ -556,6 +773,7 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
     savedFormLink,
     _dedupeKey: [
       historyTitle,
+      sortDate,
       historyDescription,
       historyRemarks,
       offerDetail,
@@ -564,29 +782,59 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
       .join("|")
       .toLowerCase()
       .trim(),
-    _sortDate: getNormalizedHistoryDate(historyDate),
+    _sortDate: sortDate,
   };
 }
 
 function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+
   const sources = [
-    candidate.applicationHistory,
-    candidate.movementTimeline,
-    candidate.movementHistory,
-    candidate.pipelineHistory,
-    candidate.stageHistory,
-    candidate.timeline,
-    candidate.history,
-    candidate.activityHistory,
-    candidate.candidateSnapshot?.applicationHistory,
-    candidate.candidateSnapshot?.timeline,
+    safeCandidate.applicationHistory,
+    safeCandidate.movementTimeline,
+    safeCandidate.movementHistory,
+    safeCandidate.pipelineHistory,
+    safeCandidate.stageHistory,
+    safeCandidate.timeline,
+    safeCandidate.history,
+    safeCandidate.activityHistory,
+
+    candidateSnapshot.applicationHistory,
+    candidateSnapshot.timeline,
+    candidateSnapshot.movementTimeline,
+
+    metadata.applicationHistory,
+    metadata.timeline,
+    metadata.movementTimeline,
+    metadata.pipelineHistory,
+    metadata.pipelineTimeline,
+
+    pipelineCandidate.timeline,
+    pipelineCandidate.movementTimeline,
+    pipelineCandidate.movementHistory,
+    pipelineCandidate.pipelineHistory,
+    pipelineCandidate.stageHistory,
+    pipelineCandidate.history,
+    pipelineCandidate.activityHistory,
+
+    pipelineDetails.timeline,
+    pipelineDetails.movementTimeline,
+    pipelineDetails.movementHistory,
+    pipelineDetails.pipelineHistory,
+    pipelineDetails.stageHistory,
+    pipelineDetails.history,
+    pipelineDetails.activityHistory,
   ];
 
   const merged = sources
     .filter(Array.isArray)
     .flat()
     .filter(Boolean)
-    .map((item) => normalizeHistoryItem(item, candidate, fallbackOwner))
+    .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .filter((item) => item.stage || item.description);
 
   const uniqueMap = new Map();
@@ -646,6 +894,12 @@ export default function CandidateProfileModal() {
     message: "",
   });
 
+  const [pipelineCandidateDetails, setPipelineCandidateDetails] = useState(null);
+  const [pipelineCandidateDetailsLoading, setPipelineCandidateDetailsLoading] =
+    useState(false);
+  const [pipelineCandidateDetailsError, setPipelineCandidateDetailsError] =
+    useState("");
+
   const [candidatePipelineFiles, setCandidatePipelineFiles] = useState([]);
   const [candidatePipelineFilesLoading, setCandidatePipelineFilesLoading] =
     useState(false);
@@ -657,14 +911,75 @@ export default function CandidateProfileModal() {
     [selectedCandidate],
   );
 
-  const profilePreEmploymentFiles = useMemo(
-    () => getCandidatePreEmploymentFiles(selectedCandidate),
-    [selectedCandidate],
-  );
-
   const isPipelineLinkedForFiles = useMemo(
     () => isCandidateLinkedToPipeline(selectedCandidate),
     [selectedCandidate],
+  );
+
+  useEffect(() => {
+    let isActive = true;
+
+    setPipelineCandidateDetails(null);
+    setPipelineCandidateDetailsError("");
+
+    if (
+      !selectedCandidate ||
+      !candidatePipelineLookupId ||
+      !isPipelineLinkedForFiles
+    ) {
+      setPipelineCandidateDetailsLoading(false);
+
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setPipelineCandidateDetailsLoading(true);
+
+    api
+      .get(`/api/candidate-pipeline/${encodeURIComponent(candidatePipelineLookupId)}`, {
+        withCredentials: true,
+        params: {
+          _t: Date.now(),
+        },
+      })
+      .then((response) => {
+        if (!isActive) return;
+
+        const pipelineCandidate = getPipelineCandidateFromResponse(response);
+
+        setPipelineCandidateDetails(safeObject(pipelineCandidate));
+      })
+      .catch((error) => {
+        if (!isActive) return;
+
+        setPipelineCandidateDetails(null);
+        setPipelineCandidateDetailsError(
+          getApiErrorMessage(
+            error,
+            "Unable to load Candidate Pipeline process history.",
+          ),
+        );
+      })
+      .finally(() => {
+        if (isActive) {
+          setPipelineCandidateDetailsLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [selectedCandidate, candidatePipelineLookupId, isPipelineLinkedForFiles]);
+
+  const profileCandidate = useMemo(
+    () => mergeCandidateWithPipelineDetails(selectedCandidate, pipelineCandidateDetails),
+    [selectedCandidate, pipelineCandidateDetails],
+  );
+
+  const profilePreEmploymentFiles = useMemo(
+    () => getCandidatePreEmploymentFiles(profileCandidate),
+    [profileCandidate],
   );
 
   useEffect(() => {
@@ -709,13 +1024,13 @@ export default function CandidateProfileModal() {
 
         const normalizedFiles = dedupeCandidateFiles(
           safeArray(responseFiles),
-          selectedCandidate,
+          profileCandidate,
         );
 
         setCandidatePipelineFiles(
           dedupeCandidateFiles(
             [...localProfileFiles, ...normalizedFiles],
-            selectedCandidate,
+            profileCandidate,
           ),
         );
       })
@@ -746,14 +1061,15 @@ export default function CandidateProfileModal() {
     };
   }, [
     selectedCandidate,
+    profileCandidate,
     candidatePipelineLookupId,
     isPipelineLinkedForFiles,
     profilePreEmploymentFiles,
   ]);
 
   const displayedPreEmploymentFiles = useMemo(
-    () => dedupeCandidateFiles(candidatePipelineFiles, selectedCandidate),
-    [candidatePipelineFiles, selectedCandidate],
+    () => dedupeCandidateFiles(candidatePipelineFiles, profileCandidate),
+    [candidatePipelineFiles, profileCandidate],
   );
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
@@ -774,28 +1090,30 @@ export default function CandidateProfileModal() {
 
   if (!selectedCandidate) return null;
 
-  const encodedBy = getEncodedByName(selectedCandidate, currentTaOwner);
-  const isDoNotReprocess = selectedCandidate.status === "Do Not Reprocess";
+  const activeCandidate = profileCandidate || selectedCandidate;
+
+  const encodedBy = getEncodedByName(activeCandidate, currentTaOwner);
+  const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
 
   const candidateInitials =
-    selectedCandidate.name
+    activeCandidate.name
       ?.split(" ")
       .map((part) => part[0])
       .slice(0, 2)
       .join("") || "C";
 
-  const validReferences = Array.isArray(selectedCandidate.references)
-    ? selectedCandidate.references.filter(
+  const validReferences = Array.isArray(activeCandidate.references)
+    ? activeCandidate.references.filter(
         (reference) => reference?.name || reference?.phone,
       )
     : [];
 
-  const workExperiences = Array.isArray(selectedCandidate.workExperiences)
-    ? selectedCandidate.workExperiences.filter(Boolean)
+  const workExperiences = Array.isArray(activeCandidate.workExperiences)
+    ? activeCandidate.workExperiences.filter(Boolean)
     : [];
 
   const applicationHistory = getCandidateApplicationHistory(
-    selectedCandidate,
+    activeCandidate,
     encodedBy,
   );
 
@@ -808,7 +1126,7 @@ export default function CandidateProfileModal() {
   const hasMoreApplicationHistory =
     applicationHistory.length > collapsedHistoryLimit;
 
-  const currentStage = getCandidateStageValue(selectedCandidate);
+  const currentStage = getCandidateStageValue(activeCandidate);
   const isAlreadyInPipeline = isPipelineLinkedForFiles;
 
   function handleCloseCandidateProfile() {
@@ -916,24 +1234,24 @@ export default function CandidateProfileModal() {
 
                         <div className="min-w-0">
                           <h3 className="truncate text-xl font-extrabold text-[#101828]">
-                            {selectedCandidate.name || "Unnamed Candidate"}
+                            {activeCandidate.name || "Unnamed Candidate"}
                           </h3>
 
                           <p className="mt-1 truncate text-sm font-semibold text-sibs-primary-1">
-                            {selectedCandidate.email || "No email provided"}
+                            {activeCandidate.email || "No email provided"}
                           </p>
 
                           <div className="mt-3 flex flex-wrap gap-2">
                             <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                              {selectedCandidate.candidateId || "—"}
+                              {activeCandidate.candidateId || "—"}
                             </span>
 
                             <span
                               className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                selectedCandidate.status,
+                                activeCandidate.status,
                               )}`}
                             >
-                              {selectedCandidate.status || "—"}
+                              {activeCandidate.status || "—"}
                             </span>
 
                             {currentStage && (
@@ -942,7 +1260,7 @@ export default function CandidateProfileModal() {
                               </span>
                             )}
 
-                            {selectedCandidate.isPublicSubmission && (
+                            {activeCandidate.isPublicSubmission && (
                               <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
                                 Public Submission
                               </span>
@@ -981,14 +1299,14 @@ export default function CandidateProfileModal() {
 
                       <p
                         title={
-                          selectedCandidate.openPosition ||
-                          selectedCandidate.roleCapability ||
+                          activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
                           "—"
                         }
                         className="mt-1 truncate text-sm font-extrabold text-[#101828]"
                       >
-                        {selectedCandidate.openPosition ||
-                          selectedCandidate.roleCapability ||
+                        {activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
                           "—"}
                       </p>
                     </div>
@@ -999,10 +1317,10 @@ export default function CandidateProfileModal() {
                       </p>
 
                       <p
-                        title={selectedCandidate.applyingLocation || "—"}
+                        title={activeCandidate.applyingLocation || "—"}
                         className="mt-1 truncate text-sm font-extrabold text-[#101828]"
                       >
-                        {selectedCandidate.applyingLocation || "—"}
+                        {activeCandidate.applyingLocation || "—"}
                       </p>
                     </div>
 
@@ -1012,10 +1330,10 @@ export default function CandidateProfileModal() {
                       </p>
 
                       <p
-                        title={formatDate(selectedCandidate.lastActivity)}
+                        title={formatDate(activeCandidate.lastActivity)}
                         className="mt-1 truncate text-sm font-extrabold text-[#101828]"
                       >
-                        {formatDate(selectedCandidate.lastActivity)}
+                        {formatDate(activeCandidate.lastActivity)}
                       </p>
                     </div>
                   </div>
@@ -1037,65 +1355,51 @@ export default function CandidateProfileModal() {
 
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     <div className="rounded-xl bg-[#F8FAFC] p-4">
-                      <DetailRow
-                        label="First Name"
-                        value={selectedCandidate.firstName}
-                      />
-                      <DetailRow
-                        label="Middle Name"
-                        value={selectedCandidate.middleName}
-                      />
-                      <DetailRow
-                        label="Last Name"
-                        value={selectedCandidate.lastName}
-                      />
-                      <DetailRow
-                        label="Suffix"
-                        value={selectedCandidate.suffix}
-                      />
-                      <DetailRow
-                        label="Nickname"
-                        value={selectedCandidate.nickname}
-                      />
+                      <DetailRow label="First Name" value={activeCandidate.firstName} />
+                      <DetailRow label="Middle Name" value={activeCandidate.middleName} />
+                      <DetailRow label="Last Name" value={activeCandidate.lastName} />
+                      <DetailRow label="Suffix" value={activeCandidate.suffix} />
+                      <DetailRow label="Nickname" value={activeCandidate.nickname} />
                       <DetailRow
                         label="Date of Birth"
-                        value={formatDate(selectedCandidate.dateOfBirth)}
+                        value={formatDate(activeCandidate.dateOfBirth)}
                       />
                       <DetailRow
                         label="Age"
                         value={
-                          selectedCandidate.ageAsOfApplication
-                            ? `${selectedCandidate.ageAsOfApplication}`
+                          activeCandidate.ageAsOfApplication
+                            ? `${activeCandidate.ageAsOfApplication}`
                             : "—"
                         }
                       />
                     </div>
 
                     <div className="rounded-xl bg-[#F8FAFC] p-4">
-                      <DetailRow label="Email" value={selectedCandidate.email} />
+                      <DetailRow label="Email" value={activeCandidate.email} />
                       <DetailRow
                         label="Phone 1"
                         value={
-                          selectedCandidate.phoneNumber1 ||
-                          selectedCandidate.contactNumber
+                          activeCandidate.phoneNumber1 ||
+                          activeCandidate.contactNumber ||
+                          activeCandidate.phone
                         }
                       />
                       <DetailRow
                         label="Phone 2"
-                        value={selectedCandidate.phoneNumber2}
+                        value={activeCandidate.phoneNumber2}
                       />
                       <DetailRow
                         label="Address"
-                        value={selectedCandidate.physicalAddress}
+                        value={activeCandidate.physicalAddress}
                       />
                       <DetailRow
                         label="Preferred Location"
-                        value={selectedCandidate.applyingLocation}
+                        value={activeCandidate.applyingLocation}
                       />
                       <DetailRow label="Encoded By" value={encodedBy} />
                       <DetailRow
                         label="Created At"
-                        value={formatDate(selectedCandidate.createdAt)}
+                        value={formatDate(activeCandidate.createdAt)}
                       />
                     </div>
                   </div>
@@ -1112,26 +1416,16 @@ export default function CandidateProfileModal() {
                     <DetailRow
                       label="Applied Position"
                       value={
-                        selectedCandidate.openPosition ||
-                        selectedCandidate.roleCapability
+                        activeCandidate.openPosition || activeCandidate.roleCapability
                       }
                     />
                     <DetailRow
                       label="How Heard About Us"
-                      value={formatList(selectedCandidate.hearAboutUs)}
+                      value={formatList(activeCandidate.hearAboutUs)}
                     />
-                    <DetailRow
-                      label="Source"
-                      value={selectedCandidate.source}
-                    />
-                    <DetailRow
-                      label="Referred By"
-                      value={selectedCandidate.referredBy}
-                    />
-                    <DetailRow
-                      label="Employee ID"
-                      value={selectedCandidate.employeeId}
-                    />
+                    <DetailRow label="Source" value={activeCandidate.source} />
+                    <DetailRow label="Referred By" value={activeCandidate.referredBy} />
+                    <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
                   </div>
                 </section>
 
@@ -1145,34 +1439,30 @@ export default function CandidateProfileModal() {
                   <div className="rounded-xl bg-[#F8FAFC] p-4">
                     <DetailRow
                       label="Pipeline Status"
-                      value={selectedCandidate.pipelineStatus || "—"}
+                      value={activeCandidate.pipelineStatus || "—"}
                     />
                     <DetailRow
                       label="Current Stage"
                       value={
-                        selectedCandidate.currentPipelineStage ||
-                        selectedCandidate.currentStage ||
-                        selectedCandidate.pipelineStage ||
+                        activeCandidate.currentPipelineStage ||
+                        activeCandidate.currentStage ||
+                        activeCandidate.pipelineStage ||
                         "—"
                       }
                     />
                     <DetailRow
                       label="Final Role"
-                      value={
-                        selectedCandidate.currentAppliedRole ||
-                        "Not assigned yet"
-                      }
+                      value={activeCandidate.currentAppliedRole || "Not assigned yet"}
                     />
                     <DetailRow
                       label="Final Account"
                       value={
-                        selectedCandidate.currentAppliedAccount ||
-                        "Not assigned yet"
+                        activeCandidate.currentAppliedAccount || "Not assigned yet"
                       }
                     />
                     <DetailRow
                       label="TA Owner"
-                      value={selectedCandidate.currentTaOwner || "—"}
+                      value={activeCandidate.currentTaOwner || "—"}
                     />
                   </div>
                 </section>
@@ -1192,7 +1482,7 @@ export default function CandidateProfileModal() {
                         </p>
 
                         <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-                          {selectedCandidate.educationalAttainment || "—"}
+                          {activeCandidate.educationalAttainment || "—"}
                         </p>
                       </div>
 
@@ -1202,7 +1492,7 @@ export default function CandidateProfileModal() {
                         </p>
 
                         <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-                          {selectedCandidate.skillsLanguage || "—"}
+                          {activeCandidate.skillsLanguage || "—"}
                         </p>
                       </div>
 
@@ -1212,7 +1502,7 @@ export default function CandidateProfileModal() {
                         </p>
 
                         <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-                          {formatList(selectedCandidate.affiliations)}
+                          {formatList(activeCandidate.affiliations)}
                         </p>
                       </div>
 
@@ -1222,7 +1512,7 @@ export default function CandidateProfileModal() {
                         </p>
 
                         <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-                          {selectedCandidate.trainingAttended || "—"}
+                          {activeCandidate.trainingAttended || "—"}
                         </p>
                       </div>
                     </div>
@@ -1241,7 +1531,7 @@ export default function CandidateProfileModal() {
                         </div>
 
                         <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                          {selectedCandidate.workExperience || "—"}
+                          {activeCandidate.workExperience || "—"}
                         </span>
                       </div>
 
@@ -1328,7 +1618,7 @@ export default function CandidateProfileModal() {
                           </div>
                         ) : (
                           <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center text-sm font-bold text-gray-500">
-                            {selectedCandidate.workExperience ||
+                            {activeCandidate.workExperience ||
                               "No work experience provided."}
                           </div>
                         )}
@@ -1347,38 +1637,38 @@ export default function CandidateProfileModal() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <StatusTile
                       label="Vaccinated"
-                      value={selectedCandidate.fullyVaccinated}
+                      value={activeCandidate.fullyVaccinated}
                     />
 
                     <StatusTile
                       label="On-site Ready"
-                      value={selectedCandidate.comfortableOnSite}
+                      value={activeCandidate.comfortableOnSite}
                     />
 
                     <StatusTile
                       label="Graveyard Shift"
-                      value={selectedCandidate.willingGraveyard}
+                      value={activeCandidate.willingGraveyard}
                     />
 
                     <StatusTile
                       label="Employment Type"
-                      value={selectedCandidate.employmentInterest}
+                      value={activeCandidate.employmentInterest}
                     />
 
                     <StatusTile
                       label="Remote Access"
-                      value={selectedCandidate.remoteWorkAccess}
+                      value={activeCandidate.remoteWorkAccess}
                     />
 
                     <StatusTile
                       label="Drug Test"
-                      value={selectedCandidate.willingDrugTest}
+                      value={activeCandidate.willingDrugTest}
                     />
 
                     <div className="sm:col-span-2 xl:col-span-3">
                       <StatusTile
                         label="Background Check"
-                        value={selectedCandidate.willingBackgroundCheck}
+                        value={activeCandidate.willingBackgroundCheck}
                       />
                     </div>
                   </div>
@@ -1418,17 +1708,17 @@ export default function CandidateProfileModal() {
                   <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                     <ViewableFileRow
                       label="Audio Recording"
-                      fileName={selectedCandidate.audioFileName}
-                      fileUrl={selectedCandidate.audioFileUrl}
-                      fileType={selectedCandidate.audioFileType}
+                      fileName={activeCandidate.audioFileName}
+                      fileUrl={activeCandidate.audioFileUrl}
+                      fileType={activeCandidate.audioFileType}
                       audio
                     />
 
                     <ViewableFileRow
                       label="Attachment"
-                      fileName={selectedCandidate.attachmentFileName}
-                      fileUrl={selectedCandidate.attachmentFileUrl}
-                      fileType={selectedCandidate.attachmentFileType}
+                      fileName={activeCandidate.attachmentFileName}
+                      fileUrl={activeCandidate.attachmentFileUrl}
+                      fileType={activeCandidate.attachmentFileType}
                     />
                   </div>
 
@@ -1497,7 +1787,8 @@ export default function CandidateProfileModal() {
                       </h3>
 
                       <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                        Candidate movement and application timeline.
+                        Candidate movement and application timeline, including
+                        Candidate Pipeline process.
                       </p>
                     </div>
 
@@ -1509,6 +1800,18 @@ export default function CandidateProfileModal() {
                     )}
                   </div>
 
+                  {pipelineCandidateDetailsError && (
+                    <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                      {pipelineCandidateDetailsError}
+                    </div>
+                  )}
+
+                  {pipelineCandidateDetailsLoading && (
+                    <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+                      Loading Candidate Pipeline process history...
+                    </div>
+                  )}
+
                   <div className="mt-5">
                     {applicationHistory.length > 0 ? (
                       <>
@@ -1518,7 +1821,7 @@ export default function CandidateProfileModal() {
                               item.stage || "Application Update";
 
                             const historyDate =
-                              item.date || selectedCandidate.lastActivity;
+                              item.date || activeCandidate.lastActivity;
 
                             const historyOwner = item.owner || encodedBy || "—";
                             const historyDescription = item.description;
@@ -1536,8 +1839,7 @@ export default function CandidateProfileModal() {
                                 : index;
 
                             const isRealLastNode =
-                              safeHistoryIndex ===
-                              applicationHistory.length - 1;
+                              safeHistoryIndex === applicationHistory.length - 1;
 
                             const isLastVisibleNode =
                               index === visibleApplicationHistory.length - 1;
@@ -1599,7 +1901,7 @@ export default function CandidateProfileModal() {
 
                                   <GetAssessmentTimelineFiles
                                     item={item}
-                                    candidate={selectedCandidate}
+                                    candidate={activeCandidate}
                                   />
 
                                   {offerDetail && (
@@ -1622,8 +1924,9 @@ export default function CandidateProfileModal() {
                                         dir="ltr"
                                         className="mt-2 block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border border-[#D9E2EC] bg-white px-3 py-2 text-left text-sm text-blue-700 underline"
                                       >
-                                        {window.location.origin}
-                                        {item.savedFormLink}
+                                        {item.savedFormLink.startsWith("http")
+                                          ? item.savedFormLink
+                                          : `${window.location.origin}${item.savedFormLink}`}
                                       </a>
                                     </div>
                                   )}
@@ -1672,7 +1975,7 @@ export default function CandidateProfileModal() {
                   </h3>
 
                   <p className="mt-3 whitespace-pre-line rounded-xl bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
-                    {selectedCandidate.remarks || "—"}
+                    {activeCandidate.remarks || "—"}
                   </p>
                 </section>
               </div>
