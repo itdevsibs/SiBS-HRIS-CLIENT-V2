@@ -1045,7 +1045,7 @@ export default function CandidateProfileModal() {
           </div>
 
           {/* BODY */}
-          <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-36 sm:p-6 sm:pb-28">
+          <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6">
             <div className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
               {/* CANDIDATE TOP HEADER */}
               <section className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
