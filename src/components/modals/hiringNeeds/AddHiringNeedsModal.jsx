@@ -1,4 +1,10 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   CalendarDays,
@@ -10,9 +16,11 @@ import {
   Plus,
   X,
 } from "lucide-react";
+
 import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
 import { useUser } from "../../../services/context/UserContext";
 import { createHiringNeed } from "../../../lib/axios/getHiringNeeds";
+import { getTalentPoolOpenPositions } from "../../../lib/axios/getTalentPool";
 
 function FieldLabel({ children, required = false }) {
   return (
@@ -30,6 +38,104 @@ function TextInput({ className = "", ...props }) {
       className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
     />
   );
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function upperText(value) {
+  return cleanText(value).toUpperCase();
+}
+
+function getUserSibsId(user = {}) {
+  return cleanText(
+    user.sibsId ||
+      user.sibs_id ||
+      user.userCode ||
+      user.user_code ||
+      user.employeeId ||
+      user.employee_id ||
+      user.empCode ||
+      user.emp_code ||
+      user.gyEmpCode ||
+      user.gy_emp_code ||
+      user.sibs_id_creator ||
+      user.username ||
+      "",
+  );
+}
+
+function getUserDisplayName(user = {}) {
+  const lastName = cleanText(
+    user.lastName ||
+      user.last_name ||
+      user.lastname ||
+      user.surname ||
+      "",
+  );
+
+  const firstName = cleanText(
+    user.firstName ||
+      user.first_name ||
+      user.firstname ||
+      user.givenName ||
+      user.given_name ||
+      "",
+  );
+
+  const middleName = cleanText(
+    user.middleName ||
+      user.middle_name ||
+      user.middlename ||
+      user.middleInitial ||
+      user.middle_initial ||
+      "",
+  );
+
+  if (lastName || firstName || middleName) {
+    return upperText(
+      `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
+        middleName ? ` ${middleName}` : ""
+      }`,
+    );
+  }
+
+  const fullName = cleanText(
+    user.fullName ||
+      user.full_name ||
+      user.employeeName ||
+      user.employee_name ||
+      user.name ||
+      "",
+  );
+
+  if (fullName.includes(",")) {
+    return upperText(fullName);
+  }
+
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+
+  if (nameParts.length >= 2) {
+    const fallbackLastName = nameParts[nameParts.length - 1];
+    const fallbackFirstName = nameParts[0];
+    const fallbackMiddleName = nameParts.slice(1, -1).join(" ");
+
+    return upperText(
+      `${fallbackLastName}, ${fallbackFirstName}${
+        fallbackMiddleName ? ` ${fallbackMiddleName}` : ""
+      }`,
+    );
+  }
+
+  return upperText(fullName || user.username || "SYSTEM USER");
+}
+
+function formatPreparedByUser(user = {}) {
+  const sibsId = getUserSibsId(user);
+  const displayName = getUserDisplayName(user);
+
+  return upperText([sibsId, displayName].filter(Boolean).join(" - "));
 }
 
 function formatShortDate(value) {
@@ -82,6 +188,76 @@ function isSameDate(firstDate, secondDate) {
     firstDate.getMonth() === secondDate.getMonth() &&
     firstDate.getDate() === secondDate.getDate()
   );
+}
+
+function normalizePosition(row = {}) {
+  const positionTitle =
+    row.positionTitle ||
+    row.position_title ||
+    row.title ||
+    row.name ||
+    "";
+
+  const positionId =
+    row.positionId ||
+    row.position_id ||
+    row.code ||
+    row.positionCode ||
+    row.position_code ||
+    "";
+
+  const accountName =
+    row.accountName ||
+    row.account_name ||
+    row.accountGhlName ||
+    row.account_ghl_name ||
+    row.account ||
+    "";
+
+  const department =
+    row.department || row.departmentName || row.department_name || "";
+
+  const departmentAccount = [department, accountName]
+    .map(cleanText)
+    .filter(Boolean)
+    .join(" / ");
+
+  return {
+    raw: row,
+    id: row.id || row.openPositionId || row.open_position_id || positionId,
+    openPositionDbId: row.id || row.openPositionId || row.open_position_id || "",
+    positionId,
+    positionTitle,
+    department,
+    departmentId: row.departmentId || row.department_id || "",
+    accountId: row.accountId || row.account_id || "",
+    accountName,
+    accountGhlName: row.accountGhlName || row.account_ghl_name || "",
+    locationSite: row.locationSite || row.location_site || "Davao Site",
+    status: row.status || "Active",
+    departmentAccount,
+    description: row.description || "",
+    preferredSkills: row.preferredSkills || row.preferred_skills || "",
+    remarks: row.remarks || "",
+  };
+}
+
+function unwrapOpenPositionsPayload(response) {
+  const payload = response?.data ?? response;
+
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.records)) return payload.records;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  if (Array.isArray(payload?.positions)) return payload.positions;
+  if (Array.isArray(payload?.openPositions)) return payload.openPositions;
+  if (Array.isArray(payload?.open_positions)) return payload.open_positions;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  if (Array.isArray(payload?.data?.records)) return payload.data.records;
+  if (Array.isArray(payload?.data?.rows)) return payload.data.rows;
+  if (Array.isArray(payload?.data?.positions)) return payload.data.positions;
+
+  return [];
 }
 
 function DropdownPortal({
@@ -482,146 +658,276 @@ function DateDropdown({
   );
 }
 
-
 const initialForm = {
-    jobDescriptionDbId: "",
-    positionTitle: "",
-    departmentAccount: "",
-    accountId: "",
-    departmentId: "",
-    jobDescriptionId: "",
-    jobDescriptionCode: "",
-    jobDescriptionTitle: "",
-    headcount: "",
-    reasonForHiring: "",
-    assignment: "Probationary",
-    assignmentOther: "",
-    locationSite: "Davao Site",
-    dateNeeded: "",
-    preparedBy: "",
-    preparedById: "",
-    approvalStatus: "For Approval",
+  openPositionDbId: "",
+  positionId: "",
+  positionTitle: "",
+  departmentAccount: "",
+  accountId: "",
+  departmentId: "",
+  accountName: "",
+  department: "",
+  locationSite: "Davao Site",
+
+  jobDescriptionDbId: "",
+  jobDescriptionId: "",
+  jobDescriptionCode: "",
+  jobDescriptionTitle: "",
+
+  headcount: "",
+  reasonForHiring: "",
+  assignment: "Probationary",
+  assignmentOther: "",
+  dateNeeded: "",
+  preparedBy: "",
+  preparedById: "",
+  approvalStatus: "For Approval",
 };
 
 export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
-   const { user } = useUser();
-   const { jobDescriptions, fetchList, jobDescriptionLoading, reasonForHiringOptions } = useHiringNeeds();
+  const { user } = useUser();
+  const { fetchList, reasonForHiringOptions } = useHiringNeeds();
 
-   const [form, setForm] = useState(initialForm);
-   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState(initialForm);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openPositions, setOpenPositions] = useState([]);
+  const [positionLoading, setPositionLoading] = useState(false);
 
-   // Auto-fill user info when modal opens
-   useEffect(() => {
-     if (open && user) {
-       const name = user.fullName || user.username || "System User";
-       setForm(prev => ({
-         ...prev,
-         preparedBy: name,
-         preparedById: user.id || user.userId || ""
-       }));
-     }
-   }, [open, user]);
+  useEffect(() => {
+    if (!open || !user) return;
 
-   if (!open) return null;
+    const sibsId = getUserSibsId(user);
+    const preparedBy = formatPreparedByUser(user);
 
-   function updateField(field, value) {
-     setForm(prev => ({ ...prev, [field]: value }));
-   }
+    setForm((prev) => ({
+      ...prev,
+      preparedBy,
+      preparedById: sibsId,
+    }));
+  }, [open, user]);
 
-   function handleReset() {
-     setForm({
-       ...initialForm,
-       preparedBy: user?.fullName || user?.username || "",
-       preparedById: user?.id || ""
-     });
-   }
+  useEffect(() => {
+    let isActive = true;
 
-   function handleJobDescriptionChange(jobDescriptionDbId) {
-     const selectedJd = jobDescriptions.find(jd => String(jd.id) === String(jobDescriptionDbId));
-     if (!selectedJd) {
-       handleReset();
-       return;
-     }
-     setForm(prev => ({
-       ...prev,
-       jobDescriptionDbId: selectedJd.id || "",
-       positionTitle: selectedJd.roleTitle || "",
-       departmentAccount: selectedJd.departmentAccount || (selectedJd.department && selectedJd.account ? `${selectedJd.department} / ${selectedJd.account}` : ""),
-       accountId: selectedJd.accountId || "",
-       departmentId: selectedJd.departmentId || "",
-       jobDescriptionId: selectedJd.id || "",
-       jobDescriptionCode: selectedJd.jdCode || "",
-       jobDescriptionTitle: selectedJd.roleTitle || "",
-     }));
-   }
+    async function loadOpenPositions() {
+      if (!open) return;
 
-   const handleSubmit = async (e) => {
-     e.preventDefault();
+      setPositionLoading(true);
 
-     // 1. Validation
-     if (!form.jobDescriptionDbId) {
-       onStatus?.({ type: "error", title: "Required", message: "Position Title is required." });
-       return;
-     }
-     if (!form.headcount || Number(form.headcount) <= 0) {
-       onStatus?.({ type: "error", title: "Invalid", message: "Headcount must be greater than 0." });
-       return;
-     }
-     if (!form.reasonForHiring) {
-       onStatus?.({ type: "error", title: "Required", message: "Reason for Hiring is required." });
-       return;
-     }
-     if (!form.dateNeeded) {
-       onStatus?.({ type: "error", title: "Required", message: "Date Needed is required." });
-       return;
-     }
+      try {
+        const response = await getTalentPoolOpenPositions({
+          page: 1,
+          limit: 500,
+          status: "Active",
+        });
 
-     // 2. Submit
-     setIsSubmitting(true);
-     try {
-       const res = await createHiringNeed(form);
-       if (res?.success || res?.id) {
-         onStatus?.({ type: "success", title: "Submitted", message: "Personnel Requisition submitted successfully." });
-         fetchList(); // Refresh the main table
-         handleReset();
-         onClose();
-       } else {
-         throw new Error(res?.message || "Failed to submit request.");
-       }
-     } catch (err) {
-       onStatus?.({ type: "error", title: "Submission Failed", message: err.message });
-     } finally {
-       setIsSubmitting(false);
-     }
-   };
+        if (!isActive) return;
 
-   const handleAssignmentChange = (value) => {
-    setForm(prev => ({
+        const rows = unwrapOpenPositionsPayload(response)
+          .map(normalizePosition)
+          .filter((item) => item.positionTitle);
+
+        setOpenPositions(rows);
+      } catch (error) {
+        if (!isActive) return;
+
+        setOpenPositions([]);
+
+        onStatus?.({
+          type: "error",
+          title: "Unable to Load Positions",
+          message:
+            error?.message ||
+            "Failed to load positions from talent_pool_open_positions.",
+        });
+      } finally {
+        if (isActive) {
+          setPositionLoading(false);
+        }
+      }
+    }
+
+    loadOpenPositions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [open, onStatus]);
+
+  if (!open) return null;
+
+  function updateField(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleReset() {
+    const sibsId = getUserSibsId(user);
+    const preparedBy = formatPreparedByUser(user);
+
+    setForm({
+      ...initialForm,
+      preparedBy,
+      preparedById: sibsId,
+    });
+  }
+
+  function handlePositionChange(positionKey, selectedPosition) {
+  const position =
+    selectedPosition ||
+    openPositions.find((item) => String(item.id) === String(positionKey));
+
+  if (!position) {
+    handleReset();
+    return;
+  }
+
+  setForm((prev) => ({
+    ...prev,
+
+    openPositionDbId: position.openPositionDbId || position.id || "",
+    positionId: position.positionId || "",
+    positionTitle: position.positionTitle || "",
+
+    department: position.department || "",
+    departmentId: position.departmentId || "",
+    accountId: position.accountId || "",
+    accountName: position.accountName || "",
+    departmentAccount: position.departmentAccount || "",
+
+    locationSite: position.locationSite || prev.locationSite || "Davao Site",
+
+    // IMPORTANT:
+    // Talent Pool Open Position ID is NOT a job_description.id.
+    // Keep these empty so backend will not query job_description.
+    jobDescriptionDbId: "",
+    jobDescriptionId: "",
+
+    // Display reference only.
+    jobDescriptionCode: position.positionId || "",
+    jobDescriptionTitle: position.positionTitle || "",
+  }));
+}
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    if (!form.openPositionDbId && !form.positionId && !form.positionTitle) {
+      onStatus?.({
+        type: "error",
+        title: "Required",
+        message: "Position Title is required.",
+      });
+      return;
+    }
+
+    if (!form.headcount || Number(form.headcount) <= 0) {
+      onStatus?.({
+        type: "error",
+        title: "Invalid",
+        message: "Headcount must be greater than 0.",
+      });
+      return;
+    }
+
+    if (!form.reasonForHiring) {
+      onStatus?.({
+        type: "error",
+        title: "Required",
+        message: "Reason for Hiring is required.",
+      });
+      return;
+    }
+
+    if (!form.dateNeeded) {
+      onStatus?.({
+        type: "error",
+        title: "Required",
+        message: "Date Needed is required.",
+      });
+      return;
+    }
+
+    if (form.assignment === "Other" && !cleanText(form.assignmentOther)) {
+      onStatus?.({
+        type: "error",
+        title: "Required",
+        message: "Please enter other assignment information.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        ...form,
+
+        preparedBy: form.preparedBy || formatPreparedByUser(user),
+        preparedById: form.preparedById || getUserSibsId(user),
+
+        jobDescriptionDbId: form.jobDescriptionDbId || "",
+        jobDescriptionId: form.jobDescriptionId || "",
+        jobDescriptionCode: form.jobDescriptionCode || form.positionId,
+        jobDescriptionTitle: form.jobDescriptionTitle || form.positionTitle,
+
+        departmentAccount:
+          form.departmentAccount ||
+          [form.department, form.accountName].filter(Boolean).join(" / "),
+      };
+
+      const res = await createHiringNeed(payload);
+
+      if (res?.success || res?.id || res?.data?.id) {
+        onStatus?.({
+          type: "success",
+          title: "Submitted",
+          message: "Personnel Requisition submitted successfully.",
+        });
+
+        fetchList();
+        handleReset();
+        onClose();
+      } else {
+        throw new Error(res?.message || "Failed to submit request.");
+      }
+    } catch (err) {
+      onStatus?.({
+        type: "error",
+        title: "Submission Failed",
+        message: err?.message || "Failed to submit personnel requisition.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleAssignmentChange(value) {
+    setForm((prev) => ({
       ...prev,
       assignment: value,
       assignmentOther: value === "Other" ? prev.assignmentOther : "",
     }));
-   }
+  }
 
-
-  const jobDescriptionOptions = [
+  const positionOptions = [
     {
       value: "",
-      label: jobDescriptionLoading
-        ? "Loading job descriptions..."
-        : "Select Position Title",
+      label: positionLoading ? "Loading positions..." : "Select Position Title",
       description: "",
+      disabled: true,
     },
-    ...jobDescriptions.map((item) => ({
+    ...openPositions.map((item) => ({
       value: item.id,
-      label: `${item.roleTitle || "Untitled Job Description"}${
-        item.jdCode ? ` (${item.jdCode})` : ""
+      label: `${item.positionTitle}${
+        item.positionId ? ` (${item.positionId})` : ""
       }`,
       description:
         item.departmentAccount ||
-        (item.department && item.account
-          ? `${item.department} / ${item.account}`
-          : item.department || item.account || ""),
+        item.locationSite ||
+        item.accountName ||
+        item.department ||
+        "",
+      raw: item,
     })),
   ];
 
@@ -664,6 +970,15 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       value: "Mabini Site",
       label: "Mabini Site",
     },
+    ...(form.locationSite &&
+    !["Davao Site", "Tagum Site", "Mabini Site"].includes(form.locationSite)
+      ? [
+          {
+            value: form.locationSite,
+            label: form.locationSite,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -689,8 +1004,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               </h2>
 
               <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                Select a position title from Job Description. Department /
-                Account and Job Description will auto-populate from your backend.
+                Select a position from Talent Pool Open Positions. Department,
+                account, site, and position reference will auto-populate.
               </p>
             </div>
 
@@ -699,6 +1014,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               onClick={onClose}
               className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
               aria-label="Close modal"
+              disabled={isSubmitting}
             >
               <X size={20} />
             </button>
@@ -721,18 +1037,35 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               <div className="lg:col-span-2">
                 <FieldLabel required>Position Title</FieldLabel>
                 <CustomSelect
-                  value={form.jobDescriptionDbId || ""}
-                  options={jobDescriptionOptions}
-                  onChange={(value) => handleJobDescriptionChange(value)}
-                  disabled={jobDescriptionLoading}
+                  value={form.openPositionDbId || ""}
+                  options={positionOptions}
+                  onChange={(value, option) =>
+                    handlePositionChange(value, option?.raw)
+                  }
+                  disabled={positionLoading || isSubmitting}
                   placeholder={
-                    jobDescriptionLoading
-                      ? "Loading job descriptions..."
-                      : "Select Position Title"
+                    positionLoading ? "Loading positions..." : "Select Position"
                   }
                   optionValue={(option) => option.value}
                   optionLabel={(option) => option.label}
                   optionDescription={(option) => option.description}
+                />
+
+                {!positionLoading && openPositions.length === 0 && (
+                  <p className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
+                    No active positions found from talent_pool_open_positions.
+                    Please add or activate a position first.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <FieldLabel>Position ID</FieldLabel>
+                <TextInput
+                  value={form.positionId || ""}
+                  readOnly
+                  disabled
+                  placeholder="Auto-generated from selected position"
                 />
               </div>
 
@@ -747,7 +1080,27 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               </div>
 
               <div>
-                <FieldLabel>Job Description</FieldLabel>
+                <FieldLabel>Department ID</FieldLabel>
+                <TextInput
+                  value={form.departmentId || ""}
+                  readOnly
+                  disabled
+                  placeholder="Auto-populated"
+                />
+              </div>
+
+              <div>
+                <FieldLabel>Account ID</FieldLabel>
+                <TextInput
+                  value={form.accountId || ""}
+                  readOnly
+                  disabled
+                  placeholder="Auto-populated"
+                />
+              </div>
+
+              <div className="lg:col-span-2">
+                <FieldLabel>Position Reference</FieldLabel>
                 <TextInput
                   value={
                     form.jobDescriptionCode
@@ -768,6 +1121,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   value={form.headcount || ""}
                   onChange={(e) => updateField("headcount", e.target.value)}
                   placeholder="Enter requested headcount"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -778,6 +1132,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   options={reasonOptions}
                   onChange={(value) => updateField("reasonForHiring", value)}
                   placeholder="Select Reason"
+                  disabled={isSubmitting}
                   optionValue={(option) => option.value}
                   optionLabel={(option) => option.label}
                 />
@@ -790,6 +1145,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   options={assignmentOptions}
                   onChange={handleAssignmentChange}
                   placeholder="Select Assignment"
+                  disabled={isSubmitting}
                   optionValue={(option) => option.value}
                   optionLabel={(option) => option.label}
                 />
@@ -802,6 +1158,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   options={locationOptions}
                   onChange={(value) => updateField("locationSite", value)}
                   placeholder="Select Location"
+                  disabled={isSubmitting}
                   optionValue={(option) => option.value}
                   optionLabel={(option) => option.label}
                 />
@@ -816,6 +1173,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       updateField("assignmentOther", e.target.value)
                     }
                     placeholder="Enter other assignment information"
+                    disabled={isSubmitting}
                   />
                 </div>
               )}
@@ -828,6 +1186,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                       value={form.dateNeeded || ""}
                       onChange={(value) => updateField("dateNeeded", value)}
                       placeholder="Select Date Needed"
+                      disabled={isSubmitting}
                     />
                   </div>
 
@@ -881,7 +1240,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              disabled={isSubmitting}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Reset
             </button>
@@ -889,17 +1249,23 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              disabled={isSubmitting}
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              disabled={isSubmitting}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Plus size={17} />
-              Submit for Approval
+              {isSubmitting ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              ) : (
+                <Plus size={17} />
+              )}
+              {isSubmitting ? "Submitting..." : "Submit for Approval"}
             </button>
           </div>
         </div>
