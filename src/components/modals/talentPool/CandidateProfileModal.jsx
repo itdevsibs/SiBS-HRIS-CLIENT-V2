@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   ArrowRight,
@@ -12,6 +13,12 @@ import {
   FileText,
   ChevronDown,
   Network,
+  UploadCloud,
+  Check,
+  Eye,
+  ExternalLink,
+  FileImage,
+  FileSpreadsheet,
 } from "lucide-react";
 
 import {
@@ -44,43 +51,52 @@ import {
 
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
+import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
 
-function getNormalizedHistoryDate(value) {
-  if (!value) return "";
+const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
 
-  const date = new Date(value);
+const MAJOR_PRE_EMPLOYMENT_REQUIREMENTS = [
+  "Transcript of Records and/or Diploma",
+  "Medical Records",
+  "NBI Clearance",
+  "Birth Certificate",
+  "Valid ID",
+];
 
-  if (Number.isNaN(date.getTime())) {
-    return String(value).trim();
-  }
+const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
+  "BIR 2316 Form",
+  "Employment Certificate",
+];
 
-  return date.toISOString().slice(0, 16);
-}
+const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
+  {
+    id: "major",
+    title: "Major Requirements",
+    requirements: MAJOR_PRE_EMPLOYMENT_REQUIREMENTS,
+  },
+  {
+    id: "other",
+    title: "Other Requirements",
+    requirements: [
+      "ID picture (2 pcs passport size)",
+      "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
+      "TIN Verification Slip",
+      "SSS E1 Form",
+      "PhilHealth MDR",
+      "Pag-IBIG MDF",
+      "Vaccination Card",
+    ],
+  },
+  {
+    id: "previous-employment",
+    title: "Previous Employment",
+    requirements: PREVIOUS_EMPLOYMENT_REQUIREMENTS,
+  },
+];
 
-function getCandidateStageValue(candidate = {}) {
-  return (
-    candidate.currentStage ||
-    candidate.currentPipelineStage ||
-    candidate.pipelineStage ||
-    candidate.stage ||
-    ""
-  );
-}
-
-function isCandidateLinkedToPipeline(candidate = {}) {
-  return Boolean(
-    candidate?.pipelineStatus ||
-      candidate?.currentPipelineStage ||
-      candidate?.currentTaOwner ||
-      candidate?.pipelineStage ||
-      candidate?.currentStage ||
-      candidate?.movedToPipeline ||
-      candidate?.pipelineCandidate ||
-      candidate?.pipelineId ||
-      candidate?.pipelineDbId,
-  );
-}
+const OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS =
+  PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap((group) => group.requirements);
 
 function safeArray(value) {
   return Array.isArray(value) ? value.filter(Boolean) : [];
@@ -113,6 +129,10 @@ function normalizeRequirementKey(value = "") {
     .replace(/^_+|_+$/g, "");
 }
 
+function normalizeRequirementText(value = "") {
+  return cleanText(value).toLowerCase().replace(/\s+/g, " ");
+}
+
 function getOfficialRequirementMatch(value = "") {
   const key = normalizeRequirementKey(value);
 
@@ -143,6 +163,8 @@ function getNormalizedPreEmploymentRequirement(file = {}) {
     file.savedFileName ||
     file.filename ||
     file.saved_file_name ||
+    file.storedFileName ||
+    file.stored_file_name ||
     file.fileName ||
     file.name ||
     file.originalName ||
@@ -152,39 +174,140 @@ function getNormalizedPreEmploymentRequirement(file = {}) {
   return getOfficialRequirementMatch(filename);
 }
 
+function getRequirementDisplayLabel(file = {}) {
+  return (
+    getNormalizedPreEmploymentRequirement(file) ||
+    cleanText(file.requirement) ||
+    cleanText(file.label) ||
+    cleanText(file.title) ||
+    cleanText(file.category) ||
+    cleanText(file.folderName) ||
+    cleanText(file.applicantFolderName) ||
+    "NHO Uploaded File"
+  );
+}
+
 function isOfficialPreEmploymentFile(file = {}) {
   return Boolean(getNormalizedPreEmploymentRequirement(file));
 }
 
-const OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS = [
-  "Transcript of Records and/or Diploma",
-  "Medical Records",
-  "NBI Clearance",
-  "Birth Certificate",
-  "Valid ID",
-  "ID picture (2 pcs passport size)",
-  "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
-  "TIN Verification Slip",
-  "SSS E1 Form",
-  "PhilHealth MDR",
-  "Pag-IBIG MDF",
-  "Vaccination Card",
-  "BIR 2316 Form",
-  "Employment Certificate",
-];
+function isMajorPreEmploymentRequirement(requirement = "") {
+  const key = normalizeRequirementKey(requirement);
 
-function safeArray(value) {
-  return Array.isArray(value) ? value.filter(Boolean) : [];
+  return MAJOR_PRE_EMPLOYMENT_REQUIREMENTS.some(
+    (item) => normalizeRequirementKey(item) === key,
+  );
 }
 
-function safeObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : {};
+function formatFileSize(size = 0) {
+  const numberSize = Number(size || 0);
+
+  if (!numberSize) return "—";
+
+  const kb = numberSize / 1024;
+
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+
+  return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-function cleanText(value) {
-  return String(value ?? "").trim();
+function formatUploadedDate(value = "") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getFileIcon(fileName = "") {
+  const value = String(fileName || "").toLowerCase();
+
+  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
+  if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
+
+  return FileText;
+}
+
+function getRequirementSortIndex(requirement = "") {
+  const requirementKey = normalizeRequirementText(requirement);
+
+  const index = OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.findIndex(
+    (item) => normalizeRequirementText(item) === requirementKey,
+  );
+
+  return index === -1 ? 9999 : index;
+}
+
+function calculateMajorRequirementProgress(files = []) {
+  const uploadedRequirementKeys = new Set(
+    files
+      .filter(isOfficialPreEmploymentFile)
+      .map((file) =>
+        normalizeRequirementKey(getNormalizedPreEmploymentRequirement(file)),
+      )
+      .filter(Boolean),
+  );
+
+  const completed = MAJOR_PRE_EMPLOYMENT_REQUIREMENTS.filter((requirement) =>
+    uploadedRequirementKeys.has(normalizeRequirementKey(requirement)),
+  ).length;
+
+  const total = MAJOR_PRE_EMPLOYMENT_REQUIREMENTS.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  return {
+    completed,
+    total,
+    percent,
+    isComplete: total > 0 && completed >= total,
+  };
+}
+
+function calculateTotalRequirementProgress(files = []) {
+  const uploadedRequirementKeys = new Set(
+    files
+      .filter(isOfficialPreEmploymentFile)
+      .map((file) =>
+        normalizeRequirementKey(getNormalizedPreEmploymentRequirement(file)),
+      )
+      .filter(Boolean),
+  );
+
+  const completed = OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.filter((requirement) =>
+    uploadedRequirementKeys.has(normalizeRequirementKey(requirement)),
+  ).length;
+
+  const total = OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  return {
+    completed,
+    total,
+    percent,
+    isComplete: total > 0 && completed >= total,
+  };
+}
+
+function getNormalizedHistoryDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).trim();
+  }
+
+  return date.toISOString().slice(0, 16);
 }
 
 function getApiErrorMessage(error, fallback = "Request failed.") {
@@ -221,30 +344,88 @@ function getOfficialRequirementMatch(value = "") {
   if (!key) return "";
 
   return (
-    OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.find((requirement) => {
-      const requirementKey = normalizeRequirementKey(requirement);
-
-      return (
-        key === requirementKey ||
-        key.startsWith(`${requirementKey}_`) ||
-        key.includes(requirementKey)
-      );
-    }) || ""
+    pipelineCandidate.dbId ||
+    pipelineCandidate.id ||
+    safeCandidate.pipelineDbId ||
+    safeCandidate.pipelineId ||
+    safeCandidate.dbId ||
+    safeCandidate.pipelineCandidateId ||
+    metadata.pipelineId ||
+    metadata.pipelineDbId ||
+    metadata.candidatePipelineId ||
+    candidateSnapshot.pipelineId ||
+    candidateSnapshot.dbId ||
+    safeCandidate.candidateId ||
+    safeCandidate.candidateApplicationId ||
+    safeCandidate.applicationId ||
+    safeCandidate.id ||
+    ""
   );
 }
 
-function getNormalizedPreEmploymentRequirement(file = {}) {
-  const directRequirement =
-    file.requirement || file.label || file.title || file.category || "";
+function getCandidatePublicId(candidate = {}) {
+  return (
+    candidate.candidateId ||
+    candidate.candidate_id ||
+    candidate.candidateApplicationId ||
+    candidate.candidate_application_id ||
+    candidate.applicationId ||
+    candidate.application_id ||
+    candidate.id ||
+    ""
+  );
+}
 
-  const directMatch = getOfficialRequirementMatch(directRequirement);
+function buildCandidatePipelineNavigationUrl(candidate = {}, pipelineId = "") {
+  const stage = cleanText(getCandidateStageValue(candidate));
+  const candidateId = cleanText(getCandidatePublicId(candidate));
+  const resolvedPipelineId = cleanText(
+    pipelineId || getCandidatePipelineLookupId(candidate),
+  );
 
-  if (directMatch) return directMatch;
+  const params = new URLSearchParams();
+
+  if (stage) params.set("stage", stage);
+  if (candidateId) params.set("candidateId", candidateId);
+  if (resolvedPipelineId) params.set("pipelineId", resolvedPipelineId);
+
+  return `${CANDIDATE_PIPELINE_ROUTE}${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+}
+
+function getResolvedFileUrl(fileUrl = "") {
+  const value = cleanText(fileUrl);
+
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  const apiBaseUrl = cleanText(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
+
+  if (value.startsWith("/api/") && apiBaseUrl) {
+    return `${apiBaseUrl}${value}`;
+  }
+
+  return value;
+}
+
+function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
+  const lookupId = getCandidatePipelineLookupId(candidate);
 
   const filename =
     file.savedFileName ||
     file.filename ||
     file.saved_file_name ||
+    file.storedFileName ||
+    file.stored_file_name ||
     file.fileName ||
     file.name ||
     "";
@@ -260,7 +441,12 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
   const safeFile = safeObject(file);
 
   const savedFileName =
-    safeFile.savedFileName || safeFile.filename || safeFile.saved_file_name || "";
+    safeFile.savedFileName ||
+    safeFile.filename ||
+    safeFile.saved_file_name ||
+    safeFile.storedFileName ||
+    safeFile.stored_file_name ||
+    "";
 
   const fileName =
     safeFile.fileName ||
@@ -272,16 +458,12 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
     savedFileName ||
     "";
 
-  const normalizedRequirement = getNormalizedPreEmploymentRequirement({
-    ...safeFile,
-    fileName,
-    savedFileName,
-  });
-
   const fileUrl =
     safeFile.fileUrl ||
     safeFile.url ||
     safeFile.dataUrl ||
+    safeFile.previewUrl ||
+    safeFile.downloadUrl ||
     safeFile.attachmentFileUrl ||
     safeFile.audioFileUrl ||
     buildCandidatePipelineFileUrl(candidate, {
@@ -290,12 +472,25 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
       savedFileName,
     });
 
+  const requirement = getRequirementDisplayLabel({
+    ...safeFile,
+    fileName,
+    savedFileName,
+  });
+
   return {
+    ...safeFile,
     id:
       safeFile.id ||
       safeFile.fileId ||
-      `${normalizedRequirement || "file"}-${fileName}-${savedFileName}`,
-    requirement: normalizedRequirement,
+      safeFile.file_id ||
+      `${requirement || "nho-file"}-${fileName}-${savedFileName}-${fileUrl}`,
+    requirement,
+    officialRequirement: getNormalizedPreEmploymentRequirement({
+      ...safeFile,
+      fileName,
+      savedFileName,
+    }),
     fileName,
     savedFileName,
     filename: safeFile.filename || savedFileName,
@@ -314,42 +509,88 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
       safeFile.attachmentFileSize ||
       safeFile.audioFileSize ||
       0,
-    uploadedAt: safeFile.uploadedAt || safeFile.createdAt || safeFile.updatedAt || "",
-    uploadedBy: safeFile.uploadedBy || safeFile.createdBy || safeFile.updatedBy || "",
-    applicantFolderName: safeFile.applicantFolderName || "",
+    uploadedAt:
+      safeFile.uploadedAt ||
+      safeFile.uploaded_at ||
+      safeFile.createdAt ||
+      safeFile.created_at ||
+      safeFile.updatedAt ||
+      safeFile.updated_at ||
+      "",
+    uploadedBy:
+      safeFile.uploadedBy ||
+      safeFile.uploaded_by ||
+      safeFile.createdBy ||
+      safeFile.created_by ||
+      safeFile.updatedBy ||
+      safeFile.updated_by ||
+      "",
+    applicantFolderName:
+      safeFile.applicantFolderName ||
+      safeFile.applicant_folder_name ||
+      safeFile.folderName ||
+      "",
   };
 }
 
-function dedupeCandidateFiles(files = [], candidate = {}) {
+function getCandidateFileUniqueKey(file = {}) {
+  return [
+    cleanText(file.id),
+    cleanText(file.requirement),
+    cleanText(file.fileName),
+    cleanText(file.savedFileName),
+    cleanText(file.filename),
+    cleanText(file.fileUrl),
+    cleanText(file.uploadedAt),
+  ]
+    .filter(Boolean)
+    .join("|")
+    .toLowerCase();
+}
+
+function normalizeCandidateFiles(files = [], candidate = {}) {
   const map = new Map();
 
   files
     .filter(Boolean)
-    .filter(isOfficialPreEmploymentFile)
+    .map((file) => normalizeCandidateFile(file, candidate))
+    .filter((file) => file.fileName || file.savedFileName || file.fileUrl)
     .forEach((file) => {
-      const normalizedFile = normalizeCandidateFile(file, candidate);
-      const requirementKey = normalizeRequirementKey(normalizedFile.requirement);
+      const key =
+        getCandidateFileUniqueKey(file) ||
+        `${file.requirement}-${file.fileName}-${Math.random()}`;
 
-      if (!requirementKey) return;
-
-      const currentFile = map.get(requirementKey);
-
-      if (!currentFile) {
-        map.set(requirementKey, normalizedFile);
-        return;
-      }
-
-      const currentDate = new Date(currentFile.uploadedAt || 0).getTime();
-      const nextDate = new Date(normalizedFile.uploadedAt || 0).getTime();
-
-      if (!Number.isFinite(currentDate) || nextDate >= currentDate) {
-        map.set(requirementKey, normalizedFile);
+      if (!map.has(key)) {
+        map.set(key, file);
       }
     });
 
-  return Array.from(map.values()).sort((a, b) =>
-    cleanText(a.requirement).localeCompare(cleanText(b.requirement)),
-  );
+  return Array.from(map.values()).sort((a, b) => {
+    const aMajor = isMajorPreEmploymentRequirement(a.requirement) ? 0 : 1;
+    const bMajor = isMajorPreEmploymentRequirement(b.requirement) ? 0 : 1;
+
+    if (aMajor !== bMajor) return aMajor - bMajor;
+
+    const aOfficial = isOfficialPreEmploymentFile(a) ? 0 : 1;
+    const bOfficial = isOfficialPreEmploymentFile(b) ? 0 : 1;
+
+    if (aOfficial !== bOfficial) return aOfficial - bOfficial;
+
+    const requirementSort =
+      getRequirementSortIndex(a.requirement) -
+      getRequirementSortIndex(b.requirement);
+
+    if (requirementSort !== 0) return requirementSort;
+
+    const dateA = new Date(a.uploadedAt || 0).getTime();
+    const dateB = new Date(b.uploadedAt || 0).getTime();
+
+    if (Number.isFinite(dateA) && Number.isFinite(dateB) && dateA !== dateB) {
+      return dateB - dateA;
+    }
+
+    return cleanText(a.fileName).localeCompare(cleanText(b.fileName));
+  });
 }
 
 function getCandidatePreEmploymentFiles(candidate = {}) {
@@ -371,32 +612,61 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     metadata.nhoFiles,
     metadata.nho_files,
     metadata.preEmploymentFiles,
+    metadata.pre_employment_files,
+    metadata.uploadedFiles,
+    metadata.files,
 
     candidateSnapshot.nhoFiles,
     candidateSnapshot.nho_files,
     candidateSnapshot.preEmploymentFiles,
+    candidateSnapshot.pre_employment_files,
+    candidateSnapshot.uploadedFiles,
+    candidateSnapshot.files,
 
     pipelineCandidate.nhoFiles,
     pipelineCandidate.nho_files,
     pipelineCandidate.preEmploymentFiles,
     pipelineCandidate.pre_employment_files,
+    pipelineCandidate.uploadedFiles,
+    pipelineCandidate.files,
 
     pipelineDetails.nhoFiles,
     pipelineDetails.nho_files,
     pipelineDetails.preEmploymentFiles,
     pipelineDetails.pre_employment_files,
+    pipelineDetails.uploadedFiles,
+    pipelineDetails.files,
 
     pipelineMetadata.nhoFiles,
     pipelineMetadata.nho_files,
     pipelineMetadata.preEmploymentFiles,
+    pipelineMetadata.pre_employment_files,
+    pipelineMetadata.uploadedFiles,
+    pipelineMetadata.files,
   ];
 
-  return dedupeCandidateFiles(
-    sources
-      .flatMap((source) => safeArray(source))
-      .map((file) => normalizeCandidateFile(file, safeCandidate)),
+  return normalizeCandidateFiles(
+    sources.flatMap((source) => safeArray(source)),
     safeCandidate,
   );
+}
+
+function getNhoFilesFromApiResponse(response) {
+  const payload = response?.data ?? response;
+  const data = payload?.data || {};
+
+  return [
+    ...safeArray(payload?.files),
+    ...safeArray(data?.files),
+    ...safeArray(payload?.nhoFiles),
+    ...safeArray(payload?.nho_files),
+    ...safeArray(data?.nhoFiles),
+    ...safeArray(data?.nho_files),
+    ...safeArray(payload?.candidate?.nhoFiles),
+    ...safeArray(payload?.candidate?.nho_files),
+    ...safeArray(data?.candidate?.nhoFiles),
+    ...safeArray(data?.candidate?.nho_files),
+  ];
 }
 
 function getPipelineCandidateFromResponse(response) {
@@ -467,9 +737,14 @@ function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {
     safePipelineCandidate.nho_files,
     safePipelineCandidate.preEmploymentFiles,
     safePipelineCandidate.pre_employment_files,
+    safePipelineCandidate.uploadedFiles,
+    safePipelineCandidate.files,
     pipelineMetadata.nhoFiles,
     pipelineMetadata.nho_files,
     pipelineMetadata.preEmploymentFiles,
+    pipelineMetadata.pre_employment_files,
+    pipelineMetadata.uploadedFiles,
+    pipelineMetadata.files,
   );
 
   return {
@@ -486,7 +761,9 @@ function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {
       safePipelineCandidate.pipelineStatus ||
       safePipelineCandidate.pipeline_status ||
       safeCandidate.pipelineStatus ||
-      (safePipelineCandidate.currentStage ? "Active" : safeCandidate.pipelineStatus),
+      (safePipelineCandidate.currentStage
+        ? "Active"
+        : safeCandidate.pipelineStatus),
 
     currentPipelineStage:
       safePipelineCandidate.currentPipelineStage ||
@@ -531,13 +808,8 @@ function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {
       safePipelineCandidate.updated_by_sibs_id ||
       safeCandidate.currentTaOwner,
 
-    nhoFiles: dedupeCandidateFiles(
-      [
-        ...getCandidatePreEmploymentFiles(safeCandidate),
-        ...pipelineNhoFiles.map((file) =>
-          normalizeCandidateFile(file, safePipelineCandidate),
-        ),
-      ],
+    nhoFiles: normalizeCandidateFiles(
+      [...getCandidatePreEmploymentFiles(safeCandidate), ...pipelineNhoFiles],
       safePipelineCandidate,
     ),
 
@@ -601,6 +873,9 @@ function getHistoryTitle(item = {}) {
   if (title.includes("Offer details")) return "Offered";
   if (title.includes("Offer approved")) return "Accepted";
   if (title.includes("NHO schedule")) return "For NHO";
+  if (title.includes("incomplete major")) {
+    return "For Onboarding - Incomplete Requirements";
+  }
 
   return title || "Application Update";
 }
@@ -675,6 +950,14 @@ function getHistoryDescription(item = {}) {
 
   if (title === "For NHO") {
     return "Candidate moved to For NHO.";
+  }
+
+  if (title === "For Onboarding - Incomplete Requirements") {
+    return "Candidate has fewer than 5 major requirements and was routed to Talent Pool for follow-up.";
+  }
+
+  if (title === "Onboarding") {
+    return "Candidate completed the 5 major requirements and moved to Onboarding.";
   }
 
   if (title === "Drop-off" || title === "Drop-offs") {
@@ -896,7 +1179,592 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
   });
 }
 
+function getFilesForRequirement(files = [], requirement = "") {
+  const requirementKey = normalizeRequirementKey(requirement);
+
+  return files.filter((file) => {
+    const officialKey = normalizeRequirementKey(file.officialRequirement);
+    const displayKey = normalizeRequirementKey(file.requirement);
+
+    return officialKey === requirementKey || displayKey === requirementKey;
+  });
+}
+
+function getCompletedCountForGroup(files = [], requirements = []) {
+  return requirements.filter(
+    (requirement) => getFilesForRequirement(files, requirement).length > 0,
+  ).length;
+}
+
+function NhoRequirementCard({
+  requirement,
+  files = [],
+  selectedFileId = "",
+  onSelect,
+}) {
+  const hasFiles = files.length > 0;
+  const isMajor = isMajorPreEmploymentRequirement(requirement);
+
+  return (
+    <div
+      className={`rounded-xl border p-4 transition ${
+        hasFiles
+          ? "border-emerald-200 bg-emerald-50/50"
+          : "border-[#D9E2EC] bg-[#F8FAFC]"
+      }`}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <div
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+            hasFiles
+              ? "border-emerald-500 bg-emerald-500 text-white"
+              : "border-[#B9C7D6] bg-white"
+          }`}
+        >
+          {hasFiles && <Check size={14} strokeWidth={3} />}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <p
+              title={requirement}
+              className="truncate text-sm font-extrabold text-[#101828]"
+            >
+              {requirement}
+            </p>
+
+            {isMajor && (
+              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Major
+              </span>
+            )}
+          </div>
+
+          {!hasFiles && (
+            <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+              No uploaded file yet.
+            </div>
+          )}
+
+          {hasFiles && (
+            <div className="mt-3 space-y-2">
+              {files.map((file) => {
+                const FileIcon = getFileIcon(file.fileName);
+                const isSelected = selectedFileId && selectedFileId === file.id;
+
+                return (
+                  <button
+                    key={`${file.id}-${file.fileName}-${file.fileUrl}`}
+                    type="button"
+                    onClick={() => onSelect?.(file)}
+                    className={`flex w-full min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-left transition ${
+                      isSelected
+                        ? "border-sibs-primary-1 bg-blue-50"
+                        : "border-emerald-100 bg-white hover:bg-emerald-50"
+                    }`}
+                  >
+                    <FileIcon
+                      size={17}
+                      className={`shrink-0 ${
+                        isSelected ? "text-sibs-primary-1" : "text-emerald-700"
+                      }`}
+                    />
+
+                    <span className="min-w-0 flex-1">
+                      <span
+                        title={file.fileName || file.savedFileName}
+                        className={`block truncate text-xs font-extrabold ${
+                          isSelected
+                            ? "text-sibs-primary-1"
+                            : "text-emerald-800"
+                        }`}
+                      >
+                        {file.fileName || file.savedFileName || "Uploaded file"}
+                      </span>
+
+                      <span
+                        className={`mt-0.5 block truncate text-[11px] font-bold ${
+                          isSelected
+                            ? "text-sibs-primary-1/80"
+                            : "text-emerald-700/80"
+                        }`}
+                      >
+                        {formatFileSize(file.fileSize)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NhoFilePreviewPanel({ file }) {
+  if (!file) {
+    return (
+      <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#B9C7D6] bg-[#F8FAFC] p-6 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D9E2EC] bg-white text-sibs-primary-1 shadow-sm">
+          <FileText size={27} />
+        </div>
+
+        <p className="mt-4 text-base font-extrabold text-[#101828]">
+          No file selected
+        </p>
+
+        <p className="mt-2 max-w-xs text-sm font-semibold leading-6 text-sibs-tertiary-5">
+          Select an uploaded NHO file from the requirements list to preview its
+          details here.
+        </p>
+      </div>
+    );
+  }
+
+  const FileIcon = getFileIcon(file.fileName);
+  const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
+
+  const isImageByType = String(file.fileType || "").startsWith("image/");
+  const isImageByName = /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(
+    file.fileName || "",
+  );
+
+  const isImage =
+    resolvedFileUrl &&
+    (isImageByType || isImageByName) &&
+    !String(resolvedFileUrl).startsWith("blob:");
+
+  return (
+    <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+          <FileIcon size={24} />
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            Selected File
+          </p>
+
+          <h3
+            title={file.fileName || file.savedFileName}
+            className="mt-1 break-words text-base font-extrabold text-[#101828]"
+          >
+            {file.fileName || file.savedFileName || "Uploaded file"}
+          </h3>
+
+          <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+            {formatFileSize(file.fileSize)}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-3 rounded-xl border border-[#E6ECF2] bg-white p-4">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            Requirement
+          </p>
+
+          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+            {file.requirement || "NHO Uploaded File"}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+            Uploaded At
+          </p>
+
+          <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+            {formatUploadedDate(file.uploadedAt)}
+          </p>
+        </div>
+
+        {file.uploadedBy && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+              Uploaded By
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+              {file.uploadedBy}
+            </p>
+          </div>
+        )}
+
+        {file.applicantFolderName && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+              Server Folder
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+              {file.applicantFolderName}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {isImage && (
+        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+          <img
+            src={resolvedFileUrl}
+            alt={file.fileName || "Uploaded file"}
+            className="max-h-[280px] w-full object-contain"
+          />
+        </div>
+      )}
+
+      {resolvedFileUrl && (
+        <a
+          href={resolvedFileUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+        >
+          Open File
+        </a>
+      )}
+    </div>
+  );
+}
+
+function NhoUploadedFilesList({ files = [], onSelect }) {
+  if (!files.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+          <FileText size={23} />
+        </div>
+
+        <p className="mt-3 text-sm font-extrabold text-[#101828]">
+          No Candidate Pipeline NHO files yet
+        </p>
+
+        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+          Uploaded files from the Candidate Pipeline NHO modal will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {files.map((file) => {
+        const FileIcon = getFileIcon(file.fileName);
+        const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
+
+        return (
+          <div
+            key={`${file.id}-${file.requirement}-${file.fileName}-${file.fileUrl}`}
+            className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 transition hover:border-sibs-primary-1/30 hover:bg-white"
+          >
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <button
+                type="button"
+                onClick={() => onSelect?.(file)}
+                className="flex min-w-0 flex-1 items-start gap-3 text-left"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+                  <FileIcon size={21} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <p
+                      title={file.requirement}
+                      className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
+                    >
+                      {file.requirement || "NHO Uploaded File"}
+                    </p>
+
+                    {isMajorPreEmploymentRequirement(file.requirement) && (
+                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-primary-1">
+                        Major
+                      </span>
+                    )}
+                  </div>
+
+                  <p
+                    title={file.fileName || file.savedFileName}
+                    className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                  >
+                    {file.fileName || file.savedFileName || "Uploaded file"}
+                  </p>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-tertiary-5">
+                    <span>{formatFileSize(file.fileSize)}</span>
+                    <span>•</span>
+                    <span>{formatUploadedDate(file.uploadedAt)}</span>
+                  </div>
+                </div>
+              </button>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onSelect?.(file)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
+                >
+                  <Eye size={15} />
+                  View
+                </button>
+
+                {resolvedFileUrl && (
+                  <a
+                    href={resolvedFileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
+                  >
+                    <ExternalLink size={15} />
+                    Open
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CandidateNhoFilesSection({
+  files = [],
+  selectedFile,
+  onSelectFile,
+  isLoading = false,
+  error = "",
+  canUpload = false,
+  onUploadFollowUp,
+}) {
+  const majorProgress = useMemo(
+    () => calculateMajorRequirementProgress(files),
+    [files],
+  );
+
+  const totalProgress = useMemo(
+    () => calculateTotalRequirementProgress(files),
+    [files],
+  );
+
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <SectionTitle
+          icon={FileText}
+          title="Files"
+          description="Uploaded audio, supporting attachments, and NHO pre-employment files."
+        />
+      </div>
+
+      <div className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0 space-y-5">
+            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-extrabold text-[#101828]">
+                    Candidate Pipeline NHO Uploaded Files
+                  </h3>
+
+                  <p className="mt-1 text-sm font-semibold text-sibs-primary-1/80">
+                    Review and monitor candidate pre-employment requirements
+                    uploaded from Candidate Pipeline.
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-extrabold ${
+                      majorProgress.isComplete
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "bg-amber-50 text-amber-700"
+                    }`}
+                  >
+                    {majorProgress.completed} / {majorProgress.total} Major
+                  </span>
+
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                    {totalProgress.completed} / {totalProgress.total} Total
+                  </span>
+
+                  <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-[#344054]">
+                    {isLoading
+                      ? "Loading..."
+                      : `${files.length} upload${files.length === 1 ? "" : "s"}`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <span>Major Completion</span>
+                  <span>{majorProgress.percent}%</span>
+                </div>
+
+                <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      majorProgress.isComplete
+                        ? "bg-emerald-600"
+                        : "bg-sibs-primary-1"
+                    }`}
+                    style={{ width: `${majorProgress.percent}%` }}
+                  />
+                </div>
+
+                <div className="mt-4 mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <span>Total Completion</span>
+                  <span>{totalProgress.percent}%</span>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                  <div
+                    className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
+                    style={{ width: `${totalProgress.percent}%` }}
+                  />
+                </div>
+              </div>
+
+              {!majorProgress.isComplete && (
+                <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                  Candidate has fewer than 5 major requirements. Candidate
+                  should remain under{" "}
+                  <span className="font-extrabold">
+                    For Onboarding - Incomplete Requirements
+                  </span>{" "}
+                  for Talent Pool follow-up.
+                </div>
+              )}
+
+              {majorProgress.isComplete && (
+                <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+                  Candidate completed the 5 major requirements and can proceed
+                  to Onboarding.
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                  {error}
+                </div>
+              )}
+
+              {isLoading && files.length === 0 && (
+                <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+                  Loading Candidate Pipeline NHO uploaded files...
+                </div>
+              )}
+
+              {canUpload && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onUploadFollowUp}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
+                  >
+                    <UploadCloud size={17} />
+                    Upload Follow-up Requirements
+                  </button>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <h3 className="text-lg font-extrabold text-[#101828]">
+                Pre-Employment Requirements
+              </h3>
+
+              <div className="mt-5 space-y-6">
+                {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
+                  const groupCompleted = getCompletedCountForGroup(
+                    files,
+                    group.requirements,
+                  );
+
+                  return (
+                    <div
+                      key={group.id}
+                      className="border-t border-[#E6ECF2] pt-5 first:border-t-0 first:pt-0"
+                    >
+                      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <h4 className="text-base font-extrabold text-sibs-primary-1">
+                            {group.title}
+                          </h4>
+
+                          <span className="rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                            {groupCompleted} / {group.requirements.length}
+                          </span>
+                        </div>
+
+                        {group.id === "major" && (
+                          <span
+                            className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-extrabold ${
+                              groupCompleted >= group.requirements.length
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            Required before Onboarding
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {group.requirements.map((requirement) => (
+                          <NhoRequirementCard
+                            key={requirement}
+                            requirement={requirement}
+                            files={getFilesForRequirement(files, requirement)}
+                            selectedFileId={selectedFile?.id || ""}
+                            onSelect={onSelectFile}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-extrabold text-sibs-primary-1">
+                    Uploaded Files List
+                  </h3>
+
+                  <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+                    Complete list of all Candidate Pipeline NHO uploaded files.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                  {files.length} upload{files.length === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              <NhoUploadedFilesList files={files} onSelect={onSelectFile} />
+            </section>
+          </div>
+
+          <aside className="xl:sticky xl:top-0 xl:self-start">
+            <NhoFilePreviewPanel file={selectedFile} />
+          </aside>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function CandidateProfileModal() {
+  const navigate = useNavigate();
+
   const {
     selectedCandidate,
     setSelectedCandidate,
@@ -961,12 +1829,17 @@ export default function CandidateProfileModal() {
     setPipelineCandidateDetailsLoading(true);
 
     api
-      .get(`/api/candidate-pipeline/${encodeURIComponent(candidatePipelineLookupId)}`, {
-        withCredentials: true,
-        params: {
-          _t: Date.now(),
+      .get(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidatePipelineLookupId,
+        )}`,
+        {
+          withCredentials: true,
+          params: {
+            _t: Date.now(),
+          },
         },
-      })
+      )
       .then((response) => {
         if (!isActive) return;
 
@@ -997,7 +1870,11 @@ export default function CandidateProfileModal() {
   }, [selectedCandidate, candidatePipelineLookupId, isPipelineLinkedForFiles]);
 
   const profileCandidate = useMemo(
-    () => mergeCandidateWithPipelineDetails(selectedCandidate, pipelineCandidateDetails),
+    () =>
+      mergeCandidateWithPipelineDetails(
+        selectedCandidate,
+        pipelineCandidateDetails,
+      ),
     [selectedCandidate, pipelineCandidateDetails],
   );
 
@@ -1043,16 +1920,15 @@ export default function CandidateProfileModal() {
       .then((response) => {
         if (!isActive) return;
 
-        const responseFiles =
-          response?.data?.data?.files || response?.data?.files || [];
+        const responseFiles = getNhoFilesFromApiResponse(response);
 
-        const normalizedFiles = dedupeCandidateFiles(
-          safeArray(responseFiles),
+        const normalizedFiles = normalizeCandidateFiles(
+          responseFiles,
           profileCandidate,
         );
 
         setCandidatePipelineFiles(
-          dedupeCandidateFiles(
+          normalizeCandidateFiles(
             [...localProfileFiles, ...normalizedFiles],
             profileCandidate,
           ),
@@ -1092,9 +1968,48 @@ export default function CandidateProfileModal() {
   ]);
 
   const displayedPreEmploymentFiles = useMemo(
-    () => dedupeCandidateFiles(candidatePipelineFiles, profileCandidate),
+    () => normalizeCandidateFiles(candidatePipelineFiles, profileCandidate),
     [candidatePipelineFiles, profileCandidate],
   );
+
+  const majorRequirementProgress = useMemo(
+    () => calculateMajorRequirementProgress(displayedPreEmploymentFiles),
+    [displayedPreEmploymentFiles],
+  );
+
+  const talentPoolStage = useMemo(
+    () => cleanText(getCandidateStageValue(profileCandidate || selectedCandidate)),
+    [profileCandidate, selectedCandidate],
+  );
+
+  const canUploadFollowUpNhoRequirements = useMemo(() => {
+    const stage = talentPoolStage.toLowerCase();
+
+    return Boolean(
+      candidatePipelineLookupId &&
+        isPipelineLinkedForFiles &&
+        (stage === "for onboarding - incomplete requirements" ||
+          stage === "for nho"),
+    );
+  }, [candidatePipelineLookupId, isPipelineLinkedForFiles, talentPoolStage]);
+
+  useEffect(() => {
+    if (!displayedPreEmploymentFiles.length) {
+      setSelectedNhoFile(null);
+      return;
+    }
+
+    setSelectedNhoFile((current) => {
+      if (
+        current &&
+        displayedPreEmploymentFiles.some((file) => file.id === current.id)
+      ) {
+        return current;
+      }
+
+      return displayedPreEmploymentFiles[0] || null;
+    });
+  }, [displayedPreEmploymentFiles]);
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
@@ -1151,7 +2066,22 @@ export default function CandidateProfileModal() {
     applicationHistory.length > collapsedHistoryLimit;
 
   const currentStage = getCandidateStageValue(activeCandidate);
+
+  const normalizedCurrentStage = cleanText(currentStage).toLowerCase();
+
+  const isIncompleteRequirementsStage =
+    normalizedCurrentStage === "for onboarding - incomplete requirements";
+
   const isAlreadyInPipeline = isPipelineLinkedForFiles;
+  const isAlreadyOnboarding =
+    cleanText(currentStage).toLowerCase() === "onboarding";
+
+  const canMoveToOnboarding = Boolean(
+    isAlreadyInPipeline &&
+      majorRequirementProgress.isComplete &&
+      candidatePipelineLookupId &&
+      !isAlreadyOnboarding,
+  );
 
   const profileTabs = [
     {
@@ -1253,11 +2183,7 @@ export default function CandidateProfileModal() {
     }
 
     if (isAlreadyInPipeline) {
-      showStatusModal({
-        type: "success",
-        title: "Already Linked",
-        message: "This candidate is already linked to the Candidate Pipeline.",
-      });
+      handleOpenLinkedCandidatePipeline();
       return;
     }
 
@@ -1271,6 +2197,316 @@ export default function CandidateProfileModal() {
     }
 
     openMoveToPipeline(selectedCandidate);
+  }
+
+  function handleOpenLinkedCandidatePipeline() {
+    const stage = cleanText(getCandidateStageValue(activeCandidate));
+    const pipelineId = cleanText(candidatePipelineLookupId);
+    const candidateId = cleanText(getCandidatePublicId(activeCandidate));
+    const url = buildCandidatePipelineNavigationUrl(activeCandidate, pipelineId);
+
+    window.dispatchEvent(
+      new CustomEvent("ta-candidate-pipeline-focus", {
+        detail: {
+          candidate: activeCandidate,
+          candidateId,
+          pipelineId,
+          stage,
+          focusStage: stage,
+          focusCandidateId: candidateId,
+          focusPipelineId: pipelineId,
+        },
+      }),
+    );
+
+    setSelectedCandidate(null);
+
+    navigate(url, {
+      state: {
+        fromTalentPool: true,
+        candidate: activeCandidate,
+        focusCandidate: activeCandidate,
+        candidateId,
+        pipelineId,
+        stage,
+        focusStage: stage,
+        focusCandidateId: candidateId,
+        focusPipelineId: pipelineId,
+      },
+    });
+  }
+
+  async function handleMoveToOnboarding() {
+    if (!candidatePipelineLookupId) {
+      showStatusModal({
+        type: "error",
+        title: "Missing Candidate Pipeline ID",
+        message:
+          "Candidate Pipeline ID is missing. The candidate cannot be moved to Onboarding.",
+      });
+      return;
+    }
+
+    if (!majorRequirementProgress.isComplete) {
+      showStatusModal({
+        type: "error",
+        title: "Incomplete Major Requirements",
+        message:
+          "The candidate must complete all 5 major requirements before moving to Onboarding.",
+      });
+      return;
+    }
+
+    if (isAlreadyOnboarding) {
+      showStatusModal({
+        type: "success",
+        title: "Already in Onboarding",
+        message: "This candidate is already under the Onboarding stage.",
+      });
+      return;
+    }
+
+    try {
+      setIsMovingToOnboarding(true);
+
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidatePipelineLookupId,
+        )}/move`,
+        {
+          targetStage: "Onboarding",
+          stage: "Onboarding",
+          reason:
+            "Candidate completed the 5 major pre-employment requirements from Talent Pool follow-up.",
+          remarks:
+            "Candidate completed the 5 major pre-employment requirements and was moved to Onboarding from Talent Pool.",
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const responsePayload = response?.data || {};
+
+      if (responsePayload?.success === false) {
+        throw new Error(
+          responsePayload?.message ||
+            "Failed to move candidate to Onboarding.",
+        );
+      }
+
+      const responseCandidate = safeObject(
+        responsePayload?.candidate ||
+          responsePayload?.data?.candidate ||
+          responsePayload?.data ||
+          {},
+      );
+
+      const nextCandidateBase = {
+        ...activeCandidate,
+        ...responseCandidate,
+        status: "Hired / Active",
+        pipelineStatus:
+          responseCandidate.pipelineStatus ||
+          responseCandidate.pipeline_status ||
+          activeCandidate.pipelineStatus ||
+          "Active",
+        currentPipelineStage: "Onboarding",
+        currentStage: "Onboarding",
+        pipelineStage: "Onboarding",
+        stage: "Onboarding",
+        nhoFiles: displayedPreEmploymentFiles,
+        nho_files: displayedPreEmploymentFiles,
+        preEmploymentFiles: displayedPreEmploymentFiles,
+        pre_employment_files: displayedPreEmploymentFiles,
+        uploadedFiles: displayedPreEmploymentFiles,
+        files: displayedPreEmploymentFiles,
+        majorNhoUploadProgress: majorRequirementProgress,
+        major_nho_upload_progress: majorRequirementProgress,
+      };
+
+      const nextCandidate = mergeCandidateWithPipelineDetails(
+        nextCandidateBase,
+        responseCandidate,
+      );
+
+      setSelectedCandidate(nextCandidate);
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: nextCandidate,
+            files: displayedPreEmploymentFiles,
+            majorProgress: majorRequirementProgress,
+            routedStage: "Onboarding",
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: {
+            candidate: nextCandidate,
+            files: displayedPreEmploymentFiles,
+            majorProgress: majorRequirementProgress,
+            routedStage: "Onboarding",
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-onboarding-updated", {
+          detail: {
+            candidate: nextCandidate,
+            files: displayedPreEmploymentFiles,
+            majorProgress: majorRequirementProgress,
+          },
+        }),
+      );
+
+      showStatusModal({
+        type: "success",
+        title: "Moved to Onboarding",
+        message:
+          "Candidate completed all 5 major requirements and was moved to Onboarding.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Move to Onboarding Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to move candidate to Onboarding.",
+        ),
+      });
+    } finally {
+      setIsMovingToOnboarding(false);
+    }
+  }
+
+  function handleTalentPoolNhoSave({
+    files = [],
+    candidate: updatedCandidate = null,
+    majorProgress = null,
+    routedStage = "",
+    response = null,
+  } = {}) {
+    const savedFiles = normalizeCandidateFiles(
+      [...displayedPreEmploymentFiles, ...files],
+      activeCandidate,
+    );
+
+    const responseCandidate = safeObject(
+      updatedCandidate || response?.candidate || response?.data || {},
+    );
+
+    const nextStage = cleanText(
+      routedStage ||
+        responseCandidate.currentStage ||
+        responseCandidate.current_stage ||
+        responseCandidate.currentPipelineStage ||
+        responseCandidate.current_pipeline_stage ||
+        responseCandidate.pipelineStage ||
+        responseCandidate.stage ||
+        activeCandidate.currentPipelineStage ||
+        activeCandidate.currentStage ||
+        activeCandidate.pipelineStage ||
+        "",
+    );
+
+    const nextCandidateBase = {
+      ...activeCandidate,
+      ...responseCandidate,
+
+      nhoFiles: savedFiles,
+      nho_files: savedFiles,
+      preEmploymentFiles: savedFiles,
+      pre_employment_files: savedFiles,
+      uploadedFiles: savedFiles,
+      files: savedFiles,
+
+      majorNhoUploadProgress:
+        majorProgress || calculateMajorRequirementProgress(savedFiles),
+      major_nho_upload_progress:
+        majorProgress || calculateMajorRequirementProgress(savedFiles),
+
+      ...(nextStage
+        ? {
+            status:
+              nextStage === "Onboarding"
+                ? "Hired / Active"
+                : activeCandidate.status,
+            pipelineStatus:
+              responseCandidate.pipelineStatus ||
+              responseCandidate.pipeline_status ||
+              activeCandidate.pipelineStatus ||
+              "Active",
+            currentPipelineStage: nextStage,
+            currentStage: nextStage,
+            pipelineStage: nextStage,
+            stage: nextStage,
+          }
+        : {}),
+    };
+
+    const nextCandidate = mergeCandidateWithPipelineDetails(
+      nextCandidateBase,
+      responseCandidate,
+    );
+
+    setCandidatePipelineFiles(savedFiles);
+    setSelectedCandidate(nextCandidate);
+    setSelectedNhoFile(savedFiles[0] || null);
+    setShowNhoUploadModal(false);
+
+    window.dispatchEvent(
+      new CustomEvent("ta-talent-pool-updated", {
+        detail: {
+          candidate: nextCandidate,
+          files: savedFiles,
+          majorProgress:
+            majorProgress || calculateMajorRequirementProgress(savedFiles),
+          routedStage: nextStage,
+        },
+      }),
+    );
+
+    window.dispatchEvent(
+      new CustomEvent("ta-pipeline-candidates-updated", {
+        detail: {
+          candidate: nextCandidate,
+          files: savedFiles,
+          majorProgress:
+            majorProgress || calculateMajorRequirementProgress(savedFiles),
+          routedStage: nextStage,
+        },
+      }),
+    );
+
+    if (nextStage === "Onboarding") {
+      window.dispatchEvent(
+        new CustomEvent("ta-onboarding-updated", {
+          detail: {
+            candidate: nextCandidate,
+            files: savedFiles,
+            majorProgress:
+              majorProgress || calculateMajorRequirementProgress(savedFiles),
+          },
+        }),
+      );
+    }
+
+    showStatusModal({
+      type: "success",
+      title:
+        nextStage === "Onboarding"
+          ? "Moved to Onboarding"
+          : "Requirements Saved",
+      message:
+        nextStage === "Onboarding"
+          ? "Candidate completed the 5 major requirements and was moved to Onboarding."
+          : "NHO uploaded files were saved and displayed in the candidate profile.",
+    });
   }
 
   return (
@@ -1437,11 +2673,23 @@ export default function CandidateProfileModal() {
 
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     <div className="rounded-xl bg-[#F8FAFC] p-4">
-                      <DetailRow label="First Name" value={activeCandidate.firstName} />
-                      <DetailRow label="Middle Name" value={activeCandidate.middleName} />
-                      <DetailRow label="Last Name" value={activeCandidate.lastName} />
+                      <DetailRow
+                        label="First Name"
+                        value={activeCandidate.firstName}
+                      />
+                      <DetailRow
+                        label="Middle Name"
+                        value={activeCandidate.middleName}
+                      />
+                      <DetailRow
+                        label="Last Name"
+                        value={activeCandidate.lastName}
+                      />
                       <DetailRow label="Suffix" value={activeCandidate.suffix} />
-                      <DetailRow label="Nickname" value={activeCandidate.nickname} />
+                      <DetailRow
+                        label="Nickname"
+                        value={activeCandidate.nickname}
+                      />
                       <DetailRow
                         label="Date of Birth"
                         value={formatDate(activeCandidate.dateOfBirth)}
@@ -1498,7 +2746,8 @@ export default function CandidateProfileModal() {
                     <DetailRow
                       label="Applied Position"
                       value={
-                        activeCandidate.openPosition || activeCandidate.roleCapability
+                        activeCandidate.openPosition ||
+                        activeCandidate.roleCapability
                       }
                     />
                     <DetailRow
@@ -1506,8 +2755,14 @@ export default function CandidateProfileModal() {
                       value={formatList(activeCandidate.hearAboutUs)}
                     />
                     <DetailRow label="Source" value={activeCandidate.source} />
-                    <DetailRow label="Referred By" value={activeCandidate.referredBy} />
-                    <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
+                    <DetailRow
+                      label="Referred By"
+                      value={activeCandidate.referredBy}
+                    />
+                    <DetailRow
+                      label="Employee ID"
+                      value={activeCandidate.employeeId}
+                    />
                   </div>
                 </section>
 
@@ -1534,12 +2789,15 @@ export default function CandidateProfileModal() {
                     />
                     <DetailRow
                       label="Final Role"
-                      value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+                      value={
+                        activeCandidate.currentAppliedRole || "Not assigned yet"
+                      }
                     />
                     <DetailRow
                       label="Final Account"
                       value={
-                        activeCandidate.currentAppliedAccount || "Not assigned yet"
+                        activeCandidate.currentAppliedAccount ||
+                        "Not assigned yet"
                       }
                     />
                     <DetailRow
@@ -2149,6 +3407,20 @@ export default function CandidateProfileModal() {
           </div>
         </div>
       </div>
+
+      {canUploadFollowUpNhoRequirements && (
+        <NhoUploadModal
+          open={showNhoUploadModal}
+          onClose={() => setShowNhoUploadModal(false)}
+          candidateId={candidatePipelineLookupId}
+          candidateName={activeCandidate.name || "Candidate"}
+          candidateEmail={activeCandidate.email || ""}
+          initialFiles={displayedPreEmploymentFiles}
+          currentFile={selectedNhoFile || displayedPreEmploymentFiles[0] || null}
+          previousEmploymentEnabled
+          onSave={handleTalentPoolNhoSave}
+        />
+      )}
 
       <StatusModal
         open={statusModal.open}

@@ -12,7 +12,6 @@ import OnboardingProcessNote from "../../components/recruitment/onboarding/Onboa
 import { getAcceptedOffers } from "../../lib/axios/onboarding";
 import { ClipboardList, Plus } from "lucide-react";
 
-// 1. ABSOLUTE PARITY HELPERS
 const formatDate = (d) =>
   !d
     ? "—"
@@ -29,18 +28,18 @@ const getShowStatusClass = (s) =>
   s === "Show"
     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
     : s === "No Show"
-    ? "bg-red-50 text-red-700 border-red-200"
-    : "bg-amber-50 text-amber-700 border-amber-200";
+      ? "bg-red-50 text-red-700 border-red-200"
+      : "bg-amber-50 text-amber-700 border-amber-200";
 
 const getOutcomeClass = (o) =>
   o === "True Hire"
     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
     : o === "No Show"
-    ? "bg-red-50 text-red-700 border-red-200"
-    : o === "Pre-start Withdrawal"
-    ? "bg-orange-50 text-orange-700 border-orange-200"
-    : "bg-amber-50 text-amber-700 border-amber-200";
-  
+      ? "bg-red-50 text-red-700 border-red-200"
+      : o === "Pre-start Withdrawal"
+        ? "bg-orange-50 text-orange-700 border-orange-200"
+        : "bg-amber-50 text-amber-700 border-amber-200";
+
 const emptyOnboardingForm = {
   offerId: "",
   candidateApplicationId: "",
@@ -58,15 +57,16 @@ const emptyOnboardingForm = {
 };
 
 export default function OnboardingPage() {
-  const { fetchList, updateOutcome, list } = useOnboarding();
+  const { fetchList, createRecord, updateOutcome, list } = useOnboarding();
   const [acceptedOffers, setAcceptedOffers] = useState([]);
 
-  // MODAL & FORM STATES
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [onboardingForm, setOnboardingForm] = useState(emptyOnboardingForm);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [outcomeRecord, setOutcomeRecord] = useState(null);
   const [outcomeType, setOutcomeType] = useState("");
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false);
+
   const [outcomeForm, setOutcomeForm] = useState({
     actualStartDate: new Date().toISOString().split("T")[0],
     reasonCategory: "No Response",
@@ -78,73 +78,108 @@ export default function OnboardingPage() {
   });
 
   const loadData = useCallback(async () => {
-    fetchList();
+    await fetchList();
+
     const res = await getAcceptedOffers();
-    if (res.success) setAcceptedOffers(res.data);
+
+    if (res.success) {
+      setAcceptedOffers(Array.isArray(res.data) ? res.data : []);
+    }
   }, [fetchList]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // 2. MODAL HANDLERS (Details -> Outcome Trigger)
   const handleOpenOutcomeModal = (record, type) => {
     setOutcomeRecord(record);
     setOutcomeType(type);
     setOutcomeForm((prev) => ({
       ...prev,
-      actualStartDate: type === "Show" ? new Date().toISOString().split("T")[0] : "",
+      actualStartDate:
+        type === "Show" ? new Date().toISOString().split("T")[0] : "",
       feedbackTag: type === "No Show" ? "No Show" : "Pre-start Withdrawal",
     }));
   };
 
+  const handleSubmitCreate = async (e) => {
+    e.preventDefault();
+
+    if (isSubmittingCreate) return;
+
+    setIsSubmittingCreate(true);
+
+    try {
+      const response = await createRecord(onboardingForm);
+
+      if (!response?.success) {
+        alert(response?.message || "Failed to create onboarding record.");
+        return;
+      }
+
+      setShowCreateModal(false);
+      setOnboardingForm(emptyOnboardingForm);
+      await loadData();
+    } finally {
+      setIsSubmittingCreate(false);
+    }
+  };
+
   const handleSubmitOutcome = async (e) => {
     e.preventDefault();
+
     const finalOutcome =
       outcomeType === "Show"
         ? "True Hire"
         : outcomeType === "No Show"
-        ? "No Show"
-        : "Pre-start Withdrawal";
+          ? "No Show"
+          : "Pre-start Withdrawal";
 
     await updateOutcome(outcomeRecord.id, {
       ...outcomeForm,
       finalOutcome,
       showStatus: outcomeType,
     });
+
     setOutcomeRecord(null);
     setSelectedRecord(null);
-    fetchList();
+    await fetchList();
   };
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
-      <main className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-6 bg-sibs-tertiary-10">
+
+      <main className="min-w-0 flex-1 overflow-y-auto bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
-          {/* HEADER (0ms) */}
           <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
               <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                 <ClipboardList size={14} /> Recruitment Setup
               </div>
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">Onboarding</h1>
+
+              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
+                Onboarding
+              </h1>
+
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
                 Track transitions, true hires, show/no-show, and pre-start withdrawals.
               </p>
             </div>
+
             <button
+              type="button"
               onClick={() => setShowCreateModal(true)}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 active:scale-[0.98]"
             >
-              <Plus size={18} /> Add Onboarding Record
+              <Plus size={18} />
+              Add Onboarding Record
             </button>
           </div>
 
-          <OnboardingStats /> {/* Summary Cards (60ms) */}
-          <OnboardingOutcomeOverview /> {/* Progress Bars & Alert (120ms) */}
+          <OnboardingStats />
+          <OnboardingOutcomeOverview />
 
-          {/* Records Table Section (240ms) */}
           <section
             className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
             style={{ animationDelay: "240ms" }}
@@ -157,7 +192,6 @@ export default function OnboardingPage() {
         </div>
       </main>
 
-      {/* MODALS TRILOGY */}
       <CreateOnboardingModal
         open={showCreateModal}
         form={onboardingForm}
@@ -169,11 +203,8 @@ export default function OnboardingPage() {
         }}
         onboardingList={list}
         acceptedOfferList={acceptedOffers}
-        onSubmit={(e) => {
-          e.preventDefault();
-          setShowCreateModal(false);
-          fetchList();
-        }}
+        onSubmit={handleSubmitCreate}
+        isSubmitting={isSubmittingCreate}
       />
 
       <OnboardingDetailsModal

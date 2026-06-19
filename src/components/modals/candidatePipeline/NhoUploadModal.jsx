@@ -19,17 +19,19 @@ const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
   "Employment Certificate",
 ];
 
+const MAJOR_REQUIREMENTS = [
+  "Transcript of Records and/or Diploma",
+  "Medical Records",
+  "NBI Clearance",
+  "Birth Certificate",
+  "Valid ID",
+];
+
 const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
   {
     id: "major",
     title: "Major Requirements",
-    requirements: [
-      "Transcript of Records and/or Diploma",
-      "Medical Records",
-      "NBI Clearance",
-      "Birth Certificate",
-      "Valid ID",
-    ],
+    requirements: MAJOR_REQUIREMENTS,
   },
   {
     id: "other",
@@ -116,6 +118,14 @@ function getOfficialRequirementFromFile(file = {}) {
 
 function isOfficialNhoFile(file = {}) {
   return Boolean(getOfficialRequirementFromFile(file));
+}
+
+function isMajorRequirement(requirement = "") {
+  const key = normalizeRequirement(requirement);
+
+  return MAJOR_REQUIREMENTS.some(
+    (majorRequirement) => normalizeRequirement(majorRequirement) === key,
+  );
 }
 
 function formatFileSize(size = 0) {
@@ -263,13 +273,6 @@ function filterOfficialUploadedFiles(files = []) {
     .filter(Boolean);
 }
 
-function stripRawFile(file = {}) {
-  const normalized = normalizeUploadedFile(file);
-  const { rawFile, ...rest } = normalized;
-
-  return rest;
-}
-
 function getFilesFromApiPayload(payload) {
   const responsePayload = payload?.data ?? payload;
 
@@ -295,6 +298,33 @@ function getCandidateFromApiPayload(payload) {
   const responsePayload = payload?.data ?? payload;
 
   return responsePayload?.candidate || responsePayload?.data || null;
+}
+
+function getMajorProgressFromApiPayload(payload, fallbackFiles = []) {
+  const responsePayload = payload?.data ?? payload;
+
+  return (
+    responsePayload?.majorProgress ||
+    responsePayload?.data?.majorProgress ||
+    responsePayload?.candidate?.majorNhoUploadProgress ||
+    calculateMajorProgress(fallbackFiles)
+  );
+}
+
+function getRoutedStageFromApiPayload(payload) {
+  const responsePayload = payload?.data ?? payload;
+
+  return (
+    responsePayload?.routedStage ||
+    responsePayload?.data?.routedStage ||
+    responsePayload?.candidate?.currentStage ||
+    responsePayload?.candidate?.current_stage ||
+    responsePayload?.candidate?.currentPipelineStage ||
+    responsePayload?.candidate?.current_pipeline_stage ||
+    responsePayload?.data?.currentStage ||
+    responsePayload?.data?.current_stage ||
+    ""
+  );
 }
 
 function dedupeFiles(files = []) {
@@ -351,7 +381,7 @@ function sortUploadedFiles(files = []) {
     });
 }
 
-function calculateProgress(files = []) {
+function calculateProgress(files = [], requirements = ALL_REQUIREMENTS) {
   const uploadedRequirementMap = new Map();
 
   filterOfficialUploadedFiles(files).forEach((file) => {
@@ -362,18 +392,23 @@ function calculateProgress(files = []) {
     }
   });
 
-  const completed = ALL_REQUIREMENTS.filter((requirement) =>
+  const completed = requirements.filter((requirement) =>
     uploadedRequirementMap.has(normalizeRequirement(requirement)),
   ).length;
 
-  const total = ALL_REQUIREMENTS.length;
+  const total = requirements.length;
   const percent = total ? Math.round((completed / total) * 100) : 0;
 
   return {
     completed,
     total,
     percent,
+    isComplete: total > 0 && completed >= total,
   };
+}
+
+function calculateMajorProgress(files = []) {
+  return calculateProgress(files, MAJOR_REQUIREMENTS);
 }
 
 function RequirementCard({
@@ -388,6 +423,7 @@ function RequirementCard({
 
   const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
   const FileIcon = getFileIcon(uploadedFile?.fileName);
+  const major = isMajorRequirement(requirement);
 
   async function handleFileChange(event) {
     const file = event.target.files?.[0];
@@ -444,12 +480,20 @@ function RequirementCard({
         </button>
 
         <div className="min-w-0 flex-1">
-          <p
-            title={requirement}
-            className="truncate text-sm font-extrabold text-[#101828]"
-          >
-            {requirement}
-          </p>
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <p
+              title={requirement}
+              className="truncate text-sm font-extrabold text-[#101828]"
+            >
+              {requirement}
+            </p>
+
+            {major && (
+              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Major
+              </span>
+            )}
+          </div>
 
           {hasFile && (
             <button
@@ -697,12 +741,20 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <p
-                        title={file.requirement}
-                        className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
-                      >
-                        {file.requirement || "Uploaded Requirement"}
-                      </p>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p
+                          title={file.requirement}
+                          className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
+                        >
+                          {file.requirement || "Uploaded Requirement"}
+                        </p>
+
+                        {isMajorRequirement(file.requirement) && (
+                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-primary-1">
+                            Major
+                          </span>
+                        )}
+                      </div>
 
                       <p
                         title={file.fileName}
@@ -826,15 +878,16 @@ export default function NhoUploadModal({
     return map;
   }, [files]);
 
-  const completedRequirements = useMemo(() => {
-    return ALL_REQUIREMENTS.filter((requirement) =>
-      uploadedRequirementMap.has(normalizeRequirement(requirement)),
-    ).length;
-  }, [uploadedRequirementMap]);
+  const overallProgress = useMemo(() => {
+    return calculateProgress(files, ALL_REQUIREMENTS);
+  }, [files]);
 
-  const progressPercent = ALL_REQUIREMENTS.length
-    ? Math.round((completedRequirements / ALL_REQUIREMENTS.length) * 100)
-    : 0;
+  const majorProgress = useMemo(() => {
+    return calculateMajorProgress(files);
+  }, [files]);
+
+  const completedRequirements = overallProgress.completed;
+  const progressPercent = overallProgress.percent;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -968,6 +1021,9 @@ export default function NhoUploadModal({
 
   async function saveUploadsToBackend() {
     const officialFiles = filterOfficialUploadedFiles(files);
+    const currentOverallProgress = calculateProgress(officialFiles);
+    const currentMajorProgress = calculateMajorProgress(officialFiles);
+
     const formData = new FormData();
 
     const filePayloads = officialFiles.map((file) => {
@@ -996,9 +1052,16 @@ export default function NhoUploadModal({
     });
 
     formData.append("filePayloads", JSON.stringify(filePayloads));
-    formData.append("completed", String(completedRequirements));
-    formData.append("total", String(ALL_REQUIREMENTS.length));
-    formData.append("percent", String(progressPercent));
+
+    formData.append("completed", String(currentOverallProgress.completed));
+    formData.append("total", String(currentOverallProgress.total));
+    formData.append("percent", String(currentOverallProgress.percent));
+
+    formData.append("majorCompleted", String(currentMajorProgress.completed));
+    formData.append("majorTotal", String(currentMajorProgress.total));
+    formData.append("majorPercent", String(currentMajorProgress.percent));
+    formData.append("majorComplete", String(currentMajorProgress.isComplete));
+
     formData.append("previousEmploymentEnabled", "true");
 
     const response = await api.post(
@@ -1037,31 +1100,73 @@ export default function NhoUploadModal({
             : officialFiles;
 
         const savedProgress = calculateProgress(savedFiles);
+        const savedMajorProgress =
+          getMajorProgressFromApiPayload(response, savedFiles) ||
+          calculateMajorProgress(savedFiles);
+
+        const routedStage = getRoutedStageFromApiPayload(response);
 
         onSaveRef.current?.({
           files: savedFiles,
+
           completed:
             response?.data?.progress?.completed ?? savedProgress.completed,
           total: response?.data?.progress?.total ?? savedProgress.total,
           percent: response?.data?.progress?.percent ?? savedProgress.percent,
+
+          majorCompleted:
+            response?.data?.majorProgress?.completed ??
+            savedMajorProgress.completed,
+          majorTotal:
+            response?.data?.majorProgress?.total ?? savedMajorProgress.total,
+          majorPercent:
+            response?.data?.majorProgress?.percent ?? savedMajorProgress.percent,
+          majorProgress: savedMajorProgress,
+
+          routedStage,
           previousEmploymentEnabled: true,
           candidate: getCandidateFromApiPayload(response),
           response,
         });
 
-        window.dispatchEvent(new Event("ta-pipeline-candidates-updated"));
+        window.dispatchEvent(
+          new CustomEvent("ta-pipeline-candidates-updated", {
+            detail: {
+              candidate: getCandidateFromApiPayload(response),
+              files: savedFiles,
+              majorProgress: savedMajorProgress,
+              routedStage,
+            },
+          }),
+        );
+
+        window.dispatchEvent(
+          new CustomEvent("ta-talent-pool-updated", {
+            detail: {
+              candidate: getCandidateFromApiPayload(response),
+              files: savedFiles,
+              majorProgress: savedMajorProgress,
+              routedStage,
+            },
+          }),
+        );
 
         onClose?.();
         return;
       }
 
       const progress = calculateProgress(officialFiles);
+      const fallbackMajorProgress = calculateMajorProgress(officialFiles);
 
       onSaveRef.current?.({
         files: officialFiles,
         completed: progress.completed,
         total: progress.total,
         percent: progress.percent,
+        majorCompleted: fallbackMajorProgress.completed,
+        majorTotal: fallbackMajorProgress.total,
+        majorPercent: fallbackMajorProgress.percent,
+        majorProgress: fallbackMajorProgress,
         previousEmploymentEnabled: true,
       });
 
@@ -1125,26 +1230,69 @@ export default function NhoUploadModal({
                       Pre-Employment
                     </span>
 
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      {completedRequirements} / {ALL_REQUIREMENTS.length}{" "}
-                      Submitted
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-extrabold ${
+                        majorProgress.isComplete
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {majorProgress.completed} / {majorProgress.total} Major
+                    </span>
+
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                      {completedRequirements} / {ALL_REQUIREMENTS.length} Total
                     </span>
                   </div>
                 </div>
 
                 <div className="mt-5">
                   <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    <span>Completion</span>
-                    <span>{progressPercent}%</span>
+                    <span>Major Completion</span>
+                    <span>{majorProgress.percent}%</span>
                   </div>
 
                   <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
                     <div
-                      className="h-full rounded-full bg-sibs-primary-1 transition-all duration-300"
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        majorProgress.isComplete
+                          ? "bg-emerald-600"
+                          : "bg-sibs-primary-1"
+                      }`}
+                      style={{ width: `${majorProgress.percent}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-4 mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <span>Total Completion</span>
+                    <span>{progressPercent}%</span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                    <div
+                      className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                 </div>
+
+                {!majorProgress.isComplete && (
+                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                    Candidate has fewer than 5 major requirements. After saving,
+                    this candidate should stay under{" "}
+                    <span className="font-extrabold">
+                      For Onboarding - Incomplete Requirements
+                    </span>{" "}
+                    for Talent Pool follow-up.
+                  </div>
+                )}
+
+                {majorProgress.isComplete && (
+                  <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+                    Candidate completed the 5 major requirements. After saving,
+                    this candidate can proceed to Onboarding.
+                  </div>
+                )}
 
                 {isLoadingFiles && (
                   <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
@@ -1202,6 +1350,18 @@ export default function NhoUploadModal({
                               {groupCompleted} / {group.requirements.length}
                             </span>
                           </div>
+
+                          {group.id === "major" && (
+                            <span
+                              className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-extrabold ${
+                                groupCompleted >= group.requirements.length
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              Required before Onboarding
+                            </span>
+                          )}
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -1246,8 +1406,9 @@ export default function NhoUploadModal({
         <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-7">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-bold text-sibs-tertiary-5">
-              {completedRequirements} of {ALL_REQUIREMENTS.length} requirements
-              submitted.
+              {majorProgress.completed} of {majorProgress.total} major
+              requirements submitted. {completedRequirements} of{" "}
+              {ALL_REQUIREMENTS.length} total requirements submitted.
             </p>
 
             <div className="flex flex-col gap-2 sm:flex-row">

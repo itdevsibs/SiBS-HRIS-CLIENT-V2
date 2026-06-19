@@ -29,27 +29,16 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
-import {
-  getSupervisorAttritions,
-  getSupervisorResignations,
-} from "../../lib/axios/getEmployee";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
-import api from "../../lib/axios/api-template";
 
 const APPROVAL_MODULES = [
   "Attrition",
-  "Weekly Hiring Plan",
   "Job Description",
   "Hiring Needs",
 ];
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
-  "Weekly Hiring Plan": [
-    "Recruitment Settings",
-    "Update Headcount",
-    "Weekly Hiring Plan",
-  ],
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
 };
@@ -149,104 +138,6 @@ async function getApprovalNotificationCountByModule(moduleName) {
       Number(counts.forReview || 0)
     );
   }, 0);
-}
-
-
-function normalizeSidebarRoleValue(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function isHrOrHrAdminUser(user = {}) {
-  const roleValues = [
-    user?.role,
-    user?.roleName,
-    user?.role_name,
-    user?.userRole,
-    user?.user_role,
-    user?.accountType,
-    user?.account_type,
-  ]
-    .map(normalizeSidebarRoleValue)
-    .filter(Boolean);
-
-  const adminAccess = Number(
-    user?.adminAccess ?? user?.admin_access ?? user?.admin_level ?? 0,
-  );
-
-  return (
-    roleValues.some((role) =>
-      [
-        "hr",
-        "hr_admin",
-        "hradmin",
-        "human_resource",
-        "human_resources",
-        "human_resource_admin",
-        "human_resources_admin",
-        "super_admin",
-      ].includes(role),
-    ) || [6, 7].includes(adminAccess)
-  );
-}
-
-function getResignationNotificationStatus(item = {}) {
-  return normalizeApprovalNotificationStatus(
-    item?.status ||
-      item?.resignationStatus ||
-      item?.resignation_status ||
-      item?.raw?.status ||
-      item?.raw?.resignationStatus ||
-      item?.raw?.resignation_status ||
-      "",
-  );
-}
-
-function getResignationNotificationKey(item = {}) {
-  return [
-    item?.source || "resignation-management",
-    item?.rawId || item?.raw_id || item?.id || "",
-    item?.resignationId || item?.resignation_id || "",
-    item?.attritionId || item?.attrition_id || "",
-    item?.sibsId || item?.sibs_id || item?.employeeSibsId || "",
-  ].join("::");
-}
-
-function countResignationManagementNotificationData(data = []) {
-  const uniqueItems = new Map();
-
-  data.forEach((item) => {
-    const key = getResignationNotificationKey(item);
-
-    if (!uniqueItems.has(key)) {
-      uniqueItems.set(key, item);
-    }
-  });
-
-  return Array.from(uniqueItems.values()).filter((item) => {
-    const status = getResignationNotificationStatus(item);
-
-    return status === "Pending" || status === "For Review";
-  }).length;
-}
-
-async function getResignationManagementNotificationCount() {
-  const res = await api.get("/api/resignation-management", {
-    params: {
-      page: 1,
-      limit: 500,
-      search: "",
-      status: "",
-      type: "",
-    },
-    withCredentials: true,
-  });
-
-  const data = Array.isArray(res?.data?.data) ? res.data.data : [];
-
-  return countResignationManagementNotificationData(data);
 }
 
 function SibsLogo({ collapsed = false, isMobile = false }) {
@@ -382,9 +273,6 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const [attritionNotificationCount, setAttritionNotificationCount] =
-    useState(0);
-
   const [approvalRequestNotificationCount, setApprovalRequestNotificationCount] =
     useState(0);
 
@@ -482,86 +370,6 @@ export default function Sidebar() {
     if (!mounted || loading || !user) return;
     if (!ADMIN_ROLES.includes(user.role)) return;
 
-    let isMounted = true;
-
-    async function fetchAttritionNotifications() {
-      try {
-        if (isHrOrHrAdminUser(user)) {
-          const allResignationCount =
-            await getResignationManagementNotificationCount();
-
-          if (isMounted) {
-            setAttritionNotificationCount(allResignationCount);
-          }
-
-          return;
-        }
-
-        const [resignationResult, attritionResult] = await Promise.all([
-          getSupervisorResignations(),
-          getSupervisorAttritions(),
-        ]);
-
-        const resignationData = resignationResult?.success
-          ? resignationResult.data || []
-          : [];
-
-        const attritionData = attritionResult?.success
-          ? attritionResult.data || []
-          : [];
-
-        const pendingResignationCount = resignationData.filter((item) => {
-          const status = normalizeApprovalNotificationStatus(item?.status);
-
-          return status === "Pending" || status === "For Review";
-        }).length;
-
-        const pendingAttritionCount = attritionData.filter((item) => {
-          const isDeclined =
-            Number(item.tlIsDeclined) === 1 ||
-            Number(item.omIsDeclined) === 1 ||
-            Number(item.somIsDeclined) === 1;
-
-          const isFullyApproved =
-            (item.hideTl ||
-              !item.tlSibsId ||
-              Number(item.tlIsApproved) === 1) &&
-            (!item.omSibsId || Number(item.omIsApproved) === 1) &&
-            (!item.somSibsId || Number(item.somIsApproved) === 1);
-
-          return !isDeclined && !isFullyApproved;
-        }).length;
-
-        if (isMounted) {
-          setAttritionNotificationCount(
-            pendingResignationCount + pendingAttritionCount,
-          );
-        }
-      } catch (error) {
-        console.error("Sidebar attrition notification error:", error);
-
-        if (isMounted) {
-          setAttritionNotificationCount(0);
-        }
-      }
-    }
-
-    fetchAttritionNotifications();
-
-    const interval = window.setInterval(() => {
-      fetchAttritionNotifications();
-    }, 30000);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(interval);
-    };
-  }, [mounted, loading, user, pathname, ADMIN_ROLES]);
-
-  useEffect(() => {
-    if (!mounted || loading || !user) return;
-    if (!ADMIN_ROLES.includes(user.role)) return;
-
     loadApprovalRequestNotifications();
 
     const interval = window.setInterval(() => {
@@ -650,7 +458,6 @@ export default function Sidebar() {
       icon: FileText,
       path: "/resignation",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
-      notificationCount: attritionNotificationCount,
     },
   ];
 
@@ -833,7 +640,7 @@ export default function Sidebar() {
           key={`${item.name}-${index}`}
           to={item.path}
           draggable={false}
-          onDragStart={(e) => e.preventDefault()}
+          onDragStart={(event) => event.preventDefault()}
           onClick={handleLinkClick}
           title={!isMobile && collapsed ? item.name : ""}
           className={[
@@ -907,7 +714,7 @@ export default function Sidebar() {
 
       <aside
         draggable={false}
-        onDragStart={(e) => e.preventDefault()}
+        onDragStart={(event) => event.preventDefault()}
         className={[
           "fixed left-0 top-0 z-[1000] flex h-dvh shrink-0 select-none flex-col border-r border-[#C9D6E4] bg-sibs-tertiary-10 transition-all duration-300",
           !isMobile && collapsed ? "w-20" : "w-[260px]",

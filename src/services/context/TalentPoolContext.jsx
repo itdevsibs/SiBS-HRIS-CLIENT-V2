@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -114,6 +115,10 @@ const defaultFormOptions = {
   audioQuestions: [],
   statuses: [],
 };
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
 
 function getOptionValue(option) {
   if (typeof option === "string") return option;
@@ -516,6 +521,200 @@ function getUniqueAccountOptions(positions = [], candidates = []) {
   return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
+function getTalentPoolResponseCandidate(response = {}) {
+  return (
+    response?.candidate ||
+    response?.record ||
+    response?.data?.candidate ||
+    response?.data?.record ||
+    response?.data?.application ||
+    response?.data ||
+    null
+  );
+}
+
+function getCandidateIdentity(candidate = {}) {
+  return {
+    id: cleanText(candidate.id || candidate.rawId),
+    applicationId: cleanText(
+      candidate.applicationId ||
+        candidate.application_id ||
+        candidate.candidateApplicationId ||
+        candidate.candidate_application_id,
+    ),
+    candidateId: cleanText(candidate.candidateId || candidate.candidate_id),
+    pipelineId: cleanText(
+      candidate.pipelineId ||
+        candidate.pipelineDbId ||
+        candidate.pipelineCandidateId ||
+        candidate.candidatePipelineId ||
+        candidate.candidate_pipeline_id ||
+        candidate.pipelineCandidate?.id ||
+        candidate.pipelineCandidate?.dbId,
+    ),
+    email: cleanText(candidate.email || candidate.candidateEmail).toLowerCase(),
+    name: cleanText(
+      candidate.name || candidate.fullName || candidate.full_name,
+    ).toLowerCase(),
+  };
+}
+
+function isSameTalentPoolCandidate(candidateA = {}, candidateB = {}) {
+  const left = getCandidateIdentity(candidateA);
+  const right = getCandidateIdentity(candidateB);
+
+  return Boolean(
+    (left.id && right.id && left.id === right.id) ||
+      (left.applicationId &&
+        right.applicationId &&
+        left.applicationId === right.applicationId) ||
+      (left.candidateId &&
+        right.candidateId &&
+        left.candidateId === right.candidateId) ||
+      (left.pipelineId &&
+        right.pipelineId &&
+        left.pipelineId === right.pipelineId) ||
+      (left.email && right.email && left.email === right.email) ||
+      (left.name && right.name && left.name === right.name),
+  );
+}
+
+function isMeaningfulUpdateValue(value) {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "boolean") return true;
+  if (typeof value === "number") return true;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+
+  const text = String(value).trim();
+
+  return text !== "" && text !== "—";
+}
+
+function mergeCandidatePatch(existingCandidate = {}, candidatePatch = {}) {
+  const merged = {
+    ...existingCandidate,
+  };
+
+  Object.entries(candidatePatch || {}).forEach(([key, value]) => {
+    if (isMeaningfulUpdateValue(value)) {
+      merged[key] = value;
+    }
+  });
+
+  return normalizeCandidateRecord({
+    ...merged,
+    id: existingCandidate.id || candidatePatch.id || candidatePatch.rawId,
+    candidateId:
+      existingCandidate.candidateId ||
+      candidatePatch.candidateId ||
+      candidatePatch.candidate_id,
+    applicationId:
+      existingCandidate.applicationId ||
+      candidatePatch.applicationId ||
+      candidatePatch.application_id,
+  });
+}
+
+function buildCandidatePatchFromEvent(candidate = {}, detail = {}) {
+  const routedStage = cleanText(
+    detail.routedStage ||
+      detail.targetStage ||
+      detail.stage ||
+      candidate.routedStage ||
+      candidate.currentPipelineStage ||
+      candidate.current_pipeline_stage ||
+      candidate.currentStage ||
+      candidate.current_stage ||
+      candidate.pipelineStage ||
+      candidate.pipeline_stage,
+  );
+
+  const files = normalizeArray(
+    detail.files ||
+      detail.nhoFiles ||
+      detail.nho_files ||
+      candidate.nhoFiles ||
+      candidate.nho_files ||
+      candidate.preEmploymentFiles ||
+      candidate.pre_employment_files,
+  );
+
+  const majorProgress =
+    detail.majorProgress ||
+    detail.majorNhoUploadProgress ||
+    detail.major_nho_upload_progress ||
+    candidate.majorNhoUploadProgress ||
+    candidate.major_nho_upload_progress ||
+    null;
+
+  const patch = {
+    ...candidate,
+  };
+
+  if (files.length) {
+    patch.nhoFiles = files;
+    patch.nho_files = files;
+    patch.preEmploymentFiles = files;
+    patch.pre_employment_files = files;
+    patch.uploadedFiles = files;
+    patch.files = files;
+  }
+
+  if (majorProgress && typeof majorProgress === "object") {
+    patch.majorNhoUploadProgress = majorProgress;
+    patch.major_nho_upload_progress = majorProgress;
+  }
+
+  if (routedStage) {
+    patch.currentPipelineStage = routedStage;
+    patch.currentStage = routedStage;
+    patch.pipelineStage = routedStage;
+    patch.stage = routedStage;
+    patch.pipelineStatus = patch.pipelineStatus || "Active";
+    patch.movedToPipeline = true;
+    patch.moved_to_pipeline = true;
+
+    if (routedStage === "Onboarding") {
+      patch.status = "Hired / Active";
+    }
+  }
+
+  return patch;
+}
+
+function mergeUpdatedCandidateList(list = [], candidatePatch = {}) {
+  if (!candidatePatch || typeof candidatePatch !== "object") return list;
+
+  let didUpdate = false;
+
+  const nextList = list.map((candidate) => {
+    if (!isSameTalentPoolCandidate(candidate, candidatePatch)) {
+      return candidate;
+    }
+
+    didUpdate = true;
+
+    return mergeCandidatePatch(candidate, candidatePatch);
+  });
+
+  if (didUpdate) return nextList;
+
+  const identity = getCandidateIdentity(candidatePatch);
+  const hasUsableIdentity = Boolean(
+    identity.id ||
+      identity.applicationId ||
+      identity.candidateId ||
+      identity.pipelineId ||
+      identity.email ||
+      identity.name,
+  );
+
+  if (!hasUsableIdentity) return nextList;
+
+  return [normalizeCandidateRecord(candidatePatch), ...nextList];
+}
+
 export function useTalentPool() {
   const context = useContext(TalentPoolContext);
 
@@ -561,9 +760,35 @@ export function TalentPoolProvider({ children }) {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
 
-  async function refreshTalentPool() {
-    setIsLoading(true);
-    setLoadError("");
+  const applyTalentPoolCandidateUpdate = useCallback((candidate, detail = {}) => {
+    if (!candidate || typeof candidate !== "object") return null;
+
+    const candidatePatch = buildCandidatePatchFromEvent(candidate, detail);
+
+    setCandidateList((previousList) =>
+      mergeUpdatedCandidateList(previousList, candidatePatch),
+    );
+
+    setSelectedCandidate((previousCandidate) => {
+      if (!previousCandidate) return previousCandidate;
+
+      if (!isSameTalentPoolCandidate(previousCandidate, candidatePatch)) {
+        return previousCandidate;
+      }
+
+      return mergeCandidatePatch(previousCandidate, candidatePatch);
+    });
+
+    return candidatePatch;
+  }, []);
+
+  const refreshTalentPool = useCallback(async (options = {}) => {
+    const silent = Boolean(options?.silent);
+
+    if (!silent) {
+      setIsLoading(true);
+      setLoadError("");
+    }
 
     try {
       const [optionsResponse, positionsResponse, applicationsResponse] =
@@ -592,7 +817,8 @@ export function TalentPoolProvider({ children }) {
 
       if (!applicationsResponse?.success) {
         throw new Error(
-          applicationsResponse?.message || "Failed to load talent pool candidates.",
+          applicationsResponse?.message ||
+            "Failed to load talent pool candidates.",
         );
       }
 
@@ -607,25 +833,112 @@ export function TalentPoolProvider({ children }) {
       setCandidateList(
         normalizeArray(applicationsResponse.data).map(normalizeCandidateRecord),
       );
+
+      if (!silent) {
+        setLoadError("");
+      }
+
+      return {
+        success: true,
+      };
     } catch (error) {
       console.error("Refresh Talent Pool error:", error);
-      setLoadError(error?.message || "Failed to load Talent Pool data.");
-      setCandidateList([]);
-      setActivePositionOptions([]);
-      setFormOptions(defaultFormOptions);
+
+      if (!silent) {
+        setLoadError(error?.message || "Failed to load Talent Pool data.");
+        setCandidateList([]);
+        setActivePositionOptions([]);
+        setFormOptions(defaultFormOptions);
+      }
+
+      return {
+        success: false,
+        message: error?.message || "Failed to load Talent Pool data.",
+      };
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
-  }
+  }, []);
 
   useEffect(() => {
     refreshTalentPool();
-  }, []);
+  }, [refreshTalentPool]);
+
+  useEffect(() => {
+    let syncTimeout = null;
+
+    function queueSilentSync() {
+      window.clearTimeout(syncTimeout);
+
+      syncTimeout = window.setTimeout(() => {
+        refreshTalentPool({ silent: true });
+      }, 350);
+    }
+
+    function handleTalentPoolRealtimeUpdate(event) {
+      const detail = event?.detail || {};
+      const eventCandidate =
+        detail.candidate ||
+        detail.record ||
+        detail.data?.candidate ||
+        detail.data?.record ||
+        detail.data ||
+        null;
+
+      if (eventCandidate && typeof eventCandidate === "object") {
+        applyTalentPoolCandidateUpdate(eventCandidate, detail);
+      }
+
+      queueSilentSync();
+    }
+
+    function handleFocusSync() {
+      refreshTalentPool({ silent: true });
+    }
+
+    window.addEventListener(
+      "ta-talent-pool-updated",
+      handleTalentPoolRealtimeUpdate,
+    );
+    window.addEventListener(
+      "ta-pipeline-candidates-updated",
+      handleTalentPoolRealtimeUpdate,
+    );
+    window.addEventListener("ta-onboarding-updated", handleTalentPoolRealtimeUpdate);
+    window.addEventListener("focus", handleFocusSync);
+
+    return () => {
+      window.clearTimeout(syncTimeout);
+
+      window.removeEventListener(
+        "ta-talent-pool-updated",
+        handleTalentPoolRealtimeUpdate,
+      );
+      window.removeEventListener(
+        "ta-pipeline-candidates-updated",
+        handleTalentPoolRealtimeUpdate,
+      );
+      window.removeEventListener(
+        "ta-onboarding-updated",
+        handleTalentPoolRealtimeUpdate,
+      );
+      window.removeEventListener("focus", handleFocusSync);
+    };
+  }, [applyTalentPoolCandidateUpdate, refreshTalentPool]);
 
   const statusOptions = useMemo(() => {
     const dbStatuses = optionValues(formOptions.statuses);
+
     const candidateStatuses = candidateList
-      .map((candidate) => candidate.status)
+      .flatMap((candidate) => [
+        candidate.status,
+        candidate.pipelineStatus,
+        candidate.currentPipelineStage,
+        candidate.currentStage,
+        candidate.pipelineStage,
+      ])
       .filter(Boolean);
 
     return ["All", ...new Set([...dbStatuses, ...candidateStatuses])];
@@ -665,6 +978,13 @@ export function TalentPoolProvider({ children }) {
         formatList(candidate.affiliations),
         candidate.trainingAttended,
         candidate.status,
+        candidate.pipelineStatus,
+        candidate.currentPipelineStage,
+        candidate.currentStage,
+        candidate.pipelineStage,
+        candidate.currentAppliedAccount,
+        candidate.currentAppliedRole,
+        candidate.currentTaOwner,
         candidate.remarks,
       ]
         .filter(Boolean)
@@ -673,8 +993,16 @@ export function TalentPoolProvider({ children }) {
 
       const matchesSearch = !keyword || searchableText.includes(keyword);
 
+      const candidateStatusValues = [
+        candidate.status,
+        candidate.pipelineStatus,
+        candidate.currentPipelineStage,
+        candidate.currentStage,
+        candidate.pipelineStage,
+      ].filter(Boolean);
+
       const matchesStatus =
-        statusFilter === "All" || candidate.status === statusFilter;
+        statusFilter === "All" || candidateStatusValues.includes(statusFilter);
 
       const matchesPosition =
         positionFilter === "All" ||
@@ -697,7 +1025,11 @@ export function TalentPoolProvider({ children }) {
         (candidate) => candidate.status === "Do Not Reprocess",
       ).length,
       hiredActive: candidateList.filter(
-        (candidate) => candidate.status === "Hired / Active",
+        (candidate) =>
+          candidate.status === "Hired / Active" ||
+          candidate.currentPipelineStage === "Onboarding" ||
+          candidate.currentStage === "Onboarding" ||
+          candidate.pipelineStage === "Onboarding",
       ).length,
       publicSubmissions: candidateList.filter(
         (candidate) => candidate.isPublicSubmission,
@@ -824,9 +1156,24 @@ export function TalentPoolProvider({ children }) {
         return;
       }
 
-      await refreshTalentPool();
+      const savedCandidate = getTalentPoolResponseCandidate(response);
+
+      if (savedCandidate && typeof savedCandidate === "object") {
+        applyTalentPoolCandidateUpdate(savedCandidate);
+      } else {
+        refreshTalentPool({ silent: true });
+      }
+
       setSelectedCandidate(null);
       closeAllTalentPoolModals();
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: savedCandidate || null,
+          },
+        }),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -862,9 +1209,27 @@ export function TalentPoolProvider({ children }) {
         return;
       }
 
-      await refreshTalentPool();
+      const updatedCandidate =
+        getTalentPoolResponseCandidate(response) || {
+          ...editCandidate,
+          ...editCandidateForm,
+          name: buildFullName(editCandidateForm),
+        };
+
+      applyTalentPoolCandidateUpdate(updatedCandidate);
+
       setSelectedCandidate(null);
       closeAllTalentPoolModals();
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: updatedCandidate,
+          },
+        }),
+      );
+
+      refreshTalentPool({ silent: true });
     } finally {
       setIsSaving(false);
     }
@@ -901,9 +1266,28 @@ export function TalentPoolProvider({ children }) {
         return;
       }
 
-      await refreshTalentPool();
+      const updatedCandidate =
+        getTalentPoolResponseCandidate(response) || {
+          ...statusTarget,
+          status: statusForm.status,
+          remarks: statusForm.remarks || statusTarget.remarks,
+          lastActivity: new Date().toISOString(),
+        };
+
+      applyTalentPoolCandidateUpdate(updatedCandidate);
+
       setSelectedCandidate(null);
       closeAllTalentPoolModals();
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: updatedCandidate,
+          },
+        }),
+      );
+
+      refreshTalentPool({ silent: true });
     } finally {
       setIsSaving(false);
     }
@@ -933,6 +1317,9 @@ export function TalentPoolProvider({ children }) {
       return;
     }
 
+    const initialStage =
+      moveToPipelineForm.initialStage || "Initial Screening";
+
     setIsSaving(true);
 
     try {
@@ -941,8 +1328,7 @@ export function TalentPoolProvider({ children }) {
         {
           ...moveToPipelineForm,
           taOwner: moveToPipelineForm.taOwner || currentTaOwner,
-          initialStage:
-            moveToPipelineForm.initialStage || "Initial Screening",
+          initialStage,
         },
       );
 
@@ -951,9 +1337,53 @@ export function TalentPoolProvider({ children }) {
         return;
       }
 
-      await refreshTalentPool();
+      const movedCandidate =
+        getTalentPoolResponseCandidate(response) || {
+          ...pipelineTarget,
+          movedToPipeline: true,
+          moved_to_pipeline: true,
+          pipelineStatus: "Active",
+          pipeline_status: "Active",
+          currentPipelineStage: initialStage,
+          current_pipeline_stage: initialStage,
+          currentStage: initialStage,
+          current_stage: initialStage,
+          pipelineStage: initialStage,
+          pipeline_stage: initialStage,
+          currentTaOwner: moveToPipelineForm.taOwner || currentTaOwner,
+          current_ta_owner: moveToPipelineForm.taOwner || currentTaOwner,
+          leadAccount: moveToPipelineForm.leadAccount,
+          lead_account: moveToPipelineForm.leadAccount,
+          remarks: moveToPipelineForm.remarks || pipelineTarget.remarks,
+          lastActivity: new Date().toISOString(),
+        };
+
+      applyTalentPoolCandidateUpdate(movedCandidate, {
+        routedStage: initialStage,
+      });
+
       setSelectedCandidate(null);
       closeAllTalentPoolModals();
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: {
+            candidate: movedCandidate,
+            routedStage: initialStage,
+          },
+        }),
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: {
+            candidate: movedCandidate,
+            routedStage: initialStage,
+          },
+        }),
+      );
+
+      refreshTalentPool({ silent: true });
     } finally {
       setIsSaving(false);
     }
@@ -1100,6 +1530,7 @@ export function TalentPoolProvider({ children }) {
     isSaving,
     loadError,
     refreshTalentPool,
+    applyTalentPoolCandidateUpdate,
 
     search,
     setSearch,

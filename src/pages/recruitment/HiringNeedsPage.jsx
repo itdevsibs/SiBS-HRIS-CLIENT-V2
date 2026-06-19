@@ -39,8 +39,10 @@ export default function HiringNeedsPage() {
   }, [fetchList, fetchJobDescriptions]);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main
         ref={mainRef}
@@ -64,6 +66,7 @@ export default function HiringNeedsPage() {
             </div>
 
             <button
+              type="button"
               onClick={() => setShowCreateModal(true)}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
             >

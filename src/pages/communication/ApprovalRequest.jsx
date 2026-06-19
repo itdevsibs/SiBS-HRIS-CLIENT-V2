@@ -39,41 +39,24 @@ import {
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
 
-const REQUEST_MODULES = [
-  "Attrition",
-  "Weekly Hiring Plan",
-  "Job Description",
-  "Hiring Needs",
-];
+const REQUEST_MODULES = ["Attrition", "Job Description", "Hiring Needs"];
 
 const STATUS_OPTIONS = ["All", "Pending", "For Review", "Approved", "Rejected"];
 
 const TYPE_OPTIONS_BY_MODULE = {
   Attrition: ["All", "Resignation", "Attrition"],
-  "Weekly Hiring Plan": [
-    "All",
-    "Recruitment Settings",
-    "Update Headcount",
-    "Weekly Hiring Plan",
-  ],
   "Job Description": ["All", "Job Description"],
   "Hiring Needs": ["All", "Hiring Needs"],
 };
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
-  "Weekly Hiring Plan": [
-    "Recruitment Settings",
-    "Update Headcount",
-    "Weekly Hiring Plan",
-  ],
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
 };
 
 const moduleIconMap = {
   Attrition: UserRoundCheck,
-  "Weekly Hiring Plan": ClipboardList,
   "Job Description": FileText,
   "Hiring Needs": BriefcaseBusiness,
 };
@@ -1789,8 +1772,8 @@ export default function ApprovalRequest() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review resignation approvals, weekly hiring plan requests, job
-              descriptions, and hiring needs approvals.
+              Review resignation approvals, job descriptions, and hiring needs
+              approvals.
             </p>
           </div>
 
@@ -1945,61 +1928,74 @@ function ApprovalPaginationToolbar({
   hasActiveFilters,
   onClearFilters,
 }) {
-  const statusOptions = STATUS_OPTIONS.filter((option) => option !== "All");
-  const requestTypeOptions = (typeOptions || []).filter(
-    (option) => option !== "All",
-  );
+  const statusOptions = STATUS_OPTIONS;
+  const requestTypeOptions = typeOptions || ["All"];
 
   return (
     <div className={`${EDGE} ${PANEL_BORDER} bg-white p-5`}>
-      <PaginationTable
-        title="Approval Request Filters"
-        subtitle="Search and filter submitted approval requests before review."
-        loading={loading}
-        searchValue={searchInput}
-        searchPlaceholder="Search request, requester, department, type, status, approver..."
-        onSearchChange={onSearchInputChange}
-        onSearchKeyDown={onSearchKeyDown}
-        searchLabel="Search"
-        dropdownFilters={[
-          {
-            key: "approval-status",
-            label: "Approval Status",
-            value: statusFilter,
-            onChange: setStatusFilter,
-            options: statusOptions,
-            allLabel: "All Status",
-            placeholder: "Search status...",
-            className: "sm:w-[240px]",
-            searchable: false,
-            includeAll: true,
-          },
-          {
-            key: "request-type",
-            label: "Request Type",
-            value: typeFilter,
-            onChange: setTypeFilter,
-            options: requestTypeOptions,
-            allLabel: "All Types",
-            placeholder: "Search request type...",
-            className: "sm:w-[240px]",
-            searchable: false,
-            includeAll: true,
-          },
-        ]}
-        rightContent={
-          hasActiveFilters ? (
-            <button
-              type="button"
-              onClick={onClearFilters}
-              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
-            >
-              Clear Filters
-            </button>
-          ) : null
-        }
-        showPagination={false}
-      />
+      <div className="mb-5">
+        <h2 className="text-base font-extrabold text-sibs-primary-1">
+          Approval Request Filters
+        </h2>
+
+        <p className="mt-2 text-sm font-medium text-[#2F6CA5]">
+          Search and filter submitted approval requests before review.
+        </p>
+      </div>
+
+      <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_240px_240px_auto] lg:items-end">
+        <div className="min-w-0">
+          <label className="mb-2 block text-sm font-extrabold text-[#101828]">
+            Search
+          </label>
+
+          <div className="relative">
+            <Search
+              size={18}
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#2F6CA5]"
+            />
+
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => onSearchInputChange(e.target.value)}
+              onKeyDown={onSearchKeyDown}
+              disabled={loading}
+              placeholder="Search request, requester, department, type, status, approver..."
+              className="h-11 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-bold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#667085]"
+            />
+          </div>
+        </div>
+
+        <CustomSelect
+          label="Approval Status"
+          value={statusFilter}
+          options={statusOptions}
+          allLabel="All Status"
+          onChange={setStatusFilter}
+        />
+
+        <CustomSelect
+          label="Request Type"
+          value={typeFilter}
+          options={requestTypeOptions}
+          allLabel="All Types"
+          onChange={setTypeFilter}
+        />
+
+        <button
+          type="button"
+          onClick={onClearFilters}
+          disabled={loading || !hasActiveFilters}
+          className={`inline-flex h-11 w-full items-center justify-center rounded-[10px] border px-4 text-sm font-extrabold transition active:scale-[0.98] lg:w-auto lg:min-w-[116px] ${
+            hasActiveFilters
+              ? "border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+              : "cursor-not-allowed border-[#E6ECF2] bg-[#F8FAFC] text-[#98A2B3]"
+          }`}
+        >
+          Clear Filters
+        </button>
+      </div>
 
       <div className="mt-4 block sm:hidden">
         <button
@@ -2015,7 +2011,6 @@ function ApprovalPaginationToolbar({
     </div>
   );
 }
-
 
 function ApprovalSearchTable({
   search,
