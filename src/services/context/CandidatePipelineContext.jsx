@@ -239,6 +239,7 @@ function getLoggedInUserIdentifier(user) {
 /* ================================
    LOCAL API FUNCTIONS
 ================================ */
+
 async function getCandidatePipelineCandidates(params = {}) {
   try {
     const res = await api.get("/api/candidate-pipeline", {
@@ -972,6 +973,7 @@ export function CandidatePipelineProvider({ children }) {
     type: "error",
     title: "",
     message: "",
+    closePipelineModals: false,
   });
 
   const normalizedActiveStage = normalizePipelineStageName(activeStage);
@@ -984,21 +986,23 @@ export function CandidatePipelineProvider({ children }) {
   const showAssessmentResultColumn =
     normalizedActiveStage === "Online Assessment";
 
-  function openStatusModal(type, title, message) {
+  function openStatusModal(type, title, message, options = {}) {
     setStatusModal({
       open: true,
       type,
       title,
       message,
+      closePipelineModals: Boolean(options.closePipelineModals),
     });
   }
 
   function closeStatusModal() {
-    const shouldClosePipelineModals = statusModal.type === "success";
+    const shouldClosePipelineModals = Boolean(statusModal.closePipelineModals);
 
     setStatusModal((prev) => ({
       ...prev,
       open: false,
+      closePipelineModals: false,
     }));
 
     if (shouldClosePipelineModals) {
@@ -1006,12 +1010,12 @@ export function CandidatePipelineProvider({ children }) {
     }
   }
 
-  function showError(message, title = "Action not allowed") {
-    openStatusModal("error", title, message);
+  function showError(message, title = "Action not allowed", options = {}) {
+    openStatusModal("error", title, message, options);
   }
 
-  function showSuccess(message, title = "Success") {
-    openStatusModal("success", title, message);
+  function showSuccess(message, title = "Success", options = {}) {
+    openStatusModal("success", title, message, options);
   }
 
   const refreshCandidatePipeline = useCallback(async () => {
@@ -1090,6 +1094,7 @@ export function CandidatePipelineProvider({ children }) {
       setStatusModal((prev) => ({
         ...prev,
         open: false,
+        closePipelineModals: false,
       }));
 
       return;
@@ -1285,9 +1290,9 @@ export function CandidatePipelineProvider({ children }) {
       "Review";
 
     return normalizePipelineCandidateForBoard({
-      ...(matchedSelected || {}),
-      ...candidate,
       ...(matchedFromList || {}),
+      ...candidate,
+      ...(matchedSelected || {}),
       prfStatus: bestPrfStatus,
       prf_status: bestPrfStatus,
     });
@@ -1301,37 +1306,55 @@ export function CandidatePipelineProvider({ children }) {
 
     setSelectedCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
 
     setMoveCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
 
     setScheduleCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
 
     setAssessmentCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
 
     setOfferCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
 
     setDropOffCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, normalizedCandidate)
-        ? normalizedCandidate
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...normalizedCandidate,
+          })
         : prev,
     );
   }
@@ -1417,7 +1440,7 @@ export function CandidatePipelineProvider({ children }) {
     } else if (nextStage === INCOMPLETE_REQUIREMENTS_STAGE) {
       showSuccess(
         "Candidate has incomplete major requirements and was moved to Talent Pool for follow-up.",
-        "Incomplete Requirements",
+        "Moved to Talent Pool",
       );
     }
 
@@ -1487,7 +1510,10 @@ export function CandidatePipelineProvider({ children }) {
           syncSelectedCandidate(normalizedCandidate);
           setSelectedCandidate((prev) =>
             prev && isSamePipelineCandidate(prev, normalizedCandidate)
-              ? normalizedCandidate
+              ? normalizePipelineCandidateForBoard({
+                  ...prev,
+                  ...normalizedCandidate,
+                })
               : prev,
           );
         }
@@ -1563,20 +1589,34 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
-    const currentStage = normalizePipelineStageName(getCandidateStage(candidate));
-    const id = getCandidateRecordId(candidate);
+    const latestCandidate = getLatestCandidateRecord(candidate);
+    const currentStage = normalizePipelineStageName(
+      getCandidateStage(latestCandidate),
+    );
+    const id = getCandidateRecordId(latestCandidate);
 
     const optimisticCandidate = normalizePipelineCandidateForBoard({
-      ...candidate,
+      ...latestCandidate,
       prfStatus: normalizedNextPrfStatus,
       prf_status: normalizedNextPrfStatus,
       prfReviewed: true,
       prf_reviewed: true,
       prfReviewedAt: new Date().toISOString(),
+      prf_reviewed_at: new Date().toISOString(),
       currentStage,
       currentPipelineStage: currentStage,
       stage: currentStage,
       pipelineStage: currentStage,
+      candidateSnapshot: {
+        ...(latestCandidate.candidateSnapshot || {}),
+        prfStatus: normalizedNextPrfStatus,
+        prf_status: normalizedNextPrfStatus,
+        prfReviewed: true,
+        prf_reviewed: true,
+        currentStage,
+        currentPipelineStage: currentStage,
+        pipelineStage: currentStage,
+      },
     });
 
     setCandidateList((prev) =>
@@ -1587,8 +1627,11 @@ export function CandidatePipelineProvider({ children }) {
 
     setSelectedCandidate((prev) =>
       prev && isSamePipelineCandidate(prev, optimisticCandidate)
-        ? optimisticCandidate
-        : prev,
+        ? normalizePipelineCandidateForBoard({
+            ...prev,
+            ...optimisticCandidate,
+          })
+        : optimisticCandidate,
     );
 
     const response = await runCandidateAction(
@@ -1596,18 +1639,51 @@ export function CandidatePipelineProvider({ children }) {
         updateCandidatePipelinePrfStatus(id, {
           prfStatus: normalizedNextPrfStatus,
           prf_status: normalizedNextPrfStatus,
+          prfReviewStatus: normalizedNextPrfStatus,
+          prf_review_status: normalizedNextPrfStatus,
           status: normalizedNextPrfStatus,
           remarks: `PRF Status: ${normalizedNextPrfStatus}`,
         }),
       {
-        activeStageAfter: "Initial Screening",
+        activeStageAfter: currentStage,
+        refresh: false,
+        setSelected: true,
       },
     );
 
     if (response?.success) {
+      const responseCandidate = normalizePipelineCandidateForBoard({
+        ...optimisticCandidate,
+        ...(getApiCandidate(response) || {}),
+        prfStatus: normalizedNextPrfStatus,
+        prf_status: normalizedNextPrfStatus,
+        prfReviewed: true,
+        prf_reviewed: true,
+        currentStage,
+        currentPipelineStage: currentStage,
+        stage: currentStage,
+        pipelineStage: currentStage,
+      });
+
+      setCandidateList((prev) =>
+        mergeUpdatedCandidateList(prev, responseCandidate),
+      );
+
+      syncSelectedCandidate(responseCandidate);
+      setSelectedCandidate(responseCandidate);
+
       showSuccess(
-        `PRF status was updated to ${normalizedNextPrfStatus}.`,
+        `PRF status was updated to ${normalizedNextPrfStatus}. You can now move the candidate to Online Assessment.`,
         "PRF Status Updated",
+        {
+          closePipelineModals: false,
+        },
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: responseCandidate,
+        }),
       );
     }
 
@@ -1888,14 +1964,10 @@ export function CandidatePipelineProvider({ children }) {
     if (!candidate) return;
 
     const latestCandidate = getLatestCandidateRecord(candidate);
-    const currentStage = normalizePipelineStageName(
-      getCandidateStage(latestCandidate),
-    );
+    const currentStage = getCandidateStage(latestCandidate);
 
-    const nextStage = normalizePipelineStageName(
-      cleanText(forcedStage) || getNextPipelineStage(latestCandidate),
-      "",
-    );
+    const nextStage =
+      cleanText(forcedStage) || getNextPipelineStage(latestCandidate);
 
     if (!nextStage) return;
 
@@ -1948,7 +2020,8 @@ export function CandidatePipelineProvider({ children }) {
       );
 
       syncSelectedCandidate(optimisticCandidate);
-      setSelectedCandidate(null);
+      setSelectedCandidate(optimisticCandidate);
+
       setMoveCandidate(null);
       setMoveForm(emptyMoveForm);
       setActiveStage("Online Assessment");
@@ -1968,17 +2041,45 @@ export function CandidatePipelineProvider({ children }) {
         {
           closeModal: handleCloseMoveModal,
           activeStageAfter: "Online Assessment",
+          refresh: false,
         },
       );
 
       if (response?.success) {
-        const updatedCandidate = getApiCandidate(response) || optimisticCandidate;
+        const updatedCandidate = normalizePipelineCandidateForBoard({
+          ...optimisticCandidate,
+          ...(getApiCandidate(response) || {}),
+          prfStatus: "Matched",
+          prf_status: "Matched",
+          prfReviewed: true,
+          prf_reviewed: true,
+          currentStage: "Online Assessment",
+          currentPipelineStage: "Online Assessment",
+          stage: "Online Assessment",
+          pipelineStage: "Online Assessment",
+        });
+
+        setCandidateList((prev) =>
+          mergeUpdatedCandidateList(prev, updatedCandidate),
+        );
+
+        syncSelectedCandidate(updatedCandidate);
+        setSelectedCandidate(updatedCandidate);
 
         triggerAssessmentEmail(updatedCandidate);
 
         showSuccess(
           `${normalizedCandidate.name} was moved to Online Assessment.`,
           "Candidate Moved",
+          {
+            closePipelineModals: false,
+          },
+        );
+
+        window.dispatchEvent(
+          new CustomEvent("ta-pipeline-candidates-updated", {
+            detail: updatedCandidate,
+          }),
         );
       }
 
@@ -2001,9 +2102,7 @@ export function CandidatePipelineProvider({ children }) {
     setMoveForm({
       reason:
         normalizedCandidate.reasonForMovement ||
-        (nextStage === INCOMPLETE_REQUIREMENTS_STAGE
-          ? "Candidate has fewer than 5 major pre-employment requirements. Candidate will be followed up in Talent Pool."
-          : `Candidate moved from ${currentStage} to ${nextStage}.`),
+        `Candidate moved from ${currentStage} to ${nextStage}.`,
       remarks: "",
       nextStage,
       targetStage: nextStage,
@@ -2025,17 +2124,13 @@ export function CandidatePipelineProvider({ children }) {
     const normalizedMoveCandidate =
       normalizePipelineCandidateForBoard(latestMoveCandidate);
 
-    const currentStage = normalizePipelineStageName(
-      getCandidateStage(normalizedMoveCandidate),
-    );
+    const currentStage = getCandidateStage(normalizedMoveCandidate);
 
-    const rawNextStage =
+    const nextStage =
       moveForm.targetStage ||
       moveForm.nextStage ||
       moveForm.stage ||
       getNextPipelineStage(normalizedMoveCandidate);
-
-    const nextStage = normalizePipelineStageName(rawNextStage, "");
 
     if (!nextStage) {
       showError("This candidate cannot be moved forward.");
@@ -2055,11 +2150,7 @@ export function CandidatePipelineProvider({ children }) {
       cleanText(moveForm.reason) ||
       (nextStage === "Online Assessment"
         ? "PRF matched. Candidate moved from Initial Screening to Online Assessment and assessment email will be sent."
-        : nextStage === INCOMPLETE_REQUIREMENTS_STAGE
-          ? "Candidate has fewer than 5 major pre-employment requirements. Candidate will be followed up in Talent Pool."
-          : nextStage === ONBOARDING_STAGE
-            ? "Candidate completed the 5 major pre-employment requirements and is ready for onboarding."
-            : `Candidate moved from ${currentStage} to ${nextStage}.`);
+        : `Candidate moved from ${currentStage} to ${nextStage}.`);
 
     if (
       !(await confirmAction(
@@ -2117,7 +2208,13 @@ export function CandidatePipelineProvider({ children }) {
     );
 
     syncSelectedCandidate(optimisticCandidate);
-    setSelectedCandidate(null);
+
+    if (movingToOnlineAssessment) {
+      setSelectedCandidate(optimisticCandidate);
+    } else {
+      setSelectedCandidate(null);
+    }
+
     setActiveStage(nextStage);
 
     const response = await runCandidateAction(
@@ -2135,17 +2232,43 @@ export function CandidatePipelineProvider({ children }) {
       {
         closeModal: handleCloseMoveModal,
         activeStageAfter: nextStage,
+        refresh: false,
       },
     );
 
-    if (response?.success && movingToOnlineAssessment) {
-      triggerAssessmentEmail(getApiCandidate(response) || optimisticCandidate);
-    }
-
     if (response?.success) {
+      const updatedCandidate = normalizePipelineCandidateForBoard({
+        ...optimisticCandidate,
+        ...(getApiCandidate(response) || {}),
+        currentStage: nextStage,
+        currentPipelineStage: nextStage,
+        stage: nextStage,
+        pipelineStage: nextStage,
+      });
+
+      setCandidateList((prev) =>
+        mergeUpdatedCandidateList(prev, updatedCandidate),
+      );
+
+      syncSelectedCandidate(updatedCandidate);
+
+      if (movingToOnlineAssessment) {
+        setSelectedCandidate(updatedCandidate);
+        triggerAssessmentEmail(updatedCandidate);
+      }
+
       showSuccess(
         `${normalizedMoveCandidate.name} was moved to ${nextStage}.`,
         "Candidate Moved",
+        {
+          closePipelineModals: false,
+        },
+      );
+
+      window.dispatchEvent(
+        new CustomEvent("ta-pipeline-candidates-updated", {
+          detail: updatedCandidate,
+        }),
       );
     }
 
@@ -2511,8 +2634,7 @@ export function CandidatePipelineProvider({ children }) {
         String(candidate.candidateId || "") === String(candidateId || "") ||
         String(candidate.candidateApplicationId || "") ===
           String(candidateApplicationId || "") ||
-        String(candidate.applicationId || "") ===
-          String(candidateApplicationId || "") ||
+        String(candidate.applicationId || "") === String(candidateApplicationId || "") ||
         String(candidate.id || "") === String(candidateApplicationId || "")
       );
     });
