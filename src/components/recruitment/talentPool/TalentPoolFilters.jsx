@@ -226,7 +226,7 @@ export default function TalentPoolFilters() {
     cleanText(search) || statusFilter !== "All" || positionFilter !== "All";
 
   return (
-    <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5 lg:px-6">
+    <div className="relative z-[90] overflow-visible rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5 lg:px-6">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_minmax(210px,260px)_minmax(170px,220px)_110px] xl:items-end">
         <div className="min-w-0 md:col-span-2 xl:col-span-1">
           <label className="mb-1.5 block text-sm font-extrabold text-[#101828]">

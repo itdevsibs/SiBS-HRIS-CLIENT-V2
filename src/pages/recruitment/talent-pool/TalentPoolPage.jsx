@@ -128,7 +128,7 @@ export default function TalentPoolPage() {
             <TalentPoolStats />
           </div>
 
-          <section className="relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+          <section className="sibs-profile-tab-panel relative z-[80] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <TalentPoolFilters />
 
             <div className="relative z-[1] overflow-hidden rounded-b-2xl">
