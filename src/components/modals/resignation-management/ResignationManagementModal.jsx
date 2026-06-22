@@ -1768,7 +1768,11 @@ function FieldCompleteBadge({ completed = false }) {
   );
 }
 
-function CompletionStatusBadge({ isComplete }) {
+function CompletionStatusBadge({ completed = 0, total = 6 }) {
+  const safeCompleted = Number(completed || 0);
+  const safeTotal = Number(total || 6);
+
+  const isComplete = safeTotal > 0 && safeCompleted === safeTotal;
   const Icon = isComplete ? CheckCircle2 : Clock3;
 
   return (
@@ -1780,7 +1784,7 @@ function CompletionStatusBadge({ isComplete }) {
       }`}
     >
       <Icon size={14} />
-      {isComplete ? "Complete" : "Incomplete"}
+      {safeCompleted}/{safeTotal} Complete
     </span>
   );
 }
@@ -1966,20 +1970,49 @@ export function ViewResignationModal({ open, item, onClose }) {
     "TL / OM";
 
   const hasEmployeeSibsId = Boolean(employeeSibsId && employeeSibsId !== "--");
-  const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
-  const hasResignationType = Boolean(resignationType);
-  const hasResignationDate = Boolean(rawResignationDate);
-  const hasLastWorkingDate = Boolean(rawLastWorkingDate);
-  const hasReason = Boolean(String(reason || "").trim());
+const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
+const hasResignationType = Boolean(resignationType);
+const hasResignationDate = Boolean(rawResignationDate);
+const hasLastWorkingDate = Boolean(rawLastWorkingDate);
+const hasReason = Boolean(String(reason || "").trim());
 
-  const requiredDetailsComplete =
-    hasEmployeeSibsId &&
-    hasEmployeeName &&
-    hasResignationType &&
-    hasResignationDate &&
-    hasLastWorkingDate &&
-    hasReason;
+const requiredFieldChecks = [
+  {
+    label: "Employee SIBS ID",
+    complete: hasEmployeeSibsId,
+  },
+  {
+    label: "Employee Name",
+    complete: hasEmployeeName,
+  },
+  {
+    label: "Type of Resignation",
+    complete: hasResignationType,
+  },
+  {
+    label: "Resignation Date",
+    complete: hasResignationDate,
+  },
+  {
+    label: "Last Working Date",
+    complete: hasLastWorkingDate,
+  },
+  {
+    label: "Reason / Summary",
+    complete: hasReason,
+  },
+];
 
+const completedRequiredFields = requiredFieldChecks.filter(
+  (field) => field.complete,
+).length;
+
+const totalRequiredFields = requiredFieldChecks.length;
+
+const requiredDetailsComplete =
+  completedRequiredFields === totalRequiredFields;
+
+    
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
       <div
@@ -2041,7 +2074,10 @@ export function ViewResignationModal({ open, item, onClose }) {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <CompletionStatusBadge isComplete={requiredDetailsComplete} />
+                  <CompletionStatusBadge
+                    completed={completedRequiredFields}
+                    total={totalRequiredFields}
+                  />
 
                   <span
                     className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
@@ -2140,7 +2176,10 @@ export function ViewResignationModal({ open, item, onClose }) {
                     </p>
                   </div>
 
-                  <CompletionStatusBadge isComplete={requiredDetailsComplete} />
+                  <CompletionStatusBadge
+                    completed={completedRequiredFields}
+                    total={totalRequiredFields}
+                  />
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3">
