@@ -3,6 +3,8 @@ import {
   Check,
   Eye,
   ExternalLink,
+  Eye,
+  ExternalLink,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -57,6 +59,10 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
   (group) => group.requirements,
 );
 
+const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
+  (group) => group.requirements,
+);
+
 const ACCEPTED_FILE_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
 
@@ -68,6 +74,18 @@ function normalizeRequirement(value) {
   return cleanText(value).toLowerCase().replace(/\s+/g, " ");
 }
 
+function normalizeRequirementSlug(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getOfficialRequirementMatch(value = "") {
+  const key = normalizeRequirementSlug(value);
+
+  if (!key) return "";
 function normalizeRequirementSlug(value) {
   return cleanText(value)
     .toLowerCase()
@@ -181,6 +199,42 @@ function getResolvedFileUrl(fileUrl = "") {
   }
 
   return value;
+  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
+  if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
+
+  return FileText;
+}
+
+function getApiErrorMessage(error, fallback = "Request failed.") {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
+function getResolvedFileUrl(fileUrl = "") {
+  const value = cleanText(fileUrl);
+
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  const apiBaseUrl = cleanText(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
+
+  if (value.startsWith("/api/") && apiBaseUrl) {
+    return `${apiBaseUrl}${value}`;
+  }
+
+  return value;
 }
 
 function readFileAsDataUrl(file) {
@@ -192,6 +246,10 @@ function readFileAsDataUrl(file) {
 
     reader.readAsDataURL(file);
   });
+}
+
+function isRawBrowserFile(file) {
+  return typeof File !== "undefined" && file instanceof File;
 }
 
 function isRawBrowserFile(file) {
@@ -229,9 +287,40 @@ function normalizeUploadedFile(file = {}) {
     fileName,
   });
 
+  const savedFileName =
+    file.savedFileName ||
+    file.saved_file_name ||
+    file.filename ||
+    file.storedFileName ||
+    "";
+
+  const fileName =
+    file.fileName ||
+    file.name ||
+    file.originalName ||
+    file.originalname ||
+    savedFileName ||
+    "";
+
+  const fileUrl =
+    file.fileUrl ||
+    file.url ||
+    file.dataUrl ||
+    file.previewUrl ||
+    file.downloadUrl ||
+    "";
+
+  const filePath = file.filePath || file.storedPath || file.path || "";
+  const officialRequirement = getOfficialRequirementFromFile({
+    ...file,
+    savedFileName,
+    fileName,
+  });
+
   return {
     id:
       file.id ||
+      file.fileId ||
       file.fileId ||
       `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     requirement:
@@ -243,7 +332,27 @@ function normalizeUploadedFile(file = {}) {
     fileName,
     savedFileName,
     filename: file.filename || savedFileName,
+    requirement:
+      officialRequirement ||
+      file.requirement ||
+      file.label ||
+      file.category ||
+      "",
+    fileName,
+    savedFileName,
+    filename: file.filename || savedFileName,
     fileSize: file.fileSize || file.size || 0,
+    fileType:
+      file.fileType ||
+      file.type ||
+      file.mimetype ||
+      file.mimeType ||
+      "application/octet-stream",
+    fileUrl,
+    filePath,
+    storedPath: file.storedPath || filePath,
+    uploadedAt: file.uploadedAt || file.createdAt || file.updatedAt || "",
+    uploadedBy: file.uploadedBy || file.createdBy || file.updatedBy || "",
     fileType:
       file.fileType ||
       file.type ||
@@ -422,6 +531,7 @@ function RequirementCard({
   const inputRef = useRef(null);
 
   const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
+  const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
   const FileIcon = getFileIcon(uploadedFile?.fileName);
   const major = isMajorRequirement(requirement);
 
@@ -433,6 +543,7 @@ function RequirementCard({
     try {
       const fileUrl = await readFileAsDataUrl(file);
 
+      const nextFile = normalizeUploadedFile({
       const nextFile = normalizeUploadedFile({
         id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         requirement,
@@ -447,6 +558,8 @@ function RequirementCard({
         uploadedAt: new Date().toISOString(),
         rawFile: file,
       });
+
+      onUpload(requirement, nextFile);
 
       onUpload(requirement, nextFile);
     } finally {
@@ -507,6 +620,7 @@ function RequirementCard({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-extrabold text-emerald-800">
                   {uploadedFile.fileName || "Uploaded file"}
+                  {uploadedFile.fileName || "Uploaded file"}
                 </span>
 
                 <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
@@ -555,6 +669,7 @@ function RequirementCard({
         ref={inputRef}
         type="file"
         accept={ACCEPTED_FILE_TYPES}
+        disabled={disabled}
         disabled={disabled}
         onChange={handleFileChange}
         className="hidden"
@@ -606,6 +721,7 @@ function FilePreviewPanel({ file }) {
             title={file.fileName}
             className="mt-1 break-words text-base font-extrabold text-[#101828]"
           >
+            {file.fileName || "Uploaded file"}
             {file.fileName || "Uploaded file"}
           </h3>
 
@@ -838,8 +954,14 @@ export default function NhoUploadModal({
   initialFiles = [],
   currentFile = null,
   previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
+  previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
   onSave,
 }) {
+  const onSaveRef = useRef(onSave);
+  const initialFilesRef = useRef(initialFiles);
+  const currentFileRef = useRef(currentFile);
+  const latestRequestRef = useRef(0);
+
   const onSaveRef = useRef(onSave);
   const initialFilesRef = useRef(initialFiles);
   const currentFileRef = useRef(currentFile);
@@ -848,7 +970,9 @@ export default function NhoUploadModal({
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -863,10 +987,21 @@ export default function NhoUploadModal({
   useEffect(() => {
     currentFileRef.current = currentFile;
   }, [currentFile]);
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  useEffect(() => {
+    initialFilesRef.current = initialFiles;
+  }, [initialFiles]);
+
+  useEffect(() => {
+    currentFileRef.current = currentFile;
+  }, [currentFile]);
 
   const uploadedRequirementMap = useMemo(() => {
     const map = new Map();
 
+    filterOfficialUploadedFiles(files).forEach((file) => {
     filterOfficialUploadedFiles(files).forEach((file) => {
       const key = normalizeRequirement(file.requirement);
 
@@ -990,7 +1125,14 @@ export default function NhoUploadModal({
         ...filePayload,
         requirement,
       });
+      const nextFile = normalizeUploadedFile({
+        ...filePayload,
+        requirement,
+      });
 
+      const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
+
+      setSelectedFile(nextFile);
       const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
 
       setSelectedFile(nextFile);
@@ -1026,6 +1168,8 @@ export default function NhoUploadModal({
 
     const formData = new FormData();
 
+    const filePayloads = officialFiles.map((file) => {
+      const hasNewFile = isRawBrowserFile(file.rawFile);
     const filePayloads = officialFiles.map((file) => {
       const hasNewFile = isRawBrowserFile(file.rawFile);
 
@@ -1086,6 +1230,8 @@ export default function NhoUploadModal({
 
       const officialFiles = filterOfficialUploadedFiles(files);
 
+      const officialFiles = filterOfficialUploadedFiles(files);
+
       if (candidateId) {
         const response = await saveUploadsToBackend();
 
@@ -1094,6 +1240,7 @@ export default function NhoUploadModal({
         }
 
         const savedFiles = Array.isArray(response.files)
+          ? filterOfficialUploadedFiles(response.files)
           ? filterOfficialUploadedFiles(response.files)
           : Array.isArray(response?.data?.files)
             ? filterOfficialUploadedFiles(response.data.files)
@@ -1328,6 +1475,7 @@ export default function NhoUploadModal({
 
                 <div className="mt-5 space-y-6">
                   {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
+                  {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
                     const groupCompleted = group.requirements.filter(
                       (requirement) =>
                         uploadedRequirementMap.has(
@@ -1369,7 +1517,25 @@ export default function NhoUploadModal({
                             const uploadedFile = uploadedRequirementMap.get(
                               normalizeRequirement(requirement),
                             );
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          {group.requirements.map((requirement) => {
+                            const uploadedFile = uploadedRequirementMap.get(
+                              normalizeRequirement(requirement),
+                            );
 
+                            return (
+                              <RequirementCard
+                                key={requirement}
+                                requirement={requirement}
+                                uploadedFile={uploadedFile}
+                                disabled={isSaving || isLoadingFiles}
+                                onUpload={handleUpload}
+                                onSelect={setSelectedFile}
+                                onRemove={handleRemove}
+                              />
+                            );
+                          })}
+                        </div>
                             return (
                               <RequirementCard
                                 key={requirement}
@@ -1386,6 +1552,13 @@ export default function NhoUploadModal({
                       </div>
                     );
                   })}
+
+                  <UploadedFilesList
+                    files={files}
+                    disabled={isSaving || isLoadingFiles}
+                    onSelect={setSelectedFile}
+                    onRemove={handleRemove}
+                  />
 
                   <UploadedFilesList
                     files={files}
@@ -1423,6 +1596,7 @@ export default function NhoUploadModal({
 
               <button
                 type="button"
+                disabled={isSaving || isLoadingFiles}
                 disabled={isSaving || isLoadingFiles}
                 onClick={handleSaveUploads}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"

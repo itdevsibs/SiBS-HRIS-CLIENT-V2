@@ -38,10 +38,102 @@ import {
   ViewableFileRow,
 } from "../../recruitment/talentPool/TalentPoolShared";
 
+
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
+
+const OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS = [
+  "Transcript of Records and/or Diploma",
+  "Medical Records",
+  "NBI Clearance",
+  "Birth Certificate",
+  "Valid ID",
+  "ID picture (2 pcs passport size)",
+  "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
+  "TIN Verification Slip",
+  "SSS E1 Form",
+  "PhilHealth MDR",
+  "Pag-IBIG MDF",
+  "Vaccination Card",
+  "BIR 2316 Form",
+  "Employment Certificate",
+];
+
+function safeArray(value) {
+  return Array.isArray(value) ? value.filter(Boolean) : [];
+}
+
+function safeObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value
+    : {};
+}
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function getApiErrorMessage(error, fallback = "Request failed.") {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
+function normalizeRequirementKey(value = "") {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getOfficialRequirementMatch(value = "") {
+  const key = normalizeRequirementKey(value);
+
+  if (!key) return "";
+
+  return (
+    OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.find((requirement) => {
+      const requirementKey = normalizeRequirementKey(requirement);
+
+      return (
+        key === requirementKey ||
+        key.startsWith(`${requirementKey}_`) ||
+        key.includes(requirementKey)
+      );
+    }) || ""
+  );
+}
+
+function getNormalizedPreEmploymentRequirement(file = {}) {
+  const directRequirement =
+    file.requirement || file.label || file.title || file.category || "";
+
+  const directMatch = getOfficialRequirementMatch(directRequirement);
+
+  if (directMatch) return directMatch;
+
+  const filename =
+    file.savedFileName ||
+    file.filename ||
+    file.saved_file_name ||
+    file.fileName ||
+    file.name ||
+    file.originalName ||
+    file.originalname ||
+    "";
+
+  return getOfficialRequirementMatch(filename);
+}
+
+function isOfficialPreEmploymentFile(file = {}) {
+  return Boolean(getNormalizedPreEmploymentRequirement(file));
+}
 
 const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
 const ONBOARDING_ROUTE = "/recruitment/onboarding";
@@ -415,6 +507,7 @@ function getResolvedFileUrl(fileUrl = "") {
 function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
   const lookupId = getCandidatePipelineLookupId(candidate);
 
+
   const filename =
     file.savedFileName ||
     file.filename ||
@@ -497,8 +590,18 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
       safeFile.mimeType ||
       safeFile.attachmentFileType ||
       safeFile.audioFileType ||
+      safeFile.fileType ||
+      safeFile.type ||
+      safeFile.mimetype ||
+      safeFile.mimeType ||
+      safeFile.attachmentFileType ||
+      safeFile.audioFileType ||
       "",
     fileSize:
+      safeFile.fileSize ||
+      safeFile.size ||
+      safeFile.attachmentFileSize ||
+      safeFile.audioFileSize ||
       safeFile.fileSize ||
       safeFile.size ||
       safeFile.attachmentFileSize ||
@@ -595,6 +698,8 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
   const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
   const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
   const pipelineMetadata = safeObject(pipelineCandidate.metadata);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const pipelineMetadata = safeObject(pipelineCandidate.metadata);
 
   const sources = [
     safeCandidate.nhoFiles,
@@ -604,6 +709,7 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     safeCandidate.uploadedFiles,
     safeCandidate.files,
 
+
     metadata.nhoFiles,
     metadata.nho_files,
     metadata.preEmploymentFiles,
@@ -612,6 +718,7 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     metadata.files,
 
     candidateSnapshot.nhoFiles,
+    candidateSnapshot.nho_files,
     candidateSnapshot.nho_files,
     candidateSnapshot.preEmploymentFiles,
     candidateSnapshot.pre_employment_files,
@@ -905,9 +1012,14 @@ function getHistoryTitle(item = {}) {
 
   if (title.includes("PRF status changed")) return "Initial Screening";
   if (title.includes("PRF status updated")) return "Initial Screening";
+  if (title.includes("PRF status updated")) return "Initial Screening";
   if (title.includes("Assessment marked")) return "Online Assessment";
   if (title.includes("Assessment updated")) return "Online Assessment";
+  if (title.includes("Assessment updated")) return "Online Assessment";
   if (title.includes("interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview schedule")) return "Interview Scheduled";
+  if (title.includes("Interview started")) return "Interview Scheduled";
+  if (title.includes("Interview completed")) return "Interviewed";
   if (title.includes("Interview schedule")) return "Interview Scheduled";
   if (title.includes("Interview started")) return "Interview Scheduled";
   if (title.includes("Interview completed")) return "Interviewed";
@@ -927,7 +1039,9 @@ function getHistoryDate(item = {}) {
     item.date ||
     item.createdAt ||
     item.created_at ||
+    item.created_at ||
     item.updatedAt ||
+    item.updated_at ||
     item.updated_at ||
     item.activityDate ||
     item.activity_date ||
@@ -1028,6 +1142,7 @@ function getOfferDetail(item = {}) {
     item.roleTitle ||
     item.offerDetails?.roleTitle ||
     item.extra?.offerDetails?.roleTitle ||
+    item.extra?.offerDetails?.roleTitle ||
     "";
 
   const account =
@@ -1038,9 +1153,15 @@ function getOfferDetail(item = {}) {
     item.account ||
     item.offerDetails?.account ||
     item.extra?.offerDetails?.account ||
+    item.extra?.offerDetails?.account ||
     "";
 
   const basicPay =
+    item.basicPay ||
+    item.offerDetails?.basicPay ||
+    item.extra?.offerDetails?.basicPay ||
+    item.compensation ||
+    "";
     item.basicPay ||
     item.offerDetails?.basicPay ||
     item.extra?.offerDetails?.basicPay ||
@@ -1052,8 +1173,16 @@ function getOfferDetail(item = {}) {
     item.offerDetails?.deminimisDailyRate ||
     item.extra?.offerDetails?.deminimisDailyRate ||
     "";
+    item.deminimisDailyRate ||
+    item.offerDetails?.deminimisDailyRate ||
+    item.extra?.offerDetails?.deminimisDailyRate ||
+    "";
 
   const hiringRequirement =
+    item.hiringRequirementId ||
+    item.offerDetails?.hiringRequirementId ||
+    item.extra?.offerDetails?.hiringRequirementId ||
+    "";
     item.hiringRequirementId ||
     item.offerDetails?.hiringRequirementId ||
     item.extra?.offerDetails?.hiringRequirementId ||
@@ -1102,6 +1231,13 @@ function getHistoryRemarks(item = {}) {
     item.extra?.remarks ||
     ""
   );
+  return (
+    item.remarks ||
+    item.dropOffReason ||
+    item.dropOffCategory ||
+    item.extra?.remarks ||
+    ""
+  );
 }
 
 function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") {
@@ -1110,6 +1246,13 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
   const historyDescription = getHistoryDescription(item);
   const historyRemarks = getHistoryRemarks(item);
   const offerDetail = getOfferDetail(item);
+  const savedFormLink =
+    item.savedFormLink ||
+    item.jobEvaluationLink ||
+    item.extra?.savedFormLink ||
+    item.extra?.jobEvaluationLink ||
+    "";
+  const sortDate = getNormalizedHistoryDate(historyDate);
   const savedFormLink =
     item.savedFormLink ||
     item.jobEvaluationLink ||
@@ -1130,6 +1273,7 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
     _dedupeKey: [
       historyTitle,
       sortDate,
+      sortDate,
       historyDescription,
       historyRemarks,
       offerDetail,
@@ -1139,10 +1283,17 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
       .toLowerCase()
       .trim(),
     _sortDate: sortDate,
+    _sortDate: sortDate,
   };
 }
 
 function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+
   const safeCandidate = safeObject(candidate);
   const metadata = safeObject(safeCandidate.metadata);
   const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
@@ -1184,12 +1335,47 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
     pipelineDetails.stageHistory,
     pipelineDetails.history,
     pipelineDetails.activityHistory,
+    safeCandidate.applicationHistory,
+    safeCandidate.movementTimeline,
+    safeCandidate.movementHistory,
+    safeCandidate.pipelineHistory,
+    safeCandidate.stageHistory,
+    safeCandidate.timeline,
+    safeCandidate.history,
+    safeCandidate.activityHistory,
+
+    candidateSnapshot.applicationHistory,
+    candidateSnapshot.timeline,
+    candidateSnapshot.movementTimeline,
+
+    metadata.applicationHistory,
+    metadata.timeline,
+    metadata.movementTimeline,
+    metadata.pipelineHistory,
+    metadata.pipelineTimeline,
+
+    pipelineCandidate.timeline,
+    pipelineCandidate.movementTimeline,
+    pipelineCandidate.movementHistory,
+    pipelineCandidate.pipelineHistory,
+    pipelineCandidate.stageHistory,
+    pipelineCandidate.history,
+    pipelineCandidate.activityHistory,
+
+    pipelineDetails.timeline,
+    pipelineDetails.movementTimeline,
+    pipelineDetails.movementHistory,
+    pipelineDetails.pipelineHistory,
+    pipelineDetails.stageHistory,
+    pipelineDetails.history,
+    pipelineDetails.activityHistory,
   ];
 
   const merged = sources
     .filter(Array.isArray)
     .flat()
     .filter(Boolean)
+    .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .filter((item) => item.stage || item.description);
 
@@ -2050,6 +2236,7 @@ export default function CandidateProfileModal() {
     ) {
       setCandidatePipelineFilesLoading(false);
 
+
       return () => {
         isActive = false;
       };
@@ -2064,6 +2251,9 @@ export default function CandidateProfileModal() {
         )}/nho/files`,
         {
           withCredentials: true,
+          params: {
+            _t: Date.now(),
+          },
           params: {
             _t: Date.now(),
           },
@@ -2091,6 +2281,8 @@ export default function CandidateProfileModal() {
 
         if (localProfileFiles.length > 0) {
           setCandidatePipelineFiles(localProfileFiles);
+        if (localProfileFiles.length > 0) {
+          setCandidatePipelineFiles(localProfileFiles);
           setCandidatePipelineFilesError("");
           return;
         }
@@ -2113,6 +2305,7 @@ export default function CandidateProfileModal() {
     };
   }, [
     selectedCandidate,
+    profileCandidate,
     profileCandidate,
     candidatePipelineLookupId,
     isPipelineLinkedForFiles,
@@ -2200,6 +2393,7 @@ export default function CandidateProfileModal() {
 
   const candidateInitials =
     activeCandidate.name
+    activeCandidate.name
       ?.split(" ")
       .map((part) => part[0])
       .slice(0, 2)
@@ -2208,15 +2402,20 @@ export default function CandidateProfileModal() {
 
   const validReferences = Array.isArray(activeCandidate.references)
     ? activeCandidate.references.filter(
+  const validReferences = Array.isArray(activeCandidate.references)
+    ? activeCandidate.references.filter(
         (reference) => reference?.name || reference?.phone,
       )
     : [];
 
   const workExperiences = Array.isArray(activeCandidate.workExperiences)
     ? activeCandidate.workExperiences.filter(Boolean)
+  const workExperiences = Array.isArray(activeCandidate.workExperiences)
+    ? activeCandidate.workExperiences.filter(Boolean)
     : [];
 
   const applicationHistory = getCandidateApplicationHistory(
+    activeCandidate,
     activeCandidate,
     encodedBy,
   );
