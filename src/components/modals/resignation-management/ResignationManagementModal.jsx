@@ -1754,26 +1754,95 @@ function ChecklistItem({ done = false, title, subtitle }) {
   );
 }
 
-function ViewDetailField({ label, value }) {
+function FieldCompleteBadge({ completed = false }) {
+  return completed ? (
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+      <CheckCircle2 size={12} />
+      Complete
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+      <Clock3 size={12} />
+      Missing
+    </span>
+  );
+}
+
+function CompletionStatusBadge({ completed = 0, total = 6 }) {
+  const safeCompleted = Number(completed || 0);
+  const safeTotal = Number(total || 6);
+
+  const isComplete = safeTotal > 0 && safeCompleted === safeTotal;
+  const Icon = isComplete ? CheckCircle2 : Clock3;
+
   return (
-    <div className="min-w-0">
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
+    <span
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${
+        isComplete
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-amber-200 bg-amber-50 text-amber-700"
+      }`}
+    >
+      <Icon size={14} />
+      {safeCompleted}/{safeTotal} Complete
+    </span>
+  );
+}
+
+function ViewFieldLabel({ label, completed = false }) {
+  return (
+    <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+      <label className="truncate text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
 
-      <div className={`flex min-h-[44px] w-full items-center ${EDGE} ${FIELD_BORDER} bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1`}>
+      <FieldCompleteBadge completed={completed} />
+    </div>
+  );
+}
+
+function FilingInfoInput({ label, value, displayValue }) {
+  const finalDisplayValue = displayValue || value || "—";
+
+  return (
+    <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
+      <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+        {label}
+      </p>
+
+      <p
+        title={finalDisplayValue}
+        className="mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 text-[#344054] selection:bg-[#FFF3B8] selection:text-[#101828] hover:cursor-pointer [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CBD5E1] [&::-webkit-scrollbar-track]:bg-transparent"
+      >
+        {finalDisplayValue}
+      </p>
+    </div>
+  );
+}
+
+function ViewDetailField({ label, value, completed = false }) {
+  return (
+    <div className="min-w-0">
+      <ViewFieldLabel label={label} completed={completed} />
+
+      <div
+        className={`flex min-h-[48px] w-full items-center ${EDGE} ${FIELD_BORDER} bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1`}
+      >
         <span className="min-w-0 break-words">{safeText(value)}</span>
       </div>
     </div>
   );
 }
 
-function ViewDetailTextarea({ label, value, rows = "min-h-[104px]" }) {
+function ViewDetailTextarea({
+  label,
+  value,
+  rows = "min-h-[104px]",
+  completed = false,
+}) {
   return (
     <div className="min-w-0">
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-        {label}
-      </label>
+      <ViewFieldLabel label={label} completed={completed} />
 
       <div
         className={`${rows} w-full ${EDGE} ${FIELD_BORDER} bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1`}
@@ -1787,15 +1856,16 @@ function ViewDetailTextarea({ label, value, rows = "min-h-[104px]" }) {
 function ViewUploadedFileField({ item }) {
   const fileName = getUploadedFileDisplayName(item);
   const fileUrl = getUploadedFileUrl(item);
+  const hasFile = Boolean(fileName);
 
   if (!fileName) {
     return (
       <div>
-        <p className="mb-2 text-sm font-bold text-sibs-primary-1">
-          Uploaded File
-        </p>
+        <ViewFieldLabel label="Uploaded File" completed={false} />
 
-        <div className={`flex min-h-[74px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5`}>
+        <div
+          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-sibs-tertiary-5`}
+        >
           <Paperclip size={18} />
           No uploaded file
         </div>
@@ -1806,15 +1876,13 @@ function ViewUploadedFileField({ item }) {
   if (fileUrl) {
     return (
       <div>
-        <p className="mb-2 text-sm font-bold text-sibs-primary-1">
-          Uploaded File
-        </p>
+        <ViewFieldLabel label="Uploaded File" completed={hasFile} />
 
         <a
           href={fileUrl}
           target="_blank"
           rel="noreferrer"
-          className={`flex min-h-[74px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]`}
+          className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]`}
           title={fileName}
         >
           <FileTypeIcon filename={fileName} />
@@ -1826,12 +1894,10 @@ function ViewUploadedFileField({ item }) {
 
   return (
     <div>
-      <p className="mb-2 text-sm font-bold text-sibs-primary-1">
-        Uploaded File
-      </p>
+      <ViewFieldLabel label="Uploaded File" completed={hasFile} />
 
       <div
-        className={`flex min-h-[74px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5]`}
+        className={`flex min-h-[78px] items-center gap-3 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5]`}
         title={fileName}
       >
         <FileTypeIcon filename={fileName} />
@@ -1844,6 +1910,7 @@ function ViewUploadedFileField({ item }) {
     </div>
   );
 }
+
 
 function ViewChecklistItem({ done = false, title, subtitle }) {
   return (
@@ -1871,6 +1938,8 @@ function ViewChecklistItem({ done = false, title, subtitle }) {
   );
 }
 
+
+
 export function ViewResignationModal({ open, item, onClose }) {
   if (!open || !item) return null;
 
@@ -1880,20 +1949,81 @@ export function ViewResignationModal({ open, item, onClose }) {
   const employeeName = getFullName(item);
   const employeeSibsId = getEmployeeSibsId(item);
   const employeeDepartment = getEmployeeDepartment(item);
+  const employeePosition = getEmployeePosition(item);
+
   const resignationType = item?.resignationType || item?.type || "";
-  const resignationDate = formatDate(item?.resignationDate || getItemDate(item));
-  const lastWorkingDate = formatDate(
-    item?.lastWorkingDate || item?.last_working_date,
-  );
+
+  const rawResignationDate = item?.resignationDate || getItemDate(item);
+  const rawLastWorkingDate = item?.lastWorkingDate || item?.last_working_date;
+
+  const resignationDate = formatDate(rawResignationDate);
+  const lastWorkingDate = formatDate(rawLastWorkingDate);
+
+  const reason = item?.reason || "";
   const remarks = item?.remarks || item?.comment_retain || item?.commentRetain;
 
+  const filedBy =
+    item?.filedByName ||
+    item?.encodedByName ||
+    item?.createdByName ||
+    item?.supervisorName ||
+    "TL / OM";
+
+  const hasEmployeeSibsId = Boolean(employeeSibsId && employeeSibsId !== "--");
+const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
+const hasResignationType = Boolean(resignationType);
+const hasResignationDate = Boolean(rawResignationDate);
+const hasLastWorkingDate = Boolean(rawLastWorkingDate);
+const hasReason = Boolean(String(reason || "").trim());
+
+const requiredFieldChecks = [
+  {
+    label: "Employee SIBS ID",
+    complete: hasEmployeeSibsId,
+  },
+  {
+    label: "Employee Name",
+    complete: hasEmployeeName,
+  },
+  {
+    label: "Type of Resignation",
+    complete: hasResignationType,
+  },
+  {
+    label: "Resignation Date",
+    complete: hasResignationDate,
+  },
+  {
+    label: "Last Working Date",
+    complete: hasLastWorkingDate,
+  },
+  {
+    label: "Reason / Summary",
+    complete: hasReason,
+  },
+];
+
+const completedRequiredFields = requiredFieldChecks.filter(
+  (field) => field.complete,
+).length;
+
+const totalRequiredFields = requiredFieldChecks.length;
+
+const requiredDetailsComplete =
+  completedRequiredFields === totalRequiredFields;
+
+    
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
-      <div className={`flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl`}>
+      <div
+        className={`flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl`}
+      >
         <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}>
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}
+              >
                 <FileText size={22} />
               </div>
 
@@ -1920,27 +2050,34 @@ export function ViewResignationModal({ open, item, onClose }) {
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 sibs-scrollbar">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-            <div className="space-y-5">
-              <div className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <ProfileAvatar item={item} size="lg" />
+          <div className="space-y-5">
+            <div
+              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <ProfileAvatar item={item} size="lg" />
 
-                    <div className="min-w-0">
-                      <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Employee
-                      </p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                      Employee
+                    </p>
 
-                      <h3 className="mt-1 truncate text-lg font-extrabold text-[#101828]">
-                        {employeeName}
-                      </h3>
+                    <h3 className="mt-1 truncate text-lg font-extrabold text-[#101828]">
+                      {employeeName}
+                    </h3>
 
-                      <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
-                        {employeeSibsId} · {employeeDepartment}
-                      </p>
-                    </div>
+                    <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
+                      {employeeSibsId} · {employeeDepartment}
+                    </p>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <CompletionStatusBadge
+                    completed={completedRequiredFields}
+                    total={totalRequiredFields}
+                  />
 
                   <span
                     className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
@@ -1951,103 +2088,69 @@ export function ViewResignationModal({ open, item, onClose }) {
                     {status}
                   </span>
                 </div>
+              </div>
 
-                <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <ViewDetailField
+                  label="Employee SIBS ID"
+                  value={employeeSibsId}
+                  completed={hasEmployeeSibsId}
+                />
+
+                <ViewDetailField
+                  label="Employee Name"
+                  value={employeeName}
+                  completed={hasEmployeeName}
+                />
+
+                <div className="md:col-span-2">
                   <ViewDetailField
-                    label="Employee SIBS ID"
-                    value={employeeSibsId}
+                    label="Type of Resignation"
+                    value={resignationType}
+                    completed={hasResignationType}
                   />
+                </div>
 
-                  <ViewDetailField label="Employee Name" value={employeeName} />
+                <ViewDetailField
+                  label="Resignation Date"
+                  value={resignationDate}
+                  completed={hasResignationDate}
+                />
 
-                  <div className="md:col-span-2">
-                    <ViewDetailField
-                      label="Type of Resignation"
-                      value={resignationType}
-                    />
-                  </div>
+                <ViewDetailField
+                  label="Last Working Date"
+                  value={lastWorkingDate}
+                  completed={hasLastWorkingDate}
+                />
 
-                  <ViewDetailField
-                    label="Resignation Date"
-                    value={resignationDate}
+                <div className="md:col-span-2">
+                  <ViewUploadedFileField item={item} />
+                </div>
+
+                <div className="md:col-span-2">
+                  <ViewDetailTextarea
+                    label="Reason / Summary"
+                    value={reason}
+                    rows="min-h-[126px]"
+                    completed={hasReason}
                   />
+                </div>
 
-                  <ViewDetailField
-                    label="Last Working Date"
-                    value={lastWorkingDate}
+                <div className="md:col-span-2">
+                  <ViewDetailTextarea
+                    label="TL / OM Remarks"
+                    value={remarks}
+                    rows="min-h-[96px]"
+                    completed={Boolean(String(remarks || "").trim())}
                   />
-
-                  <div className="md:col-span-2">
-                    <ViewUploadedFileField item={item} />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <ViewDetailTextarea
-                      label="Reason / Summary"
-                      value={item?.reason}
-                      rows="min-h-[104px]"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <ViewDetailTextarea
-                      label="TL / OM Remarks"
-                      value={remarks}
-                      rows="min-h-[86px]"
-                    />
-                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-5">
-              <div className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}>
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Filing Checklist
-                </h3>
-
-                <div className="mt-4 space-y-3">
-                  <ViewChecklistItem
-                    done={!!employeeSibsId && employeeSibsId !== "--"}
-                    title="Employee selected"
-                    subtitle={employeeSibsId || "Waiting for SIBS ID"}
-                  />
-
-                  <ViewChecklistItem
-                    done={!!employeeName && employeeName !== "Employee"}
-                    title="Employee name"
-                    subtitle={employeeName || "Waiting for name"}
-                  />
-
-                  <ViewChecklistItem
-                    done={!!resignationType}
-                    title="Resignation type"
-                    subtitle={resignationType || "Waiting for type"}
-                  />
-
-                  <ViewChecklistItem
-                    done={!!item?.resignationDate && !!item?.lastWorkingDate}
-                    title="Dates completed"
-                    subtitle={
-                      item?.resignationDate && item?.lastWorkingDate
-                        ? `${formatDate(item.resignationDate)} to ${formatDate(
-                            item.lastWorkingDate,
-                          )}`
-                        : "Waiting for resignation and last working date"
-                    }
-                  />
-
-                  <ViewChecklistItem
-                    done={!!String(item?.reason || "").trim()}
-                    title="Reason summary"
-                    subtitle={
-                      item?.reason || "Waiting for reason / email summary"
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-5`}>
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+              <div
+                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-5`}
+              >
                 <h3 className="text-base font-extrabold text-sibs-primary-1">
                   Process Rule
                 </h3>
@@ -2059,39 +2162,33 @@ export function ViewResignationModal({ open, item, onClose }) {
                 </p>
               </div>
 
-              <div className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}>
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Filing Details
-                </h3>
+              <div
+                className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-extrabold text-sibs-primary-1">
+                      Filing Details
+                    </h3>
 
-                <div className="mt-4 space-y-3 text-sm font-medium text-[#344054]">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Filed By
-                    </p>
-
-                    <p className="mt-1 text-sibs-primary-1">
-                      {safeText(
-                        item?.filedByName ||
-                          item?.encodedByName ||
-                          item?.createdByName ||
-                          item?.supervisorName ||
-                          "TL / OM",
-                      )}
+                    <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                      Filing ownership and department details.
                     </p>
                   </div>
 
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Department / Position
-                    </p>
+                  <CompletionStatusBadge
+                    completed={completedRequiredFields}
+                    total={totalRequiredFields}
+                  />
+                </div>
 
-                    <p className="mt-1 text-sibs-primary-1">
-                      {safeText(
-                        getEmployeePosition(item) || employeeDepartment,
-                      )}
-                    </p>
-                  </div>
+                <div className="mt-5 grid grid-cols-1 gap-3">
+                  <FilingInfoInput label="Filed By" value={safeText(filedBy)} />
+
+                  <FilingInfoInput
+                    label="Department / Position"
+                    value={safeText(employeePosition || employeeDepartment)}
+                  />
                 </div>
               </div>
             </div>

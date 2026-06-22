@@ -27,6 +27,8 @@ import {
   UserRound,
   UsersRound,
   XCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -36,6 +38,7 @@ import {
   ResignationManagementModal,
   ViewResignationModal,
 } from "../../components/modals/resignation-management/ResignationManagementModal";
+import TableFooter from "../../components/tables/footer/TableFooter";
 
 import {
   getManagedEmployees,
@@ -517,19 +520,17 @@ function CustomSelect({
         ref={anchorRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-          open
+        className={`flex h-11 w-full items-center justify-between ${EDGE} border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
             : "border-[#D0D5DD]"
-        }`}
+          }`}
       >
         <span className="truncate">{displayValue}</span>
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -550,11 +551,10 @@ function CustomSelect({
                 onChange(option);
                 setOpen(false);
               }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                selected
+              className={`block w-full px-4 py-3 text-left text-sm transition ${selected
                   ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                   : "text-[#344054] hover:bg-[#F8FAFC]"
-              }`}
+                }`}
             >
               <span className="block truncate">{optionLabel}</span>
             </button>
@@ -707,22 +707,20 @@ function ResignationProcessStep({
     <div className="relative min-w-0 flex-1">
       <div className="flex min-w-0 flex-col items-center text-center">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-300 ${
-            done
+          className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-300 ${done
               ? "bg-emerald-600 text-white"
               : active
                 ? "bg-sibs-primary-1 text-white"
                 : "bg-[#eef2f6] text-sibs-tertiary-5"
-          }`}
+            }`}
         >
           <Icon size={20} />
         </div>
 
         <div className="mt-3 min-w-0">
           <p
-            className={`text-xs font-bold ${
-              done || active ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
-            }`}
+            className={`text-xs font-bold ${done || active ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+              }`}
           >
             {number}. {title}
           </p>
@@ -1093,7 +1091,7 @@ function ResignationFilters({
 
 function ResignationTableCard({ data, totalRecords, loading, onView }) {
   return (
-    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
+    <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -1107,49 +1105,44 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              View all resignation records filed by TL/OM or direct supervisors.
+              View all resignation records filed by TL, OM or direct supervisors.
             </p>
           </div>
 
-          <div
-            className={`inline-flex w-fit items-center gap-2 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
-          >
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
             {loading && <Loader2 size={15} className="animate-spin" />}
             Showing: {data.length} / {totalRecords}
           </div>
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
         <div className="hidden lg:block">
-          <div
-            className={`overflow-auto ${EDGE} border border-[#E6ECF2] sibs-scrollbar`}
-          >
-            <table className="w-full min-w-[1250px] border-collapse bg-white text-left">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1250px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <thead>
+                <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                  <th className="w-[20%] px-5 py-4 first:rounded-tl-2xl">
                     Employee
                   </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                    Filed By
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Type
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+
+                  <th className="w-[16%] px-5 py-4">Filed By</th>
+
+                  <th className="w-[8%] px-5 py-4 text-center">Type</th>
+
+                  <th className="w-[11%] px-5 py-4 text-center">
                     Resignation Date
                   </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+
+                  <th className="w-[12%] px-5 py-4 text-center">
                     Last Working Date
                   </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                    Status
-                  </th>
-                  <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                    Reason
-                  </th>
-                  <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
+
+                  <th className="w-[13%] px-5 py-4 text-center">Status</th>
+
+                  <th className="w-[12%] px-5 py-4">Reason</th>
+
+                  <th className="w-[8%] px-5 py-4 text-right last:rounded-tr-2xl">
                     Actions
                   </th>
                 </tr>
@@ -1159,8 +1152,8 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
                 {loading ? (
                   <tr>
                     <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                       colSpan={8}
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       <Loader2
                         size={28}
@@ -1172,8 +1165,8 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
                 ) : data.length === 0 ? (
                   <tr>
                     <td
-                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
                       colSpan={8}
+                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
                     >
                       No resignation records found.
                     </td>
@@ -1194,9 +1187,7 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
 
         <div className="block lg:hidden">
           {loading ? (
-            <div
-              className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
-            >
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
               <Loader2
                 size={28}
                 className="mx-auto mb-3 animate-spin text-sibs-primary-1"
@@ -1204,9 +1195,7 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
               Loading resignations...
             </div>
           ) : data.length === 0 ? (
-            <div
-              className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
-            >
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
               No resignation records found.
             </div>
           ) : (
@@ -1221,6 +1210,38 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
             </div>
           )}
         </div>
+
+        <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <p className="text-sm font-semibold text-sibs-tertiary-5">
+            Showing {data.length > 0 ? 1 : 0} to {data.length} of{" "}
+            {totalRecords} resignation records
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <button
+              type="button"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
+            >
+              1
+            </button>
+
+            <button
+              type="button"
+              disabled
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -1231,76 +1252,125 @@ function ResignationRow({ item, onView }) {
   const StatusIcon = getStatusIcon(status);
   const employeeName = getFullName(item);
 
+  const filedBy =
+    item?.filedByName ||
+    item?.encodedByName ||
+    item?.createdByName ||
+    item?.supervisorName ||
+    "TL / OM";
+
+  const filedByRole =
+    item?.filedByRole ||
+    item?.encodedByRole ||
+    item?.supervisorRole ||
+    "Direct supervisor";
+
+  const reason = item?.reason || item?.remarks || "—";
+
+  const resignationDate =
+    item?.resignationDate || item?.resignation_date || getItemDate(item);
+
+  const lastWorkingDate = item?.lastWorkingDate || item?.last_working_date;
+
+  const resignationType = item?.resignationType || item?.type || "—";
+
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
         <div className="flex min-w-0 items-center gap-3">
           <ProfileAvatar item={item} />
 
           <div className="min-w-0">
-            <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+            <p
+              title={employeeName}
+              className="truncate text-sm font-extrabold text-[#101828]"
+            >
               {employeeName}
             </p>
 
-            <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+            <p
+              title={`${getEmployeeSibsId(item)} · ${getEmployeeDepartment(
+                item,
+              )}`}
+              className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
+            >
               {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
             </p>
           </div>
         </div>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
-          {item?.filedByName ||
-            item?.encodedByName ||
-            item?.createdByName ||
-            item?.supervisorName ||
-            "TL / OM"}
-        </p>
+      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+        <div className="min-w-0">
+          <p
+            title={filedBy}
+            className="truncate text-sm font-bold text-[#344054]"
+          >
+            {filedBy}
+          </p>
 
-        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-          Direct supervisor
-        </p>
+          <p
+            title={filedByRole}
+            className="mt-1 truncate text-xs font-semibold text-sibs-primary-1"
+          >
+            {filedByRole}
+          </p>
+        </div>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
-        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
-          {item?.resignationType || item?.type || "--"}
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
+        <span
+          title={resignationType}
+          className="inline-flex max-w-full rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]"
+        >
+          <span className="truncate">{resignationType}</span>
         </span>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
-        {formatDate(
-          item?.resignationDate || item?.resignation_date || getItemDate(item),
-        )}
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
+        <p
+          title={formatDate(resignationDate)}
+          className="truncate whitespace-nowrap text-sm font-semibold text-[#344054]"
+        >
+          {formatDate(resignationDate)}
+        </p>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
-        {formatDate(item?.lastWorkingDate || item?.last_working_date)}
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
+        <p
+          title={formatDate(lastWorkingDate)}
+          className="truncate whitespace-nowrap text-sm font-semibold text-[#344054]"
+        >
+          {formatDate(lastWorkingDate)}
+        </p>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
         <span
-          className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+          title={status}
+          className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
             status,
           )}`}
         >
-          <StatusIcon size={14} />
-          {status}
+          <StatusIcon size={14} className="shrink-0" />
+          <span className="truncate">{status}</span>
         </span>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-        <p className="max-w-[260px] truncate text-sm font-semibold text-[#344054]">
-          {item?.reason || item?.remarks || "--"}
+      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+        <p
+          title={reason}
+          className="truncate text-sm font-semibold text-[#344054]"
+        >
+          {reason}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right align-middle">
         <button
           type="button"
           onClick={onView}
-          className={`inline-flex items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]`}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
         >
           <Eye size={16} />
           View
