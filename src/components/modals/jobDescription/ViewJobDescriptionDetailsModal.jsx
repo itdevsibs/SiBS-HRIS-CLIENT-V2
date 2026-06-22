@@ -8,7 +8,7 @@ import LinkedERCases from "../../layout/tabs/JobDescriptionView/LinkedERCases";
 import { saveJobDescriptionRevisionComments } from "../../../lib/axios/jobDescription";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
 
-const detailTabs = ["Details", "Revision History", "Linked ER Cases"];
+const detailTabs = ["Details", "Revision History"];
 
 export default function ViewJobDescriptionDetailsModal({
   open,
@@ -239,9 +239,9 @@ export default function ViewJobDescriptionDetailsModal({
 
   if (!open || !item) return null;
 
-  const jdTitle = `${item.roleTitle || "Job Description"} - V. ${
+  const jdTitle = `${item.roleTitle || "Job Description"} - Version ${
     item.revisionNo || item.currentVersion || "1"
-  }`;
+  }.0`;
 
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
@@ -251,14 +251,15 @@ export default function ViewJobDescriptionDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center
+         bg-black/40 px-4 py-4"
       onClick={saving ? undefined : onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-[1440px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div

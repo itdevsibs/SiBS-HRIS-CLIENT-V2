@@ -462,7 +462,7 @@ const Details = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -717,9 +717,20 @@ const Details = ({
             />
           </div>
         </div>
-      </section>
 
-      <RevisionCommentList comments={getSectionComments("recordInformation")} />
+        {getSectionComments("recordInformation").length > 0 && (
+          <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-5">
+            <div className="space-y-3">
+              {getSectionComments("recordInformation").map((comment) => (
+                <InlineRevisionCommentBlock
+                  key={comment.id}
+                  comment={comment}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="space-y-7">
         <DetailArticleSection
