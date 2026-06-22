@@ -16,6 +16,7 @@ const JD_STATUS_OPTIONS = [
   { label: "All Status", value: "All Status" },
   { label: "Existing", value: "Existing" },
   { label: "For Revision", value: "For Revision" },
+  { label: "For Approval", value: "For Approval" },
   { label: "New Job Description", value: "New Job Description" },
   { label: "Archived", value: "Archived" },
 ];
@@ -35,57 +36,84 @@ function safeText(value) {
 }
 
 function normalizeJdStatus(status) {
-  if (status === "New JD") return "New Job Description";
-  return status || "New Job Description";
+  const value = String(status || "").trim();
+
+  if (value === "New JD") return "New Job Description";
+
+  return value || "New Job Description";
+}
+
+function getRealJdStatus(item = {}) {
+  return normalizeJdStatus(
+    item.jdStatus ||
+      item.jd_status ||
+      item.raw?.jdStatus ||
+      item.raw?.jd_status ||
+      item.status,
+  );
 }
 
 function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
     case "Existing":
     case "Active":
-      return "bg-emerald-50 text-emerald-700";
+      return "border border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "For Revision":
+      return "border border-amber-200 bg-amber-50 text-amber-700";
+
     case "For Approval":
-      return "bg-amber-50 text-amber-700";
+      return "border border-orange-200 bg-orange-50 text-orange-700";
 
     case "New Job Description":
     case "Draft":
-      return "bg-blue-50 text-blue-700";
+      return "border border-blue-200 bg-blue-50 text-blue-700";
 
     case "Returned for Revision":
-      return "bg-red-50 text-red-700";
+      return "border border-red-200 bg-red-50 text-red-700";
 
     case "Archived":
     case "Archived JD":
-      return "bg-gray-100 text-gray-700";
+      return "border border-gray-200 bg-gray-50 text-gray-700";
 
     default:
-      return "bg-gray-50 text-gray-600";
+      return "border border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
 function getJdStatusLabel(status) {
-  switch (normalizeJdStatus(status)) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  switch (normalizedStatus) {
     case "Existing":
-      return "Active";
+      return "Existing";
+
     case "For Revision":
+      return "For Revision";
+
+    case "For Approval":
       return "For Approval";
+
     case "New Job Description":
       return "New Job Description";
+
+    case "Archived":
+    case "Archived JD":
+      return "Archived";
+
     default:
-      return normalizeJdStatus(status);
+      return normalizedStatus || "—";
   }
 }
 
 function getJdViewStatus(item) {
-  const status = normalizeJdStatus(item?.jdStatus);
+  const status = getRealJdStatus(item);
 
   if (status === "Existing" || status === "Active") {
     return "Active JD";
   }
 
-  if (status === "For Revision" || status === "For Approval") {
+  if (status === "For Approval") {
     return "For Approval";
   }
 
@@ -97,13 +125,15 @@ function getJdViewStatus(item) {
 }
 
 function JdStatusBadge({ status }) {
+  const realStatus = normalizeJdStatus(status);
+
   return (
     <span
-      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-md px-3 py-2 text-[11px] font-bold leading-none ${getJdStatusClass(
-        status,
+      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold leading-none ${getJdStatusClass(
+        realStatus,
       )}`}
     >
-      {getJdStatusLabel(status)}
+      {getJdStatusLabel(realStatus)}
     </span>
   );
 }
@@ -150,6 +180,7 @@ function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
 
 function JobDescriptionMobileCard({ item, onView }) {
   const latestRevision = getLatestRevision(item);
+  const realStatus = getRealJdStatus(item);
 
   return (
     <button
@@ -172,7 +203,7 @@ function JobDescriptionMobileCard({ item, onView }) {
           </p>
         </div>
 
-        <JdStatusBadge status={item.jdStatus} />
+        <JdStatusBadge status={realStatus} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -354,7 +385,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
       .toLowerCase();
 
     return jobDescriptionList.filter((item) => {
-      const normalizedStatus = normalizeJdStatus(item.jdStatus);
+      const realStatus = getRealJdStatus(item);
       const jdViewStatus = getJdViewStatus(item);
 
       const matchesSearch =
@@ -366,13 +397,13 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
         safeText(item.owner).includes(keyword) ||
         safeText(item.linkedHiringRequirement).includes(keyword) ||
         safeText(getVersion(item)).includes(keyword) ||
-        safeText(getJdStatusLabel(item.jdStatus)).includes(keyword);
+        safeText(getJdStatusLabel(realStatus)).includes(keyword);
 
       const matchesJdView =
         jdViewFilter === "All JD" || jdViewStatus === jdViewFilter;
 
       const matchesJdStatus =
-        statusFilter === "All Status" || normalizedStatus === statusFilter;
+        statusFilter === "All Status" || realStatus === statusFilter;
 
       return matchesSearch && matchesJdView && matchesJdStatus;
     });
@@ -511,8 +542,8 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                   <th className="px-5 py-4">Job Title</th>
                   <th className="px-5 py-4">JD Code</th>
                   <th className="px-5 py-4">Department</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Version</th>
+                  <th className="px-5 py-4 text-center">Status</th>
+                  <th className="px-5 py-4 text-center">Version</th>
                   <th className="px-5 py-4">Last Approved</th>
                   <th className="px-5 py-4 text-center">Action</th>
                 </tr>
@@ -520,47 +551,51 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
               <tbody className="bg-white">
                 {filteredList.length > 0 ? (
-                  filteredList.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
-                    >
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.roleTitle || "—"}
-                      </td>
+                  filteredList.map((item) => {
+                    const realStatus = getRealJdStatus(item);
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.jdCode || "—"}
-                      </td>
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
+                      >
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.roleTitle || "—"}
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.department || "—"}
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.jdCode || "—"}
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <JdStatusBadge status={item.jdStatus} />
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.department || "—"}
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {getVersion(item)}
-                      </td>
+                        <td className="px-5 py-4 text-center">
+                          <JdStatusBadge status={realStatus} />
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {formatDate(getLastApproved(item))}
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054] text-center">
+                          {getVersion(item)}
+                        </td>
 
-                      <td className="px-5 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onView?.(item)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
-                        >
-                          <Eye size={15} />
-                          Preview
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {formatDate(getLastApproved(item))}
+                        </td>
+
+                        <td className="px-5 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => onView?.(item)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
+                          >
+                            <Eye size={15} />
+                            Preview
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td

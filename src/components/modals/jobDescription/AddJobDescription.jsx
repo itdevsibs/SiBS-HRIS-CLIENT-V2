@@ -21,13 +21,95 @@ function normalizeJdStatus(status) {
   return status || "New Job Description";
 }
 
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeArrayText(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item || "").trim())
+      .filter(Boolean)
+      .join(", ");
+  }
+
+  return normalizeText(value);
+}
+
 function normalizeJobDescriptionItem(item) {
+  if (!item) return null;
+
   return {
     ...item,
-    jdStatus: normalizeJdStatus(item?.jdStatus),
-    revisionHistory: Array.isArray(item?.revisionHistory)
+
+    id: item.id,
+    jdCode: item.jdCode || item.jd_code || "",
+
+    existingJdId:
+      item.existingJdId ||
+      item.existing_jd_id ||
+      item.linkedHiringRequirement ||
+      item.linked_hiring_requirement ||
+      "",
+
+    linkedHiringRequirement:
+      item.linkedHiringRequirement ||
+      item.linked_hiring_requirement ||
+      item.existingJdId ||
+      item.existing_jd_id ||
+      "",
+
+    documentTitle:
+      item.documentTitle ||
+      item.document_title ||
+      item.roleTitle ||
+      item.role_title ||
+      "",
+
+    roleTitle:
+      item.roleTitle ||
+      item.role_title ||
+      item.documentTitle ||
+      item.document_title ||
+      "",
+
+    accountId: item.accountId || item.account_id || "",
+    departmentId: item.departmentId || item.department_id || "",
+
+    jdStatus: normalizeJdStatus(item.jdStatus || item.jd_status || item.status),
+
+    ownerSibsId:
+      item.ownerSibsId ||
+      item.owner_sibs_id ||
+      item.requestedBySibsId ||
+      item.requested_by_sibs_id ||
+      "",
+
+    requestedBySibsId:
+      item.requestedBySibsId || item.requested_by_sibs_id || "",
+
+    dateRequested: item.dateRequested || item.date_requested || "",
+    effectiveDate: item.effectiveDate || item.effective_date || "",
+
+    description: item.description || "",
+    responsibilities: item.responsibilities || "",
+    qualifications: item.qualifications || "",
+
+    personalityType:
+      item.personalityType || item.personality_type || item.remarks || "",
+
+    reportsTo: item.reportsTo || item.reports_to || "",
+    supervisory: item.supervisory || "No",
+
+    remarks: item.remarks || "",
+
+    competencies: Array.isArray(item.competencies) ? item.competencies : [],
+
+    revisionHistory: Array.isArray(item.revisionHistory)
       ? item.revisionHistory
-      : [],
+      : Array.isArray(item.revisions)
+        ? item.revisions
+        : [],
   };
 }
 
@@ -74,6 +156,47 @@ function formatLoggedInOwner(user) {
   };
 }
 
+function normalizeCompetencyItem(item = {}) {
+  const title = String(
+    item.title ||
+      item.competency ||
+      item.competencyTitle ||
+      item.competencyName ||
+      item.name ||
+      item.label ||
+      item.competencyForThisPosition ||
+      item.description ||
+      "",
+  ).trim();
+
+  const description = String(
+    item.details ||
+      item.competencyDescription ||
+      item.definition ||
+      item.competencyDetails ||
+      item.longDescription ||
+      item.description ||
+      "",
+  ).trim();
+
+  const level = String(
+    item.level ||
+      item.proficiencyLevel ||
+      item.selectedLevel ||
+      item.rating ||
+      "",
+  ).trim();
+
+  return {
+    title,
+    description,
+    level,
+    average: item.average,
+    proficient: item.proficient,
+    excellent: item.excellent,
+  };
+}
+
 export default function AddJobDescription({
   open,
   onClose,
@@ -106,7 +229,10 @@ export default function AddJobDescription({
       resetJobDescriptionForm({
         ownerSibsId: loggedInOwner.ownerSibsId,
         owner: loggedInOwner.owner,
+        requestedBySibsId: loggedInOwner.ownerSibsId,
+        requestedBy: loggedInOwner.owner,
         dateRequested: getTodayDate(),
+        effectiveDate: getTodayDate(),
       }),
   });
 
@@ -116,7 +242,10 @@ export default function AddJobDescription({
     resetJobDescriptionForm({
       ownerSibsId: loggedInOwner.ownerSibsId,
       owner: loggedInOwner.owner,
+      requestedBySibsId: loggedInOwner.ownerSibsId,
+      requestedBy: loggedInOwner.owner,
       dateRequested: getTodayDate(),
+      effectiveDate: getTodayDate(),
     });
   }, [open, loggedInOwner.ownerSibsId, loggedInOwner.owner]);
 
@@ -128,11 +257,48 @@ export default function AddJobDescription({
   async function handleCreateJobDescription(e) {
     e.preventDefault();
 
-    if (!form.roleTitle.trim()) {
+    const documentTitle = normalizeText(form.documentTitle || form.roleTitle);
+
+    const existingJdId = normalizeText(
+      form.existingJdId || form.linkedHiringRequirement,
+    );
+
+    const requestedBySibsId = normalizeText(
+      form.requestedBySibsId || form.ownerSibsId || loggedInOwner.ownerSibsId,
+    );
+
+    const description = normalizeText(form.description);
+
+    const responsibilities = normalizeText(
+      form.responsibilities ||
+        form.dutiesResponsibilities ||
+        form.duties ||
+        form.qualifications ||
+        "",
+    );
+
+    const qualifications = normalizeText(
+      form.qualificationDetails ||
+        form.characteristics ||
+        form.qualificationCharacteristics ||
+        form.remarks ||
+        form.qualifications ||
+        "",
+    );
+
+    const personalityType = normalizeText(
+      form.personalityType ||
+        form.personality_type ||
+        normalizeArrayText(form.personalityTypes),
+    );
+
+    const remarks = normalizeText(form.remarks);
+
+    if (!documentTitle) {
       onStatus?.({
         type: "error",
-        title: "Missing Role Title",
-        message: "Role title is required.",
+        title: "Missing Document Title",
+        message: "Document title / role title is required.",
       });
       return;
     }
@@ -155,16 +321,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!form.ownerSibsId) {
-      onStatus?.({
-        type: "error",
-        title: "Missing Owner",
-        message: "Owner is required.",
-      });
-      return;
-    }
-
-    if (!form.requestedBySibsId) {
+    if (!requestedBySibsId) {
       onStatus?.({
         type: "error",
         title: "Missing Requested By",
@@ -173,7 +330,16 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!form.description.trim()) {
+    if (!form.effectiveDate) {
+      onStatus?.({
+        type: "error",
+        title: "Missing Effective Date",
+        message: "Effective date is required.",
+      });
+      return;
+    }
+
+    if (!description) {
       onStatus?.({
         type: "error",
         title: "Missing Job Description",
@@ -182,7 +348,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!form.responsibilities.trim()) {
+    if (!responsibilities) {
       onStatus?.({
         type: "error",
         title: "Missing Responsibilities",
@@ -191,7 +357,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!form.qualifications.trim()) {
+    if (!qualifications) {
       onStatus?.({
         type: "error",
         title: "Missing Qualifications",
@@ -200,31 +366,47 @@ export default function AddJobDescription({
       return;
     }
 
-    const cleanCompetencies = competencies
-      .filter((item) => String(item.title || "").trim())
-      .map((item) => ({
-        title: String(item.title || "").trim(),
-        description: String(item.description || "").trim(),
-        level: String(item.level || "").trim(),
-      }));
+    const cleanCompetencies = Array.isArray(competencies)
+      ? competencies
+          .map(normalizeCompetencyItem)
+          .filter((item) => item.title || item.description)
+      : [];
 
     const payload = {
-      linkedHiringRequirement: form.linkedHiringRequirement,
-      roleTitle: form.roleTitle.trim(),
+      existingJdId: existingJdId || null,
+      linkedHiringRequirement: existingJdId || null,
+
+      documentTitle,
+      roleTitle: documentTitle,
+
       accountId: form.accountId,
       departmentId: form.departmentId,
-      jdStatus: form.linkedHiringRequirement
-        ? normalizeJdStatus(form.jdStatus)
+
+      jdStatus: existingJdId
+        ? normalizeJdStatus(form.jdStatus || "Existing")
         : "New Job Description",
-      ownerSibsId: form.ownerSibsId,
-      requestedBySibsId: form.requestedBySibsId,
+
+      requestedBySibsId,
       dateRequested: form.dateRequested || getTodayDate(),
-      description: form.description.trim(),
-      responsibilities: form.responsibilities.trim(),
-      qualifications: form.qualifications.trim(),
-      remarks: form.remarks.trim(),
+      effectiveDate: form.effectiveDate || getTodayDate(),
+
+      description,
+      responsibilities,
+      qualifications,
+
+      personalityType,
+
+      reportsTo: normalizeText(form.reportsTo || form.reports_to),
+      supervisory: normalizeText(form.supervisory || "No") || "No",
+
+      remarks,
+
       competencies: cleanCompetencies,
     };
+
+    console.log("RAW COMPETENCIES:", competencies);
+    console.log("CLEAN COMPETENCIES:", cleanCompetencies);
+    console.log("JD PAYLOAD:", payload);
 
     const result = await createJobDescription(payload);
 
@@ -248,6 +430,8 @@ export default function AddJobDescription({
       title: "Job Description Saved",
       message: result.message || "Job description created successfully.",
     });
+
+    onClose?.();
   }
 
   if (!open) return null;
