@@ -1359,19 +1359,6 @@ export default function SourcingAnalyticsPage() {
           behavior,
         });
       }
-
-      if (typeof window !== "undefined") {
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior,
-        });
-      }
-
-      if (typeof document !== "undefined") {
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }
     });
   }
 
@@ -1693,12 +1680,14 @@ export default function SourcingAnalyticsPage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main
         ref={mainRef}
-        className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

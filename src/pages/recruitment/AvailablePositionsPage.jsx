@@ -18,10 +18,6 @@ import {
   Save,
   RotateCcw,
   BriefcaseBusiness,
-  CheckCircle2,
-  XCircle,
-  Archive,
-  Clock3,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -38,6 +34,8 @@ import {
 const POSITIONS_PER_PAGE = 8;
 
 const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Both Davao and Tagum"];
+
+const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];
 
 const emptyForm = {
   positionTitle: "",
@@ -149,72 +147,6 @@ function getStatusTone(status) {
   }
 
   return "border-blue-200 bg-blue-50 text-sibs-primary-1";
-}
-
-function getStatusIcon(status) {
-  const normalizedStatus = String(status || "").toLowerCase();
-
-  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
-    return CheckCircle2;
-  }
-
-  if (normalizedStatus.includes("inactive")) {
-    return XCircle;
-  }
-
-  if (normalizedStatus.includes("draft")) {
-    return Clock3;
-  }
-
-  if (normalizedStatus.includes("archive")) {
-    return Archive;
-  }
-
-  return BriefcaseBusiness;
-}
-
-function getStatusValueClass(status) {
-  const normalizedStatus = String(status || "").toLowerCase();
-
-  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
-    return "text-emerald-600";
-  }
-
-  if (normalizedStatus.includes("inactive")) {
-    return "text-red-600";
-  }
-
-  if (normalizedStatus.includes("draft")) {
-    return "text-amber-500";
-  }
-
-  if (normalizedStatus.includes("archive")) {
-    return "text-gray-600";
-  }
-
-  return "text-sibs-primary-1";
-}
-
-function getStatusIconClass(status) {
-  const normalizedStatus = String(status || "").toLowerCase();
-
-  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
-    return "bg-emerald-50 text-emerald-600";
-  }
-
-  if (normalizedStatus.includes("inactive")) {
-    return "bg-red-50 text-red-600";
-  }
-
-  if (normalizedStatus.includes("draft")) {
-    return "bg-amber-50 text-amber-600";
-  }
-
-  if (normalizedStatus.includes("archive")) {
-    return "bg-gray-50 text-gray-600";
-  }
-
-  return "bg-[#F2F6FA] text-sibs-primary-1";
 }
 
 function StatusBadge({ status }) {
@@ -385,53 +317,6 @@ function DropdownField({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  icon: Icon,
-  description,
-  valueClassName,
-  iconClassName,
-  delay = 0,
-}) {
-  return (
-    <div
-      className="sibs-page-card-in group rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold ${
-              valueClassName || "text-sibs-primary-1"
-            }`}
-          >
-            {value ?? 0}
-          </p>
-
-          {description && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-              {description}
-            </p>
-          )}
-        </div>
-
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-200 group-hover:scale-105 ${
-            iconClassName || "bg-[#F2F6FA] text-sibs-primary-1"
-          }`}
-        >
-          <Icon size={22} />
-        </div>
-      </div>
     </div>
   );
 }
@@ -908,16 +793,21 @@ export default function AvailablePositionsPage() {
       : [];
   }, [meta.statusOptions]);
 
-  const activeStatus = useMemo(() => getStatusOption(meta, "active"), [meta]);
+  const activeStatus = useMemo(() => {
+    return getStatusOption(meta, "active") || "Active";
+  }, [meta]);
 
-  const inactiveStatus = useMemo(
-    () => getStatusOption(meta, "inactive"),
-    [meta],
-  );
+  const inactiveStatus = useMemo(() => {
+    return getStatusOption(meta, "inactive") || "Inactive";
+  }, [meta]);
 
-  const statusOptions = useMemo(() => {
-    return ["All", ...databaseStatusOptions.filter((item) => item !== "All")];
-  }, [databaseStatusOptions]);
+  const statusFilterOptions = useMemo(() => {
+    return STATUS_FILTER_OPTIONS.map((status) => ({
+      id: status,
+      value: status,
+      label: status === "All" ? "All Statuses" : status,
+    }));
+  }, []);
 
   const departmentOptions = useMemo(() => {
     return Array.isArray(meta.departments) ? meta.departments : [];
@@ -934,14 +824,6 @@ export default function AvailablePositionsPage() {
       (account) => String(account.departmentId) === String(departmentFilter),
     );
   }, [accountOptions, departmentFilter]);
-
-  const statusFilterOptions = useMemo(() => {
-    return statusOptions.map((status) => ({
-      id: status,
-      value: status,
-      label: status === "All" ? "All Statuses" : status,
-    }));
-  }, [statusOptions]);
 
   const departmentFilterOptions = useMemo(() => {
     return [
@@ -1379,6 +1261,7 @@ export default function AvailablePositionsPage() {
 
   const filteredPositions = useMemo(() => {
     const keyword = search.trim().toLowerCase();
+    const normalizedStatusFilter = String(statusFilter || "").toLowerCase();
 
     return positionList.filter((position) => {
       const text = [
@@ -1398,9 +1281,11 @@ export default function AvailablePositionsPage() {
         .join(" ")
         .toLowerCase();
 
+      const normalizedPositionStatus = String(position.status || "").toLowerCase();
+
       const matchesSearch = !keyword || text.includes(keyword);
       const matchesStatus =
-        statusFilter === "All" || position.status === statusFilter;
+        statusFilter === "All" || normalizedPositionStatus === normalizedStatusFilter;
       const matchesDepartment =
         departmentFilter === "All" ||
         String(position.departmentId) === String(departmentFilter);
@@ -1491,16 +1376,6 @@ export default function AvailablePositionsPage() {
     }, 0);
   }
 
-  const statusCounts = useMemo(() => {
-    return databaseStatusOptions.map((status) => ({
-      status,
-      count: positionList.filter((item) => item.status === status).length,
-      Icon: getStatusIcon(status),
-      valueClassName: getStatusValueClass(status),
-      iconClassName: getStatusIconClass(status),
-    }));
-  }, [databaseStatusOptions, positionList]);
-
   const hasActiveFilters =
     search.trim() ||
     statusFilter !== "All" ||
@@ -1537,19 +1412,6 @@ export default function AvailablePositionsPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={refreshPositions}
-                disabled={isLoading || isSaving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RotateCcw
-                  size={17}
-                  className={isLoading ? "animate-spin" : ""}
-                />
-                Refresh
-              </button>
-
-              <button
-                type="button"
                 onClick={openAddModal}
                 disabled={
                   isSaving ||
@@ -1582,44 +1444,6 @@ export default function AvailablePositionsPage() {
               No available accounts found.
             </section>
           )}
-
-          <section className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-bold text-[#101828]">
-                Position Summary
-              </h2>
-
-              {isLoading && (
-                <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                  <Loader2 size={13} className="animate-spin" />
-                  Loading database data...
-                </span>
-              )}
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              <SummaryCard
-                title="Total Positions"
-                value={positionList.length}
-                icon={BriefcaseBusiness}
-                description="All database records"
-                delay={0}
-              />
-
-              {statusCounts.map((item, index) => (
-                <SummaryCard
-                  key={item.status}
-                  title={item.status}
-                  value={item.count}
-                  icon={item.Icon}
-                  description="Database status"
-                  valueClassName={item.valueClassName}
-                  iconClassName={item.iconClassName}
-                  delay={(index + 1) * 60}
-                />
-              ))}
-            </div>
-          </section>
 
           <section className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
             <div className="relative z-[90] border-b border-[#E6ECF2] p-4 sm:p-5">

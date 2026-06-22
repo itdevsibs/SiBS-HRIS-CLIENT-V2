@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
+  Eye,
+  ExternalLink,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -17,17 +19,19 @@ const PREVIOUS_EMPLOYMENT_REQUIREMENTS = [
   "Employment Certificate",
 ];
 
+const MAJOR_REQUIREMENTS = [
+  "Transcript of Records and/or Diploma",
+  "Medical Records",
+  "NBI Clearance",
+  "Birth Certificate",
+  "Valid ID",
+];
+
 const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
   {
     id: "major",
     title: "Major Requirements",
-    requirements: [
-      "Transcript of Records and/or Diploma",
-      "Medical Records",
-      "NBI Clearance",
-      "Birth Certificate",
-      "Valid ID",
-    ],
+    requirements: MAJOR_REQUIREMENTS,
   },
   {
     id: "other",
@@ -49,6 +53,10 @@ const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
   },
 ];
 
+const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
+  (group) => group.requirements,
+);
+
 const ACCEPTED_FILE_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
 
@@ -60,28 +68,64 @@ function normalizeRequirement(value) {
   return cleanText(value).toLowerCase().replace(/\s+/g, " ");
 }
 
-function isPreviousEmploymentRequirement(requirement) {
-  const requirementKey = normalizeRequirement(requirement);
+function normalizeRequirementSlug(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
 
-  return PREVIOUS_EMPLOYMENT_REQUIREMENTS.some(
-    (item) => normalizeRequirement(item) === requirementKey,
+function getOfficialRequirementMatch(value = "") {
+  const key = normalizeRequirementSlug(value);
+
+  if (!key) return "";
+
+  return (
+    ALL_REQUIREMENTS.find((requirement) => {
+      const requirementKey = normalizeRequirementSlug(requirement);
+
+      return (
+        key === requirementKey ||
+        key.startsWith(`${requirementKey}_`) ||
+        key.includes(requirementKey)
+      );
+    }) || ""
   );
 }
 
-function getActiveRequirementGroups(previousEmploymentEnabled) {
-  return PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
-    if (group.id !== "previous-employment") return group;
+function getOfficialRequirementFromFile(file = {}) {
+  const directRequirement =
+    file.requirement || file.label || file.category || file.title || "";
 
-    return {
-      ...group,
-      requirements: previousEmploymentEnabled ? group.requirements : [],
-    };
-  });
+  const directMatch = getOfficialRequirementMatch(directRequirement);
+
+  if (directMatch) return directMatch;
+
+  const filename =
+    file.savedFileName ||
+    file.saved_file_name ||
+    file.filename ||
+    file.storedFileName ||
+    file.stored_file_name ||
+    file.fileName ||
+    file.name ||
+    file.originalName ||
+    file.originalname ||
+    "";
+
+  return getOfficialRequirementMatch(filename);
 }
 
-function getActiveRequirements(previousEmploymentEnabled) {
-  return getActiveRequirementGroups(previousEmploymentEnabled).flatMap(
-    (group) => group.requirements,
+function isOfficialNhoFile(file = {}) {
+  return Boolean(getOfficialRequirementFromFile(file));
+}
+
+function isMajorRequirement(requirement = "") {
+  const key = normalizeRequirement(requirement);
+
+  return MAJOR_REQUIREMENTS.some(
+    (majorRequirement) => normalizeRequirement(majorRequirement) === key,
   );
 }
 
@@ -99,50 +143,29 @@ function formatFileSize(size = 0) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
-function getFileIcon(fileName = "") {
-  const value = String(fileName || "").toLowerCase();
+function formatUploadedDate(value = "") {
+  if (!value) return "—";
 
-  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) {
-    return FileImage;
-  }
+  const date = new Date(value);
 
-  if (/\.(xls|xlsx|csv)$/i.test(value)) {
-    return FileSpreadsheet;
-  }
+  if (Number.isNaN(date.getTime())) return String(value);
 
-  return FileText;
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-
-    reader.readAsDataURL(file);
+  return date.toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
-function normalizeUploadedFile(file = {}) {
-  return {
-    id:
-      file.id ||
-      `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    requirement: file.requirement || "",
-    fileName: file.fileName || file.name || "",
-    savedFileName: file.savedFileName || file.filename || "",
-    filename: file.filename || file.savedFileName || "",
-    fileSize: file.fileSize || file.size || 0,
-    fileType: file.fileType || file.type || "",
-    fileUrl: file.fileUrl || file.url || file.dataUrl || "",
-    filePath: file.filePath || file.storedPath || file.path || "",
-    storedPath: file.storedPath || file.filePath || file.path || "",
-    uploadedAt: file.uploadedAt || new Date().toISOString(),
-    uploadedBy: file.uploadedBy || "",
-    applicantFolderName: file.applicantFolderName || "",
-    rawFile: file.rawFile || null,
-  };
+function getFileIcon(fileName = "") {
+  const value = String(fileName || "").toLowerCase();
+
+  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
+  if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
+
+  return FileText;
 }
 
 function getApiErrorMessage(error, fallback = "Request failed.") {
@@ -177,33 +200,280 @@ function getResolvedFileUrl(fileUrl = "") {
   return value;
 }
 
-function ToggleSwitch({ checked, disabled = false, onChange }) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onChange?.(!checked)}
-      className={`inline-flex h-8 items-center gap-2 rounded-full border px-2 text-xs font-extrabold transition ${
-        checked
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-slate-200 bg-slate-50 text-slate-600"
-      } disabled:cursor-not-allowed disabled:opacity-60`}
-    >
-      <span
-        className={`relative h-5 w-9 rounded-full transition ${
-          checked ? "bg-emerald-500" : "bg-slate-300"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${
-            checked ? "left-4" : "left-0.5"
-          }`}
-        />
-      </span>
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
-      {checked ? "Enabled" : "Disabled"}
-    </button>
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function isRawBrowserFile(file) {
+  return typeof File !== "undefined" && file instanceof File;
+}
+
+function normalizeUploadedFile(file = {}) {
+  const savedFileName =
+    file.savedFileName ||
+    file.saved_file_name ||
+    file.filename ||
+    file.storedFileName ||
+    file.stored_file_name ||
+    "";
+
+  const fileName =
+    file.fileName ||
+    file.name ||
+    file.originalName ||
+    file.originalname ||
+    savedFileName ||
+    "";
+
+  const fileUrl =
+    file.fileUrl ||
+    file.url ||
+    file.dataUrl ||
+    file.previewUrl ||
+    file.downloadUrl ||
+    "";
+
+  const filePath =
+    file.filePath || file.storedPath || file.stored_path || file.path || "";
+
+  const officialRequirement = getOfficialRequirementFromFile({
+    ...file,
+    savedFileName,
+    fileName,
+  });
+
+  return {
+    ...file,
+    id:
+      file.id ||
+      file.fileId ||
+      file.file_id ||
+      `${officialRequirement || "FILE"}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`,
+    requirement:
+      officialRequirement ||
+      file.requirement ||
+      file.label ||
+      file.category ||
+      "",
+    fileName,
+    savedFileName,
+    filename: file.filename || savedFileName,
+    fileSize: file.fileSize || file.size || file.file_size || 0,
+    fileType:
+      file.fileType ||
+      file.type ||
+      file.mimetype ||
+      file.mimeType ||
+      file.file_type ||
+      "application/octet-stream",
+    fileUrl,
+    filePath,
+    storedPath: file.storedPath || file.stored_path || filePath,
+    uploadedAt:
+      file.uploadedAt ||
+      file.uploaded_at ||
+      file.createdAt ||
+      file.created_at ||
+      file.updatedAt ||
+      file.updated_at ||
+      "",
+    uploadedBy:
+      file.uploadedBy ||
+      file.uploaded_by ||
+      file.createdBy ||
+      file.created_by ||
+      file.updatedBy ||
+      file.updated_by ||
+      "",
+    applicantFolderName:
+      file.applicantFolderName ||
+      file.applicant_folder_name ||
+      file.folderName ||
+      file.folder_name ||
+      "",
+    rawFile: file.rawFile || null,
+  };
+}
+
+function normalizeOfficialUploadedFile(file = {}) {
+  if (!isOfficialNhoFile(file)) return null;
+
+  return normalizeUploadedFile(file);
+}
+
+function filterOfficialUploadedFiles(files = []) {
+  return files
+    .filter(Boolean)
+    .map(normalizeOfficialUploadedFile)
+    .filter(Boolean);
+}
+
+function getFilesFromApiPayload(payload) {
+  const responsePayload = payload?.data ?? payload;
+
+  if (Array.isArray(responsePayload)) return responsePayload;
+  if (Array.isArray(responsePayload?.files)) return responsePayload.files;
+  if (Array.isArray(responsePayload?.data?.files)) {
+    return responsePayload.data.files;
+  }
+  if (Array.isArray(responsePayload?.candidate?.nhoFiles)) {
+    return responsePayload.candidate.nhoFiles;
+  }
+  if (Array.isArray(responsePayload?.candidate?.nho_files)) {
+    return responsePayload.candidate.nho_files;
+  }
+  if (Array.isArray(responsePayload?.data?.nhoFiles)) {
+    return responsePayload.data.nhoFiles;
+  }
+  if (Array.isArray(responsePayload?.data?.nho_files)) {
+    return responsePayload.data.nho_files;
+  }
+  if (Array.isArray(responsePayload?.data?.candidate?.nhoFiles)) {
+    return responsePayload.data.candidate.nhoFiles;
+  }
+  if (Array.isArray(responsePayload?.data?.candidate?.nho_files)) {
+    return responsePayload.data.candidate.nho_files;
+  }
+
+  return [];
+}
+
+function getCandidateFromApiPayload(payload) {
+  const responsePayload = payload?.data ?? payload;
+
+  return (
+    responsePayload?.candidate ||
+    responsePayload?.data?.candidate ||
+    responsePayload?.data ||
+    null
   );
+}
+
+function calculateProgress(files = [], requirements = ALL_REQUIREMENTS) {
+  const uploadedRequirementMap = new Map();
+
+  filterOfficialUploadedFiles(files).forEach((file) => {
+    const key = normalizeRequirement(file?.requirement);
+
+    if (key) {
+      uploadedRequirementMap.set(key, file);
+    }
+  });
+
+  const completed = requirements.filter((requirement) =>
+    uploadedRequirementMap.has(normalizeRequirement(requirement)),
+  ).length;
+
+  const total = requirements.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  return {
+    completed,
+    total,
+    percent,
+    isComplete: total > 0 && completed >= total,
+  };
+}
+
+function calculateMajorProgress(files = []) {
+  return calculateProgress(files, MAJOR_REQUIREMENTS);
+}
+
+function getMajorProgressFromApiPayload(payload, fallbackFiles = []) {
+  const responsePayload = payload?.data ?? payload;
+
+  return (
+    responsePayload?.majorProgress ||
+    responsePayload?.data?.majorProgress ||
+    responsePayload?.candidate?.majorNhoUploadProgress ||
+    responsePayload?.candidate?.major_nho_upload_progress ||
+    responsePayload?.data?.candidate?.majorNhoUploadProgress ||
+    responsePayload?.data?.candidate?.major_nho_upload_progress ||
+    calculateMajorProgress(fallbackFiles)
+  );
+}
+
+function getRoutedStageFromApiPayload(payload) {
+  const responsePayload = payload?.data ?? payload;
+
+  return (
+    responsePayload?.routedStage ||
+    responsePayload?.data?.routedStage ||
+    responsePayload?.candidate?.currentStage ||
+    responsePayload?.candidate?.current_stage ||
+    responsePayload?.candidate?.currentPipelineStage ||
+    responsePayload?.candidate?.current_pipeline_stage ||
+    responsePayload?.data?.candidate?.currentStage ||
+    responsePayload?.data?.candidate?.current_stage ||
+    responsePayload?.data?.candidate?.currentPipelineStage ||
+    responsePayload?.data?.candidate?.current_pipeline_stage ||
+    responsePayload?.data?.currentStage ||
+    responsePayload?.data?.current_stage ||
+    ""
+  );
+}
+
+function dedupeFiles(files = []) {
+  const map = new Map();
+
+  filterOfficialUploadedFiles(files).forEach((normalizedFile) => {
+    const key = normalizeRequirement(normalizedFile.requirement);
+
+    if (!key) return;
+
+    const currentFile = map.get(key);
+
+    if (!currentFile) {
+      map.set(key, normalizedFile);
+      return;
+    }
+
+    const currentDate = new Date(currentFile.uploadedAt || 0).getTime();
+    const nextDate = new Date(normalizedFile.uploadedAt || 0).getTime();
+
+    if (!Number.isFinite(currentDate) || nextDate >= currentDate) {
+      map.set(key, {
+        ...currentFile,
+        ...normalizedFile,
+      });
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function getRequirementSortIndex(requirement = "") {
+  const requirementKey = normalizeRequirement(requirement);
+
+  const index = ALL_REQUIREMENTS.findIndex(
+    (item) => normalizeRequirement(item) === requirementKey,
+  );
+
+  return index === -1 ? 9999 : index;
+}
+
+function sortUploadedFiles(files = []) {
+  return filterOfficialUploadedFiles(files)
+    .filter((file) => file?.fileName || file?.fileUrl)
+    .slice()
+    .sort((a, b) => {
+      const requirementSort =
+        getRequirementSortIndex(a.requirement) -
+        getRequirementSortIndex(b.requirement);
+
+      if (requirementSort !== 0) return requirementSort;
+
+      return cleanText(a.fileName).localeCompare(cleanText(b.fileName));
+    });
 }
 
 function RequirementCard({
@@ -216,8 +486,9 @@ function RequirementCard({
 }) {
   const inputRef = useRef(null);
 
-  const hasFile = Boolean(uploadedFile?.fileName);
+  const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
   const FileIcon = getFileIcon(uploadedFile?.fileName);
+  const major = isMajorRequirement(requirement);
 
   async function handleFileChange(event) {
     const file = event.target.files?.[0];
@@ -227,7 +498,7 @@ function RequirementCard({
     try {
       const fileUrl = await readFileAsDataUrl(file);
 
-      onUpload(requirement, {
+      const nextFile = normalizeUploadedFile({
         id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         requirement,
         fileName: file.name,
@@ -241,6 +512,8 @@ function RequirementCard({
         uploadedAt: new Date().toISOString(),
         rawFile: file,
       });
+
+      onUpload(requirement, nextFile);
     } finally {
       event.target.value = "";
     }
@@ -272,14 +545,22 @@ function RequirementCard({
         </button>
 
         <div className="min-w-0 flex-1">
-          <p
-            title={requirement}
-            className="truncate text-sm font-extrabold text-[#101828]"
-          >
-            {requirement}
-          </p>
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <p
+              title={requirement}
+              className="truncate text-sm font-extrabold text-[#101828]"
+            >
+              {requirement}
+            </p>
 
-          {hasFile && (
+            {major && (
+              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Major
+              </span>
+            )}
+          </div>
+
+          {hasFile ? (
             <button
               type="button"
               disabled={disabled}
@@ -290,7 +571,7 @@ function RequirementCard({
 
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-extrabold text-emerald-800">
-                  {uploadedFile.fileName}
+                  {uploadedFile.fileName || "Uploaded file"}
                 </span>
 
                 <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
@@ -298,6 +579,10 @@ function RequirementCard({
                 </span>
               </span>
             </button>
+          ) : (
+            <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+              No uploaded file yet.
+            </div>
           )}
         </div>
       </div>
@@ -339,6 +624,7 @@ function RequirementCard({
         ref={inputRef}
         type="file"
         accept={ACCEPTED_FILE_TYPES}
+        disabled={disabled}
         onChange={handleFileChange}
         className="hidden"
       />
@@ -368,9 +654,14 @@ function FilePreviewPanel({ file }) {
   const FileIcon = getFileIcon(file.fileName);
   const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
 
+  const isImageByType = String(file.fileType || "").startsWith("image/");
+  const isImageByName = /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(
+    file.fileName || "",
+  );
+
   const isImage =
     resolvedFileUrl &&
-    String(file.fileType || "").startsWith("image/") &&
+    (isImageByType || isImageByName) &&
     !String(resolvedFileUrl).startsWith("blob:");
 
   return (
@@ -389,7 +680,7 @@ function FilePreviewPanel({ file }) {
             title={file.fileName}
             className="mt-1 break-words text-base font-extrabold text-[#101828]"
           >
-            {file.fileName}
+            {file.fileName || "Uploaded file"}
           </h3>
 
           <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
@@ -415,17 +706,21 @@ function FilePreviewPanel({ file }) {
           </p>
 
           <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {file.uploadedAt
-              ? new Date(file.uploadedAt).toLocaleString("en-PH", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
-              : "—"}
+            {formatUploadedDate(file.uploadedAt)}
           </p>
         </div>
+
+        {file.uploadedBy && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+              Uploaded By
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+              {file.uploadedBy}
+            </p>
+          </div>
+        )}
 
         {file.applicantFolderName && (
           <div>
@@ -464,6 +759,139 @@ function FilePreviewPanel({ file }) {
   );
 }
 
+function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove }) {
+  const uploadedFiles = useMemo(() => sortUploadedFiles(files), [files]);
+
+  return (
+    <div className="border-t border-[#E6ECF2] pt-5">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h4 className="text-base font-extrabold text-sibs-primary-1">
+            Uploaded Files List
+          </h4>
+
+          <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+            Complete list of official NHO files uploaded under the
+            pre-employment requirements.
+          </p>
+        </div>
+
+        <span className="inline-flex w-fit rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+          {uploadedFiles.length} upload{uploadedFiles.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      {uploadedFiles.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+            <FileText size={23} />
+          </div>
+
+          <p className="mt-3 text-sm font-extrabold text-[#101828]">
+            No uploaded files yet
+          </p>
+
+          <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+            Official uploaded files will appear here after selecting a
+            requirement file.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {uploadedFiles.map((file) => {
+            const FileIcon = getFileIcon(file.fileName);
+            const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
+
+            return (
+              <div
+                key={`${file.requirement}-${file.id}-${file.fileName}`}
+                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 transition hover:border-sibs-primary-1/30 hover:bg-white"
+              >
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => onSelect?.(file)}
+                    className="flex min-w-0 flex-1 items-start gap-3 text-left disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
+                      <FileIcon size={21} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p
+                          title={file.requirement}
+                          className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
+                        >
+                          {file.requirement || "Uploaded Requirement"}
+                        </p>
+
+                        {isMajorRequirement(file.requirement) && (
+                          <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-primary-1">
+                            Major
+                          </span>
+                        )}
+                      </div>
+
+                      <p
+                        title={file.fileName}
+                        className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                      >
+                        {file.fileName || "Uploaded file"}
+                      </p>
+
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-tertiary-5">
+                        <span>{formatFileSize(file.fileSize)}</span>
+                        <span>•</span>
+                        <span>{formatUploadedDate(file.uploadedAt)}</span>
+                      </div>
+                    </div>
+                  </button>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onSelect?.(file)}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF] disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <Eye size={15} />
+                      View
+                    </button>
+
+                    {resolvedFileUrl && (
+                      <a
+                        href={resolvedFileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
+                      >
+                        <ExternalLink size={15} />
+                        Open
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => onRemove?.(file.requirement)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      title="Remove file"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function NhoUploadModal({
   open,
   onClose,
@@ -472,68 +900,37 @@ export default function NhoUploadModal({
   candidateEmail = "",
   initialFiles = [],
   currentFile = null,
-  previousEmploymentEnabled: initialPreviousEmploymentEnabled = false,
+  previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
   onSave,
 }) {
+  const onSaveRef = useRef(onSave);
+  const initialFilesRef = useRef(initialFiles);
+  const currentFileRef = useRef(currentFile);
+  const latestRequestRef = useRef(0);
+
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [previousEmploymentEnabled, setPreviousEmploymentEnabled] =
-    useState(false);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    if (!open) return;
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
-    const normalizedFiles = Array.isArray(initialFiles)
-      ? initialFiles.map(normalizeUploadedFile)
-      : [];
+  useEffect(() => {
+    initialFilesRef.current = initialFiles;
+  }, [initialFiles]);
 
-    const hasPreviousEmploymentFile = normalizedFiles.some((file) =>
-      isPreviousEmploymentRequirement(file.requirement),
-    );
-
-    const nextPreviousEmploymentEnabled =
-      Boolean(initialPreviousEmploymentEnabled) || hasPreviousEmploymentFile;
-
-    setPreviousEmploymentEnabled(nextPreviousEmploymentEnabled);
-
-    const nextFiles = nextPreviousEmploymentEnabled
-      ? normalizedFiles
-      : normalizedFiles.filter(
-          (file) => !isPreviousEmploymentRequirement(file.requirement),
-        );
-
-    setFiles(nextFiles);
-
-    const normalizedCurrentFile = currentFile
-      ? normalizeUploadedFile(currentFile)
-      : nextFiles[0] || null;
-
-    setSelectedFile(
-      normalizedCurrentFile &&
-        !nextPreviousEmploymentEnabled &&
-        isPreviousEmploymentRequirement(normalizedCurrentFile.requirement)
-        ? nextFiles[0] || null
-        : normalizedCurrentFile,
-    );
-
-    setSaveError("");
-    setIsSaving(false);
-  }, [open, initialFiles, currentFile, initialPreviousEmploymentEnabled]);
-
-  const activeRequirementGroups = useMemo(() => {
-    return getActiveRequirementGroups(previousEmploymentEnabled);
-  }, [previousEmploymentEnabled]);
-
-  const activeRequirements = useMemo(() => {
-    return getActiveRequirements(previousEmploymentEnabled);
-  }, [previousEmploymentEnabled]);
+  useEffect(() => {
+    currentFileRef.current = currentFile;
+  }, [currentFile]);
 
   const uploadedRequirementMap = useMemo(() => {
     const map = new Map();
 
-    files.forEach((file) => {
+    filterOfficialUploadedFiles(files).forEach((file) => {
       const key = normalizeRequirement(file.requirement);
 
       if (key) {
@@ -544,39 +941,105 @@ export default function NhoUploadModal({
     return map;
   }, [files]);
 
-  const completedRequirements = useMemo(() => {
-    return activeRequirements.filter((requirement) =>
-      uploadedRequirementMap.has(normalizeRequirement(requirement)),
-    ).length;
-  }, [activeRequirements, uploadedRequirementMap]);
+  const overallProgress = useMemo(() => {
+    return calculateProgress(files, ALL_REQUIREMENTS);
+  }, [files]);
 
-  const progressPercent = activeRequirements.length
-    ? Math.round((completedRequirements / activeRequirements.length) * 100)
-    : 0;
+  const majorProgress = useMemo(() => {
+    return calculateMajorProgress(files);
+  }, [files]);
 
-  if (!open) return null;
+  const completedRequirements = overallProgress.completed;
+  const progressPercent = overallProgress.percent;
 
-  function handlePreviousEmploymentToggle(enabled) {
-    setPreviousEmploymentEnabled(enabled);
+  useEffect(() => {
+    if (!open) return undefined;
 
-    if (!enabled) {
-      setFiles((previous) => {
-        const nextFiles = previous.filter(
-          (file) => !isPreviousEmploymentRequirement(file.requirement),
+    const requestId = Date.now();
+    latestRequestRef.current = requestId;
+
+    let isMounted = true;
+
+    async function loadFiles() {
+      setLoadError("");
+      setSaveError("");
+      setIsSaving(false);
+
+      const normalizedInitialFiles = filterOfficialUploadedFiles(
+        Array.isArray(initialFilesRef.current) ? initialFilesRef.current : [],
+      );
+
+      const normalizedCurrentFile =
+        currentFileRef.current && isOfficialNhoFile(currentFileRef.current)
+          ? normalizeUploadedFile(currentFileRef.current)
+          : null;
+
+      setFiles(normalizedInitialFiles);
+      setSelectedFile(normalizedCurrentFile || normalizedInitialFiles[0] || null);
+
+      if (!candidateId) {
+        setLoadError(
+          "Candidate ID is missing. Saved backend files cannot be loaded.",
+        );
+        return;
+      }
+
+      setIsLoadingFiles(true);
+
+      try {
+        const response = await api.get(
+          `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files`,
+          {
+            withCredentials: true,
+            params: {
+              _t: Date.now(),
+            },
+          },
         );
 
-        setSelectedFile((current) => {
-          if (isPreviousEmploymentRequirement(current?.requirement)) {
-            return nextFiles[0] || null;
-          }
+        if (!isMounted || latestRequestRef.current !== requestId) return;
 
-          return current;
-        });
+        const apiFiles = filterOfficialUploadedFiles(
+          getFilesFromApiPayload(response),
+        );
 
-        return nextFiles;
-      });
+        const finalFiles = dedupeFiles([...normalizedInitialFiles, ...apiFiles]);
+
+        const selectedFromCurrent =
+          normalizedCurrentFile &&
+          finalFiles.find(
+            (file) =>
+              file.id === normalizedCurrentFile.id ||
+              normalizeRequirement(file.requirement) ===
+                normalizeRequirement(normalizedCurrentFile.requirement),
+          );
+
+        setFiles(finalFiles);
+        setSelectedFile(selectedFromCurrent || finalFiles[0] || null);
+      } catch (error) {
+        if (!isMounted || latestRequestRef.current !== requestId) return;
+
+        setLoadError(
+          getApiErrorMessage(
+            error,
+            "Unable to load saved pre-employment files.",
+          ),
+        );
+      } finally {
+        if (isMounted && latestRequestRef.current === requestId) {
+          setIsLoadingFiles(false);
+        }
+      }
     }
-  }
+
+    loadFiles();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open, candidateId]);
+
+  if (!open) return null;
 
   function handleUpload(requirement, filePayload) {
     setFiles((previous) => {
@@ -586,9 +1049,14 @@ export default function NhoUploadModal({
         (item) => normalizeRequirement(item.requirement) !== requirementKey,
       );
 
-      const nextFiles = [filePayload, ...withoutCurrentRequirement];
+      const nextFile = normalizeUploadedFile({
+        ...filePayload,
+        requirement,
+      });
 
-      setSelectedFile(filePayload);
+      const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
+
+      setSelectedFile(nextFile);
 
       return nextFiles;
     });
@@ -615,10 +1083,14 @@ export default function NhoUploadModal({
   }
 
   async function saveUploadsToBackend() {
+    const officialFiles = filterOfficialUploadedFiles(files);
+    const currentOverallProgress = calculateProgress(officialFiles);
+    const currentMajorProgress = calculateMajorProgress(officialFiles);
+
     const formData = new FormData();
 
-    const filePayloads = files.map((file) => {
-      const hasNewFile = Boolean(file.rawFile);
+    const filePayloads = officialFiles.map((file) => {
+      const hasNewFile = isRawBrowserFile(file.rawFile);
 
       if (hasNewFile) {
         formData.append("nhoFiles", file.rawFile, file.fileName);
@@ -643,13 +1115,17 @@ export default function NhoUploadModal({
     });
 
     formData.append("filePayloads", JSON.stringify(filePayloads));
-    formData.append("completed", String(completedRequirements));
-    formData.append("total", String(activeRequirements.length));
-    formData.append("percent", String(progressPercent));
-    formData.append(
-      "previousEmploymentEnabled",
-      String(previousEmploymentEnabled),
-    );
+
+    formData.append("completed", String(currentOverallProgress.completed));
+    formData.append("total", String(currentOverallProgress.total));
+    formData.append("percent", String(currentOverallProgress.percent));
+
+    formData.append("majorCompleted", String(currentMajorProgress.completed));
+    formData.append("majorTotal", String(currentMajorProgress.total));
+    formData.append("majorPercent", String(currentMajorProgress.percent));
+    formData.append("majorComplete", String(currentMajorProgress.isComplete));
+
+    formData.append("previousEmploymentEnabled", "true");
 
     const response = await api.post(
       `/api/candidate-pipeline/${encodeURIComponent(candidateId)}/nho/files`,
@@ -671,6 +1147,8 @@ export default function NhoUploadModal({
     try {
       setIsSaving(true);
 
+      const officialFiles = filterOfficialUploadedFiles(files);
+
       if (candidateId) {
         const response = await saveUploadsToBackend();
 
@@ -678,34 +1156,81 @@ export default function NhoUploadModal({
           throw new Error(response?.message || "Failed to save uploads.");
         }
 
-        const savedFiles = Array.isArray(response.files)
-          ? response.files.map(normalizeUploadedFile)
-          : Array.isArray(response?.data?.files)
-            ? response.data.files.map(normalizeUploadedFile)
-            : files;
+        const responseFiles = getFilesFromApiPayload(response);
+        const savedFiles = responseFiles.length
+          ? filterOfficialUploadedFiles(responseFiles)
+          : officialFiles;
 
-        onSave?.({
+        const savedProgress = calculateProgress(savedFiles);
+        const savedMajorProgress =
+          getMajorProgressFromApiPayload(response, savedFiles) ||
+          calculateMajorProgress(savedFiles);
+
+        const routedStage = getRoutedStageFromApiPayload(response);
+
+        onSaveRef.current?.({
           files: savedFiles,
+
           completed:
-            response?.data?.progress?.completed ?? completedRequirements,
-          total: response?.data?.progress?.total ?? activeRequirements.length,
-          percent: response?.data?.progress?.percent ?? progressPercent,
-          previousEmploymentEnabled:
-            response?.data?.previousEmploymentEnabled ??
-            previousEmploymentEnabled,
+            response?.data?.progress?.completed ?? savedProgress.completed,
+          total: response?.data?.progress?.total ?? savedProgress.total,
+          percent: response?.data?.progress?.percent ?? savedProgress.percent,
+
+          majorCompleted:
+            response?.data?.majorProgress?.completed ??
+            savedMajorProgress.completed,
+          majorTotal:
+            response?.data?.majorProgress?.total ?? savedMajorProgress.total,
+          majorPercent:
+            response?.data?.majorProgress?.percent ??
+            savedMajorProgress.percent,
+          majorProgress: savedMajorProgress,
+
+          routedStage,
+          previousEmploymentEnabled: true,
+          candidate: getCandidateFromApiPayload(response),
           response,
         });
+
+        window.dispatchEvent(
+          new CustomEvent("ta-pipeline-candidates-updated", {
+            detail: {
+              candidate: getCandidateFromApiPayload(response),
+              files: savedFiles,
+              majorProgress: savedMajorProgress,
+              routedStage,
+            },
+          }),
+        );
+
+        window.dispatchEvent(
+          new CustomEvent("ta-talent-pool-updated", {
+            detail: {
+              candidate: getCandidateFromApiPayload(response),
+              files: savedFiles,
+              majorProgress: savedMajorProgress,
+              routedStage,
+            },
+          }),
+        );
 
         onClose?.();
         return;
       }
 
-      onSave?.({
-        files,
-        completed: completedRequirements,
-        total: activeRequirements.length,
-        percent: progressPercent,
-        previousEmploymentEnabled,
+      const progress = calculateProgress(officialFiles);
+      const fallbackMajorProgress = calculateMajorProgress(officialFiles);
+
+      onSaveRef.current?.({
+        files: officialFiles,
+        completed: progress.completed,
+        total: progress.total,
+        percent: progress.percent,
+        majorCompleted: fallbackMajorProgress.completed,
+        majorTotal: fallbackMajorProgress.total,
+        majorPercent: fallbackMajorProgress.percent,
+        majorProgress: fallbackMajorProgress,
+        previousEmploymentEnabled: true,
       });
 
       onClose?.();
@@ -768,26 +1293,82 @@ export default function NhoUploadModal({
                       Pre-Employment
                     </span>
 
-                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      {completedRequirements} / {activeRequirements.length}{" "}
-                      Submitted
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-extrabold ${
+                        majorProgress.isComplete
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      }`}
+                    >
+                      {majorProgress.completed} / {majorProgress.total} Major
+                    </span>
+
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                      {completedRequirements} / {ALL_REQUIREMENTS.length} Total
                     </span>
                   </div>
                 </div>
 
                 <div className="mt-5">
                   <div className="mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    <span>Completion</span>
-                    <span>{progressPercent}%</span>
+                    <span>Major Completion</span>
+                    <span>{majorProgress.percent}%</span>
                   </div>
 
                   <div className="h-3 overflow-hidden rounded-full bg-[#EEF4FA]">
                     <div
-                      className="h-full rounded-full bg-sibs-primary-1 transition-all duration-300"
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        majorProgress.isComplete
+                          ? "bg-emerald-600"
+                          : "bg-sibs-primary-1"
+                      }`}
+                      style={{ width: `${majorProgress.percent}%` }}
+                    />
+                  </div>
+
+                  <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    <span>Total Completion</span>
+                    <span>{progressPercent}%</span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-[#EEF4FA]">
+                    <div
+                      className="h-full rounded-full bg-sibs-primary-1/70 transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
                 </div>
+
+                {!majorProgress.isComplete && (
+                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                    Candidate has fewer than 5 major requirements. After saving,
+                    this candidate should stay under{" "}
+                    <span className="font-extrabold">
+                      For Onboarding - Incomplete Requirements
+                    </span>{" "}
+                    for Talent Pool follow-up.
+                  </div>
+                )}
+
+                {majorProgress.isComplete && (
+                  <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-bold leading-6 text-emerald-700">
+                    Candidate completed the 5 major requirements. After saving,
+                    this candidate can proceed to Onboarding.
+                  </div>
+                )}
+
+                {isLoadingFiles && (
+                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+                    <Loader2 size={16} className="animate-spin" />
+                    Loading saved official files from backend...
+                  </div>
+                )}
+
+                {loadError && (
+                  <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+                    {loadError}
+                  </div>
+                )}
 
                 {saveError && (
                   <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
@@ -809,16 +1390,13 @@ export default function NhoUploadModal({
                 </h3>
 
                 <div className="mt-5 space-y-6">
-                  {activeRequirementGroups.map((group) => {
+                  {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
                     const groupCompleted = group.requirements.filter(
                       (requirement) =>
                         uploadedRequirementMap.has(
                           normalizeRequirement(requirement),
                         ),
                     ).length;
-
-                    const isPreviousEmployment =
-                      group.id === "previous-employment";
 
                     return (
                       <div
@@ -836,44 +1414,48 @@ export default function NhoUploadModal({
                             </span>
                           </div>
 
-                          {isPreviousEmployment && (
-                            <ToggleSwitch
-                              checked={previousEmploymentEnabled}
-                              disabled={isSaving}
-                              onChange={handlePreviousEmploymentToggle}
-                            />
+                          {group.id === "major" && (
+                            <span
+                              className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-extrabold ${
+                                groupCompleted >= group.requirements.length
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              Required before Onboarding
+                            </span>
                           )}
                         </div>
 
-                        {isPreviousEmployment && !previousEmploymentEnabled ? (
-                          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-5 text-sm font-bold text-sibs-tertiary-5">
-                            Previous employment requirements are disabled for
-                            this candidate.
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                            {group.requirements.map((requirement) => {
-                              const uploadedFile = uploadedRequirementMap.get(
-                                normalizeRequirement(requirement),
-                              );
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                          {group.requirements.map((requirement) => {
+                            const uploadedFile = uploadedRequirementMap.get(
+                              normalizeRequirement(requirement),
+                            );
 
-                              return (
-                                <RequirementCard
-                                  key={requirement}
-                                  requirement={requirement}
-                                  uploadedFile={uploadedFile}
-                                  disabled={isSaving}
-                                  onUpload={handleUpload}
-                                  onSelect={setSelectedFile}
-                                  onRemove={handleRemove}
-                                />
-                              );
-                            })}
-                          </div>
-                        )}
+                            return (
+                              <RequirementCard
+                                key={requirement}
+                                requirement={requirement}
+                                uploadedFile={uploadedFile}
+                                disabled={isSaving || isLoadingFiles}
+                                onUpload={handleUpload}
+                                onSelect={setSelectedFile}
+                                onRemove={handleRemove}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })}
+
+                  <UploadedFilesList
+                    files={files}
+                    disabled={isSaving || isLoadingFiles}
+                    onSelect={setSelectedFile}
+                    onRemove={handleRemove}
+                  />
                 </div>
               </section>
             </div>
@@ -887,8 +1469,9 @@ export default function NhoUploadModal({
         <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-7">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-bold text-sibs-tertiary-5">
-              {completedRequirements} of {activeRequirements.length}{" "}
-              requirements submitted.
+              {majorProgress.completed} of {majorProgress.total} major
+              requirements submitted. {completedRequirements} of{" "}
+              {ALL_REQUIREMENTS.length} total requirements submitted.
             </p>
 
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -903,7 +1486,7 @@ export default function NhoUploadModal({
 
               <button
                 type="button"
-                disabled={isSaving}
+                disabled={isSaving || isLoadingFiles}
                 onClick={handleSaveUploads}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
               >

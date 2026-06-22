@@ -4,28 +4,6 @@ import { Eye, ListChecks } from "lucide-react";
 import PaginationTable from "@/services/pagination/PaginationTable";
 
 const PAGE_LIMIT = 15;
-const EDGE = "rounded-[10px]";
-const TABLE_MIN_WIDTH = 2200;
-
-const COLUMN_WIDTHS = [
-  250,
-  140,
-  140,
-  190,
-  170,
-  180,
-  170,
-  210,
-  210,
-  210,
-  130,
-  220,
-  150,
-  130,
-  150,
-  260,
-  140,
-];
 
 function getNumberValue(...values) {
   for (const value of values) {
@@ -172,23 +150,13 @@ function getRowMetrics(item) {
   };
 }
 
-function TableColGroup() {
-  return (
-    <colgroup>
-      {COLUMN_WIDTHS.map((width, index) => (
-        <col key={index} style={{ width: `${width}px` }} />
-      ))}
-    </colgroup>
-  );
-}
-
 function MobileMetric({
   label,
   value,
   valueClassName = "text-sibs-primary-1",
 }) {
   return (
-    <div className={`${EDGE} bg-[#F8FAFC] p-3`}>
+    <div className="rounded-xl bg-[#F8FAFC] p-3">
       <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
         {label}
       </p>
@@ -202,13 +170,11 @@ function MobileMetric({
 
 function HeaderCell({ children, note, className = "" }) {
   return (
-    <th
-      className={`border-b border-r border-[#E6ECF2] bg-[#F5F7FA] px-5 py-4 text-center align-top ${className}`}
-    >
+    <th className={`px-5 py-4 text-center align-top ${className}`}>
       <div className="leading-tight">{children}</div>
 
       {note && (
-        <div className="mx-auto mt-1 max-w-[170px] text-center text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
+        <div className="mt-1 max-w-[170px] text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
           ({note})
         </div>
       )}
@@ -221,7 +187,6 @@ export default function WeeklyHiringAccountsTable({
   filteredPlans = [],
   onViewPlan,
 }) {
-  const tableHeaderRef = useRef(null);
   const tableScrollRef = useRef(null);
   const mobileScrollRef = useRef(null);
 
@@ -332,13 +297,6 @@ export default function WeeklyHiringAccountsTable({
       });
     }
 
-    if (tableHeaderRef.current) {
-      tableHeaderRef.current.scrollTo({
-        left: 0,
-        behavior: "smooth",
-      });
-    }
-
     if (mobileScrollRef.current) {
       mobileScrollRef.current.scrollTo({
         top: 0,
@@ -347,12 +305,6 @@ export default function WeeklyHiringAccountsTable({
       });
     }
   }, [currentPage, search, statusFilter]);
-
-  function syncHeaderScroll() {
-    if (!tableScrollRef.current || !tableHeaderRef.current) return;
-
-    tableHeaderRef.current.scrollLeft = tableScrollRef.current.scrollLeft;
-  }
 
   function handlePreviousPage() {
     if (accountsLoading || !hasPreviousPage) return;
@@ -415,7 +367,6 @@ export default function WeeklyHiringAccountsTable({
     }
 
     container.scrollLeft = dragState.scrollLeft - walk;
-    syncHeaderScroll();
   }
 
   function handleDragEnd() {
@@ -433,8 +384,8 @@ export default function WeeklyHiringAccountsTable({
   }
 
   return (
-    <div className="bg-white">
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -443,9 +394,7 @@ export default function WeeklyHiringAccountsTable({
             </div>
           </div>
 
-          <div
-            className={`inline-flex w-fit ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
-          >
+          <div className="inline-flex w-fit rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
             Records: {totalRecords}
           </div>
         </div>
@@ -472,264 +421,231 @@ export default function WeeklyHiringAccountsTable({
         </div>
       </div>
 
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <div className="hidden lg:block">
           <div
-            className={`${EDGE} overflow-hidden border border-[#D9E2EC] bg-white`}
+            ref={tableScrollRef}
+            onMouseDown={handleDragStart}
+            onMouseMove={handleDragMove}
+            onMouseUp={handleDragEnd}
+            onMouseLeave={handleDragEnd}
+            className={`max-h-[670px] overflow-auto select-none ${
+              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+            }`}
           >
-            <div ref={tableHeaderRef} className="overflow-hidden bg-[#F5F7FA]">
-              <table
-                className="border-separate border-spacing-0 bg-white text-center"
-                style={{
-                  width: `${TABLE_MIN_WIDTH}px`,
-                  minWidth: `${TABLE_MIN_WIDTH}px`,
-                  tableLayout: "fixed",
-                }}
-              >
-                <TableColGroup />
+            <table className="w-full min-w-[2200px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+                    Account
+                  </th>
 
-                <thead>
-                  <tr className="text-center text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                    <th className="border-b border-r border-[#E6ECF2] bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                      Account
-                    </th>
+                  <HeaderCell>Required Headcount</HeaderCell>
 
-                    <HeaderCell>Required Headcount</HeaderCell>
+                  <HeaderCell>Actual Headcount</HeaderCell>
 
-                    <HeaderCell>Actual Headcount</HeaderCell>
+                  <HeaderCell note="Required Headcount × 10%">
+                    Required Buffer Headcount
+                  </HeaderCell>
 
-                    <HeaderCell note="Required Headcount × 10%">
-                      Required Buffer Headcount
-                    </HeaderCell>
+                  <HeaderCell note="Required Buffer Headcount ÷ Required Headcount">
+                    Required Buffer %
+                  </HeaderCell>
 
-                    <HeaderCell note="Required Buffer Headcount ÷ Required Headcount">
-                      Required Buffer %
-                    </HeaderCell>
+                  <HeaderCell note="Actual Headcount - Required Headcount">
+                    Actual Buffer Count
+                  </HeaderCell>
 
-                    <HeaderCell note="Actual Headcount - Required Headcount">
-                      Actual Buffer Count
-                    </HeaderCell>
+                  <HeaderCell note="Actual Buffer Count ÷ Required Headcount">
+                    Actual Buffer %
+                  </HeaderCell>
 
-                    <HeaderCell note="Actual Buffer Count ÷ Required Headcount">
-                      Actual Buffer %
-                    </HeaderCell>
+                  <HeaderCell note="Required Headcount + Required Buffer Headcount">
+                    Required Actual HC with Buffer
+                  </HeaderCell>
 
-                    <HeaderCell note="Required Headcount + Required Buffer Headcount">
-                      Required Actual HC with Buffer
-                    </HeaderCell>
+                  <HeaderCell>Absenteeism Past 6 Weeks Average</HeaderCell>
 
-                    <HeaderCell>Absenteeism Past 6 Weeks Average</HeaderCell>
+                  <HeaderCell>Attrition Past 6 Weeks Average</HeaderCell>
 
-                    <HeaderCell>Attrition Past 6 Weeks Average</HeaderCell>
+                  <HeaderCell>OPS PRF</HeaderCell>
 
-                    <HeaderCell>OPS PRF</HeaderCell>
+                  <HeaderCell note="Required Buffer + Absenteeism Avg + Attrition Avg + OPS PRF">
+                    Actual Headcount Needs
+                  </HeaderCell>
 
-                    <HeaderCell note="Required Buffer + Absenteeism Avg + Attrition Avg + OPS PRF">
-                      Actual Headcount Needs
-                    </HeaderCell>
+                  <HeaderCell>Leads to Interview</HeaderCell>
 
-                    <HeaderCell>Leads to Interview</HeaderCell>
+                  <HeaderCell>Hiring Rate</HeaderCell>
 
-                    <HeaderCell>Hiring Rate</HeaderCell>
+                  <HeaderCell>Status</HeaderCell>
 
-                    <HeaderCell>Status</HeaderCell>
+                  <th className="px-5 py-4 text-left align-top">
+                    Status Note
+                  </th>
 
-                    <th className="border-b border-r border-[#E6ECF2] bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                      Status Note
-                    </th>
+                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
 
-                    <th className="border-b border-[#E6ECF2] bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-              </table>
-            </div>
-
-            <div
-              ref={tableScrollRef}
-              onScroll={syncHeaderScroll}
-              onMouseDown={handleDragStart}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              className={`max-h-[590px] overflow-auto select-none ${
-                isDraggingTable ? "cursor-grabbing" : "cursor-grab"
-              }`}
-            >
-              <table
-                className="border-separate border-spacing-0 bg-white text-left"
-                style={{
-                  width: `${TABLE_MIN_WIDTH}px`,
-                  minWidth: `${TABLE_MIN_WIDTH}px`,
-                  tableLayout: "fixed",
-                }}
-              >
-                <TableColGroup />
-
-                <tbody
-                  key={`${currentPage}-${search}-${statusFilter}-${accountsLoading}`}
-                >
-                  {accountsLoading ? (
-                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                      <tr key={index}>
-                        <td
-                          className="border-b border-[#E6ECF2] px-5 py-5"
-                          colSpan={17}
-                        >
-                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : paginatedPlans.length === 0 ? (
-                    <tr>
+              <tbody key={`${currentPage}-${search}-${statusFilter}-${accountsLoading}`}>
+                {accountsLoading ? (
+                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                    <tr key={index}>
                       <td
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                        className="border-b border-[#E6ECF2] px-5 py-5"
                         colSpan={17}
                       >
-                        No weekly hiring plan records found.
+                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                       </td>
                     </tr>
-                  ) : (
-                    paginatedPlans.map((item) => {
-                      const metrics = getRowMetrics(item);
+                  ))
+                ) : paginatedPlans.length === 0 ? (
+                  <tr>
+                    <td
+                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      colSpan={17}
+                    >
+                      No weekly hiring plan records found.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedPlans.map((item) => {
+                    const metrics = getRowMetrics(item);
 
-                      return (
-                        <tr
-                          key={item.id}
-                          className="transition hover:bg-[#FAFBFC]"
+                    return (
+                      <tr
+                        key={item.id}
+                        className="transition hover:bg-[#FAFBFC]"
+                      >
+                        <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+                            {item.account || "--"}
+                          </p>
+
+                          <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                            {item.cluster || "--"}
+                          </p>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.requiredHeadcount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.actualHeadcount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                          {formatNumber(metrics.requiredBufferHeadcount, 2)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.requiredBufferPercent)}
+                        </td>
+
+                        <td
+                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${
+                            metrics.actualBufferCount < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }`}
                         >
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5">
-                            <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
-                              {item.account || "--"}
-                            </p>
+                          {formatNumber(metrics.actualBufferCount)}
+                        </td>
 
-                            <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-                              {item.cluster || "--"}
-                            </p>
-                          </td>
+                        <td
+                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${
+                            metrics.actualBufferPercent < 0
+                              ? "text-red-700"
+                              : "text-emerald-700"
+                          }`}
+                        >
+                          {formatPercent(metrics.actualBufferPercent)}
+                        </td>
 
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(metrics.requiredHeadcount)}
-                          </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                          {formatNumber(
+                            metrics.requiredActualHeadcountWithBuffer,
+                            2,
+                          )}
+                        </td>
 
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(metrics.actualHeadcount)}
-                          </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(
+                            metrics.absenteeismPastSixWeeksAverage,
+                          )}
+                        </td>
 
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                            {formatNumber(metrics.requiredBufferHeadcount, 2)}
-                          </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.attritionPastSixWeeksAverage)}
+                        </td>
 
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatPercent(metrics.requiredBufferPercent)}
-                          </td>
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
+                          {formatNumber(metrics.opsPrf)}
+                        </td>
 
-                          <td
-                            className={`border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${
-                              metrics.actualBufferCount < 0
-                                ? "text-red-700"
-                                : "text-emerald-700"
-                            }`}
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+                          {formatNumber(metrics.actualHeadcountNeeds, 2)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.leadsToInterview)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.hiringRate)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                              item.pipelineStatus,
+                            )}`}
                           >
-                            {formatNumber(metrics.actualBufferCount)}
-                          </td>
+                            {item.pipelineStatus || "--"}
+                          </span>
+                        </td>
 
-                          <td
-                            className={`border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${
-                              metrics.actualBufferPercent < 0
-                                ? "text-red-700"
-                                : "text-emerald-700"
-                            }`}
+                        <td className="border-b border-[#E6ECF2] px-5 py-5">
+                          <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
+                            {item.statusNote || "--"}
+                          </p>
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleViewClick(item)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
                           >
-                            {formatPercent(metrics.actualBufferPercent)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                            {formatNumber(
-                              metrics.requiredActualHeadcountWithBuffer,
-                              2,
-                            )}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(
-                              metrics.absenteeismPastSixWeeksAverage,
-                            )}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(metrics.attritionPastSixWeeksAverage)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
-                            {formatNumber(metrics.opsPrf)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
-                            {formatNumber(metrics.actualHeadcountNeeds, 2)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(metrics.leadsToInterview)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatPercent(metrics.hiringRate)}
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5 text-center">
-                            <span
-                              className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                                item.pipelineStatus,
-                              )}`}
-                            >
-                              {item.pipelineStatus || "--"}
-                            </span>
-                          </td>
-
-                          <td className="border-b border-r border-[#E6ECF2] px-5 py-5">
-                            <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
-                              {item.statusNote || "--"}
-                            </p>
-                          </td>
-
-                          <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleViewClick(item)}
-                              className={`inline-flex items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]`}
-                            >
-                              <Eye size={16} />
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                            <Eye size={16} />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
 
           <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table body.
+            Hold left click and drag left or right to scroll the table.
           </p>
         </div>
 
         <div className="block lg:hidden">
           <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto">
             {accountsLoading ? (
-              <div
-                className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
-              >
+              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
                 Loading weekly hiring plan records...
               </div>
             ) : paginatedPlans.length === 0 ? (
-              <div
-                className={`${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500`}
-              >
+              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
                 No weekly hiring plan records found.
               </div>
             ) : (
@@ -745,7 +661,7 @@ export default function WeeklyHiringAccountsTable({
                       key={item.id}
                       type="button"
                       onClick={() => onViewPlan?.(item)}
-                      className={`w-full ${EDGE} border border-[#E6ECF2] bg-white p-4 text-left transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]`}
+                      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -855,7 +771,7 @@ export default function WeeklyHiringAccountsTable({
                         />
                       </div>
 
-                      <div className={`mt-4 ${EDGE} bg-[#F8FAFC] p-3`}>
+                      <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
                         <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
                           Status Note
                         </p>
@@ -865,9 +781,7 @@ export default function WeeklyHiringAccountsTable({
                         </p>
                       </div>
 
-                      <div
-                        className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1`}
-                      >
+                      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
                         <Eye size={16} />
                         View Details
                       </div>
@@ -892,6 +806,6 @@ export default function WeeklyHiringAccountsTable({
           onNext={handleNextPage}
         />
       </div>
-    </div>
+    </section>
   );
 }

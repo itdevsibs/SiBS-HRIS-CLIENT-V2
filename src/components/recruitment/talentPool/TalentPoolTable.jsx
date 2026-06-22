@@ -81,6 +81,7 @@ export default function TalentPoolTable() {
                         candidate.currentPipelineStage ||
                         candidate.pipelineStage ||
                         candidate.currentStage ||
+                        candidate.pipelineStatus ||
                         candidate.status ||
                         "—";
 

@@ -59,7 +59,7 @@ function formatDisplayDate(value) {
 }
 
 function getCandidateName(candidate = {}) {
-  return candidate.name || candidate.candidateName || "Unnamed Candidate";
+  return candidate.name || candidate.candidateName || "—";
 }
 
 function getCandidateId(candidate = {}) {
@@ -171,7 +171,7 @@ function FilterDropdown({
       ref={dropdownRef}
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
+      <label className="mb-1 block text-sm font-extrabold text-[#101828]">
         {label}
       </label>
 
@@ -179,7 +179,7 @@ function FilterDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
             : "border-[#D0D5DD] hover:border-sibs-primary-1"
@@ -189,11 +189,7 @@ function FilterDropdown({
             : "text-[#344054]"
         }`}
       >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
-          }`}
-        >
+        <span className="min-w-0 flex-1 truncate text-[#344054]">
           {displayLabel}
         </span>
 
@@ -206,7 +202,7 @@ function FilterDropdown({
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
           <div className="max-h-72 overflow-y-auto">
             {normalizedOptions.length > 0 ? (
               normalizedOptions.map((option) => {
@@ -217,7 +213,7 @@ function FilterDropdown({
                     key={option.id || option.value}
                     type="button"
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-4 py-4 text-left text-sm font-extrabold transition ${
                       active
                         ? "bg-[#EAF4FF] text-sibs-primary-1"
                         : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
@@ -230,7 +226,7 @@ function FilterDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
+              <div className="px-4 py-4 text-sm font-extrabold text-sibs-tertiary-5">
                 No options found.
               </div>
             )}
@@ -610,8 +606,10 @@ export default function CandidatePipelinePage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="mx-auto max-w-[1600px] space-y-5">
@@ -730,7 +728,7 @@ export default function CandidatePipelinePage() {
           {pageView === "pipeline" && (
             <div className="space-y-5">
               <section className="relative z-[90] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-                <div className="relative z-[90] border-b border-[#E6ECF2] p-4 sm:p-5">
+                <div className="relative z-[90] overflow-visible border-b border-[#E6ECF2] p-4 sm:p-5">
                   <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_220px_220px_auto] xl:items-end">
                     <div>
                       <label className="mb-1 block text-sm font-bold text-[#101828]">
