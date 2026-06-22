@@ -34,3 +34,9 @@ build
 
 # OS / misc
 Thumbs.db
+
+# MD files
+*.md
+
+# Codex
+.codex
