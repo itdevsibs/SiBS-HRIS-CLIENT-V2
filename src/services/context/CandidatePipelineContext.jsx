@@ -96,6 +96,54 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function isPlaceholderText(value = "") {
+  const text = cleanText(value).toLowerCase();
+
+  return (
+    !text ||
+    text === "unnamed candidate" ||
+    text === "unknown candidate" ||
+    text === "no name saved" ||
+    text === "no email saved" ||
+    text === "no email provided" ||
+    text === "n/a" ||
+    text === "na" ||
+    text === "null" ||
+    text === "undefined"
+  );
+}
+
+function getCandidateDisplayNameValue(candidate = {}) {
+  return cleanText(
+    candidate.name ||
+      candidate.candidateName ||
+      candidate.candidate_name ||
+      candidate.fullName ||
+      candidate.full_name ||
+      candidate.candidateSnapshot?.name ||
+      [
+        candidate.firstName || candidate.first_name,
+        candidate.middleName || candidate.middle_name,
+        candidate.lastName || candidate.last_name,
+      ]
+        .map(cleanText)
+        .filter(Boolean)
+        .join(" "),
+  );
+}
+
+function isDisplayablePipelineCandidate(candidate = {}) {
+  const name = getCandidateDisplayNameValue(candidate);
+
+  if (isPlaceholderText(name)) return false;
+
+  return true;
+}
+
+function filterDisplayablePipelineCandidates(candidates = []) {
+  return candidates.filter((candidate) => isDisplayablePipelineCandidate(candidate));
+}
+
 function normalizeStageKey(value) {
   return cleanText(value)
     .toLowerCase()
@@ -752,11 +800,9 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
         candidate.candidate_id ||
         candidate.candidateSnapshot?.candidateId,
       name:
-        candidate.name ||
-        candidate.candidateName ||
-        candidate.candidate_name ||
+        getCandidateDisplayNameValue(candidate) ||
         candidate.candidateSnapshot?.name ||
-        "Unnamed Candidate",
+        "",
       email: candidate.email || candidate.candidateSnapshot?.email || "",
       roleTitle,
       account,
@@ -774,18 +820,28 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
 }
 
 function mergeUpdatedCandidateList(list = [], updatedCandidate = {}) {
+  if (!isDisplayablePipelineCandidate(updatedCandidate)) {
+    return filterDisplayablePipelineCandidates(list);
+  }
+
   const normalizedUpdated =
     normalizePipelineCandidateForBoard(updatedCandidate);
 
-  const existingIndex = list.findIndex((candidate) =>
+  if (!isDisplayablePipelineCandidate(normalizedUpdated)) {
+    return filterDisplayablePipelineCandidates(list);
+  }
+
+  const cleanedList = filterDisplayablePipelineCandidates(list);
+
+  const existingIndex = cleanedList.findIndex((candidate) =>
     isSamePipelineCandidate(candidate, normalizedUpdated),
   );
 
   if (existingIndex === -1) {
-    return [normalizedUpdated, ...list];
+    return [normalizedUpdated, ...cleanedList];
   }
 
-  return list.map((candidate, index) => {
+  return cleanedList.map((candidate, index) => {
     if (index !== existingIndex) return candidate;
 
     return normalizePipelineCandidateForBoard({
@@ -1052,7 +1108,9 @@ export function CandidatePipelineProvider({ children }) {
           ? response.candidates
           : [];
 
-      const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
+      const normalizedRows = filterDisplayablePipelineCandidates(rows)
+        .map(normalizePipelineCandidateForBoard)
+        .filter(isDisplayablePipelineCandidate);
 
       setCandidateList(normalizedRows);
       setHasLoadedStorage(true);
@@ -1110,15 +1168,22 @@ export function CandidatePipelineProvider({ children }) {
       const payload = event?.detail || {};
       const eventCandidate = payload?.candidate || payload;
 
-      if (eventCandidate && typeof eventCandidate === "object") {
+      if (
+        eventCandidate &&
+        typeof eventCandidate === "object" &&
+        isDisplayablePipelineCandidate(eventCandidate)
+      ) {
         const normalizedCandidate =
           normalizePipelineCandidateForBoard(eventCandidate);
 
         if (
-          normalizedCandidate.id ||
-          normalizedCandidate.candidateId ||
-          normalizedCandidate.candidateApplicationId ||
-          normalizedCandidate.email
+          isDisplayablePipelineCandidate(normalizedCandidate) &&
+          (
+            normalizedCandidate.id ||
+            normalizedCandidate.candidateId ||
+            normalizedCandidate.candidateApplicationId ||
+            normalizedCandidate.email
+          )
         ) {
           setCandidateList((prev) =>
             mergeUpdatedCandidateList(prev, normalizedCandidate),
@@ -1166,7 +1231,9 @@ export function CandidatePipelineProvider({ children }) {
     const keyword = search.trim().toLowerCase();
 
     return candidateList
+      .filter(isDisplayablePipelineCandidate)
       .map(normalizePipelineCandidateForBoard)
+      .filter(isDisplayablePipelineCandidate)
       .filter((candidate) => {
         const role = getCandidateRoleForFilter(candidate);
         const account = getCandidateAccountForFilter(candidate);

@@ -1279,18 +1279,52 @@ function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
   return `${ONBOARDING_ROUTE}${params.toString() ? `?${params.toString()}` : ""}`;
 }
 
-function SectionTitle({ icon: Icon, title, description }) {
+function CompactInfoRow({ label, value }) {
   return (
-    <div className="mb-5 flex min-w-0 items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF2F6] text-sibs-primary-1">
-        <Icon size={20} />
+    <div className="grid grid-cols-1 gap-2 border-b border-[#E6ECF2] py-4 last:border-b-0 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start">
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </p>
+
+      <p className="min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828] sm:text-right">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function ProfileInfoCard({ label, value, wide = false }) {
+  return (
+    <div
+      className={`rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm ${
+        wide ? "md:col-span-2" : ""
+      }`}
+    >
+      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </p>
+
+      <p className="mt-2 min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828]">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function TabSectionHeader({ icon: Icon, title, description }) {
+  return (
+    <div className="mb-5 flex items-start gap-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F8] text-sibs-primary-1">
+        <Icon size={19} />
       </div>
 
       <div className="min-w-0">
-        <h3 className="text-base font-extrabold text-[#101828]">{title}</h3>
+        <h3 className="text-base font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          {title}
+        </h3>
 
         {description && (
-          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-primary-1/80">
+          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
             {description}
           </p>
         )}
@@ -1299,34 +1333,11 @@ function SectionTitle({ icon: Icon, title, description }) {
   );
 }
 
-function TabSectionHeader({ icon: Icon, title, description }) {
-  return <SectionTitle icon={Icon} title={title} description={description} />;
-}
-
-function DetailRow({ label, value }) {
-  const displayValue =
-    value === null || value === undefined || value === "" ? "—" : value;
-
-  return (
-    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
-      <p className="shrink-0 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </p>
-
-      <p
-        title={String(displayValue)}
-        className="min-w-0 break-words text-right text-sm font-extrabold leading-6 text-[#101828]"
-      >
-        {displayValue}
-      </p>
-    </div>
-  );
-}
-
 function EmptyState({ title, description }) {
   return (
     <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
       <p className="text-sm font-extrabold text-[#101828]">{title}</p>
+
       {description && (
         <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
           {description}
@@ -1683,11 +1694,11 @@ function CandidateNhoFilesSection({
   );
 
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div>
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <SectionTitle
+        <TabSectionHeader
           icon={FileText}
-          title="Pre-Employment Files"
+          title="Pre-Employment / NHO Files"
           description="Candidate Pipeline NHO uploaded files and follow-up requirements."
         />
 
@@ -1885,7 +1896,7 @@ function CandidateNhoFilesSection({
           <NhoFilePreviewPanel file={selectedFile} />
         </aside>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -1905,6 +1916,7 @@ export default function CandidateProfileModal() {
 
   const [showFullApplicationHistory, setShowFullApplicationHistory] =
     useState(false);
+
   const [activeTab, setActiveTab] = useState("personal");
 
   const [statusModal, setStatusModal] = useState({
@@ -1940,6 +1952,13 @@ export default function CandidateProfileModal() {
     () => isCandidateLinkedToPipeline(selectedCandidate),
     [selectedCandidate],
   );
+
+  useEffect(() => {
+    setActiveTab("personal");
+    setShowFullApplicationHistory(false);
+    setSelectedNhoFile(null);
+    setShowNhoUploadModal(false);
+  }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
 
   useEffect(() => {
     let isActive = true;
@@ -2728,420 +2747,437 @@ export default function CandidateProfileModal() {
     });
   }
 
-  function renderPersonalInformation() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={UserRound}
-          title="Personal Information"
-          description="Candidate master profile and contact information."
-        />
+  function renderTabContent() {
+    if (activeTab === "personal") {
+      const personalRows = [
+        {
+          label: "Date of Birth",
+          value: formatDate(activeCandidate.dateOfBirth),
+        },
+        {
+          label: "Age",
+          value: activeCandidate.ageAsOfApplication
+            ? `${activeCandidate.ageAsOfApplication}`
+            : "—",
+        },
+        {
+          label: "Encoded By",
+          value: encodedBy || "—",
+        },
+        {
+          label: "Created At",
+          value: formatDate(activeCandidate.createdAt),
+        },
+        {
+          label: "Address",
+          value: activeCandidate.physicalAddress || "—",
+          wide: true,
+        },
+      ];
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="rounded-xl bg-[#F8FAFC] p-4">
-            <DetailRow label="First Name" value={activeCandidate.firstName} />
-            <DetailRow label="Middle Name" value={activeCandidate.middleName} />
-            <DetailRow label="Last Name" value={activeCandidate.lastName} />
-            <DetailRow label="Suffix" value={activeCandidate.suffix} />
-            <DetailRow label="Nickname" value={activeCandidate.nickname} />
-            <DetailRow
-              label="Date of Birth"
-              value={formatDate(activeCandidate.dateOfBirth)}
-            />
-            <DetailRow
-              label="Age"
-              value={
-                activeCandidate.ageAsOfApplication
-                  ? `${activeCandidate.ageAsOfApplication}`
-                  : "—"
-              }
-            />
-          </div>
-
-          <div className="rounded-xl bg-[#F8FAFC] p-4">
-            <DetailRow label="Email" value={activeCandidate.email} />
-            <DetailRow
-              label="Phone 1"
-              value={
-                activeCandidate.phoneNumber1 ||
-                activeCandidate.contactNumber ||
-                activeCandidate.phone
-              }
-            />
-            <DetailRow label="Phone 2" value={activeCandidate.phoneNumber2} />
-            <DetailRow label="Address" value={activeCandidate.physicalAddress} />
-            <DetailRow
-              label="Preferred Location"
-              value={activeCandidate.applyingLocation}
-            />
-            <DetailRow label="Encoded By" value={encodedBy} />
-            <DetailRow
-              label="Created At"
-              value={formatDate(activeCandidate.createdAt)}
-            />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  function renderApplicationSource() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={BriefcaseBusiness}
-          title="Application Source"
-          description="Candidate source information and referral details."
-        />
-
-        <div className="rounded-xl bg-[#F8FAFC] p-4">
-          <DetailRow
-            label="Applied Position"
-            value={activeCandidate.openPosition || activeCandidate.roleCapability}
+      return (
+        <>
+          <TabSectionHeader
+            icon={UserRound}
+            title="Personal Information"
+            description="Additional candidate profile details."
           />
-          <DetailRow
-            label="How Heard About Us"
-            value={formatList(activeCandidate.hearAboutUs)}
-          />
-          <DetailRow label="Source" value={activeCandidate.source} />
-          <DetailRow label="Referred By" value={activeCandidate.referredBy} />
-          <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
-        </div>
-      </section>
-    );
-  }
 
-  function renderPipelineLink() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={Network}
-          title="Pipeline Link"
-          description="Current pipeline status, assignment, and TA ownership."
-        />
-
-        <div className="rounded-xl bg-[#F8FAFC] p-4">
-          <DetailRow
-            label="Pipeline Status"
-            value={activeCandidate.pipelineStatus || "—"}
-          />
-          <DetailRow
-            label="Current Stage"
-            value={
-              activeCandidate.currentPipelineStage ||
-              activeCandidate.currentStage ||
-              activeCandidate.pipelineStage ||
-              "—"
-            }
-          />
-          <DetailRow
-            label="Final Role"
-            value={activeCandidate.currentAppliedRole || "Not assigned yet"}
-          />
-          <DetailRow
-            label="Final Account"
-            value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
-          />
-          <DetailRow
-            label="TA Owner"
-            value={activeCandidate.currentTaOwner || "—"}
-          />
-        </div>
-      </section>
-    );
-  }
-
-  function renderQualifications() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={GraduationCap}
-          title="Qualifications"
-          description="Education, skills, trainings, and certifications."
-        />
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Educational Attainment
-            </p>
-            <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-              {activeCandidate.educationalAttainment || "—"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Skills / Language
-            </p>
-            <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-              {activeCandidate.skillsLanguage || "—"}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Affiliations
-            </p>
-            <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-              {formatList(activeCandidate.affiliations)}
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Training Attended
-            </p>
-            <p className="mt-2 text-sm font-extrabold leading-6 text-[#101828]">
-              {activeCandidate.trainingAttended || "—"}
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  function renderWorkExperience() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={BriefcaseBusiness}
-          title="Work Experience"
-          description="Candidate employment background, previous role, company, and compensation."
-        />
-
-        <div className="mb-4">
-          <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-            {activeCandidate.workExperience || "—"}
-          </span>
-        </div>
-
-        {workExperiences.length > 0 ? (
-          <div className="space-y-4">
-            {workExperiences.map((experience, index) => (
-              <div
-                key={`experience-${index}`}
-                className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
-              >
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      Experience {index + 1}
-                    </p>
-
-                    <h5 className="mt-1 break-words text-base font-extrabold text-[#101828]">
-                      {experience.role || experience.industry || "—"}
-                    </h5>
-
-                    <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-                      {experience.company || "Company not provided"}
-                    </p>
-                  </div>
-
-                  <span className="inline-flex w-fit shrink-0 rounded-full border border-[#D6E9FF] bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                    {experience.years
-                      ? `${experience.years} year(s)`
-                      : "No duration"}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div className="rounded-xl bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Industry
-                    </p>
-                    <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                      {experience.industry || "—"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Compensation
-                    </p>
-                    <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                      {experience.monthlyCompensation
-                        ? formatCurrency(experience.monthlyCompensation)
-                        : "—"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-[#F8FAFC] p-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Length of Experience
-                    </p>
-                    <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                      {experience.lengthOfWorkExperience || "—"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl bg-[#F8FAFC] p-3 md:col-span-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Reason for Leaving
-                    </p>
-
-                    <p className="mt-1 text-sm font-bold leading-6 text-[#344054]">
-                      {experience.reasonForLeaving || "—"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {personalRows.map((item) => (
+              <ProfileInfoCard
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                wide={item.wide}
+              />
             ))}
           </div>
-        ) : (
-          <EmptyState
-            title="No work experience details"
-            description={
-              activeCandidate.workExperience || "No work experience provided."
-            }
-          />
-        )}
-      </section>
-    );
-  }
+        </>
+      );
+    }
 
-  function renderReadiness() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={ShieldCheck}
-          title="Readiness and Compliance"
-          description="Availability, work setup, and compliance readiness."
-        />
+    if (activeTab === "applicationSource") {
+      const sourceRows = [
+        {
+          label: "Applied Position",
+          value: activeCandidate.openPosition || activeCandidate.roleCapability,
+        },
+        {
+          label: "How Heard About Us",
+          value: formatList(activeCandidate.hearAboutUs),
+        },
+        {
+          label: "Source",
+          value: activeCandidate.source || "—",
+        },
+        {
+          label: "Referred By",
+          value: activeCandidate.referredBy || "—",
+        },
+        {
+          label: "Employee ID",
+          value: activeCandidate.employeeId || "—",
+        },
+      ];
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <StatusTile label="Vaccinated" value={activeCandidate.fullyVaccinated} />
-          <StatusTile
-            label="On-site Ready"
-            value={activeCandidate.comfortableOnSite}
+      return (
+        <>
+          <TabSectionHeader
+            icon={BriefcaseBusiness}
+            title="Application Source"
+            description="Source information and referral details."
           />
-          <StatusTile
-            label="Graveyard Shift"
-            value={activeCandidate.willingGraveyard}
-          />
-          <StatusTile
-            label="Employment Type"
-            value={activeCandidate.employmentInterest}
-          />
-          <StatusTile
-            label="Remote Access"
-            value={activeCandidate.remoteWorkAccess}
-          />
-          <StatusTile label="Drug Test" value={activeCandidate.willingDrugTest} />
 
-          <div className="sm:col-span-2 xl:col-span-3">
-            <StatusTile
-              label="Background Check"
-              value={activeCandidate.willingBackgroundCheck}
-            />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  function renderReferences() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={Phone}
-          title="References"
-          description="Candidate character or work references."
-        />
-
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {validReferences.length > 0 ? (
-            validReferences.map((reference, index) => (
-              <ReferenceCard
-                key={`reference-${index}`}
-                reference={reference}
-                index={index}
+          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            {sourceRows.map((item) => (
+              <CompactInfoRow
+                key={item.label}
+                label={item.label}
+                value={item.value}
               />
-            ))
-          ) : (
-            <div className="md:col-span-2">
-              <EmptyState title="No references provided." />
-            </div>
-          )}
-        </div>
-      </section>
-    );
-  }
+            ))}
+          </div>
+        </>
+      );
+    }
 
-  function renderFiles() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={FileText}
-          title="Files"
-          description="Uploaded audio and supporting attachments."
-        />
+    if (activeTab === "pipeline") {
+      const pipelineRows = [
+        {
+          label: "Pipeline Status",
+          value: activeCandidate.pipelineStatus || "—",
+        },
+        {
+          label: "Current Stage",
+          value:
+            activeCandidate.currentPipelineStage ||
+            activeCandidate.currentStage ||
+            activeCandidate.pipelineStage ||
+            "—",
+        },
+        {
+          label: "Final Role",
+          value: activeCandidate.currentAppliedRole || "Not assigned yet",
+        },
+        {
+          label: "Final Account",
+          value: activeCandidate.currentAppliedAccount || "Not assigned yet",
+        },
+        {
+          label: "TA Owner",
+          value: activeCandidate.currentTaOwner || "—",
+        },
+      ];
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <ViewableFileRow
-            label="Audio Recording"
-            fileName={activeCandidate.audioFileName}
-            fileUrl={activeCandidate.audioFileUrl}
-            fileType={activeCandidate.audioFileType}
-            audio
-          />
-
-          <ViewableFileRow
-            label="Attachment"
-            fileName={activeCandidate.attachmentFileName}
-            fileUrl={activeCandidate.attachmentFileUrl}
-            fileType={activeCandidate.attachmentFileType}
-          />
-        </div>
-      </section>
-    );
-  }
-
-  function renderPreEmploymentFiles() {
-    return (
-      <CandidateNhoFilesSection
-        files={displayedPreEmploymentFiles}
-        selectedFile={selectedNhoFile}
-        onSelectFile={setSelectedNhoFile}
-        isLoading={candidatePipelineFilesLoading}
-        error={candidatePipelineFilesError}
-        canUpload={canUploadFollowUpNhoRequirements}
-        onUploadFollowUp={() => setShowNhoUploadModal(true)}
-      />
-    );
-  }
-
-  function renderApplicationHistory() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      return (
+        <>
           <TabSectionHeader
             icon={Network}
-            title="Application History"
-            description="Candidate movement and application timeline, including Candidate Pipeline process."
+            title="Pipeline Link"
+            description="Current pipeline status, assignment, and TA ownership."
           />
 
-          {applicationHistory.length > 0 && (
-            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-              {applicationHistory.length} record
-              {applicationHistory.length > 1 ? "s" : ""}
-            </span>
+          {pipelineCandidateDetailsLoading && (
+            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+              Loading Candidate Pipeline details...
+            </div>
           )}
-        </div>
 
-        {pipelineCandidateDetailsError && (
-          <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-            {pipelineCandidateDetailsError}
+          {pipelineCandidateDetailsError && (
+            <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+              {pipelineCandidateDetailsError}
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+            {pipelineRows.map((item) => (
+              <CompactInfoRow
+                key={item.label}
+                label={item.label}
+                value={item.value}
+              />
+            ))}
           </div>
-        )}
+        </>
+      );
+    }
 
-        {pipelineCandidateDetailsLoading && (
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
-            Loading Candidate Pipeline process history...
+    if (activeTab === "qualifications") {
+      return (
+        <>
+          <TabSectionHeader
+            icon={GraduationCap}
+            title="Qualifications"
+            description="Education, work experience, skills, and certifications."
+          />
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ProfileInfoCard
+              label="Educational Attainment"
+              value={activeCandidate.educationalAttainment || "—"}
+            />
+
+            <ProfileInfoCard
+              label="Skills / Language"
+              value={activeCandidate.skillsLanguage || "—"}
+            />
+
+            <ProfileInfoCard
+              label="Affiliations"
+              value={formatList(activeCandidate.affiliations)}
+            />
+
+            <ProfileInfoCard
+              label="Training Attended"
+              value={activeCandidate.trainingAttended || "—"}
+            />
           </div>
-        )}
+        </>
+      );
+    }
 
-        <div className="mt-5">
+    if (activeTab === "workExperience") {
+      return (
+        <>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <TabSectionHeader
+              icon={BriefcaseBusiness}
+              title="Work Experience"
+              description="Candidate employment background and compensation."
+            />
+
+            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+              {activeCandidate.workExperience || "—"}
+            </span>
+          </div>
+
+          {workExperiences.length > 0 ? (
+            <div className="space-y-4">
+              {workExperiences.map((experience, index) => (
+                <div
+                  key={`experience-${index}`}
+                  className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                        Experience {index + 1}
+                      </p>
+
+                      <h5 className="mt-1 break-words text-base font-extrabold text-[#101828]">
+                        {experience.role || experience.industry || "—"}
+                      </h5>
+
+                      <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+                        {experience.company || "Company not provided"}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex w-fit shrink-0 rounded-full border border-[#D6E9FF] bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                      {experience.years
+                        ? `${experience.years} year(s)`
+                        : "No duration"}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div className="rounded-xl bg-[#F8FAFC] p-3">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Industry
+                      </p>
+                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                        {experience.industry || "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-[#F8FAFC] p-3">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Compensation
+                      </p>
+                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                        {experience.monthlyCompensation
+                          ? formatCurrency(experience.monthlyCompensation)
+                          : "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-[#F8FAFC] p-3">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Length of Experience
+                      </p>
+                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
+                        {experience.lengthOfWorkExperience || "—"}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl bg-[#F8FAFC] p-3 md:col-span-3">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Reason for Leaving
+                      </p>
+                      <p className="mt-1 whitespace-pre-line break-words text-sm font-bold leading-6 text-[#344054]">
+                        {experience.reasonForLeaving || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No work experience details"
+              description={
+                activeCandidate.workExperience || "No work experience provided."
+              }
+            />
+          )}
+        </>
+      );
+    }
+
+    if (activeTab === "readiness") {
+      return (
+        <>
+          <TabSectionHeader
+            icon={ShieldCheck}
+            title="Readiness and Compliance"
+            description="Availability, work setup, and compliance readiness."
+          />
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <StatusTile
+              label="Vaccinated"
+              value={activeCandidate.fullyVaccinated}
+            />
+            <StatusTile
+              label="On-site Ready"
+              value={activeCandidate.comfortableOnSite}
+            />
+            <StatusTile
+              label="Graveyard Shift"
+              value={activeCandidate.willingGraveyard}
+            />
+            <StatusTile
+              label="Employment Type"
+              value={activeCandidate.employmentInterest}
+            />
+            <StatusTile
+              label="Remote Access"
+              value={activeCandidate.remoteWorkAccess}
+            />
+            <StatusTile label="Drug Test" value={activeCandidate.willingDrugTest} />
+            <div className="sm:col-span-2 xl:col-span-3">
+              <StatusTile
+                label="Background Check"
+                value={activeCandidate.willingBackgroundCheck}
+              />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    if (activeTab === "references") {
+      return (
+        <>
+          <TabSectionHeader
+            icon={Phone}
+            title="References"
+            description="Candidate character or work references."
+          />
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {validReferences.length > 0 ? (
+              validReferences.map((reference, index) => (
+                <ReferenceCard
+                  key={`reference-${index}`}
+                  reference={reference}
+                  index={index}
+                />
+              ))
+            ) : (
+              <div className="md:col-span-2">
+                <EmptyState title="No references provided." />
+              </div>
+            )}
+          </div>
+        </>
+      );
+    }
+
+    if (activeTab === "files") {
+      return (
+        <>
+          <TabSectionHeader
+            icon={FileText}
+            title="Files"
+            description="Uploaded audio and supporting attachments."
+          />
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ViewableFileRow
+              label="Audio Recording"
+              fileName={activeCandidate.audioFileName}
+              fileUrl={activeCandidate.audioFileUrl}
+              fileType={activeCandidate.audioFileType}
+              audio
+            />
+
+            <ViewableFileRow
+              label="Attachment"
+              fileName={activeCandidate.attachmentFileName}
+              fileUrl={activeCandidate.attachmentFileUrl}
+              fileType={activeCandidate.attachmentFileType}
+            />
+          </div>
+        </>
+      );
+    }
+
+    if (activeTab === "preEmploymentFiles") {
+      return (
+        <CandidateNhoFilesSection
+          files={displayedPreEmploymentFiles}
+          selectedFile={selectedNhoFile}
+          onSelectFile={setSelectedNhoFile}
+          isLoading={candidatePipelineFilesLoading}
+          error={candidatePipelineFilesError}
+          canUpload={canUploadFollowUpNhoRequirements}
+          onUploadFollowUp={() => setShowNhoUploadModal(true)}
+        />
+      );
+    }
+
+    if (activeTab === "applicationHistory") {
+      return (
+        <>
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <TabSectionHeader
+              icon={Network}
+              title="Application History"
+              description="Candidate movement and application timeline, including Candidate Pipeline process."
+            />
+
+            {applicationHistory.length > 0 && (
+              <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                {applicationHistory.length} record
+                {applicationHistory.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {pipelineCandidateDetailsError && (
+            <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
+              {pipelineCandidateDetailsError}
+            </div>
+          )}
+
+          {pipelineCandidateDetailsLoading && (
+            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
+              Loading Candidate Pipeline process history...
+            </div>
+          )}
+
           {applicationHistory.length > 0 ? (
             <>
               <div className="relative space-y-4">
@@ -3278,39 +3314,25 @@ export default function CandidateProfileModal() {
           ) : (
             <EmptyState title="No application history yet." />
           )}
-        </div>
-      </section>
-    );
-  }
+        </>
+      );
+    }
 
-  function renderRemarks() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <TabSectionHeader
-          icon={FileText}
-          title="General Remarks"
-          description="Additional notes for this candidate."
-        />
+    if (activeTab === "remarks") {
+      return (
+        <>
+          <TabSectionHeader
+            icon={FileText}
+            title="General Remarks"
+            description="Additional notes for this candidate."
+          />
 
-        <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
-          {activeCandidate.remarks || "No additional remarks."}
-        </div>
-      </section>
-    );
-  }
-
-  function renderActiveTabContent() {
-    if (activeTab === "personal") return renderPersonalInformation();
-    if (activeTab === "applicationSource") return renderApplicationSource();
-    if (activeTab === "pipeline") return renderPipelineLink();
-    if (activeTab === "qualifications") return renderQualifications();
-    if (activeTab === "workExperience") return renderWorkExperience();
-    if (activeTab === "readiness") return renderReadiness();
-    if (activeTab === "references") return renderReferences();
-    if (activeTab === "files") return renderFiles();
-    if (activeTab === "preEmploymentFiles") return renderPreEmploymentFiles();
-    if (activeTab === "applicationHistory") return renderApplicationHistory();
-    if (activeTab === "remarks") return renderRemarks();
+          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
+            {activeCandidate.remarks || "No additional remarks."}
+          </div>
+        </>
+      );
+    }
 
     return null;
   }
@@ -3346,155 +3368,183 @@ export default function CandidateProfileModal() {
           </div>
 
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6">
-            <div className="space-y-5">
-              <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
-                <div className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
-                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
-                        {candidateInitials}
-                      </div>
-
-                      <div className="min-w-0 max-w-full">
-                        <h3 className="line-clamp-4 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-3 sm:text-2xl">
-                          {activeCandidate.name || "Unnamed Candidate"}
-                        </h3>
-
-                        <p className="mt-2 break-words text-sm font-extrabold text-sibs-primary-1">
-                          {activeCandidate.email || "No email provided"}
-                        </p>
-
-                        <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-                          <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                            {activeCandidate.candidateId || "—"}
-                          </span>
-
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              activeCandidate.status,
-                            )}`}
-                          >
-                            {activeCandidate.status || "—"}
-                          </span>
-
-                          {currentStage && (
-                            <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
-                              {currentStage}
-                            </span>
-                          )}
-
-                          {activeCandidate.isPublicSubmission && (
-                            <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
-                              Public Submission
-                            </span>
-                          )}
-                        </div>
-                      </div>
+            <div className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
+              <section className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
+                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
+                      {candidateInitials}
                     </div>
 
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:items-center">
-                      <button
-                        type="button"
-                        onClick={handleEditCandidate}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
-                      >
-                        <Pencil size={16} />
-                        Edit Profile
-                      </button>
+                    <div className="min-w-0 max-w-full">
+                      <h3 className="line-clamp-4 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-3 sm:text-2xl">
+                        {activeCandidate.name || "Unnamed Candidate"}
+                      </h3>
 
-                      <button
-                        type="button"
-                        onClick={handleUpdateCandidateStatus}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm"
-                      >
-                        <RefreshCcw size={16} />
-                        Update Status
-                      </button>
+                      <p className="mt-2 line-clamp-2 text-sm font-extrabold text-[#101828] sm:text-base">
+                        {activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
+                          activeCandidate.currentAppliedRole ||
+                          "No applied role"}
+                      </p>
+
+                      <div className="mt-4 flex flex-col gap-2 text-sm font-semibold text-[#344054] sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
+                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                          <span className="shrink-0 text-sibs-primary-1">
+                            Nickname:
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {activeCandidate.nickname || "—"}
+                          </span>
+                        </span>
+
+                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                          <span className="shrink-0 text-sibs-primary-1">
+                            Email:
+                          </span>
+                          <span className="min-w-0 break-all">
+                            {activeCandidate.email || "—"}
+                          </span>
+                        </span>
+
+                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                          <span className="shrink-0 text-sibs-primary-1">
+                            Phone 1:
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {activeCandidate.phoneNumber1 ||
+                              activeCandidate.contactNumber ||
+                              activeCandidate.phone ||
+                              "—"}
+                          </span>
+                        </span>
+
+                        {activeCandidate.phoneNumber2 && (
+                          <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                            <span className="shrink-0 text-sibs-primary-1">
+                              Phone 2:
+                            </span>
+                            <span className="min-w-0 break-words">
+                              {activeCandidate.phoneNumber2}
+                            </span>
+                          </span>
+                        )}
+
+                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                          <span className="shrink-0 text-sibs-primary-1">
+                            Location:
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {activeCandidate.applyingLocation ||
+                              activeCandidate.physicalAddress ||
+                              "—"}
+                          </span>
+                        </span>
+
+                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
+                          <span className="shrink-0 text-sibs-primary-1">
+                            Last Activity:
+                          </span>
+                          <span className="min-w-0 break-words">
+                            {formatDate(activeCandidate.lastActivity)}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+                        <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                          {activeCandidate.candidateId || "—"}
+                        </span>
+
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+                            activeCandidate.status,
+                          )}`}
+                        >
+                          {activeCandidate.status || "—"}
+                        </span>
+
+                        {currentStage && (
+                          <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-extrabold text-cyan-700">
+                            {currentStage}
+                          </span>
+                        )}
+
+                        {activeCandidate.isPublicSubmission && (
+                          <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
+                            Public Submission
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 divide-y divide-[#E6ECF2] md:grid-cols-3 md:divide-x md:divide-y-0">
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Applied Position
-                    </p>
-
-                    <p
-                      title={
-                        activeCandidate.openPosition ||
-                        activeCandidate.roleCapability ||
-                        "—"
-                      }
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row xl:pt-2">
+                    <button
+                      type="button"
+                      onClick={handleEditCandidate}
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
                     >
-                      {activeCandidate.openPosition ||
-                        activeCandidate.roleCapability ||
-                        "—"}
-                    </p>
-                  </div>
+                      <Pencil size={16} />
+                      Edit Profile
+                    </button>
 
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Preferred Location
-                    </p>
-
-                    <p
-                      title={activeCandidate.applyingLocation || "—"}
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                    <button
+                      type="button"
+                      onClick={handleUpdateCandidateStatus}
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm sm:w-auto"
                     >
-                      {activeCandidate.applyingLocation || "—"}
-                    </p>
-                  </div>
-
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Last Activity
-                    </p>
-
-                    <p
-                      title={formatDate(activeCandidate.lastActivity)}
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
-                    >
-                      {formatDate(activeCandidate.lastActivity)}
-                    </p>
+                      <RefreshCcw size={16} />
+                      Update Status
+                    </button>
                   </div>
                 </div>
 
                 {isDoNotReprocess && (
-                  <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
                     This candidate is marked as Do Not Reprocess and cannot be
                     moved to the pipeline unless the status is updated.
                   </div>
                 )}
               </section>
 
-              <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3 shadow-sm">
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {profileTabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const active = activeTab === tab.id;
+              <section className="grid grid-cols-1 gap-0 border-t border-[#E6ECF2] lg:grid-cols-[240px_minmax(0,1fr)]">
+                <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
+                  <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+                    {profileTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      const isActive = activeTab === tab.id;
 
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-xs font-extrabold transition ${
-                          active
-                            ? "bg-sibs-primary-1 text-white shadow-sm"
-                            : "border border-[#D6DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                        }`}
-                      >
-                        <Icon size={15} />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition lg:min-w-0 ${
+                            isActive
+                              ? "bg-[#EEF3F8] text-sibs-primary-1"
+                              : "text-[#667085] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                          }`}
+                        >
+                          <Icon
+                            size={18}
+                            className={
+                              isActive
+                                ? "text-sibs-primary-1"
+                                : "text-[#98A2B3]"
+                            }
+                          />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </aside>
+
+                <div className="min-w-0 bg-white p-5 sm:p-7">
+                  {renderTabContent()}
                 </div>
               </section>
-
-              {renderActiveTabContent()}
             </div>
           </div>
 

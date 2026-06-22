@@ -48,6 +48,7 @@ import {
   getOfferDecisionClass,
   getOfferApprovalSummary,
   isOfferApproved,
+  buildAssessmentLink,
   buildOfferContractLink,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
@@ -103,6 +104,14 @@ const PRE_EMPLOYMENT_REQUIREMENT_GROUPS = [
 const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
   (group) => group.requirements,
 );
+
+const ASSESSMENT_STATUS_OPTIONS = ["Not Take", "Taken"];
+
+const ASSESSMENT_RESULT_OPTIONS = [
+  "Assessment Fit",
+  "Assessment Not Fit",
+  "For Reassessment",
+];
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -1000,6 +1009,512 @@ function PreEmploymentRequirementsPanel({
   );
 }
 
+function AssessmentModalDropdown({
+  label,
+  required = false,
+  value,
+  options = [],
+  placeholder = "Select",
+  disabled = false,
+  onChange,
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedLabel = cleanText(value) || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(option) {
+    onChange?.(option);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={dropdownRef} className={`relative ${open ? "z-[120]" : "z-[1]"}`}>
+      <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </span>
+
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`mt-2 flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold text-[#344054] shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D6DEE8] hover:border-sibs-primary-1"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
+            : ""
+        }`}
+      >
+        <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[130] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+          <div className="max-h-64 overflow-y-auto py-1">
+            {options.map((option) => {
+              const active = String(option) === String(value);
+
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleSelect(option)}
+                  className={`block w-full px-4 py-3.5 text-left text-sm font-extrabold transition ${
+                    active
+                      ? "bg-[#EAF4FF] text-sibs-primary-1"
+                      : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                  }`}
+                >
+                  <span className="block min-w-0 truncate">{option}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UpdateAssessmentModal({
+  open,
+  candidate,
+  candidateId,
+  onClose,
+  onSaved,
+}) {
+  const [assessmentStatus, setAssessmentStatus] = useState("Not Take");
+  const [assessmentResult, setAssessmentResult] = useState("");
+  const [assessmentRemarks, setAssessmentRemarks] = useState("");
+  const [assessmentFile, setAssessmentFile] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const assessmentFileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const initialStatus =
+      candidate?.assessmentStatus ||
+      candidate?.assessment_status ||
+      "Not Take";
+
+    setAssessmentStatus(initialStatus);
+    setAssessmentResult(
+      candidate?.assessmentResult || candidate?.assessment_result || "",
+    );
+    setAssessmentRemarks(
+      candidate?.assessmentRemarks || candidate?.assessment_remarks || "",
+    );
+    setAssessmentFile(null);
+    setErrorMessage("");
+  }, [
+    open,
+    candidate?.id,
+    candidate?.candidateId,
+    candidate?.assessmentStatus,
+    candidate?.assessment_status,
+    candidate?.assessmentResult,
+    candidate?.assessment_result,
+    candidate?.assessmentRemarks,
+    candidate?.assessment_remarks,
+  ]);
+
+  useEffect(() => {
+    if (assessmentStatus !== "Taken") {
+      setAssessmentFile(null);
+
+      if (assessmentFileInputRef.current) {
+        assessmentFileInputRef.current.value = "";
+      }
+    }
+  }, [assessmentStatus]);
+
+  if (!open) return null;
+
+  const resolvedCandidateId = cleanText(candidateId);
+
+  const assessmentEmailSent = Boolean(
+    candidate?.assessmentEmailSent || candidate?.assessment_email_sent,
+  );
+
+  const assessmentEmailSentAt =
+    candidate?.assessmentEmailSentAt ||
+    candidate?.assessment_email_sent_at ||
+    "—";
+
+  const assessmentLink = buildAssessmentLink
+    ? buildAssessmentLink(candidate || {})
+    : "";
+
+  const displayName =
+    candidate?.name ||
+    candidate?.candidateName ||
+    candidate?.candidate_name ||
+    "Candidate";
+
+  const displayEmail = candidate?.email || "No email provided";
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!resolvedCandidateId) {
+      setErrorMessage("Candidate Pipeline ID is missing.");
+      return;
+    }
+
+    if (assessmentStatus === "Taken" && !cleanText(assessmentResult)) {
+      setErrorMessage("Assessment result is required when status is Taken.");
+      return;
+    }
+
+    setIsSaving(true);
+    setErrorMessage("");
+
+    try {
+      const formData = new FormData();
+
+      formData.append("assessmentStatus", assessmentStatus);
+      formData.append("assessment_status", assessmentStatus);
+      formData.append(
+        "assessmentResult",
+        assessmentStatus === "Taken" ? assessmentResult : "",
+      );
+      formData.append(
+        "assessment_result",
+        assessmentStatus === "Taken" ? assessmentResult : "",
+      );
+      formData.append("assessmentRemarks", assessmentRemarks);
+      formData.append("assessment_remarks", assessmentRemarks);
+
+      if (assessmentFile) {
+        formData.append("assessmentFile", assessmentFile, assessmentFile.name);
+      }
+
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          resolvedCandidateId,
+        )}/assessment`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(payload?.message || "Failed to save assessment.");
+      }
+
+      const apiCandidate = getCandidateFromApiPayload(payload) || {};
+
+      const nextCandidate = {
+        ...(candidate || {}),
+        ...apiCandidate,
+        assessmentStatus:
+          apiCandidate.assessmentStatus ||
+          apiCandidate.assessment_status ||
+          assessmentStatus,
+        assessment_status:
+          apiCandidate.assessment_status ||
+          apiCandidate.assessmentStatus ||
+          assessmentStatus,
+        assessmentResult:
+          apiCandidate.assessmentResult ||
+          apiCandidate.assessment_result ||
+          (assessmentStatus === "Taken" ? assessmentResult : ""),
+        assessment_result:
+          apiCandidate.assessment_result ||
+          apiCandidate.assessmentResult ||
+          (assessmentStatus === "Taken" ? assessmentResult : ""),
+        assessmentRemarks:
+          apiCandidate.assessmentRemarks ||
+          apiCandidate.assessment_remarks ||
+          assessmentRemarks,
+        assessment_remarks:
+          apiCandidate.assessment_remarks ||
+          apiCandidate.assessmentRemarks ||
+          assessmentRemarks,
+      };
+
+      onSaved?.(nextCandidate, payload);
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, "Failed to save assessment."),
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={handleSubmit}
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[92dvh] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
+          <div className="min-w-0">
+            <h2 className="text-xl font-extrabold leading-tight text-sibs-primary-1">
+              Online Assessment
+            </h2>
+
+            <p className="mt-2 max-w-[500px] text-sm font-semibold leading-5 text-sibs-primary-1/90">
+              Update status, tag result, and attach assessment proof after the
+              candidate takes the assessment.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="shrink-0 rounded-full p-2 text-[#98A2B3] transition hover:bg-gray-100 hover:text-[#475467] disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close assessment modal"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
+          <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <h3 className="break-words text-lg font-extrabold text-sibs-primary-1">
+              {displayName}
+            </h3>
+
+            <p className="mt-1 break-words text-sm font-extrabold text-sibs-primary-1/80">
+              {displayEmail}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-extrabold text-orange-600">
+                Assessment: {assessmentStatus || "Not Take"}
+              </span>
+
+              <span className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-extrabold text-[#475467]">
+                {assessmentResult || "No Result"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <div className="rounded-2xl bg-white px-4">
+              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 border-b border-[#E6ECF2] py-4">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Assessment Email Sent
+                </p>
+
+                <p className="break-words text-right text-sm font-extrabold text-[#344054]">
+                  {assessmentEmailSent ? "Yes" : "No"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 border-b border-[#E6ECF2] py-4">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Email Sent At
+                </p>
+
+                <p className="break-words text-right text-sm font-extrabold text-[#344054]">
+                  {assessmentEmailSentAt || "—"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 py-4">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Assessment Link
+                </p>
+
+                {assessmentLink ? (
+                  <a
+                    href={assessmentLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={assessmentLink}
+                    className="min-w-0 break-words text-right text-sm font-extrabold leading-5 text-sibs-primary-1 underline decoration-sibs-primary-1/30 underline-offset-2"
+                  >
+                    {assessmentLink}
+                  </a>
+                ) : (
+                  <p className="text-right text-sm font-extrabold text-[#344054]">
+                    —
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            <AssessmentModalDropdown
+              label="Assessment Status"
+              required
+              value={assessmentStatus}
+              options={ASSESSMENT_STATUS_OPTIONS}
+              disabled={isSaving}
+              onChange={(value) => {
+                setAssessmentStatus(value);
+
+                if (value !== "Taken") {
+                  setAssessmentResult("");
+                  setAssessmentFile(null);
+
+                  if (assessmentFileInputRef.current) {
+                    assessmentFileInputRef.current.value = "";
+                  }
+                }
+              }}
+            />
+
+            {assessmentStatus === "Taken" && (
+              <>
+                <AssessmentModalDropdown
+                  label="Assessment Result"
+                  required
+                  value={assessmentResult}
+                  options={ASSESSMENT_RESULT_OPTIONS}
+                  placeholder="Select result"
+                  disabled={isSaving}
+                  onChange={setAssessmentResult}
+                />
+
+                <label className="block">
+                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    Assessment Attachment
+                  </span>
+
+                  <input
+                    ref={assessmentFileInputRef}
+                    type="file"
+                    disabled={isSaving}
+                    accept=".pdf,.png,.jpg,.jpeg,.webp"
+                    onChange={(event) =>
+                      setAssessmentFile(event.target.files?.[0] || null)
+                    }
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => assessmentFileInputRef.current?.click()}
+                    className="mt-2 flex min-h-[170px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-sibs-primary-1 bg-[#EEF6FF] px-5 py-6 text-center transition hover:bg-[#E7F1FF] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-sibs-primary-1 shadow-sm">
+                      <UploadCloud size={26} strokeWidth={2.4} />
+                    </span>
+
+                    <span className="mt-4 max-w-full break-words text-base font-extrabold text-sibs-primary-1">
+                      {assessmentFile ? assessmentFile.name : "Choose assessment file"}
+                    </span>
+
+                    <span className="mt-1 text-sm font-semibold text-sibs-primary-1">
+                      Accepted: PDF, PNG, JPG, JPEG, WEBP
+                    </span>
+
+                    {assessmentFile && (
+                      <span className="mt-3 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                        {(assessmentFile.size / 1024).toFixed(1)} KB
+                      </span>
+                    )}
+                  </button>
+                </label>
+              </>
+            )}
+
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Assessment Remarks
+              </span>
+
+              <textarea
+                value={assessmentRemarks}
+                disabled={isSaving}
+                onChange={(event) => setAssessmentRemarks(event.target.value)}
+                rows={5}
+                placeholder="Example: Candidate completed assessment and passed required score."
+                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054] shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+              />
+            </label>
+
+            {errorMessage && (
+              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-600">
+                {errorMessage}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="inline-flex h-11 min-w-[92px] items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="inline-flex h-11 min-w-[160px] items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <ClipboardCheck size={16} />
+            )}
+            {isSaving ? "Saving..." : "Save Assessment"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 const CandidatePipelineModal = ({
   open,
   candidate,
@@ -1022,6 +1537,9 @@ const CandidatePipelineModal = ({
   const [selectedNhoFile, setSelectedNhoFile] = useState(null);
   const [isLoadingNhoFiles, setIsLoadingNhoFiles] = useState(false);
   const [isSavingNhoFiles, setIsSavingNhoFiles] = useState(false);
+  const [isSendingAssessmentEmail, setIsSendingAssessmentEmail] =
+    useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
 
@@ -1074,6 +1592,8 @@ const CandidatePipelineModal = ({
     setInterviewNotesDraft(candidate?.interviewNotes || "");
     setLocalCandidate(candidate || null);
     setSelectedNhoFile(null);
+    setIsSendingAssessmentEmail(false);
+    setShowAssessmentModal(false);
     setNhoFilesError("");
     setNhoFilesSuccess("");
     setStatusModal({
@@ -1149,7 +1669,13 @@ const CandidatePipelineModal = ({
     });
   }, [sortedCandidateFiles]);
 
-  const currentStage = activeCandidate?.currentStage || "";
+  const currentStage =
+    activeCandidate?.currentStage ||
+    activeCandidate?.currentPipelineStage ||
+    activeCandidate?.pipelineStage ||
+    activeCandidate?.stage ||
+    "";
+
   const nextStage = getNextStage(currentStage);
 
   const isLeadStage = false;
@@ -1296,6 +1822,147 @@ const CandidatePipelineModal = ({
   const modalStatus = getDisplayInterviewStatus(activeCandidate);
   const isInterviewInProgress =
     isInterviewScheduled && modalStatus === "Interview in Progress";
+
+  function syncCandidateAfterAction(nextCandidate = {}, detail = {}) {
+    const mergedCandidate = {
+      ...activeCandidate,
+      ...nextCandidate,
+    };
+
+    setLocalCandidate(mergedCandidate);
+
+    window.dispatchEvent(
+      new CustomEvent("ta-pipeline-candidates-updated", {
+        detail: {
+          candidate: mergedCandidate,
+          ...detail,
+        },
+      }),
+    );
+
+    return mergedCandidate;
+  }
+
+  async function handleSendAssessmentEmailClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!candidateNhoUploadId) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Send",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    setIsSendingAssessmentEmail(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateNhoUploadId,
+        )}/assessment/send-email`,
+        {},
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message || "Failed to send assessment email.",
+        );
+      }
+
+      const apiCandidate = getCandidateFromApiPayload(payload) || {};
+
+      const nextCandidate = syncCandidateAfterAction({
+        ...apiCandidate,
+        assessmentEmailSent:
+          apiCandidate.assessmentEmailSent ??
+          apiCandidate.assessment_email_sent ??
+          true,
+        assessment_email_sent:
+          apiCandidate.assessment_email_sent ??
+          apiCandidate.assessmentEmailSent ??
+          true,
+        assessmentEmailSentAt:
+          apiCandidate.assessmentEmailSentAt ||
+          apiCandidate.assessment_email_sent_at ||
+          new Date().toISOString(),
+        assessment_email_sent_at:
+          apiCandidate.assessment_email_sent_at ||
+          apiCandidate.assessmentEmailSentAt ||
+          new Date().toISOString(),
+      });
+
+      if (typeof onSendAssessmentEmail === "function") {
+        try {
+          await onSendAssessmentEmail(nextCandidate);
+        } catch (callbackError) {
+          console.warn(
+            "Parent assessment email callback warning:",
+            callbackError,
+          );
+        }
+      }
+
+      showStatusModal({
+        type: "success",
+        title: "Assessment Email Sent",
+        message:
+          payload?.message ||
+          "Assessment email was marked as sent successfully.",
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Send Assessment Email Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to send assessment email.",
+        ),
+      });
+    } finally {
+      setIsSendingAssessmentEmail(false);
+    }
+  }
+
+  function handleOpenAssessmentModalClick(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setShowAssessmentModal(true);
+  }
+
+  function handleAssessmentSaved(nextCandidate, payload = {}) {
+    const mergedCandidate = syncCandidateAfterAction(nextCandidate || {});
+
+    setShowAssessmentModal(false);
+
+    if (typeof onOpenAssessmentModal === "function") {
+      try {
+        window.dispatchEvent(
+          new CustomEvent("ta-assessment-updated", {
+            detail: {
+              candidate: mergedCandidate,
+              payload,
+            },
+          }),
+        );
+      } catch {
+        // Ignore event dispatch warning.
+      }
+    }
+
+    showStatusModal({
+      type: "success",
+      title: "Assessment Saved",
+      message: payload?.message || "Assessment details were saved successfully.",
+    });
+  }
 
   async function handleLocalPrfStatusUpdate(firstArg, secondArg) {
     const nextPrfStatus =
@@ -1995,10 +2662,10 @@ const CandidatePipelineModal = ({
                       <div className="mt-3 flex flex-wrap gap-2">
                         <span
                           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStageClass(
-                            activeCandidate.currentStage,
+                            currentStage,
                           )}`}
                         >
-                          {activeCandidate.currentStage}
+                          {currentStage}
                         </span>
 
                         <span
@@ -2179,12 +2846,18 @@ const CandidatePipelineModal = ({
                           <DetailRow
                             label="Email Sent"
                             value={
-                              activeCandidate.assessmentEmailSent ? "Yes" : "No"
+                              activeCandidate.assessmentEmailSent ||
+                              activeCandidate.assessment_email_sent
+                                ? "Yes"
+                                : "No"
                             }
                           />
                           <DetailRow
                             label="Email Sent At"
-                            value={activeCandidate.assessmentEmailSentAt}
+                            value={
+                              activeCandidate.assessmentEmailSentAt ||
+                              activeCandidate.assessment_email_sent_at
+                            }
                           />
                         </div>
 
@@ -2192,20 +2865,23 @@ const CandidatePipelineModal = ({
                           <div className="mt-4 grid grid-cols-1 gap-2">
                             <button
                               type="button"
-                              onClick={() =>
-                                onSendAssessmentEmail?.(activeCandidate)
-                              }
-                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                              disabled={isSendingAssessmentEmail}
+                              onClick={handleSendAssessmentEmailClick}
+                              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                              <Mail size={16} />
-                              Send Assessment Email
+                              {isSendingAssessmentEmail ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Mail size={16} />
+                              )}
+                              {isSendingAssessmentEmail
+                                ? "Sending..."
+                                : "Send Assessment Email"}
                             </button>
 
                             <button
                               type="button"
-                              onClick={() =>
-                                onOpenAssessmentModal?.(activeCandidate)
-                              }
+                              onClick={handleOpenAssessmentModalClick}
                               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
                             >
                               <ClipboardCheck size={16} />
@@ -2664,6 +3340,14 @@ const CandidatePipelineModal = ({
           </div>
         </div>
       </div>
+
+      <UpdateAssessmentModal
+        open={showAssessmentModal}
+        candidate={activeCandidate}
+        candidateId={candidateNhoUploadId}
+        onClose={() => setShowAssessmentModal(false)}
+        onSaved={handleAssessmentSaved}
+      />
 
       <StatusModal
         open={statusModal.open}
