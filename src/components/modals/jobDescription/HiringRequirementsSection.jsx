@@ -144,6 +144,7 @@ export default function HiringRequirementSection({
               )}
             </div>
           </div>
+
           <div className="mt-2 self-start">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
               Document Title <span className="text-red-500">*</span>
@@ -253,17 +254,31 @@ export default function HiringRequirementSection({
           zIndex="z-30"
         />
 
-        {/* <div className="self-start">
+        <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Effectivity Date <span className="text-red-500">*</span>
+            Effective Date <span className="text-red-500">*</span>
           </label>
 
           <input
-            value={form.owner || ""}
-            placeholder="Logged-in user account"
-            className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
+            required
+            type="date"
+            value={form.effectiveDate || ""}
+            onFocus={() => {
+              setLinkedRequirementOpen(false);
+              setAccountOpen(false);
+              setDepartmentOpen(false);
+              setJdStatusOpen(false);
+              setRequestedByOpen(false);
+            }}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                effectiveDate: e.target.value,
+              }))
+            }
+            className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
           />
-        </div> */}
+        </div>
 
         <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">

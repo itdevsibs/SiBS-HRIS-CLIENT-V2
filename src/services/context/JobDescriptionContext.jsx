@@ -1,4 +1,15 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  getJobDescriptionRevisionComments,
+  saveJobDescriptionRevisionComments,
+} from "../../lib/axios/jobDescription";
 
 const JobDescriptionContext = createContext(null);
 
@@ -12,22 +23,35 @@ function getTodayDate() {
 }
 
 const initialJobDescriptionForm = {
+  existingJdId: "",
   linkedHiringRequirement: "",
+
   documentTitle: "",
   roleTitle: "",
+
   accountId: "",
   account: "",
+
   departmentId: "",
   department: "",
+
   jdStatus: "New Job Description",
+
+  personalityType: "",
   personalityTypes: [],
+
   ownerSibsId: "",
   owner: "",
+
   requestedBySibsId: "",
   requestedBy: "",
+
   dateRequested: "",
+  effectiveDate: "",
+
   reportsTo: "",
   supervisory: "No",
+
   description: "",
   responsibilities: "",
   qualifications: "",
@@ -47,7 +71,11 @@ export function useJobDescription() {
 }
 
 export default function JobDescriptionProvider({ children }) {
-  const [form, setForm] = useState(initialJobDescriptionForm);
+  const [form, setForm] = useState({
+    ...initialJobDescriptionForm,
+    dateRequested: getTodayDate(),
+    effectiveDate: getTodayDate(),
+  });
 
   const [accounts, setAccounts] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -57,6 +85,10 @@ export default function JobDescriptionProvider({ children }) {
   const [dropdownError, setDropdownError] = useState("");
 
   const [competencies, setCompetencies] = useState([]);
+
+  const [revisionComments, setRevisionComments] = useState([]);
+  const [revisionCommentsLoading, setRevisionCommentsLoading] = useState(false);
+  const [revisionCommentsError, setRevisionCommentsError] = useState("");
 
   const linkedRequirementOptions = useMemo(
     () => [
@@ -68,71 +100,246 @@ export default function JobDescriptionProvider({ children }) {
     [],
   );
 
-  const hasLinkedHiringRequirement = !!form.linkedHiringRequirement;
+  const hasLinkedHiringRequirement = !!String(
+    form.existingJdId || form.linkedHiringRequirement || "",
+  ).trim();
 
   const selectedLinkedRequirement =
-    linkedRequirementOptions.find(
-      (option) => option.value === String(form.linkedHiringRequirement || ""),
-    )?.label || "";
+    linkedRequirementOptions.find((option) => {
+      const currentValue = String(
+        form.existingJdId || form.linkedHiringRequirement || "",
+      );
+
+      return String(option.value) === currentValue;
+    })?.label || "";
 
   const selectedJdStatus =
     jdStatusOptions.find(
       (option) => option.value === String(form.jdStatus || ""),
     )?.label || "";
 
-  function resetJobDescriptionForm(overrides = {}) {
+  const resetJobDescriptionForm = useCallback((overrides = {}) => {
     setForm({
       ...initialJobDescriptionForm,
       dateRequested: getTodayDate(),
+      effectiveDate: getTodayDate(),
       ...overrides,
     });
 
     setCompetencies([]);
-  }
+  }, []);
 
-  function handleRequirementChange() {
+  const handleRequirementChange = useCallback((value = "") => {
+    const nextValue = String(value || "").trim();
+
     setForm((prev) => ({
       ...prev,
-      linkedHiringRequirement: "",
+
+      existingJdId: nextValue,
+      linkedHiringRequirement: nextValue,
+
+      documentTitle: "",
       roleTitle: "",
+
       accountId: "",
       account: "",
+
       departmentId: "",
       department: "",
-      jdStatus: "New Job Description",
+
+      jdStatus: nextValue ? "Existing" : "New Job Description",
+
       requestedBySibsId: "",
       requestedBy: "",
+
+      description: "",
+      responsibilities: "",
+      qualifications: "",
+      remarks: "",
+
+      personalityType: "",
+      reportsTo: "",
+      supervisory: "No",
+      effectiveDate: prev.effectiveDate || getTodayDate(),
     }));
-  }
 
-  const value = {
-    form,
-    setForm,
+    setCompetencies([]);
+  }, []);
 
-    accounts,
-    setAccounts,
-    departments,
-    setDepartments,
-    requestedByUsers,
-    setRequestedByUsers,
+  const clearRevisionComments = useCallback(() => {
+    setRevisionComments([]);
+    setRevisionCommentsError("");
+    setRevisionCommentsLoading(false);
+  }, []);
 
-    dropdownLoading,
-    setDropdownLoading,
-    dropdownError,
-    setDropdownError,
+  const loadRevisionComments = useCallback(async (jdId, params = {}) => {
+    const resolvedJdId = Number(jdId || 0);
 
-    competencies,
-    setCompetencies,
+    if (!resolvedJdId) {
+      setRevisionComments([]);
+      setRevisionCommentsError("");
+      return {
+        success: false,
+        data: [],
+        message: "Invalid job description ID.",
+      };
+    }
 
-    jdStatusOptions,
-    linkedRequirementOptions,
-    hasLinkedHiringRequirement,
-    selectedLinkedRequirement,
-    selectedJdStatus,
+    setRevisionCommentsLoading(true);
+    setRevisionCommentsError("");
 
-    resetJobDescriptionForm,
-    handleRequirementChange,
-  };
+    try {
+      const result = await getJobDescriptionRevisionComments(
+        resolvedJdId,
+        params,
+      );
+
+      if (!result?.success) {
+        setRevisionComments([]);
+        setRevisionCommentsError(
+          result?.message || "Failed to load revision comments.",
+        );
+
+        return result;
+      }
+
+      setRevisionComments(result.data || []);
+
+      return result;
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to load revision comments.";
+
+      setRevisionComments([]);
+      setRevisionCommentsError(message);
+
+      return {
+        success: false,
+        data: [],
+        message,
+      };
+    } finally {
+      setRevisionCommentsLoading(false);
+    }
+  }, []);
+
+  const saveRevisionComments = useCallback(async (jdId, comments = []) => {
+    const resolvedJdId = Number(jdId || 0);
+
+    if (!resolvedJdId) {
+      return {
+        success: false,
+        message: "Invalid job description ID.",
+      };
+    }
+
+    setRevisionCommentsLoading(true);
+    setRevisionCommentsError("");
+
+    try {
+      const result = await saveJobDescriptionRevisionComments(
+        resolvedJdId,
+        comments,
+      );
+
+      if (!result?.success) {
+        setRevisionCommentsError(
+          result?.message || "Failed to save revision comments.",
+        );
+
+        return result;
+      }
+
+      setRevisionComments(result.data || comments || []);
+
+      return result;
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to save revision comments.";
+
+      setRevisionCommentsError(message);
+
+      return {
+        success: false,
+        message,
+      };
+    } finally {
+      setRevisionCommentsLoading(false);
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      form,
+      setForm,
+
+      accounts,
+      setAccounts,
+
+      departments,
+      setDepartments,
+
+      requestedByUsers,
+      setRequestedByUsers,
+
+      dropdownLoading,
+      setDropdownLoading,
+
+      dropdownError,
+      setDropdownError,
+
+      competencies,
+      setCompetencies,
+
+      revisionComments,
+      setRevisionComments,
+
+      revisionCommentsLoading,
+      setRevisionCommentsLoading,
+
+      revisionCommentsError,
+      setRevisionCommentsError,
+
+      loadRevisionComments,
+      clearRevisionComments,
+      saveRevisionComments,
+
+      jdStatusOptions,
+      linkedRequirementOptions,
+
+      hasLinkedHiringRequirement,
+      selectedLinkedRequirement,
+      selectedJdStatus,
+
+      resetJobDescriptionForm,
+      handleRequirementChange,
+    }),
+    [
+      form,
+      accounts,
+      departments,
+      requestedByUsers,
+      dropdownLoading,
+      dropdownError,
+      competencies,
+      revisionComments,
+      revisionCommentsLoading,
+      revisionCommentsError,
+      loadRevisionComments,
+      clearRevisionComments,
+      saveRevisionComments,
+      linkedRequirementOptions,
+      hasLinkedHiringRequirement,
+      selectedLinkedRequirement,
+      selectedJdStatus,
+      resetJobDescriptionForm,
+      handleRequirementChange,
+    ],
+  );
 
   return (
     <JobDescriptionContext.Provider value={value}>
