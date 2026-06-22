@@ -3,8 +3,6 @@ import {
   Check,
   Eye,
   ExternalLink,
-  Eye,
-  ExternalLink,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -59,10 +57,6 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
   (group) => group.requirements,
 );
 
-const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
-  (group) => group.requirements,
-);
-
 const ACCEPTED_FILE_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
 
@@ -74,18 +68,6 @@ function normalizeRequirement(value) {
   return cleanText(value).toLowerCase().replace(/\s+/g, " ");
 }
 
-function normalizeRequirementSlug(value) {
-  return cleanText(value)
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function getOfficialRequirementMatch(value = "") {
-  const key = normalizeRequirementSlug(value);
-
-  if (!key) return "";
 function normalizeRequirementSlug(value) {
   return cleanText(value)
     .toLowerCase()
@@ -125,6 +107,7 @@ function getOfficialRequirementFromFile(file = {}) {
     file.saved_file_name ||
     file.filename ||
     file.storedFileName ||
+    file.stored_file_name ||
     file.fileName ||
     file.name ||
     file.originalName ||
@@ -160,45 +143,25 @@ function formatFileSize(size = 0) {
   return `${(kb / 1024).toFixed(1)} MB`;
 }
 
+function formatUploadedDate(value = "") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toLocaleString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function getFileIcon(fileName = "") {
   const value = String(fileName || "").toLowerCase();
 
-  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
-  if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
-
-  return FileText;
-}
-
-function getApiErrorMessage(error, fallback = "Request failed.") {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
-    fallback
-  );
-}
-
-function getResolvedFileUrl(fileUrl = "") {
-  const value = cleanText(fileUrl);
-
-  if (!value) return "";
-
-  if (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("data:") ||
-    value.startsWith("blob:")
-  ) {
-    return value;
-  }
-
-  const apiBaseUrl = cleanText(import.meta.env.VITE_API_URL).replace(/\/+$/, "");
-
-  if (value.startsWith("/api/") && apiBaseUrl) {
-    return `${apiBaseUrl}${value}`;
-  }
-
-  return value;
   if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
   if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
 
@@ -252,16 +215,13 @@ function isRawBrowserFile(file) {
   return typeof File !== "undefined" && file instanceof File;
 }
 
-function isRawBrowserFile(file) {
-  return typeof File !== "undefined" && file instanceof File;
-}
-
 function normalizeUploadedFile(file = {}) {
   const savedFileName =
     file.savedFileName ||
     file.saved_file_name ||
     file.filename ||
     file.storedFileName ||
+    file.stored_file_name ||
     "";
 
   const fileName =
@@ -280,37 +240,9 @@ function normalizeUploadedFile(file = {}) {
     file.downloadUrl ||
     "";
 
-  const filePath = file.filePath || file.storedPath || file.path || "";
-  const officialRequirement = getOfficialRequirementFromFile({
-    ...file,
-    savedFileName,
-    fileName,
-  });
+  const filePath =
+    file.filePath || file.storedPath || file.stored_path || file.path || "";
 
-  const savedFileName =
-    file.savedFileName ||
-    file.saved_file_name ||
-    file.filename ||
-    file.storedFileName ||
-    "";
-
-  const fileName =
-    file.fileName ||
-    file.name ||
-    file.originalName ||
-    file.originalname ||
-    savedFileName ||
-    "";
-
-  const fileUrl =
-    file.fileUrl ||
-    file.url ||
-    file.dataUrl ||
-    file.previewUrl ||
-    file.downloadUrl ||
-    "";
-
-  const filePath = file.filePath || file.storedPath || file.path || "";
   const officialRequirement = getOfficialRequirementFromFile({
     ...file,
     savedFileName,
@@ -318,11 +250,14 @@ function normalizeUploadedFile(file = {}) {
   });
 
   return {
+    ...file,
     id:
       file.id ||
       file.fileId ||
-      file.fileId ||
-      `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      file.file_id ||
+      `${officialRequirement || "FILE"}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`,
     requirement:
       officialRequirement ||
       file.requirement ||
@@ -332,39 +267,39 @@ function normalizeUploadedFile(file = {}) {
     fileName,
     savedFileName,
     filename: file.filename || savedFileName,
-    requirement:
-      officialRequirement ||
-      file.requirement ||
-      file.label ||
-      file.category ||
+    fileSize: file.fileSize || file.size || file.file_size || 0,
+    fileType:
+      file.fileType ||
+      file.type ||
+      file.mimetype ||
+      file.mimeType ||
+      file.file_type ||
+      "application/octet-stream",
+    fileUrl,
+    filePath,
+    storedPath: file.storedPath || file.stored_path || filePath,
+    uploadedAt:
+      file.uploadedAt ||
+      file.uploaded_at ||
+      file.createdAt ||
+      file.created_at ||
+      file.updatedAt ||
+      file.updated_at ||
       "",
-    fileName,
-    savedFileName,
-    filename: file.filename || savedFileName,
-    fileSize: file.fileSize || file.size || 0,
-    fileType:
-      file.fileType ||
-      file.type ||
-      file.mimetype ||
-      file.mimeType ||
-      "application/octet-stream",
-    fileUrl,
-    filePath,
-    storedPath: file.storedPath || filePath,
-    uploadedAt: file.uploadedAt || file.createdAt || file.updatedAt || "",
-    uploadedBy: file.uploadedBy || file.createdBy || file.updatedBy || "",
-    fileType:
-      file.fileType ||
-      file.type ||
-      file.mimetype ||
-      file.mimeType ||
-      "application/octet-stream",
-    fileUrl,
-    filePath,
-    storedPath: file.storedPath || filePath,
-    uploadedAt: file.uploadedAt || file.createdAt || file.updatedAt || "",
-    uploadedBy: file.uploadedBy || file.createdBy || file.updatedBy || "",
-    applicantFolderName: file.applicantFolderName || "",
+    uploadedBy:
+      file.uploadedBy ||
+      file.uploaded_by ||
+      file.createdBy ||
+      file.created_by ||
+      file.updatedBy ||
+      file.updated_by ||
+      "",
+    applicantFolderName:
+      file.applicantFolderName ||
+      file.applicant_folder_name ||
+      file.folderName ||
+      file.folder_name ||
+      "",
     rawFile: file.rawFile || null,
   };
 }
@@ -393,11 +328,20 @@ function getFilesFromApiPayload(payload) {
   if (Array.isArray(responsePayload?.candidate?.nhoFiles)) {
     return responsePayload.candidate.nhoFiles;
   }
+  if (Array.isArray(responsePayload?.candidate?.nho_files)) {
+    return responsePayload.candidate.nho_files;
+  }
   if (Array.isArray(responsePayload?.data?.nhoFiles)) {
     return responsePayload.data.nhoFiles;
   }
   if (Array.isArray(responsePayload?.data?.nho_files)) {
     return responsePayload.data.nho_files;
+  }
+  if (Array.isArray(responsePayload?.data?.candidate?.nhoFiles)) {
+    return responsePayload.data.candidate.nhoFiles;
+  }
+  if (Array.isArray(responsePayload?.data?.candidate?.nho_files)) {
+    return responsePayload.data.candidate.nho_files;
   }
 
   return [];
@@ -406,7 +350,42 @@ function getFilesFromApiPayload(payload) {
 function getCandidateFromApiPayload(payload) {
   const responsePayload = payload?.data ?? payload;
 
-  return responsePayload?.candidate || responsePayload?.data || null;
+  return (
+    responsePayload?.candidate ||
+    responsePayload?.data?.candidate ||
+    responsePayload?.data ||
+    null
+  );
+}
+
+function calculateProgress(files = [], requirements = ALL_REQUIREMENTS) {
+  const uploadedRequirementMap = new Map();
+
+  filterOfficialUploadedFiles(files).forEach((file) => {
+    const key = normalizeRequirement(file?.requirement);
+
+    if (key) {
+      uploadedRequirementMap.set(key, file);
+    }
+  });
+
+  const completed = requirements.filter((requirement) =>
+    uploadedRequirementMap.has(normalizeRequirement(requirement)),
+  ).length;
+
+  const total = requirements.length;
+  const percent = total ? Math.round((completed / total) * 100) : 0;
+
+  return {
+    completed,
+    total,
+    percent,
+    isComplete: total > 0 && completed >= total,
+  };
+}
+
+function calculateMajorProgress(files = []) {
+  return calculateProgress(files, MAJOR_REQUIREMENTS);
 }
 
 function getMajorProgressFromApiPayload(payload, fallbackFiles = []) {
@@ -416,6 +395,9 @@ function getMajorProgressFromApiPayload(payload, fallbackFiles = []) {
     responsePayload?.majorProgress ||
     responsePayload?.data?.majorProgress ||
     responsePayload?.candidate?.majorNhoUploadProgress ||
+    responsePayload?.candidate?.major_nho_upload_progress ||
+    responsePayload?.data?.candidate?.majorNhoUploadProgress ||
+    responsePayload?.data?.candidate?.major_nho_upload_progress ||
     calculateMajorProgress(fallbackFiles)
   );
 }
@@ -430,6 +412,10 @@ function getRoutedStageFromApiPayload(payload) {
     responsePayload?.candidate?.current_stage ||
     responsePayload?.candidate?.currentPipelineStage ||
     responsePayload?.candidate?.current_pipeline_stage ||
+    responsePayload?.data?.candidate?.currentStage ||
+    responsePayload?.data?.candidate?.current_stage ||
+    responsePayload?.data?.candidate?.currentPipelineStage ||
+    responsePayload?.data?.candidate?.current_pipeline_stage ||
     responsePayload?.data?.currentStage ||
     responsePayload?.data?.current_stage ||
     ""
@@ -490,36 +476,6 @@ function sortUploadedFiles(files = []) {
     });
 }
 
-function calculateProgress(files = [], requirements = ALL_REQUIREMENTS) {
-  const uploadedRequirementMap = new Map();
-
-  filterOfficialUploadedFiles(files).forEach((file) => {
-    const key = normalizeRequirement(file?.requirement);
-
-    if (key) {
-      uploadedRequirementMap.set(key, file);
-    }
-  });
-
-  const completed = requirements.filter((requirement) =>
-    uploadedRequirementMap.has(normalizeRequirement(requirement)),
-  ).length;
-
-  const total = requirements.length;
-  const percent = total ? Math.round((completed / total) * 100) : 0;
-
-  return {
-    completed,
-    total,
-    percent,
-    isComplete: total > 0 && completed >= total,
-  };
-}
-
-function calculateMajorProgress(files = []) {
-  return calculateProgress(files, MAJOR_REQUIREMENTS);
-}
-
 function RequirementCard({
   requirement,
   uploadedFile,
@@ -530,7 +486,6 @@ function RequirementCard({
 }) {
   const inputRef = useRef(null);
 
-  const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
   const hasFile = Boolean(uploadedFile?.fileName || uploadedFile?.fileUrl);
   const FileIcon = getFileIcon(uploadedFile?.fileName);
   const major = isMajorRequirement(requirement);
@@ -543,7 +498,6 @@ function RequirementCard({
     try {
       const fileUrl = await readFileAsDataUrl(file);
 
-      const nextFile = normalizeUploadedFile({
       const nextFile = normalizeUploadedFile({
         id: `FILE-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         requirement,
@@ -558,8 +512,6 @@ function RequirementCard({
         uploadedAt: new Date().toISOString(),
         rawFile: file,
       });
-
-      onUpload(requirement, nextFile);
 
       onUpload(requirement, nextFile);
     } finally {
@@ -608,7 +560,7 @@ function RequirementCard({
             )}
           </div>
 
-          {hasFile && (
+          {hasFile ? (
             <button
               type="button"
               disabled={disabled}
@@ -620,7 +572,6 @@ function RequirementCard({
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-xs font-extrabold text-emerald-800">
                   {uploadedFile.fileName || "Uploaded file"}
-                  {uploadedFile.fileName || "Uploaded file"}
                 </span>
 
                 <span className="mt-0.5 block truncate text-[11px] font-bold text-emerald-700/80">
@@ -628,6 +579,10 @@ function RequirementCard({
                 </span>
               </span>
             </button>
+          ) : (
+            <div className="mt-3 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-3 py-3 text-xs font-bold text-sibs-tertiary-5">
+              No uploaded file yet.
+            </div>
           )}
         </div>
       </div>
@@ -670,7 +625,6 @@ function RequirementCard({
         type="file"
         accept={ACCEPTED_FILE_TYPES}
         disabled={disabled}
-        disabled={disabled}
         onChange={handleFileChange}
         className="hidden"
       />
@@ -700,9 +654,14 @@ function FilePreviewPanel({ file }) {
   const FileIcon = getFileIcon(file.fileName);
   const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
 
+  const isImageByType = String(file.fileType || "").startsWith("image/");
+  const isImageByName = /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(
+    file.fileName || "",
+  );
+
   const isImage =
     resolvedFileUrl &&
-    String(file.fileType || "").startsWith("image/") &&
+    (isImageByType || isImageByName) &&
     !String(resolvedFileUrl).startsWith("blob:");
 
   return (
@@ -721,7 +680,6 @@ function FilePreviewPanel({ file }) {
             title={file.fileName}
             className="mt-1 break-words text-base font-extrabold text-[#101828]"
           >
-            {file.fileName || "Uploaded file"}
             {file.fileName || "Uploaded file"}
           </h3>
 
@@ -748,17 +706,21 @@ function FilePreviewPanel({ file }) {
           </p>
 
           <p className="mt-1 text-sm font-bold text-sibs-primary-1">
-            {file.uploadedAt
-              ? new Date(file.uploadedAt).toLocaleString("en-PH", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                })
-              : "—"}
+            {formatUploadedDate(file.uploadedAt)}
           </p>
         </div>
+
+        {file.uploadedBy && (
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+              Uploaded By
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+              {file.uploadedBy}
+            </p>
+          </div>
+        )}
 
         {file.applicantFolderName && (
           <div>
@@ -881,23 +843,8 @@ function UploadedFilesList({ files = [], disabled = false, onSelect, onRemove })
 
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-tertiary-5">
                         <span>{formatFileSize(file.fileSize)}</span>
-
                         <span>•</span>
-
-                        <span>
-                          {file.uploadedAt
-                            ? new Date(file.uploadedAt).toLocaleString(
-                                "en-PH",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                  hour: "numeric",
-                                  minute: "2-digit",
-                                },
-                              )
-                            : "No date"}
-                        </span>
+                        <span>{formatUploadedDate(file.uploadedAt)}</span>
                       </div>
                     </div>
                   </button>
@@ -954,14 +901,8 @@ export default function NhoUploadModal({
   initialFiles = [],
   currentFile = null,
   previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
-  previousEmploymentEnabled: _initialPreviousEmploymentEnabled = true,
   onSave,
 }) {
-  const onSaveRef = useRef(onSave);
-  const initialFilesRef = useRef(initialFiles);
-  const currentFileRef = useRef(currentFile);
-  const latestRequestRef = useRef(0);
-
   const onSaveRef = useRef(onSave);
   const initialFilesRef = useRef(initialFiles);
   const currentFileRef = useRef(currentFile);
@@ -970,9 +911,7 @@ export default function NhoUploadModal({
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [loadError, setLoadError] = useState("");
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
 
@@ -987,21 +926,10 @@ export default function NhoUploadModal({
   useEffect(() => {
     currentFileRef.current = currentFile;
   }, [currentFile]);
-    onSaveRef.current = onSave;
-  }, [onSave]);
-
-  useEffect(() => {
-    initialFilesRef.current = initialFiles;
-  }, [initialFiles]);
-
-  useEffect(() => {
-    currentFileRef.current = currentFile;
-  }, [currentFile]);
 
   const uploadedRequirementMap = useMemo(() => {
     const map = new Map();
 
-    filterOfficialUploadedFiles(files).forEach((file) => {
     filterOfficialUploadedFiles(files).forEach((file) => {
       const key = normalizeRequirement(file.requirement);
 
@@ -1125,14 +1053,7 @@ export default function NhoUploadModal({
         ...filePayload,
         requirement,
       });
-      const nextFile = normalizeUploadedFile({
-        ...filePayload,
-        requirement,
-      });
 
-      const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
-
-      setSelectedFile(nextFile);
       const nextFiles = dedupeFiles([nextFile, ...withoutCurrentRequirement]);
 
       setSelectedFile(nextFile);
@@ -1168,8 +1089,6 @@ export default function NhoUploadModal({
 
     const formData = new FormData();
 
-    const filePayloads = officialFiles.map((file) => {
-      const hasNewFile = isRawBrowserFile(file.rawFile);
     const filePayloads = officialFiles.map((file) => {
       const hasNewFile = isRawBrowserFile(file.rawFile);
 
@@ -1230,8 +1149,6 @@ export default function NhoUploadModal({
 
       const officialFiles = filterOfficialUploadedFiles(files);
 
-      const officialFiles = filterOfficialUploadedFiles(files);
-
       if (candidateId) {
         const response = await saveUploadsToBackend();
 
@@ -1239,12 +1156,10 @@ export default function NhoUploadModal({
           throw new Error(response?.message || "Failed to save uploads.");
         }
 
-        const savedFiles = Array.isArray(response.files)
-          ? filterOfficialUploadedFiles(response.files)
-          ? filterOfficialUploadedFiles(response.files)
-          : Array.isArray(response?.data?.files)
-            ? filterOfficialUploadedFiles(response.data.files)
-            : officialFiles;
+        const responseFiles = getFilesFromApiPayload(response);
+        const savedFiles = responseFiles.length
+          ? filterOfficialUploadedFiles(responseFiles)
+          : officialFiles;
 
         const savedProgress = calculateProgress(savedFiles);
         const savedMajorProgress =
@@ -1267,7 +1182,8 @@ export default function NhoUploadModal({
           majorTotal:
             response?.data?.majorProgress?.total ?? savedMajorProgress.total,
           majorPercent:
-            response?.data?.majorProgress?.percent ?? savedMajorProgress.percent,
+            response?.data?.majorProgress?.percent ??
+            savedMajorProgress.percent,
           majorProgress: savedMajorProgress,
 
           routedStage,
@@ -1410,7 +1326,7 @@ export default function NhoUploadModal({
                     />
                   </div>
 
-                  <div className="mt-4 mb-2 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  <div className="mb-2 mt-4 flex items-center justify-between text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
                     <span>Total Completion</span>
                     <span>{progressPercent}%</span>
                   </div>
@@ -1475,7 +1391,6 @@ export default function NhoUploadModal({
 
                 <div className="mt-5 space-y-6">
                   {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
-                  {PRE_EMPLOYMENT_REQUIREMENT_GROUPS.map((group) => {
                     const groupCompleted = group.requirements.filter(
                       (requirement) =>
                         uploadedRequirementMap.has(
@@ -1517,25 +1432,7 @@ export default function NhoUploadModal({
                             const uploadedFile = uploadedRequirementMap.get(
                               normalizeRequirement(requirement),
                             );
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                          {group.requirements.map((requirement) => {
-                            const uploadedFile = uploadedRequirementMap.get(
-                              normalizeRequirement(requirement),
-                            );
 
-                            return (
-                              <RequirementCard
-                                key={requirement}
-                                requirement={requirement}
-                                uploadedFile={uploadedFile}
-                                disabled={isSaving || isLoadingFiles}
-                                onUpload={handleUpload}
-                                onSelect={setSelectedFile}
-                                onRemove={handleRemove}
-                              />
-                            );
-                          })}
-                        </div>
                             return (
                               <RequirementCard
                                 key={requirement}
@@ -1552,13 +1449,6 @@ export default function NhoUploadModal({
                       </div>
                     );
                   })}
-
-                  <UploadedFilesList
-                    files={files}
-                    disabled={isSaving || isLoadingFiles}
-                    onSelect={setSelectedFile}
-                    onRemove={handleRemove}
-                  />
 
                   <UploadedFilesList
                     files={files}
@@ -1596,7 +1486,6 @@ export default function NhoUploadModal({
 
               <button
                 type="button"
-                disabled={isSaving || isLoadingFiles}
                 disabled={isSaving || isLoadingFiles}
                 onClick={handleSaveUploads}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"

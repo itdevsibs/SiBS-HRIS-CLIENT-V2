@@ -1,25 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  X,
   ArrowRight,
-  Pencil,
-  RefreshCcw,
-  UserRound,
   BriefcaseBusiness,
-  GraduationCap,
-  ShieldCheck,
-  Phone,
-  FileText,
-  ChevronDown,
-  Network,
-  UploadCloud,
   Check,
-  Eye,
+  ChevronDown,
   ExternalLink,
+  Eye,
   FileImage,
   FileSpreadsheet,
+  FileText,
+  GraduationCap,
   Loader2,
+  Network,
+  Pencil,
+  Phone,
+  RefreshCcw,
+  ShieldCheck,
+  UploadCloud,
+  UserRound,
+  X,
 } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
@@ -38,105 +38,16 @@ import {
   ViewableFileRow,
 } from "../../recruitment/talentPool/TalentPoolShared";
 
-
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
 
-const OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS = [
-  "Transcript of Records and/or Diploma",
-  "Medical Records",
-  "NBI Clearance",
-  "Birth Certificate",
-  "Valid ID",
-  "ID picture (2 pcs passport size)",
-  "Urinalysis, Fecalysis, Pregnancy Test, Drug Test, Chest X-ray",
-  "TIN Verification Slip",
-  "SSS E1 Form",
-  "PhilHealth MDR",
-  "Pag-IBIG MDF",
-  "Vaccination Card",
-  "BIR 2316 Form",
-  "Employment Certificate",
-];
-
-function safeArray(value) {
-  return Array.isArray(value) ? value.filter(Boolean) : [];
-}
-
-function safeObject(value) {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value
-    : {};
-}
-
-function cleanText(value) {
-  return String(value ?? "").trim();
-}
-
-function getApiErrorMessage(error, fallback = "Request failed.") {
-  return (
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
-    fallback
-  );
-}
-
-function normalizeRequirementKey(value = "") {
-  return cleanText(value)
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function getOfficialRequirementMatch(value = "") {
-  const key = normalizeRequirementKey(value);
-
-  if (!key) return "";
-
-  return (
-    OFFICIAL_PRE_EMPLOYMENT_REQUIREMENTS.find((requirement) => {
-      const requirementKey = normalizeRequirementKey(requirement);
-
-      return (
-        key === requirementKey ||
-        key.startsWith(`${requirementKey}_`) ||
-        key.includes(requirementKey)
-      );
-    }) || ""
-  );
-}
-
-function getNormalizedPreEmploymentRequirement(file = {}) {
-  const directRequirement =
-    file.requirement || file.label || file.title || file.category || "";
-
-  const directMatch = getOfficialRequirementMatch(directRequirement);
-
-  if (directMatch) return directMatch;
-
-  const filename =
-    file.savedFileName ||
-    file.filename ||
-    file.saved_file_name ||
-    file.fileName ||
-    file.name ||
-    file.originalName ||
-    file.originalname ||
-    "";
-
-  return getOfficialRequirementMatch(filename);
-}
-
-function isOfficialPreEmploymentFile(file = {}) {
-  return Boolean(getNormalizedPreEmploymentRequirement(file));
-}
-
 const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
 const ONBOARDING_ROUTE = "/recruitment/onboarding";
+
+const INCOMPLETE_ONBOARDING_STAGE = "For Onboarding - Incomplete Requirements";
+const ONBOARDING_STAGE = "Onboarding";
 
 const MAJOR_PRE_EMPLOYMENT_REQUIREMENTS = [
   "Transcript of Records and/or Diploma",
@@ -192,6 +103,10 @@ function safeObject(value) {
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeLower(value) {
+  return cleanText(value).toLowerCase();
 }
 
 function getApiErrorMessage(error, fallback = "Request failed.") {
@@ -404,7 +319,6 @@ function getCandidatePublicId(candidate = {}) {
       candidate.application_id ||
       candidate.publicId ||
       candidate.public_id ||
-      candidate.id ||
       "",
   );
 }
@@ -442,12 +356,25 @@ function getCandidatePipelineLookupId(candidate = {}) {
       candidateSnapshot.pipelineId ||
       candidateSnapshot.pipeline_id ||
       candidateSnapshot.dbId ||
-      candidateSnapshot.id ||
+      candidateSnapshot.pipelineDbId ||
+      "",
+  );
+}
+
+function getResolvedPipelineId(candidate = {}, fallback = "") {
+  const safeCandidate = safeObject(candidate);
+
+  return cleanText(
+    safeCandidate.dbId ||
+      safeCandidate.id ||
+      safeCandidate.pipelineId ||
+      safeCandidate.pipeline_id ||
+      safeCandidate.pipelineDbId ||
+      safeCandidate.pipeline_db_id ||
       safeCandidate.candidatePipelineId ||
       safeCandidate.candidate_pipeline_id ||
-      safeCandidate.dbId ||
-      safeCandidate.rawId ||
-      "",
+      getCandidatePipelineLookupId(safeCandidate) ||
+      fallback,
   );
 }
 
@@ -505,8 +432,7 @@ function getResolvedFileUrl(fileUrl = "") {
 }
 
 function buildCandidatePipelineFileUrl(candidate = {}, file = {}) {
-  const lookupId = getCandidatePipelineLookupId(candidate);
-
+  const lookupId = getResolvedPipelineId(candidate);
 
   const filename =
     file.savedFileName ||
@@ -590,18 +516,8 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
       safeFile.mimeType ||
       safeFile.attachmentFileType ||
       safeFile.audioFileType ||
-      safeFile.fileType ||
-      safeFile.type ||
-      safeFile.mimetype ||
-      safeFile.mimeType ||
-      safeFile.attachmentFileType ||
-      safeFile.audioFileType ||
       "",
     fileSize:
-      safeFile.fileSize ||
-      safeFile.size ||
-      safeFile.attachmentFileSize ||
-      safeFile.audioFileSize ||
       safeFile.fileSize ||
       safeFile.size ||
       safeFile.attachmentFileSize ||
@@ -633,7 +549,6 @@ function normalizeCandidateFile(file = {}, candidate = {}) {
 
 function getCandidateFileUniqueKey(file = {}) {
   return [
-    cleanText(file.id),
     cleanText(file.requirement),
     cleanText(file.fileName),
     cleanText(file.savedFileName),
@@ -656,7 +571,7 @@ function normalizeCandidateFiles(files = [], candidate = {}) {
     .forEach((file) => {
       const key =
         getCandidateFileUniqueKey(file) ||
-        `${file.requirement}-${file.fileName}-${Math.random()}`;
+        `${file.requirement}-${file.fileName}`;
 
       if (!map.has(key)) {
         map.set(key, file);
@@ -698,8 +613,6 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
   const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
   const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
   const pipelineMetadata = safeObject(pipelineCandidate.metadata);
-  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
-  const pipelineMetadata = safeObject(pipelineCandidate.metadata);
 
   const sources = [
     safeCandidate.nhoFiles,
@@ -709,7 +622,6 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     safeCandidate.uploadedFiles,
     safeCandidate.files,
 
-
     metadata.nhoFiles,
     metadata.nho_files,
     metadata.preEmploymentFiles,
@@ -718,7 +630,6 @@ function getCandidatePreEmploymentFiles(candidate = {}) {
     metadata.files,
 
     candidateSnapshot.nhoFiles,
-    candidateSnapshot.nho_files,
     candidateSnapshot.nho_files,
     candidateSnapshot.preEmploymentFiles,
     candidateSnapshot.pre_employment_files,
@@ -783,6 +694,139 @@ function getPipelineCandidateFromResponse(response) {
   );
 }
 
+function getPipelineRowsFromListResponse(response) {
+  const payload = response?.data ?? response;
+
+  return safeArray(
+    payload?.data ||
+      payload?.candidates ||
+      payload?.records ||
+      payload?.rows ||
+      [],
+  );
+}
+
+function candidateMatchesPipeline(candidate = {}, pipelineCandidate = {}) {
+  const sourceTalentPoolId = cleanText(
+    pipelineCandidate.sourceTalentPoolId ||
+      pipelineCandidate.source_talent_pool_id,
+  );
+
+  const talentPoolId = cleanText(candidate.id || candidate.rawId);
+
+  const candidateIds = [
+    candidate.candidateId,
+    candidate.candidate_id,
+    candidate.candidateApplicationId,
+    candidate.candidate_application_id,
+    candidate.applicationId,
+    candidate.application_id,
+    candidate.publicId,
+    candidate.public_id,
+  ]
+    .map(cleanText)
+    .filter(Boolean);
+
+  const pipelineCandidateIds = [
+    pipelineCandidate.candidateId,
+    pipelineCandidate.candidate_id,
+    pipelineCandidate.candidateApplicationId,
+    pipelineCandidate.candidate_application_id,
+    pipelineCandidate.applicationId,
+    pipelineCandidate.application_id,
+    pipelineCandidate.publicId,
+    pipelineCandidate.public_id,
+  ]
+    .map(cleanText)
+    .filter(Boolean);
+
+  const email = normalizeLower(candidate.email);
+  const pipelineEmail = normalizeLower(pipelineCandidate.email);
+
+  const name = normalizeLower(candidate.name || candidate.fullName);
+  const pipelineName = normalizeLower(
+    pipelineCandidate.name ||
+      pipelineCandidate.fullName ||
+      pipelineCandidate.candidateName,
+  );
+
+  return Boolean(
+    (sourceTalentPoolId && talentPoolId && sourceTalentPoolId === talentPoolId) ||
+      candidateIds.some((id) => pipelineCandidateIds.includes(id)) ||
+      (email && pipelineEmail && email === pipelineEmail) ||
+      (name && pipelineName && name === pipelineName),
+  );
+}
+
+async function fetchPipelineCandidateByAnyIdentity(candidate = {}) {
+  const directLookupId = getCandidatePipelineLookupId(candidate);
+
+  if (directLookupId) {
+    try {
+      const response = await api.get(
+        `/api/candidate-pipeline/${encodeURIComponent(directLookupId)}`,
+        {
+          withCredentials: true,
+          params: {
+            _t: Date.now(),
+          },
+        },
+      );
+
+      const directCandidate = getPipelineCandidateFromResponse(response);
+
+      if (directCandidate && directCandidate.success !== false) {
+        return safeObject(directCandidate);
+      }
+    } catch {
+      // Continue to list fallback.
+    }
+  }
+
+  const searchTerms = [
+    candidate.candidateId,
+    candidate.candidate_id,
+    candidate.candidateApplicationId,
+    candidate.candidate_application_id,
+    candidate.applicationId,
+    candidate.application_id,
+    candidate.email,
+    candidate.name,
+  ]
+    .map(cleanText)
+    .filter(Boolean);
+
+  const uniqueSearchTerms = Array.from(new Set(searchTerms));
+
+  for (const term of uniqueSearchTerms) {
+    try {
+      const response = await api.get("/api/candidate-pipeline", {
+        withCredentials: true,
+        params: {
+          page: 1,
+          limit: 500,
+          search: term,
+          _t: Date.now(),
+        },
+      });
+
+      const rows = getPipelineRowsFromListResponse(response);
+      const match =
+        rows.find((row) => candidateMatchesPipeline(candidate, row)) ||
+        rows[0] ||
+        null;
+
+      if (match) {
+        return safeObject(match);
+      }
+    } catch {
+      // Try next term.
+    }
+  }
+
+  return null;
+}
+
 function mergeHistoryArrays(...sources) {
   return sources.flatMap((source) => safeArray(source));
 }
@@ -832,6 +876,7 @@ function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {
     candidateMetadata.timeline,
     candidateMetadata.movementTimeline,
     candidateMetadata.pipelineHistory,
+    candidateMetadata.pipelineTimeline,
 
     pipelineTimeline,
   );
@@ -865,7 +910,10 @@ function mergeCandidateWithPipelineDetails(candidate = {}, pipelineCandidate = {
       safePipelineCandidate.pipelineStatus ||
       safePipelineCandidate.pipeline_status ||
       safeCandidate.pipelineStatus ||
-      (safePipelineCandidate.currentStage
+      (safePipelineCandidate.currentStage ||
+      safePipelineCandidate.current_stage ||
+      safePipelineCandidate.currentPipelineStage ||
+      safePipelineCandidate.current_pipeline_stage
         ? "Active"
         : safeCandidate.pipelineStatus),
 
@@ -972,27 +1020,10 @@ function getNormalizedHistoryDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return String(value).trim();
+    return cleanText(value);
   }
 
   return date.toISOString().slice(0, 16);
-}
-
-function isValidTimelineValue(value) {
-  const text = String(value || "")
-    .trim()
-    .toLowerCase();
-
-  return (
-    text &&
-    text !== "—" &&
-    text !== "--" &&
-    text !== "not assigned yet" &&
-    text !== "n/a" &&
-    text !== "na" &&
-    text !== "null" &&
-    text !== "undefined"
-  );
 }
 
 function getHistoryTitle(item = {}) {
@@ -1008,18 +1039,13 @@ function getHistoryTitle(item = {}) {
     item.title ||
     "Application Update";
 
-  const title = String(rawTitle || "").trim();
+  const title = cleanText(rawTitle);
 
   if (title.includes("PRF status changed")) return "Initial Screening";
   if (title.includes("PRF status updated")) return "Initial Screening";
-  if (title.includes("PRF status updated")) return "Initial Screening";
   if (title.includes("Assessment marked")) return "Online Assessment";
   if (title.includes("Assessment updated")) return "Online Assessment";
-  if (title.includes("Assessment updated")) return "Online Assessment";
   if (title.includes("interview schedule")) return "Interview Scheduled";
-  if (title.includes("Interview schedule")) return "Interview Scheduled";
-  if (title.includes("Interview started")) return "Interview Scheduled";
-  if (title.includes("Interview completed")) return "Interviewed";
   if (title.includes("Interview schedule")) return "Interview Scheduled";
   if (title.includes("Interview started")) return "Interview Scheduled";
   if (title.includes("Interview completed")) return "Interviewed";
@@ -1028,7 +1054,7 @@ function getHistoryTitle(item = {}) {
   if (title.includes("Offer approved")) return "Accepted";
   if (title.includes("NHO schedule")) return "For NHO";
   if (title.includes("incomplete major")) {
-    return "For Onboarding - Incomplete Requirements";
+    return INCOMPLETE_ONBOARDING_STAGE;
   }
 
   return title || "Application Update";
@@ -1039,9 +1065,7 @@ function getHistoryDate(item = {}) {
     item.date ||
     item.createdAt ||
     item.created_at ||
-    item.created_at ||
     item.updatedAt ||
-    item.updated_at ||
     item.updated_at ||
     item.activityDate ||
     item.activity_date ||
@@ -1090,43 +1114,39 @@ function getHistoryDescription(item = {}) {
   const title = getHistoryTitle(item);
 
   if (title === "Initial Screening") {
-    return "PRF status changed to Matched. Candidate is ready to move to Online Assessment.";
+    return "Candidate moved from Talent Pool.";
   }
 
   if (title === "Online Assessment") {
-    return "Assessment marked as Taken and tagged as Assessment Fit.";
+    return "Candidate moved to Online Assessment.";
   }
 
   if (title === "Interview Scheduled") {
-    return "Candidate passed assessment and interview schedule was set.";
+    return "Candidate interview schedule was set.";
   }
 
   if (title === "Interviewed") {
-    return "Final interview form was submitted. Candidate moved from Interview Scheduled to Interviewed.";
+    return "Final interview form was submitted.";
   }
 
   if (title === "Offered") {
-    return "Interview completed. Offer details prepared and sent for approval.";
+    return "Offer details prepared for approval.";
   }
 
   if (title === "Accepted") {
-    return "Candidate accepted the offer and moved to Accepted.";
+    return "Candidate accepted the offer.";
   }
 
   if (title === "For NHO") {
     return "Candidate moved to For NHO.";
   }
 
-  if (title === "For Onboarding - Incomplete Requirements") {
+  if (title === INCOMPLETE_ONBOARDING_STAGE) {
     return "Candidate has fewer than 5 major requirements and was routed to Talent Pool for follow-up.";
   }
 
-  if (title === "Onboarding") {
+  if (title === ONBOARDING_STAGE) {
     return "Candidate completed the 5 major requirements and moved to Onboarding.";
-  }
-
-  if (title === "Drop-off" || title === "Drop-offs") {
-    return "Candidate was moved to Drop-off.";
   }
 
   return "Candidate application record updated.";
@@ -1142,7 +1162,6 @@ function getOfferDetail(item = {}) {
     item.roleTitle ||
     item.offerDetails?.roleTitle ||
     item.extra?.offerDetails?.roleTitle ||
-    item.extra?.offerDetails?.roleTitle ||
     "";
 
   const account =
@@ -1153,15 +1172,9 @@ function getOfferDetail(item = {}) {
     item.account ||
     item.offerDetails?.account ||
     item.extra?.offerDetails?.account ||
-    item.extra?.offerDetails?.account ||
     "";
 
   const basicPay =
-    item.basicPay ||
-    item.offerDetails?.basicPay ||
-    item.extra?.offerDetails?.basicPay ||
-    item.compensation ||
-    "";
     item.basicPay ||
     item.offerDetails?.basicPay ||
     item.extra?.offerDetails?.basicPay ||
@@ -1173,16 +1186,8 @@ function getOfferDetail(item = {}) {
     item.offerDetails?.deminimisDailyRate ||
     item.extra?.offerDetails?.deminimisDailyRate ||
     "";
-    item.deminimisDailyRate ||
-    item.offerDetails?.deminimisDailyRate ||
-    item.extra?.offerDetails?.deminimisDailyRate ||
-    "";
 
   const hiringRequirement =
-    item.hiringRequirementId ||
-    item.offerDetails?.hiringRequirementId ||
-    item.extra?.offerDetails?.hiringRequirementId ||
-    "";
     item.hiringRequirementId ||
     item.offerDetails?.hiringRequirementId ||
     item.extra?.offerDetails?.hiringRequirementId ||
@@ -1190,69 +1195,23 @@ function getOfferDetail(item = {}) {
 
   const details = [];
 
-  if (isValidTimelineValue(hiringRequirement)) {
-    details.push(`Hiring Requirement: ${hiringRequirement}`);
-  }
-
-  if (isValidTimelineValue(role)) {
-    details.push(`Final Role: ${role}`);
-  }
-
-  if (isValidTimelineValue(account)) {
-    details.push(`Final Account: ${account}`);
-  }
-
-  if (isValidTimelineValue(basicPay)) {
-    details.push(
-      `Basic Pay: ${
-        String(basicPay).includes("₱") ? basicPay : formatCurrency(basicPay)
-      }`,
-    );
-  }
-
-  if (isValidTimelineValue(deminimisDailyRate)) {
-    details.push(
-      `Deminimis / Daily Rate: ${
-        String(deminimisDailyRate).includes("₱")
-          ? deminimisDailyRate
-          : formatCurrency(deminimisDailyRate)
-      }`,
-    );
+  if (hiringRequirement) details.push(`Hiring Requirement: ${hiringRequirement}`);
+  if (role) details.push(`Final Role: ${role}`);
+  if (account) details.push(`Final Account: ${account}`);
+  if (basicPay) details.push(`Basic Pay: ${formatCurrency(basicPay)}`);
+  if (deminimisDailyRate) {
+    details.push(`Deminimis / Daily Rate: ${formatCurrency(deminimisDailyRate)}`);
   }
 
   return details.join(", ");
-}
-
-function getHistoryRemarks(item = {}) {
-  return (
-    item.remarks ||
-    item.dropOffReason ||
-    item.dropOffCategory ||
-    item.extra?.remarks ||
-    ""
-  );
-  return (
-    item.remarks ||
-    item.dropOffReason ||
-    item.dropOffCategory ||
-    item.extra?.remarks ||
-    ""
-  );
 }
 
 function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") {
   const historyTitle = getHistoryTitle(item);
   const historyDate = getHistoryDate(item);
   const historyDescription = getHistoryDescription(item);
-  const historyRemarks = getHistoryRemarks(item);
+  const historyRemarks = item.remarks || item.dropOffReason || "";
   const offerDetail = getOfferDetail(item);
-  const savedFormLink =
-    item.savedFormLink ||
-    item.jobEvaluationLink ||
-    item.extra?.savedFormLink ||
-    item.extra?.jobEvaluationLink ||
-    "";
-  const sortDate = getNormalizedHistoryDate(historyDate);
   const savedFormLink =
     item.savedFormLink ||
     item.jobEvaluationLink ||
@@ -1273,7 +1232,6 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
     _dedupeKey: [
       historyTitle,
       sortDate,
-      sortDate,
       historyDescription,
       historyRemarks,
       offerDetail,
@@ -1283,17 +1241,10 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
       .toLowerCase()
       .trim(),
     _sortDate: sortDate,
-    _sortDate: sortDate,
   };
 }
 
 function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
-  const safeCandidate = safeObject(candidate);
-  const metadata = safeObject(safeCandidate.metadata);
-  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
-  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
-  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
-
   const safeCandidate = safeObject(candidate);
   const metadata = safeObject(safeCandidate.metadata);
   const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
@@ -1335,47 +1286,12 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
     pipelineDetails.stageHistory,
     pipelineDetails.history,
     pipelineDetails.activityHistory,
-    safeCandidate.applicationHistory,
-    safeCandidate.movementTimeline,
-    safeCandidate.movementHistory,
-    safeCandidate.pipelineHistory,
-    safeCandidate.stageHistory,
-    safeCandidate.timeline,
-    safeCandidate.history,
-    safeCandidate.activityHistory,
-
-    candidateSnapshot.applicationHistory,
-    candidateSnapshot.timeline,
-    candidateSnapshot.movementTimeline,
-
-    metadata.applicationHistory,
-    metadata.timeline,
-    metadata.movementTimeline,
-    metadata.pipelineHistory,
-    metadata.pipelineTimeline,
-
-    pipelineCandidate.timeline,
-    pipelineCandidate.movementTimeline,
-    pipelineCandidate.movementHistory,
-    pipelineCandidate.pipelineHistory,
-    pipelineCandidate.stageHistory,
-    pipelineCandidate.history,
-    pipelineCandidate.activityHistory,
-
-    pipelineDetails.timeline,
-    pipelineDetails.movementTimeline,
-    pipelineDetails.movementHistory,
-    pipelineDetails.pipelineHistory,
-    pipelineDetails.stageHistory,
-    pipelineDetails.history,
-    pipelineDetails.activityHistory,
   ];
 
   const merged = sources
     .filter(Array.isArray)
     .flat()
     .filter(Boolean)
-    .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .filter((item) => item.stage || item.description);
 
@@ -1386,20 +1302,7 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
 
     if (!key) return;
 
-    const existing = uniqueMap.get(key);
-
-    if (!existing) {
-      uniqueMap.set(key, item);
-      return;
-    }
-
-    const existingDate = new Date(existing.date || 0).getTime();
-    const itemDate = new Date(item.date || 0).getTime();
-
-    if (
-      Number.isFinite(itemDate) &&
-      (!Number.isFinite(existingDate) || itemDate > existingDate)
-    ) {
+    if (!uniqueMap.has(key)) {
       uniqueMap.set(key, item);
     }
   });
@@ -1434,10 +1337,10 @@ function getCompletedCountForGroup(files = [], requirements = []) {
 }
 
 function buildCandidatePipelineNavigationUrl(candidate = {}, pipelineId = "") {
-  const stage = cleanText(getCandidateStageValue(candidate));
-  const candidateId = cleanText(getCandidatePublicId(candidate));
+  const stage = getCandidateStageValue(candidate);
+  const candidateId = getCandidatePublicId(candidate);
   const resolvedPipelineId = cleanText(
-    pipelineId || getCandidatePipelineLookupId(candidate),
+    pipelineId || getResolvedPipelineId(candidate),
   );
 
   const params = new URLSearchParams();
@@ -1452,9 +1355,9 @@ function buildCandidatePipelineNavigationUrl(candidate = {}, pipelineId = "") {
 }
 
 function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
-  const candidateId = cleanText(getCandidatePublicId(candidate));
+  const candidateId = getCandidatePublicId(candidate);
   const resolvedPipelineId = cleanText(
-    pipelineId || getCandidatePipelineLookupId(candidate),
+    pipelineId || getResolvedPipelineId(candidate),
   );
 
   const params = new URLSearchParams();
@@ -1465,43 +1368,11 @@ function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
   return `${ONBOARDING_ROUTE}${params.toString() ? `?${params.toString()}` : ""}`;
 }
 
-function CompactInfoRow({ label, value }) {
+function SectionTitle({ icon: Icon, title, description }) {
   return (
-    <div className="grid grid-cols-1 gap-2 border-b border-[#E6ECF2] py-4 last:border-b-0 sm:grid-cols-[190px_minmax(0,1fr)] sm:items-start">
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </p>
-
-      <p className="min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828] sm:text-right">
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function ProfileInfoCard({ label, value, wide = false }) {
-  return (
-    <div
-      className={`rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm ${
-        wide ? "md:col-span-2" : ""
-      }`}
-    >
-      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label}
-      </p>
-
-      <p className="mt-2 min-w-0 break-words text-sm font-extrabold leading-6 text-[#101828]">
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function TabSectionHeader({ icon: Icon, title, description }) {
-  return (
-    <div className="mb-5 flex items-start gap-3">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#EEF3F8] text-sibs-primary-1">
-        <Icon size={19} />
+    <div className="mb-5 flex min-w-0 items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF2F6] text-sibs-primary-1">
+        <Icon size={20} />
       </div>
 
       <div className="min-w-0">
@@ -1510,7 +1381,7 @@ function TabSectionHeader({ icon: Icon, title, description }) {
         </h3>
 
         {description && (
-          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
+          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-primary-1/80">
             {description}
           </p>
         )}
@@ -1519,11 +1390,30 @@ function TabSectionHeader({ icon: Icon, title, description }) {
   );
 }
 
+function DetailRow({ label, value }) {
+  const displayValue =
+    value === null || value === undefined || value === "" ? "—" : value;
+
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
+      <p className="shrink-0 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </p>
+
+      <p
+        title={String(displayValue)}
+        className="min-w-0 break-words text-right text-sm font-extrabold leading-6 text-[#101828]"
+      >
+        {displayValue}
+      </p>
+    </div>
+  );
+}
+
 function EmptyState({ title, description }) {
   return (
     <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
       <p className="text-sm font-extrabold text-[#101828]">{title}</p>
-
       {description && (
         <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
           {description}
@@ -1768,98 +1658,6 @@ function NhoFilePreviewPanel({ file }) {
   );
 }
 
-function NhoUploadedFilesList({ files = [], onSelect }) {
-  if (!files.length) {
-    return (
-      <EmptyState
-        title="No Candidate Pipeline NHO files yet"
-        description="Uploaded files from the Candidate Pipeline NHO modal will appear here."
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {files.map((file) => {
-        const FileIcon = getFileIcon(file.fileName);
-        const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
-
-        return (
-          <div
-            key={`${file.id}-${file.requirement}-${file.fileName}-${file.fileUrl}`}
-            className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 transition hover:border-sibs-primary-1/30 hover:bg-white"
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <button
-                type="button"
-                onClick={() => onSelect?.(file)}
-                className="flex min-w-0 flex-1 items-start gap-3 text-left"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
-                  <FileIcon size={21} />
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <p
-                      title={file.requirement}
-                      className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1"
-                    >
-                      {file.requirement || "NHO Uploaded File"}
-                    </p>
-
-                    {isMajorPreEmploymentRequirement(file.requirement) && (
-                      <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-sibs-primary-1">
-                        Major
-                      </span>
-                    )}
-                  </div>
-
-                  <p
-                    title={file.fileName || file.savedFileName}
-                    className="mt-1 truncate text-sm font-extrabold text-[#101828]"
-                  >
-                    {file.fileName || file.savedFileName || "Uploaded file"}
-                  </p>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] font-bold text-sibs-tertiary-5">
-                    <span>{formatFileSize(file.fileSize)}</span>
-                    <span>•</span>
-                    <span>{formatUploadedDate(file.uploadedAt)}</span>
-                  </div>
-                </div>
-              </button>
-
-              <div className="flex shrink-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => onSelect?.(file)}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
-                >
-                  <Eye size={15} />
-                  View
-                </button>
-
-                {resolvedFileUrl && (
-                  <a
-                    href={resolvedFileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F3F8FF]"
-                  >
-                    <ExternalLink size={15} />
-                    Open
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function CandidateNhoFilesSection({
   files = [],
   selectedFile,
@@ -1880,9 +1678,9 @@ function CandidateNhoFilesSection({
   );
 
   return (
-    <div>
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <TabSectionHeader
+        <SectionTitle
           icon={FileText}
           title="Pre-Employment / NHO Files"
           description="Candidate Pipeline NHO uploaded files and follow-up requirements."
@@ -2056,33 +1854,13 @@ function CandidateNhoFilesSection({
               })}
             </div>
           </section>
-
-          <section className="rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-lg font-extrabold text-sibs-primary-1">
-                  Uploaded Files List
-                </h3>
-
-                <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
-                  Complete list of all Candidate Pipeline NHO uploaded files.
-                </p>
-              </div>
-
-              <span className="inline-flex w-fit rounded-full bg-[#F2F6FA] px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                {files.length} upload{files.length === 1 ? "" : "s"}
-              </span>
-            </div>
-
-            <NhoUploadedFilesList files={files} onSelect={onSelectFile} />
-          </section>
         </div>
 
         <aside className="xl:sticky xl:top-0 xl:self-start">
           <NhoFilePreviewPanel file={selectedFile} />
         </aside>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -2102,7 +1880,6 @@ export default function CandidateProfileModal() {
 
   const [showFullApplicationHistory, setShowFullApplicationHistory] =
     useState(false);
-
   const [activeTab, setActiveTab] = useState("personal");
 
   const [statusModal, setStatusModal] = useState({
@@ -2119,6 +1896,8 @@ export default function CandidateProfileModal() {
   const [pipelineCandidateDetailsError, setPipelineCandidateDetailsError] =
     useState("");
 
+  const [resolvedPipelineId, setResolvedPipelineId] = useState("");
+
   const [candidatePipelineFiles, setCandidatePipelineFiles] = useState([]);
   const [candidatePipelineFilesLoading, setCandidatePipelineFilesLoading] =
     useState(false);
@@ -2134,78 +1913,173 @@ export default function CandidateProfileModal() {
     [selectedCandidate],
   );
 
-  const isPipelineLinkedForFiles = useMemo(
-    () => isCandidateLinkedToPipeline(selectedCandidate),
-    [selectedCandidate],
-  );
-
   useEffect(() => {
     setActiveTab("personal");
     setShowFullApplicationHistory(false);
     setSelectedNhoFile(null);
     setShowNhoUploadModal(false);
+    setPipelineCandidateDetails(null);
+    setResolvedPipelineId("");
+    setCandidatePipelineFiles([]);
+    setCandidatePipelineFilesError("");
+    setPipelineCandidateDetailsError("");
   }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
 
-  useEffect(() => {
-    let isActive = true;
+  const loadCandidatePipelineNhoFiles = useCallback(async () => {
+    if (!selectedCandidate) return;
 
-    setPipelineCandidateDetails(null);
-    setPipelineCandidateDetailsError("");
-
-    if (
-      !selectedCandidate ||
-      !candidatePipelineLookupId ||
-      !isPipelineLinkedForFiles
-    ) {
-      setPipelineCandidateDetailsLoading(false);
-
-      return () => {
-        isActive = false;
-      };
-    }
+    let isResolved = true;
 
     setPipelineCandidateDetailsLoading(true);
+    setCandidatePipelineFilesLoading(true);
+    setPipelineCandidateDetailsError("");
+    setCandidatePipelineFilesError("");
 
-    api
-      .get(
-        `/api/candidate-pipeline/${encodeURIComponent(
-          candidatePipelineLookupId,
-        )}`,
-        {
-          withCredentials: true,
-          params: {
-            _t: Date.now(),
-          },
-        },
-      )
-      .then((response) => {
-        if (!isActive) return;
+    const localFiles = getCandidatePreEmploymentFiles(selectedCandidate);
 
-        const pipelineCandidate = getPipelineCandidateFromResponse(response);
+    setCandidatePipelineFiles(localFiles);
 
-        setPipelineCandidateDetails(safeObject(pipelineCandidate));
-      })
-      .catch((error) => {
-        if (!isActive) return;
+    try {
+      const resolvedPipelineCandidate =
+        await fetchPipelineCandidateByAnyIdentity(selectedCandidate);
 
-        setPipelineCandidateDetails(null);
-        setPipelineCandidateDetailsError(
-          getApiErrorMessage(
-            error,
-            "Unable to load Candidate Pipeline process history.",
-          ),
-        );
-      })
-      .finally(() => {
-        if (isActive) {
-          setPipelineCandidateDetailsLoading(false);
-        }
+      if (!isResolved) return;
+
+      const pipelineCandidate = safeObject(resolvedPipelineCandidate);
+      const pipelineId =
+        getResolvedPipelineId(pipelineCandidate) || candidatePipelineLookupId;
+
+      if (Object.keys(pipelineCandidate).length) {
+        setPipelineCandidateDetails(pipelineCandidate);
+      }
+
+      if (pipelineId) {
+        setResolvedPipelineId(pipelineId);
+      }
+
+      const pipelineLocalFiles = getCandidatePreEmploymentFiles({
+        ...selectedCandidate,
+        pipelineCandidate,
+        pipelineDetails: pipelineCandidate,
       });
 
+      let responseFiles = [];
+
+      if (pipelineId) {
+        try {
+          const nhoResponse = await api.get(
+            `/api/candidate-pipeline/${encodeURIComponent(
+              pipelineId,
+            )}/nho/files`,
+            {
+              withCredentials: true,
+              params: {
+                _t: Date.now(),
+              },
+            },
+          );
+
+          responseFiles = getNhoFilesFromApiResponse(nhoResponse);
+        } catch (error) {
+          if (!pipelineLocalFiles.length && !localFiles.length) {
+            setCandidatePipelineFilesError(
+              getApiErrorMessage(
+                error,
+                "Unable to load pre-employment files from Candidate Pipeline.",
+              ),
+            );
+          }
+        }
+      }
+
+      const allFiles = normalizeCandidateFiles(
+        [...localFiles, ...pipelineLocalFiles, ...responseFiles],
+        {
+          ...selectedCandidate,
+          ...pipelineCandidate,
+          id: pipelineId || pipelineCandidate.id || selectedCandidate.id,
+          dbId: pipelineId || pipelineCandidate.dbId,
+        },
+      );
+
+      setCandidatePipelineFiles(allFiles);
+    } catch (error) {
+      setPipelineCandidateDetailsError(
+        getApiErrorMessage(
+          error,
+          "Unable to load Candidate Pipeline details.",
+        ),
+      );
+
+      if (!localFiles.length) {
+        setCandidatePipelineFilesError(
+          getApiErrorMessage(
+            error,
+            "Unable to load pre-employment files from Candidate Pipeline.",
+          ),
+        );
+      }
+    } finally {
+      if (isResolved) {
+        setPipelineCandidateDetailsLoading(false);
+        setCandidatePipelineFilesLoading(false);
+      }
+    }
+
     return () => {
-      isActive = false;
+      isResolved = false;
     };
-  }, [selectedCandidate, candidatePipelineLookupId, isPipelineLinkedForFiles]);
+  }, [selectedCandidate, candidatePipelineLookupId]);
+
+  useEffect(() => {
+    loadCandidatePipelineNhoFiles();
+  }, [loadCandidatePipelineNhoFiles]);
+
+  useEffect(() => {
+    function handlePipelineFilesUpdated(event) {
+      const payload = event?.detail || {};
+      const eventCandidate = payload?.candidate || payload;
+
+      if (
+        selectedCandidate &&
+        eventCandidate &&
+        candidateMatchesPipeline(selectedCandidate, eventCandidate)
+      ) {
+        const nextFiles = normalizeCandidateFiles(
+          [
+            ...candidatePipelineFiles,
+            ...safeArray(payload.files),
+            ...getCandidatePreEmploymentFiles(eventCandidate),
+          ],
+          eventCandidate,
+        );
+
+        setPipelineCandidateDetails((prev) => ({
+          ...safeObject(prev),
+          ...safeObject(eventCandidate),
+        }));
+
+        setCandidatePipelineFiles(nextFiles);
+      }
+    }
+
+    window.addEventListener(
+      "ta-pipeline-candidates-updated",
+      handlePipelineFilesUpdated,
+    );
+    window.addEventListener("ta-talent-pool-updated", handlePipelineFilesUpdated);
+
+    return () => {
+      window.removeEventListener(
+        "ta-pipeline-candidates-updated",
+        handlePipelineFilesUpdated,
+      );
+      window.removeEventListener(
+        "ta-talent-pool-updated",
+        handlePipelineFilesUpdated,
+      );
+    };
+  }, [selectedCandidate, candidatePipelineFiles]);
 
   const profileCandidate = useMemo(
     () =>
@@ -2216,127 +2090,26 @@ export default function CandidateProfileModal() {
     [selectedCandidate, pipelineCandidateDetails],
   );
 
-  const profilePreEmploymentFiles = useMemo(
-    () => getCandidatePreEmploymentFiles(profileCandidate),
-    [profileCandidate],
-  );
-
-  useEffect(() => {
-    let isActive = true;
-
-    const localProfileFiles = profilePreEmploymentFiles;
-
-    setCandidatePipelineFiles(localProfileFiles);
-    setCandidatePipelineFilesError("");
-
-    if (
-      !selectedCandidate ||
-      !candidatePipelineLookupId ||
-      !isPipelineLinkedForFiles
-    ) {
-      setCandidatePipelineFilesLoading(false);
-
-
-      return () => {
-        isActive = false;
-      };
-    }
-
-    setCandidatePipelineFilesLoading(true);
-
-    api
-      .get(
-        `/api/candidate-pipeline/${encodeURIComponent(
-          candidatePipelineLookupId,
-        )}/nho/files`,
-        {
-          withCredentials: true,
-          params: {
-            _t: Date.now(),
-          },
-          params: {
-            _t: Date.now(),
-          },
-        },
-      )
-      .then((response) => {
-        if (!isActive) return;
-
-        const responseFiles = getNhoFilesFromApiResponse(response);
-
-        const normalizedFiles = normalizeCandidateFiles(
-          responseFiles,
-          profileCandidate,
-        );
-
-        setCandidatePipelineFiles(
-          normalizeCandidateFiles(
-            [...localProfileFiles, ...normalizedFiles],
-            profileCandidate,
-          ),
-        );
-      })
-      .catch((error) => {
-        if (!isActive) return;
-
-        if (localProfileFiles.length > 0) {
-          setCandidatePipelineFiles(localProfileFiles);
-        if (localProfileFiles.length > 0) {
-          setCandidatePipelineFiles(localProfileFiles);
-          setCandidatePipelineFilesError("");
-          return;
-        }
-
-        setCandidatePipelineFilesError(
-          getApiErrorMessage(
-            error,
-            "Unable to load pre-employment files from Candidate Pipeline.",
-          ),
-        );
-      })
-      .finally(() => {
-        if (isActive) {
-          setCandidatePipelineFilesLoading(false);
-        }
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [
-    selectedCandidate,
-    profileCandidate,
-    profileCandidate,
-    candidatePipelineLookupId,
-    isPipelineLinkedForFiles,
-    profilePreEmploymentFiles,
-  ]);
-
   const displayedPreEmploymentFiles = useMemo(
-    () => normalizeCandidateFiles(candidatePipelineFiles, profileCandidate),
-    [candidatePipelineFiles, profileCandidate],
+    () =>
+      normalizeCandidateFiles(
+        [
+          ...candidatePipelineFiles,
+          ...getCandidatePreEmploymentFiles(profileCandidate),
+        ],
+        {
+          ...profileCandidate,
+          id: resolvedPipelineId || profileCandidate?.id,
+          dbId: resolvedPipelineId || profileCandidate?.dbId,
+        },
+      ),
+    [candidatePipelineFiles, profileCandidate, resolvedPipelineId],
   );
 
   const majorRequirementProgress = useMemo(
     () => calculateMajorRequirementProgress(displayedPreEmploymentFiles),
     [displayedPreEmploymentFiles],
   );
-
-  const talentPoolStage = useMemo(
-    () => cleanText(getCandidateStageValue(profileCandidate || selectedCandidate)),
-    [profileCandidate, selectedCandidate],
-  );
-
-  const canUploadFollowUpNhoRequirements = useMemo(() => {
-    const stage = talentPoolStage.toLowerCase();
-
-    return Boolean(
-      candidatePipelineLookupId &&
-        isPipelineLinkedForFiles &&
-        (stage === "for onboarding - incomplete requirements" ||
-          stage === "for nho"),
-    );
-  }, [candidatePipelineLookupId, isPipelineLinkedForFiles, talentPoolStage]);
 
   useEffect(() => {
     if (!displayedPreEmploymentFiles.length) {
@@ -2391,8 +2164,36 @@ export default function CandidateProfileModal() {
   const encodedBy = getEncodedByName(activeCandidate, currentTaOwner);
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
 
+  const currentStage = getCandidateStageValue(activeCandidate);
+  const normalizedCurrentStage = normalizeLower(currentStage);
+
+  const isIncompleteRequirementsStage =
+    normalizedCurrentStage === normalizeLower(INCOMPLETE_ONBOARDING_STAGE);
+
+  const isAlreadyOnboarding =
+    normalizedCurrentStage === normalizeLower(ONBOARDING_STAGE);
+
+  const isAlreadyInPipeline = isCandidateLinkedToPipeline(activeCandidate);
+
+  const canUploadFollowUpNhoRequirements = Boolean(
+    (resolvedPipelineId || candidatePipelineLookupId) &&
+      isAlreadyInPipeline &&
+      (isIncompleteRequirementsStage ||
+        normalizedCurrentStage === "for nho"),
+  );
+
+  const canMoveToOnboarding = Boolean(
+    isAlreadyInPipeline &&
+      majorRequirementProgress.isComplete &&
+      (resolvedPipelineId || candidatePipelineLookupId) &&
+      !isAlreadyOnboarding,
+  );
+
+  const shouldShowLinkedButton = Boolean(
+    isAlreadyInPipeline && !isIncompleteRequirementsStage && !canMoveToOnboarding,
+  );
+
   const candidateInitials =
-    activeCandidate.name
     activeCandidate.name
       ?.split(" ")
       .map((part) => part[0])
@@ -2402,20 +2203,15 @@ export default function CandidateProfileModal() {
 
   const validReferences = Array.isArray(activeCandidate.references)
     ? activeCandidate.references.filter(
-  const validReferences = Array.isArray(activeCandidate.references)
-    ? activeCandidate.references.filter(
         (reference) => reference?.name || reference?.phone,
       )
     : [];
 
   const workExperiences = Array.isArray(activeCandidate.workExperiences)
     ? activeCandidate.workExperiences.filter(Boolean)
-  const workExperiences = Array.isArray(activeCandidate.workExperiences)
-    ? activeCandidate.workExperiences.filter(Boolean)
     : [];
 
   const applicationHistory = getCandidateApplicationHistory(
-    activeCandidate,
     activeCandidate,
     encodedBy,
   );
@@ -2428,26 +2224,6 @@ export default function CandidateProfileModal() {
 
   const hasMoreApplicationHistory =
     applicationHistory.length > collapsedHistoryLimit;
-
-  const currentStage = getCandidateStageValue(activeCandidate);
-  const normalizedCurrentStage = cleanText(currentStage).toLowerCase();
-
-  const isIncompleteRequirementsStage =
-    normalizedCurrentStage === "for onboarding - incomplete requirements";
-
-  const isAlreadyInPipeline = isPipelineLinkedForFiles;
-  const isAlreadyOnboarding = normalizedCurrentStage === "onboarding";
-
-  const canMoveToOnboarding = Boolean(
-    isAlreadyInPipeline &&
-      majorRequirementProgress.isComplete &&
-      candidatePipelineLookupId &&
-      !isAlreadyOnboarding,
-  );
-
-  const shouldShowLinkedButton = Boolean(
-    isAlreadyInPipeline && !isIncompleteRequirementsStage && !canMoveToOnboarding,
-  );
 
   const profileTabs = [
     {
@@ -2537,15 +2313,13 @@ export default function CandidateProfileModal() {
     openStatus(selectedCandidate);
   }
 
-  function dispatchFocusEvent(eventName, detail) {
-    window.dispatchEvent(new CustomEvent(eventName, { detail }));
-  }
-
   function handleOpenLinkedCandidateDestination() {
-    const stage = cleanText(getCandidateStageValue(activeCandidate));
-    const pipelineId = cleanText(candidatePipelineLookupId);
-    const candidateId = cleanText(getCandidatePublicId(activeCandidate));
-    const targetIsOnboarding = stage.toLowerCase() === "onboarding";
+    const stage = getCandidateStageValue(activeCandidate);
+    const pipelineId = cleanText(
+      resolvedPipelineId || candidatePipelineLookupId,
+    );
+    const candidateId = getCandidatePublicId(activeCandidate);
+    const targetIsOnboarding = normalizeLower(stage) === "onboarding";
 
     const url = targetIsOnboarding
       ? buildOnboardingNavigationUrl(activeCandidate, pipelineId)
@@ -2561,11 +2335,13 @@ export default function CandidateProfileModal() {
       focusPipelineId: pipelineId,
     };
 
-    dispatchFocusEvent(
-      targetIsOnboarding
-        ? "ta-onboarding-focus"
-        : "ta-candidate-pipeline-focus",
-      detail,
+    window.dispatchEvent(
+      new CustomEvent(
+        targetIsOnboarding
+          ? "ta-onboarding-focus"
+          : "ta-candidate-pipeline-focus",
+        { detail },
+      ),
     );
 
     setSelectedCandidate(null);
@@ -2619,46 +2395,20 @@ export default function CandidateProfileModal() {
     if (typeof setCandidateList === "function") {
       setCandidateList((previousList = []) =>
         previousList.map((candidate) => {
-          const currentIds = [
-            candidate.id,
-            candidate.rawId,
-            candidate.candidateId,
-            candidate.candidate_id,
-            candidate.applicationId,
-            candidate.application_id,
-            candidate.pipelineId,
-            candidate.pipeline_id,
-            candidate.pipelineDbId,
-            candidate.pipeline_db_id,
-          ]
-            .map(cleanText)
-            .filter(Boolean);
+          if (candidateMatchesPipeline(candidate, nextCandidate)) {
+            return { ...candidate, ...nextCandidate };
+          }
 
-          const nextIds = [
-            nextCandidate.id,
-            nextCandidate.rawId,
-            nextCandidate.candidateId,
-            nextCandidate.candidate_id,
-            nextCandidate.applicationId,
-            nextCandidate.application_id,
-            nextCandidate.pipelineId,
-            nextCandidate.pipeline_id,
-            nextCandidate.pipelineDbId,
-            nextCandidate.pipeline_db_id,
-          ]
-            .map(cleanText)
-            .filter(Boolean);
-
-          const hasMatch = currentIds.some((id) => nextIds.includes(id));
-
-          return hasMatch ? { ...candidate, ...nextCandidate } : candidate;
+          return candidate;
         }),
       );
     }
   }
 
   async function handleMoveToOnboarding() {
-    if (!candidatePipelineLookupId) {
+    const pipelineId = cleanText(resolvedPipelineId || candidatePipelineLookupId);
+
+    if (!pipelineId) {
       showStatusModal({
         type: "error",
         title: "Missing Candidate Pipeline ID",
@@ -2691,12 +2441,10 @@ export default function CandidateProfileModal() {
       setIsMovingToOnboarding(true);
 
       const response = await api.post(
-        `/api/candidate-pipeline/${encodeURIComponent(
-          candidatePipelineLookupId,
-        )}/move`,
+        `/api/candidate-pipeline/${encodeURIComponent(pipelineId)}/move`,
         {
-          targetStage: "Onboarding",
-          stage: "Onboarding",
+          targetStage: ONBOARDING_STAGE,
+          stage: ONBOARDING_STAGE,
           reason:
             "Candidate completed the 5 major pre-employment requirements from Talent Pool follow-up.",
           remarks:
@@ -2732,13 +2480,13 @@ export default function CandidateProfileModal() {
           responseCandidate.pipeline_status ||
           activeCandidate.pipelineStatus ||
           "Active",
-        currentPipelineStage: "Onboarding",
-        current_pipeline_stage: "Onboarding",
-        currentStage: "Onboarding",
-        current_stage: "Onboarding",
-        pipelineStage: "Onboarding",
-        pipeline_stage: "Onboarding",
-        stage: "Onboarding",
+        currentPipelineStage: ONBOARDING_STAGE,
+        current_pipeline_stage: ONBOARDING_STAGE,
+        currentStage: ONBOARDING_STAGE,
+        current_stage: ONBOARDING_STAGE,
+        pipelineStage: ONBOARDING_STAGE,
+        pipeline_stage: ONBOARDING_STAGE,
+        stage: ONBOARDING_STAGE,
         nhoFiles: displayedPreEmploymentFiles,
         nho_files: displayedPreEmploymentFiles,
         preEmploymentFiles: displayedPreEmploymentFiles,
@@ -2762,7 +2510,7 @@ export default function CandidateProfileModal() {
             candidate: nextCandidate,
             files: displayedPreEmploymentFiles,
             majorProgress: majorRequirementProgress,
-            routedStage: "Onboarding",
+            routedStage: ONBOARDING_STAGE,
           },
         }),
       );
@@ -2773,7 +2521,7 @@ export default function CandidateProfileModal() {
             candidate: nextCandidate,
             files: displayedPreEmploymentFiles,
             majorProgress: majorRequirementProgress,
-            routedStage: "Onboarding",
+            routedStage: ONBOARDING_STAGE,
           },
         }),
       );
@@ -2869,7 +2617,7 @@ export default function CandidateProfileModal() {
       ...(nextStage
         ? {
             status:
-              nextStage === "Onboarding"
+              nextStage === ONBOARDING_STAGE
                 ? "Hired / Active"
                 : activeCandidate.status,
             pipelineStatus:
@@ -2921,7 +2669,7 @@ export default function CandidateProfileModal() {
       }),
     );
 
-    if (nextStage === "Onboarding") {
+    if (nextStage === ONBOARDING_STAGE) {
       window.dispatchEvent(
         new CustomEvent("ta-onboarding-updated", {
           detail: {
@@ -2936,447 +2684,389 @@ export default function CandidateProfileModal() {
     showStatusModal({
       type: "success",
       title:
-        nextStage === "Onboarding"
+        nextStage === ONBOARDING_STAGE
           ? "Moved to Onboarding"
           : "Requirements Saved",
       message:
-        nextStage === "Onboarding"
+        nextStage === ONBOARDING_STAGE
           ? "Candidate completed the 5 major requirements and was moved to Onboarding."
           : "NHO uploaded files were saved and displayed in the candidate profile.",
     });
   }
 
-  function renderTabContent() {
-    if (activeTab === "personal") {
-      const personalRows = [
-        {
-          label: "Date of Birth",
-          value: formatDate(activeCandidate.dateOfBirth),
-        },
-        {
-          label: "Age",
-          value: activeCandidate.ageAsOfApplication
-            ? `${activeCandidate.ageAsOfApplication}`
-            : "—",
-        },
-        {
-          label: "Encoded By",
-          value: encodedBy || "—",
-        },
-        {
-          label: "Created At",
-          value: formatDate(activeCandidate.createdAt),
-        },
-        {
-          label: "Address",
-          value: activeCandidate.physicalAddress || "—",
-          wide: true,
-        },
-      ];
+  function renderPersonalInformation() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={UserRound}
+          title="Personal Information"
+          description="Candidate master profile and contact information."
+        />
 
-      return (
-        <>
-          <TabSectionHeader
-            icon={UserRound}
-            title="Personal Information"
-            description="Additional candidate profile details."
-          />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {personalRows.map((item) => (
-              <ProfileInfoCard
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                wide={item.wide}
-              />
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    if (activeTab === "applicationSource") {
-      const sourceRows = [
-        {
-          label: "Applied Position",
-          value: activeCandidate.openPosition || activeCandidate.roleCapability,
-        },
-        {
-          label: "How Heard About Us",
-          value: formatList(activeCandidate.hearAboutUs),
-        },
-        {
-          label: "Source",
-          value: activeCandidate.source || "—",
-        },
-        {
-          label: "Referred By",
-          value: activeCandidate.referredBy || "—",
-        },
-        {
-          label: "Employee ID",
-          value: activeCandidate.employeeId || "—",
-        },
-      ];
-
-      return (
-        <>
-          <TabSectionHeader
-            icon={BriefcaseBusiness}
-            title="Application Source"
-            description="Source information and referral details."
-          />
-
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            {sourceRows.map((item) => (
-              <CompactInfoRow
-                key={item.label}
-                label={item.label}
-                value={item.value}
-              />
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    if (activeTab === "pipeline") {
-      const pipelineRows = [
-        {
-          label: "Pipeline Status",
-          value: activeCandidate.pipelineStatus || "—",
-        },
-        {
-          label: "Current Stage",
-          value:
-            activeCandidate.currentPipelineStage ||
-            activeCandidate.currentStage ||
-            activeCandidate.pipelineStage ||
-            "—",
-        },
-        {
-          label: "Final Role",
-          value: activeCandidate.currentAppliedRole || "Not assigned yet",
-        },
-        {
-          label: "Final Account",
-          value: activeCandidate.currentAppliedAccount || "Not assigned yet",
-        },
-        {
-          label: "TA Owner",
-          value: activeCandidate.currentTaOwner || "—",
-        },
-      ];
-
-      return (
-        <>
-          <TabSectionHeader
-            icon={Network}
-            title="Pipeline Link"
-            description="Current pipeline status, assignment, and TA ownership."
-          />
-
-          {pipelineCandidateDetailsLoading && (
-            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
-              Loading Candidate Pipeline details...
-            </div>
-          )}
-
-          {pipelineCandidateDetailsError && (
-            <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-              {pipelineCandidateDetailsError}
-            </div>
-          )}
-
-          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            {pipelineRows.map((item) => (
-              <CompactInfoRow
-                key={item.label}
-                label={item.label}
-                value={item.value}
-              />
-            ))}
-          </div>
-        </>
-      );
-    }
-
-    if (activeTab === "qualifications") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={GraduationCap}
-            title="Qualifications"
-            description="Education, work experience, skills, and certifications."
-          />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <ProfileInfoCard
-              label="Educational Attainment"
-              value={activeCandidate.educationalAttainment || "—"}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <div className="rounded-xl bg-[#F8FAFC] p-4">
+            <DetailRow label="First Name" value={activeCandidate.firstName} />
+            <DetailRow label="Middle Name" value={activeCandidate.middleName} />
+            <DetailRow label="Last Name" value={activeCandidate.lastName} />
+            <DetailRow label="Suffix" value={activeCandidate.suffix} />
+            <DetailRow label="Nickname" value={activeCandidate.nickname} />
+            <DetailRow
+              label="Date of Birth"
+              value={formatDate(activeCandidate.dateOfBirth)}
             />
-
-            <ProfileInfoCard
-              label="Skills / Language"
-              value={activeCandidate.skillsLanguage || "—"}
-            />
-
-            <ProfileInfoCard
-              label="Affiliations"
-              value={formatList(activeCandidate.affiliations)}
-            />
-
-            <ProfileInfoCard
-              label="Training Attended"
-              value={activeCandidate.trainingAttended || "—"}
-            />
-          </div>
-        </>
-      );
-    }
-
-    if (activeTab === "workExperience") {
-      return (
-        <>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <TabSectionHeader
-              icon={BriefcaseBusiness}
-              title="Work Experience"
-              description="Candidate employment background and compensation."
-            />
-
-            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-              {activeCandidate.workExperience || "—"}
-            </span>
-          </div>
-
-          {workExperiences.length > 0 ? (
-            <div className="space-y-4">
-              {workExperiences.map((experience, index) => (
-                <div
-                  key={`experience-${index}`}
-                  className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                        Experience {index + 1}
-                      </p>
-
-                      <h5 className="mt-1 break-words text-base font-extrabold text-[#101828]">
-                        {experience.role || experience.industry || "—"}
-                      </h5>
-
-                      <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-                        {experience.company || "Company not provided"}
-                      </p>
-                    </div>
-
-                    <span className="inline-flex w-fit shrink-0 rounded-full border border-[#D6E9FF] bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      {experience.years
-                        ? `${experience.years} year(s)`
-                        : "No duration"}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div className="rounded-xl bg-[#F8FAFC] p-3">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Industry
-                      </p>
-                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                        {experience.industry || "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-[#F8FAFC] p-3">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Compensation
-                      </p>
-                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                        {experience.monthlyCompensation
-                          ? formatCurrency(experience.monthlyCompensation)
-                          : "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-[#F8FAFC] p-3">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Length of Experience
-                      </p>
-                      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-                        {experience.lengthOfWorkExperience || "—"}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl bg-[#F8FAFC] p-3 md:col-span-3">
-                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                        Reason for Leaving
-                      </p>
-                      <p className="mt-1 whitespace-pre-line break-words text-sm font-bold leading-6 text-[#344054]">
-                        {experience.reasonForLeaving || "—"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No work experience details"
-              description={
-                activeCandidate.workExperience || "No work experience provided."
+            <DetailRow
+              label="Age"
+              value={
+                activeCandidate.ageAsOfApplication
+                  ? `${activeCandidate.ageAsOfApplication}`
+                  : "—"
               }
             />
-          )}
-        </>
-      );
-    }
-
-    if (activeTab === "readiness") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={ShieldCheck}
-            title="Readiness and Compliance"
-            description="Availability, work setup, and compliance readiness."
-          />
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <StatusTile
-              label="Vaccinated"
-              value={activeCandidate.fullyVaccinated}
-            />
-            <StatusTile
-              label="On-site Ready"
-              value={activeCandidate.comfortableOnSite}
-            />
-            <StatusTile
-              label="Graveyard Shift"
-              value={activeCandidate.willingGraveyard}
-            />
-            <StatusTile
-              label="Employment Type"
-              value={activeCandidate.employmentInterest}
-            />
-            <StatusTile
-              label="Remote Access"
-              value={activeCandidate.remoteWorkAccess}
-            />
-            <StatusTile label="Drug Test" value={activeCandidate.willingDrugTest} />
-            <div className="sm:col-span-2 xl:col-span-3">
-              <StatusTile
-                label="Background Check"
-                value={activeCandidate.willingBackgroundCheck}
-              />
-            </div>
           </div>
-        </>
-      );
-    }
 
-    if (activeTab === "references") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={Phone}
-            title="References"
-            description="Candidate character or work references."
-          />
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {validReferences.length > 0 ? (
-              validReferences.map((reference, index) => (
-                <ReferenceCard
-                  key={`reference-${index}`}
-                  reference={reference}
-                  index={index}
-                />
-              ))
-            ) : (
-              <div className="md:col-span-2">
-                <EmptyState title="No references provided." />
-              </div>
-            )}
-          </div>
-        </>
-      );
-    }
-
-    if (activeTab === "files") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={FileText}
-            title="Files"
-            description="Uploaded audio and supporting attachments."
-          />
-
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <ViewableFileRow
-              label="Audio Recording"
-              fileName={activeCandidate.audioFileName}
-              fileUrl={activeCandidate.audioFileUrl}
-              fileType={activeCandidate.audioFileType}
-              audio
+          <div className="rounded-xl bg-[#F8FAFC] p-4">
+            <DetailRow label="Email" value={activeCandidate.email} />
+            <DetailRow
+              label="Phone 1"
+              value={
+                activeCandidate.phoneNumber1 ||
+                activeCandidate.contactNumber ||
+                activeCandidate.phone
+              }
             />
-
-            <ViewableFileRow
-              label="Attachment"
-              fileName={activeCandidate.attachmentFileName}
-              fileUrl={activeCandidate.attachmentFileUrl}
-              fileType={activeCandidate.attachmentFileType}
+            <DetailRow label="Phone 2" value={activeCandidate.phoneNumber2} />
+            <DetailRow label="Address" value={activeCandidate.physicalAddress} />
+            <DetailRow
+              label="Preferred Location"
+              value={activeCandidate.applyingLocation}
+            />
+            <DetailRow label="Encoded By" value={encodedBy} />
+            <DetailRow
+              label="Created At"
+              value={formatDate(activeCandidate.createdAt)}
             />
           </div>
-        </>
-      );
-    }
+        </div>
+      </section>
+    );
+  }
 
-    if (activeTab === "preEmploymentFiles") {
-      return (
-        <CandidateNhoFilesSection
-          files={displayedPreEmploymentFiles}
-          selectedFile={selectedNhoFile}
-          onSelectFile={setSelectedNhoFile}
-          isLoading={candidatePipelineFilesLoading}
-          error={candidatePipelineFilesError}
-          canUpload={canUploadFollowUpNhoRequirements}
-          onUploadFollowUp={() => setShowNhoUploadModal(true)}
+  function renderApplicationSource() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={BriefcaseBusiness}
+          title="Application Source"
+          description="Candidate source information and referral details."
         />
-      );
-    }
 
-    if (activeTab === "applicationHistory") {
-      return (
-        <>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <TabSectionHeader
-              icon={Network}
-              title="Application History"
-              description="Candidate movement and application timeline, including Candidate Pipeline process."
-            />
+        <div className="rounded-xl bg-[#F8FAFC] p-4">
+          <DetailRow
+            label="Applied Position"
+            value={activeCandidate.openPosition || activeCandidate.roleCapability}
+          />
+          <DetailRow
+            label="How Heard About Us"
+            value={formatList(activeCandidate.hearAboutUs)}
+          />
+          <DetailRow label="Source" value={activeCandidate.source} />
+          <DetailRow label="Referred By" value={activeCandidate.referredBy} />
+          <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
+        </div>
+      </section>
+    );
+  }
 
-            {applicationHistory.length > 0 && (
-              <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                {applicationHistory.length} record
-                {applicationHistory.length > 1 ? "s" : ""}
-              </span>
-            )}
+  function renderPipelineLink() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={Network}
+          title="Pipeline Link"
+          description="Current pipeline status, assignment, and TA ownership."
+        />
+
+        {pipelineCandidateDetailsLoading && (
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+            Loading Candidate Pipeline details...
           </div>
+        )}
 
-          {pipelineCandidateDetailsError && (
-            <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-700">
-              {pipelineCandidateDetailsError}
+        {pipelineCandidateDetailsError && (
+          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+            {pipelineCandidateDetailsError}
+          </div>
+        )}
+
+        <div className="rounded-xl bg-[#F8FAFC] p-4">
+          <DetailRow
+            label="Pipeline ID"
+            value={resolvedPipelineId || candidatePipelineLookupId || "—"}
+          />
+          <DetailRow
+            label="Pipeline Status"
+            value={activeCandidate.pipelineStatus || "—"}
+          />
+          <DetailRow label="Current Stage" value={currentStage || "—"} />
+          <DetailRow
+            label="Final Role"
+            value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+          />
+          <DetailRow
+            label="Final Account"
+            value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
+          />
+          <DetailRow
+            label="TA Owner"
+            value={activeCandidate.currentTaOwner || "—"}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  function renderQualifications() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={GraduationCap}
+          title="Qualifications"
+          description="Education, skills, trainings, and certifications."
+        />
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatusTile
+            label="Educational Attainment"
+            value={activeCandidate.educationalAttainment}
+          />
+          <StatusTile
+            label="Skills / Language"
+            value={activeCandidate.skillsLanguage}
+          />
+          <StatusTile
+            label="Affiliations"
+            value={formatList(activeCandidate.affiliations)}
+          />
+          <StatusTile
+            label="Training Attended"
+            value={activeCandidate.trainingAttended}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  function renderWorkExperience() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={BriefcaseBusiness}
+          title="Work Experience"
+          description="Candidate employment background, previous role, company, and compensation."
+        />
+
+        <div className="mb-4">
+          <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+            {activeCandidate.workExperience || "—"}
+          </span>
+        </div>
+
+        {workExperiences.length > 0 ? (
+          <div className="space-y-4">
+            {workExperiences.map((experience, index) => (
+              <div
+                key={`experience-${index}`}
+                className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm"
+              >
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                      Experience {index + 1}
+                    </p>
+
+                    <h5 className="mt-1 break-words text-base font-extrabold text-[#101828]">
+                      {experience.role || experience.industry || "—"}
+                    </h5>
+
+                    <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
+                      {experience.company || "Company not provided"}
+                    </p>
+                  </div>
+
+                  <span className="inline-flex w-fit shrink-0 rounded-full border border-[#D6E9FF] bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                    {experience.years
+                      ? `${experience.years} year(s)`
+                      : "No duration"}
+                  </span>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <StatusTile label="Industry" value={experience.industry} />
+                  <StatusTile
+                    label="Compensation"
+                    value={
+                      experience.monthlyCompensation
+                        ? formatCurrency(experience.monthlyCompensation)
+                        : "—"
+                    }
+                  />
+                  <StatusTile
+                    label="Length of Experience"
+                    value={experience.lengthOfWorkExperience}
+                  />
+
+                  <div className="md:col-span-3">
+                    <StatusTile
+                      label="Reason for Leaving"
+                      value={experience.reasonForLeaving}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No work experience details"
+            description={
+              activeCandidate.workExperience || "No work experience provided."
+            }
+          />
+        )}
+      </section>
+    );
+  }
+
+  function renderReadiness() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={ShieldCheck}
+          title="Readiness and Compliance"
+          description="Availability, work setup, and compliance readiness."
+        />
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <StatusTile label="Vaccinated" value={activeCandidate.fullyVaccinated} />
+          <StatusTile
+            label="On-site Ready"
+            value={activeCandidate.comfortableOnSite}
+          />
+          <StatusTile
+            label="Graveyard Shift"
+            value={activeCandidate.willingGraveyard}
+          />
+          <StatusTile
+            label="Employment Type"
+            value={activeCandidate.employmentInterest}
+          />
+          <StatusTile
+            label="Remote Access"
+            value={activeCandidate.remoteWorkAccess}
+          />
+          <StatusTile label="Drug Test" value={activeCandidate.willingDrugTest} />
+
+          <div className="sm:col-span-2 xl:col-span-3">
+            <StatusTile
+              label="Background Check"
+              value={activeCandidate.willingBackgroundCheck}
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderReferences() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={Phone}
+          title="References"
+          description="Candidate character or work references."
+        />
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {validReferences.length > 0 ? (
+            validReferences.map((reference, index) => (
+              <ReferenceCard
+                key={`reference-${index}`}
+                reference={reference}
+                index={index}
+              />
+            ))
+          ) : (
+            <div className="md:col-span-2">
+              <EmptyState title="No references provided." />
             </div>
           )}
+        </div>
+      </section>
+    );
+  }
 
-          {pipelineCandidateDetailsLoading && (
-            <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-700">
-              Loading Candidate Pipeline process history...
-            </div>
+  function renderFiles() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={FileText}
+          title="Files"
+          description="Uploaded audio and supporting attachments."
+        />
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <ViewableFileRow
+            label="Audio Recording"
+            fileName={activeCandidate.audioFileName}
+            fileUrl={activeCandidate.audioFileUrl}
+            fileType={activeCandidate.audioFileType}
+            audio
+          />
+
+          <ViewableFileRow
+            label="Attachment"
+            fileName={activeCandidate.attachmentFileName}
+            fileUrl={activeCandidate.attachmentFileUrl}
+            fileType={activeCandidate.attachmentFileType}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  function renderPreEmploymentFiles() {
+    return (
+      <CandidateNhoFilesSection
+        files={displayedPreEmploymentFiles}
+        selectedFile={selectedNhoFile}
+        onSelectFile={setSelectedNhoFile}
+        isLoading={candidatePipelineFilesLoading}
+        error={candidatePipelineFilesError}
+        canUpload={canUploadFollowUpNhoRequirements}
+        onUploadFollowUp={() => setShowNhoUploadModal(true)}
+      />
+    );
+  }
+
+  function renderApplicationHistory() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <SectionTitle
+            icon={Network}
+            title="Application History"
+            description="Candidate movement and application timeline, including Candidate Pipeline process."
+          />
+
+          {applicationHistory.length > 0 && (
+            <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+              {applicationHistory.length} record
+              {applicationHistory.length > 1 ? "s" : ""}
+            </span>
           )}
+        </div>
 
+        <div className="mt-5">
           {applicationHistory.length > 0 ? (
             <>
               <div className="relative space-y-4">
@@ -3385,20 +3075,6 @@ export default function CandidateProfileModal() {
                   const historyDate = item.date || activeCandidate.lastActivity;
                   const historyOwner = item.owner || encodedBy || "—";
                   const historyDescription = item.description;
-                  const offerDetail = item.offerDetail;
-
-                  const absoluteHistoryIndex = applicationHistory.findIndex(
-                    (historyItem) =>
-                      historyItem._dedupeKey === item._dedupeKey,
-                  );
-
-                  const safeHistoryIndex =
-                    absoluteHistoryIndex >= 0 ? absoluteHistoryIndex : index;
-
-                  const isRealLastNode =
-                    safeHistoryIndex === applicationHistory.length - 1;
-
-                  const shouldShowLine = !isRealLastNode;
 
                   return (
                     <div
@@ -3406,12 +3082,12 @@ export default function CandidateProfileModal() {
                       className="relative grid grid-cols-[42px_minmax(0,1fr)] gap-4"
                     >
                       <div className="relative flex justify-center">
-                        {shouldShowLine && (
+                        {index < visibleApplicationHistory.length - 1 && (
                           <span className="absolute left-1/2 top-10 -bottom-4 w-px -translate-x-1/2 bg-[#DCE8F5]" />
                         )}
 
                         <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sm font-extrabold text-blue-700 shadow-[0_0_0_6px_#FFFFFF]">
-                          {safeHistoryIndex + 1}
+                          {index + 1}
                         </div>
                       </div>
 
@@ -3453,9 +3129,9 @@ export default function CandidateProfileModal() {
                           candidate={activeCandidate}
                         />
 
-                        {offerDetail && (
+                        {item.offerDetail && (
                           <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054]">
-                            {offerDetail}
+                            {item.offerDetail}
                           </div>
                         )}
 
@@ -3513,25 +3189,39 @@ export default function CandidateProfileModal() {
           ) : (
             <EmptyState title="No application history yet." />
           )}
-        </>
-      );
-    }
+        </div>
+      </section>
+    );
+  }
 
-    if (activeTab === "remarks") {
-      return (
-        <>
-          <TabSectionHeader
-            icon={FileText}
-            title="General Remarks"
-            description="Additional notes for this candidate."
-          />
+  function renderRemarks() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+        <SectionTitle
+          icon={FileText}
+          title="General Remarks"
+          description="Additional notes for this candidate."
+        />
 
-          <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
-            {activeCandidate.remarks || "No additional remarks."}
-          </div>
-        </>
-      );
-    }
+        <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
+          {activeCandidate.remarks || "No additional remarks."}
+        </div>
+      </section>
+    );
+  }
+
+  function renderActiveTabContent() {
+    if (activeTab === "personal") return renderPersonalInformation();
+    if (activeTab === "applicationSource") return renderApplicationSource();
+    if (activeTab === "pipeline") return renderPipelineLink();
+    if (activeTab === "qualifications") return renderQualifications();
+    if (activeTab === "workExperience") return renderWorkExperience();
+    if (activeTab === "readiness") return renderReadiness();
+    if (activeTab === "references") return renderReferences();
+    if (activeTab === "files") return renderFiles();
+    if (activeTab === "preEmploymentFiles") return renderPreEmploymentFiles();
+    if (activeTab === "applicationHistory") return renderApplicationHistory();
+    if (activeTab === "remarks") return renderRemarks();
 
     return null;
   }
@@ -3567,183 +3257,159 @@ export default function CandidateProfileModal() {
           </div>
 
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6">
-            <div className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
-              <section className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
-                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
-                      {candidateInitials}
+            <div className="space-y-5">
+              <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
+                <div className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
+                        {candidateInitials}
+                      </div>
+
+                      <div className="min-w-0 max-w-full">
+                        <h3 className="line-clamp-4 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-3 sm:text-2xl">
+                          {activeCandidate.name || "Unnamed Candidate"}
+                        </h3>
+
+                        <p className="mt-2 break-words text-sm font-extrabold text-sibs-primary-1">
+                          {activeCandidate.email || "No email provided"}
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
+                          <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                            {activeCandidate.candidateId || "—"}
+                          </span>
+
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                              activeCandidate.status,
+                            )}`}
+                          >
+                            {activeCandidate.status || "—"}
+                          </span>
+
+                          {currentStage && (
+                            <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
+                              {currentStage}
+                            </span>
+                          )}
+
+                          {activeCandidate.isPublicSubmission && (
+                            <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
+                              Public Submission
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="min-w-0 max-w-full">
-                      <h3 className="line-clamp-4 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-3 sm:text-2xl">
-                        {activeCandidate.name || "Unnamed Candidate"}
-                      </h3>
+                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:items-center">
+                      <button
+                        type="button"
+                        onClick={handleEditCandidate}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                      >
+                        <Pencil size={16} />
+                        Edit Profile
+                      </button>
 
-                      <p className="mt-2 line-clamp-2 text-sm font-extrabold text-[#101828] sm:text-base">
-                        {activeCandidate.openPosition ||
-                          activeCandidate.roleCapability ||
-                          activeCandidate.currentAppliedRole ||
-                          "No applied role"}
-                      </p>
-
-                      <div className="mt-4 flex flex-col gap-2 text-sm font-semibold text-[#344054] sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-2">
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Nickname:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {activeCandidate.nickname || "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Email:
-                          </span>
-                          <span className="min-w-0 break-all">
-                            {activeCandidate.email || "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Phone 1:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {activeCandidate.phoneNumber1 ||
-                              activeCandidate.contactNumber ||
-                              activeCandidate.phone ||
-                              "—"}
-                          </span>
-                        </span>
-
-                        {activeCandidate.phoneNumber2 && (
-                          <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                            <span className="shrink-0 text-sibs-primary-1">
-                              Phone 2:
-                            </span>
-                            <span className="min-w-0 break-words">
-                              {activeCandidate.phoneNumber2}
-                            </span>
-                          </span>
-                        )}
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Location:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {activeCandidate.applyingLocation ||
-                              activeCandidate.physicalAddress ||
-                              "—"}
-                          </span>
-                        </span>
-
-                        <span className="inline-flex min-w-0 items-center justify-center gap-2 sm:justify-start">
-                          <span className="shrink-0 text-sibs-primary-1">
-                            Last Activity:
-                          </span>
-                          <span className="min-w-0 break-words">
-                            {formatDate(activeCandidate.lastActivity)}
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-                        <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                          {activeCandidate.candidateId || "—"}
-                        </span>
-
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                            activeCandidate.status,
-                          )}`}
-                        >
-                          {activeCandidate.status || "—"}
-                        </span>
-
-                        {currentStage && (
-                          <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-extrabold text-cyan-700">
-                            {currentStage}
-                          </span>
-                        )}
-
-                        {activeCandidate.isPublicSubmission && (
-                          <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
-                            Public Submission
-                          </span>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleUpdateCandidateStatus}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm"
+                      >
+                        <RefreshCcw size={16} />
+                        Update Status
+                      </button>
                     </div>
                   </div>
+                </div>
 
-                  <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row xl:pt-2">
-                    <button
-                      type="button"
-                      onClick={handleEditCandidate}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
-                    >
-                      <Pencil size={16} />
-                      Edit Profile
-                    </button>
+                <div className="grid grid-cols-1 divide-y divide-[#E6ECF2] md:grid-cols-3 md:divide-x md:divide-y-0">
+                  <div className="px-5 py-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Applied Position
+                    </p>
 
-                    <button
-                      type="button"
-                      onClick={handleUpdateCandidateStatus}
-                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm sm:w-auto"
+                    <p
+                      title={
+                        activeCandidate.openPosition ||
+                        activeCandidate.roleCapability ||
+                        "—"
+                      }
+                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
                     >
-                      <RefreshCcw size={16} />
-                      Update Status
-                    </button>
+                      {activeCandidate.openPosition ||
+                        activeCandidate.roleCapability ||
+                        "—"}
+                    </p>
+                  </div>
+
+                  <div className="px-5 py-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Preferred Location
+                    </p>
+
+                    <p
+                      title={activeCandidate.applyingLocation || "—"}
+                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                    >
+                      {activeCandidate.applyingLocation || "—"}
+                    </p>
+                  </div>
+
+                  <div className="px-5 py-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      Last Activity
+                    </p>
+
+                    <p
+                      title={formatDate(activeCandidate.lastActivity)}
+                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                    >
+                      {formatDate(activeCandidate.lastActivity)}
+                    </p>
                   </div>
                 </div>
 
                 {isDoNotReprocess && (
-                  <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
+                  <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
                     This candidate is marked as Do Not Reprocess and cannot be
                     moved to the pipeline unless the status is updated.
                   </div>
                 )}
               </section>
 
-              <section className="grid grid-cols-1 gap-0 border-t border-[#E6ECF2] lg:grid-cols-[240px_minmax(0,1fr)]">
-                <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
+                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3 shadow-sm lg:sticky lg:top-0 lg:self-start">
                   <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
                     {profileTabs.map((tab) => {
                       const Icon = tab.icon;
-                      const isActive = activeTab === tab.id;
+                      const active = activeTab === tab.id;
 
                       return (
                         <button
                           key={tab.id}
                           type="button"
                           onClick={() => setActiveTab(tab.id)}
-                          className={`inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition lg:min-w-0 ${
-                            isActive
-                              ? "bg-[#EEF3F8] text-sibs-primary-1"
-                              : "text-[#667085] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                          className={`inline-flex min-h-11 shrink-0 items-center justify-start gap-3 rounded-xl px-4 py-3 text-left text-xs font-extrabold transition lg:w-full ${
+                            active
+                              ? "bg-sibs-primary-1 text-white shadow-sm"
+                              : "bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
                           }`}
                         >
-                          <Icon
-                            size={18}
-                            className={
-                              isActive
-                                ? "text-sibs-primary-1"
-                                : "text-[#98A2B3]"
-                            }
-                          />
-                          <span>{tab.label}</span>
+                          <Icon size={16} className="shrink-0" />
+                          <span className="whitespace-nowrap lg:whitespace-normal">
+                            {tab.label}
+                          </span>
                         </button>
                       );
                     })}
                   </div>
-                </aside>
+                </section>
 
-                <div className="min-w-0 bg-white p-5 sm:p-7">
-                  {renderTabContent()}
-                </div>
-              </section>
+                <div className="min-w-0">{renderActiveTabContent()}</div>
+              </div>
             </div>
           </div>
 
@@ -3833,7 +3499,7 @@ export default function CandidateProfileModal() {
         <NhoUploadModal
           open={showNhoUploadModal}
           onClose={() => setShowNhoUploadModal(false)}
-          candidateId={candidatePipelineLookupId}
+          candidateId={resolvedPipelineId || candidatePipelineLookupId}
           candidateName={activeCandidate.name || "Candidate"}
           candidateEmail={activeCandidate.email || ""}
           initialFiles={displayedPreEmploymentFiles}

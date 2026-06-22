@@ -191,7 +191,6 @@ function formatFileSize(size = 0) {
   if (!numberSize) return "—";
 
   const kb = numberSize / 1024;
-  const kb = numberSize / 1024;
 
   if (kb < 1024) return `${kb.toFixed(1)} KB`;
 
