@@ -1391,9 +1391,11 @@ function FormFieldLabel({
   );
 }
 
-function FilingProgressItem({ label, complete, statusText }) {
+function FilingProgressItem({ label, complete, statusText, className = "" }) {
   return (
-    <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
+    <div
+      className={`min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828] ${className}`}
+    >
       <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
         {label}
       </p>
@@ -1635,6 +1637,11 @@ const requiredFieldChecks = [
     label: "Reason / Summary",
     complete: hasReason,
     statusText: hasReason ? "Complete" : "Missing",
+  },
+  {
+    label: "TL / OM Remarks",
+    complete: hasRemarks,
+    statusText: hasRemarks ? "Complete" : "Missing",
   },
 ];
 
@@ -1989,7 +1996,6 @@ const requiredFieldChecks = [
                     placeholder="Add remarks before sending the resignation request for approval."
                     disabled={detailsDisabled}
                     completed={hasRemarks}
-                    showCompletion={false}
                   />
                 </div>
               </div>
@@ -2032,13 +2038,18 @@ const requiredFieldChecks = [
                   />
                 </div>
 
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {requiredFieldChecks.map((field) => (
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-2">
+                 {requiredFieldChecks.map((field) => (
                     <FilingProgressItem
                       key={field.label}
                       label={field.label}
                       complete={field.complete}
                       statusText={field.statusText}
+                      className={
+                        field.label === "TL / OM Remarks"
+                          ? "sm:col-span-2 2xl:col-span-3"
+                          : ""
+                      }
                     />
                   ))}
                 </div>
@@ -2151,6 +2162,11 @@ const requiredFieldChecks = [
     label: "Reason / Summary",
     complete: hasReason,
     statusText: hasReason ? "Complete" : "Missing",
+  },
+  {
+    label: "TL / OM Remarks",
+    complete: hasRemarks,
+    statusText: hasRemarks ? "Complete" : "Missing",
   },
 ];
 
@@ -2290,7 +2306,8 @@ const totalRequiredFields = requiredFieldChecks.length;
                     label="TL / OM Remarks"
                     value={remarks}
                     rows="min-h-[96px]"
-                    completed={Boolean(String(remarks || "").trim())}
+                    completed={hasRemarks}
+                    showCompletion={false}
                   />
                 </div>
               </div>
