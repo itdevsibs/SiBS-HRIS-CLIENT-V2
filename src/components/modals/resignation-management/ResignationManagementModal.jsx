@@ -1391,7 +1391,7 @@ function FormFieldLabel({
   );
 }
 
-function FilingProgressItem({ label, complete }) {
+function FilingProgressItem({ label, complete, statusText }) {
   return (
     <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
       <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
@@ -1403,12 +1403,11 @@ function FilingProgressItem({ label, complete }) {
           complete ? "text-emerald-700" : "text-amber-700"
         }`}
       >
-        {complete ? "Complete" : "Missing"}
+        {statusText || (complete ? "Complete" : "Missing")}
       </p>
     </div>
   );
 }
-
 function ViewFieldLabel({ label, completed = false }) {
   return (
     <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
@@ -1584,40 +1583,60 @@ export function ResignationManagementModal({
   const isImmediate = form?.resignationType === "Immediate";
 
   const hasEmployeeSibsId = Boolean(form?.employeeSibsId);
-  const hasEmployeeName = Boolean(form?.employeeName);
-  const hasResignationType = Boolean(form?.resignationType);
-  const hasResignationDate = Boolean(form?.resignationDate);
-  const hasLastWorkingDate = Boolean(form?.lastWorkingDate);
-  const hasUploadedFile = Boolean(form?.uploadedFile?.name || form?.uploadedFile);
-  const hasReason = Boolean(String(form?.reason || "").trim());
-  const hasRemarks = Boolean(String(form?.remarks || "").trim());
+const hasEmployeeName = Boolean(form?.employeeName);
+const hasResignationType = Boolean(form?.resignationType);
 
-  const requiredFieldChecks = [
-    {
-      label: "Employee SIBS ID",
-      complete: hasEmployeeSibsId,
-    },
-    {
-      label: "Employee Name",
-      complete: hasEmployeeName,
-    },
-    {
-      label: "Type of Resignation",
-      complete: hasResignationType,
-    },
-    {
-      label: "Resignation Date",
-      complete: hasResignationDate,
-    },
-    {
-      label: "Last Working Date",
-      complete: hasLastWorkingDate,
-    },
-    {
-      label: "Reason / Summary",
-      complete: hasReason,
-    },
-  ];
+const hasResignationDate =
+  hasSelectedEmployee && Boolean(form?.resignationDate);
+
+const hasLastWorkingDate =
+  hasSelectedEmployee && Boolean(form?.lastWorkingDate);
+
+const completedDateFields = [
+  hasResignationDate,
+  hasLastWorkingDate,
+].filter(Boolean).length;
+
+const hasDatesCompleted = completedDateFields === 2;
+
+const hasUploadedFile = Boolean(form?.uploadedFile?.name || form?.uploadedFile);
+const hasReason = Boolean(String(form?.reason || "").trim());
+const hasRemarks = Boolean(String(form?.remarks || "").trim());
+
+const requiredFieldChecks = [
+  {
+    label: "Employee SIBS ID",
+    complete: hasEmployeeSibsId,
+    statusText: hasEmployeeSibsId ? "Complete" : "Missing",
+  },
+  {
+    label: "Employee Name",
+    complete: hasEmployeeName,
+    statusText: hasEmployeeName ? "Complete" : "Missing",
+  },
+  {
+    label: "Type of Resignation",
+    complete: hasResignationType,
+    statusText: hasResignationType ? "Complete" : "Missing",
+  },
+  {
+    label: "Dates Completed",
+    complete: hasDatesCompleted,
+    statusText: hasDatesCompleted
+      ? "2/2 Complete"
+      : `${completedDateFields}/2 Missing`,
+  },
+  {
+    label: "Email Attachment",
+    complete: hasUploadedFile,
+    statusText: hasUploadedFile ? "Complete" : "Missing",
+  },
+  {
+    label: "Reason / Summary",
+    complete: hasReason,
+    statusText: hasReason ? "Complete" : "Missing",
+  },
+];
 
   const completedRequiredFields = requiredFieldChecks.filter(
     (field) => field.complete,
@@ -1970,6 +1989,7 @@ export function ResignationManagementModal({
                     placeholder="Add remarks before sending the resignation request for approval."
                     disabled={detailsDisabled}
                     completed={hasRemarks}
+                    showCompletion={false}
                   />
                 </div>
               </div>
@@ -2018,6 +2038,7 @@ export function ResignationManagementModal({
                       key={field.label}
                       label={field.label}
                       complete={field.complete}
+                      statusText={field.statusText}
                     />
                   ))}
                 </div>
@@ -2081,44 +2102,65 @@ export function ViewResignationModal({ open, item, onClose }) {
     "TL / OM";
 
   const hasEmployeeSibsId = Boolean(employeeSibsId && employeeSibsId !== "--");
-  const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
-  const hasResignationType = Boolean(resignationType);
-  const hasResignationDate = Boolean(rawResignationDate);
-  const hasLastWorkingDate = Boolean(rawLastWorkingDate);
-  const hasReason = Boolean(String(reason || "").trim());
+const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
+const hasResignationType = Boolean(resignationType);
 
-  const requiredFieldChecks = [
-    {
-      label: "Employee SIBS ID",
-      complete: hasEmployeeSibsId,
-    },
-    {
-      label: "Employee Name",
-      complete: hasEmployeeName,
-    },
-    {
-      label: "Type of Resignation",
-      complete: hasResignationType,
-    },
-    {
-      label: "Resignation Date",
-      complete: hasResignationDate,
-    },
-    {
-      label: "Last Working Date",
-      complete: hasLastWorkingDate,
-    },
-    {
-      label: "Reason / Summary",
-      complete: hasReason,
-    },
-  ];
+const hasResignationDate = Boolean(rawResignationDate);
+const hasLastWorkingDate = Boolean(rawLastWorkingDate);
 
-  const completedRequiredFields = requiredFieldChecks.filter(
-    (field) => field.complete,
-  ).length;
+const completedDateFields = [
+  hasResignationDate,
+  hasLastWorkingDate,
+].filter(Boolean).length;
 
-  const totalRequiredFields = requiredFieldChecks.length;
+const hasDatesCompleted = completedDateFields === 2;
+
+const hasUploadedFile = Boolean(getUploadedFileDisplayName(item));
+const hasReason = Boolean(String(reason || "").trim());
+const hasRemarks = Boolean(String(remarks || "").trim());
+
+const requiredFieldChecks = [
+  {
+    label: "Employee SIBS ID",
+    complete: hasEmployeeSibsId,
+    statusText: hasEmployeeSibsId ? "Complete" : "Missing",
+  },
+  {
+    label: "Employee Name",
+    complete: hasEmployeeName,
+    statusText: hasEmployeeName ? "Complete" : "Missing",
+  },
+  {
+    label: "Type of Resignation",
+    complete: hasResignationType,
+    statusText: hasResignationType ? "Complete" : "Missing",
+  },
+  {
+    label: "Dates Completed",
+    complete: hasDatesCompleted,
+    statusText: hasDatesCompleted
+      ? "2/2 Complete"
+      : `${completedDateFields}/2 Missing`,
+  },
+  {
+    label: "Email Attachment",
+    complete: hasUploadedFile,
+    statusText: hasUploadedFile ? "Complete" : "Missing",
+  },
+  {
+    label: "Reason / Summary",
+    complete: hasReason,
+    statusText: hasReason ? "Complete" : "Missing",
+  },
+];
+
+const completedRequiredFields = requiredFieldChecks.filter(
+  (field) => field.complete,
+).length;
+
+const totalRequiredFields = requiredFieldChecks.length;
+
+
 
   return createPortal(
     <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-2 sm:p-4">
