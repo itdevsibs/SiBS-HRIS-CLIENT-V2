@@ -1375,49 +1375,25 @@ function CompletionStatusBadge({ completed = 0, total = 6 }) {
   );
 }
 
-function FormFieldLabel({
-  label,
-  completed = false,
-  showCompletion = true,
-}) {
+function FormFieldLabel({ label }) {
   return (
     <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
       <label className="truncate text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
-
-      {showCompletion && <FieldCompleteBadge completed={completed} />}
     </div>
   );
 }
 
-function FilingProgressItem({ label, complete, statusText, className = "" }) {
-  return (
-    <div
-      className={`min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828] ${className}`}
-    >
-      <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-        {label}
-      </p>
 
-      <p
-        className={`mt-1 text-sm font-bold leading-5 ${
-          complete ? "text-emerald-700" : "text-amber-700"
-        }`}
-      >
-        {statusText || (complete ? "Complete" : "Missing")}
-      </p>
-    </div>
-  );
-}
-function ViewFieldLabel({ label, completed = false }) {
+
+
+function ViewFieldLabel({ label }) {
   return (
     <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
       <label className="truncate text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
-
-      <FieldCompleteBadge completed={completed} />
     </div>
   );
 }
@@ -1770,11 +1746,6 @@ const requiredFieldChecks = [
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
-
                   {hasSelectedEmployee ? (
                     <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
                       <CheckCircle2 size={14} />
@@ -2001,7 +1972,7 @@ const requiredFieldChecks = [
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5">
               <div
                 className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-4 sm:p-5`}
               >
@@ -2015,44 +1986,6 @@ const requiredFieldChecks = [
                   resignation requires selecting a last working date within 1 to
                   29 days.
                 </p>
-              </div>
-
-              <div
-                className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="text-base font-extrabold text-sibs-primary-1">
-                      Filing Progress
-                    </h3>
-
-                    <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                      Required information before submitting this resignation
-                      request.
-                    </p>
-                  </div>
-
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
-                </div>
-
-                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-2">
-                 {requiredFieldChecks.map((field) => (
-                    <FilingProgressItem
-                      key={field.label}
-                      label={field.label}
-                      complete={field.complete}
-                      statusText={field.statusText}
-                      className={
-                        field.label === "TL / OM Remarks"
-                          ? "sm:col-span-2 2xl:col-span-3"
-                          : ""
-                      }
-                    />
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -2134,39 +2067,35 @@ const requiredFieldChecks = [
   {
     label: "Employee SIBS ID",
     complete: hasEmployeeSibsId,
-    statusText: hasEmployeeSibsId ? "Complete" : "Missing",
+    
   },
   {
     label: "Employee Name",
     complete: hasEmployeeName,
-    statusText: hasEmployeeName ? "Complete" : "Missing",
+    
   },
   {
     label: "Type of Resignation",
     complete: hasResignationType,
-    statusText: hasResignationType ? "Complete" : "Missing",
+    
   },
   {
     label: "Dates Completed",
     complete: hasDatesCompleted,
-    statusText: hasDatesCompleted
-      ? "2/2 Complete"
-      : `${completedDateFields}/2 Missing`,
+    
   },
   {
     label: "Email Attachment",
     complete: hasUploadedFile,
-    statusText: hasUploadedFile ? "Complete" : "Missing",
   },
   {
     label: "Reason / Summary",
     complete: hasReason,
-    statusText: hasReason ? "Complete" : "Missing",
+    
   },
   {
     label: "TL / OM Remarks",
     complete: hasRemarks,
-    statusText: hasRemarks ? "Complete" : "Missing",
   },
 ];
 
@@ -2239,10 +2168,7 @@ const totalRequiredFields = requiredFieldChecks.length;
                 </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
+                  
 
                   <span
                     className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
@@ -2342,10 +2268,7 @@ const totalRequiredFields = requiredFieldChecks.length;
                     </p>
                   </div>
 
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
+                  
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3">
