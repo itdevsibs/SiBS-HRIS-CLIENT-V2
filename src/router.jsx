@@ -51,6 +51,9 @@ export default function Router() {
       <Route path="/" element={<LoginPage />} />
       <Route path="/login" element={<LoginPage />} />
 
+      {/* PUBLIC ONLINE ASSESSMENT / JOB EVALUATION FORM */}
+      <Route path="/online-assessment" element={<FinalInterviewForms publicMode />} />
+
       {/* ROUTE ALIASES */}
       <Route
         path="/candidate-pipeline"

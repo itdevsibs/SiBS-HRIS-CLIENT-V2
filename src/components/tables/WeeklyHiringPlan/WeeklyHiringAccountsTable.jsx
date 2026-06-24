@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, ListChecks } from "lucide-react";
+import { ListChecks } from "lucide-react";
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 
@@ -17,6 +17,19 @@ function getNumberValue(...values) {
   }
 
   return 0;
+}
+
+function safeDivide(numerator, denominator) {
+  const cleanNumerator = Number(numerator || 0);
+  const cleanDenominator = Number(denominator || 0);
+
+  if (!Number.isFinite(cleanNumerator) || !Number.isFinite(cleanDenominator)) {
+    return 0;
+  }
+
+  if (cleanDenominator === 0) return 0;
+
+  return cleanNumerator / cleanDenominator;
 }
 
 function formatPercent(value) {
@@ -56,6 +69,20 @@ function getStatusClass(status) {
   }
 }
 
+function calculatePipelineStatus(metrics) {
+  const requiredHeadcount = Number(metrics.requiredHeadcount || 0);
+  const hiringNeeded = Number(metrics.hiringNeeded || 0);
+  const leadsToInterview = Number(metrics.leadsToInterview || 0);
+  const interviewCount = Number(metrics.interviewCount || 0);
+
+  if (requiredHeadcount <= 0) return "Pending";
+  if (hiringNeeded <= 0) return "Completed";
+  if (interviewCount <= 0 && hiringNeeded > 0) return "Not Started";
+  if (leadsToInterview > 0) return "At Risk";
+
+  return "On Track";
+}
+
 function getRowMetrics(item) {
   const requiredHeadcount = getNumberValue(
     item.requiredHeadcount,
@@ -67,86 +94,159 @@ function getRowMetrics(item) {
     item.actual_headcount,
   );
 
-  const requiredBufferHeadcount = getNumberValue(
-    item.requiredBufferHeadcount,
-    item.required_buffer_headcount,
-    item.bufferHeadcount,
-    item.buffer_headcount,
-  );
-
-  const requiredBufferPercent = getNumberValue(
-    item.requiredBufferPercent,
-    item.required_buffer_percent,
-    item.bufferPercent,
-    item.buffer_percent,
-  );
-
-  const actualBufferCount = getNumberValue(
-    item.actualBufferCount,
-    item.actual_buffer_count,
-    item.missingHeadcount,
-    item.missing_headcount,
-  );
-
-  const actualBufferPercent = getNumberValue(
-    item.actualBufferPercent,
-    item.actual_buffer_percent,
-  );
-
-  const requiredActualHeadcountWithBuffer = getNumberValue(
-    item.requiredActualHeadcountWithBuffer,
-    item.required_actual_headcount_with_buffer,
-    requiredHeadcount + requiredBufferHeadcount,
-  );
-
-  const absenteeismPastSixWeeksAverage = getNumberValue(
-    item.absenteeismPastSixWeeksAverage,
-    item.absenteeism_past_six_weeks_average,
-    item.absenteeismOpsCount,
-    item.absenteeism_ops_count,
+  const absenteeismSixWeeks = getNumberValue(
+    item.absenteeismSixWeeks,
+    item.absenteeism_6_weeks,
+    item.absenteeismPastSixWeeks,
+    item.absenteeism_past_six_weeks,
     item.absenteeismCount,
     item.absenteeism_count,
+    item.absenteeismPastCount,
+    item.absenteeism_past_count,
+    item.absenteeismPastSixWeeksAverage,
+    item.absenteeism_past_six_weeks_average,
   );
 
-  const attritionPastSixWeeksAverage = getNumberValue(
-    item.attritionPastSixWeeksAverage,
-    item.attrition_past_six_weeks_average,
+  const attritionSixWeeks = getNumberValue(
+    item.attritionSixWeeks,
+    item.attrition_6_weeks,
+    item.attritionPastSixWeeks,
+    item.attrition_past_six_weeks,
     item.attritionPastCount,
     item.attrition_past_count,
+    item.attritionCount,
+    item.attrition_count,
+    item.attritionPastSixWeeksAverage,
+    item.attrition_past_six_weeks_average,
   );
 
-  const opsPrf = getNumberValue(item.opsPrf, item.ops_prf);
+  const netActualHeadcount =
+    actualHeadcount - absenteeismSixWeeks - attritionSixWeeks;
 
-  const actualHeadcountNeeds = getNumberValue(
-    item.actualHeadcountNeeds,
-    item.actual_headcount_needs,
-    requiredBufferHeadcount +
-      absenteeismPastSixWeeksAverage +
-      attritionPastSixWeeksAverage +
-      opsPrf,
+  const bufferPercentage = safeDivide(
+    netActualHeadcount - requiredHeadcount,
+    requiredHeadcount,
   );
 
-  const leadsToInterview = getNumberValue(
-    item.leadsToInterview,
-    item.leads_to_interview,
+  const absenteeismPercentage = safeDivide(
+    absenteeismSixWeeks,
+    actualHeadcount,
   );
 
-  const hiringRate = getNumberValue(item.hiringRate, item.hiring_rate, 5);
+  const attritionPercentage = safeDivide(attritionSixWeeks, actualHeadcount);
+
+  const hiringNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+
+  const interviewCount = getNumberValue(
+    item.interviewCount,
+    item.interview_count,
+    item.interviewPopulationCount,
+    item.interview_population_count,
+  );
+
+  const nhoCount = getNumberValue(
+    item.nhoCount,
+    item.nho_count,
+    item.nhoPopulationCount,
+    item.nho_population_count,
+  );
+
+  const fstCount = getNumberValue(
+    item.fstCount,
+    item.fst_count,
+    item.fstPopulationCount,
+    item.fst_population_count,
+  );
+
+  const pstCount = getNumberValue(
+    item.pstCount,
+    item.pst_count,
+    item.pstPopulationCount,
+    item.pst_population_count,
+  );
+
+  const attritionInterviewToNhoCount = Math.max(0, interviewCount - nhoCount);
+
+  const attritionInterviewToNhoPercent = safeDivide(
+    attritionInterviewToNhoCount,
+    interviewCount,
+  );
+
+  const attritionNhoToFstCount = Math.max(0, nhoCount - fstCount);
+
+  const attritionNhoToFstPercent = safeDivide(
+    attritionNhoToFstCount,
+    nhoCount,
+  );
+
+  const attritionFstToPstCount = Math.max(0, fstCount - pstCount);
+
+  const attritionFstToPstPercent = safeDivide(
+    attritionFstToPstCount,
+    fstCount,
+  );
+
+  const attritionNhoToPstCount = Math.max(0, nhoCount - pstCount);
+
+  const attritionNhoToPstPercent = safeDivide(
+    attritionNhoToPstCount,
+    nhoCount,
+  );
+
+  const hiredCount = fstCount + pstCount;
+
+  const hiringRate = safeDivide(hiredCount, interviewCount);
+
+  const leadsToInterview =
+    hiringNeeded <= 0
+      ? 0
+      : hiringRate > 0
+        ? Math.ceil(hiringNeeded / hiringRate)
+        : hiringNeeded;
+
+  const pipelineStatus = calculatePipelineStatus({
+    requiredHeadcount,
+    hiringNeeded,
+    leadsToInterview,
+    interviewCount,
+  });
 
   return {
     requiredHeadcount,
     actualHeadcount,
-    requiredBufferHeadcount,
-    requiredBufferPercent,
-    actualBufferCount,
-    actualBufferPercent,
-    requiredActualHeadcountWithBuffer,
-    absenteeismPastSixWeeksAverage,
-    attritionPastSixWeeksAverage,
-    opsPrf,
-    actualHeadcountNeeds,
-    leadsToInterview,
+
+    absenteeismSixWeeks,
+    absenteeismPercentage,
+
+    attritionSixWeeks,
+    attritionPercentage,
+
+    netActualHeadcount,
+    bufferPercentage,
+    hiringNeeded,
+
+    interviewCount,
+    nhoCount,
+    fstCount,
+    pstCount,
+
+    attritionInterviewToNhoCount,
+    attritionInterviewToNhoPercent,
+
+    attritionNhoToFstCount,
+    attritionNhoToFstPercent,
+
+    attritionFstToPstCount,
+    attritionFstToPstPercent,
+
+    attritionNhoToPstCount,
+    attritionNhoToPstPercent,
+
+    hiredCount,
     hiringRate,
+    leadsToInterview,
+
+    pipelineStatus,
   };
 }
 
@@ -170,15 +270,151 @@ function MobileMetric({
 
 function HeaderCell({ children, note, className = "" }) {
   return (
-    <th className={`px-5 py-4 text-center align-top ${className}`}>
+    <th
+      className={`sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top ${className}`}
+    >
       <div className="leading-tight">{children}</div>
 
       {note && (
-        <div className="mt-1 max-w-[170px] text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
+        <div className="mx-auto mt-1 max-w-[190px] text-[10px] font-bold normal-case leading-tight text-sibs-tertiary-5">
           ({note})
         </div>
       )}
     </th>
+  );
+}
+
+function ColumnGroup() {
+  return (
+    <colgroup>
+      <col style={{ width: "240px" }} />
+      <col style={{ width: "150px" }} />
+      <col style={{ width: "150px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "160px" }} />
+      <col style={{ width: "160px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "160px" }} />
+      <col style={{ width: "140px" }} />
+      <col style={{ width: "140px" }} />
+      <col style={{ width: "140px" }} />
+      <col style={{ width: "210px" }} />
+      <col style={{ width: "210px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "190px" }} />
+      <col style={{ width: "150px" }} />
+      <col style={{ width: "150px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "170px" }} />
+      <col style={{ width: "280px" }} />
+    </colgroup>
+  );
+}
+
+function DesktopTableHeader() {
+  return (
+    <table className="w-full table-fixed border-separate border-spacing-0 bg-white text-left">
+      <ColumnGroup />
+
+      <thead>
+        <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+          <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+            Account
+          </th>
+
+          <HeaderCell>Required Headcount</HeaderCell>
+
+          <HeaderCell>Actual Headcount</HeaderCell>
+
+          <HeaderCell note="((Actual HC - Absenteeism - Attrition) - Required HC) ÷ Required HC">
+            Buffer %
+          </HeaderCell>
+
+          <HeaderCell>Absenteeism 6 Weeks</HeaderCell>
+
+          <HeaderCell note="Absenteeism 6 Weeks ÷ Actual HC">
+            Absenteeism %
+          </HeaderCell>
+
+          <HeaderCell>Attrition 6 Weeks</HeaderCell>
+
+          <HeaderCell note="Attrition 6 Weeks ÷ Actual HC">
+            Attrition %
+          </HeaderCell>
+
+          <HeaderCell note="Actual HC - Absenteeism - Attrition">
+            Net Actual HC
+          </HeaderCell>
+
+          <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
+            Hiring Needed
+          </HeaderCell>
+
+          <HeaderCell>Interview Count</HeaderCell>
+
+          <HeaderCell>NHO Count</HeaderCell>
+
+          <HeaderCell>FST Count</HeaderCell>
+
+          <HeaderCell>PST Count</HeaderCell>
+
+          <HeaderCell note="MAX(0, Interview - NHO)">
+            Attrition Count Interview to NHO
+          </HeaderCell>
+
+          <HeaderCell note="Attrition Interview to NHO ÷ Interview">
+            Attrition % Interview to NHO
+          </HeaderCell>
+
+          <HeaderCell note="MAX(0, NHO - FST)">
+            Attrition Count NHO to FST
+          </HeaderCell>
+
+          <HeaderCell note="Attrition NHO to FST ÷ NHO">
+            Attrition % NHO to FST
+          </HeaderCell>
+
+          <HeaderCell note="MAX(0, FST - PST)">
+            Attrition Count FST to PST
+          </HeaderCell>
+
+          <HeaderCell note="Attrition FST to PST ÷ FST">
+            Attrition % FST to PST
+          </HeaderCell>
+
+          <HeaderCell note="MAX(0, NHO - PST)">
+            Attrition Count NHO to PST
+          </HeaderCell>
+
+          <HeaderCell note="Attrition NHO to PST ÷ NHO">
+            Attrition % NHO to PST
+          </HeaderCell>
+
+          <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
+
+          <HeaderCell note="Hired Count ÷ Interview Count">
+            Hiring Rate
+          </HeaderCell>
+
+          <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
+            Leads to Interview
+          </HeaderCell>
+
+          <HeaderCell>Status</HeaderCell>
+
+          <th className="px-5 py-4 text-left align-top last:rounded-tr-2xl">
+            Status Note
+          </th>
+        </tr>
+      </thead>
+    </table>
   );
 }
 
@@ -205,10 +441,98 @@ export default function WeeklyHiringAccountsTable({
 
   const safePlans = Array.isArray(filteredPlans) ? filteredPlans : [];
 
+  const computedPlans = useMemo(() => {
+    return safePlans.map((item) => {
+      const metrics = getRowMetrics(item);
+
+      return {
+        ...item,
+
+        requiredHeadcount: metrics.requiredHeadcount,
+        required_headcount: metrics.requiredHeadcount,
+
+        actualHeadcount: metrics.actualHeadcount,
+        actual_headcount: metrics.actualHeadcount,
+
+        absenteeismSixWeeks: metrics.absenteeismSixWeeks,
+        absenteeism_6_weeks: metrics.absenteeismSixWeeks,
+        absenteeismPercentage: metrics.absenteeismPercentage,
+        absenteeism_percentage: metrics.absenteeismPercentage,
+
+        attritionSixWeeks: metrics.attritionSixWeeks,
+        attrition_6_weeks: metrics.attritionSixWeeks,
+        attritionPercentage: metrics.attritionPercentage,
+        attrition_percentage: metrics.attritionPercentage,
+
+        netActualHeadcount: metrics.netActualHeadcount,
+        net_actual_headcount: metrics.netActualHeadcount,
+
+        bufferPercentage: metrics.bufferPercentage,
+        buffer_percentage: metrics.bufferPercentage,
+        bufferPercent: metrics.bufferPercentage,
+        buffer_percent: metrics.bufferPercentage,
+
+        hiringNeeded: metrics.hiringNeeded,
+        hiring_needed: metrics.hiringNeeded,
+        actualHeadcountNeeds: metrics.hiringNeeded,
+        actual_headcount_needs: metrics.hiringNeeded,
+
+        interviewCount: metrics.interviewCount,
+        interview_count: metrics.interviewCount,
+
+        nhoCount: metrics.nhoCount,
+        nho_count: metrics.nhoCount,
+
+        fstCount: metrics.fstCount,
+        fst_count: metrics.fstCount,
+
+        pstCount: metrics.pstCount,
+        pst_count: metrics.pstCount,
+
+        attritionInterviewToNhoCount: metrics.attritionInterviewToNhoCount,
+        attrition_interview_to_nho_count:
+          metrics.attritionInterviewToNhoCount,
+        attritionInterviewToNhoPercent:
+          metrics.attritionInterviewToNhoPercent,
+        attrition_interview_to_nho_percent:
+          metrics.attritionInterviewToNhoPercent,
+
+        attritionNhoToFstCount: metrics.attritionNhoToFstCount,
+        attrition_nho_to_fst_count: metrics.attritionNhoToFstCount,
+        attritionNhoToFstPercent: metrics.attritionNhoToFstPercent,
+        attrition_nho_to_fst_percent: metrics.attritionNhoToFstPercent,
+
+        attritionFstToPstCount: metrics.attritionFstToPstCount,
+        attrition_fst_to_pst_count: metrics.attritionFstToPstCount,
+        attritionFstToPstPercent: metrics.attritionFstToPstPercent,
+        attrition_fst_to_pst_percent: metrics.attritionFstToPstPercent,
+
+        attritionNhoToPstCount: metrics.attritionNhoToPstCount,
+        attrition_nho_to_pst_count: metrics.attritionNhoToPstCount,
+        attritionNhoToPstPercent: metrics.attritionNhoToPstPercent,
+        attrition_nho_to_pst_percent: metrics.attritionNhoToPstPercent,
+
+        hiredCount: metrics.hiredCount,
+        hired_count: metrics.hiredCount,
+
+        hiringRate: metrics.hiringRate,
+        hiring_rate: metrics.hiringRate,
+
+        leadsToInterview: metrics.leadsToInterview,
+        leads_to_interview: metrics.leadsToInterview,
+
+        pipelineStatus: metrics.pipelineStatus,
+        pipeline_status: metrics.pipelineStatus,
+
+        excelMetrics: metrics,
+      };
+    });
+  }, [safePlans]);
+
   const statusOptions = useMemo(() => {
     const statuses = new Set();
 
-    safePlans.forEach((item) => {
+    computedPlans.forEach((item) => {
       const value = String(item.pipelineStatus || "").trim();
       if (value) statuses.add(value);
     });
@@ -222,39 +546,51 @@ export default function WeeklyHiringAccountsTable({
           value,
         })),
     ];
-  }, [safePlans]);
+  }, [computedPlans]);
 
   const displayPlans = useMemo(() => {
     const keyword = String(search || "").trim().toLowerCase();
 
-    return safePlans.filter((item) => {
+    return computedPlans.filter((item) => {
       const status = String(item.pipelineStatus || "").trim();
 
       const matchesStatus =
         statusFilter === "All" ||
         status.toLowerCase() === statusFilter.toLowerCase();
 
-      const metrics = getRowMetrics(item);
+      const metrics = item.excelMetrics || getRowMetrics(item);
 
       const searchableText = [
         item.id,
+        item.week,
         item.account,
         item.cluster,
         item.pipelineStatus,
         item.statusNote,
         metrics.requiredHeadcount,
         metrics.actualHeadcount,
-        metrics.requiredBufferHeadcount,
-        metrics.requiredBufferPercent,
-        metrics.actualBufferCount,
-        metrics.actualBufferPercent,
-        metrics.requiredActualHeadcountWithBuffer,
-        metrics.absenteeismPastSixWeeksAverage,
-        metrics.attritionPastSixWeeksAverage,
-        metrics.opsPrf,
-        metrics.actualHeadcountNeeds,
-        metrics.leadsToInterview,
+        metrics.bufferPercentage,
+        metrics.absenteeismSixWeeks,
+        metrics.absenteeismPercentage,
+        metrics.attritionSixWeeks,
+        metrics.attritionPercentage,
+        metrics.netActualHeadcount,
+        metrics.hiringNeeded,
+        metrics.interviewCount,
+        metrics.nhoCount,
+        metrics.fstCount,
+        metrics.pstCount,
+        metrics.attritionInterviewToNhoCount,
+        metrics.attritionInterviewToNhoPercent,
+        metrics.attritionNhoToFstCount,
+        metrics.attritionNhoToFstPercent,
+        metrics.attritionFstToPstCount,
+        metrics.attritionFstToPstPercent,
+        metrics.attritionNhoToPstCount,
+        metrics.attritionNhoToPstPercent,
+        metrics.hiredCount,
         metrics.hiringRate,
+        metrics.leadsToInterview,
       ]
         .filter((value) => value !== undefined && value !== null)
         .join(" ")
@@ -264,7 +600,7 @@ export default function WeeklyHiringAccountsTable({
 
       return matchesStatus && matchesSearch;
     });
-  }, [safePlans, search, statusFilter]);
+  }, [computedPlans, search, statusFilter]);
 
   const totalRecords = displayPlans.length;
   const totalPages = Math.max(Math.ceil(totalRecords / PAGE_LIMIT), 1);
@@ -291,7 +627,6 @@ export default function WeeklyHiringAccountsTable({
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollTo({
-        top: 0,
         left: 0,
         behavior: "smooth",
       });
@@ -300,7 +635,6 @@ export default function WeeklyHiringAccountsTable({
     if (mobileScrollRef.current) {
       mobileScrollRef.current.scrollTo({
         top: 0,
-        left: 0,
         behavior: "smooth",
       });
     }
@@ -378,9 +712,16 @@ export default function WeeklyHiringAccountsTable({
     }, 0);
   }
 
-  function handleViewClick(item) {
+  function handleRowClick(item) {
     if (dragStateRef.current.moved) return;
     onViewPlan?.(item);
+  }
+
+  function handleRowKeyDown(e, item) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+
+    e.preventDefault();
+    handleRowClick(item);
   }
 
   return (
@@ -402,7 +743,7 @@ export default function WeeklyHiringAccountsTable({
         <div className="mt-4">
           <PaginationTable
             title="Weekly Hiring Accounts"
-            subtitle="Review Excel-based hiring plan computation per account, including buffer, actual buffer, headcount needs, OPS PRF, and leads."
+            subtitle="Excel-based computation: Net Actual HC, Hiring Needed, Stage Attrition, Hiring Rate, and Leads to Interview."
             loading={accountsLoading}
             searchValue={searchInput}
             searchPlaceholder="Search account then press Enter"
@@ -429,14 +770,16 @@ export default function WeeklyHiringAccountsTable({
             onMouseMove={handleDragMove}
             onMouseUp={handleDragEnd}
             onMouseLeave={handleDragEnd}
-            className={`max-h-[670px] overflow-auto select-none ${
+            className={`max-h-[670px] overflow-auto rounded-2xl border border-[#D9E2EC] bg-white select-none ${
               isDraggingTable ? "cursor-grabbing" : "cursor-grab"
             }`}
           >
-            <table className="w-full min-w-[2200px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
-              <thead className="sticky top-0 z-10">
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="px-5 py-4 text-left align-top first:rounded-tl-2xl">
+            <table className="w-full min-w-[4100px] table-fixed border-separate border-spacing-0 bg-white text-left">
+              <ColumnGroup />
+
+              <thead>
+                <tr className="text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                  <th className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-top first:rounded-tl-2xl">
                     Account
                   </th>
 
@@ -444,48 +787,84 @@ export default function WeeklyHiringAccountsTable({
 
                   <HeaderCell>Actual Headcount</HeaderCell>
 
-                  <HeaderCell note="Required Headcount × 10%">
-                    Required Buffer Headcount
+                  <HeaderCell note="((Actual HC - Absenteeism - Attrition) - Required HC) ÷ Required HC">
+                    Buffer %
                   </HeaderCell>
 
-                  <HeaderCell note="Required Buffer Headcount ÷ Required Headcount">
-                    Required Buffer %
+                  <HeaderCell>Absenteeism 6 Weeks</HeaderCell>
+
+                  <HeaderCell note="Absenteeism 6 Weeks ÷ Actual HC">
+                    Absenteeism %
                   </HeaderCell>
 
-                  <HeaderCell note="Actual Headcount - Required Headcount">
-                    Actual Buffer Count
+                  <HeaderCell>Attrition 6 Weeks</HeaderCell>
+
+                  <HeaderCell note="Attrition 6 Weeks ÷ Actual HC">
+                    Attrition %
                   </HeaderCell>
 
-                  <HeaderCell note="Actual Buffer Count ÷ Required Headcount">
-                    Actual Buffer %
+                  <HeaderCell note="Actual HC - Absenteeism - Attrition">
+                    Net Actual HC
                   </HeaderCell>
 
-                  <HeaderCell note="Required Headcount + Required Buffer Headcount">
-                    Required Actual HC with Buffer
+                  <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
+                    Hiring Needed
                   </HeaderCell>
 
-                  <HeaderCell>Absenteeism Past 6 Weeks Average</HeaderCell>
+                  <HeaderCell>Interview Count</HeaderCell>
 
-                  <HeaderCell>Attrition Past 6 Weeks Average</HeaderCell>
+                  <HeaderCell>NHO Count</HeaderCell>
 
-                  <HeaderCell>OPS PRF</HeaderCell>
+                  <HeaderCell>FST Count</HeaderCell>
 
-                  <HeaderCell note="Required Buffer + Absenteeism Avg + Attrition Avg + OPS PRF">
-                    Actual Headcount Needs
+                  <HeaderCell>PST Count</HeaderCell>
+
+                  <HeaderCell note="MAX(0, Interview - NHO)">
+                    Attrition Count Interview to NHO
                   </HeaderCell>
 
-                  <HeaderCell>Leads to Interview</HeaderCell>
+                  <HeaderCell note="Attrition Interview to NHO ÷ Interview">
+                    Attrition % Interview to NHO
+                  </HeaderCell>
 
-                  <HeaderCell>Hiring Rate</HeaderCell>
+                  <HeaderCell note="MAX(0, NHO - FST)">
+                    Attrition Count NHO to FST
+                  </HeaderCell>
+
+                  <HeaderCell note="Attrition NHO to FST ÷ NHO">
+                    Attrition % NHO to FST
+                  </HeaderCell>
+
+                  <HeaderCell note="MAX(0, FST - PST)">
+                    Attrition Count FST to PST
+                  </HeaderCell>
+
+                  <HeaderCell note="Attrition FST to PST ÷ FST">
+                    Attrition % FST to PST
+                  </HeaderCell>
+
+                  <HeaderCell note="MAX(0, NHO - PST)">
+                    Attrition Count NHO to PST
+                  </HeaderCell>
+
+                  <HeaderCell note="Attrition NHO to PST ÷ NHO">
+                    Attrition % NHO to PST
+                  </HeaderCell>
+
+                  <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
+
+                  <HeaderCell note="Hired Count ÷ Interview Count">
+                    Hiring Rate
+                  </HeaderCell>
+
+                  <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
+                    Leads to Interview
+                  </HeaderCell>
 
                   <HeaderCell>Status</HeaderCell>
 
-                  <th className="px-5 py-4 text-left align-top">
+                  <th className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-top last:rounded-tr-2xl">
                     Status Note
-                  </th>
-
-                  <th className="px-5 py-4 text-right align-top last:rounded-tr-2xl">
-                    Actions
                   </th>
                 </tr>
               </thead>
@@ -496,7 +875,7 @@ export default function WeeklyHiringAccountsTable({
                     <tr key={index}>
                       <td
                         className="border-b border-[#E6ECF2] px-5 py-5"
-                        colSpan={17}
+                        colSpan={27}
                       >
                         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                       </td>
@@ -506,19 +885,23 @@ export default function WeeklyHiringAccountsTable({
                   <tr>
                     <td
                       className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={17}
+                      colSpan={27}
                     >
                       No weekly hiring plan records found.
                     </td>
                   </tr>
                 ) : (
                   paginatedPlans.map((item) => {
-                    const metrics = getRowMetrics(item);
+                    const metrics = item.excelMetrics || getRowMetrics(item);
 
                     return (
                       <tr
                         key={item.id}
-                        className="transition hover:bg-[#FAFBFC]"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleRowClick(item)}
+                        onKeyDown={(e) => handleRowKeyDown(e, item)}
+                        className="cursor-pointer transition hover:bg-[#F3F7FB] focus:bg-[#F3F7FB] focus:outline-none"
                       >
                         <td className="border-b border-[#E6ECF2] px-5 py-5">
                           <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
@@ -528,6 +911,12 @@ export default function WeeklyHiringAccountsTable({
                           <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
                             {item.cluster || "--"}
                           </p>
+
+                          {item.week && (
+                            <p className="mt-1 max-w-[220px] truncate text-[11px] font-bold text-[#667085]">
+                              {item.week}
+                            </p>
+                          )}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
@@ -538,65 +927,98 @@ export default function WeeklyHiringAccountsTable({
                           {formatNumber(metrics.actualHeadcount)}
                         </td>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                          {formatNumber(metrics.requiredBufferHeadcount, 2)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatPercent(metrics.requiredBufferPercent)}
-                        </td>
-
                         <td
                           className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${
-                            metrics.actualBufferCount < 0
+                            metrics.bufferPercentage < 0
                               ? "text-red-700"
                               : "text-emerald-700"
                           }`}
                         >
-                          {formatNumber(metrics.actualBufferCount)}
+                          {formatPercent(metrics.bufferPercentage)}
                         </td>
 
-                        <td
-                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${
-                            metrics.actualBufferPercent < 0
-                              ? "text-red-700"
-                              : "text-emerald-700"
-                          }`}
-                        >
-                          {formatPercent(metrics.actualBufferPercent)}
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.absenteeismSixWeeks)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.absenteeismPercentage)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.attritionSixWeeks)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatPercent(metrics.attritionPercentage)}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                          {formatNumber(
-                            metrics.requiredActualHeadcountWithBuffer,
-                            2,
-                          )}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(
-                            metrics.absenteeismPastSixWeeksAverage,
-                          )}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.attritionPastSixWeeksAverage)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-sibs-primary-1">
-                          {formatNumber(metrics.opsPrf)}
+                          {formatNumber(metrics.netActualHeadcount)}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
-                          {formatNumber(metrics.actualHeadcountNeeds, 2)}
+                          {formatNumber(metrics.hiringNeeded)}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.leadsToInterview)}
+                          {formatNumber(metrics.interviewCount)}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.nhoCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.fstCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                          {formatNumber(metrics.pstCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatNumber(metrics.attritionInterviewToNhoCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatPercent(metrics.attritionInterviewToNhoPercent)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatNumber(metrics.attritionNhoToFstCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatPercent(metrics.attritionNhoToFstPercent)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatNumber(metrics.attritionFstToPstCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatPercent(metrics.attritionFstToPstPercent)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatNumber(metrics.attritionNhoToPstCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
+                          {formatPercent(metrics.attritionNhoToPstPercent)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+                          {formatNumber(metrics.hiredCount)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
                           {formatPercent(metrics.hiringRate)}
+                        </td>
+
+                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+                          {formatNumber(metrics.leadsToInterview)}
                         </td>
 
                         <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
@@ -614,17 +1036,6 @@ export default function WeeklyHiringAccountsTable({
                             {item.statusNote || "--"}
                           </p>
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleViewClick(item)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
-                          >
-                            <Eye size={16} />
-                            View
-                          </button>
-                        </td>
                       </tr>
                     );
                   })
@@ -634,7 +1045,8 @@ export default function WeeklyHiringAccountsTable({
           </div>
 
           <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table.
+            Hold left click and drag left or right to scroll the table. Click any row to
+            view details.
           </p>
         </div>
 
@@ -654,7 +1066,7 @@ export default function WeeklyHiringAccountsTable({
                 className="space-y-3"
               >
                 {paginatedPlans.map((item) => {
-                  const metrics = getRowMetrics(item);
+                  const metrics = item.excelMetrics || getRowMetrics(item);
 
                   return (
                     <button
@@ -672,6 +1084,12 @@ export default function WeeklyHiringAccountsTable({
                           <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
                             {item.cluster || "--"}
                           </p>
+
+                          {item.week && (
+                            <p className="mt-1 text-[11px] font-bold text-[#667085]">
+                              {item.week}
+                            </p>
+                          )}
                         </div>
 
                         <span
@@ -695,79 +1113,138 @@ export default function WeeklyHiringAccountsTable({
                         />
 
                         <MobileMetric
-                          label="Required Buffer HC"
-                          value={formatNumber(
-                            metrics.requiredBufferHeadcount,
-                            2,
-                          )}
-                        />
-
-                        <MobileMetric
-                          label="Required Buffer %"
-                          value={formatPercent(metrics.requiredBufferPercent)}
-                        />
-
-                        <MobileMetric
-                          label="Actual Buffer Count"
-                          value={formatNumber(metrics.actualBufferCount)}
+                          label="Buffer %"
+                          value={formatPercent(metrics.bufferPercentage)}
                           valueClassName={
-                            metrics.actualBufferCount < 0
+                            metrics.bufferPercentage < 0
                               ? "text-red-700"
                               : "text-emerald-700"
                           }
                         />
 
                         <MobileMetric
-                          label="Actual Buffer %"
-                          value={formatPercent(metrics.actualBufferPercent)}
-                          valueClassName={
-                            metrics.actualBufferPercent < 0
-                              ? "text-red-700"
-                              : "text-emerald-700"
-                          }
+                          label="Absenteeism 6 Weeks"
+                          value={formatNumber(metrics.absenteeismSixWeeks)}
                         />
 
                         <MobileMetric
-                          label="Required Actual HC + Buffer"
-                          value={formatNumber(
-                            metrics.requiredActualHeadcountWithBuffer,
-                            2,
-                          )}
+                          label="Absenteeism %"
+                          value={formatPercent(metrics.absenteeismPercentage)}
                         />
 
                         <MobileMetric
-                          label="Absenteeism Avg"
-                          value={formatNumber(
-                            metrics.absenteeismPastSixWeeksAverage,
-                          )}
+                          label="Attrition 6 Weeks"
+                          value={formatNumber(metrics.attritionSixWeeks)}
                         />
 
                         <MobileMetric
-                          label="Attrition Avg"
-                          value={formatNumber(
-                            metrics.attritionPastSixWeeksAverage,
-                          )}
+                          label="Attrition %"
+                          value={formatPercent(metrics.attritionPercentage)}
                         />
 
                         <MobileMetric
-                          label="OPS PRF"
-                          value={formatNumber(metrics.opsPrf)}
+                          label="Net Actual HC"
+                          value={formatNumber(metrics.netActualHeadcount)}
                         />
 
                         <MobileMetric
-                          label="Actual HC Needs"
-                          value={formatNumber(metrics.actualHeadcountNeeds, 2)}
+                          label="Hiring Needed"
+                          value={formatNumber(metrics.hiringNeeded)}
                           valueClassName="text-violet-700"
                         />
 
                         <MobileMetric
-                          label="Leads"
-                          value={formatNumber(metrics.leadsToInterview)}
+                          label="Interview Count"
+                          value={formatNumber(metrics.interviewCount)}
+                        />
+
+                        <MobileMetric
+                          label="NHO Count"
+                          value={formatNumber(metrics.nhoCount)}
+                        />
+
+                        <MobileMetric
+                          label="FST Count"
+                          value={formatNumber(metrics.fstCount)}
+                        />
+
+                        <MobileMetric
+                          label="PST Count"
+                          value={formatNumber(metrics.pstCount)}
+                        />
+
+                        <MobileMetric
+                          label="Attrition Interview to NHO"
+                          value={formatNumber(
+                            metrics.attritionInterviewToNhoCount,
+                          )}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition % Interview to NHO"
+                          value={formatPercent(
+                            metrics.attritionInterviewToNhoPercent,
+                          )}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition NHO to FST"
+                          value={formatNumber(metrics.attritionNhoToFstCount)}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition % NHO to FST"
+                          value={formatPercent(
+                            metrics.attritionNhoToFstPercent,
+                          )}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition FST to PST"
+                          value={formatNumber(metrics.attritionFstToPstCount)}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition % FST to PST"
+                          value={formatPercent(
+                            metrics.attritionFstToPstPercent,
+                          )}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition NHO to PST"
+                          value={formatNumber(metrics.attritionNhoToPstCount)}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Attrition % NHO to PST"
+                          value={formatPercent(
+                            metrics.attritionNhoToPstPercent,
+                          )}
+                          valueClassName="text-red-700"
+                        />
+
+                        <MobileMetric
+                          label="Hired Count"
+                          value={formatNumber(metrics.hiredCount)}
                         />
 
                         <MobileMetric
                           label="Hiring Rate"
                           value={formatPercent(metrics.hiringRate)}
+                        />
+
+                        <MobileMetric
+                          label="Leads to Interview"
+                          value={formatNumber(metrics.leadsToInterview)}
+                          valueClassName="text-violet-700"
                         />
                       </div>
 
@@ -779,11 +1256,6 @@ export default function WeeklyHiringAccountsTable({
                         <p className="mt-1 text-sm font-bold text-[#344054]">
                           {item.statusNote || "--"}
                         </p>
-                      </div>
-
-                      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
-                        <Eye size={16} />
-                        View Details
                       </div>
                     </button>
                   );

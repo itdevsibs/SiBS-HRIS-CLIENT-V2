@@ -1899,17 +1899,6 @@ const CandidatePipelineModal = ({
           new Date().toISOString(),
       });
 
-      if (typeof onSendAssessmentEmail === "function") {
-        try {
-          await onSendAssessmentEmail(nextCandidate);
-        } catch (callbackError) {
-          console.warn(
-            "Parent assessment email callback warning:",
-            callbackError,
-          );
-        }
-      }
-
       showStatusModal({
         type: "success",
         title: "Assessment Email Sent",

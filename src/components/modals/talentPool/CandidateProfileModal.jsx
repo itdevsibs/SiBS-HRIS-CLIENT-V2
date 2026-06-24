@@ -5,8 +5,6 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronDown,
-  ExternalLink,
-  Eye,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -1053,9 +1051,7 @@ function getHistoryTitle(item = {}) {
   if (title.includes("Offer details")) return "Offered";
   if (title.includes("Offer approved")) return "Accepted";
   if (title.includes("NHO schedule")) return "For NHO";
-  if (title.includes("incomplete major")) {
-    return INCOMPLETE_ONBOARDING_STAGE;
-  }
+  if (title.includes("incomplete major")) return INCOMPLETE_ONBOARDING_STAGE;
 
   return title || "Application Update";
 }
@@ -1113,38 +1109,18 @@ function getHistoryDescription(item = {}) {
 
   const title = getHistoryTitle(item);
 
-  if (title === "Initial Screening") {
-    return "Candidate moved from Talent Pool.";
-  }
-
-  if (title === "Online Assessment") {
-    return "Candidate moved to Online Assessment.";
-  }
-
+  if (title === "Initial Screening") return "Candidate moved from Talent Pool.";
+  if (title === "Online Assessment") return "Candidate moved to Online Assessment.";
   if (title === "Interview Scheduled") {
     return "Candidate interview schedule was set.";
   }
-
-  if (title === "Interviewed") {
-    return "Final interview form was submitted.";
-  }
-
-  if (title === "Offered") {
-    return "Offer details prepared for approval.";
-  }
-
-  if (title === "Accepted") {
-    return "Candidate accepted the offer.";
-  }
-
-  if (title === "For NHO") {
-    return "Candidate moved to For NHO.";
-  }
-
+  if (title === "Interviewed") return "Final interview form was submitted.";
+  if (title === "Offered") return "Offer details prepared for approval.";
+  if (title === "Accepted") return "Candidate accepted the offer.";
+  if (title === "For NHO") return "Candidate moved to For NHO.";
   if (title === INCOMPLETE_ONBOARDING_STAGE) {
     return "Candidate has fewer than 5 major requirements and was routed to Talent Pool for follow-up.";
   }
-
   if (title === ONBOARDING_STAGE) {
     return "Candidate completed the 5 major requirements and moved to Onboarding.";
   }
@@ -1928,8 +1904,6 @@ export default function CandidateProfileModal() {
   const loadCandidatePipelineNhoFiles = useCallback(async () => {
     if (!selectedCandidate) return;
 
-    let isResolved = true;
-
     setPipelineCandidateDetailsLoading(true);
     setCandidatePipelineFilesLoading(true);
     setPipelineCandidateDetailsError("");
@@ -1942,8 +1916,6 @@ export default function CandidateProfileModal() {
     try {
       const resolvedPipelineCandidate =
         await fetchPipelineCandidateByAnyIdentity(selectedCandidate);
-
-      if (!isResolved) return;
 
       const pipelineCandidate = safeObject(resolvedPipelineCandidate);
       const pipelineId =
@@ -2005,10 +1977,7 @@ export default function CandidateProfileModal() {
       setCandidatePipelineFiles(allFiles);
     } catch (error) {
       setPipelineCandidateDetailsError(
-        getApiErrorMessage(
-          error,
-          "Unable to load Candidate Pipeline details.",
-        ),
+        getApiErrorMessage(error, "Unable to load Candidate Pipeline details."),
       );
 
       if (!localFiles.length) {
@@ -2020,15 +1989,9 @@ export default function CandidateProfileModal() {
         );
       }
     } finally {
-      if (isResolved) {
-        setPipelineCandidateDetailsLoading(false);
-        setCandidatePipelineFilesLoading(false);
-      }
+      setPipelineCandidateDetailsLoading(false);
+      setCandidatePipelineFilesLoading(false);
     }
-
-    return () => {
-      isResolved = false;
-    };
   }, [selectedCandidate, candidatePipelineLookupId]);
 
   useEffect(() => {
@@ -2178,8 +2141,7 @@ export default function CandidateProfileModal() {
   const canUploadFollowUpNhoRequirements = Boolean(
     (resolvedPipelineId || candidatePipelineLookupId) &&
       isAlreadyInPipeline &&
-      (isIncompleteRequirementsStage ||
-        normalizedCurrentStage === "for nho"),
+      (isIncompleteRequirementsStage || normalizedCurrentStage === "for nho"),
   );
 
   const canMoveToOnboarding = Boolean(
@@ -2315,9 +2277,7 @@ export default function CandidateProfileModal() {
 
   function handleOpenLinkedCandidateDestination() {
     const stage = getCandidateStageValue(activeCandidate);
-    const pipelineId = cleanText(
-      resolvedPipelineId || candidatePipelineLookupId,
-    );
+    const pipelineId = cleanText(resolvedPipelineId || candidatePipelineLookupId);
     const candidateId = getCandidatePublicId(activeCandidate);
     const targetIsOnboarding = normalizeLower(stage) === "onboarding";
 
@@ -2361,7 +2321,10 @@ export default function CandidateProfileModal() {
     });
   }
 
-  function handleMoveToPipeline() {
+  function handleMoveToPipeline(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
     if (isDoNotReprocess) {
       showStatusModal({
         type: "error",
@@ -2386,7 +2349,15 @@ export default function CandidateProfileModal() {
       return;
     }
 
-    openMoveToPipeline(selectedCandidate);
+    const candidateForMove = {
+      ...(activeCandidate || selectedCandidate || {}),
+    };
+
+    openMoveToPipeline(candidateForMove);
+
+    setTimeout(() => {
+      setSelectedCandidate(null);
+    }, 50);
   }
 
   function applyLocalCandidateUpdate(nextCandidate) {
@@ -3413,7 +3384,7 @@ export default function CandidateProfileModal() {
             </div>
           </div>
 
-          <div className="flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+          <div className="relative z-[40] flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <p className="text-xs font-bold leading-5 text-sibs-tertiary-5">
               {canMoveToOnboarding ? (
                 <span className="font-extrabold text-emerald-600">
@@ -3442,7 +3413,7 @@ export default function CandidateProfileModal() {
               )}
             </p>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative z-[50] flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
@@ -3463,9 +3434,7 @@ export default function CandidateProfileModal() {
                   ) : (
                     <ArrowRight size={16} />
                   )}
-                  {isMovingToOnboarding
-                    ? "Moving..."
-                    : "Move to Onboarding"}
+                  {isMovingToOnboarding ? "Moving..." : "Move to Onboarding"}
                 </button>
               )}
 
@@ -3484,7 +3453,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
+                  className="relative z-[60] inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
                 >
                   <ArrowRight size={16} />
                   Move to Pipeline
