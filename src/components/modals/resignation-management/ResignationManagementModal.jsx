@@ -1042,6 +1042,8 @@ function ModalSelectField({
   placeholder = "Select",
   onSelect,
   disabled = false,
+  completed = false,
+  showCompletion = true,
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
@@ -1052,10 +1054,12 @@ function ModalSelectField({
   }
 
   return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-        {label}
-      </label>
+    <div className="min-w-0">
+      <FormFieldLabel
+        label={label}
+        completed={completed}
+        showCompletion={showCompletion}
+      />
 
       <button
         ref={anchorRef}
@@ -1126,6 +1130,8 @@ function FormDateField({
   readOnly = false,
   minDate = "",
   maxDate = "",
+  completed = false,
+  showCompletion = true,
 }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
@@ -1166,10 +1172,12 @@ function FormDateField({
   const isLocked = disabled || readOnly;
 
   return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-        {label}
-      </label>
+    <div className="min-w-0">
+      <FormFieldLabel
+        label={label}
+        completed={completed}
+        showCompletion={showCompletion}
+      />
 
       <button
         ref={anchorRef}
@@ -1191,7 +1199,11 @@ function FormDateField({
         <span className="flex min-w-0 items-center gap-2">
           <CalendarDays size={16} className="shrink-0 text-sibs-primary-1" />
 
-          <span className={value ? "text-sibs-primary-1" : "text-gray-400"}>
+          <span
+            className={`truncate ${
+              value ? "text-sibs-primary-1" : "text-gray-400"
+            }`}
+          >
             {value ? formatModalDateLabel(value) : placeholder}
           </span>
         </span>
@@ -1199,7 +1211,7 @@ function FormDateField({
         {!isLocked && (
           <ChevronDown
             size={17}
-            className={`text-sibs-primary-1 transition-transform ${
+            className={`shrink-0 text-sibs-primary-1 transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -1224,441 +1236,7 @@ function FormDateField({
   );
 }
 
-export function ResignationManagementModal({
-  open,
-  form,
-  submitting,
-  managedEmployees = [],
-  employeePickerLoading = false,
-  employeePickerSearch = "",
-  employeePickerOpen = false,
-  onEmployeePickerOpenChange,
-  onEmployeePickerSearchChange,
-  onSearchManagedEmployees,
-  onSelectManagedEmployee,
-  onClose,
-  onChange,
-  onSubmit,
-}) {
-  if (!open) return null;
 
-  const hasSelectedEmployee = !!form?.employeeSibsId && !!form?.employeeName;
-  const detailsDisabled = !hasSelectedEmployee || submitting;
-  const isFormal = form?.resignationType === "Formal";
-  const isImmediate = form?.resignationType === "Immediate";
-
-  const selectedEmployee =
-    managedEmployees.find(
-      (employee) => String(employee?.sibsId) === String(form?.employeeSibsId),
-    ) || {
-      sibsId: form?.employeeSibsId,
-      employeeSibsId: form?.employeeSibsId,
-      fullName: form?.employeeName,
-      employeeName: form?.employeeName,
-      department: form?.department,
-      account: form?.account,
-      profilePictureUrl: form?.profilePictureUrl,
-      profile_picture_url: form?.profile_picture_url,
-      profileFilename: form?.profileFilename,
-      profile_filename: form?.profile_filename,
-      profilePicture: form?.profilePicture,
-      profile_picture: form?.profile_picture,
-      profileImage: form?.profileImage,
-      profile_image: form?.profile_image,
-    };
-
-  function emitChange(name, value, type = "text") {
-    onChange?.({
-      target: {
-        name,
-        value,
-        type,
-      },
-    });
-  }
-
-  function handleTypeSelect(type) {
-    if (detailsDisabled) return;
-
-    const resignationDate = form?.resignationDate || getTodayDate();
-
-    emitChange("resignationType", type, "select-one");
-
-    if (type === "Formal") {
-      emitChange("lastWorkingDate", addDays(resignationDate, 30), "date");
-      return;
-    }
-
-    emitChange("lastWorkingDate", "", "date");
-  }
-
-  function handleResignationDateChange(e) {
-    const nextDate = e?.target?.value || "";
-
-    emitChange("resignationDate", nextDate, "date");
-
-    if (form?.resignationType === "Formal") {
-      emitChange("lastWorkingDate", addDays(nextDate, 30), "date");
-    }
-
-    if (form?.resignationType === "Immediate") {
-      emitChange("lastWorkingDate", "", "date");
-    }
-  }
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4"
-    >
-      <form
-        onSubmit={onSubmit}
-        className={`flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl`}
-      >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}>
-                <FileText size={22} />
-              </div>
-
-              <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  New Resignation
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  Select an employee first to enable the resignation filing
-                  details.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60`}
-              aria-label="Close"
-            >
-              <X size={22} />
-            </button>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sibs-scrollbar">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-            <div className="space-y-5">
-              <div className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-base font-extrabold text-sibs-primary-1">
-                      Employee Information
-                    </h3>
-
-                    <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                      Choose an employee before completing the rest of the form.
-                    </p>
-                  </div>
-
-                  {hasSelectedEmployee ? (
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
-                      <CheckCircle2 size={14} />
-                      Employee selected
-                    </span>
-                  ) : (
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
-                      <Clock3 size={14} />
-                      Select employee first
-                    </span>
-                  )}
-                </div>
-
-                {hasSelectedEmployee && (
-                  <div className={`mt-5 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] p-4`}>
-                    <div className="flex min-w-0 items-center gap-3">
-                      <ProfileAvatar item={selectedEmployee} size="lg" />
-
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          Selected Employee
-                        </p>
-
-                        <h4 className="mt-1 truncate text-base font-extrabold text-[#101828]">
-                          {form.employeeName}
-                        </h4>
-
-                        <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
-                          {form.employeeSibsId}
-                          {form.department ? ` · ${form.department}` : ""}
-                          {form.account ? ` · ${form.account}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <EmployeePickerField
-                    label="Employee SIBS ID"
-                    selectedSibsId={form.employeeSibsId}
-                    employees={managedEmployees}
-                    loading={employeePickerLoading}
-                    search={employeePickerSearch}
-                    open={employeePickerOpen}
-                    onOpenChange={onEmployeePickerOpenChange}
-                    onSearchChange={(value) => {
-                      onEmployeePickerSearchChange?.(value);
-                      onSearchManagedEmployees?.(value);
-                    }}
-                    onSelect={onSelectManagedEmployee}
-                  />
-
-                  <FormInput
-                    label="Employee Name"
-                    name="employeeName"
-                    value={form.employeeName}
-                    onChange={onChange}
-                    placeholder="Employee name will auto-fill"
-                    readOnly
-                  />
-
-                  {!hasSelectedEmployee && (
-                    <div className={`md:col-span-2 ${EDGE} border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700`}>
-                      Please select an employee first. The resignation date,
-                      last working date, resignation type, email attachment,
-                      reason, and remarks are disabled until an employee is
-                      selected.
-                    </div>
-                  )}
-
-                  <div className="md:col-span-2">
-                    <ModalSelectField
-                      label="Type of Resignation *"
-                      value={form.resignationType}
-                      options={RESIGNATION_TYPES}
-                      placeholder="Select type"
-                      onSelect={handleTypeSelect}
-                      disabled={detailsDisabled}
-                    />
-                  </div>
-
-                  <FormDateField
-                    label="Resignation Date *"
-                    name="resignationDate"
-                    value={form.resignationDate}
-                    onChange={handleResignationDateChange}
-                    disabled={detailsDisabled}
-                    readOnly
-                    placeholder="Select resignation date"
-                  />
-
-                  <FormDateField
-                    label="Last Working Date *"
-                    name="lastWorkingDate"
-                    value={form.lastWorkingDate}
-                    onChange={onChange}
-                    disabled={detailsDisabled}
-                    readOnly={isFormal}
-                    minDate={
-                      isImmediate
-                        ? getImmediateMinDate(form.resignationDate)
-                        : ""
-                    }
-                    maxDate={
-                      isImmediate
-                        ? getImmediateMaxDate(form.resignationDate)
-                        : ""
-                    }
-                    placeholder="Select last working date"
-                  />
-
-                  {isFormal && (
-                    <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
-                      For formal resignation, the last working date is
-                      automatically set to 30 days from the resignation date.
-                    </p>
-                  )}
-
-                  {isImmediate && (
-                    <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
-                      For immediate resignation, only dates within 1 to 29 days
-                      from the resignation date can be selected.
-                    </p>
-                  )}
-
-                  <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-                      Email Attachment
-                    </label>
-
-                    <div className="space-y-2">
-                      <label
-                        className={`flex min-h-[74px] items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} px-4 py-3 text-sm transition ${
-                          detailsDisabled
-                            ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
-                            : "cursor-pointer bg-white hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
-                        }`}
-                      >
-                        <div className="flex min-w-0 items-center gap-3">
-                          {form.uploadedFile?.name ? (
-                            <FileTypeIcon filename={form.uploadedFile.name} />
-                          ) : (
-                            <Paperclip
-                              size={18}
-                              className="shrink-0 text-sibs-tertiary-5"
-                            />
-                          )}
-
-                          <span
-                            className={`min-w-0 truncate text-sm font-semibold ${
-                              form.uploadedFile?.name
-                                ? "text-gray-700"
-                                : "text-sibs-tertiary-5"
-                            }`}
-                          >
-                            {form.uploadedFile?.name ||
-                              (detailsDisabled
-                                ? "Select employee before uploading file"
-                                : "Choose resignation file")}
-                          </span>
-                        </div>
-
-                        <span className={`ml-4 shrink-0 ${EDGE} bg-[var(--sibs-tertiary-9)] px-3 py-1.5 text-xs font-bold text-sibs-primary-1`}>
-                          Browse
-                        </span>
-
-                        <input
-                          type="file"
-                          name="uploadedFile"
-                          onChange={onChange}
-                          disabled={detailsDisabled}
-                          className="hidden"
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
-                        />
-                      </label>
-
-                      <p className="text-xs text-sibs-tertiary-5">
-                        Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg,
-                        .png, .heic
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FormTextarea
-                      label="Reason / Summary"
-                      name="reason"
-                      value={form.reason}
-                      onChange={onChange}
-                      rows={4}
-                      placeholder="Summarize the employee’s resignation reason based on the submitted email."
-                      disabled={detailsDisabled}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FormTextarea
-                      label="TL / OM Remarks"
-                      name="remarks"
-                      value={form.remarks}
-                      onChange={onChange}
-                      rows={3}
-                      placeholder="Add remarks before sending the resignation request for approval."
-                      disabled={detailsDisabled}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}>
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Filing Checklist
-                </h3>
-
-                <div className="mt-4 space-y-3">
-                  <ChecklistItem
-                    done={!!form.employeeSibsId}
-                    title="Employee selected"
-                    subtitle={form.employeeSibsId || "Waiting for SIBS ID"}
-                  />
-
-                  <ChecklistItem
-                    done={!!form.employeeName}
-                    title="Employee name"
-                    subtitle={form.employeeName || "Waiting for name"}
-                  />
-
-                  <ChecklistItem
-                    done={!!form.resignationType}
-                    title="Resignation type"
-                    subtitle={form.resignationType || "Waiting for type"}
-                  />
-
-                  <ChecklistItem
-                    done={!!form.resignationDate && !!form.lastWorkingDate}
-                    title="Dates completed"
-                    subtitle={
-                      form.resignationDate && form.lastWorkingDate
-                        ? `${form.resignationDate} to ${form.lastWorkingDate}`
-                        : "Waiting for resignation and last working date"
-                    }
-                  />
-
-                  <ChecklistItem
-                    done={!!String(form.reason || "").trim()}
-                    title="Reason summary"
-                    subtitle={
-                      form.reason || "Waiting for reason / email summary"
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-5`}>
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Process Rule
-                </h3>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
-                  Formal resignation automatically computes the last working
-                  date as 30 days from the resignation date. Immediate
-                  resignation requires selecting a last working date within 1 to
-                  29 days.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-5">
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className={`${EDGE} ${FIELD_BORDER} px-4 py-2.5 text-sm font-bold text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)] disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={submitting || !hasSelectedEmployee}
-              className={`${EDGE} bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {submitting ? "Submitting..." : "Submit Resignation"}
-            </button>
-          </div>
-        </div>
-      </form>
-    </div>,
-    document.body,
-  );
-}
 
 function FormInput({
   label,
@@ -1669,14 +1247,18 @@ function FormInput({
   placeholder = "",
   readOnly = false,
   disabled = false,
+  completed = false,
+  showCompletion = true,
 }) {
   const isDisabled = disabled || readOnly;
 
   return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-        {label}
-      </label>
+    <div className="min-w-0">
+      <FormFieldLabel
+        label={label}
+        completed={completed}
+        showCompletion={showCompletion}
+      />
 
       <input
         type={type}
@@ -1704,12 +1286,16 @@ function FormTextarea({
   rows = 4,
   placeholder = "",
   disabled = false,
+  completed = false,
+  showCompletion = true,
 }) {
   return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-sibs-primary-1">
-        {label}
-      </label>
+    <div className="min-w-0">
+      <FormFieldLabel
+        label={label}
+        completed={completed}
+        showCompletion={showCompletion}
+      />
 
       <textarea
         name={name}
@@ -1777,7 +1363,7 @@ function CompletionStatusBadge({ completed = 0, total = 6 }) {
 
   return (
     <span
-      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide whitespace-nowrap ${
         isComplete
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
@@ -1789,14 +1375,25 @@ function CompletionStatusBadge({ completed = 0, total = 6 }) {
   );
 }
 
-function ViewFieldLabel({ label, completed = false }) {
+function FormFieldLabel({ label }) {
   return (
     <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
       <label className="truncate text-sm font-bold text-sibs-primary-1">
         {label}
       </label>
+    </div>
+  );
+}
 
-      <FieldCompleteBadge completed={completed} />
+
+
+
+function ViewFieldLabel({ label }) {
+  return (
+    <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+      <label className="truncate text-sm font-bold text-sibs-primary-1">
+        {label}
+      </label>
     </div>
   );
 }
@@ -1940,6 +1537,485 @@ function ViewChecklistItem({ done = false, title, subtitle }) {
 
 
 
+export function ResignationManagementModal({
+  open,
+  form,
+  submitting,
+  managedEmployees = [],
+  employeePickerLoading = false,
+  employeePickerSearch = "",
+  employeePickerOpen = false,
+  onEmployeePickerOpenChange,
+  onEmployeePickerSearchChange,
+  onSearchManagedEmployees,
+  onSelectManagedEmployee,
+  onClose,
+  onChange,
+  onSubmit,
+}) {
+  if (!open) return null;
+
+  const hasSelectedEmployee = !!form?.employeeSibsId && !!form?.employeeName;
+  const detailsDisabled = !hasSelectedEmployee || submitting;
+  const isFormal = form?.resignationType === "Formal";
+  const isImmediate = form?.resignationType === "Immediate";
+
+  const hasEmployeeSibsId = Boolean(form?.employeeSibsId);
+const hasEmployeeName = Boolean(form?.employeeName);
+const hasResignationType = Boolean(form?.resignationType);
+
+const hasResignationDate =
+  hasSelectedEmployee && Boolean(form?.resignationDate);
+
+const hasLastWorkingDate =
+  hasSelectedEmployee && Boolean(form?.lastWorkingDate);
+
+const completedDateFields = [
+  hasResignationDate,
+  hasLastWorkingDate,
+].filter(Boolean).length;
+
+const hasDatesCompleted = completedDateFields === 2;
+
+const hasUploadedFile = Boolean(form?.uploadedFile?.name || form?.uploadedFile);
+const hasReason = Boolean(String(form?.reason || "").trim());
+const hasRemarks = Boolean(String(form?.remarks || "").trim());
+
+const requiredFieldChecks = [
+  {
+    label: "Employee SIBS ID",
+    complete: hasEmployeeSibsId,
+    statusText: hasEmployeeSibsId ? "Complete" : "Missing",
+  },
+  {
+    label: "Employee Name",
+    complete: hasEmployeeName,
+    statusText: hasEmployeeName ? "Complete" : "Missing",
+  },
+  {
+    label: "Type of Resignation",
+    complete: hasResignationType,
+    statusText: hasResignationType ? "Complete" : "Missing",
+  },
+  {
+    label: "Dates Completed",
+    complete: hasDatesCompleted,
+    statusText: hasDatesCompleted
+      ? "2/2 Complete"
+      : `${completedDateFields}/2 Missing`,
+  },
+  {
+    label: "Email Attachment",
+    complete: hasUploadedFile,
+    statusText: hasUploadedFile ? "Complete" : "Missing",
+  },
+  {
+    label: "Reason / Summary",
+    complete: hasReason,
+    statusText: hasReason ? "Complete" : "Missing",
+  },
+  {
+    label: "TL / OM Remarks",
+    complete: hasRemarks,
+    statusText: hasRemarks ? "Complete" : "Missing",
+  },
+];
+
+  const completedRequiredFields = requiredFieldChecks.filter(
+    (field) => field.complete,
+  ).length;
+
+  const totalRequiredFields = requiredFieldChecks.length;
+
+  const selectedEmployee =
+    managedEmployees.find(
+      (employee) => String(employee?.sibsId) === String(form?.employeeSibsId),
+    ) || {
+      sibsId: form?.employeeSibsId,
+      employeeSibsId: form?.employeeSibsId,
+      fullName: form?.employeeName,
+      employeeName: form?.employeeName,
+      department: form?.department,
+      account: form?.account,
+      profilePictureUrl: form?.profilePictureUrl,
+      profile_picture_url: form?.profile_picture_url,
+      profileFilename: form?.profileFilename,
+      profile_filename: form?.profile_filename,
+      profilePicture: form?.profilePicture,
+      profile_picture: form?.profile_picture,
+      profileImage: form?.profileImage,
+      profile_image: form?.profile_image,
+    };
+
+  function emitChange(name, value, type = "text") {
+    onChange?.({
+      target: {
+        name,
+        value,
+        type,
+      },
+    });
+  }
+
+  function handleTypeSelect(type) {
+    if (detailsDisabled) return;
+
+    const resignationDate = form?.resignationDate || getTodayDate();
+
+    emitChange("resignationType", type, "select-one");
+
+    if (type === "Formal") {
+      emitChange("lastWorkingDate", addDays(resignationDate, 30), "date");
+      return;
+    }
+
+    emitChange("lastWorkingDate", "", "date");
+  }
+
+  function handleResignationDateChange(e) {
+    const nextDate = e?.target?.value || "";
+
+    emitChange("resignationDate", nextDate, "date");
+
+    if (form?.resignationType === "Formal") {
+      emitChange("lastWorkingDate", addDays(nextDate, 30), "date");
+    }
+
+    if (form?.resignationType === "Immediate") {
+      emitChange("lastWorkingDate", "", "date");
+    }
+  }
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-2 sm:p-4"
+    >
+      <form
+        onSubmit={onSubmit}
+        className={`flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl sm:max-h-[94vh]`}
+      >
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}
+              >
+                <FileText size={22} />
+              </div>
+
+              <div className="min-w-0">
+                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
+                  New Resignation
+                </h2>
+
+                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
+                  Select an employee first to enable the resignation filing
+                  details.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60`}
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
+          <div className="space-y-5">
+            <div
+              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
+            >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <h3 className="text-base font-extrabold text-sibs-primary-1">
+                    Employee Information
+                  </h3>
+
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    Choose an employee before completing the rest of the form.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  {hasSelectedEmployee ? (
+                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-700">
+                      <CheckCircle2 size={14} />
+                      Employee selected
+                    </span>
+                  ) : (
+                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
+                      <Clock3 size={14} />
+                      Select employee first
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {hasSelectedEmployee && (
+                <div
+                  className={`mt-5 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] p-4`}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <ProfileAvatar item={selectedEmployee} size="lg" />
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                        Selected Employee
+                      </p>
+
+                      <h4 className="mt-1 truncate text-base font-extrabold text-[#101828]">
+                        {form.employeeName}
+                      </h4>
+
+                      <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
+                        {form.employeeSibsId}
+                        {form.department ? ` · ${form.department}` : ""}
+                        {form.account ? ` · ${form.account}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-5 grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="min-w-0">
+                  <FormFieldLabel
+                    label="Employee SIBS ID"
+                    completed={hasEmployeeSibsId}
+                  />
+
+                  <EmployeePickerField
+                    label=""
+                    selectedSibsId={form.employeeSibsId}
+                    employees={managedEmployees}
+                    loading={employeePickerLoading}
+                    search={employeePickerSearch}
+                    open={employeePickerOpen}
+                    onOpenChange={onEmployeePickerOpenChange}
+                    onSearchChange={(value) => {
+                      onEmployeePickerSearchChange?.(value);
+                      onSearchManagedEmployees?.(value);
+                    }}
+                    onSelect={onSelectManagedEmployee}
+                  />
+                </div>
+
+                <FormInput
+                  label="Employee Name"
+                  name="employeeName"
+                  value={form.employeeName}
+                  onChange={onChange}
+                  placeholder="Employee name will auto-fill"
+                  readOnly
+                  completed={hasEmployeeName}
+                />
+
+                {!hasSelectedEmployee && (
+                  <div
+                    className={`md:col-span-2 ${EDGE} border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700`}
+                  >
+                    Please select an employee first. The resignation date, last
+                    working date, resignation type, email attachment, reason,
+                    and remarks are disabled until an employee is selected.
+                  </div>
+                )}
+
+                <div className="md:col-span-2">
+                  <ModalSelectField
+                    label="Type of Resignation *"
+                    value={form.resignationType}
+                    options={RESIGNATION_TYPES}
+                    placeholder="Select type"
+                    onSelect={handleTypeSelect}
+                    disabled={detailsDisabled}
+                    completed={hasResignationType}
+                  />
+                </div>
+
+                <FormDateField
+                  label="Resignation Date *"
+                  name="resignationDate"
+                  value={form.resignationDate}
+                  onChange={handleResignationDateChange}
+                  disabled={detailsDisabled}
+                  readOnly
+                  placeholder="Select resignation date"
+                  completed={hasResignationDate}
+                />
+
+                <FormDateField
+                  label="Last Working Date *"
+                  name="lastWorkingDate"
+                  value={form.lastWorkingDate}
+                  onChange={onChange}
+                  disabled={detailsDisabled}
+                  readOnly={isFormal}
+                  minDate={
+                    isImmediate ? getImmediateMinDate(form.resignationDate) : ""
+                  }
+                  maxDate={
+                    isImmediate ? getImmediateMaxDate(form.resignationDate) : ""
+                  }
+                  placeholder="Select last working date"
+                  completed={hasLastWorkingDate}
+                />
+
+                {isFormal && (
+                  <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
+                    For formal resignation, the last working date is
+                    automatically set to 30 days from the resignation date.
+                  </p>
+                )}
+
+                {isImmediate && (
+                  <p className="md:col-span-2 text-xs text-sibs-tertiary-5">
+                    For immediate resignation, only dates within 1 to 29 days
+                    from the resignation date can be selected.
+                  </p>
+                )}
+
+                <div className="md:col-span-2">
+                  <FormFieldLabel
+                    label="Email Attachment"
+                    completed={hasUploadedFile}
+                  />
+
+                  <div className="space-y-2">
+                    <label
+                      className={`flex min-h-[74px] items-center justify-between gap-3 ${EDGE} ${FIELD_BORDER} px-4 py-3 text-sm transition ${
+                        detailsDisabled
+                          ? "cursor-not-allowed bg-[#F8FAFC] opacity-70"
+                          : "cursor-pointer bg-white hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        {form.uploadedFile?.name ? (
+                          <FileTypeIcon filename={form.uploadedFile.name} />
+                        ) : (
+                          <Paperclip
+                            size={18}
+                            className="shrink-0 text-sibs-tertiary-5"
+                          />
+                        )}
+
+                        <span
+                          className={`min-w-0 truncate text-sm font-semibold ${
+                            form.uploadedFile?.name
+                              ? "text-gray-700"
+                              : "text-sibs-tertiary-5"
+                          }`}
+                        >
+                          {form.uploadedFile?.name ||
+                            (detailsDisabled
+                              ? "Select employee before uploading file"
+                              : "Choose resignation file")}
+                        </span>
+                      </div>
+
+                      <span
+                        className={`ml-4 shrink-0 ${EDGE} bg-[var(--sibs-tertiary-9)] px-3 py-1.5 text-xs font-bold text-sibs-primary-1`}
+                      >
+                        Browse
+                      </span>
+
+                      <input
+                        type="file"
+                        name="uploadedFile"
+                        onChange={onChange}
+                        disabled={detailsDisabled}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,image/heic,image/heif"
+                      />
+                    </label>
+
+                    <p className="text-xs text-sibs-tertiary-5">
+                      Accepted file types: .pdf, .doc, .docx, .jpg, .jpeg,
+                      .png, .heic
+                    </p>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <FormTextarea
+                    label="Reason / Summary"
+                    name="reason"
+                    value={form.reason}
+                    onChange={onChange}
+                    rows={4}
+                    placeholder="Summarize the employee’s resignation reason based on the submitted email."
+                    disabled={detailsDisabled}
+                    completed={hasReason}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <FormTextarea
+                    label="TL / OM Remarks"
+                    name="remarks"
+                    value={form.remarks}
+                    onChange={onChange}
+                    rows={3}
+                    placeholder="Add remarks before sending the resignation request for approval."
+                    disabled={detailsDisabled}
+                    completed={hasRemarks}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5">
+              <div
+                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-4 sm:p-5`}
+              >
+                <h3 className="text-base font-extrabold text-sibs-primary-1">
+                  Process Rule
+                </h3>
+
+                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
+                  Formal resignation automatically computes the last working
+                  date as 30 days from the resignation date. Immediate
+                  resignation requires selecting a last working date within 1 to
+                  29 days.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className={`${EDGE} ${FIELD_BORDER} px-4 py-2.5 text-sm font-bold text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)] disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={submitting || !hasSelectedEmployee}
+              className={`${EDGE} bg-[var(--sibs-primary-1)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60`}
+            >
+              {submitting ? "Submitting..." : "Submit Resignation"}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>,
+    document.body,
+  );
+}
 export function ViewResignationModal({ open, item, onClose }) {
   if (!open || !item) return null;
 
@@ -1972,34 +2048,54 @@ export function ViewResignationModal({ open, item, onClose }) {
   const hasEmployeeSibsId = Boolean(employeeSibsId && employeeSibsId !== "--");
 const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
 const hasResignationType = Boolean(resignationType);
+
 const hasResignationDate = Boolean(rawResignationDate);
 const hasLastWorkingDate = Boolean(rawLastWorkingDate);
+
+const completedDateFields = [
+  hasResignationDate,
+  hasLastWorkingDate,
+].filter(Boolean).length;
+
+const hasDatesCompleted = completedDateFields === 2;
+
+const hasUploadedFile = Boolean(getUploadedFileDisplayName(item));
 const hasReason = Boolean(String(reason || "").trim());
+const hasRemarks = Boolean(String(remarks || "").trim());
 
 const requiredFieldChecks = [
   {
     label: "Employee SIBS ID",
     complete: hasEmployeeSibsId,
+    
   },
   {
     label: "Employee Name",
     complete: hasEmployeeName,
+    
   },
   {
     label: "Type of Resignation",
     complete: hasResignationType,
+    
   },
   {
-    label: "Resignation Date",
-    complete: hasResignationDate,
+    label: "Dates Completed",
+    complete: hasDatesCompleted,
+    
   },
   {
-    label: "Last Working Date",
-    complete: hasLastWorkingDate,
+    label: "Email Attachment",
+    complete: hasUploadedFile,
   },
   {
     label: "Reason / Summary",
     complete: hasReason,
+    
+  },
+  {
+    label: "TL / OM Remarks",
+    complete: hasRemarks,
   },
 ];
 
@@ -2009,16 +2105,14 @@ const completedRequiredFields = requiredFieldChecks.filter(
 
 const totalRequiredFields = requiredFieldChecks.length;
 
-const requiredDetailsComplete =
-  completedRequiredFields === totalRequiredFields;
 
-    
+
   return createPortal(
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-2 sm:p-4">
       <div
-        className={`flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl`}
+        className={`flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl sm:max-h-[94vh]`}
       >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
+        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-start gap-3">
               <div
@@ -2049,10 +2143,10 @@ const requiredDetailsComplete =
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-6 sibs-scrollbar">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
           <div className="space-y-5">
             <div
-              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}
+              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
@@ -2074,10 +2168,7 @@ const requiredDetailsComplete =
                 </div>
 
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
+                  
 
                   <span
                     className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
@@ -2141,7 +2232,8 @@ const requiredDetailsComplete =
                     label="TL / OM Remarks"
                     value={remarks}
                     rows="min-h-[96px]"
-                    completed={Boolean(String(remarks || "").trim())}
+                    completed={hasRemarks}
+                    showCompletion={false}
                   />
                 </div>
               </div>
@@ -2149,7 +2241,7 @@ const requiredDetailsComplete =
 
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
               <div
-                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-5`}
+                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-4 sm:p-5`}
               >
                 <h3 className="text-base font-extrabold text-sibs-primary-1">
                   Process Rule
@@ -2163,7 +2255,7 @@ const requiredDetailsComplete =
               </div>
 
               <div
-                className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-5 shadow-sm`}
+                className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
@@ -2176,10 +2268,7 @@ const requiredDetailsComplete =
                     </p>
                   </div>
 
-                  <CompletionStatusBadge
-                    completed={completedRequiredFields}
-                    total={totalRequiredFields}
-                  />
+                  
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 gap-3">
@@ -2195,7 +2284,7 @@ const requiredDetailsComplete =
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-5">
+        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex justify-end">
             <button
               type="button"
