@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CalendarDays,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Paperclip,
   X,
   ArrowRight,
@@ -29,9 +32,77 @@ const resignationReasons = [
 
 const resignationTypes = ["Formal", "Immediate"];
 
+const MONTH_LABELS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
 function formatPerson(sibsId, fullName) {
   if (!sibsId && !fullName) return "N/A";
   return `${sibsId || "N/A"} - ${fullName || "N/A"}`;
+}
+
+function toDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(value) {
+  if (!value) return null;
+
+  const [year, month, day] = String(value).split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function formatDisplayDate(value) {
+  const date = parseDateKey(value);
+
+  if (!date) return "Select date";
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getCalendarCells(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDate = new Date(year, month, 1 - firstDay.getDay());
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+
+    return date;
+  });
 }
 
 function FileTypeIcon({ filename }) {
@@ -107,6 +178,285 @@ function getInitialForm() {
   };
 }
 
+function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
+  return (
+    <div
+      className={`sibs-animated-dropdown absolute z-20 mt-2 w-full ${
+        open ? "open" : "closed"
+      } ${className}`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box">
+          <div className={`${maxHeight} overflow-y-auto py-2 sibs-scrollbar`}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnimatedCalendarDropdown({ open, children }) {
+  return (
+    <div
+      className={`sibs-animated-dropdown absolute right-0 z-[10050] mt-2 w-[310px] max-[380px]:right-auto max-[380px]:left-0 max-[380px]:w-[calc(100vw-48px)] ${
+        open ? "open" : "closed"
+      }`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="overflow-hidden rounded-2xl border border-[#D7E3F0] bg-white shadow-2xl">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniCalendar({ value, min, max, onSelect, onClose }) {
+  const selectedDate = parseDateKey(value);
+  const minDate = parseDateKey(min);
+  const maxDate = parseDateKey(max);
+  const today = new Date();
+
+  const [viewDate, setViewDate] = useState(selectedDate || minDate || today);
+
+  const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
+
+  function goPreviousMonth() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() - 1);
+      return next;
+    });
+  }
+
+  function goNextMonth() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() + 1);
+      return next;
+    });
+  }
+
+  function isDisabled(dateKey) {
+    if (min && dateKey < min) return true;
+    if (max && dateKey > max) return true;
+    return false;
+  }
+
+  function handleSelect(date) {
+    const dateKey = toDateKey(date);
+
+    if (isDisabled(dateKey)) return;
+
+    onSelect(dateKey);
+    onClose?.();
+  }
+
+  function handleToday() {
+    const todayKey = toDateKey(today);
+
+    if (isDisabled(todayKey)) return;
+
+    onSelect(todayKey);
+    onClose?.();
+  }
+
+  function handleClear() {
+    onSelect("");
+    onClose?.();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+        <button
+          type="button"
+          onClick={goPreviousMonth}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="text-sm font-extrabold text-sibs-primary-1">
+          {MONTH_LABELS[viewDate.getMonth()]} {viewDate.getFullYear()}
+        </div>
+
+        <button
+          type="button"
+          onClick={goNextMonth}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
+      <div className="px-4 py-3">
+        <div className="grid grid-cols-7 gap-1">
+          {WEEKDAY_LABELS.map((day) => (
+            <div
+              key={day}
+              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-tertiary-5"
+            >
+              {day}
+            </div>
+          ))}
+
+          {cells.map((date) => {
+            const dateKey = toDateKey(date);
+            const isCurrentMonth = date.getMonth() === viewDate.getMonth();
+            const isSelected = value && dateKey === value;
+            const isToday = dateKey === toDateKey(today);
+            const disabled = isDisabled(dateKey);
+
+            return (
+              <button
+                key={dateKey}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleSelect(date)}
+                className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition active:scale-[0.96] ${
+                  isSelected
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : isToday
+                      ? "bg-[#EAF2FB] text-sibs-primary-1"
+                      : isCurrentMonth
+                        ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                        : "text-slate-400 hover:bg-slate-50"
+                } ${
+                  disabled
+                    ? "cursor-not-allowed bg-slate-50 text-slate-300 hover:bg-slate-50"
+                    : ""
+                }`}
+              >
+                {date.getDate()}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-slate-50 hover:text-sibs-primary-1"
+          >
+            Clear
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToday}
+            disabled={isDisabled(toDateKey(today))}
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+          >
+            Today
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DatePickerInput({
+  value,
+  min,
+  max,
+  onChange,
+  disabled = false,
+  readOnly = false,
+  placeholder = "Select date",
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const isDisabled = disabled || readOnly;
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(e) {
+      if (!wrapperRef.current) return;
+
+      if (!wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} className="relative h-11 w-full min-w-0">
+      <button
+        type="button"
+        disabled={isDisabled}
+        onClick={() => {
+          if (isDisabled) return;
+          setOpen((prev) => !prev);
+        }}
+        className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 active:scale-[0.99] ${
+          isDisabled
+            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F8FAFC] text-sibs-tertiary-5"
+            : open
+              ? "border-sibs-primary-1 bg-white text-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:border-sibs-primary-1/50 hover:shadow-sm"
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays
+            size={17}
+            className={`shrink-0 ${
+              isDisabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+            }`}
+          />
+
+          <span
+            className={`truncate ${
+              value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {value ? formatDisplayDate(value) : placeholder}
+          </span>
+        </span>
+
+        {!isDisabled && (
+          <ChevronDown
+            size={16}
+            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        )}
+      </button>
+
+      <AnimatedCalendarDropdown open={open}>
+        <MiniCalendar
+          value={value}
+          min={min}
+          max={max}
+          onSelect={onChange}
+          onClose={() => setOpen(false)}
+        />
+      </AnimatedCalendarDropdown>
+    </div>
+  );
+}
+
 export default function ResignationModal({
   open,
   onClose,
@@ -116,6 +466,7 @@ export default function ResignationModal({
   const [reasonOpen, setReasonOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [form, setForm] = useState(getInitialForm());
 
   const [policyModalOpen, setPolicyModalOpen] = useState(false);
@@ -158,9 +509,19 @@ export default function ResignationModal({
   };
 
   const handleClose = () => {
-    resetForm();
-    setOpenEditResignationModal(false);
-    onClose?.();
+    if (isClosing || submitting) return;
+
+    setReasonOpen(false);
+    setTypeOpen(false);
+    setPolicyModalOpen(false);
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      resetForm();
+      setOpenEditResignationModal(false);
+      setIsClosing(false);
+      onClose?.();
+    }, 220);
   };
 
   useEffect(() => {
@@ -184,10 +545,12 @@ export default function ResignationModal({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "";
     };
-  }, [open, policyModalOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, policyModalOpen, isClosing, submitting]);
 
   useEffect(() => {
     if (open) {
+      setIsClosing(false);
       setForm(getInitialForm());
       setReasonOpen(false);
       setTypeOpen(false);
@@ -255,6 +618,39 @@ export default function ResignationModal({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleResignationDateSelect = (value) => {
+    setForm((prev) => {
+      const resignationDate = value || getTodayDate();
+
+      const nextForm = {
+        ...prev,
+        resignationDate,
+      };
+
+      if (prev.resignationType === "Formal") {
+        nextForm.lastWorkingDate = addDays(resignationDate, 30);
+      }
+
+      return nextForm;
+    });
+  };
+
+  const handleLastWorkingDateSelect = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      lastWorkingDate: value,
+    }));
+
+    if (form.resignationType === "Immediate" && value) {
+      setPolicyAccepted(false);
+      setPolicyModalOpen(true);
+    }
+  };
+
+  const handleNewLastWorkingDateSelect = (value) => {
+    setNewLastWorkingDate(value);
   };
 
   const handleTypeSelect = (item) => {
@@ -520,8 +916,16 @@ export default function ResignationModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6">
-        <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+      <div
+        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6 ${
+          isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
+        }`}
+      >
+        <div
+          className={`flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ${
+            isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
+          }`}
+        >
           <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-5 sm:px-6">
             <div className="min-w-0">
               <h2 className="text-xl font-bold text-sibs-primary-1 sm:text-2xl">
@@ -536,7 +940,7 @@ export default function ResignationModal({
             <button
               type="button"
               onClick={handleClose}
-              disabled={submitting}
+              disabled={submitting || isClosing}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Close modal"
             >
@@ -569,32 +973,28 @@ export default function ResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
                           typeOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
-                    {typeOpen && (
-                      <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="py-2">
-                          {resignationTypes.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => handleTypeSelect(item)}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.resignationType === item
-                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <AnimatedDropdown open={typeOpen}>
+                      {resignationTypes.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleTypeSelect(item)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            form.resignationType === item
+                              ? "bg-blue-50 font-medium text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </AnimatedDropdown>
                   </div>
                 </Field>
               </div>
@@ -603,27 +1003,17 @@ export default function ResignationModal({
             {!isEdit && (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Field label="Resignation Date *">
-                  <input
-                    type="date"
-                    name="resignationDate"
+                  <DatePickerInput
                     value={form.resignationDate}
+                    onChange={handleResignationDateSelect}
                     readOnly
-                    required
-                    className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
                   />
                 </Field>
 
                 <Field label="Last Working Date *">
-                  <input
-                    type="date"
-                    name="lastWorkingDate"
+                  <DatePickerInput
                     value={form.lastWorkingDate}
-                    onChange={handleChange}
-                    onClick={(e) => {
-                      if (!isFormal && e.target.showPicker) {
-                        e.target.showPicker();
-                      }
-                    }}
+                    onChange={handleLastWorkingDateSelect}
                     readOnly={isFormal}
                     min={
                       isImmediate
@@ -635,12 +1025,6 @@ export default function ResignationModal({
                         ? getImmediateMaxDate(form.resignationDate)
                         : undefined
                     }
-                    required
-                    className={`w-full rounded-xl border px-4 py-3 text-sm outline-none transition ${
-                      isFormal
-                        ? "pointer-events-none border-[#D7DEE8] bg-[#F8FAFC] text-sibs-tertiary-5"
-                        : "border-[#D7DEE8] bg-white focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    }`}
                   />
                 </Field>
               </div>
@@ -672,33 +1056,18 @@ export default function ResignationModal({
               >
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <Field label="Resignation Date *">
-                    <input
-                      type="date"
-                      name="resignationDate"
-                      value={form.resignationDate}
-                      readOnly
-                      required={extendOpenWorkingDate}
-                      className="pointer-events-none w-full rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm text-sibs-tertiary-5 outline-none"
-                    />
+                    <DatePickerInput value={form.resignationDate} readOnly />
                   </Field>
 
                   <Field label="New Last Working Date *">
-                    <input
-                      type="date"
-                      name="newLastWorkingDate"
+                    <DatePickerInput
                       value={newLastWorkingDate || ""}
-                      onChange={handleChange}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.target.showPicker?.();
-                      }}
+                      onChange={handleNewLastWorkingDateSelect}
                       min={
                         extendOpenWorkingDate && originalLastWorkingDate
                           ? addDays(originalLastWorkingDate, 1)
                           : undefined
                       }
-                      required={extendOpenWorkingDate}
-                      className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     />
                   </Field>
                 </div>
@@ -782,32 +1151,28 @@ export default function ResignationModal({
 
                       <ChevronDown
                         size={18}
-                        className={`text-sibs-tertiary-5 transition-transform ${
+                        className={`text-sibs-tertiary-5 transition-transform duration-200 ${
                           reasonOpen ? "rotate-180" : ""
                         }`}
                       />
                     </button>
 
-                    {reasonOpen && (
-                      <div className="absolute z-20 mt-2 max-h-60 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-lg">
-                        <div className="max-h-60 overflow-y-auto py-2">
-                          {resignationReasons.map((item) => (
-                            <button
-                              key={item}
-                              type="button"
-                              onClick={() => handleReasonSelect(item)}
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                form.reason === item
-                                  ? "bg-blue-50 font-medium text-sibs-primary-1"
-                                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <AnimatedDropdown open={reasonOpen} maxHeight="max-h-60">
+                      {resignationReasons.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => handleReasonSelect(item)}
+                          className={`block w-full px-4 py-3 text-left text-sm transition ${
+                            form.reason === item
+                              ? "bg-blue-50 font-medium text-sibs-primary-1"
+                              : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      ))}
+                    </AnimatedDropdown>
                   </div>
                 </Field>
               </div>
@@ -919,7 +1284,7 @@ export default function ResignationModal({
               <button
                 type="button"
                 onClick={handleClose}
-                disabled={submitting}
+                disabled={submitting || isClosing}
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-4 text-sm font-medium text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-9 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
@@ -927,7 +1292,7 @@ export default function ResignationModal({
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || isClosing}
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-medium text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting
@@ -944,8 +1309,8 @@ export default function ResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6">
-          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6 sibs-modal-backdrop-in">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl sibs-modal-pop-in">
             <div className="px-6 pb-6 pt-6 text-center">
               <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">
                 Important Notice Regarding Company Policy:
@@ -1039,12 +1404,16 @@ function ActionPanel({ title, description, checked, onToggle, children }) {
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          checked ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          checked
+            ? "mt-3 grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0"
         }`}
       >
         <div
           className={`overflow-hidden transition-all duration-500 ease-in-out ${
-            checked ? "mt-2 translate-y-0 opacity-100" : "-translate-y-2 opacity-0"
+            checked
+              ? "mt-2 translate-y-0 opacity-100"
+              : "-translate-y-2 opacity-0"
           }`}
           onClick={(e) => e.stopPropagation()}
         >

@@ -1,34 +1,47 @@
-import { useLayoutEffect, useRef, useState } from "react";
-import { AlertTriangle, Eye } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { AlertTriangle, Eye, Loader2 } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
 import Approvals from "../../layout/tabs/JobDescriptionView/Approvals";
 import RevisionHistory from "../../layout/tabs/JobDescriptionView/RevisionHistory";
 import LinkedERCases from "../../layout/tabs/JobDescriptionView/LinkedERCases";
+import { saveJobDescriptionRevisionComments } from "../../../lib/axios/jobDescription";
+import { useJobDescription } from "../../../services/context/JobDescriptionContext";
 
-const detailTabs = [
-  "Details",
-  "Approvals",
-  "Revision History",
-  "Linked ER Cases",
-];
+const detailTabs = ["Details", "Revision History"];
 
 export default function ViewJobDescriptionDetailsModal({
   open,
   item,
   onClose,
+  approvalPage = false,
+
+  // Optional callbacks from parent page
+  onUpdated,
+  onRefresh,
+  onStatus,
 }) {
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
-  const [revisionComments, setRevisionComments] = useState([]);
+  // const [revisionComments, setRevisionComments] = useState([]);
   const [hasEditedChanges, setHasEditedChanges] = useState(false);
   const [editedChangeDetails, setEditedChangeDetails] = useState([]);
   const [showEditedChanges, setShowEditedChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const tabRefs = useRef({});
   const [tabIndicator, setTabIndicator] = useState({
     left: 0,
     width: 0,
   });
+
+  const {
+    revisionComments,
+    setRevisionComments,
+    loadRevisionComments,
+    clearRevisionComments,
+    saveRevisionComments,
+    revisionCommentsLoading,
+  } = useJobDescription();
 
   const hasRevisionComments = revisionComments.length > 0;
 
@@ -44,6 +57,37 @@ export default function ViewJobDescriptionDetailsModal({
       ? "Save the edited job description as a new version."
       : "Approve job description.";
 
+  useEffect(() => {
+    if (!open || !item) {
+      clearRevisionComments();
+      return;
+    }
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      clearRevisionComments();
+      return;
+    }
+
+    if (!shouldLoadRevisionComments()) {
+      clearRevisionComments();
+      return;
+    }
+
+    loadRevisionComments(jdId, {
+      revisionNo: getSelectedRevisionNo(),
+    });
+  }, [
+    open,
+    item?.id,
+    item?.rawId,
+    item?.jdStatus,
+    item?.status,
+    item?.currentVersion,
+    item?.revisionNo,
+  ]);
+
   function getJdStatusClass(status) {
     switch (normalizeJdStatus(status)) {
       case "Existing":
@@ -57,7 +101,132 @@ export default function ViewJobDescriptionDetailsModal({
     }
   }
 
+  function getJobDescriptionId() {
+    return Number(item?.rawId || item?.raw?.id || item?.id || 0);
+  }
+
+  function getSelectedRevisionNo() {
+    return (
+      item?.currentVersion ||
+      item?.revisionNo ||
+      item?.raw?.currentVersion ||
+      item?.raw?.revisionNo ||
+      ""
+    );
+  }
+
+  function shouldLoadRevisionComments() {
+    const status = normalizeJdStatus(
+      item?.jdStatus || item?.raw?.jdStatus || item?.status || "",
+    );
+
+    return status === "For Revision";
+  }
+
+  async function handleSaveRevisionComments() {
+    if (saving || revisionCommentsLoading) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      onStatus?.({
+        type: "error",
+        title: "Invalid Job Description",
+        message: "Unable to identify the selected job description.",
+      });
+      return;
+    }
+
+    if (!revisionComments.length) {
+      onStatus?.({
+        type: "error",
+        title: "No Revision Comments",
+        message: "Please add at least one revision comment.",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const result = await saveRevisionComments(jdId, revisionComments);
+
+      if (!result?.success) {
+        onStatus?.({
+          type: "error",
+          title: "Save Failed",
+          message: result?.message || "Failed to save revision comments.",
+        });
+        return;
+      }
+
+      const updatedItem = {
+        ...item,
+        jdStatus: "For Revision",
+        status: "For Revision",
+        raw: {
+          ...(item.raw || {}),
+          jdStatus: "For Revision",
+          status: "For Revision",
+        },
+      };
+
+      onUpdated?.(updatedItem);
+      await onRefresh?.();
+
+      onStatus?.({
+        type: "success",
+        title: "Tagged for Revision",
+        message:
+          result.message ||
+          "Revision comments saved and job description was tagged for revision.",
+      });
+
+      onClose?.();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePrimaryAction() {
+    if (hasRevisionComments) {
+      await handleSaveRevisionComments();
+      return;
+    }
+
+    if (hasEditedChanges) {
+      onStatus?.({
+        type: "info",
+        title: "Not Yet Connected",
+        message: "Save as New Version action is not connected yet.",
+      });
+      return;
+    }
+
+    onStatus?.({
+      type: "info",
+      title: "Not Yet Connected",
+      message: "Approve action is not connected yet.",
+    });
+  }
+
+  useEffect(() => {
+    console.log(item);
+  }, [item]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    setRevisionComments([]);
+    setHasEditedChanges(false);
+    setEditedChangeDetails([]);
+    setShowEditedChanges(false);
+    setSaving(false);
+  }, [open, item?.id, item?.rawId]);
+
   useLayoutEffect(() => {
+    if (approvalPage) return;
+
     const activeButton = tabRefs.current[activeDetailTab];
 
     if (!activeButton) return;
@@ -66,32 +235,43 @@ export default function ViewJobDescriptionDetailsModal({
       left: activeButton.offsetLeft,
       width: activeButton.offsetWidth,
     });
-  }, [activeDetailTab, open]);
+  }, [activeDetailTab, open, approvalPage]);
 
   if (!open || !item) return null;
 
   const jdTitle = `${item.roleTitle || "Job Description"} - Version ${
-    item.version || item.jdVersion || item.currentVersion || "2.0"
-  }`;
+    item.revisionNo || item.currentVersion || "1"
+  }.0`;
 
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
 
+  const shouldShowDetails = approvalPage || activeDetailTab === "Details";
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center
+         bg-black/40 px-4 py-4"
+      onClick={saving ? undefined : onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-[1440px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-gray-200 px-5 pt-6 sm:px-6">
-          <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div
+          className={`border-b border-gray-200 px-5 sm:px-6 ${
+            approvalPage ? "py-6" : "pt-6"
+          }`}
+        >
+          <div
+            className={`flex flex-col justify-between gap-4 md:flex-row md:items-start ${
+              approvalPage ? "" : "mb-5"
+            }`}
+          >
             <div className="min-w-0">
               <p className="text-xs font-bold uppercase tracking-wide text-sibs-primary-1/80">
                 Job Description Overview
@@ -118,41 +298,43 @@ export default function ViewJobDescriptionDetailsModal({
             </span>
           </div>
 
-          <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054]">
-            <span
-              className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
-              style={{
-                left: `${tabIndicator.left}px`,
-                width: `${tabIndicator.width}px`,
-              }}
-            />
+          {!approvalPage && (
+            <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054]">
+              <span
+                className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
+                style={{
+                  left: `${tabIndicator.left}px`,
+                  width: `${tabIndicator.width}px`,
+                }}
+              />
 
-            {detailTabs.map((tab) => {
-              const isActive = activeDetailTab === tab;
+              {detailTabs.map((tab) => {
+                const isActive = activeDetailTab === tab;
 
-              return (
-                <button
-                  key={tab}
-                  ref={(el) => {
-                    tabRefs.current[tab] = el;
-                  }}
-                  type="button"
-                  onClick={() => setActiveDetailTab(tab)}
-                  className={`relative z-10 whitespace-nowrap px-4 pb-3 transition ${
-                    isActive
-                      ? "text-blue-600"
-                      : "text-[#344054] hover:text-blue-600"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={tab}
+                    ref={(el) => {
+                      tabRefs.current[tab] = el;
+                    }}
+                    type="button"
+                    onClick={() => setActiveDetailTab(tab)}
+                    className={`relative z-10 whitespace-nowrap px-4 pb-3 transition ${
+                      isActive
+                        ? "text-blue-600"
+                        : "text-[#344054] hover:text-blue-600"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {activeDetailTab === "Details" && (
+          {shouldShowDetails && (
             <Details
               item={item}
               revisionComments={revisionComments}
@@ -161,21 +343,22 @@ export default function ViewJobDescriptionDetailsModal({
               onEditedChange={setHasEditedChanges}
               editedChangeDetails={editedChangeDetails}
               setEditedChangeDetails={setEditedChangeDetails}
+              approvalPage={approvalPage}
             />
           )}
 
-          {activeDetailTab === "Approvals" && <Approvals />}
-
-          {activeDetailTab === "Revision History" && (
+          {!approvalPage && activeDetailTab === "Revision History" && (
             <RevisionHistory revisionHistory={revisionHistory} item={item} />
           )}
 
-          {activeDetailTab === "Linked ER Cases" && <LinkedERCases />}
+          {!approvalPage && activeDetailTab === "Linked ER Cases" && (
+            <LinkedERCases />
+          )}
         </div>
 
         <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            {hasRevisionComments && (
+            {!hasRevisionComments && hasEditedChanges && (
               <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-amber-700">
                 <AlertTriangle size={16} />
                 Tagged for revision
@@ -203,33 +386,28 @@ export default function ViewJobDescriptionDetailsModal({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98]"
+              disabled={saving}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              title={
-                hasRevisionComments
-                  ? "Save this job description as tagged for revision."
-                  : hasEditedChanges
-                    ? "Save the edited job description as a new version."
-                    : "Approve job description."
-              }
-              className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] ${
-                hasRevisionComments
-                  ? "bg-sibs-primary-2 hover:opacity-90"
-                  : "bg-sibs-primary-1 hover:opacity-90"
-              }`}
-            >
-              {hasRevisionComments
-                ? "Save"
-                : hasEditedChanges
-                  ? "Save as New Version"
-                  : "Approve"}
-            </button>
+            {approvalPage && (
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                disabled={saving}
+                title={primaryButtonTitle}
+                className={`inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 ${
+                  hasRevisionComments
+                    ? "bg-sibs-primary-2 hover:opacity-90"
+                    : "bg-sibs-primary-1 hover:opacity-90"
+                }`}
+              >
+                {saving && <Loader2 size={16} className="animate-spin" />}
+                {saving ? "Saving..." : primaryButtonLabel}
+              </button>
+            )}
           </div>
         </div>
       </div>

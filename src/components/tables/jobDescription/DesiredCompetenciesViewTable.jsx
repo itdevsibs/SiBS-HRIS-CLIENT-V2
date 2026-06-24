@@ -7,10 +7,12 @@ function getCompetencyLevel(item) {
   if (item.level) return item.level;
 
   if (item.average === true || Number(item.average) === 1) return "Average";
-  if (item.proficient === true || Number(item.proficient) === 1)
+  if (item.proficient === true || Number(item.proficient) === 1) {
     return "Proficient";
-  if (item.excellent === true || Number(item.excellent) === 1)
+  }
+  if (item.excellent === true || Number(item.excellent) === 1) {
     return "Excellent";
+  }
 
   return "";
 }
@@ -34,7 +36,7 @@ const DesiredCompetenciesViewTable = ({
     setEditableCompetencies(
       competencies.map((item, index) => ({
         id: item.id || `competency-${index}`,
-        title: item.title || `Competency ${index + 1}`,
+        title: item.title || "",
         description: item.description || "",
         level: getCompetencyLevel(item),
       })),
@@ -60,7 +62,7 @@ const DesiredCompetenciesViewTable = ({
     setEditableCompetencies(
       competencies.map((item, index) => ({
         id: item.id || `competency-${index}`,
-        title: item.title || `Competency ${index + 1}`,
+        title: item.title || "",
         description: item.description || "",
         level: getCompetencyLevel(item),
       })),
@@ -72,7 +74,7 @@ const DesiredCompetenciesViewTable = ({
   function handleSaveEdit() {
     const original = competencies.map((item, index) => ({
       id: item.id || `competency-${index}`,
-      title: item.title || `Competency ${index + 1}`,
+      title: item.title || "",
       description: item.description || "",
       level: getCompetencyLevel(item),
     }));
@@ -117,7 +119,7 @@ const DesiredCompetenciesViewTable = ({
       ? editableCompetencies
       : competencies.map((item, index) => ({
           id: item.id || `competency-${index}`,
-          title: item.title || `Competency ${index + 1}`,
+          title: item.title || "",
           description: item.description || "",
           level: getCompetencyLevel(item),
         }));
@@ -213,7 +215,7 @@ const DesiredCompetenciesViewTable = ({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-sm selection:bg-[#FFF3B8] selection:text-[#101828]">
+        <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-sm">
           <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px] border-b border-[#D7DEE8] bg-[#F8FAFC] md:grid">
             <div className="px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               Competency for this Position
@@ -246,7 +248,7 @@ const DesiredCompetenciesViewTable = ({
                           onChange={(e) =>
                             handleChange(item.id, "title", e.target.value)
                           }
-                          placeholder={`Competency ${index + 1} title`}
+                          placeholder="Competency title"
                           className="w-full rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm font-extrabold text-[#101828] outline-none transition focus:border-sibs-primary-1"
                         />
 
@@ -255,23 +257,31 @@ const DesiredCompetenciesViewTable = ({
                           onChange={(e) =>
                             handleChange(item.id, "description", e.target.value)
                           }
-                          placeholder="Describe this competency..."
-                          rows={3}
+                          placeholder="Competency description"
+                          rows={4}
                           className="w-full resize-y rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm font-medium leading-7 text-[#344054] outline-none transition focus:border-sibs-primary-1"
                         />
                       </div>
                     ) : (
-                      <>
-                        <p className="text-sm font-extrabold text-[#101828]">
-                          {item.title || `Competency ${index + 1}`}
-                        </p>
+                      <div>
+                        {item.title && (
+                          <p className="text-sm font-extrabold leading-7 text-[#101828]">
+                            {item.title}
+                          </p>
+                        )}
 
                         {item.description && (
                           <p className="mt-2 whitespace-pre-line text-sm font-medium leading-7 text-[#344054]">
                             {item.description}
                           </p>
                         )}
-                      </>
+
+                        {!item.title && !item.description && (
+                          <p className="text-sm font-medium leading-7 text-[#344054]">
+                            —
+                          </p>
+                        )}
+                      </div>
                     )}
 
                     <div className="mt-3 flex md:hidden">

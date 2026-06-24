@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const CandidateAvatar = ({ candidate }) => {
   const initials = String(candidate.name || "?")
@@ -7,6 +7,10 @@ const CandidateAvatar = ({ candidate }) => {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+  useEffect(() => {
+    console.log(candidate);
+  }, [candidate]);
 
   return (
     <div

@@ -4,18 +4,34 @@ import { normalizeJdStatus } from "../../../../lib/utils/NormalizeJDStatus";
 import { formatDate } from "../../FormatDateTime";
 import DesiredCompetenciesViewTable from "../../../tables/jobDescription/DesiredCompetenciesViewTable";
 import { useUser } from "../../../../services/context/UserContext";
+import { useJobDescription } from "../../../../services/context/JobDescriptionContext";
 
 const Details = ({
   item,
   onOpenRevision,
-  revisionComments = [],
-  setRevisionComments,
   hasEditedChanges = false,
   onEditedChange,
   editedChangeDetails = [],
   setEditedChangeDetails,
+  approvalPage = false,
 }) => {
   const { user } = useUser();
+
+  const { revisionComments, setRevisionComments } = useJobDescription();
+
+  function getEffectiveDateValue(source = {}) {
+    return (
+      source.effectiveDate ||
+      source.effective_date ||
+      source.effectiveDateRaw ||
+      source.effective_date_raw ||
+      ""
+    );
+  }
+
+  useEffect(() => {
+    console.log("item from details:", item);
+  }, [item]);
 
   const canManageJdDetails = useMemo(() => {
     return [6, 7].includes(Number(user?.adminAccess));
@@ -33,6 +49,7 @@ const Details = ({
     description: item.description || "",
     responsibilities: item.responsibilities || "",
     qualifications: item.qualifications || "",
+    personalityType: item.personalityType || item.personality_type || "",
     remarks: item.remarks || "",
   });
 
@@ -50,15 +67,17 @@ const Details = ({
     requestedBy: item.requestedBy || "",
     jdCode: item.jdCode || "",
     currentVersion: item.currentVersion || "2.0",
-    effectiveDate: item.effectiveDate || "",
+    effectiveDate: getEffectiveDateValue(item),
     lastUpdated: item.lastUpdated || "",
     reportsTo: item.reportsTo || "",
     supervisory: item.supervisory || "No",
   });
 
   const hasRevisionComments = revisionComments.length > 0;
+
   const disableEditBecauseCommented =
     !canManageJdDetails || hasRevisionComments;
+
   const disableCommentBecauseEdited = !canManageJdDetails || hasEditedChanges;
 
   useEffect(() => {
@@ -66,6 +85,7 @@ const Details = ({
       description: item.description || "",
       responsibilities: item.responsibilities || "",
       qualifications: item.qualifications || "",
+      personalityType: item.personalityType || item.personality_type || "",
       remarks: item.remarks || "",
     });
 
@@ -81,7 +101,7 @@ const Details = ({
       requestedBy: item.requestedBy || "",
       jdCode: item.jdCode || "",
       currentVersion: item.currentVersion || "2.0",
-      effectiveDate: item.effectiveDate || "",
+      effectiveDate: getEffectiveDateValue(item),
       lastUpdated: item.lastUpdated || "",
       reportsTo: item.reportsTo || "",
       supervisory: item.supervisory || "No",
@@ -89,7 +109,7 @@ const Details = ({
 
     setEditingRecordInfo(false);
     onEditedChange?.(false);
-  }, [item]);
+  }, [item, onEditedChange]);
 
   function getSelectedText() {
     if (typeof window === "undefined") return "";
@@ -97,6 +117,120 @@ const Details = ({
     const selection = window.getSelection?.();
 
     if (!selection || selection.rangeCount === 0) return "";
+
+    const range = selection.getRangeAt(0);
+    const fragment = range.cloneContents();
+
+    const formattedLines = [];
+
+    function getListPrefix(liElement) {
+      const parentList = liElement.parentElement;
+
+      if (!parentList) return "- ";
+
+      const tagName = parentList.tagName?.toLowerCase();
+
+      if (tagName === "ul") {
+        return "- ";
+      }
+
+      if (tagName === "ol") {
+        const siblings = Array.from(parentList.children).filter(
+          (child) => child.tagName?.toLowerCase() === "li",
+        );
+
+        const index = siblings.indexOf(liElement);
+        const letter = String.fromCharCode(97 + Math.max(index, 0));
+
+        return `${letter}. `;
+      }
+
+      return "- ";
+    }
+
+    function extractNodeText(node, depth = 0) {
+      if (!node) return;
+
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = String(node.textContent || "")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (text) {
+          formattedLines.push(text);
+        }
+
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+      const tagName = node.tagName?.toLowerCase();
+
+      if (tagName === "li") {
+        const prefix = getListPrefix(node);
+        const indent = depth > 0 ? "  ".repeat(depth) : "";
+
+        const directTextParts = [];
+
+        Array.from(node.childNodes).forEach((child) => {
+          const childTagName = child.tagName?.toLowerCase?.();
+
+          if (childTagName === "ul" || childTagName === "ol") {
+            return;
+          }
+
+          const text = String(child.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (text) {
+            directTextParts.push(text);
+          }
+        });
+
+        const directText = directTextParts.join(" ").trim();
+
+        if (directText) {
+          formattedLines.push(`${indent}${prefix}${directText}`);
+        }
+
+        Array.from(node.children).forEach((child) => {
+          const childTagName = child.tagName?.toLowerCase();
+
+          if (childTagName === "ul" || childTagName === "ol") {
+            Array.from(child.children).forEach((childLi) => {
+              extractNodeText(childLi, depth + 1);
+            });
+          }
+        });
+
+        return;
+      }
+
+      if (tagName === "ul" || tagName === "ol") {
+        Array.from(node.children).forEach((child) => {
+          extractNodeText(child, depth);
+        });
+
+        return;
+      }
+
+      Array.from(node.childNodes).forEach((child) => {
+        extractNodeText(child, depth);
+      });
+    }
+
+    Array.from(fragment.childNodes).forEach((node) => {
+      extractNodeText(node);
+    });
+
+    const formattedText = formattedLines
+      .map((line) => line.trimEnd())
+      .filter(Boolean)
+      .join("\n");
+
+    if (formattedText) return formattedText;
 
     return String(selection.toString() || "").trim();
   }
@@ -108,7 +242,7 @@ const Details = ({
   }
 
   function openSectionComment(sectionKey, sectionTitle) {
-    if (disableCommentBecauseEdited) return;
+    if (!approvalPage || disableCommentBecauseEdited) return;
 
     const selectedText = getSelectedText();
 
@@ -162,7 +296,7 @@ const Details = ({
   }
 
   function startEditSection(sectionKey) {
-    if (disableEditBecauseCommented) return;
+    if (!approvalPage || disableEditBecauseCommented) return;
 
     setEditingSection(sectionKey);
     setEditingDraft(editableContent[sectionKey] || "");
@@ -189,16 +323,16 @@ const Details = ({
     description: "Position Overview",
     responsibilities: "Duties & Responsibilities",
     qualifications: "Qualifications & Characteristics",
-    remarks: "Preferred Personality Type",
+    personalityType: "Preferred Personality Type",
+    remarks: "Remarks",
   };
 
-  function updateEditedChanges(nextChanges) {
-    setEditedChangeDetails?.(nextChanges);
-    onEditedChange?.(nextChanges.length > 0);
-  }
-
   function saveEditSection(sectionKey) {
-    const oldValue = String(item?.[sectionKey] || "");
+    const oldValue = String(
+      sectionKey === "personalityType"
+        ? item?.personalityType || item?.personality_type || ""
+        : item?.[sectionKey] || "",
+    );
     const newValue = String(editingDraft || "");
 
     setEditableContent((prev) => ({
@@ -248,7 +382,7 @@ const Details = ({
       requestedBy: item.requestedBy || "",
       jdCode: item.jdCode || "",
       currentVersion: item.currentVersion || "2.0",
-      effectiveDate: item.effectiveDate || "",
+      effectiveDate: getEffectiveDateValue(item),
       lastUpdated: item.lastUpdated || "",
       reportsTo: item.reportsTo || "",
       supervisory: item.supervisory || "No",
@@ -267,7 +401,7 @@ const Details = ({
       requestedBy: item.requestedBy || "",
       jdCode: item.jdCode || "",
       currentVersion: item.currentVersion || "2.0",
-      effectiveDate: item.effectiveDate || "",
+      effectiveDate: getEffectiveDateValue(item),
       lastUpdated: item.lastUpdated || "",
       reportsTo: item.reportsTo || "",
       supervisory: item.supervisory || "No",
@@ -328,7 +462,35 @@ const Details = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
+      {normalizeJdStatus(item.jdStatus) === "For Revision" && (
+        <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-amber-700">
+                Revision Required
+              </h3>
+
+              <p className="mt-2 text-sm font-medium leading-6 text-amber-700/90">
+                This job description needs revision before it can be treated as
+                sourcing-ready.
+              </p>
+            </div>
+
+            {/* {approvalPage && ( */}
+            <button
+              type="button"
+              onClick={() => onOpenRevision?.(item)}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700"
+            >
+              <PencilLine size={16} />
+              Revise Job Description
+            </button>
+            {/* )} */}
+          </div>
+        </section>
+      )}
+
       <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-2xs">
         <div className="flex flex-col gap-3 border-b border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -352,7 +514,7 @@ const Details = ({
             </p>
           </div>
 
-          {!disableEditBecauseCommented && (
+          {approvalPage && canManageJdDetails && (
             <div className="flex shrink-0 items-center gap-2">
               {!editingRecordInfo ? (
                 <>
@@ -461,6 +623,7 @@ const Details = ({
                 value={recordInfoDraft.dateRequested}
                 displayValue={formatDate(recordInfoDraft.dateRequested)}
                 editable={editingRecordInfo}
+                inputType="date"
                 onChange={(value) =>
                   handleRecordInfoChange("dateRequested", value)
                 }
@@ -519,6 +682,7 @@ const Details = ({
               value={recordInfoDraft.effectiveDate}
               displayValue={formatDate(recordInfoDraft.effectiveDate)}
               editable={editingRecordInfo}
+              inputType="date"
               onChange={(value) =>
                 handleRecordInfoChange("effectiveDate", value)
               }
@@ -530,6 +694,7 @@ const Details = ({
               value={recordInfoDraft.lastUpdated}
               displayValue={formatDate(recordInfoDraft.lastUpdated)}
               editable={editingRecordInfo}
+              inputType="date"
               onChange={(value) => handleRecordInfoChange("lastUpdated", value)}
             />
           </div>
@@ -552,9 +717,20 @@ const Details = ({
             />
           </div>
         </div>
-      </section>
 
-      <RevisionCommentList comments={getSectionComments("recordInformation")} />
+        {getSectionComments("recordInformation").length > 0 && (
+          <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-5">
+            <div className="space-y-3">
+              {getSectionComments("recordInformation").map((comment) => (
+                <InlineRevisionCommentBlock
+                  key={comment.id}
+                  comment={comment}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="space-y-7">
         <DetailArticleSection
@@ -573,6 +749,7 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
         <DetailArticleSection
@@ -591,6 +768,7 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
         <DetailArticleSection
@@ -609,25 +787,29 @@ const Details = ({
           disableEdit={disableEditBecauseCommented}
           disableComment={disableCommentBecauseEdited}
           canManageJdDetails={canManageJdDetails}
+          approvalPage={approvalPage}
         />
 
-        {String(editableContent.remarks || "").trim() && (
-          <DetailArticleSection
-            sectionKey="remarks"
-            title="Preferred Personality Type"
-            value={editableContent.remarks}
-            emptyText="No remarks provided."
-            comments={getSectionComments("remarks")}
-            onAddComment={openSectionComment}
-            isEditing={editingSection === "remarks"}
-            editingDraft={editingDraft}
-            setEditingDraft={setEditingDraft}
-            onStartEdit={startEditSection}
-            onCancelEdit={cancelEditSection}
-            onSaveEdit={saveEditSection}
+        {String(editableContent.personalityType || "").trim() && (
+          <PreferredPersonalityTypeSection
+            value={editableContent.personalityType}
+            comments={getSectionComments("personalityType")}
+            approvalPage={approvalPage}
+            canManageJdDetails={canManageJdDetails}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
-            canManageJdDetails={canManageJdDetails}
+            isEditing={editingSection === "personalityType"}
+            editingDraft={editingDraft}
+            setEditingDraft={setEditingDraft}
+            onStartEdit={() => startEditSection("personalityType")}
+            onCancelEdit={cancelEditSection}
+            onSaveEdit={() => saveEditSection("personalityType")}
+            onAddComment={() =>
+              openSectionComment(
+                "personalityType",
+                "Preferred Personality Type",
+              )
+            }
           />
         )}
 
@@ -638,7 +820,7 @@ const Details = ({
             onAddComment={openSectionComment}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
-            canManageActions={canManageJdDetails}
+            canManageActions={approvalPage && canManageJdDetails}
             onEditedChange={onEditedChange}
           />
 
@@ -661,33 +843,7 @@ const Details = ({
         </div>
       </section>
 
-      {normalizeJdStatus(item.jdStatus) === "For Revision" && (
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-sm font-extrabold text-amber-700">
-                Revision Required
-              </h3>
-
-              <p className="mt-2 text-sm font-medium leading-6 text-amber-700/90">
-                This job description needs revision before it can be treated as
-                sourcing-ready.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => onOpenRevision?.(item)}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700"
-            >
-              <PencilLine size={16} />
-              Update Revision and Tag as Existing
-            </button>
-          </div>
-        </section>
-      )}
-
-      {commentModal.open && (
+      {commentModal.open && approvalPage && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
@@ -717,9 +873,11 @@ const Details = ({
                     Highlighted Text
                   </p>
 
-                  <p className="mt-2 text-sm font-semibold leading-6 text-sibs-primary-1/90">
-                    “{commentModal.selectedText}”
-                  </p>
+                  <div className="mt-3">
+                    <HighlightedRevisionText
+                      value={commentModal.selectedText}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -780,6 +938,7 @@ function DocumentInfoInput({
   value,
   displayValue,
   editable = false,
+  inputType = "text",
   onChange,
 }) {
   const finalDisplayValue = displayValue || value || "—";
@@ -792,6 +951,7 @@ function DocumentInfoInput({
 
       {editable ? (
         <input
+          type={inputType}
           value={value || ""}
           onChange={(e) => onChange?.(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition selection:bg-[#FFF3B8] selection:text-[#101828] focus:border-sibs-primary-1"
@@ -814,6 +974,7 @@ function CompactSummaryRow({
   displayValue,
   className = "",
   editable = false,
+  inputType = "text",
   onChange,
 }) {
   const finalDisplayValue = displayValue || value || "—";
@@ -826,6 +987,7 @@ function CompactSummaryRow({
 
       {editable ? (
         <input
+          type={inputType}
           value={value || ""}
           onChange={(e) => onChange?.(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1"
@@ -846,8 +1008,18 @@ function parseDetailContent(value) {
 
   const blocks = [];
   let listItems = [];
+  let currentParent = null;
+
+  const flushCurrentParent = () => {
+    if (currentParent) {
+      listItems.push(currentParent);
+      currentParent = null;
+    }
+  };
 
   const flushList = () => {
+    flushCurrentParent();
+
     if (listItems.length > 0) {
       blocks.push({
         type: "list",
@@ -862,17 +1034,45 @@ function parseDetailContent(value) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      flushList();
       return;
     }
 
     const isBullet = /^[-•*]\s+/.test(trimmed);
     const isNumbered = /^\d+[.)]\s+/.test(trimmed);
+    const isLettered = /^[a-zA-Z][.)]\s+/.test(trimmed);
 
     if (isBullet || isNumbered) {
-      listItems.push(
-        trimmed.replace(/^[-•*]\s+/, "").replace(/^\d+[.)]\s+/, ""),
-      );
+      flushCurrentParent();
+
+      currentParent = {
+        text: trimmed.replace(/^[-•*]\s+/, "").replace(/^\d+[.)]\s+/, ""),
+        children: [],
+      };
+
+      return;
+    }
+
+    if (isLettered) {
+      const childText = trimmed.replace(/^[a-zA-Z][.)]\s+/, "");
+
+      if (currentParent) {
+        currentParent.children.push(childText);
+      } else if (listItems.length > 0) {
+        listItems[listItems.length - 1].children.push(childText);
+      } else {
+        listItems.push({
+          text: "",
+          children: [childText],
+        });
+      }
+
+      return;
+    }
+
+    if (currentParent) {
+      currentParent.text = `${currentParent.text} ${trimmed}`
+        .replace(/\s+/g, " ")
+        .trim();
       return;
     }
 
@@ -905,6 +1105,7 @@ function DetailArticleSection({
   disableEdit = false,
   disableComment = false,
   canManageJdDetails = false,
+  approvalPage = false,
 }) {
   function getEditTitle() {
     if (!canManageJdDetails) {
@@ -943,7 +1144,7 @@ function DetailArticleSection({
           )}
         </div>
 
-        {!isEditing && !disableEdit && (
+        {approvalPage && !isEditing && canManageJdDetails && (
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
@@ -988,7 +1189,6 @@ function DetailArticleSection({
             onChange={(e) => setEditingDraft?.(e.target.value)}
             className="min-h-[180px] w-full resize-y rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm font-medium leading-7 text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
           />
-
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"
@@ -1008,7 +1208,225 @@ function DetailArticleSection({
           </div>
         </div>
       ) : (
-        <DetailRichContent value={value} emptyText={emptyText} />
+        <DetailRichContent
+          value={value}
+          emptyText={emptyText}
+          approvalPage={approvalPage}
+          comments={comments}
+        />
+      )}
+
+      {/* <RevisionCommentList comments={comments} /> */}
+    </section>
+  );
+}
+
+function PreferredPersonalityTypeSection({
+  value = "",
+  comments = [],
+  approvalPage = false,
+  canManageJdDetails = false,
+  disableEdit = false,
+  disableComment = false,
+  isEditing = false,
+  editingDraft = "",
+  setEditingDraft,
+  onStartEdit,
+  onCancelEdit,
+  onSaveEdit,
+  onAddComment,
+}) {
+  const PERSONALITY_TYPE_LABELS = {
+    INTJ: "Architect",
+    INTP: "Logician",
+    ENTJ: "Commander",
+    ENTP: "Debater",
+    INFJ: "Advocate",
+    INFP: "Mediator",
+    ENFJ: "Protagonist",
+    ENFP: "Campaigner",
+    ISTJ: "Logistician",
+    ISFJ: "Defender",
+    ESTJ: "Executive",
+    ESFJ: "Consul",
+    ISTP: "Virtuoso",
+    ISFP: "Adventurer",
+    ESTP: "Entrepreneur",
+    ESFP: "Entertainer",
+  };
+
+  function formatPersonalityTypeLabel(type = "") {
+    const cleanType = String(type || "").trim();
+
+    if (!cleanType) return "";
+
+    if (cleanType.includes("(") && cleanType.includes(")")) {
+      return cleanType;
+    }
+
+    const code = cleanType.toUpperCase();
+    const label = PERSONALITY_TYPE_LABELS[code];
+
+    return label ? `${code} (${label})` : cleanType;
+  }
+
+  const personalityTypes = String(value || "")
+    .split(/[,;\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  function getEditTitle() {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can edit this JD.";
+    }
+
+    if (disableEdit) {
+      return "Editing is disabled because this JD has revision comments.";
+    }
+
+    return "Edit preferred personality type.";
+  }
+
+  function getCommentTitle() {
+    if (!canManageJdDetails) {
+      return "Only admin access roles 6 and 7 can add revision comments.";
+    }
+
+    if (disableComment) {
+      return "Commenting is disabled because this JD already has edited changes.";
+    }
+
+    return "Add revision comment.";
+  }
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-[15px] font-extrabold text-[#101828]">
+              Preferred Personality Type
+            </h4>
+
+            {comments.length > 0 && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700">
+                {comments.length} comment{comments.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {approvalPage && !isEditing && canManageJdDetails && (
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onStartEdit}
+              disabled={disableEdit}
+              title={getEditTitle()}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                disableEdit
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
+              }`}
+            >
+              <SquarePen size={14} />
+              Edit
+            </button>
+
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAddComment}
+              disabled={disableComment}
+              title={getCommentTitle()}
+              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                disableComment
+                  ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                  : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
+              }`}
+            >
+              <PencilLine size={14} />
+              Add Comment
+            </button>
+          </div>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div className="rounded-xl border border-[#D7DEE8] bg-white p-4 shadow-sm">
+          <textarea
+            rows={4}
+            value={editingDraft}
+            onChange={(e) => setEditingDraft?.(e.target.value)}
+            placeholder="Example: INTJ, INTP, ENTJ, ENTP, INFP, ENFJ"
+            className="min-h-[120px] w-full resize-y rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm font-medium leading-7 text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
+          />
+
+          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+            Separate personality types with commas, semicolons, or new lines.
+          </p>
+
+          {String(editingDraft || "").trim() && (
+            <div className="mt-4 rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] p-3">
+              <p className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                Preview
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {String(editingDraft || "")
+                  .split(/[,;\n]/)
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+                  .map((type) => (
+                    <span
+                      key={type}
+                      className="inline-flex items-center rounded-full border border-[#BFD6F6] bg-[#EAF2FB] px-3 py-1.5 text-xs font-bold text-sibs-primary-1"
+                    >
+                      {formatPersonalityTypeLabel(type)}
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={onSaveEdit}
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-[#D7DEE8] bg-white px-4 py-4 shadow-sm">
+          {personalityTypes.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {personalityTypes.map((type) => (
+                <span
+                  key={type}
+                  className="inline-flex items-center rounded-full border border-[#BFD6F6] bg-[#EAF2FB] px-3 py-1.5 text-xs font-bold text-sibs-primary-1"
+                >
+                  {formatPersonalityTypeLabel(type)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm font-semibold text-sibs-tertiary-5">
+              No preferred personality type provided.
+            </p>
+          )}
+        </div>
       )}
 
       <RevisionCommentList comments={comments} />
@@ -1037,12 +1455,12 @@ function RevisionCommentList({ comments = [] }) {
           </div>
 
           {comment.selectedText && (
-            <p className="mt-2 border-l-2 border-amber-400 pl-3 text-sm font-semibold leading-6 text-amber-800">
-              “{comment.selectedText}”
-            </p>
+            <div className="mt-3 border-l-2 border-amber-400 pl-3">
+              <HighlightedRevisionText value={comment.selectedText} />
+            </div>
           )}
 
-          <p className="mt-2 text-sm font-medium leading-6 text-amber-800">
+          <p className="mt-3 text-sm font-medium leading-6 text-amber-800">
             {comment.comment}
           </p>
         </div>
@@ -1051,24 +1469,221 @@ function RevisionCommentList({ comments = [] }) {
   );
 }
 
-function DetailRichContent({ value, emptyText = "No information provided." }) {
+function HighlightedRevisionText({ value = "" }) {
+  const blocks = useMemo(() => parseDetailContent(value), [value]);
+
+  if (!String(value || "").trim()) return null;
+
+  return (
+    <div className="space-y-3 text-sm font-semibold leading-6 text-amber-800">
+      {blocks.map((block, index) => {
+        if (block.type === "list") {
+          return (
+            <ul
+              key={`highlight-list-${index}`}
+              className="list-disc space-y-2 pl-5"
+            >
+              {block.items.map((listItem, listIndex) => (
+                <li key={`highlight-item-${listIndex}`}>
+                  {listItem.text}
+
+                  {listItem.children?.length > 0 && (
+                    <ol className="mt-2 list-[lower-alpha] space-y-1 pl-5">
+                      {listItem.children.map((child, childIndex) => (
+                        <li key={`highlight-child-${listIndex}-${childIndex}`}>
+                          {child}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return <p key={`highlight-paragraph-${index}`}>{block.text}</p>;
+      })}
+    </div>
+  );
+}
+
+function normalizeContentLine(value = "") {
+  return String(value || "")
+    .trim()
+    .replace(/^[-•*]\s+/, "")
+    .replace(/^\d+[.)]\s+/, "")
+    .replace(/^[a-zA-Z][.)]\s+/, "")
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
+function getContentLines(value = "") {
+  return String(value || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function findSelectedTextRange(contentLines = [], selectedText = "") {
+  const selectedLines = getContentLines(selectedText)
+    .map(normalizeContentLine)
+    .filter(Boolean);
+
+  if (!selectedLines.length || !contentLines.length) {
+    return null;
+  }
+
+  const normalizedContentLines = contentLines.map(normalizeContentLine);
+
+  for (
+    let startIndex = 0;
+    startIndex < normalizedContentLines.length;
+    startIndex += 1
+  ) {
+    let selectedIndex = 0;
+    let contentIndex = startIndex;
+
+    while (
+      contentIndex < normalizedContentLines.length &&
+      selectedIndex < selectedLines.length
+    ) {
+      const contentLine = normalizedContentLines[contentIndex];
+      const selectedLine = selectedLines[selectedIndex];
+
+      if (
+        contentLine === selectedLine ||
+        contentLine.includes(selectedLine) ||
+        selectedLine.includes(contentLine)
+      ) {
+        selectedIndex += 1;
+        contentIndex += 1;
+        continue;
+      }
+
+      break;
+    }
+
+    if (selectedIndex === selectedLines.length) {
+      return {
+        start: startIndex,
+        end: contentIndex,
+      };
+    }
+  }
+
+  return null;
+}
+
+function buildRevisionContentParts(value = "", comments = []) {
+  const contentLines = getContentLines(value);
+
+  if (!contentLines.length || !comments.length) {
+    return [
+      {
+        type: "content",
+        value,
+      },
+    ];
+  }
+
+  const sortedComments = comments
+    .map((comment) => ({
+      ...comment,
+      range: findSelectedTextRange(contentLines, comment.selectedText),
+    }))
+    .filter((comment) => comment.range)
+    .sort((a, b) => a.range.start - b.range.start);
+
+  if (!sortedComments.length) {
+    return [
+      {
+        type: "content",
+        value,
+      },
+      ...comments.map((comment) => ({
+        type: "comment",
+        comment,
+      })),
+    ];
+  }
+
+  const parts = [];
+  let cursor = 0;
+
+  sortedComments.forEach((comment) => {
+    const { start, end } = comment.range;
+
+    if (start > cursor) {
+      parts.push({
+        type: "content",
+        value: contentLines.slice(cursor, start).join("\n"),
+      });
+    }
+
+    parts.push({
+      type: "comment",
+      comment,
+    });
+
+    cursor = Math.max(cursor, end);
+  });
+
+  if (cursor < contentLines.length) {
+    parts.push({
+      type: "content",
+      value: contentLines.slice(cursor).join("\n"),
+    });
+  }
+
+  return parts.filter((part) => {
+    if (part.type === "content") {
+      return String(part.value || "").trim();
+    }
+
+    return true;
+  });
+}
+
+function DetailContentRenderer({
+  value,
+  emptyText = "No information provided.",
+  approvalPage = false,
+}) {
   const blocks = useMemo(() => parseDetailContent(value), [value]);
 
   if (!String(value || "").trim()) {
     return <p className="text-sm text-sibs-tertiary-5">{emptyText}</p>;
   }
 
+  const selectionClass = approvalPage
+    ? "selection:bg-amber-200 selection:text-[#101828]"
+    : "selection:bg-transparent selection:text-inherit";
+
   return (
-    <div className="space-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4 selection:bg-amber-200 selection:text-[#101828]">
+    <div className={`space-y-4 ${selectionClass}`}>
       {blocks.map((block, index) => {
         if (block.type === "list") {
           return (
             <ul
               key={`list-${index}`}
-              className="list-disc space-y-2 pl-6 text-[15px] font-medium leading-7 text-[#344054]"
+              className="list-disc space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]"
             >
               {block.items.map((listItem, listIndex) => (
-                <li key={`item-${listIndex}`}>{listItem}</li>
+                <li key={`item-${listIndex}`}>
+                  {listItem.text}
+
+                  {listItem.children?.length > 0 && (
+                    <ol className="mt-3 list-[lower-alpha] space-y-2 pl-6">
+                      {listItem.children.map((child, childIndex) => (
+                        <li key={`child-${listIndex}-${childIndex}`}>
+                          {child}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </li>
               ))}
             </ul>
           );
@@ -1081,6 +1696,100 @@ function DetailRichContent({ value, emptyText = "No information provided." }) {
           >
             {block.text}
           </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function InlineRevisionCommentBlock({ comment }) {
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-amber-200/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wide text-amber-700">
+            Text Marked for Revision
+          </p>
+
+          <p className="mt-1 text-xs font-semibold text-amber-700/80">
+            The highlighted content below needs to be reviewed and updated.
+          </p>
+        </div>
+
+        <span className="w-fit rounded-full border border-amber-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+          {comment.status || "Open"}
+        </span>
+      </div>
+
+      <div className="px-4 py-4">
+        {comment.selectedText && (
+          <div className="rounded-xl border border-amber-200 bg-white/70 px-4 py-4">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
+                Selected JD Content
+              </p>
+            </div>
+
+            <div className="border-l-2 border-amber-400 pl-4">
+              <HighlightedRevisionText value={comment.selectedText} />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 rounded-xl border border-orange-100 bg-white px-4 py-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-orange-500" />
+
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-orange-700">
+              Reviewer Comment
+            </p>
+          </div>
+
+          <p className="text-sm font-semibold leading-6 text-orange-800">
+            {comment.comment || "No revision comment provided."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRichContent({
+  value,
+  emptyText = "No information provided.",
+  approvalPage = false,
+  comments = [],
+}) {
+  const parts = useMemo(
+    () => buildRevisionContentParts(value, comments),
+    [value, comments],
+  );
+
+  if (!String(value || "").trim() && !comments.length) {
+    return <p className="text-sm text-sibs-tertiary-5">{emptyText}</p>;
+  }
+
+  return (
+    <div className="space-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+      {parts.map((part, index) => {
+        if (part.type === "comment") {
+          return (
+            <InlineRevisionCommentBlock
+              key={`revision-comment-${part.comment.id || index}`}
+              comment={part.comment}
+            />
+          );
+        }
+
+        return (
+          <DetailContentRenderer
+            key={`content-${index}`}
+            value={part.value}
+            emptyText={emptyText}
+            approvalPage={approvalPage}
+          />
         );
       })}
     </div>

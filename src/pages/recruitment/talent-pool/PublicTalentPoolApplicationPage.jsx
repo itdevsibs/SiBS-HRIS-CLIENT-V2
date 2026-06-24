@@ -1,130 +1,96 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Send,
   UserPlus,
   CheckCircle2,
   RotateCcw,
   BriefcaseBusiness,
-  Mail,
-  Phone,
   GraduationCap,
   ShieldCheck,
-  ClipboardList,
   Mic,
   UploadCloud,
   Users,
-  MapPin,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CalendarDays,
 } from "lucide-react";
+import {
+  getTalentPoolFormOptions,
+  getTalentPoolOpenPositions,
+  submitPublicTalentPoolApplication,
+} from "@/lib/axios/getTalentPool";
+import StatusModal from "@/components/modals/StatusModal";
 
-const PUBLIC_SUBMISSIONS_KEY = "ta_public_candidate_submissions";
-const AVAILABLE_POSITIONS_STORAGE_KEY = "ta_available_positions";
-
-const hearAboutUsOptions = [
-  "Employee Referral Program",
-  "Print Ads (Billboards, Brochures, Flyers, Posters)",
-  "Social Media Pages",
-  "Social Media Ads",
-  "Online Job Portals",
-  "Walk In",
-  "Word of Mouth",
-  "Institutional Partnership",
-  "External Referral Listings",
-  "Job Fairs",
-  "Employee Retention Program",
-  "Others",
-];
-
-const fallbackAvailablePositions = [
-  {
-    id: 1,
-    positionId: "POS-001",
-    positionTitle: "Customer Service Representative",
-    department: "Operations",
-    locationSite: "Davao Site",
-    status: "Active",
-  },
-  {
-    id: 2,
-    positionId: "POS-002",
-    positionTitle: "QA Specialist",
-    department: "Quality Assurance",
-    locationSite: "Davao Site",
-    status: "Active",
-  },
-  {
-    id: 3,
-    positionId: "POS-003",
-    positionTitle: "RCM Analyst",
-    department: "Operations",
-    locationSite: "Tagum Site",
-    status: "Active",
-  },
-  {
-    id: 4,
-    positionId: "POS-004",
-    positionTitle: "IT Support",
-    department: "Information Technology",
-    locationSite: "Any Site",
-    status: "Active",
-  },
-  {
-    id: 5,
-    positionId: "POS-005",
-    positionTitle: "Accounting Staff",
-    department: "Accounting",
-    locationSite: "Davao Site",
-    status: "Active",
-  },
-];
-
-const locationOptions = ["Davao Site", "Tagum Site", "Mabini Site"];
-
-const workExperienceOptions = [
-  "Has work Experience (at least 6 months relevant work experience)",
-  "No work Experience",
-];
-
-const lengthOfExperienceOptions = [
-  "6 months to less than 1 year",
-  "1 year to less than 2 years",
-  "2 years to less than 3 years",
-  "3 years to less than 5 years",
-  "5 years and above",
-];
-
-const educationalAttainmentOptions = [
-  "High School Graduate",
-  "Senior High School Graduate",
-  "College Level",
-  "College Graduate",
-  "Vocational / Technical Graduate",
-  "Graduate School Level",
-  "Master's Degree Holder",
-  "Doctorate Degree Holder",
-];
-
-const affiliationCertificationOptions = [
-  "CPA",
-  "LPT",
-  "Master Degree Holder",
-  "Doctorate Holder",
-  "Lean Six Sigma Belt Holder",
-  "NC II",
-  "BOSH / COSH",
-  "First Aid Certification",
-  "Other",
-];
-
-const yesNoOptions = ["Yes", "No"];
-
-const employmentInterestOptions = [
-  "Full Time",
-  "Part Time",
-  "Full Time or Part Time",
-];
+const acceptedAudioTypes =
+  ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
 
 const acceptedDocumentTypes =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif";
+
+const acceptedAudioExtensions = [
+  ".mp3",
+  ".wav",
+  ".wave",
+  ".m4a",
+  ".aac",
+  ".ogg",
+  ".oga",
+  ".webm",
+  ".mp4",
+  ".mpeg",
+  ".mpga",
+  ".flac",
+  ".amr",
+  ".3gp",
+  ".opus",
+  ".aif",
+  ".aiff",
+  ".caf",
+  ".wma",
+];
+
+const acceptedDocumentExtensions = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".csv",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+];
+
+const defaultFormOptions = {
+  hearAboutUs: [],
+  locations: [],
+  workExperience: [],
+  lengthOfExperience: [],
+  educationalAttainment: [],
+  affiliationCertification: [],
+  yesNo: [],
+  employmentInterest: [],
+  audioQuestions: [],
+};
+
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function createEmptyExperience() {
   return {
@@ -191,12 +157,49 @@ const emptyPublicForm = {
   consent: false,
 };
 
-function getTodayDate() {
-  return new Date().toISOString().split("T")[0];
+function getFileExtension(file) {
+  const name = String(file?.name || "");
+  const dotIndex = name.lastIndexOf(".");
+
+  if (dotIndex === -1) return "";
+
+  return name.slice(dotIndex).toLowerCase();
 }
 
-function generatePublicCandidateId() {
-  return `PUB-${Date.now()}`;
+function isAcceptedAudioFile(file) {
+  if (!file) return false;
+
+  const extension = getFileExtension(file);
+  const mimeType = String(file.type || "").toLowerCase();
+
+  const hasAudioExtension = acceptedAudioExtensions.includes(extension);
+  const hasAudioMime = mimeType.startsWith("audio/");
+  const hasPhoneRecordingMime =
+    (mimeType === "video/mp4" && [".mp4", ".m4a"].includes(extension)) ||
+    (mimeType === "video/3gpp" && extension === ".3gp") ||
+    (mimeType === "application/octet-stream" && hasAudioExtension);
+
+  return hasAudioExtension || hasAudioMime || hasPhoneRecordingMime;
+}
+
+function isAcceptedDocumentFile(file) {
+  if (!file) return false;
+
+  const extension = getFileExtension(file);
+
+  return acceptedDocumentExtensions.includes(extension);
+}
+
+function formatFileSize(file) {
+  if (!file?.size) return "";
+
+  const sizeInMb = file.size / (1024 * 1024);
+
+  if (sizeInMb >= 1) {
+    return `${sizeInMb.toFixed(2)} MB`;
+  }
+
+  return `${Math.max(file.size / 1024, 1).toFixed(0)} KB`;
 }
 
 function calculateAge(dateOfBirth) {
@@ -205,6 +208,8 @@ function calculateAge(dateOfBirth) {
   const today = new Date();
   const birthDate = new Date(dateOfBirth);
 
+  if (Number.isNaN(birthDate.getTime())) return null;
+
   let age = today.getFullYear() - birthDate.getFullYear();
   const monthDifference = today.getMonth() - birthDate.getMonth();
 
@@ -212,86 +217,95 @@ function calculateAge(dateOfBirth) {
     monthDifference < 0 ||
     (monthDifference === 0 && today.getDate() < birthDate.getDate())
   ) {
-    age--;
+    age -= 1;
   }
 
   return age;
 }
 
-function buildFullName(candidate) {
-  return [
-    candidate.firstName,
-    candidate.middleName,
-    candidate.lastName,
-    candidate.suffix,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
-function readLocalStorage(key, fallback) {
-  if (typeof window === "undefined") return fallback;
-
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
-function writeLocalStorage(key, value) {
-  if (typeof window === "undefined") return;
-
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // temporary frontend-only storage
-  }
+function padNumber(value) {
+  return String(value).padStart(2, "0");
 }
 
-function normalizeAvailablePosition(position) {
-  return {
-    ...position,
-    positionTitle:
-      position?.positionTitle ||
-      position?.title ||
-      position?.name ||
-      position?.roleTitle ||
-      "",
-    status: position?.status || "Active",
-  };
+function toDateInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(
+    date.getDate(),
+  )}`;
 }
 
-function getActiveAvailablePositions() {
-  const storedPositions = readLocalStorage(
-    AVAILABLE_POSITIONS_STORAGE_KEY,
-    fallbackAvailablePositions
+function parseDateInputValue(value) {
+  if (!value) return null;
+
+  const parts = String(value).split("-");
+
+  if (parts.length !== 3) return null;
+
+  const year = Number(parts[0]);
+  const month = Number(parts[1]) - 1;
+  const day = Number(parts[2]);
+
+  const date = new Date(year, month, day);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
   );
-
-  const sourcePositions = Array.isArray(storedPositions) && storedPositions.length
-    ? storedPositions
-    : fallbackAvailablePositions;
-
-  return sourcePositions
-    .map(normalizeAvailablePosition)
-    .filter((position) => position.positionTitle && position.status === "Active");
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve) => {
-    if (!file) {
-      resolve("");
-      return;
-    }
+function formatDateDisplay(value) {
+  const date = parseDateInputValue(value);
 
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => resolve("");
-    reader.readAsDataURL(file);
+  if (!date) return "";
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
+}
+
+function buildCalendarDays(displayDate) {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDay = firstDayOfMonth.getDay();
+
+  const calendarStart = new Date(year, month, 1 - startDay);
+  const days = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    days.push({
+      date,
+      dateValue: toDateInputValue(date),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+    });
+  }
+
+  return days;
 }
 
 function inputClass(extra = "") {
@@ -302,33 +316,87 @@ function textareaClass(extra = "") {
   return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
 }
 
+function getOptionValue(option) {
+  if (typeof option === "string") return option;
+  return option?.value || "";
+}
+
+function getOptionLabel(option) {
+  if (typeof option === "string") return option;
+  return option?.label || option?.value || "";
+}
+
+function normalizeDropdownOptions(options = []) {
+  return toArray(options)
+    .map((option) => {
+      const optionValue = getOptionValue(option);
+      const optionLabel = getOptionLabel(option);
+
+      if (!cleanText(optionValue) && !cleanText(optionLabel)) return null;
+
+      return {
+        id: option?.id || optionValue || optionLabel,
+        value: optionValue || optionLabel,
+        label: optionLabel || optionValue,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeOptionsPayload(payload) {
+  const data = payload && typeof payload === "object" ? payload : {};
+
+  return {
+    hearAboutUs: Array.isArray(data.hearAboutUs) ? data.hearAboutUs : [],
+    locations: Array.isArray(data.locations) ? data.locations : [],
+    workExperience: Array.isArray(data.workExperience)
+      ? data.workExperience
+      : [],
+    lengthOfExperience: Array.isArray(data.lengthOfExperience)
+      ? data.lengthOfExperience
+      : [],
+    educationalAttainment: Array.isArray(data.educationalAttainment)
+      ? data.educationalAttainment
+      : [],
+    affiliationCertification: Array.isArray(data.affiliationCertification)
+      ? data.affiliationCertification
+      : [],
+    yesNo: Array.isArray(data.yesNo) ? data.yesNo : [],
+    employmentInterest: Array.isArray(data.employmentInterest)
+      ? data.employmentInterest
+      : [],
+    audioQuestions: Array.isArray(data.audioQuestions)
+      ? data.audioQuestions
+      : [],
+  };
+}
+
+function normalizePosition(position) {
+  return {
+    id: position?.id || position?.positionId || position?.positionTitle,
+    positionId: position?.positionId || position?.position_id || "",
+    positionTitle:
+      position?.positionTitle ||
+      position?.position_title ||
+      position?.title ||
+      position?.name ||
+      "",
+    department: position?.department || "",
+    locationSite: position?.locationSite || position?.location_site || "",
+    status: position?.status || "",
+  };
+}
+
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-400">
-      {children}
+    <label className="mb-1 flex min-h-0 items-end text-xs font-bold uppercase leading-4 tracking-wide text-gray-400 md:min-h-[36px]">
+      <span>{children}</span>
     </label>
   );
 }
 
 function RequiredMark() {
   return <span className="text-red-500">*</span>;
-}
-
-function InfoCard({ icon: Icon, title, description }) {
-  return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="rounded-2xl bg-[var(--sibs-primary-1)]/10 p-3 text-sibs-primary-1">
-          <Icon size={20} />
-        </div>
-
-        <div>
-          <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
-          <p className="mt-1 text-sm leading-6 text-gray-500">{description}</p>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function SectionCard({ icon: Icon, title, description, children }) {
@@ -356,57 +424,581 @@ function SectionCard({ icon: Icon, title, description, children }) {
   );
 }
 
-function MultiSelectCheckboxGroup({ options, values, onChange }) {
-  function toggleValue(option) {
-    if (values.includes(option)) {
-      onChange(values.filter((item) => item !== option));
-      return;
-    }
-
-    onChange([...values, option]);
-  }
-
+function EmptyOptionNotice({ message = "No options configured in database." }) {
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {options.map((option) => (
-        <label
-          key={option}
-          className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
-        >
-          <input
-            type="checkbox"
-            checked={values.includes(option)}
-            onChange={() => toggleValue(option)}
-            className="h-4 w-4"
-          />
-          <span className="text-sm font-semibold text-gray-700">{option}</span>
-        </label>
-      ))}
+    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+      {message}
     </div>
   );
 }
 
-function YesNoSelect({ value, onChange, required = true }) {
+function HiringNeedsDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Select option",
+  required = true,
+  disabled = false,
+  zIndex = "z-[90]",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const normalizedOptions = normalizeDropdownOptions(options);
+  const selectedOption = normalizedOptions.find(
+    (option) => String(option.value) === String(value || ""),
+  );
+
+  const displayText = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange(nextValue);
+    setOpen(false);
+  }
+
   return (
-    <select
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-gray-800"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-gray-800" : "text-gray-400"
+          }`}
+        >
+          {displayText}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {required && (
+        <input
+          tabIndex={-1}
+          value={value || ""}
+          onChange={() => {}}
+          required
+          className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
+        />
+      )}
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.length > 0 ? (
+              normalizedOptions.map((option) => {
+                const active = String(option.value) === String(value || "");
+
+                return (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+                No options found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarHeaderDropdown({
+  value,
+  options = [],
+  onChange,
+  className = "",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  const displayText = selectedOption?.label || "Select";
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={dropdownRef} className={`relative min-w-0 ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-xs font-extrabold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
+        } text-sibs-primary-1`}
+      >
+        <span className="min-w-0 flex-1 truncate">{displayText}</span>
+
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+        >
+          <div className="max-h-72 overflow-y-auto">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    active
+                      ? "bg-[#EAF4FF] text-sibs-primary-1"
+                      : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                  }`}
+                >
+                  <span className="block min-w-0 truncate">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarDatePicker({
+  value,
+  onChange,
+  placeholder = "Select date",
+  disabled = false,
+  hasError = false,
+}) {
+  const calendarRef = useRef(null);
+  const selectedDate = parseDateInputValue(value);
+  const today = new Date();
+
+  const currentYear = today.getFullYear();
+  const minimumYear = currentYear - 80;
+  const maximumYear = currentYear;
+
+  const monthOptions = useMemo(() => {
+    return monthNames.map((month, index) => ({
+      value: index,
+      label: month,
+    }));
+  }, []);
+
+  const yearOptions = useMemo(() => {
+    const years = [];
+
+    for (let year = maximumYear; year >= minimumYear; year -= 1) {
+      years.push({
+        value: year,
+        label: String(year),
+      });
+    }
+
+    return years;
+  }, [maximumYear, minimumYear]);
+
+  const [open, setOpen] = useState(false);
+  const [displayDate, setDisplayDate] = useState(
+    selectedDate || new Date(currentYear - 18, today.getMonth(), 1),
+  );
+
+  const calendarDays = useMemo(
+    () => buildCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  const displayText = value ? formatDateDisplay(value) : placeholder;
+
+  useEffect(() => {
+    if (selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!calendarRef.current) return;
+
+      if (!calendarRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function goPreviousMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
+    );
+  }
+
+  function handleMonthChange(monthIndex) {
+    setDisplayDate(
+      (previous) => new Date(previous.getFullYear(), Number(monthIndex), 1),
+    );
+  }
+
+  function handleYearChange(year) {
+    setDisplayDate(
+      (previous) => new Date(Number(year), previous.getMonth(), 1),
+    );
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange("");
+    setOpen(false);
+  }
+
+  function handleToday() {
+    onChange(toDateInputValue(today));
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setOpen(false);
+  }
+
+  return (
+    <div ref={calendarRef} className="relative z-[220] min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : hasError
+              ? "border-red-300 hover:border-red-500"
+              : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-gray-800"
+        }`}
+      >
+        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
+          <CalendarDays
+            size={16}
+            className="shrink-0 text-[var(--sibs-primary-1)]"
+          />
+
+          <span
+            className={`min-w-0 truncate ${
+              value ? "text-gray-800" : "text-gray-400"
+            }`}
+          >
+            {displayText}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+            <button
+              type="button"
+              onClick={goPreviousMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <div className="grid min-w-0 flex-1 grid-cols-[1fr_96px] gap-2 px-3">
+              <CalendarHeaderDropdown
+                value={displayDate.getMonth()}
+                options={monthOptions}
+                onChange={handleMonthChange}
+                className="z-[100002]"
+                menuClassName="w-[180px]"
+              />
+
+              <CalendarHeaderDropdown
+                value={displayDate.getFullYear()}
+                options={yearOptions}
+                onChange={handleYearChange}
+                className="z-[100001]"
+                menuClassName="w-[120px]"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-7 gap-1">
+              {weekdayLabels.map((dayLabel) => (
+                <div
+                  key={dayLabel}
+                  className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                >
+                  {dayLabel}
+                </div>
+              ))}
+
+              {calendarDays.map((day) => {
+                const active =
+                  selectedDate && isSameDate(day.date, selectedDate);
+                const currentDay = isSameDate(day.date, today);
+
+                return (
+                  <button
+                    key={day.dateValue}
+                    type="button"
+                    onClick={() => handleSelectDate(day.date)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                      active
+                        ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
+                        : currentDay
+                          ? "bg-[#F2F6FA] text-sibs-primary-1"
+                          : day.isCurrentMonth
+                            ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                            : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                    }`}
+                  >
+                    {day.dayNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MultiSelectCheckboxGroup({ options, values, onChange }) {
+  function toggleValue(optionValue) {
+    if (values.includes(optionValue)) {
+      onChange(values.filter((item) => item !== optionValue));
+      return;
+    }
+
+    onChange([...values, optionValue]);
+  }
+
+  if (!options.length) {
+    return <EmptyOptionNotice />;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {options.map((option) => {
+        const optionValue = getOptionValue(option);
+        const optionLabel = getOptionLabel(option);
+
+        return (
+          <label
+            key={option?.id || optionValue}
+            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+          >
+            <input
+              type="checkbox"
+              checked={values.includes(optionValue)}
+              onChange={() => toggleValue(optionValue)}
+              className="h-4 w-4"
+            />
+            <span className="text-sm font-semibold text-gray-700">
+              {optionLabel}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function DatabaseSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select option",
+  required = true,
+  disabled = false,
+  zIndex = "z-[90]",
+}) {
+  return (
+    <HiringNeedsDropdown
       required={required}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={inputClass()}
-    >
-      <option value="">Select answer</option>
-      {yesNoOptions.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
+      disabled={disabled}
+      options={options}
+      placeholder={placeholder}
+      zIndex={zIndex}
+      onChange={onChange}
+    />
+  );
+}
+
+function YesNoSelect({ value, onChange, options, required = true }) {
+  return (
+    <DatabaseSelect
+      required={required}
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder="Select answer"
+    />
   );
 }
 
 function ExperienceFields({
   experience,
   onChange,
+  lengthOptions,
   title = "Industry or Relevant Experience",
   showRemove = false,
   onRemove,
@@ -414,9 +1006,7 @@ function ExperienceFields({
   return (
     <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">
-          {title}
-        </h4>
+        <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
 
         {showRemove && (
           <button
@@ -449,24 +1039,19 @@ function ExperienceFields({
           <FieldLabel>
             Length of work experience <RequiredMark />
           </FieldLabel>
-          <select
+          <DatabaseSelect
             required
             value={experience.lengthOfWorkExperience}
-            onChange={(e) =>
+            options={lengthOptions}
+            placeholder="Select length"
+            onChange={(value) =>
               onChange({
                 ...experience,
-                lengthOfWorkExperience: e.target.value,
+                lengthOfWorkExperience: value,
               })
             }
-            className={inputClass()}
-          >
-            <option value="">Select length</option>
-            {lengthOfExperienceOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            zIndex="z-[150]"
+          />
         </div>
 
         <div>
@@ -560,6 +1145,35 @@ function ExperienceFields({
 }
 
 export default function PublicTalentPoolApplicationPage() {
+  const audioFileRef = useRef(null);
+  const attachmentFileRef = useRef(null);
+  const audioInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
+  const fileSectionRef = useRef(null);
+  const consentRef = useRef(null);
+
+  const [form, setForm] = useState(emptyPublicForm);
+  const [submittedRecord, setSubmittedRecord] = useState(null);
+  const [activePositionOptions, setActivePositionOptions] = useState([]);
+  const [formOptions, setFormOptions] = useState(defaultFormOptions);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  const [highlightAudio, setHighlightAudio] = useState(false);
+  const [highlightAttachment, setHighlightAttachment] = useState(false);
+  const [highlightConsent, setHighlightConsent] = useState(false);
+
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const selectedAudioFile = audioFileRef.current || form.audioFile;
+  const selectedAttachmentFile = attachmentFileRef.current || form.attachmentFile;
+
   useEffect(() => {
     const styleId = "public-talent-pool-hide-sidebar-style";
 
@@ -606,29 +1220,77 @@ export default function PublicTalentPoolApplicationPage() {
     };
   }, []);
 
-  const [form, setForm] = useState(emptyPublicForm);
-  const [submittedRecord, setSubmittedRecord] = useState(null);
-  const [activePositionOptions, setActivePositionOptions] = useState([]);
-
   useEffect(() => {
-    function loadActivePositions() {
-      setActivePositionOptions(getActiveAvailablePositions());
-    }
+    let isMounted = true;
 
-    loadActivePositions();
+    async function loadDatabaseData() {
+      setIsLoadingData(true);
+      setLoadError("");
 
-    function handleStorageChange(event) {
-      if (!event || event.key === AVAILABLE_POSITIONS_STORAGE_KEY) {
-        loadActivePositions();
+      try {
+        const [optionsResponse, positionsResponse] = await Promise.all([
+          getTalentPoolFormOptions(),
+          getTalentPoolOpenPositions(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (!optionsResponse?.success) {
+          throw new Error(
+            optionsResponse?.message || "Failed to load form options.",
+          );
+        }
+
+        if (!positionsResponse?.success) {
+          throw new Error(
+            positionsResponse?.message || "Failed to load open positions.",
+          );
+        }
+
+        setFormOptions(normalizeOptionsPayload(optionsResponse?.data));
+
+        const positions = Array.isArray(positionsResponse?.data)
+          ? positionsResponse.data
+          : [];
+
+        setActivePositionOptions(
+          positions
+            .map(normalizePosition)
+            .filter(
+              (position) =>
+                position.positionTitle && position.status === "Active",
+            ),
+        );
+      } catch (error) {
+        console.error("Load public talent pool form data error:", error);
+
+        if (!isMounted) return;
+
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to load form data from database.";
+
+        setLoadError(errorMessage);
+        setFormOptions(defaultFormOptions);
+        setActivePositionOptions([]);
+
+        showStatusModal({
+          type: "error",
+          title: "Unable to load form",
+          message: errorMessage,
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
       }
     }
 
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("focus", loadActivePositions);
+    loadDatabaseData();
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("focus", loadActivePositions);
+      isMounted = false;
     };
   }, []);
 
@@ -639,26 +1301,150 @@ export default function PublicTalentPoolApplicationPage() {
     form.workExperience ===
     "Has work Experience (at least 6 months relevant work experience)";
 
+  const openPositionOptions = useMemo(() => {
+    return activePositionOptions.map((position) => ({
+      id: position.id || position.positionId || position.positionTitle,
+      value: position.positionTitle,
+      label: position.positionTitle,
+    }));
+  }, [activePositionOptions]);
+
   const canSubmit = useMemo(() => {
+    if (isLoadingData) return false;
+    if (isSubmitting) return false;
+    if (loadError) return false;
     if (isMinor) return false;
     return true;
-  }, [isMinor]);
+  }, [isLoadingData, isSubmitting, loadError, isMinor]);
 
-  function handleReset() {
-    setForm(emptyPublicForm);
-    setSubmittedRecord(null);
-  }
-
-  function handleFileChange(field, file) {
-    setForm({
-      ...form,
-      [field]: file || null,
+  function showStatusModal({ type = "success", title = "", message = "" }) {
+    setStatusModal({
+      open: true,
+      type,
+      title,
+      message,
     });
   }
 
+  function closeStatusModal() {
+    setStatusModal((previous) => ({
+      ...previous,
+      open: false,
+    }));
+  }
+
+  function scrollToRef(targetRef) {
+    window.setTimeout(() => {
+      targetRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  }
+
+  function updateFormField(field, value) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  function updateFormFields(nextFields) {
+    setForm((previous) => ({
+      ...previous,
+      ...nextFields,
+    }));
+  }
+
+  function handleReset() {
+    audioFileRef.current = null;
+    attachmentFileRef.current = null;
+
+    if (audioInputRef.current) {
+      audioInputRef.current.value = "";
+    }
+
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.value = "";
+    }
+
+    setForm(emptyPublicForm);
+    setSubmittedRecord(null);
+    setHighlightAudio(false);
+    setHighlightAttachment(false);
+    setHighlightConsent(false);
+
+    showStatusModal({
+      type: "success",
+      title: "Form reset",
+      message: "The application form has been cleared.",
+    });
+  }
+
+  function handleFileChange(field, file) {
+    if (!file) {
+      if (field === "audioFile") {
+        audioFileRef.current = null;
+        setHighlightAudio(false);
+      }
+
+      if (field === "attachmentFile") {
+        attachmentFileRef.current = null;
+        setHighlightAttachment(false);
+      }
+
+      updateFormField(field, null);
+      return true;
+    }
+
+    if (field === "audioFile" && !isAcceptedAudioFile(file)) {
+      audioFileRef.current = null;
+      setHighlightAudio(true);
+
+      updateFormField("audioFile", null);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid audio file",
+        message:
+          "Please upload a valid audio file. Accepted formats: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR, 3GP, OPUS, AIFF, CAF, or WMA.",
+      });
+
+      return false;
+    }
+
+    if (field === "attachmentFile" && !isAcceptedDocumentFile(file)) {
+      attachmentFileRef.current = null;
+      setHighlightAttachment(true);
+
+      updateFormField("attachmentFile", null);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid supporting file",
+        message:
+          "Please upload a valid supporting file. Accepted formats: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, or GIF.",
+      });
+
+      return false;
+    }
+
+    if (field === "audioFile") {
+      audioFileRef.current = file;
+      setHighlightAudio(false);
+    }
+
+    if (field === "attachmentFile") {
+      attachmentFileRef.current = file;
+      setHighlightAttachment(false);
+    }
+
+    updateFormField(field, file);
+    return true;
+  }
+
   function updatePrimaryExperience(nextExperience) {
-    setForm({
-      ...form,
+    updateFormFields({
       industryRelevantExperience: nextExperience.industryRelevantExperience,
       lengthOfWorkExperience: nextExperience.lengthOfWorkExperience,
       years: nextExperience.years,
@@ -670,61 +1456,257 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   function updateOtherExperience(index, nextExperience) {
-    setForm({
-      ...form,
-      otherExperiences: form.otherExperiences.map((experience, itemIndex) =>
-        itemIndex === index ? nextExperience : experience
+    setForm((previous) => ({
+      ...previous,
+      otherExperiences: previous.otherExperiences.map(
+        (experience, itemIndex) =>
+          itemIndex === index ? nextExperience : experience,
       ),
-    });
+    }));
   }
 
   function addOtherExperience() {
-    setForm({
-      ...form,
+    setForm((previous) => ({
+      ...previous,
       hasOtherExperience: "Yes",
-      otherExperiences: [...form.otherExperiences, createEmptyExperience()],
-    });
+      otherExperiences: [...previous.otherExperiences, createEmptyExperience()],
+    }));
   }
 
   function removeOtherExperience(index) {
-    const nextOtherExperiences = form.otherExperiences.filter(
-      (_, itemIndex) => itemIndex !== index
-    );
+    setForm((previous) => {
+      const nextOtherExperiences = previous.otherExperiences.filter(
+        (_, itemIndex) => itemIndex !== index,
+      );
 
-    setForm({
-      ...form,
-      otherExperiences: nextOtherExperiences,
-      hasOtherExperience:
-        nextOtherExperiences.length > 0 ? form.hasOtherExperience : "No",
+      return {
+        ...previous,
+        otherExperiences: nextOtherExperiences,
+        hasOtherExperience:
+          nextOtherExperiences.length > 0
+            ? previous.hasOtherExperience
+            : "No",
+      };
     });
   }
 
   function handleOtherExperienceAnswer(value) {
-    setForm({
-      ...form,
+    setForm((previous) => ({
+      ...previous,
       hasOtherExperience: value,
       otherExperiences:
         value === "Yes"
-          ? form.otherExperiences.length > 0
-            ? form.otherExperiences
+          ? previous.otherExperiences.length > 0
+            ? previous.otherExperiences
             : [createEmptyExperience()]
           : [],
-    });
+    }));
   }
 
   function validateBeforeSubmit() {
+    const currentAudioFile = audioFileRef.current || form.audioFile;
+    const currentAttachmentFile =
+      attachmentFileRef.current || form.attachmentFile;
+
+    if (isLoadingData) {
+      showStatusModal({
+        type: "error",
+        title: "Please wait",
+        message: "Please wait while the form data is loading.",
+      });
+      return false;
+    }
+
+    if (loadError) {
+      showStatusModal({
+        type: "error",
+        title: "Form data error",
+        message: loadError,
+      });
+      return false;
+    }
+
+    if (!activePositionOptions.length) {
+      showStatusModal({
+        type: "error",
+        title: "No active positions",
+        message: "No active open positions are configured in the database.",
+      });
+      return false;
+    }
+
+    if (formOptions.hearAboutUs.length === 0) {
+      showStatusModal({
+        type: "error",
+        title: "Missing source options",
+        message: "No application source options are configured in the database.",
+      });
+      return false;
+    }
+
     if (form.hearAboutUs.length === 0) {
-      alert("Please select at least one source under How did you first hear about us?");
+      showStatusModal({
+        type: "error",
+        title: "Application source required",
+        message:
+          "Please select at least one source under How did you first hear about us?",
+      });
       return false;
     }
 
     if (!form.openPosition) {
-      alert("Please select an active open position.");
+      showStatusModal({
+        type: "error",
+        title: "Open position required",
+        message: "Please select an active open position.",
+      });
+      return false;
+    }
+
+    if (!form.applyingLocation) {
+      showStatusModal({
+        type: "error",
+        title: "Location required",
+        message: "Please select which location you are applying for.",
+      });
+      return false;
+    }
+
+    if (!form.firstName.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "First name required",
+        message: "Please enter your first name.",
+      });
+      return false;
+    }
+
+    if (!form.lastName.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "Last name required",
+        message: "Please enter your last name.",
+      });
+      return false;
+    }
+
+    if (!form.dateOfBirth) {
+      showStatusModal({
+        type: "error",
+        title: "Date of birth required",
+        message: "Please select your date of birth.",
+      });
+      return false;
+    }
+
+    if (!form.email.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "Email required",
+        message: "Please enter your email address.",
+      });
+      return false;
+    }
+
+    if (!form.physicalAddress.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "Physical address required",
+        message: "Please enter your complete physical address.",
+      });
+      return false;
+    }
+
+    if (!form.workExperience) {
+      showStatusModal({
+        type: "error",
+        title: "Work experience required",
+        message: "Please select your work experience.",
+      });
+      return false;
+    }
+
+    if (!form.highestEducationalAttainment) {
+      showStatusModal({
+        type: "error",
+        title: "Educational attainment required",
+        message: "Please select your highest educational attainment.",
+      });
+      return false;
+    }
+
+    if (!form.fullyVaccinated) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message: "Please answer if you are fully vaccinated.",
+      });
+      return false;
+    }
+
+    if (!form.comfortableOnSite) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message: "Please answer if you are comfortable working on site.",
+      });
+      return false;
+    }
+
+    if (!form.willingGraveyard) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message: "Please answer if you are willing to work in graveyard shift.",
+      });
+      return false;
+    }
+
+    if (!form.employmentInterest) {
+      showStatusModal({
+        type: "error",
+        title: "Employment preference required",
+        message: "Please select your employment preference.",
+      });
+      return false;
+    }
+
+    if (!form.remoteWorkAccess) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message:
+          "Please answer if you have access to a computer, internet connection, and private space.",
+      });
+      return false;
+    }
+
+    if (!form.willingDrugTest) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message:
+          "Please answer if you are willing to undertake a drug test as part of this hiring process.",
+      });
+      return false;
+    }
+
+    if (!form.willingBackgroundCheck) {
+      showStatusModal({
+        type: "error",
+        title: "Missing required field",
+        message:
+          "Please answer if you are willing to undergo a background check.",
+      });
       return false;
     }
 
     if (isMinor) {
-      alert("Applicant is below 18 years old as of date of application.");
+      showStatusModal({
+        type: "error",
+        title: "Applicant is below 18",
+        message: "Applicant is below 18 years old as of date of application.",
+      });
       return false;
     }
 
@@ -740,17 +1722,25 @@ export default function PublicTalentPoolApplicationPage() {
       ];
 
       const missingField = requiredExperienceFields.find(
-        ([value]) => !String(value || "").trim()
+        ([value]) => !String(value || "").trim(),
       );
 
       if (missingField) {
-        alert(`${missingField[1]} is required.`);
+        showStatusModal({
+          type: "error",
+          title: "Missing required field",
+          message: `${missingField[1]} is required.`,
+        });
         return false;
       }
 
       if (form.hasOtherExperience === "Yes") {
         if (!form.otherExperiences.length) {
-          alert("Please add your other work experience details.");
+          showStatusModal({
+            type: "error",
+            title: "Other experience required",
+            message: "Please add your other work experience details.",
+          });
           return false;
         }
 
@@ -766,29 +1756,83 @@ export default function PublicTalentPoolApplicationPage() {
         const hasIncompleteOtherExperience = form.otherExperiences.some(
           (experience) =>
             requiredOtherExperienceFields.some(
-              (field) => !String(experience[field] || "").trim()
-            )
+              (field) => !String(experience[field] || "").trim(),
+            ),
         );
 
         if (hasIncompleteOtherExperience) {
-          alert("Please complete all required fields in your other work experience.");
+          showStatusModal({
+            type: "error",
+            title: "Incomplete other experience",
+            message:
+              "Please complete all required fields in your other work experience.",
+          });
           return false;
         }
       }
     }
 
-    if (!form.audioFile) {
-      alert("Please upload a single audio file for the interview questions.");
+    if (!currentAudioFile) {
+      setHighlightAudio(true);
+      scrollToRef(fileSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Audio file required",
+        message:
+          "Please upload a single audio file. Click the audio upload box and select your MP3 file again.",
+      });
       return false;
     }
 
-    if (!form.attachmentFile) {
-      alert("Please upload your supporting document or file.");
+    if (!isAcceptedAudioFile(currentAudioFile)) {
+      setHighlightAudio(true);
+      scrollToRef(fileSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid audio file",
+        message:
+          "Please upload a valid audio file. Accepted formats: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC, AMR, 3GP, OPUS, AIFF, CAF, or WMA.",
+      });
+      return false;
+    }
+
+    if (!currentAttachmentFile) {
+      setHighlightAttachment(true);
+      scrollToRef(fileSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Supporting file required",
+        message: "Please upload your supporting document or file.",
+      });
+      return false;
+    }
+
+    if (!isAcceptedDocumentFile(currentAttachmentFile)) {
+      setHighlightAttachment(true);
+      scrollToRef(fileSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid supporting file",
+        message:
+          "Please upload a valid supporting file. Accepted formats: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, PNG, or GIF.",
+      });
       return false;
     }
 
     if (!form.consent) {
-      alert("Please agree to the terms and conditions before submitting.");
+      setHighlightConsent(true);
+      scrollToRef(consentRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Consent required",
+        message:
+          "Please check the consent box at the bottom of the form before submitting.",
+      });
       return false;
     }
 
@@ -800,163 +1844,78 @@ export default function PublicTalentPoolApplicationPage() {
 
     if (!validateBeforeSubmit()) return;
 
-    const today = getTodayDate();
-    const audioFileDataUrl = await readFileAsDataUrl(form.audioFile);
-    const attachmentFileDataUrl = await readFileAsDataUrl(form.attachmentFile);
-    const applicationSource = form.hearAboutUs.join(", ");
+    setIsSubmitting(true);
 
-    const newSubmission = {
-      id: Date.now(),
-      candidateId: generatePublicCandidateId(),
-
-      hearAboutUs: form.hearAboutUs,
-      openPosition: form.openPosition,
-      nickname: form.nickname.trim(),
-      applyingLocation: form.applyingLocation,
-      referredBy: form.referredBy.trim(),
-      employeeId: form.employeeId.trim(),
-
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      middleName: form.middleName.trim(),
-      suffix: form.suffix.trim(),
-      name: buildFullName(form),
-      dateOfBirth: form.dateOfBirth,
-      ageAsOfApplication: age,
-      email: form.email.trim(),
-      physicalAddress: form.physicalAddress.trim(),
-      workExperience: form.workExperience,
-      contactNumber: form.phone1.trim(),
-      phone1: form.phone1.trim(),
-      phone2: form.phone2.trim(),
-
-      industryRelevantExperience: form.industryRelevantExperience.trim(),
-      lengthOfWorkExperience: hasRelevantExperience
-        ? form.lengthOfWorkExperience
-        : "",
-      years: hasRelevantExperience ? form.years.trim() : "",
-      role: hasRelevantExperience ? form.role.trim() : "",
-      company: hasRelevantExperience ? form.company.trim() : "",
-      monthlyCompensation: hasRelevantExperience
-        ? form.monthlyCompensation.trim()
-        : "",
-      reasonForLeaving: hasRelevantExperience
-        ? form.reasonForLeaving.trim()
-        : "",
-      hasOtherExperience: hasRelevantExperience ? form.hasOtherExperience : "",
-      workExperiences: hasRelevantExperience
-        ? [
-            {
-              industryRelevantExperience:
-                form.industryRelevantExperience.trim(),
-              lengthOfWorkExperience: form.lengthOfWorkExperience,
-              years: form.years.trim(),
-              role: form.role.trim(),
-              company: form.company.trim(),
-              monthlyCompensation: form.monthlyCompensation.trim(),
-              reasonForLeaving: form.reasonForLeaving.trim(),
-            },
-            ...(form.hasOtherExperience === "Yes"
-              ? form.otherExperiences.map((experience) => ({
-                  industryRelevantExperience:
-                    experience.industryRelevantExperience.trim(),
-                  lengthOfWorkExperience:
-                    experience.lengthOfWorkExperience,
-                  years: experience.years.trim(),
-                  role: experience.role.trim(),
-                  company: experience.company.trim(),
-                  monthlyCompensation:
-                    experience.monthlyCompensation.trim(),
-                  reasonForLeaving:
-                    experience.reasonForLeaving.trim(),
-                }))
-              : []),
-          ]
-        : [],
-      otherExperiences: hasRelevantExperience && form.hasOtherExperience === "Yes"
-        ? form.otherExperiences.map((experience) => ({
-            industryRelevantExperience:
-              experience.industryRelevantExperience.trim(),
-            lengthOfWorkExperience: experience.lengthOfWorkExperience,
-            years: experience.years.trim(),
-            role: experience.role.trim(),
-            company: experience.company.trim(),
-            monthlyCompensation: experience.monthlyCompensation.trim(),
-            reasonForLeaving: experience.reasonForLeaving.trim(),
-          }))
-        : [],
-
-      highestEducationalAttainment: form.highestEducationalAttainment,
-      affiliationsAndCertifications: form.affiliationsAndCertifications,
-      trainingAttended: form.trainingAttended.trim(),
-
-      fullyVaccinated: form.fullyVaccinated,
-      comfortableOnSite: form.comfortableOnSite,
-      willingGraveyard: form.willingGraveyard,
-      employmentInterest: form.employmentInterest,
-      remoteWorkAccess: form.remoteWorkAccess,
-      willingDrugTest: form.willingDrugTest,
-      willingBackgroundCheck: form.willingBackgroundCheck,
-
-      references: [
-        {
-          name: form.reference1Name.trim(),
-          phone: form.reference1Phone.trim(),
-        },
-        {
-          name: form.reference2Name.trim(),
-          phone: form.reference2Phone.trim(),
-        },
-        {
-          name: form.reference3Name.trim(),
-          phone: form.reference3Phone.trim(),
-        },
-      ],
-
-      audioFileName: form.audioFile?.name || "",
-      audioFileType: form.audioFile?.type || "",
-      audioFileSize: form.audioFile?.size || 0,
-      audioFileDataUrl,
-      audioFileUrl: audioFileDataUrl,
-      attachmentFileName: form.attachmentFile?.name || "",
-      attachmentFileType: form.attachmentFile?.type || "",
-      attachmentFileSize: form.attachmentFile?.size || 0,
-      attachmentFileDataUrl,
-      attachmentFileUrl: attachmentFileDataUrl,
-
-      source: applicationSource,
-      entryType: "Public Application",
-      createdBy: "Candidate",
-      createdBySibsId: "",
-      createdAt: today,
-      status: "New Applicant",
-      submittedAt: today,
-      isPublicSubmission: true,
+    const submitForm = {
+      ...form,
+      audioFile: audioFileRef.current || form.audioFile,
+      attachmentFile: attachmentFileRef.current || form.attachmentFile,
     };
 
-    const existing = readLocalStorage(PUBLIC_SUBMISSIONS_KEY, []);
-    const updated = [newSubmission, ...existing];
+    try {
+      const response = await submitPublicTalentPoolApplication(submitForm);
 
-    writeLocalStorage(PUBLIC_SUBMISSIONS_KEY, updated);
+      if (!response?.success) {
+        showStatusModal({
+          type: "error",
+          title: "Application not saved",
+          message:
+            response?.message ||
+            "The application was not saved. Please check the required fields and try again.",
+        });
+        return;
+      }
 
-    setSubmittedRecord(newSubmission);
-    setForm(emptyPublicForm);
+      const savedSubmission = response?.data;
 
-    /*
-      BACKEND LATER:
+      audioFileRef.current = null;
+      attachmentFileRef.current = null;
 
-      Use FormData because this form has file uploads.
+      if (audioInputRef.current) {
+        audioInputRef.current.value = "";
+      }
 
-      POST /api/public/recruitment/candidates
+      if (attachmentInputRef.current) {
+        attachmentInputRef.current.value = "";
+      }
 
-      Backend should store:
-      - candidate profile fields
-      - audio file
-      - attachment file
-      - source = selected answer/s from How did you first hear about us
-      - status = New Applicant
-      - is_public_submission = true
-    */
+      setSubmittedRecord(savedSubmission);
+      setForm(emptyPublicForm);
+      setHighlightAudio(false);
+      setHighlightAttachment(false);
+      setHighlightConsent(false);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("ta-public-submissions-updated", {
+            detail: savedSubmission,
+          }),
+        );
+      }
+
+      showStatusModal({
+        type: "success",
+        title: "Application saved",
+        message: `Your application has been submitted successfully.${
+          savedSubmission?.candidateId
+            ? `\n\nTracking ID: ${savedSubmission.candidateId}`
+            : ""
+        }\n\nOur Talent Acquisition team will review your profile.`,
+      });
+    } catch (error) {
+      console.error("Submit public talent pool application error:", error);
+
+      showStatusModal({
+        type: "error",
+        title: "Application not saved",
+        message:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to submit application. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -993,6 +1952,12 @@ export default function PublicTalentPoolApplicationPage() {
           </div>
         </section>
 
+        {loadError && (
+          <section className="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm font-bold text-red-700">
+            {loadError}
+          </section>
+        )}
+
         {submittedRecord && (
           <section className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
             <div className="flex items-start gap-3">
@@ -1005,7 +1970,7 @@ export default function PublicTalentPoolApplicationPage() {
                   Application submitted successfully
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-emerald-700/80">
-                  Your temporary tracking ID is{" "}
+                  Your tracking ID is{" "}
                   <span className="font-extrabold">
                     {submittedRecord.candidateId}
                   </span>
@@ -1026,7 +1991,9 @@ export default function PublicTalentPoolApplicationPage() {
                 Candidate Information
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Please complete the required details before submitting.
+                {isLoadingData
+                  ? "Loading form data from database..."
+                  : "Please complete the required details before submitting."}
               </p>
             </div>
 
@@ -1041,11 +2008,9 @@ export default function PublicTalentPoolApplicationPage() {
                     How did you first hear about us? <RequiredMark />
                   </FieldLabel>
                   <MultiSelectCheckboxGroup
-                    options={hearAboutUsOptions}
+                    options={formOptions.hearAboutUs}
                     values={form.hearAboutUs}
-                    onChange={(values) =>
-                      setForm({ ...form, hearAboutUs: values })
-                    }
+                    onChange={(values) => updateFormField("hearAboutUs", values)}
                   />
                 </div>
 
@@ -1054,26 +2019,25 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Check our open positions <RequiredMark />
                     </FieldLabel>
-                    <select
+                    <DatabaseSelect
                       required
                       value={form.openPosition}
-                      onChange={(e) =>
-                        setForm({ ...form, openPosition: e.target.value })
+                      disabled={isLoadingData || !activePositionOptions.length}
+                      options={openPositionOptions}
+                      placeholder={
+                        isLoadingData
+                          ? "Loading positions..."
+                          : activePositionOptions.length
+                            ? "Select open position"
+                            : "No active positions found"
                       }
-                      className={inputClass()}
-                    >
-                      <option value="">Select open position</option>
-                      {activePositionOptions.map((position) => (
-                        <option
-                          key={position.positionId || position.positionTitle}
-                          value={position.positionTitle}
-                        >
-                          {position.positionTitle}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) =>
+                        updateFormField("openPosition", value)
+                      }
+                      zIndex="z-[200]"
+                    />
                     <p className="mt-2 text-xs font-semibold text-gray-500">
-                      Only positions marked Active in Available Positions are shown here.
+                      Only active positions from the database are shown here.
                     </p>
                   </div>
 
@@ -1082,7 +2046,7 @@ export default function PublicTalentPoolApplicationPage() {
                     <input
                       value={form.nickname}
                       onChange={(e) =>
-                        setForm({ ...form, nickname: e.target.value })
+                        updateFormField("nickname", e.target.value)
                       }
                       placeholder="Preferred nickname"
                       className={inputClass()}
@@ -1093,24 +2057,16 @@ export default function PublicTalentPoolApplicationPage() {
                     <FieldLabel>
                       Which location are you applying for? <RequiredMark />
                     </FieldLabel>
-                    <select
+                    <DatabaseSelect
                       required
                       value={form.applyingLocation}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          applyingLocation: e.target.value,
-                        })
+                      options={formOptions.locations}
+                      placeholder="Select location"
+                      onChange={(value) =>
+                        updateFormField("applyingLocation", value)
                       }
-                      className={inputClass()}
-                    >
-                      <option value="">Select location</option>
-                      {locationOptions.map((location) => (
-                        <option key={location} value={location}>
-                          {location}
-                        </option>
-                      ))}
-                    </select>
+                      zIndex="z-[190]"
+                    />
                   </div>
 
                   <div>
@@ -1121,7 +2077,7 @@ export default function PublicTalentPoolApplicationPage() {
                       required
                       value={form.referredBy}
                       onChange={(e) =>
-                        setForm({ ...form, referredBy: e.target.value })
+                        updateFormField("referredBy", e.target.value)
                       }
                       placeholder="Referrer name or N/A"
                       className={inputClass()}
@@ -1136,7 +2092,7 @@ export default function PublicTalentPoolApplicationPage() {
                       required
                       value={form.employeeId}
                       onChange={(e) =>
-                        setForm({ ...form, employeeId: e.target.value })
+                        updateFormField("employeeId", e.target.value)
                       }
                       placeholder="Referrer employee ID or N/A"
                       className={inputClass()}
@@ -1157,12 +2113,11 @@ export default function PublicTalentPoolApplicationPage() {
                     First Name <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.firstName}
                     onChange={(e) =>
-                      setForm({ ...form, firstName: e.target.value })
+                      updateFormField("firstName", e.target.value)
                     }
-                    placeholder="Juan"
+                    placeholder="Enter first name"
                     className={inputClass()}
                   />
                 </div>
@@ -1172,12 +2127,11 @@ export default function PublicTalentPoolApplicationPage() {
                     Last Name <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.lastName}
                     onChange={(e) =>
-                      setForm({ ...form, lastName: e.target.value })
+                      updateFormField("lastName", e.target.value)
                     }
-                    placeholder="Dela Cruz"
+                    placeholder="Enter last name"
                     className={inputClass()}
                   />
                 </div>
@@ -1187,9 +2141,9 @@ export default function PublicTalentPoolApplicationPage() {
                   <input
                     value={form.middleName}
                     onChange={(e) =>
-                      setForm({ ...form, middleName: e.target.value })
+                      updateFormField("middleName", e.target.value)
                     }
-                    placeholder="Santos"
+                    placeholder="Enter middle name"
                     className={inputClass()}
                   />
                 </div>
@@ -1199,7 +2153,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <input
                     value={form.suffix}
                     onChange={(e) =>
-                      setForm({ ...form, suffix: e.target.value })
+                      updateFormField("suffix", e.target.value)
                     }
                     placeholder="Jr., Sr., III"
                     className={inputClass()}
@@ -1210,18 +2164,12 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Date of Birth <RequiredMark />
                   </FieldLabel>
-                  <input
-                    required
-                    type="date"
+
+                  <CalendarDatePicker
                     value={form.dateOfBirth}
-                    onChange={(e) =>
-                      setForm({ ...form, dateOfBirth: e.target.value })
-                    }
-                    className={`h-11 w-full rounded-xl border bg-white px-4 text-sm font-semibold outline-none transition focus:ring-4 ${
-                      isMinor
-                        ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
-                        : "border-gray-200 focus:border-[var(--sibs-primary-1)] focus:ring-[var(--sibs-primary-1)]/10"
-                    }`}
+                    onChange={(value) => updateFormField("dateOfBirth", value)}
+                    placeholder="Select date"
+                    hasError={isMinor}
                   />
 
                   {age !== null && (
@@ -1241,13 +2189,10 @@ export default function PublicTalentPoolApplicationPage() {
                     Email <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     type="email"
                     value={form.email}
-                    onChange={(e) =>
-                      setForm({ ...form, email: e.target.value })
-                    }
-                    placeholder="candidate@email.com"
+                    onChange={(e) => updateFormField("email", e.target.value)}
+                    placeholder="Enter email"
                     className={inputClass()}
                   />
                 </div>
@@ -1256,9 +2201,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>Phone 1</FieldLabel>
                   <input
                     value={form.phone1}
-                    onChange={(e) =>
-                      setForm({ ...form, phone1: e.target.value })
-                    }
+                    onChange={(e) => updateFormField("phone1", e.target.value)}
                     placeholder="09xxxxxxxxx"
                     className={inputClass()}
                   />
@@ -1268,9 +2211,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>Phone 2</FieldLabel>
                   <input
                     value={form.phone2}
-                    onChange={(e) =>
-                      setForm({ ...form, phone2: e.target.value })
-                    }
+                    onChange={(e) => updateFormField("phone2", e.target.value)}
                     placeholder="Optional"
                     className={inputClass()}
                   />
@@ -1281,10 +2222,9 @@ export default function PublicTalentPoolApplicationPage() {
                     Physical Address <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.physicalAddress}
                     onChange={(e) =>
-                      setForm({ ...form, physicalAddress: e.target.value })
+                      updateFormField("physicalAddress", e.target.value)
                     }
                     placeholder="Complete physical address"
                     className={inputClass()}
@@ -1303,32 +2243,25 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Work experience <RequiredMark />
                   </FieldLabel>
-                  <select
+                  <DatabaseSelect
                     required
                     value={form.workExperience}
-                    onChange={(e) =>
-                      setForm({ ...form, workExperience: e.target.value })
-                    }
-                    className={inputClass()}
-                  >
-                    <option value="">Select work experience</option>
-                    {workExperienceOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    options={formOptions.workExperience}
+                    placeholder="Select work experience"
+                    onChange={(value) => updateFormField("workExperience", value)}
+                    zIndex="z-[180]"
+                  />
                 </div>
 
                 {hasRelevantExperience && (
                   <div className="space-y-4">
                     <ExperienceFields
                       title="Industry or Relevant Experience"
+                      lengthOptions={formOptions.lengthOfExperience}
                       experience={{
                         industryRelevantExperience:
                           form.industryRelevantExperience,
-                        lengthOfWorkExperience:
-                          form.lengthOfWorkExperience,
+                        lengthOfWorkExperience: form.lengthOfWorkExperience,
                         years: form.years,
                         role: form.role,
                         company: form.company,
@@ -1345,6 +2278,7 @@ export default function PublicTalentPoolApplicationPage() {
                           <YesNoSelect
                             required={false}
                             value={form.hasOtherExperience}
+                            options={formOptions.yesNo}
                             onChange={handleOtherExperienceAnswer}
                           />
                         </div>
@@ -1366,6 +2300,7 @@ export default function PublicTalentPoolApplicationPage() {
                         <ExperienceFields
                           key={`other-experience-${index}`}
                           title={`Other Experience ${index + 1}`}
+                          lengthOptions={formOptions.lengthOfExperience}
                           experience={experience}
                           onChange={(nextExperience) =>
                             updateOtherExperience(index, nextExperience)
@@ -1389,36 +2324,25 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Highest Educational Attainment <RequiredMark />
                   </FieldLabel>
-                  <select
+                  <DatabaseSelect
                     required
                     value={form.highestEducationalAttainment}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        highestEducationalAttainment: e.target.value,
-                      })
+                    options={formOptions.educationalAttainment}
+                    placeholder="Select educational attainment"
+                    onChange={(value) =>
+                      updateFormField("highestEducationalAttainment", value)
                     }
-                    className={inputClass()}
-                  >
-                    <option value="">Select educational attainment</option>
-                    {educationalAttainmentOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                    zIndex="z-[170]"
+                  />
                 </div>
 
                 <div>
                   <FieldLabel>Affiliations and Certifications</FieldLabel>
                   <MultiSelectCheckboxGroup
-                    options={affiliationCertificationOptions}
+                    options={formOptions.affiliationCertification}
                     values={form.affiliationsAndCertifications}
                     onChange={(values) =>
-                      setForm({
-                        ...form,
-                        affiliationsAndCertifications: values,
-                      })
+                      updateFormField("affiliationsAndCertifications", values)
                     }
                   />
                 </div>
@@ -1428,7 +2352,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <textarea
                     value={form.trainingAttended}
                     onChange={(e) =>
-                      setForm({ ...form, trainingAttended: e.target.value })
+                      updateFormField("trainingAttended", e.target.value)
                     }
                     placeholder="List trainings attended"
                     rows={4}
@@ -1450,8 +2374,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.fullyVaccinated}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, fullyVaccinated: value })
+                      updateFormField("fullyVaccinated", value)
                     }
                   />
                 </div>
@@ -1462,8 +2387,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.comfortableOnSite}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, comfortableOnSite: value })
+                      updateFormField("comfortableOnSite", value)
                     }
                   />
                 </div>
@@ -1474,8 +2400,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.willingGraveyard}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, willingGraveyard: value })
+                      updateFormField("willingGraveyard", value)
                     }
                   />
                 </div>
@@ -1484,24 +2411,16 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Full-time, part-time, or either? <RequiredMark />
                   </FieldLabel>
-                  <select
+                  <DatabaseSelect
                     required
                     value={form.employmentInterest}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        employmentInterest: e.target.value,
-                      })
+                    options={formOptions.employmentInterest}
+                    placeholder="Select employment preference"
+                    onChange={(value) =>
+                      updateFormField("employmentInterest", value)
                     }
-                    className={inputClass()}
-                  >
-                    <option value="">Select employment preference</option>
-                    {employmentInterestOptions.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    zIndex="z-[160]"
+                  />
                 </div>
 
                 <div className="md:col-span-2">
@@ -1512,8 +2431,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.remoteWorkAccess}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, remoteWorkAccess: value })
+                      updateFormField("remoteWorkAccess", value)
                     }
                   />
                 </div>
@@ -1525,8 +2445,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.willingDrugTest}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, willingDrugTest: value })
+                      updateFormField("willingDrugTest", value)
                     }
                   />
                 </div>
@@ -1538,8 +2459,9 @@ export default function PublicTalentPoolApplicationPage() {
                   </FieldLabel>
                   <YesNoSelect
                     value={form.willingBackgroundCheck}
+                    options={formOptions.yesNo}
                     onChange={(value) =>
-                      setForm({ ...form, willingBackgroundCheck: value })
+                      updateFormField("willingBackgroundCheck", value)
                     }
                   />
                 </div>
@@ -1557,10 +2479,9 @@ export default function PublicTalentPoolApplicationPage() {
                     Reference 1 <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.reference1Name}
                     onChange={(e) =>
-                      setForm({ ...form, reference1Name: e.target.value })
+                      updateFormField("reference1Name", e.target.value)
                     }
                     placeholder="Reference 1 name"
                     className={inputClass()}
@@ -1572,7 +2493,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <input
                     value={form.reference1Phone}
                     onChange={(e) =>
-                      setForm({ ...form, reference1Phone: e.target.value })
+                      updateFormField("reference1Phone", e.target.value)
                     }
                     placeholder="Reference 1 phone"
                     className={inputClass()}
@@ -1584,10 +2505,9 @@ export default function PublicTalentPoolApplicationPage() {
                     Reference 2 <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.reference2Name}
                     onChange={(e) =>
-                      setForm({ ...form, reference2Name: e.target.value })
+                      updateFormField("reference2Name", e.target.value)
                     }
                     placeholder="Reference 2 name"
                     className={inputClass()}
@@ -1599,7 +2519,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <input
                     value={form.reference2Phone}
                     onChange={(e) =>
-                      setForm({ ...form, reference2Phone: e.target.value })
+                      updateFormField("reference2Phone", e.target.value)
                     }
                     placeholder="Reference 2 phone"
                     className={inputClass()}
@@ -1611,10 +2531,9 @@ export default function PublicTalentPoolApplicationPage() {
                     Reference 3 <RequiredMark />
                   </FieldLabel>
                   <input
-                    required
                     value={form.reference3Name}
                     onChange={(e) =>
-                      setForm({ ...form, reference3Name: e.target.value })
+                      updateFormField("reference3Name", e.target.value)
                     }
                     placeholder="Reference 3 name"
                     className={inputClass()}
@@ -1626,7 +2545,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <input
                     value={form.reference3Phone}
                     onChange={(e) =>
-                      setForm({ ...form, reference3Phone: e.target.value })
+                      updateFormField("reference3Phone", e.target.value)
                     }
                     placeholder="Reference 3 phone"
                     className={inputClass()}
@@ -1635,99 +2554,195 @@ export default function PublicTalentPoolApplicationPage() {
               </div>
             </SectionCard>
 
-            <SectionCard
-              icon={Mic}
-              title="Audio and File Upload"
-              description="Upload a single audio file answering the listed questions and one supporting document/file."
+            <div ref={fileSectionRef}>
+              <SectionCard
+                icon={Mic}
+                title="Audio and File Upload"
+                description="Upload a single audio file answering the listed questions and one supporting document/file."
+              >
+                <div className="space-y-5">
+                  <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
+                    <p className="font-extrabold">
+                      Your audio file must answer these questions:
+                    </p>
+
+                    {formOptions.audioQuestions.length ? (
+                      <ul className="mt-2 list-disc space-y-1 pl-5">
+                        {formOptions.audioQuestions.map((question) => (
+                          <li key={question.id || getOptionValue(question)}>
+                            {getOptionLabel(question)}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-2">
+                        No audio questions configured in the database.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <FieldLabel>
+                      Upload single audio file <RequiredMark />
+                    </FieldLabel>
+                    <label
+                      className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                        highlightAudio && !selectedAudioFile
+                          ? "border-red-300 bg-red-50 ring-4 ring-red-100"
+                          : selectedAudioFile
+                            ? "border-emerald-300 bg-emerald-50"
+                            : "border-gray-300 bg-gray-50"
+                      }`}
+                    >
+                      <Mic
+                        size={26}
+                        className={
+                          selectedAudioFile
+                            ? "text-emerald-700"
+                            : "text-sibs-primary-1"
+                        }
+                      />
+                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                        {selectedAudioFile?.name || "Choose audio file"}
+                      </p>
+                      {selectedAudioFile && (
+                        <p className="mt-1 text-xs font-bold text-emerald-700">
+                          Audio selected • {formatFileSize(selectedAudioFile)}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs font-semibold text-gray-500">
+                        Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC,
+                        AMR, 3GP, OPUS, AIFF, CAF, WMA
+                      </p>
+                      <input
+                        ref={audioInputRef}
+                        type="file"
+                        accept={acceptedAudioTypes}
+                        onChange={(e) => {
+                          const accepted = handleFileChange(
+                            "audioFile",
+                            e.target.files?.[0],
+                          );
+
+                          if (!accepted) {
+                            e.target.value = "";
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {highlightAudio && !selectedAudioFile && (
+                      <p className="mt-2 text-sm font-bold text-red-600">
+                        Please upload your audio file before submitting.
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <FieldLabel>
+                      Upload supporting file <RequiredMark />
+                    </FieldLabel>
+                    <label
+                      className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                        highlightAttachment && !selectedAttachmentFile
+                          ? "border-red-300 bg-red-50 ring-4 ring-red-100"
+                          : selectedAttachmentFile
+                            ? "border-emerald-300 bg-emerald-50"
+                            : "border-gray-300 bg-gray-50"
+                      }`}
+                    >
+                      <UploadCloud
+                        size={26}
+                        className={
+                          selectedAttachmentFile
+                            ? "text-emerald-700"
+                            : "text-sibs-primary-1"
+                        }
+                      />
+                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                        {selectedAttachmentFile?.name || "Choose file"}
+                      </p>
+                      {selectedAttachmentFile && (
+                        <p className="mt-1 text-xs font-bold text-emerald-700">
+                          File selected • {formatFileSize(selectedAttachmentFile)}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs font-semibold text-gray-500">
+                        PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
+                      </p>
+                      <input
+                        ref={attachmentInputRef}
+                        type="file"
+                        accept={acceptedDocumentTypes}
+                        onChange={(e) => {
+                          const accepted = handleFileChange(
+                            "attachmentFile",
+                            e.target.files?.[0],
+                          );
+
+                          if (!accepted) {
+                            e.target.value = "";
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {highlightAttachment && !selectedAttachmentFile && (
+                      <p className="mt-2 text-sm font-bold text-red-600">
+                        Please upload your supporting file before submitting.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+
+            <div
+              ref={consentRef}
+              className={`rounded-3xl border p-5 transition ${
+                highlightConsent && !form.consent
+                  ? "border-red-300 bg-red-50 ring-4 ring-red-100"
+                  : "border-gray-100 bg-gray-50"
+              }`}
             >
-              <div className="space-y-5">
-                <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
-                  <p className="font-extrabold">
-                    Your audio file must answer these questions:
-                  </p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">
-                    <li>Why did you apply for this position?</li>
-                    <li>Why would you like to work with our company?</li>
-                    <li>
-                      How does this position fit in with your long-term goals?
-                    </li>
-                    <li>How did you learn about this job or source card?</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Upload single audio file <RequiredMark />
-                  </FieldLabel>
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5">
-                    <Mic size={26} className="text-sibs-primary-1" />
-                    <p className="mt-2 text-sm font-extrabold text-gray-800">
-                      {form.audioFile?.name || "Choose audio file"}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-gray-500">
-                      Accepted: audio files only
-                    </p>
-                    <input
-                      required
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) =>
-                        handleFileChange("audioFile", e.target.files?.[0])
-                      }
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Upload supporting file <RequiredMark />
-                  </FieldLabel>
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-gray-50 px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5">
-                    <UploadCloud size={26} className="text-sibs-primary-1" />
-                    <p className="mt-2 text-sm font-extrabold text-gray-800">
-                      {form.attachmentFile?.name || "Choose file"}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-gray-500">
-                      PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
-                    </p>
-                    <input
-                      required
-                      type="file"
-                      accept={acceptedDocumentTypes}
-                      onChange={(e) =>
-                        handleFileChange("attachmentFile", e.target.files?.[0])
-                      }
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-            </SectionCard>
-
-            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
-              <label className="flex items-start gap-3">
+              <label className="flex cursor-pointer items-start gap-3">
                 <input
                   type="checkbox"
                   checked={form.consent}
-                  onChange={(e) =>
-                    setForm({ ...form, consent: e.target.checked })
-                  }
-                  className="mt-1 h-4 w-4"
+                  onChange={(e) => {
+                    updateFormField("consent", e.target.checked);
+                    setHighlightConsent(false);
+                  }}
+                  className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
                 />
-                <span className="text-sm leading-6 text-gray-600">
+                <span
+                  className={`text-sm font-semibold leading-6 ${
+                    highlightConsent && !form.consent
+                      ? "text-red-700"
+                      : "text-gray-600"
+                  }`}
+                >
                   I agree to terms & conditions provided by the company. By
                   providing my phone number, I agree to receive text messages
                   from the business.
                 </span>
               </label>
+
+              {highlightConsent && !form.consent && (
+                <p className="mt-3 text-sm font-bold text-red-600">
+                  Please check this consent box before submitting.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col justify-end gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={handleReset}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5"
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={16} />
                 Reset
@@ -1739,13 +2754,22 @@ export default function PublicTalentPoolApplicationPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Send size={16} />
-                Submit Application
+                {isSubmitting ? "Submitting..." : "Submit Application"}
               </button>
             </div>
           </form>
-
         </section>
       </div>
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        onClose={closeStatusModal}
+        variant="center"
+        lockScroll
+      />
     </div>
   );
 }

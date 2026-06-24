@@ -1,12 +1,12 @@
-import React from "react";
-import {
-  ChevronDown,
-  Filter,
-  Lock,
-  RotateCcw,
-  Search,
-  Unlock,
-} from "lucide-react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Filter, Lock, Save, Unlock } from "lucide-react";
 
 const CLUSTER_OPTIONS = [
   "Coast Dental",
@@ -16,9 +16,239 @@ const CLUSTER_OPTIONS = [
   "Corporate",
 ];
 
-function getClusterFilterLabel(selectedClusters = []) {
+const FULL_ACCESS_ROLES = new Set([
+  "ta",
+  "talent_acquisition",
+  "recruitment",
+  "recruiter",
+  "hr",
+  "hr_admin",
+  "hradmin",
+  "hr_manager",
+  "hr_staff",
+  "human_resources",
+  "human_resource",
+  "human_resources_admin",
+  "human_resource_admin",
+  "super_admin",
+  "superadmin",
+]);
+
+const HIRING_PLAN_PERCENT_OPTIONS = Array.from(
+  { length: 20 },
+  (_, index) => (index + 1) * 5,
+);
+
+const EDGE = "rounded-[10px]";
+
+function getText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeRoleKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
+
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getFirstFilledValue(values = []) {
+  for (const value of values) {
+    const cleanValue = String(value ?? "").trim();
+
+    if (cleanValue) return cleanValue;
+  }
+
+  return "";
+}
+
+function getUserRoleCandidates(user) {
+  return [
+    user?.role,
+    user?.userRole,
+    user?.user_role,
+    user?.adminRole,
+    user?.admin_role,
+    user?.roleName,
+    user?.role_name,
+    user?.userRoleName,
+    user?.user_role_name,
+    user?.position,
+    user?.positionName,
+    user?.position_name,
+    user?.jobTitle,
+    user?.job_title,
+    user?.designation,
+    user?.employeeRole,
+    user?.employee_role,
+    user?.department,
+    user?.departmentName,
+    user?.department_name,
+    user?.deptName,
+    user?.dept_name,
+    getLocalStorageValue([
+      "role",
+      "userRole",
+      "user_role",
+      "adminRole",
+      "admin_role",
+      "roleName",
+      "role_name",
+      "userRoleName",
+      "user_role_name",
+      "position",
+      "positionName",
+      "position_name",
+      "jobTitle",
+      "job_title",
+      "designation",
+      "employeeRole",
+      "employee_role",
+      "department",
+      "departmentName",
+      "department_name",
+      "deptName",
+      "dept_name",
+    ]),
+  ].filter((value) => String(value ?? "").trim() !== "");
+}
+
+function getCurrentAdminAccess(user) {
+  const value =
+    user?.adminAccess ??
+    user?.admin_access ??
+    user?.gy_user_access ??
+    user?.access ??
+    user?.adminLevel ??
+    user?.admin_level ??
+    user?.adminAccessLevel ??
+    user?.admin_access_level ??
+    user?.isAdmin ??
+    user?.is_admin ??
+    getLocalStorageValue([
+      "adminAccess",
+      "admin_access",
+      "gy_user_access",
+      "access",
+      "adminLevel",
+      "admin_level",
+      "adminAccessLevel",
+      "admin_access_level",
+      "isAdmin",
+      "is_admin",
+    ]) ??
+    0;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function isFullAccessRoleValue(value) {
+  const role = normalizeRoleKey(value);
+
+  if (!role) return false;
+
+  if (FULL_ACCESS_ROLES.has(role)) return true;
+  if (role.includes("human_resource")) return true;
+  if (role.includes("human_resources")) return true;
+
+  return false;
+}
+
+function canViewAllWeeklyAccounts(user) {
+  const roleCandidates = getUserRoleCandidates(user);
+  const adminAccess = getCurrentAdminAccess(user);
+
+  return roleCandidates.some(isFullAccessRoleValue) || adminAccess === 7;
+}
+
+function getAccountName(account) {
+  return getText(
+    account?.accountName ||
+      account?.account ||
+      account?.gy_acc_name ||
+      account?.account_name ||
+      account?.name,
+  );
+}
+
+function getGhlName(account) {
+  return getText(
+    account?.ghlName || account?.gy_acc_ghl_name || account?.ghl_name,
+  );
+}
+
+function getClusterNameFromAccount(account) {
+  const accountName = getAccountName(account);
+  const ghlName = getGhlName(account);
+  const text = `${accountName} ${ghlName}`.toLowerCase();
+
+  if (
+    text.includes("cd -") ||
+    text.includes("cd-") ||
+    text.includes("coast dental")
+  ) {
+    return "Coast Dental";
+  }
+
+  if (text.includes("us visa")) {
+    return "US Visa";
+  }
+
+  if (
+    text.includes("sme-") ||
+    text.includes("sme -") ||
+    text.includes("frontsteps") ||
+    text.includes("front steps")
+  ) {
+    return "SME";
+  }
+
+  if (text.includes("yomdel")) {
+    return "Yomdel";
+  }
+
+  const explicitCluster = getText(account?.clusterName || account?.cluster);
+
+  if (explicitCluster) return explicitCluster;
+
+  return "Corporate";
+}
+
+function normalizeAssignedAccounts(user, assignedAccounts = []) {
+  if (Array.isArray(assignedAccounts) && assignedAccounts.length > 0) {
+    return assignedAccounts;
+  }
+
+  if (Array.isArray(user?.assignedAccounts) && user.assignedAccounts.length > 0) {
+    return user.assignedAccounts;
+  }
+
+  if (user?.account || user?.accountName || user?.gy_acc_name) {
+    return [user];
+  }
+
+  return [];
+}
+
+function getClusterFilterLabel(selectedClusters = [], restricted = false) {
   if (!selectedClusters.length || selectedClusters.includes("All")) {
-    return "All Clusters";
+    return restricted ? "All Assigned Clusters" : "All Clusters";
   }
 
   if (selectedClusters.length === 1) {
@@ -28,9 +258,9 @@ function getClusterFilterLabel(selectedClusters = []) {
   return `${selectedClusters.length} Clusters Selected`;
 }
 
-function getAccountFilterLabel(selectedAccounts = []) {
+function getAccountFilterLabel(selectedAccounts = [], restricted = false) {
   if (!selectedAccounts.length || selectedAccounts.includes("All")) {
-    return "All Accounts";
+    return restricted ? "All Assigned Accounts" : "All Accounts";
   }
 
   if (selectedAccounts.length === 1) {
@@ -69,6 +299,151 @@ function formatWeeklyVersionDisplay(week) {
   return weekRange ? `${label} | ${weekRange}` : label;
 }
 
+function getWeekHiringPlanPercent(week, fallback = 5) {
+  const value =
+    week?.hiringPlanPercent ??
+    week?.hiring_plan_percent ??
+    week?.hiringRate ??
+    week?.hiring_rate ??
+    fallback;
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 5;
+}
+
+function DropdownPortal({
+  open,
+  anchorRef,
+  children,
+  onClose,
+  maxHeight = 256,
+  minWidth = 0,
+  className = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [style, setStyle] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    maxHeight,
+  });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef?.current) return undefined;
+
+    function updatePosition() {
+      const anchor = anchorRef.current;
+
+      if (!anchor) return;
+
+      const rect = anchor.getBoundingClientRect();
+      const viewportWidth =
+        window.innerWidth || document.documentElement.clientWidth || 0;
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+
+      const gap = 8;
+      const safePadding = 8;
+      const dropdownWidth = Math.max(rect.width, minWidth);
+      const spaceBelow = viewportHeight - rect.bottom - gap - safePadding;
+      const spaceAbove = rect.top - gap - safePadding;
+      const shouldOpenUp = spaceBelow < 180 && spaceAbove > spaceBelow;
+
+      const availableHeight = shouldOpenUp ? spaceAbove : spaceBelow;
+      const cleanMaxHeight = Math.max(
+        160,
+        Math.min(maxHeight, Math.max(availableHeight, 160)),
+      );
+
+      const top = shouldOpenUp
+        ? Math.max(safePadding, rect.top - cleanMaxHeight - gap)
+        : Math.min(
+            rect.bottom + gap,
+            viewportHeight - cleanMaxHeight - safePadding,
+          );
+
+      const maxLeft = Math.max(
+        safePadding,
+        viewportWidth - dropdownWidth - safePadding,
+      );
+      const left = Math.min(Math.max(safePadding, rect.left), maxLeft);
+
+      setStyle({
+        top,
+        left,
+        width: dropdownWidth,
+        maxHeight: cleanMaxHeight,
+      });
+    }
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [anchorRef, maxHeight, minWidth, open]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleClickOutside(e) {
+      const clickedAnchor = anchorRef?.current?.contains(e.target);
+      const clickedDropdown = dropdownRef.current?.contains(e.target);
+
+      if (!clickedAnchor && !clickedDropdown) {
+        onClose?.();
+      }
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [anchorRef, onClose, open]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      onMouseDownCapture={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStartCapture={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] ${className}`}
+      style={{
+        top: `${style.top}px`,
+        left: `${style.left}px`,
+        width: `${style.width}px`,
+      }}
+    >
+      <div
+        className="overflow-y-auto py-2 sibs-scrollbar"
+        style={{ maxHeight: `${style.maxHeight}px` }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export default function WeeklyVersionTable({
   weekDropdownRef,
   clusterDropdownRef,
@@ -100,30 +475,240 @@ export default function WeeklyVersionTable({
   accountsLoading = false,
   filteredAccountOptions = [],
 
-  search,
-  setSearch,
+  selectedHiringPlanPercent = 5,
+  setSelectedHiringPlanPercent,
 
   isLocked = false,
+  isHiringPlanSnapshotLocked = false,
+  canManageHiringPlanPercent = false,
   canEditRequiredHeadcount = false,
 
   isAllClustersSelected,
   isAllAccountsSelected,
   handleToggleCluster,
   handleToggleAccount,
-}) {
-  const hasActiveFilters =
-    !isAllClustersSelected() || !isAllAccountsSelected() || search;
 
-  function handleClearFilters() {
-    setSelectedClusters(["All"]);
-    setSelectedAccounts(["All"]);
-    setAccountSearch("");
-    setSearch("");
+  user = null,
+  assignedAccounts = [],
+
+  onLockWeeklyHiringPlan,
+  lockingWeeklyPlan = false,
+  filteredPlansCount = 0,
+}) {
+  const [showHiringPlanDropdown, setShowHiringPlanDropdown] = useState(false);
+
+  const weekButtonRef = useRef(null);
+  const clusterButtonRef = useRef(null);
+  const accountInputRef = useRef(null);
+  const hiringPlanButtonRef = useRef(null);
+
+  const canViewAllAccounts = canViewAllWeeklyAccounts(user);
+  const isRestrictedManager = !canViewAllAccounts;
+
+  const weekLockedForDisplay = Boolean(isLocked || activeWeek?.locked);
+
+  const weekAlreadySavedInDatabase = Boolean(
+    isHiringPlanSnapshotLocked ||
+      activeWeek?.lockedByDatabase ||
+      activeWeek?.isHiringPlanLocked ||
+      activeWeek?.is_hiring_plan_locked ||
+      activeWeek?.hasHiringPlanPercent ||
+      activeWeek?.has_hiring_plan_percent,
+  );
+
+  const hiringPlanControlLocked =
+    !canManageHiringPlanPercent || weekAlreadySavedInDatabase;
+
+  const displayedHiringPlanPercent = weekAlreadySavedInDatabase
+    ? getWeekHiringPlanPercent(activeWeek, selectedHiringPlanPercent)
+    : Number(selectedHiringPlanPercent || 5);
+
+  const normalizedAssignedAccounts = useMemo(
+    () => normalizeAssignedAccounts(user, assignedAccounts),
+    [user, assignedAccounts],
+  );
+
+  const assignedAccountNames = useMemo(() => {
+    return new Set(
+      normalizedAssignedAccounts
+        .map((account) => getAccountName(account))
+        .filter(Boolean),
+    );
+  }, [normalizedAssignedAccounts]);
+
+  const assignedClusterNames = useMemo(() => {
+    return new Set(
+      normalizedAssignedAccounts
+        .map((account) => getClusterNameFromAccount(account))
+        .filter(Boolean),
+    );
+  }, [normalizedAssignedAccounts]);
+
+  const visibleClusterOptions = useMemo(() => {
+    if (canViewAllAccounts) return CLUSTER_OPTIONS;
+
+    return CLUSTER_OPTIONS.filter((cluster) =>
+      assignedClusterNames.has(cluster),
+    );
+  }, [assignedClusterNames, canViewAllAccounts]);
+
+  const visibleAccountOptions = useMemo(() => {
+    if (canViewAllAccounts) return filteredAccountOptions;
+
+    return filteredAccountOptions.filter((account) => {
+      const accountName = getAccountName(account);
+      return assignedAccountNames.has(accountName);
+    });
+  }, [assignedAccountNames, canViewAllAccounts, filteredAccountOptions]);
+
+  const safeIsAllClustersSelected = () => {
+    if (typeof isAllClustersSelected === "function") {
+      return isAllClustersSelected();
+    }
+
+    return selectedClusters.includes("All") || selectedClusters.length === 0;
+  };
+
+  const safeIsAllAccountsSelected = () => {
+    if (typeof isAllAccountsSelected === "function") {
+      return isAllAccountsSelected();
+    }
+
+    return selectedAccounts.includes("All") || selectedAccounts.length === 0;
+  };
+
+  const canLockWeeklyPlan =
+    canManageHiringPlanPercent &&
+    typeof onLockWeeklyHiringPlan === "function" &&
+    !weekAlreadySavedInDatabase &&
+    !lockingWeeklyPlan &&
+    !accountsLoading &&
+    !weeksLoading &&
+    !!activeWeek &&
+    !!selectedHiringPlanPercent &&
+    Number(filteredPlansCount || 0) > 0;
+
+  useEffect(() => {
+    if (canViewAllAccounts) return;
+
+    const selectedRealClusters = selectedClusters.filter(
+      (cluster) => cluster !== "All",
+    );
+
+    const hasInvalidCluster = selectedRealClusters.some(
+      (cluster) => !assignedClusterNames.has(cluster),
+    );
+
+    if (hasInvalidCluster) {
+      setSelectedClusters?.(["All"]);
+    }
+
+    const selectedRealAccounts = selectedAccounts.filter(
+      (account) => account !== "All",
+    );
+
+    const hasInvalidAccount = selectedRealAccounts.some(
+      (account) => !assignedAccountNames.has(account),
+    );
+
+    if (hasInvalidAccount) {
+      setSelectedAccounts?.(["All"]);
+    }
+  }, [
+    assignedAccountNames,
+    assignedClusterNames,
+    canViewAllAccounts,
+    selectedAccounts,
+    selectedClusters,
+    setSelectedAccounts,
+    setSelectedClusters,
+  ]);
+
+  useEffect(() => {
+    if (hiringPlanControlLocked) {
+      setShowHiringPlanDropdown(false);
+    }
+  }, [hiringPlanControlLocked]);
+
+  function closeOtherDropdowns(except = "") {
+    if (except !== "week") setShowWeekDropdown?.(false);
+    if (except !== "cluster") setShowClusterDropdown?.(false);
+    if (except !== "account") setShowAccountDropdown?.(false);
+    if (except !== "hiringPlan") setShowHiringPlanDropdown(false);
+  }
+
+  function handleWeeklyVersionChange(week) {
+    setActiveWeekId?.(week.id);
+    setSelectedClusters?.(["All"]);
+    setSelectedAccounts?.(["All"]);
+    setWeekSearch?.("");
+    setShowWeekDropdown?.(false);
+    setShowHiringPlanDropdown(false);
+
+    const weekPercent = getWeekHiringPlanPercent(
+      week,
+      selectedHiringPlanPercent,
+    );
+
+    setSelectedHiringPlanPercent?.(weekPercent);
+  }
+
+  function handleClusterClick(cluster) {
+    if (
+      cluster !== "All" &&
+      isRestrictedManager &&
+      !assignedClusterNames.has(cluster)
+    ) {
+      return;
+    }
+
+    handleToggleCluster?.(cluster);
+  }
+
+  function handleAccountClick(accountName) {
+    if (
+      accountName !== "All" &&
+      isRestrictedManager &&
+      !assignedAccountNames.has(accountName)
+    ) {
+      return;
+    }
+
+    handleToggleAccount?.(accountName);
+    setAccountSearch?.("");
+  }
+
+  function getLockButtonTitle() {
+    if (!canManageHiringPlanPercent) {
+      return "Only HR and HR Admin can lock the hiring plan percentage.";
+    }
+
+    if (weekAlreadySavedInDatabase) {
+      return "This selected week already has a saved hiring plan snapshot in the database.";
+    }
+
+    if (!activeWeek) {
+      return "Select a weekly version first.";
+    }
+
+    if (!selectedHiringPlanPercent) {
+      return "Select a hiring plan percentage first.";
+    }
+
+    if (accountsLoading || weeksLoading) {
+      return "Please wait until weekly records are loaded.";
+    }
+
+    if (Number(filteredPlansCount || 0) <= 0) {
+      return "No affected account records found for this selected week.";
+    }
+
+    return "Save all affected account records for the selected week.";
   }
 
   return (
-    <section className="overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
+    <div className="relative z-[100] overflow-visible bg-white">
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -131,27 +716,52 @@ export default function WeeklyVersionTable({
               Weekly Filters
             </div>
 
-            <h2 className="mt-3 text-base font-extrabold text-[#101828]">
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
               Weekly Hiring Plan Filters
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Select weekly version, cluster, account, and keyword to refine the
-              hiring plan.
+              Select weekly version, cluster, account, and hiring plan
+              percentage. HR and HR Admin can lock the latest editable hiring
+              plan rate.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`inline-flex w-fit items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${
-                isLocked
+                weekLockedForDisplay
                   ? "border-gray-200 bg-gray-50 text-gray-600"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700"
               }`}
             >
-              {isLocked ? <Lock size={13} /> : <Unlock size={13} />}
-              {isLocked ? "Locked" : "Editable"}
+              {weekLockedForDisplay ? <Lock size={13} /> : <Unlock size={13} />}
+              {weekLockedForDisplay ? "Locked" : "Editable"}
             </span>
+
+            {weekAlreadySavedInDatabase && (
+              <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                Static Hiring Plan: {displayedHiringPlanPercent}%
+              </span>
+            )}
+
+            {weekLockedForDisplay && !weekAlreadySavedInDatabase && (
+              <span className="inline-flex w-fit rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                Previous Week Display Lock
+              </span>
+            )}
+
+            {isRestrictedManager && (
+              <span className="inline-flex rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+                Manager View: Assigned Accounts Only
+              </span>
+            )}
+
+            {!canManageHiringPlanPercent && (
+              <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                View only: Hiring Plan %
+              </span>
+            )}
 
             {!canEditRequiredHeadcount && (
               <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
@@ -162,171 +772,319 @@ export default function WeeklyVersionTable({
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.1fr_1fr_1fr_1fr_auto] xl:items-end">
-          <div ref={weekDropdownRef} className="relative z-40">
+      <div className="overflow-visible px-5 py-5">
+        <div
+          className={`grid grid-cols-1 gap-3 overflow-visible ${
+            canManageHiringPlanPercent
+              ? "xl:grid-cols-[1.25fr_1fr_1fr_1fr_auto]"
+              : "xl:grid-cols-[1.25fr_1fr_1fr_1fr]"
+          } xl:items-end`}
+        >
+          <div
+            ref={weekDropdownRef}
+            className="relative z-[80] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Weekly Version
             </label>
 
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
+            <button
+              ref={weekButtonRef}
+              type="button"
+              onClick={() => {
+                if (weeksLoading) return;
 
-              <input
-                type="text"
-                value={
-                  showWeekDropdown
-                    ? weekSearch
-                    : formatWeeklyVersionDisplay(activeWeek)
-                }
-                onChange={(e) => {
-                  setWeekSearch(e.target.value);
-                  setShowWeekDropdown(true);
-                }}
-                onFocus={() => {
-                  setShowWeekDropdown(true);
-                  setWeekSearch("");
-                }}
-                placeholder={
-                  weeksLoading
-                    ? "Loading weekly versions..."
-                    : "Search weekly version..."
-                }
-                autoComplete="off"
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
+                setShowWeekDropdown?.((prev) => !prev);
+                setWeekSearch?.("");
+                closeOtherDropdowns("week");
+              }}
+              disabled={weeksLoading}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+            >
+              <span className="truncate">
+                {weeksLoading
+                  ? "Loading weekly versions..."
+                  : formatWeeklyVersionDisplay(activeWeek) ||
+                    "Select weekly version"}
+              </span>
 
               <ChevronDown
                 size={18}
-                onClick={() => {
-                  setShowWeekDropdown((prev) => !prev);
-                  setWeekSearch("");
-                }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showWeekDropdown ? "rotate-180" : ""
                 }`}
               />
+            </button>
 
-              {showWeekDropdown && (
-                <div className="absolute left-0 right-0 top-full mt-2 max-h-72 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
-                    {filteredWeeklyVersions.length > 0 ? (
-                      filteredWeeklyVersions.map((week) => {
-                        const isSelected = week.id === activeWeekId;
+            <DropdownPortal
+              open={showWeekDropdown && !weeksLoading}
+              anchorRef={weekButtonRef}
+              maxHeight={288}
+              onClose={() => setShowWeekDropdown?.(false)}
+            >
+              {filteredWeeklyVersions.length > 0 ? (
+                filteredWeeklyVersions.map((week) => {
+                  const isSelected = week.id === activeWeekId;
 
-                        return (
-                          <button
-                            key={week.id}
-                            type="button"
-                            onClick={() => {
-                              setActiveWeekId(week.id);
-                              setSelectedClusters(["All"]);
-                              setSelectedAccounts(["All"]);
-                              setSearch("");
-                              setWeekSearch("");
-                              setShowWeekDropdown(false);
-                            }}
-                            className={`block w-full px-4 py-3 text-left text-sm transition ${
-                              isSelected
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate font-bold">
-                                  {formatWeekLabel(week)}
-                                </p>
+                  const weekDisplayLocked = Boolean(week.locked);
 
-                                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                                  {week.weekRange || "—"}
-                                </p>
-                              </div>
+                  const weekSavedInDatabase = Boolean(
+                    week.lockedByDatabase ||
+                      week.isHiringPlanLocked ||
+                      week.is_hiring_plan_locked ||
+                      week.hasHiringPlanPercent ||
+                      week.has_hiring_plan_percent,
+                  );
 
-                              <span
-                                className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-                                  week.locked
-                                    ? "border-gray-200 bg-gray-50 text-gray-600"
-                                    : "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                }`}
-                              >
-                                {week.locked ? "Locked" : "Editable"}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })
-                    ) : weekSearch.trim() ? (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly version found.
+                  const weekPercent =
+                    getWeekHiringPlanPercent(week) ||
+                    Number(week.latestLockedHiringPlanPercent || 5);
+
+                  return (
+                    <button
+                      key={week.id}
+                      type="button"
+                      onClick={() => handleWeeklyVersionChange(week)}
+                      className={`block w-full px-4 py-3 text-left text-sm transition ${
+                        isSelected
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-bold">
+                            {formatWeekLabel(week)}
+                          </p>
+
+                          <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                            {week.weekRange || "—"}
+                          </p>
+
+                          {weekSavedInDatabase && (
+                            <p className="mt-1 truncate text-[11px] font-bold text-sibs-tertiary-5">
+                              Static Hiring Plan: {weekPercent}%
+                            </p>
+                          )}
+
+                          {weekDisplayLocked && !weekSavedInDatabase && (
+                            <p className="mt-1 truncate text-[11px] font-bold text-amber-600">
+                              No snapshot yet
+                            </p>
+                          )}
+                        </div>
+
+                        <span
+                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
+                            weekDisplayLocked
+                              ? "border-gray-200 bg-gray-50 text-gray-600"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
+                          {weekDisplayLocked ? "Locked" : "Editable"}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
-                        No weekly versions available.
-                      </div>
-                    )}
-                  </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                  No weekly versions available.
                 </div>
               )}
-            </div>
+            </DropdownPortal>
           </div>
 
-          <div ref={clusterDropdownRef} className="relative z-30">
+          <div
+            ref={clusterDropdownRef}
+            className="relative z-[70] overflow-visible"
+          >
             <label className="mb-1 block text-sm font-bold text-[#101828]">
               Cluster
             </label>
 
             <button
+              ref={clusterButtonRef}
               type="button"
-              onClick={() => setShowClusterDropdown((prev) => !prev)}
-              className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              onClick={() => {
+                setShowClusterDropdown?.((prev) => !prev);
+                closeOtherDropdowns("cluster");
+              }}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             >
               <span className="truncate">
-                {getClusterFilterLabel(selectedClusters)}
+                {getClusterFilterLabel(selectedClusters, isRestrictedManager)}
               </span>
 
               <ChevronDown
                 size={18}
-                className={`shrink-0 text-sibs-tertiary-5 transition-transform ${
+                className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
                   showClusterDropdown ? "rotate-180" : ""
                 }`}
               />
             </button>
 
-            {showClusterDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleCluster("All")}
-                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                      isAllClustersSelected()
-                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                        : "text-[#344054] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isAllClustersSelected()}
-                      readOnly
-                      className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                    />
-                    <span>All Clusters</span>
-                  </button>
+            <DropdownPortal
+              open={showClusterDropdown}
+              anchorRef={clusterButtonRef}
+              maxHeight={256}
+              onClose={() => setShowClusterDropdown?.(false)}
+            >
+              <button
+                type="button"
+                onClick={() => handleClusterClick("All")}
+                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                  safeIsAllClustersSelected()
+                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={safeIsAllClustersSelected()}
+                  readOnly
+                  className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                />
 
-                  {CLUSTER_OPTIONS.map((cluster) => {
+                <span>
+                  {isRestrictedManager
+                    ? "All Assigned Clusters"
+                    : "All Clusters"}
+                </span>
+              </button>
+
+              {visibleClusterOptions.length > 0 ? (
+                visibleClusterOptions.map((cluster) => {
+                  const checked =
+                    !safeIsAllClustersSelected() &&
+                    selectedClusters.includes(cluster);
+
+                  return (
+                    <button
+                      key={cluster}
+                      type="button"
+                      onClick={() => handleClusterClick(cluster)}
+                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                        checked
+                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                          : "text-[#344054] hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        readOnly
+                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                      />
+
+                      <span className="truncate">{cluster}</span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-3 text-sm font-semibold text-sibs-tertiary-5">
+                  No assigned clusters found.
+                </div>
+              )}
+            </DropdownPortal>
+          </div>
+
+          <div
+            ref={accountDropdownRef}
+            className="relative z-[60] overflow-visible"
+          >
+            <label className="mb-1 block text-sm font-bold text-[#101828]">
+              Account
+            </label>
+
+            <div className="relative overflow-visible">
+              <input
+                ref={accountInputRef}
+                type="text"
+                value={
+                  showAccountDropdown
+                    ? accountSearch
+                    : accountsLoading
+                      ? "Loading accounts..."
+                      : getAccountFilterLabel(
+                          selectedAccounts,
+                          isRestrictedManager,
+                        )
+                }
+                onChange={(e) => {
+                  setAccountSearch?.(e.target.value);
+                  setShowAccountDropdown?.(true);
+                  closeOtherDropdowns("account");
+                }}
+                onFocus={() => {
+                  if (!accountsLoading) {
+                    setShowAccountDropdown?.(true);
+                    setAccountSearch?.("");
+                    closeOtherDropdowns("account");
+                  }
+                }}
+                disabled={accountsLoading}
+                placeholder="Search accounts..."
+                autoComplete="off"
+                className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+              />
+
+              <ChevronDown
+                size={18}
+                onClick={() => {
+                  if (!accountsLoading) {
+                    setShowAccountDropdown?.((prev) => !prev);
+                    setAccountSearch?.("");
+                    closeOtherDropdowns("account");
+                  }
+                }}
+                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+                  showAccountDropdown ? "rotate-180" : ""
+                }`}
+              />
+
+              <DropdownPortal
+                open={showAccountDropdown && !accountsLoading}
+                anchorRef={accountInputRef}
+                maxHeight={256}
+                onClose={() => setShowAccountDropdown?.(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleAccountClick("All")}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                    safeIsAllAccountsSelected()
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={safeIsAllAccountsSelected()}
+                    readOnly
+                    className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
+                  />
+
+                  <span>
+                    {isRestrictedManager
+                      ? "All Assigned Accounts"
+                      : "All Accounts"}
+                  </span>
+                </button>
+
+                {visibleAccountOptions.length > 0 ? (
+                  visibleAccountOptions.map((account, index) => {
+                    const accountName = getAccountName(account);
+
                     const checked =
-                      !isAllClustersSelected() &&
-                      selectedClusters.includes(cluster);
+                      !safeIsAllAccountsSelected() &&
+                      selectedAccounts.includes(accountName);
 
                     return (
                       <button
-                        key={cluster}
+                        key={`${account.id || accountName}-${index}`}
                         type="button"
-                        onClick={() => handleToggleCluster(cluster)}
+                        onClick={() => handleAccountClick(accountName)}
                         className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
                           checked
                             ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
@@ -339,159 +1097,144 @@ export default function WeeklyVersionTable({
                           readOnly
                           className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
                         />
-                        <span className="truncate">{cluster}</span>
+
+                        <span className="truncate">{accountName}</span>
                       </button>
                     );
-                  })}
-                </div>
-              </div>
-            )}
+                  })
+                ) : (
+                  <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+                    {isRestrictedManager
+                      ? "No assigned accounts found."
+                      : "No accounts found."}
+                  </div>
+                )}
+              </DropdownPortal>
+            </div>
           </div>
 
-          <div ref={accountDropdownRef} className="relative z-20">
+          <div className="relative z-[50] overflow-visible">
             <label className="mb-1 block text-sm font-bold text-[#101828]">
-              Account
+              Hiring Plan (%)
             </label>
 
-            <div className="relative">
-              <input
-                type="text"
-                value={
-                  showAccountDropdown
-                    ? accountSearch
-                    : accountsLoading
-                      ? "Loading accounts..."
-                      : getAccountFilterLabel(selectedAccounts)
-                }
-                onChange={(e) => {
-                  setAccountSearch(e.target.value);
-                  setShowAccountDropdown(true);
-                }}
-                onFocus={() => {
-                  if (!accountsLoading) {
-                    setShowAccountDropdown(true);
-                    setAccountSearch("");
-                  }
-                }}
-                disabled={accountsLoading}
-                placeholder="Search accounts..."
-                autoComplete="off"
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
+            <button
+              ref={hiringPlanButtonRef}
+              type="button"
+              onClick={() => {
+                if (hiringPlanControlLocked) return;
+
+                setShowHiringPlanDropdown((prev) => !prev);
+                closeOtherDropdowns("hiringPlan");
+              }}
+              disabled={hiringPlanControlLocked}
+              className={`flex h-11 w-full items-center justify-between ${EDGE} border px-4 text-left text-sm font-bold outline-none transition ${
+                hiringPlanControlLocked
+                  ? "cursor-not-allowed border-[#D6DEE8] bg-[#F2F4F7] text-sibs-tertiary-5"
+                  : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              }`}
+              title={
+                !canManageHiringPlanPercent
+                  ? "Only HR and HR Admin can edit the hiring plan percentage."
+                  : weekAlreadySavedInDatabase
+                    ? "This selected week already has a saved hiring plan snapshot. Hiring plan percentage can no longer be changed."
+                    : "Select hiring plan percentage"
+              }
+            >
+              <span className="truncate">{displayedHiringPlanPercent}%</span>
 
               <ChevronDown
                 size={18}
-                onClick={() => {
-                  if (!accountsLoading) {
-                    setShowAccountDropdown((prev) => !prev);
-                    setAccountSearch("");
-                  }
-                }}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform ${
-                  showAccountDropdown ? "rotate-180" : ""
+                className={`shrink-0 transition-transform duration-300 ${
+                  hiringPlanControlLocked
+                    ? "text-sibs-tertiary-5/60"
+                    : "text-sibs-tertiary-5"
+                } ${
+                  showHiringPlanDropdown && !hiringPlanControlLocked
+                    ? "rotate-180"
+                    : ""
                 }`}
               />
+            </button>
 
-              {showAccountDropdown && !accountsLoading && (
-                <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
-                  <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleToggleAccount("All");
-                        setAccountSearch("");
-                      }}
-                      className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                        isAllAccountsSelected()
-                          ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                          : "text-[#344054] hover:bg-[#F8FAFC]"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isAllAccountsSelected()}
-                        readOnly
-                        className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                      />
+            <DropdownPortal
+              open={showHiringPlanDropdown && !hiringPlanControlLocked}
+              anchorRef={hiringPlanButtonRef}
+              maxHeight={256}
+              onClose={() => setShowHiringPlanDropdown(false)}
+            >
+              {HIRING_PLAN_PERCENT_OPTIONS.map((percent) => {
+                const checked =
+                  Number(selectedHiringPlanPercent) === Number(percent);
 
-                      <span>All Accounts</span>
-                    </button>
+                return (
+                  <button
+                    key={percent}
+                    type="button"
+                    onClick={() => {
+                      setSelectedHiringPlanPercent?.(percent);
+                      setShowHiringPlanDropdown(false);
+                    }}
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
+                      checked
+                        ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                        : "text-[#344054] hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      checked={checked}
+                      readOnly
+                      className="h-4 w-4 border-[#D0D5DD] accent-sibs-primary-1"
+                    />
 
-                    {filteredAccountOptions.length > 0 ? (
-                      filteredAccountOptions.map((account, index) => {
-                        const accountName = account.accountName;
-                        const checked =
-                          !isAllAccountsSelected() &&
-                          selectedAccounts.includes(accountName);
+                    <span>{percent}%</span>
+                  </button>
+                );
+              })}
+            </DropdownPortal>
+          </div>
 
-                        return (
-                          <button
-                            key={`${account.id || accountName}-${index}`}
-                            type="button"
-                            onClick={() => {
-                              handleToggleAccount(accountName);
-                              setAccountSearch("");
-                            }}
-                            className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition ${
-                              checked
-                                ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                : "text-[#344054] hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              readOnly
-                              className="h-4 w-4 rounded border-[#D0D5DD] accent-sibs-primary-1"
-                            />
-
-                            <span className="truncate">{accountName}</span>
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                        No accounts found.
-                      </div>
-                    )}
-                  </div>
-                </div>
+          {canManageHiringPlanPercent && (
+            <button
+              type="button"
+              onClick={canLockWeeklyPlan ? onLockWeeklyHiringPlan : undefined}
+              disabled={!canLockWeeklyPlan}
+              className={`inline-flex h-11 items-center justify-center gap-2 ${EDGE} border px-5 text-sm font-bold transition active:scale-[0.98] ${
+                canLockWeeklyPlan
+                  ? "border-sibs-primary-1 bg-sibs-primary-1 text-white hover:bg-sibs-primary-1/95 hover:shadow-sm"
+                  : weekAlreadySavedInDatabase
+                    ? "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-500"
+                    : "cursor-not-allowed border-[#D6DEE8] bg-[#F2F4F7] text-sibs-tertiary-5"
+              }`}
+              title={getLockButtonTitle()}
+            >
+              {lockingWeeklyPlan ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  Saving...
+                </>
+              ) : weekAlreadySavedInDatabase ? (
+                <>
+                  <Lock size={17} />
+                  Locked
+                </>
+              ) : (
+                <>
+                  <Save size={17} />
+                  Lock
+                </>
               )}
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-bold text-[#101828]">
-              Search
-            </label>
-
-            <div className="relative">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-              />
-
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search hiring plan..."
-                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleClearFilters}
-            disabled={!hasActiveFilters}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RotateCcw size={17} />
-            Clear
-          </button>
+            </button>
+          )}
         </div>
+
+        <p className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
+          Only HR and HR Admin can edit and lock the Hiring Plan %. Managers can
+          request headcount updates only after the Recruitment Settings request
+          is approved.
+        </p>
       </div>
-    </section>
+    </div>
   );
 }

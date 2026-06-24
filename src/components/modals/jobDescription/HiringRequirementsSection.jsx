@@ -56,9 +56,27 @@ export default function HiringRequirementSection({
 
   return (
     <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <h3 className="mb-4 text-sm font-bold text-[#101828]">
-        Hiring Requirement Link
-      </h3>
+      <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-extrabold text-[#101828]">
+            Hiring Requirement Link
+          </h3>
+
+          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+            Link this JD to an existing record or create a new job description.
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+            Status
+          </span>
+
+          <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-extrabold text-blue-700">
+            {selectedJdStatus || form.jdStatus || "New Job Description"}
+          </span>
+        </div>
+      </div>
 
       {dropdownError && (
         <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
@@ -68,8 +86,8 @@ export default function HiringRequirementSection({
 
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <div className="md:col-span-2">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
+          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_max-content] xl:items-end">
+            <div className="min-w-0">
               <SingleSelectDropdown
                 refBox={linkedRequirementRef}
                 label="Existing Job Description"
@@ -94,56 +112,14 @@ export default function HiringRequirementSection({
               />
             </div>
 
-            <div>
-              {hasLinkedHiringRequirement ? (
-                <SingleSelectDropdown
-                  refBox={jdStatusRef}
-                  label="Job Description Status"
-                  required
-                  value={selectedJdStatus}
-                  placeholder="Select Job Description status"
-                  open={jdStatusOpen}
-                  setOpen={setJdStatusOpen}
-                  disabled={false}
-                  options={jdStatusOptions}
-                  selectedValue={form.jdStatus}
-                  zIndex="z-20"
-                  onBeforeOpen={() => {
-                    setLinkedRequirementOpen(false);
-                    setAccountOpen(false);
-                    setDepartmentOpen(false);
-                    setRequestedByOpen(false);
-                  }}
-                  onSelect={(value) => {
-                    setForm((prev) => ({
-                      ...prev,
-                      jdStatus: value,
-                    }));
-
-                    setJdStatusOpen(false);
-                  }}
-                />
-              ) : (
-                <div className="self-start">
-                  <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-                    Job Description Status{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-
-                  <input
-                    readOnly
-                    value="New Job Description"
-                    className="w-full cursor-not-allowed rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 outline-none"
-                  />
-
-                  <p className="mt-2 text-xs font-semibold text-blue-700">
-                    Since this Job Description has no linked hiring requirement,
-                    the only valid status is New Job Description.
-                  </p>
-                </div>
-              )}
-            </div>
+            {!hasLinkedHiringRequirement && (
+              <p className="text-xs font-semibold leading-5 text-blue-700 xl:col-span-2">
+                No existing JD is linked, so this will be created as a new job
+                description.
+              </p>
+            )}
           </div>
+
           <div className="mt-2 self-start">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
               Document Title <span className="text-red-500">*</span>
@@ -253,17 +229,31 @@ export default function HiringRequirementSection({
           zIndex="z-30"
         />
 
-        {/* <div className="self-start">
+        <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Effectivity Date <span className="text-red-500">*</span>
+            Effective Date <span className="text-red-500">*</span>
           </label>
 
           <input
-            value={form.owner || ""}
-            placeholder="Logged-in user account"
-            className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
+            required
+            type="date"
+            value={form.effectiveDate || ""}
+            onFocus={() => {
+              setLinkedRequirementOpen(false);
+              setAccountOpen(false);
+              setDepartmentOpen(false);
+              setJdStatusOpen(false);
+              setRequestedByOpen(false);
+            }}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                effectiveDate: e.target.value,
+              }))
+            }
+            className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
           />
-        </div> */}
+        </div>
 
         <div className="self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">

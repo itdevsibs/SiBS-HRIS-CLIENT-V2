@@ -5,7 +5,6 @@ import {
   BriefcaseBusiness,
   AlertTriangle,
   CircleAlert,
-  UsersRound,
   UserX,
   Clock3,
   UserRoundCheck,
@@ -13,8 +12,6 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  TrendingDown,
   Activity,
   CalendarDays,
   X,
@@ -192,6 +189,12 @@ const movementStages = [
   "Hired",
 ];
 
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString("en-PH", {
+    maximumFractionDigits: 0,
+  });
+}
+
 function formatDate(date) {
   if (!date) return "—";
 
@@ -253,49 +256,44 @@ function getLoadClass(load) {
 function Badge({ children, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap ${className}`}
+      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
     >
       {children}
     </span>
   );
 }
 
-function StatCard({ title, value, icon: Icon, description, trend, trendType }) {
-  const TrendIcon = trendType === "down" ? TrendingDown : TrendingUp;
-
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  valueClassName = "text-sibs-primary-1",
+  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  delay = 0,
+}) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
-        <Icon size={18} />
-      </div>
+    <div
+      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+            {title}
+          </p>
 
-      <div className="min-w-0">
-        <p className="m-0 truncate text-xs font-normal text-sibs-tertiary-5">
-          {title}
-        </p>
-
-        <h2 className="m-0 truncate text-lg font-bold leading-tight text-sibs-primary-1">
-          {value}
-        </h2>
-
-        {description && (
-          <span className="block truncate text-xs font-normal text-sibs-tertiary-5">
-            {description}
-          </span>
-        )}
-
-        {trend && (
-          <div
-            className={`mt-2 inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold ${
-              trendType === "down"
-                ? "border-red-200 bg-red-50 text-red-600"
-                : "border-green-200 bg-green-50 text-green-600"
-            }`}
+          <p
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
           >
-            <TrendIcon size={13} />
-            {trend}
-          </div>
-        )}
+            {value}
+          </p>
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        >
+          <Icon size={22} />
+        </div>
       </div>
     </div>
   );
@@ -305,7 +303,7 @@ function ProgressBar({ label, value, total }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
-    <div>
+    <div className="transition-all duration-200 hover:-translate-y-0.5">
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="m-0 text-sm font-bold text-[#344054]">{label}</p>
 
@@ -316,7 +314,7 @@ function ProgressBar({ label, value, total }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -328,7 +326,7 @@ function MovementBar({ label, value, max }) {
   const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
 
   return (
-    <div>
+    <div className="transition-all duration-200 hover:-translate-y-0.5">
       <div className="mb-2 flex items-center justify-between gap-4">
         <p className="m-0 text-sm font-bold text-[#344054]">{label}</p>
 
@@ -337,7 +335,7 @@ function MovementBar({ label, value, max }) {
 
       <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f6]">
         <div
-          className="h-full rounded-full bg-sibs-primary-1"
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -359,12 +357,13 @@ function DetailRow({ label, value }) {
   );
 }
 
-function RoleMobileCard({ role, onView }) {
+function RoleMobileCard({ role, onView, delay = 0 }) {
   return (
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition hover:bg-slate-50 hover:shadow-md"
+      className="sibs-page-card-in w-full rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -381,7 +380,7 @@ function RoleMobileCard({ role, onView }) {
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-lg bg-slate-50 p-3">
+        <div className="rounded-lg bg-slate-50 p-3 transition-all duration-200 hover:bg-white hover:shadow-sm">
           <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Req.
           </p>
@@ -390,7 +389,7 @@ function RoleMobileCard({ role, onView }) {
           </strong>
         </div>
 
-        <div className="rounded-lg bg-slate-50 p-3">
+        <div className="rounded-lg bg-slate-50 p-3 transition-all duration-200 hover:bg-white hover:shadow-sm">
           <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Filled
           </p>
@@ -399,7 +398,7 @@ function RoleMobileCard({ role, onView }) {
           </strong>
         </div>
 
-        <div className="rounded-lg bg-slate-50 p-3">
+        <div className="rounded-lg bg-slate-50 p-3 transition-all duration-200 hover:bg-white hover:shadow-sm">
           <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
             Open
           </p>
@@ -423,6 +422,8 @@ function RoleMobileCard({ role, onView }) {
 }
 
 function RoleDetailsModal({ open, role, onClose }) {
+  const [isClosing, setIsClosing] = useState(false);
+
   if (!open || !role) return null;
 
   const progress =
@@ -430,13 +431,28 @@ function RoleDetailsModal({ open, role, onClose }) {
       ? Math.round((role.currentFilled / role.approvedRequirement) * 100)
       : 0;
 
+  function handleAnimatedClose() {
+    if (isClosing) return;
+
+    setIsClosing(true);
+
+    window.setTimeout(() => {
+      setIsClosing(false);
+      onClose?.();
+    }, 220);
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
+      className={`fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 p-4 ${
+        isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
+      }`}
+      onClick={handleAnimatedClose}
     >
       <div
-        className="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className={`flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${
+          isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[#f3f4f6] px-6 py-5 max-sm:px-4">
@@ -452,8 +468,8 @@ function RoleDetailsModal({ open, role, onClose }) {
 
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            onClick={handleAnimatedClose}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -463,7 +479,7 @@ function RoleDetailsModal({ open, role, onClose }) {
         <div className="flex-1 overflow-y-auto p-6 max-sm:p-4">
           <div className="grid grid-cols-[1fr_340px] gap-5 max-lg:grid-cols-1">
             <div className="flex flex-col gap-5">
-              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <div className="flex justify-between gap-4 max-lg:flex-col">
                   <div>
                     <h3 className="m-0 text-xl font-bold text-[#101828]">
@@ -497,7 +513,7 @@ function RoleDetailsModal({ open, role, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <h3 className="mb-4 text-sm font-bold text-[#101828]">
                   Weekly Movement
                 </h3>
@@ -536,7 +552,7 @@ function RoleDetailsModal({ open, role, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <h3 className="m-0 text-sm font-bold text-sibs-primary-1">
                   Current Action Item
                 </h3>
@@ -548,7 +564,7 @@ function RoleDetailsModal({ open, role, onClose }) {
             </div>
 
             <div className="flex flex-col gap-5">
-              <div className="rounded-xl border border-[#e6ecf2] bg-slate-50 p-5">
+              <div className="rounded-xl border border-[#e6ecf2] bg-slate-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <h3 className="mb-4 text-sm font-bold text-[#101828]">
                   Role Summary
                 </h3>
@@ -579,7 +595,7 @@ function RoleDetailsModal({ open, role, onClose }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-[#e6ecf2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <h3 className="mb-4 text-sm font-bold text-[#101828]">
                   Filled vs Requirement
                 </h3>
@@ -591,7 +607,7 @@ function RoleDetailsModal({ open, role, onClose }) {
                 />
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <h3 className="m-0 text-sm font-bold text-amber-700">
                   Risk Interpretation
                 </h3>
@@ -608,8 +624,8 @@ function RoleDetailsModal({ open, role, onClose }) {
         <div className="flex justify-end border-t border-[#f3f4f6] px-6 py-4 max-sm:px-4">
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            onClick={handleAnimatedClose}
+            className="rounded-xl bg-sibs-primary-1 px-5 py-2.5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
           >
             Close
           </button>
@@ -649,59 +665,59 @@ export default function OMDashboardPage() {
 
   const totals = useMemo(() => {
     const totalOpenRoles = managerRoles.filter(
-      (role) => role.openSlots > 0,
+      (role) => role.openSlots > 0
     ).length;
 
     const totalApproved = managerRoles.reduce(
       (sum, role) => sum + role.approvedRequirement,
-      0,
+      0
     );
 
     const totalFilled = managerRoles.reduce(
       (sum, role) => sum + role.currentFilled,
-      0,
+      0
     );
 
     const atRisk = managerRoles.filter(
-      (role) => role.status === "At Risk",
+      (role) => role.status === "At Risk"
     ).length;
 
     const delayed = managerRoles.filter(
-      (role) => role.status === "Delayed",
+      (role) => role.status === "Delayed"
     ).length;
 
     const totalDropOffs = managerRoles.reduce(
       (sum, role) => sum + role.dropOffs,
-      0,
+      0
     );
 
     const agingRoles = managerRoles.filter(
-      (role) => role.agingDays >= 15,
+      (role) => role.agingDays >= 15
     ).length;
 
     const totalSourced = managerRoles.reduce(
       (sum, role) => sum + role.sourced,
-      0,
+      0
     );
 
     const totalScreened = managerRoles.reduce(
       (sum, role) => sum + role.screened,
-      0,
+      0
     );
 
     const totalInterviewed = managerRoles.reduce(
       (sum, role) => sum + role.interviewed,
-      0,
+      0
     );
 
     const totalOffered = managerRoles.reduce(
       (sum, role) => sum + role.offered,
-      0,
+      0
     );
 
     const totalAccepted = managerRoles.reduce(
       (sum, role) => sum + role.accepted,
-      0,
+      0
     );
 
     const totalHired = managerRoles.reduce((sum, role) => sum + role.hired, 0);
@@ -763,11 +779,6 @@ export default function OMDashboardPage() {
 
   const maxMovement = Math.max(...Object.values(totals.movement), 1);
 
-  const filledPercentage =
-    totals.totalApproved > 0
-      ? Math.round((totals.totalFilled / totals.totalApproved) * 100)
-      : 0;
-
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -776,9 +787,12 @@ export default function OMDashboardPage() {
         ref={mainScrollRef}
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
-        <section className="mb-6">
+        <section className="sibs-page-header-in mb-6">
           <div className="flex items-center gap-2 text-sibs-primary-1">
-            <LayoutDashboard size={28} className="shrink-0" />
+            <LayoutDashboard
+              size={28}
+              className="shrink-0 transition-transform duration-300 hover:scale-110"
+            />
 
             <h1 className="m-0 text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
               Operations Dashboard
@@ -790,78 +804,89 @@ export default function OMDashboardPage() {
           </p>
         </section>
 
-        <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total Open Roles"
-            value={totals.totalOpenRoles}
-            icon={BriefcaseBusiness}
-            description="Roles with remaining open slots"
-            trend="Department filtered"
-          />
+        <section className="mb-6 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-base font-bold text-[#101828]">
+                Operations Dashboard Summary
+              </h2>
 
-          <StatCard
-            title="Requirement vs Filled"
-            value={`${totals.totalFilled}/${totals.totalApproved}`}
-            icon={UserRoundCheck}
-            description="Approved hiring requirement"
-            trend={`${filledPercentage}% filled`}
-          />
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Overview of open roles, hiring progress, risks, weekly movement,
+                and aging roles.
+              </p>
+            </div>
+          </div>
 
-          <StatCard
-            title="At-Risk Roles"
-            value={totals.atRisk}
-            icon={AlertTriangle}
-            description="Roles that may miss due date"
-            trend="+ Need review"
-            trendType="down"
-          />
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <StatCard
+              title="Total Open Roles"
+              value={formatNumber(totals.totalOpenRoles)}
+              icon={BriefcaseBusiness}
+              delay={0}
+            />
 
-          <StatCard
-            title="Delayed Roles"
-            value={totals.delayed}
-            icon={CircleAlert}
-            description="Roles already behind plan"
-            trend="Needs action"
-            trendType="down"
-          />
+            <StatCard
+              title="Requirement vs Filled"
+              value={`${formatNumber(totals.totalFilled)} / ${formatNumber(
+                totals.totalApproved
+              )}`}
+              icon={UserRoundCheck}
+              delay={60}
+            />
 
-          <StatCard
-            title="Weekly Movement"
-            value={totals.movement.Hired}
-            icon={Activity}
-            description="Total hired this week"
-            trend="+ Hiring output"
-          />
+            <StatCard
+              title="At-Risk Roles"
+              value={formatNumber(totals.atRisk)}
+              icon={AlertTriangle}
+              valueClassName="text-amber-500"
+              iconClassName="bg-amber-50 text-amber-600"
+              delay={120}
+            />
 
-          <StatCard
-            title="Drop-offs"
-            value={totals.totalDropOffs}
-            icon={UserX}
-            description="Candidate exits across stages"
-            trend="Monitor reasons"
-            trendType="down"
-          />
+            <StatCard
+              title="Delayed Roles"
+              value={formatNumber(totals.delayed)}
+              icon={CircleAlert}
+              valueClassName="text-red-600"
+              iconClassName="bg-red-50 text-red-600"
+              delay={180}
+            />
 
-          {/* <StatCard
-            title="Recruiter Load"
-            value={recruiterLoads.length}
-            icon={UsersRound}
-            description="Active TA owners"
-            trend={`${recruiterLoads.length} active`}
-          /> */}
+            <StatCard
+              title="Weekly Movement"
+              value={formatNumber(totals.movement.Hired)}
+              icon={Activity}
+              valueClassName="text-emerald-600"
+              iconClassName="bg-emerald-50 text-emerald-600"
+              delay={240}
+            />
 
-          <StatCard
-            title="Aging Roles"
-            value={totals.agingRoles}
-            icon={Clock3}
-            description="Roles aging 15+ days"
-            trend="Review weekly"
-            trendType="down"
-          />
+            <StatCard
+              title="Drop-Offs"
+              value={formatNumber(totals.totalDropOffs)}
+              icon={UserX}
+              valueClassName="text-red-600"
+              iconClassName="bg-red-50 text-red-600"
+              delay={300}
+            />
+
+            <StatCard
+              title="Aging Roles"
+              value={formatNumber(totals.agingRoles)}
+              icon={Clock3}
+              valueClassName="text-amber-500"
+              iconClassName="bg-amber-50 text-amber-600"
+              delay={360}
+            />
+          </div>
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+          <div
+            className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            style={{ animationDelay: "80ms" }}
+          >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
@@ -888,7 +913,10 @@ export default function OMDashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+          <div
+            className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            style={{ animationDelay: "140ms" }}
+          >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
@@ -917,7 +945,10 @@ export default function OMDashboardPage() {
         </section>
 
         <section className="grid grid-cols-1 gap-4 2xl:grid-cols-[1fr_380px]">
-          <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+          <div
+            className="sibs-profile-tab-panel overflow-hidden rounded-xl bg-white shadow-sm"
+            style={{ animationDelay: "180ms" }}
+          >
             <div className="flex items-center justify-between gap-4 border-b border-[#f3f4f6] p-5 max-lg:flex-col max-lg:items-stretch sm:p-6">
               <div>
                 <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
@@ -940,13 +971,13 @@ export default function OMDashboardPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search role, account, owner..."
-                  className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  className="h-11 w-full rounded-full border border-sibs-tertiary-8 bg-white px-4 pl-11 text-sm text-sibs-primary-1 outline-none transition-all duration-200 placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:shadow-sm focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
               </div>
             </div>
 
             <div className="p-5 sm:p-6">
-              <div className="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+              <div className="sibs-profile-tab-panel mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
                 <p className="m-0 text-sm font-semibold text-sibs-primary-1">
                   Viewing only: <strong>{currentUser.department}</strong>
                   {currentUser.accounts?.length > 0
@@ -955,17 +986,18 @@ export default function OMDashboardPage() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 lg:hidden">
+              <div key={search} className="flex flex-col gap-3 lg:hidden">
                 {filteredRoles.length > 0 ? (
-                  filteredRoles.map((role) => (
+                  filteredRoles.map((role, index) => (
                     <RoleMobileCard
                       key={role.id}
                       role={role}
+                      delay={Math.min(index * 40, 300)}
                       onView={() => setSelectedRole(role)}
                     />
                   ))
                 ) : (
-                  <div className="rounded-xl border border-[#e6ecf2] bg-white p-10 text-center text-sm font-bold text-gray-500">
+                  <div className="sibs-profile-tab-panel rounded-xl border border-[#e6ecf2] bg-white p-10 text-center text-sm font-bold text-gray-500">
                     No role records found.
                   </div>
                 )}
@@ -1006,12 +1038,12 @@ export default function OMDashboardPage() {
                       </tr>
                     </thead>
 
-                    <tbody>
+                    <tbody key={search} className="sibs-profile-tab-panel">
                       {filteredRoles.length > 0 ? (
                         filteredRoles.map((role) => (
                           <tr
                             key={role.id}
-                            className="transition hover:bg-slate-50"
+                            className="transition-all duration-200 hover:bg-slate-50"
                           >
                             <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm text-[#344054]">
                               <p className="m-0 text-sm font-bold text-[#101828]">
@@ -1057,7 +1089,7 @@ export default function OMDashboardPage() {
                               <button
                                 type="button"
                                 onClick={() => setSelectedRole(role)}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e6ecf2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#e6ecf2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
                               >
                                 <Eye size={15} />
                                 View
@@ -1089,21 +1121,21 @@ export default function OMDashboardPage() {
                 <div className="flex items-center gap-2 max-sm:justify-center">
                   <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e6ecf2] bg-white text-gray-500"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e6ecf2] bg-white text-gray-500 transition hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98]"
                   >
                     <ChevronLeft size={16} />
                   </button>
 
                   <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-primary-1 bg-sibs-primary-1 text-sm font-bold text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-sibs-primary-1 bg-sibs-primary-1 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98]"
                   >
                     1
                   </button>
 
                   <button
                     type="button"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e6ecf2] bg-white text-gray-500"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#e6ecf2] bg-white text-gray-500 transition hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98]"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -1112,8 +1144,11 @@ export default function OMDashboardPage() {
             </div>
           </div>
 
-          <aside className="flex flex-col gap-4">
-            <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+          <aside
+            className="sibs-profile-tab-panel flex flex-col gap-4"
+            style={{ animationDelay: "240ms" }}
+          >
+            <div className="rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6">
               <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
                 Recruiter Load
               </h2>
@@ -1123,10 +1158,13 @@ export default function OMDashboardPage() {
               </p>
 
               <div className="mt-5 flex flex-col gap-4">
-                {recruiterLoads.map((item) => (
+                {recruiterLoads.map((item, index) => (
                   <div
                     key={item.recruiter}
-                    className="rounded-xl border border-[#e6ecf2] bg-slate-50 p-4"
+                    className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-slate-50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                    style={{
+                      animationDelay: `${Math.min(index * 60, 300)}ms`,
+                    }}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -1145,7 +1183,7 @@ export default function OMDashboardPage() {
                     </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2 text-center max-sm:grid-cols-1">
-                      <div className="rounded-lg bg-white p-3">
+                      <div className="rounded-lg bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                         <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
                           Sourced
                         </p>
@@ -1154,7 +1192,7 @@ export default function OMDashboardPage() {
                         </strong>
                       </div>
 
-                      <div className="rounded-lg bg-white p-3">
+                      <div className="rounded-lg bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                         <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
                           Interviewed
                         </p>
@@ -1163,7 +1201,7 @@ export default function OMDashboardPage() {
                         </strong>
                       </div>
 
-                      <div className="rounded-lg bg-white p-3">
+                      <div className="rounded-lg bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                         <p className="m-0 text-[10px] font-bold uppercase text-sibs-tertiary-5">
                           Hired
                         </p>
@@ -1177,7 +1215,7 @@ export default function OMDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
               <h3 className="m-0 text-sm font-bold text-sibs-primary-1">
                 Operations Manager Dashboard Rule
               </h3>

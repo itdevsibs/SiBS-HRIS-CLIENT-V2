@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, FileText, X } from "lucide-react";
 
 import {
   formatDate,
   formatDateTime,
 } from "@/components/layout/FormatDateTime";
 import { useUser } from "../../../services/context/UserContext";
+import PaginationTable from "@/services/pagination/PaginationTable";
 import StatusModal from "../../modals/StatusModal";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const PAGE_LIMIT = 15;
 
 function mapAssignedLocation(value) {
   if (value === null || value === undefined || value === "") return "N/A";
@@ -20,12 +23,12 @@ function mapAssignedLocation(value) {
   if (raw === "2") return "Both Tagum and Davao";
   if (raw === "3") return "Hybrid";
 
-  if (raw.toLowerCase() === "tagum") return "Tagum";
-  if (raw.toLowerCase() === "davao") return "Davao";
-  if (raw.toLowerCase() === "both tagum and davao") {
-    return "Both Tagum and Davao";
-  }
-  if (raw.toLowerCase() === "hybrid") return "Hybrid";
+  const lower = raw.toLowerCase();
+
+  if (lower === "tagum") return "Tagum";
+  if (lower === "davao") return "Davao";
+  if (lower === "both tagum and davao") return "Both Tagum and Davao";
+  if (lower === "hybrid") return "Hybrid";
 
   return raw;
 }
@@ -34,8 +37,50 @@ function getUploadedFileUrl(item) {
   if (!item?.uploadedFile || !item?.sibsId) return "#";
 
   return `${API_URL}/api/resignation/file/${encodeURIComponent(
-    item.sibsId
+    item.sibsId,
   )}/${encodeURIComponent(item.uploadedFile)}`;
+}
+
+function FieldLabel({ children, required = false }) {
+  return (
+    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+      {children}
+      {required && <span className="text-red-500"> *</span>}
+    </label>
+  );
+}
+
+function ReadOnlyInput({ value, className = "" }) {
+  return (
+    <input
+      type="text"
+      value={value || ""}
+      readOnly
+      disabled
+      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-[#F2F4F7] px-4 text-sm font-semibold text-sibs-primary-1 outline-none disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+    />
+  );
+}
+
+function SelectButton({ value, placeholder, open, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+    >
+      <span className={value ? "" : "text-sibs-tertiary-5"}>
+        {value || placeholder}
+      </span>
+
+      <ChevronDown
+        size={18}
+        className={`text-sibs-tertiary-5 transition ${
+          open ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+  );
 }
 
 function FileTypeIcon({ filename }) {
@@ -75,7 +120,7 @@ function FileTypeIcon({ filename }) {
   };
 
   return (
-    <div className="relative h-12 w-10 shrink-0">
+    <div className="relative h-12 w-10 shrink-0" draggable={false}>
       <div className="absolute inset-0 rounded-md border-2 border-gray-300 bg-white" />
       <div className="absolute right-0 top-0 h-3 w-3 border-b-2 border-l-2 border-gray-300 bg-gray-100" />
       <div className="absolute left-1 top-1/2 h-0.5 w-6 -translate-y-1/2 bg-gray-300" />
@@ -94,7 +139,7 @@ function FileTypeIcon({ filename }) {
 
 function UploadedFileCell({ item, className = "" }) {
   if (!item?.uploadedFile) {
-    return <span className="text-sm text-gray-400">N/A</span>;
+    return <span className="text-sm font-semibold text-gray-400">N/A</span>;
   }
 
   return (
@@ -102,39 +147,28 @@ function UploadedFileCell({ item, className = "" }) {
       href={getUploadedFileUrl(item)}
       target="_blank"
       rel="noopener noreferrer"
+      draggable={false}
+      data-no-table-drag="true"
+      onMouseDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onDragStart={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onClick={(e) => e.stopPropagation()}
-      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm text-gray-700 no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
+      className={`flex min-w-0 items-center gap-3 rounded-lg p-1 text-left text-sm font-semibold text-[#344054] no-underline transition hover:bg-slate-50 hover:text-sibs-primary-1 ${className}`}
       title={`Open ${item.uploadedFile}`}
     >
       <FileTypeIcon filename={item.uploadedFile} />
 
-      <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+      <span
+        draggable={false}
+        data-no-table-drag="true"
+        className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+      >
         {item.uploadedFile}
       </span>
     </a>
-  );
-}
-
-function Field({ label, children, className = "" }) {
-  return (
-    <div className={className}>
-      <label className="mb-2 block text-sm font-medium text-sibs-primary-1">
-        {label}
-      </label>
-
-      {children}
-    </div>
-  );
-}
-
-function ReadOnlyInput({ value, className = "" }) {
-  return (
-    <input
-      type="text"
-      value={value}
-      readOnly
-      className={`w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-sibs-primary-1 outline-none ${className}`}
-    />
   );
 }
 
@@ -160,10 +194,10 @@ function EditResignationModal({
 
     const handleClickOutside = (e) => {
       const commentSpokenDropdown = document.getElementById(
-        "comment-spoken-dropdown-wrapper"
+        "comment-spoken-dropdown-wrapper",
       );
       const retainedDropdown = document.getElementById(
-        "employee-retained-dropdown-wrapper"
+        "employee-retained-dropdown-wrapper",
       );
 
       if (commentSpokenDropdown && !commentSpokenDropdown.contains(e.target)) {
@@ -175,14 +209,22 @@ function EditResignationModal({
       }
     };
 
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
     document.addEventListener("keydown", handleEscape);
     document.addEventListener("mousedown", handleClickOutside);
+
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "";
+
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+
       setCommentSpokenOpen(false);
       setEmployeeRetainedOpen(false);
     };
@@ -190,106 +232,151 @@ function EditResignationModal({
 
   if (!open || !selectedItem) return null;
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4 py-6">
-      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="shrink-0 border-b border-[#e6ecf2] px-6 py-4">
-          <h2 className="m-0 text-xl font-semibold text-sibs-primary-1">
-            {readOnly
-              ? "View Resignation Request"
-              : "Update Resignation Request"}
-          </h2>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <form
+        onSubmit={onSubmit}
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+      >
+        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <FileText size={14} />
+                {readOnly ? "Resignation Request" : "Supervisor Review"}
+              </div>
 
-          <p className="mt-1 text-sm text-gray-500">
-            {readOnly
-              ? "Review all resignation request details."
-              : "Review all request details before saving"}
-          </p>
+              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
+                {readOnly
+                  ? "RESIGNATION REQUEST"
+                  : "UPDATE RESIGNATION REQUEST"}
+              </h2>
+
+              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
+                {readOnly
+                  ? "Review the resignation request details and uploaded file."
+                  : "Review the resignation request, confirm retention discussion, and submit supervisor update."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Request ID">
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
+          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
+            <div className="mb-6 flex flex-col gap-1">
+              <h3 className="text-base font-extrabold text-[#101828]">
+                Request Details
+              </h3>
+
+              <p className="text-sm font-medium text-sibs-tertiary-5">
+                Review the employee resignation information below.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <div>
+                <FieldLabel>Request ID</FieldLabel>
                 <ReadOnlyInput value={selectedItem.id || ""} />
-              </Field>
+              </div>
 
-              <Field label="SiBS ID">
+              <div>
+                <FieldLabel>SiBS ID</FieldLabel>
                 <ReadOnlyInput value={selectedItem.sibsId || ""} />
-              </Field>
+              </div>
 
-              <Field label="Resignation Type">
+              <div>
+                <FieldLabel>Resignation Type</FieldLabel>
                 <ReadOnlyInput value={selectedItem.resignationType || "N/A"} />
-              </Field>
+              </div>
 
-              <Field label="Employee Name">
+              <div>
+                <FieldLabel>Employee Name</FieldLabel>
                 <ReadOnlyInput
                   value={selectedItem.fullName || "N/A"}
                   className="uppercase"
                 />
-              </Field>
+              </div>
 
-              <Field label="Assigned Location">
-                <ReadOnlyInput value={mapAssignedLocation(selectedItem.location)} />
-              </Field>
+              <div>
+                <FieldLabel>Assigned Location</FieldLabel>
+                <ReadOnlyInput
+                  value={mapAssignedLocation(selectedItem.location)}
+                />
+              </div>
 
-              <Field label="Resignation Date">
-                <ReadOnlyInput value={formatDate(selectedItem.resignationDate)} />
-              </Field>
+              <div>
+                <FieldLabel>Resignation Date</FieldLabel>
+                <ReadOnlyInput
+                  value={formatDate(selectedItem.resignationDate)}
+                />
+              </div>
 
-              <Field label="Last Working Date">
-                <ReadOnlyInput value={formatDate(selectedItem.lastWorkingDate)} />
-              </Field>
+              <div>
+                <FieldLabel>Last Working Date</FieldLabel>
+                <ReadOnlyInput
+                  value={formatDate(selectedItem.lastWorkingDate)}
+                />
+              </div>
 
-              <Field label="Submitted At">
+              <div>
+                <FieldLabel>Submitted At</FieldLabel>
                 <ReadOnlyInput value={formatDateTime(selectedItem.createdAt)} />
-              </Field>
+              </div>
 
-              <Field label="Supervisor SiBS ID">
+              <div>
+                <FieldLabel>Supervisor SiBS ID</FieldLabel>
                 <ReadOnlyInput value={selectedItem.supervisorSibsId || "N/A"} />
-              </Field>
+              </div>
 
-              <Field label="Supervisor Name">
+              <div>
+                <FieldLabel>Supervisor Name</FieldLabel>
                 <ReadOnlyInput
                   value={selectedItem.supervisorName || "N/A"}
                   className="uppercase"
                 />
-              </Field>
+              </div>
 
-              <Field label="Reason">
+              <div>
+                <FieldLabel>Reason</FieldLabel>
                 <ReadOnlyInput value={selectedItem.reason || "N/A"} />
-              </Field>
+              </div>
 
-              <Field label="Specify Others">
+              <div>
+                <FieldLabel>Specify Others</FieldLabel>
                 <ReadOnlyInput value={selectedItem.specifyOthers || "N/A"} />
-              </Field>
+              </div>
 
-              <Field label="Have you personally spoken to the resigning employee?">
+              <div>
+                <FieldLabel required={!readOnly}>
+                  Have you personally spoken to the resigning employee?
+                </FieldLabel>
+
                 {readOnly ? (
                   <ReadOnlyInput value={form.commentSpoken || "N/A"} />
                 ) : (
                   <div id="comment-spoken-dropdown-wrapper" className="relative">
-                    <button
-                      type="button"
+                    <SelectButton
+                      value={form.commentSpoken}
+                      placeholder="Select answer"
+                      open={commentSpokenOpen}
                       onClick={() => setCommentSpokenOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-left text-sm text-sibs-primary-1"
-                    >
-                      <span
-                        className={form.commentSpoken ? "" : "text-gray-400"}
-                      >
-                        {form.commentSpoken || "Select answer"}
-                      </span>
-
-                      <ChevronDown
-                        size={18}
-                        className={`text-sibs-tertiary-5 transition ${
-                          commentSpokenOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
+                    />
 
                     {commentSpokenOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-20 w-full overflow-hidden rounded-xl border border-[#d7dee8] bg-white shadow-xl">
+                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
                         {["Yes", "No"].map((item) => (
                           <button
                             key={item}
@@ -303,9 +390,9 @@ function EditResignationModal({
                               }));
                               setCommentSpokenOpen(false);
                             }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 hover:bg-slate-50 ${
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
                               form.commentSpoken === item
-                                ? "bg-[#eaf2fb] font-medium"
+                                ? "bg-[#EAF2FB] font-extrabold"
                                 : ""
                             }`}
                           >
@@ -316,9 +403,13 @@ function EditResignationModal({
                     )}
                   </div>
                 )}
-              </Field>
+              </div>
 
-              <Field label="Was the employee retained (Y/N)?">
+              <div>
+                <FieldLabel required={!readOnly}>
+                  Was the employee retained (Y/N)?
+                </FieldLabel>
+
                 {readOnly ? (
                   <ReadOnlyInput
                     value={
@@ -334,33 +425,21 @@ function EditResignationModal({
                     id="employee-retained-dropdown-wrapper"
                     className="relative"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setEmployeeRetainedOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-left text-sm text-sibs-primary-1"
-                    >
-                      <span
-                        className={
-                          form.employeeRetained !== "" ? "" : "text-gray-400"
-                        }
-                      >
-                        {form.employeeRetained === "1"
+                    <SelectButton
+                      value={
+                        form.employeeRetained === "1"
                           ? "Yes"
                           : form.employeeRetained === "0"
                             ? "No"
-                            : "Select answer"}
-                      </span>
-
-                      <ChevronDown
-                        size={18}
-                        className={`text-sibs-tertiary-5 transition ${
-                          employeeRetainedOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
+                            : ""
+                      }
+                      placeholder="Select answer"
+                      open={employeeRetainedOpen}
+                      onClick={() => setEmployeeRetainedOpen((prev) => !prev)}
+                    />
 
                     {employeeRetainedOpen && (
-                      <div className="absolute top-[calc(100%+8px)] z-20 w-full overflow-hidden rounded-xl border border-[#d7dee8] bg-white shadow-xl">
+                      <div className="absolute top-[calc(100%+8px)] z-30 w-full overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-xl">
                         {[
                           { label: "Yes", value: "1" },
                           { label: "No", value: "0" },
@@ -375,9 +454,9 @@ function EditResignationModal({
                               }));
                               setEmployeeRetainedOpen(false);
                             }}
-                            className={`block w-full bg-white px-4 py-3 text-left text-sm text-sibs-primary-1 hover:bg-slate-50 ${
+                            className={`block w-full bg-white px-4 py-3 text-left text-sm font-semibold text-sibs-primary-1 transition hover:bg-[#F8FAFC] ${
                               form.employeeRetained === item.value
-                                ? "bg-[#eaf2fb] font-medium"
+                                ? "bg-[#EAF2FB] font-extrabold"
                                 : ""
                             }`}
                           >
@@ -388,13 +467,15 @@ function EditResignationModal({
                     )}
                   </div>
                 )}
-              </Field>
+              </div>
 
               {form.commentSpoken === "Yes" && (
-                <Field
-                  label="What have you done/offered to retain the employee (retention efforts)?"
-                  className="sm:col-span-2"
-                >
+                <div className="lg:col-span-2">
+                  <FieldLabel required={!readOnly}>
+                    What have you done/offered to retain the employee
+                    (retention efforts)?
+                  </FieldLabel>
+
                   <textarea
                     value={form.commentRetain}
                     onChange={(e) =>
@@ -406,29 +487,33 @@ function EditResignationModal({
                     rows={5}
                     readOnly={readOnly}
                     placeholder="Enter your comments here"
-                    className="w-full resize-none rounded-xl border border-[#d7dee8] bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                    className="w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
                   />
-                </Field>
+                </div>
               )}
 
-              <Field label="Uploaded File" className="sm:col-span-2">
+              <div className="lg:col-span-2">
+                <FieldLabel>Uploaded File</FieldLabel>
+
                 {selectedItem.uploadedFile ? (
                   <UploadedFileCell
                     item={selectedItem}
-                    className="rounded-xl border border-[#d7dee8] bg-white px-4 py-3"
+                    className="min-h-14 rounded-xl border border-[#D0D5DD] bg-white px-4 py-2"
                   />
                 ) : (
                   <ReadOnlyInput value="N/A" />
                 )}
-              </Field>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="flex shrink-0 justify-end gap-3 border-t border-[#e6ecf2] px-6 py-4 max-sm:flex-col-reverse">
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 max-sm:w-full"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
             >
               {readOnly ? "Close" : "Cancel"}
             </button>
@@ -437,28 +522,31 @@ function EditResignationModal({
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-xl border border-sibs-primary-1 bg-sibs-primary-1 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 max-sm:w-full"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? "Saving..." : "Submit"}
               </button>
             )}
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </div>,
+    document.body,
   );
 }
 
 function MobileField({ label, value, full = false }) {
   return (
     <div
-      className={`rounded-[10px] bg-sibs-tertiary-10 p-3 ${
+      className={`rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm ${
         full ? "sm:col-span-2" : ""
       }`}
     >
-      <p className="m-0 text-xs font-normal text-sibs-tertiary-5">{label}</p>
+      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
 
-      <strong className="mt-1 block text-sm font-medium text-sibs-primary-1">
+      <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
         {value || "N/A"}
       </strong>
     </div>
@@ -479,31 +567,34 @@ function MobileResignationCard({ item, onOpen, canOpen }) {
           onOpen(item);
         }
       }}
-      className={`rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition ${
+      className={`sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 ${
         canOpen
-          ? "cursor-pointer hover:bg-slate-50 hover:shadow-md"
+          ? "cursor-pointer hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
           : "cursor-not-allowed opacity-80"
       }`}
     >
       <div className="min-w-0">
-        <p className="m-0 text-xs font-medium text-sibs-tertiary-5">
+        <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
           {item.sibsId || "N/A"}
         </p>
 
-        <h3 className="mt-1 text-sm font-semibold leading-tight text-sibs-primary-1">
+        <h3 className="mt-1 text-sm font-bold leading-tight text-sibs-primary-1">
           {(item.fullName || "N/A").toUpperCase()}
         </h3>
 
-        <span className="mt-1 block text-xs text-sibs-tertiary-5">
+        <span className="mt-1 block text-xs font-semibold text-sibs-tertiary-5">
           {item.resignationType || "N/A"}
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <MobileField label="Location" value={mapAssignedLocation(item.location)} />
+        <MobileField
+          label="Location"
+          value={mapAssignedLocation(item.location)}
+        />
 
-        <div className="rounded-[10px] bg-sibs-tertiary-10 p-3">
-          <p className="m-0 text-xs font-normal text-sibs-tertiary-5">
+        <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
+          <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
             Uploaded File
           </p>
 
@@ -542,6 +633,12 @@ export default function ResignationTable({
   const [openEditModal, setOpenEditModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isDraggingTable, setIsDraggingTable] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [locationFilter, setLocationFilter] = useState("All");
 
   const [form, setForm] = useState({
     commentSpoken: "",
@@ -557,19 +654,226 @@ export default function ResignationTable({
   });
 
   const tableScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
+
+  const dragStateRef = useRef({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+    moved: false,
+  });
 
   const loggedInSibsId = String(
-    user?.username || user?.sibs_id || user?.sibsId || ""
+    user?.username || user?.sibs_id || user?.sibsId || "",
   ).trim();
 
+  const safeData = Array.isArray(data) ? data : [];
+
+  const filteredData = useMemo(() => {
+    const keyword = String(search || "").trim().toLowerCase();
+
+    return safeData.filter((item) => {
+      const typeValue = String(item.resignationType || "").trim();
+      const locationValue = mapAssignedLocation(item.location);
+
+      const matchesType =
+        typeFilter === "All" ||
+        typeValue.toLowerCase() === typeFilter.toLowerCase();
+
+      const matchesLocation =
+        locationFilter === "All" ||
+        locationValue.toLowerCase() === locationFilter.toLowerCase();
+
+      const searchableText = [
+        item.id,
+        item.sibsId,
+        item.fullName,
+        item.resignationType,
+        locationValue,
+        item.reason,
+        item.specifyOthers,
+        item.supervisorSibsId,
+        item.supervisorName,
+        item.uploadedFile,
+        formatDate(item.resignationDate),
+        formatDate(item.lastWorkingDate),
+        formatDateTime(item.createdAt),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      const matchesSearch = !keyword || searchableText.includes(keyword);
+
+      return matchesType && matchesLocation && matchesSearch;
+    });
+  }, [safeData, search, typeFilter, locationFilter]);
+
+  const resignationTypeOptions = useMemo(() => {
+    const types = new Set();
+
+    safeData.forEach((item) => {
+      const value = String(item.resignationType || "").trim();
+      if (value) types.add(value);
+    });
+
+    return [
+      { label: "All Types", value: "All" },
+      ...Array.from(types)
+        .sort()
+        .map((value) => ({
+          label: value,
+          value,
+        })),
+    ];
+  }, [safeData]);
+
+  const locationOptions = useMemo(() => {
+    const locations = new Set();
+
+    safeData.forEach((item) => {
+      const value = mapAssignedLocation(item.location);
+      if (value && value !== "N/A") locations.add(value);
+    });
+
+    return [
+      { label: "All Locations", value: "All" },
+      ...Array.from(locations)
+        .sort()
+        .map((value) => ({
+          label: value,
+          value,
+        })),
+    ];
+  }, [safeData]);
+
+  const totalRecords = filteredData.length;
+  const totalPages = Math.max(Math.ceil(totalRecords / PAGE_LIMIT), 1);
+  const hasPreviousPage = currentPage > 1;
+  const hasNextPage = currentPage < totalPages;
+
+  const paginatedData = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const startIndex = (safePage - 1) * PAGE_LIMIT;
+
+    return filteredData.slice(startIndex, startIndex + PAGE_LIMIT);
+  }, [filteredData, currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [data, search, typeFilter, locationFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    }
+
+    if (mobileScrollRef.current) {
+      mobileScrollRef.current.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    }
+  }, [currentPage, search, typeFilter, locationFilter]);
+
+  function handlePreviousPage() {
+    if (loading || !hasPreviousPage) return;
+    setCurrentPage((prev) => Math.max(prev - 1, 1));
+  }
+
+  function handleNextPage() {
+    if (loading || !hasNextPage) return;
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  }
+
+  function handleSearchKeyDown(e) {
+    if (e.key !== "Enter") return;
+
+    setSearch(searchInput);
+    setCurrentPage(1);
+  }
+
+  function handleTypeFilter(nextValue) {
+    setTypeFilter(nextValue);
+    setCurrentPage(1);
+  }
+
+  function handleLocationFilter(nextValue) {
+    setLocationFilter(nextValue);
+    setCurrentPage(1);
+  }
+
+  function handleDragStart(e) {
+    if (e.button !== 0) return;
+
+    const target = e.target;
+    const isInteractiveElement = target.closest(
+      "button, a, input, select, textarea, [data-no-table-drag='true']",
+    );
+
+    if (isInteractiveElement) return;
+
+    const container = tableScrollRef.current;
+    if (!container) return;
+
+    dragStateRef.current = {
+      isDown: true,
+      startX: e.pageX - container.offsetLeft,
+      scrollLeft: container.scrollLeft,
+      moved: false,
+    };
+
+    setIsDraggingTable(true);
+  }
+
+  function handleDragMove(e) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (!dragState.isDown || !container) return;
+
+    e.preventDefault();
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - dragState.startX) * 1.4;
+
+    if (Math.abs(walk) > 4) {
+      dragStateRef.current.moved = true;
+    }
+
+    container.scrollLeft = dragState.scrollLeft - walk;
+  }
+
+  function handleDragEnd() {
+    dragStateRef.current.isDown = false;
+
+    window.setTimeout(() => {
+      setIsDraggingTable(false);
+      dragStateRef.current.moved = false;
+    }, 0);
+  }
+
   const handleOpenEdit = (item) => {
+    if (dragStateRef.current.moved) return;
+
     const isAssignedSupervisor =
       String(item.supervisorSibsId || "").trim() === loggedInSibsId;
 
     if (!isAssignedSupervisor) return;
 
     const normalizedCommentSpoken = String(
-      item.comment_spoken ?? item.commentSpoken ?? ""
+      item.comment_spoken ?? item.commentSpoken ?? "",
     )
       .trim()
       .toLowerCase();
@@ -672,7 +976,7 @@ export default function ResignationTable({
     } catch (error) {
       console.error(
         "Failed to update resignation:",
-        error?.response?.data || error
+        error?.response?.data || error,
       );
 
       setStatusModal({
@@ -689,157 +993,222 @@ export default function ResignationTable({
 
   return (
     <>
-      <div className="hidden min-w-0 lg:block">
-        <div
-          ref={tableScrollRef}
-          className="max-h-[620px] overflow-auto rounded-xl bg-white"
-        >
-          <table className="w-full min-w-[1280px] table-fixed border-collapse bg-white text-sm text-sibs-primary-1">
-            <colgroup>
-              <col className="w-[110px]" />
-              <col className="w-[170px]" />
-              <col className="w-[220px]" />
-              <col className="w-[180px]" />
-              <col className="w-[260px]" />
-              <col className="w-[170px]" />
-              <col className="w-[190px]" />
-              <col className="w-[170px]" />
-            </colgroup>
+      <div className="min-w-0 overflow-hidden rounded-xl bg-white">
+        <div className="p-4 sm:p-5">
+          <PaginationTable
+            title="Resignation Records"
+            subtitle="Search and filter resignation requests loaded in this table."
+            loading={loading}
+            searchValue={searchInput}
+            searchPlaceholder="Search resignation then press Enter"
+            onSearchChange={(value) => setSearchInput(value)}
+            onSearchKeyDown={handleSearchKeyDown}
+            filters={[
+              {
+                key: "type",
+                value: typeFilter,
+                onChange: handleTypeFilter,
+                options: resignationTypeOptions,
+              },
+              {
+                key: "location",
+                value: locationFilter,
+                onChange: handleLocationFilter,
+                options: locationOptions,
+              },
+            ]}
+            showPagination={false}
+            className="mb-5"
+          />
 
-            <thead className="sticky top-0 z-10 bg-[#f3f4f6]">
-              <tr>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  SiBS ID
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Resignation Type
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Employee Name
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Assigned Location
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Uploaded File
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Resignation Date
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Last Working Date
-                </th>
-                <th className="h-12 whitespace-nowrap px-5 text-left text-sm font-semibold text-sibs-primary-1">
-                  Submitted At
-                </th>
-              </tr>
-            </thead>
+          <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+            <div
+              ref={tableScrollRef}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`max-h-[620px] overflow-auto select-none ${
+                isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+              }`}
+            >
+              <table className="w-full min-w-[1280px] table-fixed border-collapse bg-white">
+                <colgroup>
+                  <col className="w-[110px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[240px]" />
+                  <col className="w-[190px]" />
+                  <col className="w-[280px]" />
+                  <col className="w-[180px]" />
+                  <col className="w-[190px]" />
+                  <col className="w-[180px]" />
+                </colgroup>
 
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="h-24 text-center text-sibs-tertiary-5"
-                  >
-                    Loading...
-                  </td>
-                </tr>
-              ) : data.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan="8"
-                    className="h-24 text-center text-sibs-tertiary-5"
-                  >
-                    No resignation records found
-                  </td>
-                </tr>
-              ) : (
-                data.map((item) => {
-                  const isAssignedSupervisor =
-                    String(item.supervisorSibsId || "").trim() ===
-                    loggedInSibsId;
+                <thead className="sticky top-0 z-10 bg-slate-50">
+                  <tr>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      SiBS ID
+                    </th>
 
-                  return (
-                    <tr
-                      key={item.id}
-                      onClick={() => handleOpenEdit(item)}
-                      className={`transition hover:bg-slate-50 ${
-                        isAssignedSupervisor
-                          ? "cursor-pointer"
-                          : "cursor-not-allowed"
-                      }`}
-                    >
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {item.sibsId || "N/A"}
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Resignation Type
+                    </th>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {item.resignationType || "N/A"}
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Employee Name
+                    </th>
 
-                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap font-medium uppercase">
-                          {item.fullName || "N/A"}
-                        </p>
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Assigned Location
+                    </th>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {mapAssignedLocation(item.location)}
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Uploaded File
+                    </th>
 
-                      <td className="h-[58px] border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        <UploadedFileCell item={item} />
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Resignation Date
+                    </th>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {formatDate(item.resignationDate)}
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Last Working Date
+                    </th>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {formatDate(item.lastWorkingDate)}
-                      </td>
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Submitted At
+                    </th>
+                  </tr>
+                </thead>
 
-                      <td className="h-[58px] whitespace-nowrap border-t border-[#e6ecf2] px-5 text-sm text-sibs-primary-1">
-                        {formatDateTime(item.createdAt)}
+                <tbody key={`${currentPage}-${loading}-${totalRecords}`}>
+                  {loading ? (
+                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                      <tr key={index}>
+                        <td
+                          colSpan={8}
+                          className="border-t border-[#f3f4f6] px-5 py-4"
+                        >
+                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={8}
+                        className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                      >
+                        No resignation records found.
                       </td>
                     </tr>
-                  );
-                })
+                  ) : (
+                    paginatedData.map((item) => {
+                      const isAssignedSupervisor =
+                        String(item.supervisorSibsId || "").trim() ===
+                        loggedInSibsId;
+
+                      return (
+                        <tr
+                          key={item.id}
+                          onClick={() => handleOpenEdit(item)}
+                          className={`transition-all duration-200 hover:bg-slate-50 ${
+                            isAssignedSupervisor
+                              ? "cursor-pointer"
+                              : "cursor-not-allowed opacity-80"
+                          }`}
+                        >
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                            {item.sibsId || "N/A"}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {item.resignationType || "N/A"}
+                          </td>
+
+                          <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                            <p className="m-0 overflow-hidden text-ellipsis whitespace-nowrap uppercase">
+                              {item.fullName || "N/A"}
+                            </p>
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {mapAssignedLocation(item.location)}
+                          </td>
+
+                          <td className="border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            <UploadedFileCell item={item} />
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {formatDate(item.resignationDate)}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {formatDate(item.lastWorkingDate)}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                            {formatDateTime(item.createdAt)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
+              Hold left click and drag left or right to scroll the table.
+            </p>
+          </div>
+
+          <div className="block lg:hidden">
+            <div ref={mobileScrollRef} className="max-h-[620px] overflow-y-auto">
+              {loading ? (
+                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                  Loading...
+                </div>
+              ) : paginatedData.length === 0 ? (
+                <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
+                  No resignation records found.
+                </div>
+              ) : (
+                <div
+                  key={`${currentPage}-${totalRecords}-${search}-${typeFilter}-${locationFilter}`}
+                  className="flex flex-col gap-3"
+                >
+                  {paginatedData.map((item) => {
+                    const canOpen =
+                      String(item.supervisorSibsId || "").trim() ===
+                      loggedInSibsId;
+
+                    return (
+                      <MobileResignationCard
+                        key={item.id}
+                        item={item}
+                        onOpen={handleOpenEdit}
+                        canOpen={canOpen}
+                      />
+                    );
+                  })}
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="block min-w-0 lg:hidden">
-        <div className="max-h-[620px] overflow-y-auto p-3">
-          {loading ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              Loading...
-            </div>
-          ) : data.length === 0 ? (
-            <div className="rounded-xl bg-white p-6 text-center text-sm text-sibs-tertiary-5">
-              No resignation records found
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {data.map((item) => {
-                const canOpen =
-                  String(item.supervisorSibsId || "").trim() ===
-                  loggedInSibsId;
-
-                return (
-                  <MobileResignationCard
-                    key={item.id}
-                    item={item}
-                    onOpen={handleOpenEdit}
-                    canOpen={canOpen}
-                  />
-                );
-              })}
-            </div>
-          )}
+          <PaginationTable
+            loading={loading}
+            showSearch={false}
+            showPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadedCount={paginatedData.length}
+            totalRecords={totalRecords}
+            recordLabel="resignation records"
+            onPrevious={handlePreviousPage}
+            onNext={handleNextPage}
+          />
         </div>
       </div>
 

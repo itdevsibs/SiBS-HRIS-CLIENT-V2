@@ -94,64 +94,7 @@ export const defaultAvailablePositions = [
   },
 ];
 
-export const defaultFinalInterviewFields = [
-  {
-    id: 1,
-    label: "Candidate Name",
-    type: "Short Text",
-    required: true,
-    section: "Candidate Information",
-    enabled: true,
-  },
-  {
-    id: 2,
-    label: "Position Applied",
-    type: "Short Text",
-    required: true,
-    section: "Candidate Information",
-    enabled: true,
-  },
-  {
-    id: 3,
-    label: "Communication Skills",
-    type: "Rating",
-    required: true,
-    section: "Interview Assessment",
-    enabled: true,
-  },
-  {
-    id: 4,
-    label: "Technical / Role Fit",
-    type: "Rating",
-    required: true,
-    section: "Interview Assessment",
-    enabled: true,
-  },
-  {
-    id: 5,
-    label: "Culture Fit",
-    type: "Rating",
-    required: true,
-    section: "Interview Assessment",
-    enabled: true,
-  },
-  {
-    id: 6,
-    label: "Final Recommendation",
-    type: "Dropdown",
-    required: true,
-    section: "Final Decision",
-    enabled: true,
-  },
-  {
-    id: 7,
-    label: "Interview Remarks",
-    type: "Paragraph",
-    required: false,
-    section: "Final Decision",
-    enabled: true,
-  },
-];
+export const defaultFinalInterviewFields = [];
 
 export function createDefaultFormForPosition(position) {
   return {

@@ -10,11 +10,15 @@ import {
   CalendarDays,
   ChevronLeft,
   MoreHorizontal,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import { getEmployeeById } from "../../lib/axios/getEmployee";
 import { formatDate } from "../../components/layout/FormatDateTime";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
 const tabs = [
   "Personal",
@@ -29,12 +33,189 @@ const tabs = [
   "Emergency",
 ];
 
+function getProfileImageUrl(employee) {
+  const directUrl =
+    employee?.profilePictureUrl ||
+    employee?.profile_picture_url ||
+    employee?.profileUrl ||
+    employee?.profile_url ||
+    "";
+
+  if (directUrl) return directUrl;
+
+  const filename =
+    employee?.profileFilename ||
+    employee?.profile_filename ||
+    employee?.profilePicture ||
+    employee?.profile_picture ||
+    "";
+
+  if (!filename) return "";
+
+  if (String(filename).startsWith("http")) return filename;
+
+  return `${API_URL}/api/employee-profile/file/${encodeURIComponent(filename)}`;
+}
+
+function ProfilePictureViewModal({ open, employee, imageUrl, onClose }) {
+  useEffect(() => {
+    if (!open) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const fullName = employee
+    ? [employee.firstName, employee.middleName, employee.lastName]
+        .filter(Boolean)
+        .join(" ")
+    : "";
+
+  return (
+    <div
+      className="fixed inset-0 z-[99999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-5 py-5 sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <ImageIcon size={14} />
+                Profile Picture
+              </div>
+
+              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
+                {fullName || "Employee Profile"}
+              </h2>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                SiBS ID: {employee?.sibsId || "N/A"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
+              aria-label="Close profile picture modal"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
+          <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-dashed border-[#D0D5DD] bg-white p-4">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt="Employee profile"
+                className="max-h-[620px] w-full max-w-[620px] rounded-2xl object-contain shadow-sm"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-sibs-primary-1/10 bg-sibs-primary-1/10">
+                  <User size={44} className="text-sibs-primary-1" />
+                </div>
+
+                <h3 className="mt-4 text-base font-extrabold text-sibs-primary-1">
+                  No Profile Picture
+                </h3>
+
+                <p className="mt-1 max-w-sm text-sm font-medium leading-6 text-sibs-tertiary-5">
+                  This employee has no uploaded profile picture yet.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeProfileAvatar({ employee, onClick }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const imageUrl = getProfileImageUrl(employee);
+
+  const shouldShowImage = imageUrl && !imageFailed;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
+      title="View profile picture"
+    >
+      {shouldShowImage ? (
+        <img
+          src={imageUrl}
+          alt="Employee profile"
+          className="h-full w-full object-cover"
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <User
+          size={36}
+          className="text-white transition-transform duration-300 group-hover:scale-110"
+        />
+      )}
+
+      <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
+        <div className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-sibs-primary-1 shadow-sm">
+          View
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
 
   const [employee, setEmployee] = useState(null);
   const [activeTab, setActiveTab] = useState("Personal");
   const [loading, setLoading] = useState(true);
+  const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -71,6 +252,8 @@ export default function EmployeeDataPage() {
         .join(" ")
     : "";
 
+  const profileImageUrl = getProfileImageUrl(employee);
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -100,9 +283,10 @@ export default function EmployeeDataPage() {
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                     <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 sm:h-[110px] sm:w-[110px]">
-                        <User size={36} className="text-white" />
-                      </div>
+                      <EmployeeProfileAvatar
+                        employee={employee}
+                        onClick={() => setOpenProfilePictureModal(true)}
+                      />
 
                       <div className="min-w-0 pt-1">
                         <h1 className="break-words text-2xl font-bold leading-tight text-white sm:text-3xl lg:text-4xl">
@@ -111,6 +295,10 @@ export default function EmployeeDataPage() {
 
                         <p className="mt-1 text-sm font-medium text-white/80">
                           {employee.account || "Employee"}
+                        </p>
+
+                        <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-white/70">
+                          SiBS ID: {employee.sibsId || "N/A"}
                         </p>
                       </div>
                     </div>
@@ -282,6 +470,13 @@ export default function EmployeeDataPage() {
           </div>
         )}
       </main>
+
+      <ProfilePictureViewModal
+        open={openProfilePictureModal}
+        employee={employee}
+        imageUrl={profileImageUrl}
+        onClose={() => setOpenProfilePictureModal(false)}
+      />
     </div>
   );
 }
@@ -328,6 +523,7 @@ function SidebarField({ label, value }) {
   return (
     <div className="min-w-0">
       <p className="mb-1 font-medium text-sibs-primary-1">{label}</p>
+
       <p className="break-all leading-5">{value || "N/A"}</p>
     </div>
   );

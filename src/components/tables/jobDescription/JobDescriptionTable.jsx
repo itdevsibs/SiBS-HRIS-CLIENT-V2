@@ -1,10 +1,25 @@
-import React, { useEffect, useMemo } from "react";
-import { Eye } from "lucide-react";
-import TableHeader from "../tableHeader/TableHeader";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Eye, Filter, RotateCcw, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
+
+const JD_VIEW_OPTIONS = [
+  { label: "All JD", value: "All JD" },
+  { label: "For Approval", value: "For Approval" },
+  { label: "Active JD", value: "Active JD" },
+  { label: "Archived JD", value: "Archived JD" },
+];
+
+const JD_STATUS_OPTIONS = [
+  { label: "All Status", value: "All Status" },
+  { label: "Existing", value: "Existing" },
+  { label: "For Revision", value: "For Revision" },
+  { label: "For Approval", value: "For Approval" },
+  { label: "New Job Description", value: "New Job Description" },
+  { label: "Archived", value: "Archived" },
+];
 
 function formatDate(date) {
   if (!date) return "—";
@@ -21,57 +36,84 @@ function safeText(value) {
 }
 
 function normalizeJdStatus(status) {
-  if (status === "New JD") return "New Job Description";
-  return status || "New Job Description";
+  const value = String(status || "").trim();
+
+  if (value === "New JD") return "New Job Description";
+
+  return value || "New Job Description";
+}
+
+function getRealJdStatus(item = {}) {
+  return normalizeJdStatus(
+    item.jdStatus ||
+      item.jd_status ||
+      item.raw?.jdStatus ||
+      item.raw?.jd_status ||
+      item.status,
+  );
 }
 
 function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
     case "Existing":
     case "Active":
-      return "bg-emerald-50 text-emerald-700";
+      return "border border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "For Revision":
+      return "border border-amber-200 bg-amber-50 text-amber-700";
+
     case "For Approval":
-      return "bg-amber-50 text-amber-700";
+      return "border border-orange-200 bg-orange-50 text-orange-700";
 
     case "New Job Description":
     case "Draft":
-      return "bg-blue-50 text-blue-700";
+      return "border border-blue-200 bg-blue-50 text-blue-700";
 
     case "Returned for Revision":
-      return "bg-red-50 text-red-700";
+      return "border border-red-200 bg-red-50 text-red-700";
 
     case "Archived":
     case "Archived JD":
-      return "bg-gray-100 text-gray-700";
+      return "border border-gray-200 bg-gray-50 text-gray-700";
 
     default:
-      return "bg-gray-50 text-gray-600";
+      return "border border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
 function getJdStatusLabel(status) {
-  switch (normalizeJdStatus(status)) {
+  const normalizedStatus = normalizeJdStatus(status);
+
+  switch (normalizedStatus) {
     case "Existing":
-      return "Active";
+      return "Existing";
+
     case "For Revision":
+      return "For Revision";
+
+    case "For Approval":
       return "For Approval";
+
     case "New Job Description":
       return "New Job Description";
+
+    case "Archived":
+    case "Archived JD":
+      return "Archived";
+
     default:
-      return normalizeJdStatus(status);
+      return normalizedStatus || "—";
   }
 }
 
 function getJdViewStatus(item) {
-  const status = normalizeJdStatus(item?.jdStatus);
+  const status = getRealJdStatus(item);
 
   if (status === "Existing" || status === "Active") {
     return "Active JD";
   }
 
-  if (status === "For Revision" || status === "For Approval") {
+  if (status === "For Approval") {
     return "For Approval";
   }
 
@@ -83,14 +125,15 @@ function getJdViewStatus(item) {
 }
 
 function JdStatusBadge({ status }) {
+  const realStatus = normalizeJdStatus(status);
+
   return (
     <span
-      className={`inline-flex w-fit items-center justify-center whitespace-nowrap
-        rounded-md px-3 py-2 text-[11px] font-bold leading-none ${getJdStatusClass(
-          status,
-        )}`}
+      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold leading-none ${getJdStatusClass(
+        realStatus,
+      )}`}
     >
-      {getJdStatusLabel(status)}
+      {getJdStatusLabel(realStatus)}
     </span>
   );
 }
@@ -117,14 +160,33 @@ function getLastApproved(item) {
   );
 }
 
+function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
+  return (
+    <div
+      className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-50 mt-2 ${
+        open ? "open" : "closed"
+      } ${className}`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="sibs-animated-dropdown-box">
+          <div className={`${maxHeight} overflow-y-auto py-2 sibs-scrollbar`}>
+            {children}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JobDescriptionMobileCard({ item, onView }) {
   const latestRevision = getLatestRevision(item);
+  const realStatus = getRealJdStatus(item);
 
   return (
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -141,7 +203,7 @@ function JobDescriptionMobileCard({ item, onView }) {
           </p>
         </div>
 
-        <JdStatusBadge status={item.jdStatus} />
+        <JdStatusBadge status={realStatus} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -180,57 +242,150 @@ function JobDescriptionMobileCard({ item, onView }) {
   );
 }
 
-const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
-  const { search, filterValues, setTableHeader, setPagination } = usePagination(
-    JOB_DESCRIPTION_ENTITY,
-  );
-
-  const tableHeader = useMemo(
-    () => ({
-      title: "Job Description List",
-      description: "Search and filter JD records.",
-      searchPlaceholder: "Search JD, role, account, owner...",
-      filters: [
-        {
-          key: "jdView",
-          defaultValue: "All JD",
-          options: [
-            { label: "All JD", value: "All JD" },
-            { label: "For Approval", value: "For Approval" },
-            { label: "Active JD", value: "Active JD" },
-            { label: "Archived JD", value: "Archived JD" },
-          ],
-        },
-        {
-          key: "status",
-          defaultValue: "All Status",
-          options: [
-            { label: "All Status", value: "All Status" },
-            { label: "Existing", value: "Existing" },
-            { label: "For Revision", value: "For Revision" },
-            { label: "New Job Description", value: "New Job Description" },
-            { label: "Archived", value: "Archived" },
-          ],
-        },
-      ],
-    }),
-    [],
-  );
-
-  useEffect(() => {
-    setTableHeader(tableHeader);
-  }, [setTableHeader, tableHeader]);
-
-  const filteredList = useMemo(() => {
+function FilterDropdown({
+  label,
+  value,
+  search,
+  setSearch,
+  show,
+  setShow,
+  options = [],
+  selectedValue,
+  onSelect,
+  placeholder = "Search...",
+  dropdownRef,
+  zIndex = "z-40",
+}) {
+  const filteredOptions = useMemo(() => {
     const keyword = String(search || "")
       .trim()
       .toLowerCase();
 
-    const jdViewFilter = filterValues?.jdView || "All JD";
-    const jdStatusFilter = filterValues?.status || "All Status";
+    if (!keyword) return options;
+
+    return options.filter((option) =>
+      String(option.label || option.value || "")
+        .toLowerCase()
+        .includes(keyword),
+    );
+  }, [options, search]);
+
+  return (
+    <div ref={dropdownRef} className={`relative ${zIndex}`}>
+      <label className="mb-1 block text-sm font-bold text-[#101828]">
+        {label}
+      </label>
+
+      <div className="relative">
+        <input
+          type="text"
+          value={show ? search : value}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setShow(true);
+          }}
+          onFocus={() => {
+            setSearch("");
+            setShow(true);
+          }}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+        />
+
+        <ChevronDown
+          size={18}
+          onClick={() => {
+            setSearch("");
+            setShow((prev) => !prev);
+          }}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
+            show ? "rotate-180" : ""
+          }`}
+        />
+
+        <AnimatedDropdown open={show} maxHeight="max-h-64">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => {
+              const selected = selectedValue === option.value;
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onSelect(option.value);
+                    setSearch("");
+                    setShow(false);
+                  }}
+                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                    selected
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <span className="block truncate">{option.label}</span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
+              No option found.
+            </div>
+          )}
+        </AnimatedDropdown>
+      </div>
+    </div>
+  );
+}
+
+const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
+  const { setPagination } = usePagination(JOB_DESCRIPTION_ENTITY);
+
+  const jdViewDropdownRef = useRef(null);
+  const statusDropdownRef = useRef(null);
+
+  const [searchInput, setSearchInput] = useState("");
+
+  const [jdViewFilter, setJdViewFilter] = useState("All JD");
+  const [jdViewSearch, setJdViewSearch] = useState("");
+  const [showJdViewDropdown, setShowJdViewDropdown] = useState(false);
+
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [statusSearch, setStatusSearch] = useState("");
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        jdViewDropdownRef.current &&
+        !jdViewDropdownRef.current.contains(e.target)
+      ) {
+        setShowJdViewDropdown(false);
+      }
+
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(e.target)
+      ) {
+        setShowStatusDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const filteredList = useMemo(() => {
+    const keyword = String(searchInput || "")
+      .trim()
+      .toLowerCase();
 
     return jobDescriptionList.filter((item) => {
-      const normalizedStatus = normalizeJdStatus(item.jdStatus);
+      const realStatus = getRealJdStatus(item);
       const jdViewStatus = getJdViewStatus(item);
 
       const matchesSearch =
@@ -240,17 +395,19 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
         safeText(item.account).includes(keyword) ||
         safeText(item.department).includes(keyword) ||
         safeText(item.owner).includes(keyword) ||
-        safeText(item.linkedHiringRequirement).includes(keyword);
+        safeText(item.linkedHiringRequirement).includes(keyword) ||
+        safeText(getVersion(item)).includes(keyword) ||
+        safeText(getJdStatusLabel(realStatus)).includes(keyword);
 
       const matchesJdView =
         jdViewFilter === "All JD" || jdViewStatus === jdViewFilter;
 
       const matchesJdStatus =
-        jdStatusFilter === "All Status" || normalizedStatus === jdStatusFilter;
+        statusFilter === "All Status" || realStatus === statusFilter;
 
       return matchesSearch && matchesJdView && matchesJdStatus;
     });
-  }, [jobDescriptionList, search, filterValues]);
+  }, [jobDescriptionList, searchInput, jdViewFilter, statusFilter]);
 
   useEffect(() => {
     setPagination({
@@ -261,13 +418,102 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
     });
   }, [filteredList.length, setPagination]);
 
+  const hasActiveFilters =
+    searchInput.trim() ||
+    jdViewFilter !== "All JD" ||
+    statusFilter !== "All Status";
+
+  function handleClearFilters() {
+    setSearchInput("");
+    setJdViewFilter("All JD");
+    setJdViewSearch("");
+    setShowJdViewDropdown(false);
+    setStatusFilter("All Status");
+    setStatusSearch("");
+    setShowStatusDropdown(false);
+  }
+
   return (
     <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-xl bg-white shadow-sm">
       <div className="shrink-0 border-b border-gray-100">
-        <TableHeader tableEntity={JOB_DESCRIPTION_ENTITY} />
+        <section className="overflow-visible rounded-t-xl border-[#E6ECF2] bg-white">
+          <div className="p-4 sm:p-5">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_0.5fr_0.5fr_auto] xl:items-end">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-[#101828]">
+                  Search
+                </label>
+
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
+                  />
+
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search JD, role, account, owner..."
+                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                  />
+                </div>
+              </div>
+
+              <FilterDropdown
+                label="JD View"
+                value={jdViewFilter}
+                search={jdViewSearch}
+                setSearch={setJdViewSearch}
+                show={showJdViewDropdown}
+                setShow={(value) => {
+                  setShowJdViewDropdown(value);
+                  if (value) setShowStatusDropdown(false);
+                }}
+                options={JD_VIEW_OPTIONS}
+                selectedValue={jdViewFilter}
+                onSelect={setJdViewFilter}
+                placeholder="Search JD view..."
+                dropdownRef={jdViewDropdownRef}
+                zIndex="z-50"
+              />
+
+              <FilterDropdown
+                label="Status"
+                value={statusFilter}
+                search={statusSearch}
+                setSearch={setStatusSearch}
+                show={showStatusDropdown}
+                setShow={(value) => {
+                  setShowStatusDropdown(value);
+                  if (value) setShowJdViewDropdown(false);
+                }}
+                options={JD_STATUS_OPTIONS}
+                selectedValue={statusFilter}
+                onSelect={setStatusFilter}
+                placeholder="Search status..."
+                dropdownRef={statusDropdownRef}
+                zIndex="z-40"
+              />
+
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                disabled={!hasActiveFilters}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={17} />
+                Clear
+              </button>
+            </div>
+          </div>
+        </section>
       </div>
 
-      <div className="min-h-0 flex-1 p-4 sm:p-6">
+      <div
+        key={`${jdViewFilter}-${statusFilter}-${searchInput}`}
+        className="min-h-0 flex-1 p-4 sm:p-6 sibs-profile-tab-panel"
+      >
         <div className="h-full lg:hidden">
           <div className="thin-scroll h-full overflow-y-auto">
             {filteredList.length > 0 ? (
@@ -292,12 +538,12 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
           <div className="thin-scroll h-full overflow-auto">
             <table className="w-full min-w-[980px] border-collapse text-left text-sm">
               <thead className="sticky top-0 z-10 bg-slate-100">
-                <tr className="border-b border-[#E5E7EB] text-[12px] font- text-[#344054]">
+                <tr className="border-b border-[#E5E7EB] text-[12px] font-bold text-[#344054]">
                   <th className="px-5 py-4">Job Title</th>
                   <th className="px-5 py-4">JD Code</th>
                   <th className="px-5 py-4">Department</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Version</th>
+                  <th className="px-5 py-4 text-center">Status</th>
+                  <th className="px-5 py-4 text-center">Version</th>
                   <th className="px-5 py-4">Last Approved</th>
                   <th className="px-5 py-4 text-center">Action</th>
                 </tr>
@@ -305,51 +551,51 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
               <tbody className="bg-white">
                 {filteredList.length > 0 ? (
-                  filteredList.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
-                    >
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.roleTitle || "—"}
-                      </td>
+                  filteredList.map((item) => {
+                    const realStatus = getRealJdStatus(item);
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.jdCode || "—"}
-                      </td>
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
+                      >
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.roleTitle || "—"}
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {item.department || "—"}
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.jdCode || "—"}
+                        </td>
 
-                      <td className="px-5 py-4">
-                        <JdStatusBadge status={item.jdStatus} />
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {item.department || "—"}
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {getVersion(item)}
-                      </td>
+                        <td className="px-5 py-4 text-center">
+                          <JdStatusBadge status={realStatus} />
+                        </td>
 
-                      <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                        {formatDate(getLastApproved(item))}
-                      </td>
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054] text-center">
+                          {getVersion(item)}
+                        </td>
 
-                      <td className="px-5 py-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => onView?.(item)}
-                          className="inline-flex items-center justify-center gap-2 
-                            rounded-xl border border-[#E6ECF2] bg-white px-4 py-2
-                            text-xs font-bold text-sibs-primary-1 transition
-                            hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5
-                            hover:cursor-pointer"
-                        >
-                          <Eye size={15} />
-                          Preview
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                          {formatDate(getLastApproved(item))}
+                        </td>
+
+                        <td className="px-5 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => onView?.(item)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
+                          >
+                            <Eye size={15} />
+                            Preview
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td

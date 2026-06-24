@@ -1,11 +1,20 @@
 import api from "./api-template";
 
-export async function getEmployee(page = 1, search = "") {
+export async function getEmployee(
+  page = 1,
+  search = "",
+  account = "All",
+  options = {},
+) {
   try {
     const res = await api.get("/api/employees", {
       params: {
         page,
         search,
+        department: options?.department || "All",
+        account: account || "All",
+        includeDepartments: options?.includeDepartments ? 1 : 0,
+        includeAccounts: options?.includeAccounts ? 1 : 0,
       },
       withCredentials: true,
     });
@@ -13,6 +22,11 @@ export async function getEmployee(page = 1, search = "") {
     return {
       success: res.data?.success ?? true,
       data: res.data?.data || [],
+      departmentOptions: res.data?.departmentOptions || [],
+      accountOptions: res.data?.accountOptions || [],
+      selectedDepartment:
+        res.data?.selectedDepartment || options?.department || "All",
+      selectedAccount: res.data?.selectedAccount || account || "All",
       pagination: res.data?.pagination || {
         totalPages: 1,
         currentPage: 1,
@@ -25,22 +39,26 @@ export async function getEmployee(page = 1, search = "") {
     console.error(
       "Axios getEmployee API error:",
       err?.response?.status,
-      err?.message
+      err?.message,
     );
 
     return {
       success: false,
       data: [],
+      departmentOptions: [],
+      accountOptions: [],
+      selectedDepartment: options?.department || "All",
+      selectedAccount: account || "All",
       pagination: {
         totalPages: 1,
         currentPage: 1,
         total: 0,
       },
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to fetch employees",
-      status: err.response?.status || 500,
+      status: err?.response?.status || 500,
       error: err,
     };
   }
@@ -62,17 +80,17 @@ export async function getEmployeeById(sibsId) {
     console.error(
       "Axios getEmployeeById API error:",
       err?.response?.status,
-      err?.message
+      err?.message,
     );
 
     return {
       success: false,
       data: null,
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to fetch employee",
-      status: err.response?.status || 500,
+      status: err?.response?.status || 500,
       error: err,
     };
   }
@@ -94,17 +112,58 @@ export async function getSupervisorResignations() {
     console.error(
       "Axios getSupervisorResignations API error:",
       error?.response?.status,
-      error?.message
+      error?.message,
     );
 
     return {
       success: false,
       data: [],
       message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Failed to load resignation records",
-      status: error.response?.status || 500,
+      status: error?.response?.status || 500,
+      error,
+    };
+  }
+}
+
+export async function saveSupervisorResignation(payload = {}) {
+  try {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value);
+      }
+    });
+
+    const res = await api.post("/api/resignation/supervisor", formData, {
+      withCredentials: true,
+    });
+
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || null,
+      message: res.data?.message || "Resignation submitted successfully",
+      status: res.status,
+    };
+  } catch (error) {
+    console.error(
+      "Axios saveSupervisorResignation API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return {
+      success: false,
+      data: null,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to submit resignation.",
+      status: error?.response?.status || 500,
       error,
     };
   }
@@ -126,7 +185,7 @@ export async function updateSupervisorResignation({
       },
       {
         withCredentials: true,
-      }
+      },
     );
 
     return {
@@ -139,17 +198,17 @@ export async function updateSupervisorResignation({
     console.error(
       "Axios updateSupervisorResignation API error:",
       error?.response?.status,
-      error?.response?.data || error?.message
+      error?.response?.data || error?.message,
     );
 
     return {
       success: false,
       data: null,
       message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Failed to update resignation",
-      status: error.response?.status || 500,
+      status: error?.response?.status || 500,
       error,
     };
   }
@@ -161,22 +220,28 @@ export async function getSupervisorAttritions() {
       withCredentials: true,
     });
 
-    return res.data;
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || [],
+      message: res.data?.message || "",
+      status: res.status,
+    };
   } catch (err) {
     console.error(
-      "GETSUPERVISORATTRITIONS ERROR:",
-      err.response?.data || err.message
+      "Axios getSupervisorAttritions API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
     );
 
     return {
       success: false,
       data: [],
       message:
-        err.response?.data?.message ||
-        err.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
         "Failed to load attritions",
+      status: err?.response?.status || 500,
       error: err,
-      status: err.response?.status || 500,
     };
   }
 }

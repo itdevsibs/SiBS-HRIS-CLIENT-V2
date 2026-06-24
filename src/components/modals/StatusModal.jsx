@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, XCircle } from "lucide-react";
 
@@ -9,15 +9,21 @@ export default function StatusModal({
   message,
   onClose,
   variant = "center", // center | compact
+  lockScroll = false,
 }) {
   const [mounted, setMounted] = useState(false);
+
+  const previousOverflowRef = useRef({
+    body: "",
+    html: "",
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || typeof document === "undefined") return undefined;
 
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -25,21 +31,30 @@ export default function StatusModal({
       }
     };
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
     document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
+
+    if (lockScroll) {
+      previousOverflowRef.current = {
+        body: document.body.style.overflow,
+        html: document.documentElement.style.overflow,
+      };
+
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+    }
 
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
-    };
-  }, [open, onClose]);
 
-  if (!mounted || !open) return null;
+      if (lockScroll) {
+        document.body.style.overflow = previousOverflowRef.current.body || "";
+        document.documentElement.style.overflow =
+          previousOverflowRef.current.html || "";
+      }
+    };
+  }, [open, onClose, lockScroll]);
+
+  if (!mounted || !open || typeof document === "undefined") return null;
 
   const isSuccess = type === "success";
 
@@ -48,10 +63,21 @@ export default function StatusModal({
 
   const finalMessage = message || "Operation completed.";
 
+  const handleClose = () => {
+    onClose?.();
+
+    if (!lockScroll && typeof document !== "undefined") {
+      window.setTimeout(() => {
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+      }, 0);
+    }
+  };
+
   return createPortal(
     <div
       className="fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center bg-black/40 px-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       {variant === "compact" ? (
         <div
@@ -80,15 +106,15 @@ export default function StatusModal({
             </div>
           </div>
 
-          <p className="mt-2 text-sm leading-6 text-sibs-tertiary-5">
+          <p className="mt-2 whitespace-pre-line text-sm leading-6 text-sibs-tertiary-5">
             {finalMessage}
           </p>
 
           <div className="mt-6 flex justify-end">
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-xl bg-[var(--sibs-primary-1)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
+              onClick={handleClose}
+              className="rounded-xl bg-[var(--sibs-primary-1)] px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 active:scale-[0.98]"
             >
               OK
             </button>
@@ -119,14 +145,14 @@ export default function StatusModal({
                 {finalTitle}
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-sibs-tertiary-5">
+              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-sibs-tertiary-5">
                 {finalMessage}
               </p>
 
               <button
                 type="button"
-                onClick={onClose}
-                className="mt-6 w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                onClick={handleClose}
+                className="mt-6 w-full rounded-xl bg-[var(--sibs-primary-1)] px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 active:scale-[0.98]"
               >
                 OK
               </button>

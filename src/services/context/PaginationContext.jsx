@@ -4,9 +4,34 @@ import React, {
   useMemo,
   useState,
   useCallback,
+  useEffect,
+  useRef,
 } from "react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 
 const PaginationContext = createContext(null);
+
+const MONTH_LABELS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 const createDefaultPaginationState = () => ({
   page: 1,
@@ -25,10 +50,64 @@ const createDefaultPaginationState = () => ({
     searchPlaceholder: "Search...",
     filters: [],
   },
-  filterValues: {},
+  filterValues: {
+    dateFrom: "",
+    dateTo: "",
+  },
 });
 
 const isSameJson = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+function toDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(value) {
+  if (!value) return null;
+
+  const [year, month, day] = String(value).split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+function formatDisplayDate(value) {
+  const date = parseDateKey(value);
+
+  if (!date) return "Select date";
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getCalendarCells(viewDate) {
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDate = new Date(year, month, 1 - firstDay.getDay());
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
+
+    return date;
+  });
+}
 
 export const PaginationProvider = ({ children }) => {
   const [entities, setEntities] = useState({});
@@ -42,7 +121,7 @@ export const PaginationProvider = ({ children }) => {
     setEntities((prev) => {
       const current = prev[entity] || createDefaultPaginationState();
       const resolvedUpdates =
-        typeof updates === "function" ? updates(current) : updates;
+        typeof updates === "function" ? updates(current) : updates || {};
 
       const nextState = {
         ...current,
@@ -111,11 +190,12 @@ export const PaginationProvider = ({ children }) => {
   const setSearchInput = useCallback((entity, value) => {
     setEntities((prev) => {
       const current = prev[entity] || createDefaultPaginationState();
+      const cleanValue = String(value ?? "");
 
       const nextState = {
         ...current,
-        searchInput: value,
-        ...(value.trim() === ""
+        searchInput: cleanValue,
+        ...(cleanValue.trim() === ""
           ? {
               search: "",
               page: 1,
@@ -187,7 +267,7 @@ export const PaginationProvider = ({ children }) => {
 
       const nextHeader = {
         ...current.header,
-        ...header,
+        ...(header || {}),
       };
 
       if (isSameJson(current.header, nextHeader)) {
@@ -218,10 +298,42 @@ export const PaginationProvider = ({ children }) => {
     [updateEntity],
   );
 
+  const setDateRange = useCallback(
+    (entity, nextRange = {}) => {
+      updateEntity(entity, (current) => {
+        let dateFrom = String(
+          nextRange.dateFrom ?? current.filterValues?.dateFrom ?? "",
+        ).trim();
+
+        let dateTo = String(
+          nextRange.dateTo ?? current.filterValues?.dateTo ?? "",
+        ).trim();
+
+        if (dateFrom && dateTo && dateTo < dateFrom) {
+          dateTo = dateFrom;
+        }
+
+        return {
+          filterValues: {
+            ...current.filterValues,
+            dateFrom,
+            dateTo,
+          },
+          page: 1,
+          loading: true,
+        };
+      });
+    },
+    [updateEntity],
+  );
+
   const resetFilters = useCallback(
     (entity) => {
       updateEntity(entity, {
-        filterValues: {},
+        filterValues: {
+          dateFrom: "",
+          dateTo: "",
+        },
         page: 1,
         loading: true,
       });
@@ -256,6 +368,7 @@ export const PaginationProvider = ({ children }) => {
       handleSearchKeyDown,
       setTableHeader,
       setFilter,
+      setDateRange,
       resetFilters,
       resetPagination,
     }),
@@ -270,6 +383,7 @@ export const PaginationProvider = ({ children }) => {
       handleSearchKeyDown,
       setTableHeader,
       setFilter,
+      setDateRange,
       resetFilters,
       resetPagination,
     ],
@@ -300,6 +414,7 @@ export const usePagination = (entity) => {
     handleSearchKeyDown: contextHandleSearchKeyDown,
     setTableHeader: contextSetTableHeader,
     setFilter: contextSetFilter,
+    setDateRange: contextSetDateRange,
     resetFilters: contextResetFilters,
     resetPagination: contextResetPagination,
   } = context;
@@ -351,6 +466,11 @@ export const usePagination = (entity) => {
     [contextSetFilter, entity],
   );
 
+  const setDateRange = useCallback(
+    (dateRange) => contextSetDateRange(entity, dateRange),
+    [contextSetDateRange, entity],
+  );
+
   const resetFilters = useCallback(
     () => contextResetFilters(entity),
     [contextResetFilters, entity],
@@ -379,6 +499,7 @@ export const usePagination = (entity) => {
       handleSearchKeyDown,
       setTableHeader,
       setFilter,
+      setDateRange,
       resetFilters,
       resetPagination,
     }),
@@ -399,10 +520,291 @@ export const usePagination = (entity) => {
       handleSearchKeyDown,
       setTableHeader,
       setFilter,
+      setDateRange,
       resetFilters,
       resetPagination,
     ],
   );
 };
+
+function AnimatedCalendarDropdown({ open, children }) {
+  return (
+    <div
+      className={`sibs-animated-dropdown absolute right-0 z-[99999] mt-2 w-[310px] max-[380px]:right-auto max-[380px]:left-0 max-[380px]:w-[calc(100vw-48px)] ${
+        open ? "open" : "closed"
+      }`}
+    >
+      <div className="sibs-animated-dropdown-inner">
+        <div className="max-h-[min(430px,calc(100dvh-180px))] overflow-y-auto rounded-2xl border border-[#D7E3F0] bg-white shadow-2xl sibs-scrollbar">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniCalendar({ value, min, onSelect, onClose }) {
+  const selectedDate = parseDateKey(value);
+  const minDate = parseDateKey(min);
+  const today = new Date();
+
+  const [viewDate, setViewDate] = useState(selectedDate || minDate || today);
+
+  const cells = useMemo(() => getCalendarCells(viewDate), [viewDate]);
+
+  function goPreviousMonth() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() - 1);
+      return next;
+    });
+  }
+
+  function goNextMonth() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      next.setMonth(prev.getMonth() + 1);
+      return next;
+    });
+  }
+
+  function handleSelect(date) {
+    const dateKey = toDateKey(date);
+
+    if (min && dateKey < min) return;
+
+    onSelect(dateKey);
+    onClose?.();
+  }
+
+  function handleToday() {
+    const todayKey = toDateKey(today);
+
+    if (min && todayKey < min) return;
+
+    onSelect(todayKey);
+    onClose?.();
+  }
+
+  function handleClear() {
+    onSelect("");
+    onClose?.();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+        <button
+          type="button"
+          onClick={goPreviousMonth}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          aria-label="Previous month"
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div className="text-sm font-extrabold text-sibs-primary-1">
+          {MONTH_LABELS[viewDate.getMonth()]} {viewDate.getFullYear()}
+        </div>
+
+        <button
+          type="button"
+          onClick={goNextMonth}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] active:scale-[0.96]"
+          aria-label="Next month"
+        >
+          <ChevronRight size={18} />
+        </button>
+      </div>
+
+      <div className="px-4 py-3">
+        <div className="grid grid-cols-7 gap-1">
+          {WEEKDAY_LABELS.map((day) => (
+            <div
+              key={day}
+              className="flex h-8 items-center justify-center text-xs font-extrabold text-sibs-tertiary-5"
+            >
+              {day}
+            </div>
+          ))}
+
+          {cells.map((date) => {
+            const dateKey = toDateKey(date);
+            const isCurrentMonth = date.getMonth() === viewDate.getMonth();
+            const isSelected = value && dateKey === value;
+            const isToday = dateKey === toDateKey(today);
+            const disabled = min && dateKey < min;
+
+            return (
+              <button
+                key={dateKey}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleSelect(date)}
+                className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition active:scale-[0.96] ${
+                  isSelected
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : isToday
+                      ? "bg-[#EAF2FB] text-sibs-primary-1"
+                      : isCurrentMonth
+                        ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                        : "text-slate-400 hover:bg-slate-50"
+                } ${
+                  disabled
+                    ? "cursor-not-allowed bg-slate-50 text-slate-300 hover:bg-slate-50"
+                    : ""
+                }`}
+              >
+                {date.getDate()}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-slate-50 hover:text-sibs-primary-1"
+          >
+            Clear
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToday}
+            disabled={min && toDateKey(today) < min}
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+          >
+            Today
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DateRangeInput({ label, value, min, onChange }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(e) {
+      if (!wrapperRef.current) return;
+
+      if (!wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(e) {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} className="relative h-11 w-full min-w-0">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`flex h-11 w-full items-center justify-between gap-3 rounded-full border bg-white px-4 text-left text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 hover:shadow-sm active:scale-[0.99] ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#9BB7D3] hover:border-sibs-primary-1/50"
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <CalendarDays size={17} className="shrink-0 text-sibs-primary-1" />
+
+          <span className="shrink-0">{label}</span>
+
+          <span
+            className={`truncate ${
+              value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {formatDisplayDate(value)}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedCalendarDropdown open={open}>
+        <MiniCalendar
+          value={value}
+          min={min}
+          onSelect={onChange}
+          onClose={() => setOpen(false)}
+        />
+      </AnimatedCalendarDropdown>
+    </div>
+  );
+}
+
+export function PaginationDateRangeFilter({
+  entity,
+  visible = false,
+  className = "",
+}) {
+  const { filterValues, setDateRange } = usePagination(entity);
+
+  const allowedDateRangeEntities = ["attendance", "schedule", "leaves"];
+
+  if (!visible || !allowedDateRangeEntities.includes(entity)) return null;
+
+  const dateFrom = filterValues?.dateFrom || "";
+  const dateTo = filterValues?.dateTo || "";
+
+  function handleDateFromChange(value) {
+    setDateRange({
+      dateFrom: value,
+      dateTo: dateTo && value && dateTo < value ? value : dateTo,
+    });
+  }
+
+  function handleDateToChange(value) {
+    setDateRange({
+      dateFrom,
+      dateTo: value,
+    });
+  }
+
+  return (
+    <div className={`flex w-full justify-end ${className}`}>
+      <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:max-w-[680px]">
+        <DateRangeInput
+          label="From"
+          value={dateFrom}
+          onChange={handleDateFromChange}
+        />
+
+        <DateRangeInput
+          label="To"
+          value={dateTo}
+          min={dateFrom || undefined}
+          onChange={handleDateToChange}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default PaginationContext;
