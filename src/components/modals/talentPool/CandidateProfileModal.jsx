@@ -2074,6 +2074,18 @@ export default function CandidateProfileModal() {
     [displayedPreEmploymentFiles],
   );
 
+  const totalRequirementProgress = useMemo(
+    () => calculateTotalRequirementProgress(displayedPreEmploymentFiles),
+    [displayedPreEmploymentFiles],
+  );
+
+  const hasMissingPreEmploymentRequirements = useMemo(
+    () =>
+      totalRequirementProgress.total > 0 &&
+      totalRequirementProgress.completed < totalRequirementProgress.total,
+    [totalRequirementProgress],
+  );
+
   useEffect(() => {
     if (!displayedPreEmploymentFiles.length) {
       setSelectedNhoFile(null);
@@ -2141,7 +2153,7 @@ export default function CandidateProfileModal() {
   const canUploadFollowUpNhoRequirements = Boolean(
     (resolvedPipelineId || candidatePipelineLookupId) &&
       isAlreadyInPipeline &&
-      (isIncompleteRequirementsStage || normalizedCurrentStage === "for nho"),
+      hasMissingPreEmploymentRequirements
   );
 
   const canMoveToOnboarding = Boolean(
