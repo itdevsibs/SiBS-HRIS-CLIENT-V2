@@ -907,6 +907,7 @@ export default function NhoUploadModal({
   const initialFilesRef = useRef(initialFiles);
   const currentFileRef = useRef(currentFile);
   const latestRequestRef = useRef(0);
+  const previewPanelRef = useRef(null);
 
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -1080,6 +1081,17 @@ export default function NhoUploadModal({
 
       return nextFiles;
     });
+  }
+
+  function handleSelectFileForPreview(file) {
+    setSelectedFile(file);
+
+    window.setTimeout(() => {
+      previewPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 50);
   }
 
   async function saveUploadsToBackend() {
@@ -1440,7 +1452,7 @@ export default function NhoUploadModal({
                                 uploadedFile={uploadedFile}
                                 disabled={isSaving || isLoadingFiles}
                                 onUpload={handleUpload}
-                                onSelect={setSelectedFile}
+                                onSelect={handleSelectFileForPreview}
                                 onRemove={handleRemove}
                               />
                             );
@@ -1453,14 +1465,14 @@ export default function NhoUploadModal({
                   <UploadedFilesList
                     files={files}
                     disabled={isSaving || isLoadingFiles}
-                    onSelect={setSelectedFile}
+                    onSelect={handleSelectFileForPreview}
                     onRemove={handleRemove}
                   />
                 </div>
               </section>
             </div>
 
-            <aside className="xl:sticky xl:top-0 xl:self-start">
+            <aside ref={previewPanelRef} className="xl:sticky xl:top-0 xl:self-start">
               <FilePreviewPanel file={selectedFile} />
             </aside>
           </div>
