@@ -1450,6 +1450,134 @@ export default function WeeklyHiringPlanPage() {
         attritionPastSixWeeksAverage,
         attrition_past_six_weeks_average: attritionPastSixWeeksAverage,
 
+        absenteeismTrend:
+          account.absenteeismTrend ||
+          account.absenteeism_trend ||
+          account.absenteeismPastSixWeeksTrend ||
+          account.absenteeism_past_six_weeks_trend ||
+          account.absenteeismWeeklyCounts ||
+          account.absenteeism_weekly_counts ||
+          account.absenteeismSixWeeksBreakdown ||
+          account.absenteeism_six_weeks_breakdown ||
+          account.absenteeismPastSixWeeksBreakdown ||
+          account.absenteeism_past_six_weeks_breakdown ||
+          account.weeklyAbsenteeism ||
+          account.weekly_absenteeism ||
+          [],
+
+        attritionTrend:
+          account.attritionTrend ||
+          account.attrition_trend ||
+          account.attritionPastSixWeeksTrend ||
+          account.attrition_past_six_weeks_trend ||
+          account.attritionWeeklyCounts ||
+          account.attrition_weekly_counts ||
+          account.attritionSixWeeksBreakdown ||
+          account.attrition_six_weeks_breakdown ||
+          account.attritionPastSixWeeksBreakdown ||
+          account.attrition_past_six_weeks_breakdown ||
+          account.weeklyAttrition ||
+          account.weekly_attrition ||
+          [],
+
+        absenteeismWeek1:
+          account.absenteeismWeek1 ||
+          account.absenteeism_week_1 ||
+          account.week1Absenteeism ||
+          account.week_1_absenteeism ||
+          account.w1Absenteeism ||
+          account.absenteeismW1 ||
+          0,
+        absenteeismWeek2:
+          account.absenteeismWeek2 ||
+          account.absenteeism_week_2 ||
+          account.week2Absenteeism ||
+          account.week_2_absenteeism ||
+          account.w2Absenteeism ||
+          account.absenteeismW2 ||
+          0,
+        absenteeismWeek3:
+          account.absenteeismWeek3 ||
+          account.absenteeism_week_3 ||
+          account.week3Absenteeism ||
+          account.week_3_absenteeism ||
+          account.w3Absenteeism ||
+          account.absenteeismW3 ||
+          0,
+        absenteeismWeek4:
+          account.absenteeismWeek4 ||
+          account.absenteeism_week_4 ||
+          account.week4Absenteeism ||
+          account.week_4_absenteeism ||
+          account.w4Absenteeism ||
+          account.absenteeismW4 ||
+          0,
+        absenteeismWeek5:
+          account.absenteeismWeek5 ||
+          account.absenteeism_week_5 ||
+          account.week5Absenteeism ||
+          account.week_5_absenteeism ||
+          account.w5Absenteeism ||
+          account.absenteeismW5 ||
+          0,
+        absenteeismWeek6:
+          account.absenteeismWeek6 ||
+          account.absenteeism_week_6 ||
+          account.week6Absenteeism ||
+          account.week_6_absenteeism ||
+          account.w6Absenteeism ||
+          account.absenteeismW6 ||
+          0,
+
+        attritionWeek1:
+          account.attritionWeek1 ||
+          account.attrition_week_1 ||
+          account.week1Attrition ||
+          account.week_1_attrition ||
+          account.w1Attrition ||
+          account.attritionW1 ||
+          0,
+        attritionWeek2:
+          account.attritionWeek2 ||
+          account.attrition_week_2 ||
+          account.week2Attrition ||
+          account.week_2_attrition ||
+          account.w2Attrition ||
+          account.attritionW2 ||
+          0,
+        attritionWeek3:
+          account.attritionWeek3 ||
+          account.attrition_week_3 ||
+          account.week3Attrition ||
+          account.week_3_attrition ||
+          account.w3Attrition ||
+          account.attritionW3 ||
+          0,
+        attritionWeek4:
+          account.attritionWeek4 ||
+          account.attrition_week_4 ||
+          account.week4Attrition ||
+          account.week_4_attrition ||
+          account.w4Attrition ||
+          account.attritionW4 ||
+          0,
+        attritionWeek5:
+          account.attritionWeek5 ||
+          account.attrition_week_5 ||
+          account.week5Attrition ||
+          account.week_5_attrition ||
+          account.w5Attrition ||
+          account.attritionW5 ||
+          0,
+        attritionWeek6:
+          account.attritionWeek6 ||
+          account.attrition_week_6 ||
+          account.week6Attrition ||
+          account.week_6_attrition ||
+          account.w6Attrition ||
+          account.attritionW6 ||
+          0,
+
         opsPrf,
         projectedEmployeeNeeds,
         projected_employee_needs: projectedEmployeeNeeds,
@@ -2603,10 +2731,10 @@ export default function WeeklyHiringPlanPage() {
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
+        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-3 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-6"
       >
-        <div className="sibs-page-header-in mb-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
+        <div className="sibs-page-header-in mb-5 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 xl:max-w-[520px]">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <ClipboardList size={14} />
               Recruitment
@@ -2621,13 +2749,8 @@ export default function WeeklyHiringPlanPage() {
               percentage, leads needed, and action items.
             </p>
           </div>
-        </div>
 
-        <div className="space-y-4">
-          <section
-            className={`relative z-[50] ${APPROVAL_EDGE}`}
-            style={{ animationDelay: "0ms" }}
-          >
+          <div className="w-full xl:flex xl:flex-1 xl:justify-end">
             <WeeklyVersionTable
               weekDropdownRef={weekDropdownRef}
               clusterDropdownRef={clusterDropdownRef}
@@ -2653,24 +2776,17 @@ export default function WeeklyHiringPlanPage() {
               setAccountSearch={setAccountSearch}
               accountsLoading={accountsLoading}
               filteredAccountOptions={filteredAccountOptions}
-              selectedHiringPlanPercent={selectedHiringPlanPercent}
-              setSelectedHiringPlanPercent={setSelectedHiringPlanPercent}
-              isLocked={isWeekLockedForDisplay}
-              isHiringPlanSnapshotLocked={isHiringPlanSnapshotLocked}
-              canManageHiringPlanPercent={canEditHiringPlanPercentNow}
-              canEditRequiredHeadcount={canEditRequiredHeadcount}
               isAllClustersSelected={isAllClustersSelected}
               isAllAccountsSelected={isAllAccountsSelected}
               handleToggleCluster={handleToggleCluster}
               handleToggleAccount={handleToggleAccount}
               user={user}
               assignedAccounts={user?.assignedAccounts || []}
-              onLockWeeklyHiringPlan={handleLockWeeklyHiringPlan}
-              lockingWeeklyPlan={lockingWeeklyPlan}
-              filteredPlansCount={filteredPlans.length}
             />
-          </section>
+          </div>
+        </div>
 
+        <div className="space-y-3 sm:space-y-4">
           <section
             className={`relative z-[20] ${APPROVAL_EDGE}`}
             style={{ animationDelay: "60ms" }}
