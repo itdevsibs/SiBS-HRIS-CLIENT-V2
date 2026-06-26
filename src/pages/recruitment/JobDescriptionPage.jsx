@@ -10,7 +10,6 @@ import StatusModal from "../../components/modals/StatusModal";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
-  saveJobDescriptionRevision,
 } from "../../lib/axios/jobDescription";
 import { useUser } from "../../services/context/UserContext";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
@@ -30,14 +29,136 @@ const emptyRevisionForm = {
   revisedBySibsId: "",
   revisedBy: "",
   revisionRemarks: "",
+
+  existingJdId: "",
+  existing_jd_id: "",
+  linkedHiringRequirement: "",
+  linked_hiring_requirement: "",
+
+  documentTitle: "",
+  document_title: "",
+
+  roleTitle: "",
+  role_title: "",
+
+  accountId: "",
+  account_id: "",
+  account: "",
+  preparedFor: "",
+  prepared_for: "",
+  preparedForId: "",
+
+  departmentId: "",
+  department_id: "",
+  department: "",
+
+  dateRequested: "",
+  date_requested: "",
+
+  createdBy: "",
+  created_by: "",
+
+  jdCode: "",
+  jd_code: "",
+
+  currentVersion: "",
+  current_version: "",
+  revisionNo: "",
+  revision_no: "",
+
+  effectiveDate: "",
+  effective_date: "",
+
+  lastUpdated: "",
+  last_updated: "",
+
+  reportsTo: "",
+  reports_to: "",
+
+  supervisory: "No",
+
   description: "",
   responsibilities: "",
   qualifications: "",
+
+  personalityType: "",
+  personality_type: "",
+  personalityTypes: [],
+
+  remarks: "",
+
+  competencies: [],
+  desiredCompetencies: [],
+  desired_competencies: [],
+  competenciesText: "",
 };
 
 function normalizeJdStatus(status) {
   if (status === "New JD") return "New Job Description";
   return status || "New Job Description";
+}
+
+function splitPersonalityTypes(value = "") {
+  return String(value || "")
+    .split(/[,;\n|]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getCompetencyLevel(competency = {}) {
+  if (competency.level) return String(competency.level);
+
+  if (Number(competency.average) === 1 || competency.average === true) {
+    return "Average";
+  }
+
+  if (Number(competency.proficient) === 1 || competency.proficient === true) {
+    return "Proficient";
+  }
+
+  if (Number(competency.excellent) === 1 || competency.excellent === true) {
+    return "Excellent";
+  }
+
+  return "";
+}
+
+function serializeCompetenciesForDisplay(competencies = []) {
+  if (!Array.isArray(competencies)) return "";
+
+  return competencies
+    .map((competency, index) => {
+      const title = competency.title || "";
+      const description = competency.description || "";
+      const level = getCompetencyLevel(competency);
+
+      return [
+        `${index + 1}. ${title || "Untitled Competency"}`,
+        description,
+        level ? `Level: ${level}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n\n");
+}
+
+function getJobDescriptionCompetencies(item = {}) {
+  if (Array.isArray(item.competencies)) return item.competencies;
+  if (Array.isArray(item.desiredCompetencies)) return item.desiredCompetencies;
+  if (Array.isArray(item.desired_competencies)) {
+    return item.desired_competencies;
+  }
+
+  if (Array.isArray(item.raw?.competencies)) return item.raw.competencies;
+  if (Array.isArray(item.raw?.desiredCompetencies)) {
+    return item.raw.desiredCompetencies;
+  }
+  if (Array.isArray(item.raw?.desired_competencies)) {
+    return item.raw.desired_competencies;
+  }
+
+  return [];
 }
 
 function formatLoggedInOwner(user) {
@@ -132,7 +253,6 @@ function StatCard({
 
 export default function JobDescriptionPage() {
   const mainRef = useRef(null);
-
   const { user } = useUser();
 
   const {
@@ -141,11 +261,16 @@ export default function JobDescriptionPage() {
     setRequestedByUsers,
     setDropdownLoading,
     setDropdownError,
+
+    selectedJobDescription,
+    openJobDescriptionDetails,
+    closeJobDescriptionDetails,
+    updateSelectedJobDescription,
+    normalizeJobDescriptionViewItem,
   } = useJobDescription();
 
   const [jobDescriptionList, setJobDescriptionList] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
 
   const [revisionItem, setRevisionItem] = useState(null);
   const [revisionForm, setRevisionForm] = useState(emptyRevisionForm);
@@ -191,7 +316,10 @@ export default function JobDescriptionPage() {
   }
 
   useLayoutEffect(() => {
-    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+    if (
+      typeof window !== "undefined" &&
+      "scrollRestoration" in window.history
+    ) {
       window.history.scrollRestoration = "manual";
     }
 
@@ -208,12 +336,22 @@ export default function JobDescriptionPage() {
   }
 
   function normalizeJobDescriptionItem(item) {
+    const normalized =
+      typeof normalizeJobDescriptionViewItem === "function"
+        ? normalizeJobDescriptionViewItem(item || {})
+        : item || {};
+
     return {
-      ...item,
-      jdStatus: normalizeJdStatus(item?.jdStatus),
-      revisionHistory: Array.isArray(item?.revisionHistory)
-        ? item.revisionHistory
-        : [],
+      ...normalized,
+      jdStatus: normalizeJdStatus(normalized?.jdStatus),
+      jd_status: normalizeJdStatus(
+        normalized?.jd_status || normalized?.jdStatus,
+      ),
+      revisionHistory: Array.isArray(normalized?.revisionHistory)
+        ? normalized.revisionHistory
+        : Array.isArray(normalized?.revision_history)
+          ? normalized.revision_history
+          : [],
     };
   }
 
@@ -315,25 +453,208 @@ export default function JobDescriptionPage() {
 
     setJobDescriptionList((prev) => [
       normalizedItem,
-      ...prev.filter((item) => item.id !== normalizedItem.id),
+      ...prev.filter((item) => Number(item.id) !== Number(normalizedItem.id)),
     ]);
 
-    setSelectedItem(normalizedItem);
+    openJobDescriptionDetails(normalizedItem);
     setShowCreateModal(false);
     forceScrollToTop();
   }
 
+  function handleViewJobDescription(item) {
+    const normalizedItem = normalizeJobDescriptionItem(item);
+
+    openJobDescriptionDetails(normalizedItem);
+  }
+
+  function handleCloseViewJobDescription() {
+    closeJobDescriptionDetails();
+  }
+
+  function handleUpdatedJobDescription(updatedItem) {
+    if (!updatedItem) return;
+
+    const normalizedItem = normalizeJobDescriptionItem(updatedItem);
+
+    setJobDescriptionList((prev) =>
+      prev.map((item) =>
+        Number(item.id) === Number(normalizedItem.id) ? normalizedItem : item,
+      ),
+    );
+
+    updateSelectedJobDescription(normalizedItem);
+  }
+
   function handleOpenRevision(item) {
+    const targetItem = item || selectedJobDescription;
+
+    if (!targetItem) return;
+
+    const normalizedItem = normalizeJobDescriptionItem(targetItem);
     const loggedInOwner = getLoggedInOwner();
 
-    setRevisionItem(item);
+    const personalityType =
+      normalizedItem.personalityType ||
+      normalizedItem.personality_type ||
+      normalizedItem.preferredPersonalityType ||
+      normalizedItem.preferred_personality_type ||
+      "";
+
+    const competencies = getJobDescriptionCompetencies(normalizedItem);
+
+    const existingJdId =
+      normalizedItem.existingJdId ||
+      normalizedItem.existing_jd_id ||
+      normalizedItem.linkedHiringRequirement ||
+      normalizedItem.linked_hiring_requirement ||
+      "";
+
+    const accountId =
+      normalizedItem.accountId || normalizedItem.account_id || "";
+
+    const account =
+      normalizedItem.account ||
+      normalizedItem.preparedFor ||
+      normalizedItem.prepared_for ||
+      "";
+
+    const departmentId =
+      normalizedItem.departmentId || normalizedItem.department_id || "";
+
+    const department = normalizedItem.department || "";
+
+    const documentTitle =
+      normalizedItem.documentTitle || normalizedItem.document_title || "";
+
+    const roleTitle =
+      normalizedItem.roleTitle ||
+      normalizedItem.role_title ||
+      normalizedItem.title ||
+      "";
+
+    setRevisionItem(normalizedItem);
+
     setRevisionForm({
       revisedBySibsId: loggedInOwner.ownerSibsId,
       revisedBy: loggedInOwner.owner,
       revisionRemarks: "",
-      description: item.description || "",
-      responsibilities: item.responsibilities || "",
-      qualifications: item.qualifications || "",
+
+      existingJdId,
+      existing_jd_id: existingJdId,
+      linkedHiringRequirement: existingJdId,
+      linked_hiring_requirement: existingJdId,
+
+      documentTitle,
+      document_title: documentTitle,
+
+      roleTitle,
+      role_title: roleTitle,
+
+      accountId,
+      account_id: accountId,
+      account,
+      preparedFor: account,
+      prepared_for: account,
+      preparedForId: accountId,
+
+      departmentId,
+      department_id: departmentId,
+      department,
+
+      dateRequested:
+        normalizedItem.dateRequested || normalizedItem.date_requested || "",
+      date_requested:
+        normalizedItem.date_requested || normalizedItem.dateRequested || "",
+
+      createdBy:
+        normalizedItem.createdBy ||
+        normalizedItem.created_by ||
+        normalizedItem.requestedBy ||
+        normalizedItem.requested_by ||
+        "",
+
+      created_by:
+        normalizedItem.created_by ||
+        normalizedItem.createdBy ||
+        normalizedItem.requested_by ||
+        normalizedItem.requestedBy ||
+        "",
+
+      jdCode: normalizedItem.jdCode || normalizedItem.jd_code || "",
+      jd_code: normalizedItem.jd_code || normalizedItem.jdCode || "",
+
+      currentVersion:
+        normalizedItem.currentVersion ||
+        normalizedItem.current_version ||
+        normalizedItem.revisionNo ||
+        normalizedItem.revision_no ||
+        "1",
+
+      current_version:
+        normalizedItem.current_version ||
+        normalizedItem.currentVersion ||
+        normalizedItem.revision_no ||
+        normalizedItem.revisionNo ||
+        "1",
+
+      revisionNo:
+        normalizedItem.revisionNo ||
+        normalizedItem.revision_no ||
+        normalizedItem.currentVersion ||
+        normalizedItem.current_version ||
+        "1",
+
+      revision_no:
+        normalizedItem.revision_no ||
+        normalizedItem.revisionNo ||
+        normalizedItem.current_version ||
+        normalizedItem.currentVersion ||
+        "1",
+
+      effectiveDate:
+        normalizedItem.effectiveDate || normalizedItem.effective_date || "",
+      effective_date:
+        normalizedItem.effective_date || normalizedItem.effectiveDate || "",
+
+      lastUpdated:
+        normalizedItem.lastUpdated ||
+        normalizedItem.last_updated ||
+        normalizedItem.lastReviewed ||
+        normalizedItem.last_reviewed ||
+        "",
+
+      last_updated:
+        normalizedItem.last_updated ||
+        normalizedItem.lastUpdated ||
+        normalizedItem.last_reviewed ||
+        normalizedItem.lastReviewed ||
+        "",
+
+      reportsTo: normalizedItem.reportsTo || normalizedItem.reports_to || "",
+      reports_to: normalizedItem.reports_to || normalizedItem.reportsTo || "",
+
+      supervisory: normalizedItem.supervisory || "No",
+
+      description: normalizedItem.description || "",
+      responsibilities: normalizedItem.responsibilities || "",
+      qualifications: normalizedItem.qualifications || "",
+
+      personalityType,
+      personality_type: personalityType,
+      personalityTypes: Array.isArray(normalizedItem.personalityTypes)
+        ? normalizedItem.personalityTypes
+        : splitPersonalityTypes(personalityType),
+
+      remarks:
+        normalizedItem.remarks ||
+        normalizedItem.jdRemarks ||
+        normalizedItem.jd_remarks ||
+        "",
+
+      competencies,
+      desiredCompetencies: competencies,
+      desired_competencies: competencies,
+      competenciesText: serializeCompetenciesForDisplay(competencies),
     });
   }
 
@@ -347,8 +668,14 @@ export default function JobDescriptionPage() {
 
     if (!button || button.disabled) return;
 
-    const buttonText = String(button.textContent || "").trim().toLowerCase();
-    const ariaLabel = String(button.getAttribute("aria-label") || "").toLowerCase();
+    const buttonText = String(button.textContent || "")
+      .trim()
+      .toLowerCase();
+
+    const ariaLabel = String(
+      button.getAttribute("aria-label") || "",
+    ).toLowerCase();
+
     const title = String(button.getAttribute("title") || "").toLowerCase();
 
     const isPaginationClick =
@@ -370,84 +697,30 @@ export default function JobDescriptionPage() {
     }, 0);
   }
 
-  async function handleSubmitRevision(e) {
-    e.preventDefault();
-
-    if (!revisionItem) return;
-
-    if (!revisionForm.revisedBySibsId || !revisionForm.revisedBy.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Revised By",
-        message: "Revised By is required.",
-      });
-      return;
-    }
-
-    if (!revisionForm.revisionRemarks.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Revision Remarks",
-        message: "Revision remarks are required.",
-      });
-      return;
-    }
-
-    if (!revisionForm.description.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Updated Description",
-        message: "Updated job description is required.",
-      });
-      return;
-    }
-
-    if (!revisionForm.responsibilities.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Updated Responsibilities",
-        message: "Updated responsibilities are required.",
-      });
-      return;
-    }
-
-    if (!revisionForm.qualifications.trim()) {
-      showStatus({
-        type: "error",
-        title: "Missing Updated Qualifications",
-        message: "Updated qualifications are required.",
-      });
-      return;
-    }
-
-    const payload = {
-      revisedBySibsId: revisionForm.revisedBySibsId,
-      revisedBy: revisionForm.revisedBy,
-      revisionRemarks: revisionForm.revisionRemarks.trim(),
-      description: revisionForm.description.trim(),
-      responsibilities: revisionForm.responsibilities.trim(),
-      qualifications: revisionForm.qualifications.trim(),
-    };
-
-    const result = await saveJobDescriptionRevision(revisionItem.id, payload);
-
-    if (!result.success) {
+  async function handleSubmitRevision(result) {
+    if (!result?.success) {
       showStatus({
         type: "error",
         title: "Revision Failed",
-        message: result.message || "Failed to save job description revision.",
+        message: result?.message || "Failed to save job description revision.",
       });
       return;
     }
 
-    const updatedItem = normalizeJobDescriptionItem(result.data);
-
-    setJobDescriptionList((prev) =>
-      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
+    const updatedItem = normalizeJobDescriptionItem(
+      result.data || revisionItem,
     );
 
-    setSelectedItem(updatedItem);
-    handleCloseRevision();
+    setJobDescriptionList((prev) =>
+      prev.map((item) =>
+        String(item.id) === String(updatedItem.id) ? updatedItem : item,
+      ),
+    );
+
+    updateSelectedJobDescription(updatedItem);
+
+    setRevisionItem(null);
+    setRevisionForm(emptyRevisionForm);
 
     showStatus({
       type: "success",
@@ -456,6 +729,7 @@ export default function JobDescriptionPage() {
         result.message || "Job description revision was saved successfully.",
     });
 
+    await loadJobDescriptionRecords();
     forceScrollToTop();
   }
 
@@ -575,7 +849,7 @@ export default function JobDescriptionPage() {
           >
             <JobDescriptionTable
               jobDescriptionList={jobDescriptionList}
-              onView={setSelectedItem}
+              onView={handleViewJobDescription}
               onPageChange={forceScrollToTop}
               scrollToTop={forceScrollToTop}
               onRefresh={loadJobDescriptionRecords}
@@ -592,10 +866,12 @@ export default function JobDescriptionPage() {
       />
 
       <ViewJobDescriptionModal
-        open={!!selectedItem}
-        item={selectedItem}
-        onClose={() => setSelectedItem(null)}
+        open={!!selectedJobDescription}
+        onClose={handleCloseViewJobDescription}
         onOpenRevision={handleOpenRevision}
+        onUpdated={handleUpdatedJobDescription}
+        onRefresh={loadJobDescriptionRecords}
+        onStatus={showStatus}
         approvalPage={false}
       />
 
