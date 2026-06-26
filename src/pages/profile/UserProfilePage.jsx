@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   User,
-  Phone,
   Mail,
-  Building2,
   Briefcase,
   MapPin,
-  CalendarDays,
   UserRoundPen,
   X,
   UploadCloud,
@@ -44,6 +41,8 @@ import {
   uploadMyEmployeeProfilePicture,
 } from "../../lib/axios/employeeProfile";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
 const tabs = [
   "Personal",
   "Job",
@@ -72,17 +71,18 @@ const tabIcons = {
   Resignation: UserRoundPen,
 };
 
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function firstValue(...values) {
+  return values.find((value) => cleanText(value)) || "";
+}
+
 function getFullName(user) {
   return [user?.firstName, user?.middleName, user?.lastName]
     .filter(Boolean)
     .join(" ");
-}
-
-function normalizeRole(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
 }
 
 function canEditProfileDetails(user) {
@@ -103,17 +103,7 @@ function canEditProfileDetails(user) {
   // 5 = Manager
   // 6 = Executive
   // 7 = Super Admin
-
   return access >= 1 && access <= 7;
-}
-
-
-function cleanText(value) {
-  return String(value ?? "").trim();
-}
-
-function firstValue(...values) {
-  return values.find((value) => cleanText(value)) || "";
 }
 
 function getProfileSibsId(user) {
@@ -134,6 +124,18 @@ function getProfileSibsId(user) {
   return cleaned;
 }
 
+function toInputDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
 function normalizeProfileData(user) {
   const sibsId = getProfileSibsId(user);
 
@@ -143,12 +145,16 @@ function normalizeProfileData(user) {
     sibsId,
 
     firstName: firstValue(user?.firstName, user?.first_name, user?.gy_emp_fname),
+
     middleName: firstValue(
       user?.middleName,
       user?.middle_name,
       user?.gy_emp_mname,
     ),
+
     lastName: firstValue(user?.lastName, user?.last_name, user?.gy_emp_lname),
+
+    preferredName: firstValue(user?.preferredName, user?.preferred_name),
 
     email: firstValue(user?.email, user?.gy_email, user?.gy_user_email),
 
@@ -160,7 +166,9 @@ function normalizeProfileData(user) {
     ),
 
     department: firstValue(user?.department, user?.departmentName),
+
     account: firstValue(user?.account, user?.accountName),
+
     position: firstValue(user?.position, user?.jobTitle, user?.roleTitle),
 
     location: firstValue(
@@ -176,6 +184,8 @@ function normalizeProfileData(user) {
 
     birthdate: firstValue(user?.birthdate, user?.birthDate, user?.gy_emp_dob),
 
+    gender: firstValue(user?.gender, user?.gy_emp_gender),
+
     civilStatus: firstValue(
       user?.civilStatus,
       user?.maritalStatus,
@@ -183,43 +193,41 @@ function normalizeProfileData(user) {
     ),
 
     status: firstValue(user?.status, "Active"),
+
     workSetup: firstValue(user?.workSetup, "On-site"),
 
     sss: firstValue(user?.sss),
     phic: firstValue(user?.phic),
     hdmf: firstValue(user?.hdmf),
     tin: firstValue(user?.tin),
-  };
-}
-
-function buildEditableUser(user) {
-  const normalizedUser = normalizeProfileData(user);
-
-  return {
-    ...normalizedUser,
 
     education: Array.isArray(user?.education) ? user.education : [],
     experience: Array.isArray(user?.experience) ? user.experience : [],
     skills: Array.isArray(user?.skills) ? user.skills : [],
 
-    preferredName: firstValue(user?.preferredName, user?.preferred_name),
-
     emergencyName: firstValue(
       user?.emergencyName,
       user?.emergencyContactName,
     ),
+
     emergencyRelationship: firstValue(
       user?.emergencyRelationship,
       user?.emergencyContactRelationship,
     ),
+
     emergencyPhone: firstValue(
       user?.emergencyPhone,
       user?.emergencyContactNumber,
     ),
+
     emergencyEmail: firstValue(user?.emergencyEmail),
 
     notes: firstValue(user?.notes),
   };
+}
+
+function buildEditableUser(user) {
+  return normalizeProfileData(user);
 }
 
 function ProfilePictureModal({
@@ -480,7 +488,7 @@ export default function UserProfilePage() {
 
   const skills = Array.isArray(displayUser?.skills) ? displayUser.skills : [];
 
-  const formatDate = (dateString) => {
+  function formatDate(dateString) {
     if (!dateString) return "N/A";
 
     const date = new Date(dateString);
@@ -492,62 +500,67 @@ export default function UserProfilePage() {
       month: "long",
       day: "numeric",
     });
-  };
-
-  useEffect(() => {
-  if (!user) return;
-
-  setLocalProfile((prev) => {
-    const prevKey = getProfileSibsId(prev) || prev?.email;
-    const nextKey = getProfileSibsId(user) || user?.email;
-
-    if (prev && prevKey === nextKey) return prev;
-
-    return buildEditableUser(user);
-  });
-}, [user]);
-
-useEffect(() => {
-  if (!tokenSibsId) return;
-
-  const controller = new AbortController();
-
-  async function fetchCurrentEmployeeProfile() {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/employees/${encodeURIComponent(tokenSibsId)}`,
-        {
-          method: "GET",
-          credentials: "include",
-          signal: controller.signal,
-        },
-      );
-
-      if (!response.ok) return;
-
-      const result = await response.json();
-
-      if (result?.success && result?.data) {
-        setLocalProfile(
-          buildEditableUser({
-            ...user,
-            ...result.data,
-          }),
-        );
-      }
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        console.error("USER PROFILE FETCH ERROR:", error);
-      }
-    }
   }
 
-  fetchCurrentEmployeeProfile();
+  function openResignationModal() {
+    setOpenProfileDropdown(false);
+    setOpenAddResignation(true);
+  }
 
-  return () => {
-    controller.abort();
-  };
-}, [tokenSibsId, user]);
+  useEffect(() => {
+    if (!user) return;
+
+    setLocalProfile((prev) => {
+      const prevKey = getProfileSibsId(prev) || prev?.email;
+      const nextKey = getProfileSibsId(user) || user?.email;
+
+      if (prev && prevKey === nextKey) return prev;
+
+      return buildEditableUser(user);
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!tokenSibsId) return;
+
+    const controller = new AbortController();
+
+    async function fetchCurrentEmployeeProfile() {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/employees/${encodeURIComponent(tokenSibsId)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+
+        if (result?.success && result?.data) {
+          setLocalProfile(
+            buildEditableUser({
+              ...user,
+              ...result.data,
+            }),
+          );
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("USER PROFILE FETCH ERROR:", error);
+        }
+      }
+    }
+
+    fetchCurrentEmployeeProfile();
+
+    return () => {
+      controller.abort();
+    };
+  }, [tokenSibsId, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -587,7 +600,9 @@ useEffect(() => {
   }, [user, activeTab, displayUser]);
 
   useEffect(() => {
-    setOpenAddResignation(openEditResignationModal);
+    if (openEditResignationModal) {
+      setOpenAddResignation(true);
+    }
   }, [openEditResignationModal]);
 
   async function handleUploadProfilePicture(file, modalStatus) {
@@ -647,6 +662,7 @@ useEffect(() => {
   }
 
   function startEditing() {
+    setOpenProfileDropdown(false);
     setDraftProfile(buildEditableUser(displayUser));
     setIsEditing(true);
   }
@@ -817,143 +833,149 @@ useEffect(() => {
             Loading...
           </div>
         ) : (
-          <div className="w-full space-y-5">
+          <div className="sibs-page-header-in w-full space-y-5">
             <section className="overflow-visible rounded-[22px] bg-sibs-primary-1 shadow-sm ring-1 ring-[#D9E2EC]">
-  <div className="relative z-10 overflow-visible rounded-[22px] bg-sibs-primary-1 px-5 py-5 text-white">
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpenProfilePictureModal(true);
-          }}
-          className="group relative flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
-          title="View or upload profile picture"
-        >
-          {profilePicture ? (
-            <img
-              src={profilePicture}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <User
-              size={36}
-              className="text-white transition-transform duration-300 group-hover:scale-110"
-            />
-          )}
+              <div className="relative z-10 overflow-visible rounded-[22px] bg-sibs-primary-1 px-5 py-5 text-white">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenProfilePictureModal(true);
+                      }}
+                      className="group relative flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
+                      title="View or upload profile picture"
+                    >
+                      {profilePicture ? (
+                        <img
+                          src={profilePicture}
+                          alt="Profile"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <User
+                          size={36}
+                          className="text-white transition-transform duration-300 group-hover:scale-110"
+                        />
+                      )}
 
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 shadow-sm">
-              Edit
-            </span>
-          </div>
-        </button>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 shadow-sm">
+                          Edit
+                        </span>
+                      </div>
+                    </button>
 
-        <div className="min-w-0 pt-1">
-          <h1 className="break-words text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl">
-            {fullName || "User Name"}
-          </h1>
+                    <div className="min-w-0 pt-1">
+                      <h1 className="break-words text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl">
+                        {fullName || "User Name"}
+                      </h1>
 
-          <p className="mt-1 text-sm font-bold text-white/85">
-            {displayUser?.account || "User"}
-          </p>
+                      <p className="mt-1 text-sm font-bold text-white/85">
+                        {displayUser?.account || "User"}
+                      </p>
 
-          {resolvedSibsId && (
-          <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-white/70">
-            SIBS ID: {resolvedSibsId}
-          </p>
-        )}
-        </div>
-      </div>
+                      {resolvedSibsId && (
+                        <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-white/70">
+                          SIBS ID: {resolvedSibsId}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-      <div
-        className="flex flex-wrap items-center gap-2 lg:justify-end"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {canEditDetails ? (
-          isEditing ? (
-            <>
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
-              >
-                <RotateCcw size={16} />
-                Cancel
-              </button>
+                  <div
+                    className="flex flex-wrap items-center gap-2 lg:justify-end"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {canEditDetails ? (
+                      isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
+                          >
+                            <RotateCcw size={16} />
+                            Cancel
+                          </button>
 
-              <button
-                type="button"
-                onClick={saveLocalChanges}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-              >
-                <Save size={16} />
-                Save Changes
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-            >
-              <Edit3 size={16} />
-              Edit Profile
-            </button>
-          )
-        ) : (
-          <button
-            type="button"
-            onClick={() => setOpenProfileDropdown((prev) => !prev)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-          >
-            <UserRoundPen size={16} />
-            Request a Change
-          </button>
-        )}
+                          <button
+                            type="button"
+                            onClick={saveLocalChanges}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                          >
+                            <Save size={16} />
+                            Save Changes
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={startEditing}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                        >
+                          <Edit3 size={16} />
+                          Edit Profile
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openResignationModal}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                      >
+                        <UserRoundPen size={16} />
+                        Request a Change
+                      </button>
+                    )}
 
-        <div className="relative z-[60]">
-          <button
-            type="button"
-            onClick={() => setOpenProfileDropdown((prev) => !prev)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90"
-            aria-label="More profile actions"
-          >
-            <MoreHorizontal size={18} />
-          </button>
+                    <div className="relative z-[60]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenProfileDropdown((prev) => !prev);
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90"
+                        aria-label="More profile actions"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
 
-          {openProfileDropdown && (
-            <div className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2">
-              <ProfileDropdown
-                openModal={setOpenAddResignation}
-                openDropdown={setOpenProfileDropdown}
+                      {openProfileDropdown && (
+                        <div
+                          className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ProfileDropdown
+                            openModal={openResignationModal}
+                            openDropdown={setOpenProfileDropdown}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="sibs-page-card-in grid min-h-[calc(100vh-300px)] grid-cols-1 items-stretch gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
+              <ProfileSideNav
+                tabs={tabs}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
               />
+
+              <section ref={contentRef} className="min-w-0">
+                <div
+                  key={activeTab}
+                  className="sibs-profile-tab-panel h-full min-h-[calc(100vh-300px)]"
+                >
+                  {renderActiveTabContent()}
+                </div>
+              </section>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-            <div className="grid min-h-[calc(100vh-300px)] grid-cols-1 items-stretch gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
-  <ProfileSideNav
-    tabs={tabs}
-    activeTab={activeTab}
-    onTabChange={setActiveTab}
-  />
-
-  <section ref={contentRef} className="min-w-0">
-    <div
-      key={activeTab}
-      className="sibs-profile-tab-panel h-full min-h-[calc(100vh-300px)]"
-    >
-      {renderActiveTabContent()}
-    </div>
-  </section>
-</div>
           </div>
         )}
       </main>
@@ -968,9 +990,12 @@ useEffect(() => {
       />
 
       <ResignationModal
-        open={openAddResignation}
+        open={Boolean(openAddResignation)}
         onClose={() => setOpenAddResignation(false)}
-        onSuccess={() => {}}
+        onSuccess={() => {
+          setOpenAddResignation(false);
+          setActiveTab("Resignation");
+        }}
         setStatusModal={setStatusModal}
       />
 
@@ -988,20 +1013,6 @@ useEffect(() => {
           })
         }
       />
-    </div>
-  );
-}
-
-function SummaryStripItem({ label, value }) {
-  return (
-    <div className="min-w-0 border-t border-[#E6ECF2] px-5 py-4 first:border-t-0 md:border-l md:border-t-0 md:first:border-l-0">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-        {label}
-      </p>
-
-      <p className="mt-1 truncate text-sm font-extrabold text-[#101828]">
-        {value || "N/A"}
-      </p>
     </div>
   );
 }
@@ -1034,6 +1045,7 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
     </aside>
   );
 }
+
 function ProfileCard({ title, subtitle, icon: Icon, children, className = "" }) {
   return (
     <section
@@ -1077,6 +1089,10 @@ function ProfileDetail({
   onChange,
   type = "text",
 }) {
+  const isLongText = ["email", "address"].includes(
+    String(label || "").toLowerCase(),
+  );
+
   return (
     <div className="flex h-[84px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-4 py-2.5">
       <p className="mb-1.5 text-[11px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70">
@@ -1091,7 +1107,11 @@ function ProfileDetail({
           className="h-9 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
         />
       ) : (
-        <p className="flex min-h-9 items-center break-words text-sm font-extrabold leading-[18px] text-[#344054]">
+        <p
+          className={`flex min-h-9 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
+            isLongText ? "break-all" : "break-words"
+          }`}
+        >
           {value || "—"}
         </p>
       )}
@@ -1192,7 +1212,14 @@ function PersonalProfileTab({ user, isEditing, onChange, formatDate }) {
           <ProfileGrid cols="md:grid-cols-3">
             <ProfileDetail
               label="Birth Date"
-              value={formatDate(user?.birthdate || user?.birthDate)}
+              value={
+                isEditing
+                  ? toInputDate(user?.birthdate || user?.birthDate)
+                  : formatDate(user?.birthdate || user?.birthDate)
+              }
+              editable={isEditing}
+              type="date"
+              onChange={(value) => onChange("birthdate", value)}
             />
 
             <ProfileDetail
@@ -1229,7 +1256,7 @@ function PersonalProfileTab({ user, isEditing, onChange, formatDate }) {
 
             <ProfileDetail
               label="Phone Number"
-              value={user?.contactNum || user?.contact}
+              value={user?.contact}
               editable={isEditing}
               onChange={(value) => onChange("contact", value)}
             />
@@ -1300,7 +1327,17 @@ function JobProfileTab({
             onChange={(value) => onChange("position", value)}
           />
 
-          <ProfileDetail label="Hire Date" value={formatDate(user?.hireDate)} />
+          <ProfileDetail
+            label="Hire Date"
+            value={
+              isEditing
+                ? toInputDate(user?.hireDate)
+                : formatDate(user?.hireDate)
+            }
+            editable={isEditing}
+            type="date"
+            onChange={(value) => onChange("hireDate", value)}
+          />
 
           <ProfileDetail
             label="Employment Status"
@@ -1628,6 +1665,7 @@ function SkillsProfileSection({ skills = [], isEditing, onChange }) {
               ) : (
                 <>
                   <BadgeCheck size={14} />
+
                   {typeof skill === "string"
                     ? skill
                     : skill?.name || skill?.skillName || "Skill"}

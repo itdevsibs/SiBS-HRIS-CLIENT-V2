@@ -20,6 +20,13 @@ import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import { useUser } from "../../services/context/UserContext";
 import { useAdmin } from "../../services/context/AdminContext";
 
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
 function SummaryCard({
   label,
   value,
@@ -30,7 +37,7 @@ function SummaryCard({
   return (
     <div
       className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -57,7 +64,7 @@ function InfoPanel({ title, description, icon: Icon, buttonText, delay = 0 }) {
   return (
     <div
       className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -90,7 +97,7 @@ function QuickActionCard({ title, desc, icon: Icon, delay = 0, onClick }) {
       type="button"
       onClick={onClick}
       className="sibs-page-card-in group flex min-h-[74px] w-full items-center justify-between gap-4 rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex min-w-0 items-center gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
@@ -113,6 +120,47 @@ function QuickActionCard({ title, desc, icon: Icon, delay = 0, onClick }) {
         className="shrink-0 text-sibs-primary-1 transition-transform duration-200 group-hover:translate-x-1"
       />
     </button>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <Header />
+
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section
+            className="sibs-page-header-in"
+            style={getAnimationStyle(0)}
+          >
+            <div className="h-10 w-64 animate-pulse rounded bg-gray-200" />
+            <div className="mt-3 h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
+          </section>
+
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            {[1, 2, 3, 4, 5].map((item, index) => (
+              <div
+                key={item}
+                className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                style={getAnimationStyle(90 + index * 60)}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="mt-3 h-8 w-12 animate-pulse rounded bg-gray-200" />
+                  </div>
+
+                  <div className="h-12 w-12 animate-pulse rounded-2xl bg-gray-200" />
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      </main>
+
+      <AdminLoginModal />
+    </div>
   );
 }
 
@@ -198,40 +246,7 @@ export default function EmployeeDashboardPage() {
   ];
 
   if (loading || !user || user.role !== "employee") {
-    return (
-      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-        <Header />
-
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-          <div className="flex min-w-0 flex-col gap-6">
-            <section className="sibs-page-header-in">
-              <div className="h-10 w-64 animate-pulse rounded bg-gray-200" />
-              <div className="mt-3 h-5 w-80 max-w-full animate-pulse rounded bg-gray-200" />
-            </section>
-
-            <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
-                      <div className="mt-3 h-8 w-12 animate-pulse rounded bg-gray-200" />
-                    </div>
-
-                    <div className="h-12 w-12 animate-pulse rounded-2xl bg-gray-200" />
-                  </div>
-                </div>
-              ))}
-            </section>
-          </div>
-        </main>
-
-        <AdminLoginModal />
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
@@ -240,13 +255,16 @@ export default function EmployeeDashboardPage() {
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
         <div className="flex min-w-0 flex-col gap-6">
-          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <section
+            className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+            style={getAnimationStyle(0)}
+          >
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-3">
                 <LayoutDashboard
                   size={34}
                   strokeWidth={2.2}
-                  className="shrink-0 text-sibs-primary-1 transition-transform duration-300 group-hover:scale-105"
+                  className="shrink-0 text-sibs-primary-1"
                 />
 
                 <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
@@ -263,7 +281,10 @@ export default function EmployeeDashboardPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={getAnimationStyle(90)}
+          >
             <div>
               <h2 className="text-base font-bold text-[#101828]">
                 Dashboard Summary
@@ -281,7 +302,7 @@ export default function EmployeeDashboardPage() {
                   label={item.label}
                   value={item.value}
                   icon={item.icon}
-                  delay={index * 60}
+                  delay={170 + index * 60}
                 />
               ))}
             </div>
@@ -293,7 +314,7 @@ export default function EmployeeDashboardPage() {
               description="No activity yet"
               buttonText="View all activity"
               icon={Activity}
-              delay={90}
+              delay={500}
             />
 
             <InfoPanel
@@ -301,13 +322,13 @@ export default function EmployeeDashboardPage() {
               description="No notifications"
               buttonText="View all notifications"
               icon={Bell}
-              delay={150}
+              delay={580}
             />
           </section>
 
           <section
             className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-            style={{ animationDelay: "210ms" }}
+            style={getAnimationStyle(660)}
           >
             <div>
               <h2 className="text-base font-bold text-[#101828]">
@@ -326,7 +347,7 @@ export default function EmployeeDashboardPage() {
                   title={item.title}
                   desc={item.desc}
                   icon={item.icon}
-                  delay={index * 60}
+                  delay={760 + index * 70}
                   onClick={item.onClick}
                 />
               ))}

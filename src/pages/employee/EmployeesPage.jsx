@@ -14,9 +14,29 @@ import ChwcpTable from "../../components/tables/employees/ChwcpTable";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
-function SummaryCard({ label, value, icon: Icon }) {
+const animationTiming = {
+  header: 0,
+
+  summaryCardBase: 0,
+  summaryCardStagger: 60,
+
+  tabs: 90,
+  table: 150,
+};
+
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
+function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
   return (
-    <div className="flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div
+      className="sibs-page-card-in flex min-w-0 items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+      style={getAnimationStyle(delay)}
+    >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white">
         <Icon size={18} />
       </div>
@@ -121,9 +141,15 @@ export default function EmployeesPage() {
         ref={mainScrollRef}
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
-        <section className="mb-6 min-w-0">
+        <section
+          className="sibs-page-header-in mb-6 min-w-0"
+          style={getAnimationStyle(animationTiming.header)}
+        >
           <div className="flex min-w-0 items-center gap-2">
-            <Users size={28} className="shrink-0 text-sibs-primary-1" />
+            <Users
+              size={28}
+              className="shrink-0 text-sibs-primary-1 transition-transform duration-300 hover:scale-110"
+            />
 
             <h1 className="m-0 min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
               Employees
@@ -136,12 +162,41 @@ export default function EmployeesPage() {
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <SummaryCard label="Employees" value="0" icon={UserRoundCheck} />
-          <SummaryCard label="Access Requests" value="5" icon={ShieldCheck} />
-          <SummaryCard label="CHWCP" value="2" icon={FileCheck2} />
+          <SummaryCard
+            label="Employees"
+            value="0"
+            icon={UserRoundCheck}
+            delay={
+              animationTiming.summaryCardBase +
+              0 * animationTiming.summaryCardStagger
+            }
+          />
+
+          <SummaryCard
+            label="Access Requests"
+            value="5"
+            icon={ShieldCheck}
+            delay={
+              animationTiming.summaryCardBase +
+              1 * animationTiming.summaryCardStagger
+            }
+          />
+
+          <SummaryCard
+            label="CHWCP"
+            value="2"
+            icon={FileCheck2}
+            delay={
+              animationTiming.summaryCardBase +
+              2 * animationTiming.summaryCardStagger
+            }
+          />
         </section>
 
-        <section className="mb-6 min-w-0">
+        <section
+          className="sibs-page-card-in mb-6 min-w-0"
+          style={getAnimationStyle(animationTiming.tabs)}
+        >
           <div className="min-w-0 overflow-x-auto no-scrollbar">
             <div
               className="relative grid min-w-[520px] overflow-hidden rounded-full bg-[#f2f4f7] p-1 shadow-sm sm:w-max"
@@ -191,7 +246,11 @@ export default function EmployeesPage() {
           </div>
         </section>
 
-        <div key={activeEmployeeTab} className="sibs-profile-tab-panel">
+        <div
+          key={activeEmployeeTab}
+          className="sibs-profile-tab-panel"
+          style={getAnimationStyle(animationTiming.table)}
+        >
           {renderActiveTable()}
         </div>
       </main>
