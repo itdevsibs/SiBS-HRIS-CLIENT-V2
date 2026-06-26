@@ -32,6 +32,7 @@ import StatusModal from "../../components/modals/StatusModal";
 import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
 import ViewJobDescriptionDetailsModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
 import PaginationTable from "@/services/pagination/PaginationTable";
+import { useJobDescription } from "../../services/context/JobDescriptionContext";
 
 import {
   getApprovalRequestsByModule,
@@ -99,7 +100,11 @@ function collectSearchableValues(value, output = [], depth = 0) {
 
   const valueType = typeof value;
 
-  if (valueType === "string" || valueType === "number" || valueType === "boolean") {
+  if (
+    valueType === "string" ||
+    valueType === "number" ||
+    valueType === "boolean"
+  ) {
     const text = String(value).trim();
 
     if (text) output.push(text);
@@ -190,8 +195,12 @@ function buildRequestSearchText(request = {}) {
 }
 
 function requestBelongsToActiveModule(request = {}, activeModule = "") {
-  const cleanActiveModule = String(activeModule || "").trim().toLowerCase();
-  const cleanRequestModule = String(request?.module || "").trim().toLowerCase();
+  const cleanActiveModule = String(activeModule || "")
+    .trim()
+    .toLowerCase();
+  const cleanRequestModule = String(request?.module || "")
+    .trim()
+    .toLowerCase();
   const cleanType = String(getRequestType(request) || request?.type || "")
     .trim()
     .toLowerCase();
@@ -300,11 +309,7 @@ async function getApprovalTabNotificationCountByModule(moduleName) {
   return fulfilledResults.reduce((sum, result) => {
     const counts = result?.counts || {};
 
-    return (
-      sum +
-      Number(counts.pending || 0) +
-      Number(counts.forReview || 0)
-    );
+    return sum + Number(counts.pending || 0) + Number(counts.forReview || 0);
   }, 0);
 }
 
@@ -474,8 +479,12 @@ function isResignationRequest(request) {
 function isWeeklyHiringPlanRequest(request) {
   return (
     String(request?.module || "").toLowerCase() === "weekly hiring plan" ||
-    String(request?.source || "").toLowerCase().includes("weekly") ||
-    String(request?.source || "").toLowerCase().includes("headcount") ||
+    String(request?.source || "")
+      .toLowerCase()
+      .includes("weekly") ||
+    String(request?.source || "")
+      .toLowerCase()
+      .includes("headcount") ||
     String(request?.id || "").startsWith("WHP") ||
     getRequestType(request).toLowerCase().includes("headcount") ||
     getRequestType(request).toLowerCase().includes("recruitment settings")
@@ -483,11 +492,17 @@ function isWeeklyHiringPlanRequest(request) {
 }
 
 function isWeeklyRecruitmentSettingsRequest(request) {
-  return isWeeklyHiringPlanRequest(request) && getRequestType(request) === "Recruitment Settings";
+  return (
+    isWeeklyHiringPlanRequest(request) &&
+    getRequestType(request) === "Recruitment Settings"
+  );
 }
 
 function isWeeklyUpdateHeadcountRequest(request) {
-  return isWeeklyHiringPlanRequest(request) && getRequestType(request) === "Update Headcount";
+  return (
+    isWeeklyHiringPlanRequest(request) &&
+    getRequestType(request) === "Update Headcount"
+  );
 }
 
 function canEditRequiredHeadcountOnWeeklyApproval(request) {
@@ -565,7 +580,9 @@ function getNormalizedRequestStatus(request) {
     const requestType = getRequestType(request);
 
     if (requestType === "Update Headcount") {
-      return getUpdateHeadcountStatus(request) || normalizeStatus(request?.status);
+      return (
+        getUpdateHeadcountStatus(request) || normalizeStatus(request?.status)
+      );
     }
 
     return getRecruitmentSettingsStatus(request);
@@ -982,7 +999,6 @@ export default function ApprovalRequest() {
 
   const [loading, setLoading] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [selectedJobDescription, setSelectedJobDescription] = useState(null);
 
   const [decisionModal, setDecisionModal] = useState({
     open: false,
@@ -1003,6 +1019,12 @@ export default function ApprovalRequest() {
     message: "",
   });
 
+  const {
+    selectedJobDescription,
+    openJobDescriptionDetails,
+    closeJobDescriptionDetails,
+  } = useJobDescription();
+
   const typeOptions = TYPE_OPTIONS_BY_MODULE[activeModule] || ["All"];
 
   const hasActiveFilters =
@@ -1012,7 +1034,8 @@ export default function ApprovalRequest() {
     try {
       const entries = await Promise.all(
         REQUEST_MODULES.map(async (moduleName) => {
-          const count = await getApprovalTabNotificationCountByModule(moduleName);
+          const count =
+            await getApprovalTabNotificationCountByModule(moduleName);
           return [moduleName, Number(count || 0)];
         }),
       );
@@ -1028,136 +1051,163 @@ export default function ApprovalRequest() {
   }, []);
 
   const loadApprovalRequests = useCallback(
-  async ({ showError = false } = {}) => {
-    const buildParams = (requestType = typeFilter) => ({
-      page: 1,
-      // Load the active module records first, then search locally so the
-      // search bar always filters the currently opened tab/table below.
-      search: "",
-      status: statusFilter === "All" ? "" : statusFilter,
-      type:
-        requestType === "All"
-          ? ""
-          : activeModule === "Weekly Hiring Plan"
-            ? normalizeRequestType(requestType)
-            : requestType,
-      limit: 500,
-    });
+    async ({ showError = false } = {}) => {
+      const buildParams = (requestType = typeFilter) => ({
+        page: 1,
+        // Load the active module records first, then search locally so the
+        // search bar always filters the currently opened tab/table below.
+        search: "",
+        status: statusFilter === "All" ? "" : statusFilter,
+        type:
+          requestType === "All"
+            ? ""
+            : activeModule === "Weekly Hiring Plan"
+              ? normalizeRequestType(requestType)
+              : requestType,
+        limit: 500,
+      });
 
-    const getResultData = (result) =>
-      Array.isArray(result?.data) ? result.data : [];
+      const getResultData = (result) =>
+        Array.isArray(result?.data) ? result.data : [];
 
-    const buildCountsFromRequests = (items = []) => {
-      const nextCounts = {
-        ...DEFAULT_COUNTS,
-        total: items.length,
+      const buildCountsFromRequests = (items = []) => {
+        const nextCounts = {
+          ...DEFAULT_COUNTS,
+          total: items.length,
+        };
+
+        items.forEach((item) => {
+          const status = getNormalizedRequestStatus(item);
+
+          if (status === "Approved") {
+            nextCounts.approved += 1;
+          } else if (status === "Rejected") {
+            nextCounts.rejected += 1;
+          } else if (status === "For Review") {
+            nextCounts.forReview += 1;
+          } else {
+            nextCounts.pending += 1;
+          }
+        });
+
+        return nextCounts;
       };
 
-      items.forEach((item) => {
-        const status = getNormalizedRequestStatus(item);
+      const mergeUniqueRequests = (lists = []) => {
+        const map = new Map();
 
-        if (status === "Approved") {
-          nextCounts.approved += 1;
-        } else if (status === "Rejected") {
-          nextCounts.rejected += 1;
-        } else if (status === "For Review") {
-          nextCounts.forReview += 1;
-        } else {
-          nextCounts.pending += 1;
-        }
-      });
+        lists.flat().forEach((item) => {
+          const key = [
+            item?.source || item?.module || "request",
+            item?.rawId || item?.raw_id || item?.id || "",
+            getRequestType(item) || item?.type || "",
+          ].join("::");
 
-      return nextCounts;
-    };
+          if (!map.has(key)) {
+            map.set(key, item);
+          }
+        });
 
-    const mergeUniqueRequests = (lists = []) => {
-      const map = new Map();
+        return Array.from(map.values());
+      };
 
-      lists.flat().forEach((item) => {
-        const key = [
-          item?.source || item?.module || "request",
-          item?.rawId || item?.raw_id || item?.id || "",
-          getRequestType(item) || item?.type || "",
-        ].join("::");
+      try {
+        setLoading(true);
 
-        if (!map.has(key)) {
-          map.set(key, item);
-        }
-      });
+        let result = await getApprovalRequestsByModule(
+          activeModule,
+          buildParams(),
+        );
 
-      return Array.from(map.values());
-    };
-
-    try {
-      setLoading(true);
-
-      let result = await getApprovalRequestsByModule(
-        activeModule,
-        buildParams(),
-      );
-
-      let data = getResultData(result);
-      let counts = result?.counts || DEFAULT_COUNTS;
-      let paginationData =
-        result?.pagination || {
+        let data = getResultData(result);
+        let counts = result?.counts || DEFAULT_COUNTS;
+        let paginationData = result?.pagination || {
           total: data.length,
           totalPages: 1,
           currentPage: 1,
           limit: 200,
         };
 
-      /*
+        /*
         Weekly Hiring Plan has multiple request types.
         Some backend filters return empty when type is blank/All,
         so fetch each type and merge them.
       */
-      if (
-        activeModule === "Weekly Hiring Plan" &&
-        typeFilter === "All" &&
-        data.length === 0
-      ) {
-        const weeklyTypes = [
-          "Recruitment Settings",
-          "Update Headcount",
-          "Weekly Hiring Plan",
-        ];
+        if (
+          activeModule === "Weekly Hiring Plan" &&
+          typeFilter === "All" &&
+          data.length === 0
+        ) {
+          const weeklyTypes = [
+            "Recruitment Settings",
+            "Update Headcount",
+            "Weekly Hiring Plan",
+          ];
 
-        const weeklyResults = await Promise.allSettled(
-          weeklyTypes.map((requestType) =>
-            getApprovalRequestsByModule(
-              activeModule,
-              buildParams(requestType),
+          const weeklyResults = await Promise.allSettled(
+            weeklyTypes.map((requestType) =>
+              getApprovalRequestsByModule(
+                activeModule,
+                buildParams(requestType),
+              ),
             ),
-          ),
-        );
+          );
 
-        const successfulResults = weeklyResults
-          .filter((item) => item.status === "fulfilled")
-          .map((item) => item.value)
-          .filter((item) => item?.success);
+          const successfulResults = weeklyResults
+            .filter((item) => item.status === "fulfilled")
+            .map((item) => item.value)
+            .filter((item) => item?.success);
 
-        data = mergeUniqueRequests(
-          successfulResults.map((item) => getResultData(item)),
-        );
+          data = mergeUniqueRequests(
+            successfulResults.map((item) => getResultData(item)),
+          );
 
-        counts = data.length
-          ? buildCountsFromRequests(data)
-          : result?.counts || DEFAULT_COUNTS;
+          counts = data.length
+            ? buildCountsFromRequests(data)
+            : result?.counts || DEFAULT_COUNTS;
 
-        paginationData = {
-          total: data.length,
-          totalPages: 1,
-          currentPage: 1,
-          limit: 200,
-        };
+          paginationData = {
+            total: data.length,
+            totalPages: 1,
+            currentPage: 1,
+            limit: 200,
+          };
 
-        result = {
-          success: data.length > 0 || result?.success,
-          message: result?.message,
-        };
-      }
+          result = {
+            success: data.length > 0 || result?.success,
+            message: result?.message,
+          };
+        }
 
-      if (!result?.success) {
+        if (!result?.success) {
+          setRequests([]);
+          setCounts(DEFAULT_COUNTS);
+          setPagination({
+            total: 0,
+            totalPages: 1,
+            currentPage: 1,
+            limit: 200,
+          });
+
+          if (showError) {
+            setStatusModal({
+              open: true,
+              type: "error",
+              title: "Load Failed",
+              message:
+                result?.message || "Failed to load approval request records.",
+            });
+          }
+
+          return;
+        }
+
+        setRequests(data);
+        setCounts(counts);
+        setPagination(paginationData);
+      } catch (error) {
+        console.error("LOAD APPROVAL REQUESTS ERROR:", error);
+
         setRequests([]);
         setCounts(DEFAULT_COUNTS);
         setPagination({
@@ -1173,46 +1223,18 @@ export default function ApprovalRequest() {
             type: "error",
             title: "Load Failed",
             message:
-              result?.message || "Failed to load approval request records.",
+              error?.response?.data?.message ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "Something went wrong while loading approval requests.",
           });
         }
-
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      setRequests(data);
-      setCounts(counts);
-      setPagination(paginationData);
-    } catch (error) {
-      console.error("LOAD APPROVAL REQUESTS ERROR:", error);
-
-      setRequests([]);
-      setCounts(DEFAULT_COUNTS);
-      setPagination({
-        total: 0,
-        totalPages: 1,
-        currentPage: 1,
-        limit: 200,
-      });
-
-      if (showError) {
-        setStatusModal({
-          open: true,
-          type: "error",
-          title: "Load Failed",
-          message:
-            error?.response?.data?.message ||
-            error?.response?.data?.error ||
-            error?.message ||
-            "Something went wrong while loading approval requests.",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  },
-  [activeModule, statusFilter, typeFilter],
-);
+    },
+    [activeModule, statusFilter, typeFilter],
+  );
 
   useEffect(() => {
     loadApprovalRequests();
@@ -1284,8 +1306,12 @@ export default function ApprovalRequest() {
   function scrollApprovalTableToTop() {
     window.requestAnimationFrame(() => {
       const tableTop = document.querySelector("[data-approval-table-top]");
-      const tableScroll = document.querySelector("[data-approval-table-scroll]");
-      const mobileScroll = document.querySelector("[data-approval-mobile-scroll]");
+      const tableScroll = document.querySelector(
+        "[data-approval-table-scroll]",
+      );
+      const mobileScroll = document.querySelector(
+        "[data-approval-mobile-scroll]",
+      );
 
       tableTop?.scrollIntoView({
         behavior: "smooth",
@@ -1319,152 +1345,152 @@ export default function ApprovalRequest() {
     scrollApprovalTableToTop();
   }
 
-  function parseRevisionHistoryJson(value) {
-    if (Array.isArray(value)) return value;
-    if (!value) return [];
+  // function parseRevisionHistoryJson(value) {
+  //   if (Array.isArray(value)) return value;
+  //   if (!value) return [];
 
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
+  //   try {
+  //     const parsed = JSON.parse(value);
+  //     return Array.isArray(parsed) ? parsed : [];
+  //   } catch {
+  //     return [];
+  //   }
+  // }
 
-  function mapJobDescriptionApprovalToModalItem(request) {
-    const raw = request?.raw || {};
+  // function mapJobDescriptionApprovalToModalItem(request) {
+  //   const raw = request?.raw || {};
 
-    const competencies = Array.isArray(request?.competencies)
-      ? request.competencies
-      : Array.isArray(request?.desiredCompetencies)
-        ? request.desiredCompetencies
-        : Array.isArray(raw?.competencies)
-          ? raw.competencies
-          : Array.isArray(raw?.desiredCompetencies)
-            ? raw.desiredCompetencies
-            : [];
+  //   const competencies = Array.isArray(request?.competencies)
+  //     ? request.competencies
+  //     : Array.isArray(request?.desiredCompetencies)
+  //       ? request.desiredCompetencies
+  //       : Array.isArray(raw?.competencies)
+  //         ? raw.competencies
+  //         : Array.isArray(raw?.desiredCompetencies)
+  //           ? raw.desiredCompetencies
+  //           : [];
 
-    return {
-      id: request?.rawId || raw?.id || request?.id,
-      jdCode: request?.jdCode || raw?.jdCode || request?.id || "—",
+  //   return {
+  //     id: request?.rawId || raw?.id || request?.id,
+  //     jdCode: request?.jdCode || raw?.jdCode || request?.id || "—",
 
-      roleTitle:
-        request?.roleTitle ||
-        raw?.roleTitle ||
-        request?.title ||
-        "Job Description",
+  //     roleTitle:
+  //       request?.roleTitle ||
+  //       raw?.roleTitle ||
+  //       request?.title ||
+  //       "Job Description",
 
-      title:
-        request?.roleTitle ||
-        raw?.roleTitle ||
-        request?.title ||
-        "Job Description",
+  //     title:
+  //       request?.roleTitle ||
+  //       raw?.roleTitle ||
+  //       request?.title ||
+  //       "Job Description",
 
-      jdStatus: request?.jdStatus || raw?.jdStatus || request?.status,
-      status: request?.status,
+  //     jdStatus: request?.jdStatus || raw?.jdStatus || request?.status,
+  //     status: request?.status,
 
-      department:
-        request?.departmentName ||
-        request?.department ||
-        raw?.departmentName ||
-        raw?.department ||
-        raw?.departmentId ||
-        "—",
+  //     department:
+  //       request?.departmentName ||
+  //       request?.department ||
+  //       raw?.departmentName ||
+  //       raw?.department ||
+  //       raw?.departmentId ||
+  //       "—",
 
-      account:
-        request?.accountName ||
-        request?.account ||
-        raw?.accountName ||
-        raw?.account ||
-        raw?.accountId ||
-        "—",
+  //     account:
+  //       request?.accountName ||
+  //       request?.account ||
+  //       raw?.accountName ||
+  //       raw?.account ||
+  //       raw?.accountId ||
+  //       "—",
 
-      linkedHiringRequirement:
-        request?.linkedHiringRequirement || raw?.linkedHiringRequirement || "—",
+  //     linkedHiringRequirement:
+  //       request?.linkedHiringRequirement || raw?.linkedHiringRequirement || "—",
 
-      dateRequested:
-        request?.dateRequested ||
-        request?.requestDate ||
-        raw?.dateRequested ||
-        raw?.createdAt ||
-        "",
+  //     dateRequested:
+  //       request?.dateRequested ||
+  //       request?.requestDate ||
+  //       raw?.dateRequested ||
+  //       raw?.createdAt ||
+  //       "",
 
-      createdBy:
-        request?.createdByName ||
-        request?.createdBy ||
-        raw?.createdByName ||
-        raw?.createdBy ||
-        raw?.createdBySibsId ||
-        request?.requester ||
-        "—",
+  //     createdBy:
+  //       request?.createdByName ||
+  //       request?.createdBy ||
+  //       raw?.createdByName ||
+  //       raw?.createdBy ||
+  //       raw?.createdBySibsId ||
+  //       request?.requester ||
+  //       "—",
 
-      owner:
-        request?.ownerName ||
-        request?.owner ||
-        raw?.ownerName ||
-        raw?.owner ||
-        raw?.ownerSibsId ||
-        request?.approver ||
-        "—",
+  //     owner:
+  //       request?.ownerName ||
+  //       request?.owner ||
+  //       raw?.ownerName ||
+  //       raw?.owner ||
+  //       raw?.ownerSibsId ||
+  //       request?.approver ||
+  //       "—",
 
-      preparedFor: request?.preparedFor || raw?.preparedFor || "—",
-      reportsTo: request?.reportsTo || raw?.reportsTo || "—",
-      supervisory: request?.supervisory || raw?.supervisory || "No",
+  //     preparedFor: request?.preparedFor || raw?.preparedFor || "—",
+  //     reportsTo: request?.reportsTo || raw?.reportsTo || "—",
+  //     supervisory: request?.supervisory || raw?.supervisory || "No",
 
-      version:
-        request?.version ||
-        request?.jdVersion ||
-        request?.currentVersion ||
-        raw?.version ||
-        raw?.jdVersion ||
-        raw?.currentVersion ||
-        "2.0",
+  //     version:
+  //       request?.version ||
+  //       request?.jdVersion ||
+  //       request?.currentVersion ||
+  //       raw?.version ||
+  //       raw?.jdVersion ||
+  //       raw?.currentVersion ||
+  //       "2.0",
 
-      currentVersion:
-        request?.currentVersion ||
-        request?.jdVersion ||
-        request?.version ||
-        raw?.currentVersion ||
-        raw?.jdVersion ||
-        raw?.version ||
-        "2.0",
+  //     currentVersion:
+  //       request?.currentVersion ||
+  //       request?.jdVersion ||
+  //       request?.version ||
+  //       raw?.currentVersion ||
+  //       raw?.jdVersion ||
+  //       raw?.version ||
+  //       "2.0",
 
-      effectiveDate: request?.effectiveDate || raw?.effectiveDate || "",
+  //     effectiveDate: request?.effectiveDate || raw?.effectiveDate || "",
 
-      lastReviewed:
-        request?.approveDate ||
-        request?.updatedAt ||
-        raw?.approveDate ||
-        raw?.updatedAt ||
-        request?.dateRequested ||
-        "",
+  //     lastReviewed:
+  //       request?.approveDate ||
+  //       request?.updatedAt ||
+  //       raw?.approveDate ||
+  //       raw?.updatedAt ||
+  //       request?.dateRequested ||
+  //       "",
 
-      description: request?.description || raw?.description || "",
-      responsibilities:
-        request?.responsibilities || raw?.responsibilities || "",
-      qualifications: request?.qualifications || raw?.qualifications || "",
-      remarks: request?.jdRemarks || request?.remarks || raw?.remarks || "",
+  //     description: request?.description || raw?.description || "",
+  //     responsibilities:
+  //       request?.responsibilities || raw?.responsibilities || "",
+  //     qualifications: request?.qualifications || raw?.qualifications || "",
+  //     remarks: request?.jdRemarks || request?.remarks || raw?.remarks || "",
 
-      revisionHistory:
-        request?.revisionHistory ||
-        raw?.revisionHistory ||
-        parseRevisionHistoryJson(
-          request?.revisionHistoryJson || raw?.revisionHistoryJson,
-        ),
+  //     revisionHistory:
+  //       request?.revisionHistory ||
+  //       raw?.revisionHistory ||
+  //       parseRevisionHistoryJson(
+  //         request?.revisionHistoryJson || raw?.revisionHistoryJson,
+  //       ),
 
-      competencies,
-      desiredCompetencies: competencies,
-    };
-  }
+  //     competencies,
+  //     desiredCompetencies: competencies,
+  //   };
+  // }
 
   function handleViewRequest(request) {
     if (activeModule === "Job Description") {
       setSelectedRequest(null);
-      setSelectedJobDescription(mapJobDescriptionApprovalToModalItem(request));
+      openJobDescriptionDetails(request);
       return;
     }
 
-    setSelectedJobDescription(null);
+    closeJobDescriptionDetails();
     setSelectedRequest(request);
   }
 
@@ -1495,7 +1521,9 @@ export default function ApprovalRequest() {
       extra?.finalRequiredHeadcount ??
       "";
 
-    const editableRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(request)
+    const editableRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(
+      request,
+    )
       ? String(passedRequiredHeadcount ?? "")
       : "";
 
@@ -1582,7 +1610,10 @@ export default function ApprovalRequest() {
       }
     }
 
-    if (isWeeklyHiringPlanRequest(request) && !canCurrentUserApproveWeeklyHiringPlan()) {
+    if (
+      isWeeklyHiringPlanRequest(request) &&
+      !canCurrentUserApproveWeeklyHiringPlan()
+    ) {
       openStatus({
         type: "error",
         title: "Not Allowed",
@@ -1593,7 +1624,10 @@ export default function ApprovalRequest() {
       return;
     }
 
-    if (canEditRequiredHeadcountOnWeeklyApproval(request) && action === "approve") {
+    if (
+      canEditRequiredHeadcountOnWeeklyApproval(request) &&
+      action === "approve"
+    ) {
       const approvedRequiredHeadcount = normalizeHeadcountInput(
         decisionModal.editableRequiredHeadcount,
       );
@@ -1636,7 +1670,9 @@ export default function ApprovalRequest() {
           personallySpoken: decisionModal.personallySpoken,
           employeeRetained: decisionModal.employeeRetained,
           actionTaken: decisionModal.actionTaken,
-          approvedRequiredHeadcount: canEditRequiredHeadcountOnWeeklyApproval(request)
+          approvedRequiredHeadcount: canEditRequiredHeadcountOnWeeklyApproval(
+            request,
+          )
             ? normalizeHeadcountInput(decisionModal.editableRequiredHeadcount)
             : getFinalRequiredHeadcount(request),
         },
@@ -1720,7 +1756,9 @@ export default function ApprovalRequest() {
       const matchesType =
         typeFilter === "All" || requestType === normalizedTypeFilter;
 
-      return matchesCurrentModule && matchesSearch && matchesStatus && matchesType;
+      return (
+        matchesCurrentModule && matchesSearch && matchesStatus && matchesType
+      );
     });
   }, [requests, activeModule, search, statusFilter, typeFilter]);
 
@@ -1752,8 +1790,6 @@ export default function ApprovalRequest() {
       setPage(totalFilteredPages);
     }
   }, [page, totalFilteredPages]);
-
-
 
   return (
     <div className={`flex h-screen flex-1 flex-col ${FLAT_BG} font-jakarta`}>
@@ -1852,9 +1888,11 @@ export default function ApprovalRequest() {
 
       <ViewJobDescriptionDetailsModal
         open={!!selectedJobDescription}
-        item={selectedJobDescription}
         approvalPage={true}
-        onClose={() => setSelectedJobDescription(null)}
+        onClose={closeJobDescriptionDetails}
+        onUpdated={openJobDescriptionDetails}
+        onRefresh={loadApprovalRequests}
+        onStatus={openStatus}
       />
 
       <DecisionModal
@@ -1912,7 +1950,6 @@ export default function ApprovalRequest() {
     </div>
   );
 }
-
 
 function ApprovalPaginationToolbar({
   loading,
@@ -2445,7 +2482,10 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
           </p>
 
           <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-            {request.clusterName || request.cluster_name || request.department || "--"}
+            {request.clusterName ||
+              request.cluster_name ||
+              request.department ||
+              "--"}
           </p>
         </td>
       )}
@@ -2617,8 +2657,10 @@ function ViewApprovalRequestModal({
   const canReview = request.canReview === true || request.raw?.canEdit === true;
   const isResignation = isResignationRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
-  const isWeeklyRecruitmentSettings = isWeeklyRecruitmentSettingsRequest(request);
-  const canEditRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(request);
+  const isWeeklyRecruitmentSettings =
+    isWeeklyRecruitmentSettingsRequest(request);
+  const canEditRequiredHeadcount =
+    canEditRequiredHeadcountOnWeeklyApproval(request);
 
   const [weeklyEditableRequiredHeadcount, setWeeklyEditableRequiredHeadcount] =
     useState("");
@@ -2836,7 +2878,10 @@ function WeeklyHiringPlanRequestDetails({ request }) {
     "--";
 
   const weekStart =
-    request?.weekStart || request?.week_start || raw?.weekStart || raw?.week_start;
+    request?.weekStart ||
+    request?.week_start ||
+    raw?.weekStart ||
+    raw?.week_start;
 
   const weekEnd =
     request?.weekEnd || request?.week_end || raw?.weekEnd || raw?.week_end;
@@ -2867,7 +2912,9 @@ function WeeklyHiringPlanRequestDetails({ request }) {
           </h3>
 
           <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            HR / HR Admin edits Required Headcount from this approval request. After approval, OM can update weekly headcount from the Weekly Hiring Plan page and HR / HR Admin reviews that update here.
+            HR / HR Admin edits Required Headcount from this approval request.
+            After approval, OM can update weekly headcount from the Weekly
+            Hiring Plan page and HR / HR Admin reviews that update here.
           </p>
         </div>
 
@@ -2909,10 +2956,7 @@ function WeeklyHiringPlanRequestDetails({ request }) {
               : formatNumber(requestedRequiredHeadcount)
           }
         />
-        <FormLikeBox
-          label="Actual HC"
-          value={formatNumber(actualHeadcount)}
-        />
+        <FormLikeBox label="Actual HC" value={formatNumber(actualHeadcount)} />
         <FormLikeBox label="OPS PRF" value={formatNumber(opsPrf)} />
         <FormLikeBox
           label="Actual Headcount Needs"
@@ -2942,7 +2986,6 @@ function WeeklyHiringPlanRequestDetails({ request }) {
   );
 }
 
-
 function WeeklyHiringPlanApprovalPanel({
   request,
   canReview,
@@ -2961,7 +3004,8 @@ function WeeklyHiringPlanApprovalPanel({
   const requestedRequiredHeadcount = getRequestedRequiredHeadcount(request);
   const isRecruitmentSettings = isWeeklyRecruitmentSettingsRequest(request);
   const isUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
-  const canEditRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(request);
+  const canEditRequiredHeadcount =
+    canEditRequiredHeadcountOnWeeklyApproval(request);
   const approvedRequiredHeadcountValue = normalizeHeadcountInput(
     editableRequiredHeadcount,
   );
@@ -3317,9 +3361,11 @@ function DecisionModal({
   const requestStatus = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
-  const isWeeklyRecruitmentSettings = isWeeklyRecruitmentSettingsRequest(request);
+  const isWeeklyRecruitmentSettings =
+    isWeeklyRecruitmentSettingsRequest(request);
   const isWeeklyUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
-  const canEditRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(request);
+  const canEditRequiredHeadcount =
+    canEditRequiredHeadcountOnWeeklyApproval(request);
   const approvedRequiredHeadcountValue = normalizeHeadcountInput(
     editableRequiredHeadcount,
   );
@@ -3399,7 +3445,10 @@ function DecisionModal({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <DecisionInfoBox label="Request ID" value={request.id || "--"} />
+                <DecisionInfoBox
+                  label="Request ID"
+                  value={request.id || "--"}
+                />
                 <DecisionInfoBox
                   label="Request Type"
                   value={getRequestType(request) || request.type || "--"}
@@ -3430,7 +3479,10 @@ function DecisionModal({
                   label="Priority"
                   value={request.priority || "Normal"}
                 />
-                <DecisionInfoBox label="Source" value={request.source || "--"} />
+                <DecisionInfoBox
+                  label="Source"
+                  value={request.source || "--"}
+                />
 
                 {isWeekly && (
                   <>
@@ -3463,7 +3515,10 @@ function DecisionModal({
                   </h3>
 
                   <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
-                    Enter the final Required Headcount here. This field is required before HR / HR Admin can approve. After approval, OM can update the weekly headcount in the Weekly Hiring Plan page.
+                    Enter the final Required Headcount here. This field is
+                    required before HR / HR Admin can approve. After approval,
+                    OM can update the weekly headcount in the Weekly Hiring Plan
+                    page.
                   </p>
 
                   <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -3483,7 +3538,8 @@ function DecisionModal({
                     />
                     <div>
                       <label className="mb-2 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
-                        Final Required HC <span className="text-red-500">*</span>
+                        Final Required HC{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="number"
@@ -3504,7 +3560,10 @@ function DecisionModal({
                       )}
 
                       <p className="mt-2 text-xs font-semibold text-[#2F6CA5]">
-                        Final value to apply: {approvedRequiredHeadcountValue === "" ? "--" : formatNumber(approvedRequiredHeadcountValue)}
+                        Final value to apply:{" "}
+                        {approvedRequiredHeadcountValue === ""
+                          ? "--"
+                          : formatNumber(approvedRequiredHeadcountValue)}
                       </p>
                     </div>
                   </div>
@@ -3518,7 +3577,9 @@ function DecisionModal({
                   </h3>
 
                   <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
-                    This request was created from the Weekly Hiring Plan page. HR / HR Admin can approve or decline it here. The Required Headcount field is not edited in this update request.
+                    This request was created from the Weekly Hiring Plan page.
+                    HR / HR Admin can approve or decline it here. The Required
+                    Headcount field is not edited in this update request.
                   </p>
                 </div>
               )}

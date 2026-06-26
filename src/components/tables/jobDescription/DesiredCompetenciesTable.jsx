@@ -1,14 +1,47 @@
 import { Plus, Trash2 } from "lucide-react";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 const proficiencyOptions = ["Average", "Proficient", "Excellent"];
 
 const createCompetencyRow = () => ({
-  id: crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
+  id:
+    globalThis.crypto?.randomUUID?.() ||
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   title: "",
   description: "",
   level: "",
 });
+
+function AutoGrowTextarea({ value, onChange, placeholder = "" }) {
+  const textareaRef = useRef(null);
+
+  const resizeTextarea = () => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+
+  useEffect(() => {
+    resizeTextarea();
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => {
+        onChange(e.target.value);
+        requestAnimationFrame(resizeTextarea);
+      }}
+      onInput={resizeTextarea}
+      placeholder={placeholder}
+      className="min-h-[90px] w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm leading-7 text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+    />
+  );
+}
 
 const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
   const handleAddRow = () => {
@@ -75,34 +108,13 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
                 className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_120px_120px_120px_56px]"
               >
                 <div className="border-b border-[#E6ECF2] p-4 md:border-b-0 md:border-r">
-                  <div className="space-y-3">
-                    {/* <input
-                      type="text"
-                      value={item.title}
-                      onChange={(e) =>
-                        handleChange(item.id, "title", e.target.value)
-                      }
-                      placeholder={`Competency ${index + 1} title`}
-                      className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                    /> */}
-
-                    <textarea
-                      rows={1}
-                      value={item.description}
-                      onChange={(e) => {
-                        handleChange(item.id, "description", e.target.value);
-
-                        e.target.style.height = "auto";
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                      }}
-                      onInput={(e) => {
-                        e.target.style.height = "auto";
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                      }}
-                      placeholder="Describe this competency..."
-                      className="min-h-[90px] w-full resize-none overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-                    />
-                  </div>
+                  <AutoGrowTextarea
+                    value={item.description || ""}
+                    onChange={(value) =>
+                      handleChange(item.id, "description", value)
+                    }
+                    placeholder="Describe this competency..."
+                  />
                 </div>
 
                 {proficiencyOptions.map((option) => (

@@ -54,8 +54,16 @@ export default function HiringRequirementSection({
     setRequestedBySearch,
   } = searchState;
 
+  function closeAllDropdowns() {
+    setLinkedRequirementOpen(false);
+    setAccountOpen(false);
+    setDepartmentOpen(false);
+    setJdStatusOpen(false);
+    setRequestedByOpen(false);
+  }
+
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="relative z-50 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-sm font-extrabold text-[#101828]">
@@ -79,15 +87,15 @@ export default function HiringRequirementSection({
       </div>
 
       {dropdownError && (
-        <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
+        <div className="relative z-[90] mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
           {dropdownError}
         </div>
       )}
 
       <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
+        <div className="relative z-[100] md:col-span-2">
           <div className="grid grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_max-content] xl:items-end">
-            <div className="min-w-0">
+            <div className="relative z-[100] min-w-0">
               <SingleSelectDropdown
                 refBox={linkedRequirementRef}
                 label="Existing Job Description"
@@ -98,7 +106,7 @@ export default function HiringRequirementSection({
                 disabled={false}
                 options={linkedRequirementOptions}
                 selectedValue={form.linkedHiringRequirement}
-                zIndex="z-50"
+                zIndex="z-[120]"
                 onBeforeOpen={() => {
                   setAccountOpen(false);
                   setDepartmentOpen(false);
@@ -113,14 +121,14 @@ export default function HiringRequirementSection({
             </div>
 
             {!hasLinkedHiringRequirement && (
-              <p className="text-xs font-semibold leading-5 text-blue-700 xl:col-span-2">
+              <p className="relative z-[10] text-xs font-semibold leading-5 text-blue-700 xl:col-span-2">
                 No existing JD is linked, so this will be created as a new job
                 description.
               </p>
             )}
           </div>
 
-          <div className="mt-2 self-start">
+          <div className="relative z-[20] mt-2 self-start">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
               Document Title <span className="text-red-500">*</span>
             </label>
@@ -128,6 +136,7 @@ export default function HiringRequirementSection({
             <input
               required
               value={form.documentTitle}
+              onFocus={closeAllDropdowns}
               onChange={(e) =>
                 setForm((prev) => ({
                   ...prev,
@@ -140,7 +149,7 @@ export default function HiringRequirementSection({
           </div>
         </div>
 
-        <div className="self-start">
+        <div className="relative z-[80] self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Position <span className="text-red-500">*</span>
           </label>
@@ -148,6 +157,7 @@ export default function HiringRequirementSection({
           <input
             required
             value={form.roleTitle}
+            onFocus={closeAllDropdowns}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -159,77 +169,81 @@ export default function HiringRequirementSection({
           />
         </div>
 
-        <SearchDropdown
-          refBox={accountSearchRef}
-          label="Prepared For"
-          required
-          value={form.account}
-          searchValue={accountSearch}
-          setSearchValue={setAccountSearch}
-          placeholder="Search account"
-          open={accountOpen}
-          setOpen={setAccountOpen}
-          disabled={false}
-          loading={dropdownLoading}
-          loadingText="Loading accounts..."
-          options={accounts}
-          selectedValue={form.accountId}
-          getOptionValue={(item) => item.gy_acc_id}
-          getOptionLabel={(item) => item.gy_acc_name}
-          onBeforeOpen={() => {
-            setLinkedRequirementOpen(false);
-            setDepartmentOpen(false);
-            setJdStatusOpen(false);
-            setRequestedByOpen(false);
-          }}
-          onSelect={(selectedAccount) => {
-            setForm((prev) => ({
-              ...prev,
-              accountId: selectedAccount ? selectedAccount.gy_acc_id : "",
-              account: selectedAccount ? selectedAccount.gy_acc_name : "",
-            }));
-          }}
-          zIndex="z-40"
-        />
+        <div className="relative z-[80]">
+          <SearchDropdown
+            refBox={accountSearchRef}
+            label="Prepared For"
+            required
+            value={form.account}
+            searchValue={accountSearch}
+            setSearchValue={setAccountSearch}
+            placeholder="Search account"
+            open={accountOpen}
+            setOpen={setAccountOpen}
+            disabled={false}
+            loading={dropdownLoading}
+            loadingText="Loading accounts..."
+            options={accounts}
+            selectedValue={form.accountId}
+            getOptionValue={(item) => item.gy_acc_id}
+            getOptionLabel={(item) => item.gy_acc_name}
+            onBeforeOpen={() => {
+              setLinkedRequirementOpen(false);
+              setDepartmentOpen(false);
+              setJdStatusOpen(false);
+              setRequestedByOpen(false);
+            }}
+            onSelect={(selectedAccount) => {
+              setForm((prev) => ({
+                ...prev,
+                accountId: selectedAccount ? selectedAccount.gy_acc_id : "",
+                account: selectedAccount ? selectedAccount.gy_acc_name : "",
+              }));
+            }}
+            zIndex="z-[110]"
+          />
+        </div>
 
-        <SearchDropdown
-          refBox={departmentSearchRef}
-          label="Department"
-          required
-          value={form.department}
-          searchValue={departmentSearch}
-          setSearchValue={setDepartmentSearch}
-          placeholder="Search department"
-          open={departmentOpen}
-          setOpen={setDepartmentOpen}
-          disabled={false}
-          loading={dropdownLoading}
-          loadingText="Loading departments..."
-          options={departments}
-          selectedValue={form.departmentId}
-          getOptionValue={(item) => item.id_department}
-          getOptionLabel={(item) => item.name_department}
-          onBeforeOpen={() => {
-            setLinkedRequirementOpen(false);
-            setAccountOpen(false);
-            setJdStatusOpen(false);
-            setRequestedByOpen(false);
-          }}
-          onSelect={(selectedDepartment) => {
-            setForm((prev) => ({
-              ...prev,
-              departmentId: selectedDepartment
-                ? selectedDepartment.id_department
-                : "",
-              department: selectedDepartment
-                ? selectedDepartment.name_department
-                : "",
-            }));
-          }}
-          zIndex="z-30"
-        />
+        <div className="relative z-[70]">
+          <SearchDropdown
+            refBox={departmentSearchRef}
+            label="Department"
+            required
+            value={form.department}
+            searchValue={departmentSearch}
+            setSearchValue={setDepartmentSearch}
+            placeholder="Search department"
+            open={departmentOpen}
+            setOpen={setDepartmentOpen}
+            disabled={false}
+            loading={dropdownLoading}
+            loadingText="Loading departments..."
+            options={departments}
+            selectedValue={form.departmentId}
+            getOptionValue={(item) => item.id_department}
+            getOptionLabel={(item) => item.name_department}
+            onBeforeOpen={() => {
+              setLinkedRequirementOpen(false);
+              setAccountOpen(false);
+              setJdStatusOpen(false);
+              setRequestedByOpen(false);
+            }}
+            onSelect={(selectedDepartment) => {
+              setForm((prev) => ({
+                ...prev,
+                departmentId: selectedDepartment
+                  ? selectedDepartment.id_department
+                  : "",
+                department: selectedDepartment
+                  ? selectedDepartment.name_department
+                  : "",
+              }));
+            }}
+            zIndex="z-[100]"
+          />
+        </div>
 
-        <div className="self-start">
+        <div className="relative z-[20] self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Effective Date <span className="text-red-500">*</span>
           </label>
@@ -238,13 +252,7 @@ export default function HiringRequirementSection({
             required
             type="date"
             value={form.effectiveDate || ""}
-            onFocus={() => {
-              setLinkedRequirementOpen(false);
-              setAccountOpen(false);
-              setDepartmentOpen(false);
-              setJdStatusOpen(false);
-              setRequestedByOpen(false);
-            }}
+            onFocus={closeAllDropdowns}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -255,7 +263,7 @@ export default function HiringRequirementSection({
           />
         </div>
 
-        <div className="self-start">
+        <div className="relative z-[10] self-start">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Created by <span className="text-red-500">*</span>
           </label>
