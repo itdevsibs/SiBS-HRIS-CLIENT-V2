@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   X,
   UserX,
   Eye,
-  CalendarDays,
   ClipboardCheck,
   Mail,
-  ChevronDown,
   CirclePlay,
   UploadCloud,
   FileText,
@@ -48,7 +50,6 @@ import {
   getOfferDecisionClass,
   getOfferApprovalSummary,
   isOfferApproved,
-  buildAssessmentLink,
   buildOfferContractLink,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
@@ -1009,107 +1010,6 @@ function PreEmploymentRequirementsPanel({
   );
 }
 
-function AssessmentModalDropdown({
-  label,
-  required = false,
-  value,
-  options = [],
-  placeholder = "Select",
-  disabled = false,
-  onChange,
-}) {
-  const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
-
-  const selectedLabel = cleanText(value) || placeholder;
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
-
-      if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function handleSelect(option) {
-    onChange?.(option);
-    setOpen(false);
-  }
-
-  return (
-    <div ref={dropdownRef} className={`relative ${open ? "z-[120]" : "z-[1]"}`}>
-      <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </span>
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`mt-2 flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold text-[#344054] shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D6DEE8] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
-            : ""
-        }`}
-      >
-        <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[130] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-          <div className="max-h-64 overflow-y-auto py-1">
-            {options.map((option) => {
-              const active = String(option) === String(value);
-
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleSelect(option)}
-                  className={`block w-full px-4 py-3.5 text-left text-sm font-extrabold transition ${
-                    active
-                      ? "bg-[#EAF4FF] text-sibs-primary-1"
-                      : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                  }`}
-                >
-                  <span className="block min-w-0 truncate">{option}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function UpdateAssessmentModal({
   open,
   candidate,
@@ -1124,23 +1024,15 @@ function UpdateAssessmentModal({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const assessmentFileInputRef = useRef(null);
-
   useEffect(() => {
     if (!open) return;
 
     const initialStatus =
-      candidate?.assessmentStatus ||
-      candidate?.assessment_status ||
-      "Not Take";
+      candidate?.assessmentStatus || candidate?.assessment_status || "Not Take";
 
     setAssessmentStatus(initialStatus);
-    setAssessmentResult(
-      candidate?.assessmentResult || candidate?.assessment_result || "",
-    );
-    setAssessmentRemarks(
-      candidate?.assessmentRemarks || candidate?.assessment_remarks || "",
-    );
+    setAssessmentResult(candidate?.assessmentResult || "");
+    setAssessmentRemarks(candidate?.assessmentRemarks || "");
     setAssessmentFile(null);
     setErrorMessage("");
   }, [
@@ -1148,51 +1040,17 @@ function UpdateAssessmentModal({
     candidate?.id,
     candidate?.candidateId,
     candidate?.assessmentStatus,
-    candidate?.assessment_status,
     candidate?.assessmentResult,
-    candidate?.assessment_result,
     candidate?.assessmentRemarks,
-    candidate?.assessment_remarks,
   ]);
 
-  useEffect(() => {
-    if (assessmentStatus !== "Taken") {
-      setAssessmentFile(null);
-
-      if (assessmentFileInputRef.current) {
-        assessmentFileInputRef.current.value = "";
-      }
-    }
-  }, [assessmentStatus]);
-
   if (!open) return null;
-
-  const resolvedCandidateId = cleanText(candidateId);
-
-  const assessmentEmailSent = Boolean(
-    candidate?.assessmentEmailSent || candidate?.assessment_email_sent,
-  );
-
-  const assessmentEmailSentAt =
-    candidate?.assessmentEmailSentAt ||
-    candidate?.assessment_email_sent_at ||
-    "—";
-
-  const assessmentLink = buildAssessmentLink
-    ? buildAssessmentLink(candidate || {})
-    : "";
-
-  const displayName =
-    candidate?.name ||
-    candidate?.candidateName ||
-    candidate?.candidate_name ||
-    "Candidate";
-
-  const displayEmail = candidate?.email || "No email provided";
 
   async function handleSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    const resolvedCandidateId = cleanText(candidateId);
 
     if (!resolvedCandidateId) {
       setErrorMessage("Candidate Pipeline ID is missing.");
@@ -1255,25 +1113,13 @@ function UpdateAssessmentModal({
           apiCandidate.assessmentStatus ||
           apiCandidate.assessment_status ||
           assessmentStatus,
-        assessment_status:
-          apiCandidate.assessment_status ||
-          apiCandidate.assessmentStatus ||
-          assessmentStatus,
         assessmentResult:
           apiCandidate.assessmentResult ||
           apiCandidate.assessment_result ||
           (assessmentStatus === "Taken" ? assessmentResult : ""),
-        assessment_result:
-          apiCandidate.assessment_result ||
-          apiCandidate.assessmentResult ||
-          (assessmentStatus === "Taken" ? assessmentResult : ""),
         assessmentRemarks:
           apiCandidate.assessmentRemarks ||
           apiCandidate.assessment_remarks ||
-          assessmentRemarks,
-        assessment_remarks:
-          apiCandidate.assessment_remarks ||
-          apiCandidate.assessmentRemarks ||
           assessmentRemarks,
       };
 
@@ -1290,22 +1136,23 @@ function UpdateAssessmentModal({
   return (
     <div
       className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
-      onClick={onClose}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-6">
-          <div className="min-w-0">
-            <h2 className="text-xl font-extrabold leading-tight text-sibs-primary-1">
-              Online Assessment
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
+          <div>
+            <h2 className="text-lg font-extrabold text-sibs-primary-1">
+              Update Assessment
             </h2>
 
-            <p className="mt-2 max-w-[500px] text-sm font-semibold leading-5 text-sibs-primary-1/90">
-              Update status, tag result, and attach assessment proof after the
-              candidate takes the assessment.
+            <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
+              Save the candidate&apos;s online assessment status, result, and
+              attachment.
             </p>
           </div>
 
@@ -1313,170 +1160,116 @@ function UpdateAssessmentModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="shrink-0 rounded-full p-2 text-[#98A2B3] transition hover:bg-gray-100 hover:text-[#475467] disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Close assessment modal"
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-5 py-5 sm:px-6">
-          <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
-            <h3 className="break-words text-lg font-extrabold text-sibs-primary-1">
-              {displayName}
-            </h3>
-
-            <p className="mt-1 break-words text-sm font-extrabold text-sibs-primary-1/80">
-              {displayEmail}
+        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
+          <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              Candidate
             </p>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="inline-flex rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-extrabold text-orange-600">
-                Assessment: {assessmentStatus || "Not Take"}
-              </span>
+            <p className="mt-1 break-words text-base font-extrabold text-[#101828]">
+              {candidate?.name || candidate?.candidateName || "Candidate"}
+            </p>
 
-              <span className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-extrabold text-[#475467]">
-                {assessmentResult || "No Result"}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
-            <div className="rounded-2xl bg-white px-4">
-              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 border-b border-[#E6ECF2] py-4">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Assessment Email Sent
-                </p>
-
-                <p className="break-words text-right text-sm font-extrabold text-[#344054]">
-                  {assessmentEmailSent ? "Yes" : "No"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 border-b border-[#E6ECF2] py-4">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Email Sent At
-                </p>
-
-                <p className="break-words text-right text-sm font-extrabold text-[#344054]">
-                  {assessmentEmailSentAt || "—"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-4 py-4">
-                <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Assessment Link
-                </p>
-
-                {assessmentLink ? (
-                  <a
-                    href={assessmentLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={assessmentLink}
-                    className="min-w-0 break-words text-right text-sm font-extrabold leading-5 text-sibs-primary-1 underline decoration-sibs-primary-1/30 underline-offset-2"
-                  >
-                    {assessmentLink}
-                  </a>
-                ) : (
-                  <p className="text-right text-sm font-extrabold text-[#344054]">
-                    —
-                  </p>
-                )}
-              </div>
-            </div>
+            <p className="mt-1 break-words text-sm font-bold text-sibs-tertiary-5">
+              {candidate?.email || "No email provided"}
+            </p>
           </div>
 
           <div className="mt-5 space-y-4">
-            <AssessmentModalDropdown
-              label="Assessment Status"
-              required
-              value={assessmentStatus}
-              options={ASSESSMENT_STATUS_OPTIONS}
-              disabled={isSaving}
-              onChange={(value) => {
-                setAssessmentStatus(value);
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Assessment Status
+              </span>
 
-                if (value !== "Taken") {
-                  setAssessmentResult("");
-                  setAssessmentFile(null);
+              <select
+                value={assessmentStatus}
+                disabled={isSaving}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAssessmentStatus(value);
 
-                  if (assessmentFileInputRef.current) {
-                    assessmentFileInputRef.current.value = "";
+                  if (value !== "Taken") {
+                    setAssessmentResult("");
                   }
-                }
-              }}
-            />
-
-            {assessmentStatus === "Taken" && (
-              <>
-                <AssessmentModalDropdown
-                  label="Assessment Result"
-                  required
-                  value={assessmentResult}
-                  options={ASSESSMENT_RESULT_OPTIONS}
-                  placeholder="Select result"
-                  disabled={isSaving}
-                  onChange={setAssessmentResult}
-                />
-
-                <label className="block">
-                  <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Assessment Attachment
-                  </span>
-
-                  <input
-                    ref={assessmentFileInputRef}
-                    type="file"
-                    disabled={isSaving}
-                    accept=".pdf,.png,.jpg,.jpeg,.webp"
-                    onChange={(event) =>
-                      setAssessmentFile(event.target.files?.[0] || null)
-                    }
-                    className="hidden"
-                  />
-
-                  <button
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => assessmentFileInputRef.current?.click()}
-                    className="mt-2 flex min-h-[170px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-sibs-primary-1 bg-[#EEF6FF] px-5 py-6 text-center transition hover:bg-[#E7F1FF] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-sibs-primary-1 shadow-sm">
-                      <UploadCloud size={26} strokeWidth={2.4} />
-                    </span>
-
-                    <span className="mt-4 max-w-full break-words text-base font-extrabold text-sibs-primary-1">
-                      {assessmentFile ? assessmentFile.name : "Choose assessment file"}
-                    </span>
-
-                    <span className="mt-1 text-sm font-semibold text-sibs-primary-1">
-                      Accepted: PDF, PNG, JPG, JPEG, WEBP
-                    </span>
-
-                    {assessmentFile && (
-                      <span className="mt-3 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                        {(assessmentFile.size / 1024).toFixed(1)} KB
-                      </span>
-                    )}
-                  </button>
-                </label>
-              </>
-            )}
+                }}
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1"
+              >
+                {ASSESSMENT_STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="block">
               <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Assessment Remarks
+                Assessment Result
+              </span>
+
+              <select
+                value={assessmentResult}
+                disabled={isSaving || assessmentStatus !== "Taken"}
+                onChange={(event) => setAssessmentResult(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <option value="">Select assessment result</option>
+                {ASSESSMENT_RESULT_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Remarks
               </span>
 
               <textarea
                 value={assessmentRemarks}
                 disabled={isSaving}
                 onChange={(event) => setAssessmentRemarks(event.target.value)}
-                rows={5}
-                placeholder="Example: Candidate completed assessment and passed required score."
-                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#344054] shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100"
+                rows={4}
+                placeholder="Add assessment remarks..."
+                className="mt-2 w-full resize-none rounded-xl border border-[#D6DEE8] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1"
               />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Assessment Attachment
+              </span>
+
+              <div className="mt-2 rounded-xl border border-dashed border-[#B9C7D6] bg-white p-4">
+                <input
+                  type="file"
+                  disabled={isSaving}
+                  accept={ACCEPTED_FILE_TYPES}
+                  onChange={(event) =>
+                    setAssessmentFile(event.target.files?.[0] || null)
+                  }
+                  className="block w-full text-sm font-bold text-[#344054] file:mr-4 file:rounded-xl file:border-0 file:bg-sibs-primary-1 file:px-4 file:py-2 file:text-sm file:font-extrabold file:text-white"
+                />
+
+                <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                  Allowed: PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, PNG, WEBP,
+                  HEIC.
+                </p>
+
+                {assessmentFile && (
+                  <p className="mt-2 break-words text-xs font-extrabold text-sibs-primary-1">
+                    Selected: {assessmentFile.name}
+                  </p>
+                )}
+              </div>
             </label>
 
             {errorMessage && (
@@ -1492,7 +1285,7 @@ function UpdateAssessmentModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="inline-flex h-11 min-w-[92px] items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -1500,17 +1293,937 @@ function UpdateAssessmentModal({
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex h-11 min-w-[160px] items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isSaving ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <ClipboardCheck size={16} />
-            )}
+            {isSaving ? <Loader2 size={16} className="animate-spin" /> : null}
             {isSaving ? "Saving..." : "Save Assessment"}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+
+function getAssessmentEmailCandidateName(candidate = {}) {
+  return (
+    cleanText(candidate.name) ||
+    cleanText(candidate.candidateName) ||
+    cleanText(candidate.fullName) ||
+    cleanText(candidate.full_name) ||
+    "Candidate"
+  );
+}
+
+function getAssessmentEmailRole(candidate = {}) {
+  return (
+    cleanText(candidate.roleCapability) ||
+    cleanText(candidate.role_capability) ||
+    cleanText(candidate.currentAppliedRole) ||
+    cleanText(candidate.current_applied_role) ||
+    cleanText(candidate.openPosition) ||
+    cleanText(candidate.open_position) ||
+    cleanText(candidate.positionTitle) ||
+    cleanText(candidate.position_title) ||
+    cleanText(candidate.position) ||
+    "the available"
+  );
+}
+
+function addDaysToInputDate(days = 7) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatPreviewDeadline(value) {
+  if (!value) return "the scheduled deadline";
+
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+const assessmentEmailMonthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const assessmentEmailWeekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+function padDateNumber(value) {
+  return String(value).padStart(2, "0");
+}
+
+function toDateInputValue(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+
+  return `${date.getFullYear()}-${padDateNumber(date.getMonth() + 1)}-${padDateNumber(
+    date.getDate(),
+  )}`;
+}
+
+function parseDateInputValue(value) {
+  if (!value) return null;
+
+  const rawValue = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    const parts = rawValue.split("-");
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+
+    const date = new Date(year, month, day);
+
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date;
+  }
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawValue)) {
+    const parts = rawValue.split("/");
+    const month = Number(parts[0]) - 1;
+    const day = Number(parts[1]);
+    const year = Number(parts[2]);
+
+    const date = new Date(year, month, day);
+
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date;
+  }
+
+  const fallbackDate = new Date(rawValue);
+
+  if (Number.isNaN(fallbackDate.getTime())) return null;
+
+  return fallbackDate;
+}
+
+function formatAssessmentDateDisplay(value) {
+  const date = parseDateInputValue(value);
+
+  if (!date) return "Select deadline";
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function isSameAssessmentDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function buildAssessmentCalendarDays(displayDate) {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDay = firstDayOfMonth.getDay();
+
+  const calendarStart = new Date(year, month, 1 - startDay);
+  const days = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
+
+    days.push({
+      date,
+      dateValue: toDateInputValue(date),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+    });
+  }
+
+  return days;
+}
+
+function isPastAssessmentDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return true;
+
+  const today = new Date();
+
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
+  const targetStart = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  return targetStart < todayStart;
+}
+
+function AssessmentDeadlineDatePicker({
+  value,
+  onChange,
+  placeholder = "Select deadline",
+  disabled = false,
+}) {
+  const calendarRef = useRef(null);
+  const selectedDate = parseDateInputValue(value);
+  const today = new Date();
+
+  const [open, setOpen] = useState(false);
+  const [displayDate, setDisplayDate] = useState(() => {
+    if (selectedDate) {
+      return new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        1,
+      );
+    }
+
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+
+  const currentMonthStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1,
+  );
+
+  const displayMonthStart = new Date(
+    displayDate.getFullYear(),
+    displayDate.getMonth(),
+    1,
+  );
+
+  const disablePreviousMonth = displayMonthStart <= currentMonthStart;
+
+  const calendarDays = useMemo(
+    () => buildAssessmentCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  useEffect(() => {
+    if (selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!calendarRef.current) return;
+
+      if (!calendarRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function goPreviousMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
+    );
+  }
+
+  function handleSelectDate(date) {
+    if (isPastAssessmentDate(date)) return;
+
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange("");
+    setOpen(false);
+  }
+
+  function handleToday() {
+    onChange(toDateInputValue(today));
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setOpen(false);
+  }
+
+  return (
+    <div ref={calendarRef} className="relative z-[300] min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D6DEE8] hover:border-sibs-primary-1"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-[#344054]"
+        }`}
+      >
+        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
+          <CalendarDays
+            size={16}
+            className="shrink-0 text-sibs-primary-1"
+          />
+
+          <span
+            className={`min-w-0 truncate ${
+              value ? "text-[#344054]" : "text-gray-400"
+            }`}
+          >
+            {value ? formatAssessmentDateDisplay(value) : placeholder}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+            <button
+              type="button"
+              onClick={goPreviousMonth}
+              disabled={disablePreviousMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <p className="min-w-0 flex-1 text-center text-sm font-extrabold text-sibs-primary-1">
+              {assessmentEmailMonthNames[displayDate.getMonth()]}{" "}
+              {displayDate.getFullYear()}
+            </p>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-7 gap-1">
+              {assessmentEmailWeekdayLabels.map((dayLabel) => (
+                <div
+                  key={dayLabel}
+                  className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                >
+                  {dayLabel}
+                </div>
+              ))}
+
+              {calendarDays.map((day) => {
+                  const active =
+                    selectedDate && isSameAssessmentDate(day.date, selectedDate);
+                  const currentDay = isSameAssessmentDate(day.date, today);
+                  const disabledDay = isPastAssessmentDate(day.date);
+
+                  return (
+                    <button
+                      key={day.dateValue}
+                      type="button"
+                      disabled={disabledDay}
+                      onClick={() => handleSelectDate(day.date)}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                        disabledDay
+                          ? "cursor-not-allowed text-[#CBD5E1] opacity-45"
+                          : active
+                            ? "bg-sibs-primary-1 text-white"
+                            : currentDay
+                              ? "bg-[#F2F6FA] text-sibs-primary-1"
+                              : day.isCurrentMonth
+                                ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                                : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                      }`}
+                    >
+                      {day.dayNumber}
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getAssessmentClientBaseUrl() {
+  const configuredUrl = cleanText(
+    import.meta.env.VITE_CLIENT_APP_URL ||
+      import.meta.env.VITE_APP_URL ||
+      import.meta.env.VITE_PUBLIC_APP_URL ||
+      import.meta.env.VITE_FRONTEND_URL,
+  );
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/+$/, "");
+  }
+
+  return "https://sibs-hris.getleadsource.com";
+}
+
+function buildAssessmentPreviewLink() {
+  return SIBS_ASSESSMENT_PUBLIC_LINK;
+}
+
+const SIBS_ASSESSMENT_PUBLIC_LINK =
+  "https://link.sibscareers.online/l/4HqL27kZ3";
+
+function getCurrentAppOrigin() {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, "");
+  }
+
+  return "https://sibs-hris.getleadsource.com";
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function getLatestFinalInterviewSubmittedForm(candidate = {}) {
+  const forms = safeArray(
+    candidate.finalInterviewSubmittedForms ||
+      candidate.final_interview_submissions ||
+      candidate.finalInterviewSubmissions ||
+      candidate.submittedFinalInterviewForms ||
+      candidate.submitted_final_interview_forms,
+  );
+
+  if (!forms.length) return null;
+
+  return [...forms]
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aTime = new Date(
+        a.submittedAtIso ||
+          a.submitted_at_iso ||
+          a.submittedAt ||
+          a.submitted_at ||
+          a.createdAt ||
+          a.created_at ||
+          0,
+      ).getTime();
+
+      const bTime = new Date(
+        b.submittedAtIso ||
+          b.submitted_at_iso ||
+          b.submittedAt ||
+          b.submitted_at ||
+          b.createdAt ||
+          b.created_at ||
+          0,
+      ).getTime();
+
+      return (
+        (Number.isFinite(bTime) ? bTime : 0) -
+        (Number.isFinite(aTime) ? aTime : 0)
+      );
+    })[0];
+}
+
+function isFinalInterviewFormLink(link = "") {
+  return cleanText(link).includes("/recruitment/final-interview-form");
+}
+
+function finalInterviewLinkHasSavedDataParams(link = "") {
+  const value = cleanText(link);
+
+  if (!value) return false;
+
+  try {
+    const parsedUrl = new URL(
+      value,
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://sibs-hris.getleadsource.com",
+    );
+
+    return Boolean(
+      parsedUrl.searchParams.get("submissionId") ||
+        parsedUrl.searchParams.get("formId"),
+    );
+  } catch {
+    return value.includes("submissionId=") || value.includes("formId=");
+  }
+}
+
+function resolveFinalInterviewFormLink(link = "") {
+  const value = cleanText(link);
+  const appOrigin = getCurrentAppOrigin();
+
+  if (!value) return "";
+
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    try {
+      const parsedUrl = new URL(value);
+
+      if (parsedUrl.pathname === "/recruitment/final-interview-form") {
+        return `${appOrigin}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+      }
+
+      return value;
+    } catch {
+      return value;
+    }
+  }
+
+  if (value.startsWith("/")) {
+    return `${appOrigin}${value}`;
+  }
+
+  return `${appOrigin}/${value}`;
+}
+
+function buildFinalInterviewFormLink(candidate = {}, item = {}) {
+  const appOrigin = getCurrentAppOrigin();
+  const latestSubmission = getLatestFinalInterviewSubmittedForm(candidate) || {};
+
+  const candidateId =
+    cleanText(candidate.candidateId) ||
+    cleanText(candidate.candidate_id) ||
+    cleanText(latestSubmission.candidateId) ||
+    cleanText(latestSubmission.candidate_id) ||
+    "";
+
+  const candidateApplicationId =
+    cleanText(candidate.candidateApplicationId) ||
+    cleanText(candidate.candidate_application_id) ||
+    cleanText(candidate.applicationId) ||
+    cleanText(candidate.application_id) ||
+    cleanText(latestSubmission.candidateApplicationId) ||
+    cleanText(latestSubmission.candidate_application_id) ||
+    cleanText(candidate.id) ||
+    "";
+
+  const positionId =
+    cleanText(item.positionId) ||
+    cleanText(item.position_id) ||
+    cleanText(item.extra?.positionId) ||
+    cleanText(item.extra?.position_id) ||
+    cleanText(latestSubmission.positionId) ||
+    cleanText(latestSubmission.position_id) ||
+    cleanText(candidate.positionId) ||
+    cleanText(candidate.position_id) ||
+    cleanText(candidate.finalInterviewPositionId) ||
+    cleanText(candidate.final_interview_position_id) ||
+    cleanText(candidate.offerDetails?.positionId) ||
+    cleanText(candidate.hiringRequirementId) ||
+    "";
+
+  const formId =
+    cleanText(item.formId) ||
+    cleanText(item.form_id) ||
+    cleanText(item.extra?.formId) ||
+    cleanText(item.extra?.form_id) ||
+    cleanText(latestSubmission.formId) ||
+    cleanText(latestSubmission.form_id) ||
+    cleanText(candidate.finalInterviewFormId) ||
+    cleanText(candidate.final_interview_form_id) ||
+    "";
+
+  const submissionId =
+    cleanText(item.submissionId) ||
+    cleanText(item.submission_id) ||
+    cleanText(item.extra?.submissionId) ||
+    cleanText(item.extra?.submission_id) ||
+    cleanText(latestSubmission.id) ||
+    cleanText(latestSubmission.submissionId) ||
+    cleanText(latestSubmission.submission_id) ||
+    "";
+
+  if (!candidateId && !candidateApplicationId) return "";
+
+  const params = new URLSearchParams();
+
+  if (candidateId) params.set("candidateId", candidateId);
+  if (candidateApplicationId) {
+    params.set("candidateApplicationId", candidateApplicationId);
+  }
+  if (positionId) params.set("positionId", positionId);
+  if (formId) params.set("formId", formId);
+  if (submissionId) params.set("submissionId", submissionId);
+
+  params.set("mode", "view");
+
+  return `${appOrigin}/recruitment/final-interview-form?${params.toString()}`;
+}
+
+function getTimelineFinalInterviewFormLink(item = {}, candidate = {}) {
+  const possibleSavedLinks = [
+    item.savedFormLink,
+    item.saved_form_link,
+    item.finalInterviewLink,
+    item.final_interview_link,
+    item.extra?.savedFormLink,
+    item.extra?.saved_form_link,
+    item.extra?.finalInterviewLink,
+    item.extra?.final_interview_link,
+  ];
+
+  const savedFinalInterviewLink = possibleSavedLinks.find((link) =>
+    isFinalInterviewFormLink(link),
+  );
+
+  if (
+    savedFinalInterviewLink &&
+    finalInterviewLinkHasSavedDataParams(savedFinalInterviewLink)
+  ) {
+    return resolveFinalInterviewFormLink(savedFinalInterviewLink);
+  }
+
+  const stageText = cleanText(item.stage).toLowerCase();
+  const reasonText = cleanText(item.reason).toLowerCase();
+
+  const isInterviewLog =
+    stageText.includes("interview") ||
+    reasonText.includes("interview") ||
+    reasonText.includes("job evaluation");
+
+  if (!isInterviewLog && !savedFinalInterviewLink) return "";
+
+  return buildFinalInterviewFormLink(candidate, item);
+}
+
+function buildTimelineItemWithFinalInterviewLink(item = {}, candidate = {}) {
+  const finalInterviewFormLink = getTimelineFinalInterviewFormLink(
+    item,
+    candidate,
+  );
+
+  if (!finalInterviewFormLink) return item;
+
+  return {
+    ...item,
+    savedFormLink: finalInterviewFormLink,
+    saved_form_link: finalInterviewFormLink,
+    assessmentLink: finalInterviewFormLink,
+    assessment_link: finalInterviewFormLink,
+    extra: {
+      ...(item.extra || {}),
+      savedFormLink: finalInterviewFormLink,
+      saved_form_link: finalInterviewFormLink,
+      assessmentLink: finalInterviewFormLink,
+      assessment_link: finalInterviewFormLink,
+    },
+  };
+}
+
+function AssessmentEmailFormatModal({
+  open,
+  candidate,
+  form,
+  isSending = false,
+  onChange,
+  onClose,
+  onSend,
+}) {
+  if (!open) return null;
+
+  const candidateName = getAssessmentEmailCandidateName(candidate);
+  const roleName = form.roleName || getAssessmentEmailRole(candidate);
+  const deadlineText = formatPreviewDeadline(form.emailDeadline);
+  const assessmentLink = buildAssessmentPreviewLink(
+    candidate,
+    form.recipientEmail,
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[92dvh] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-6 py-5">
+          <div className="min-w-0">
+            <h2 className="text-xl font-extrabold text-sibs-primary-1">
+              Assessment Email Format
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+              Review the message before sending the online assessment invitation.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSending}
+            className="rounded-full p-2 text-[#98A2B3] transition hover:bg-gray-100 hover:text-[#475467] disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close assessment email format modal"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] px-6 py-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Recipient Email
+              </span>
+              <input
+                type="email"
+                value={form.recipientEmail}
+                onChange={(event) =>
+                  onChange({
+                    ...form,
+                    recipientEmail: event.target.value,
+                  })
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Assessment Deadline
+              </span>
+                <div className="mt-2">
+                  <AssessmentDeadlineDatePicker
+                    value={form.emailDeadline}
+                    disabled={isSending}
+                    placeholder="Select deadline"
+                    onChange={(nextDate) =>
+                      onChange({
+                        ...form,
+                        emailDeadline: nextDate,
+                      })
+                    }
+                  />
+                </div>
+            </label>
+
+            <label className="block md:col-span-2">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Subject
+              </span>
+              <input
+                value={form.emailSubject}
+                onChange={(event) =>
+                  onChange({
+                    ...form,
+                    emailSubject: event.target.value,
+                  })
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+            </label>
+
+            <label className="block md:col-span-2">
+              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                Role / Position
+              </span>
+              <input
+                value={form.roleName}
+                onChange={(event) =>
+                  onChange({
+                    ...form,
+                    roleName: event.target.value,
+                  })
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+            </label>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-white p-5">
+            <div className="mx-auto max-w-[560px] overflow-hidden rounded-sm bg-[#FFF8EF] shadow-sm">
+              <div className="bg-white px-8 py-5 text-center">
+                <img
+                  src="/sibs-logo-navy.svg"
+                  alt="SiBS"
+                  className="mx-auto h-auto w-[360px] max-w-full"
+                  onError={(event) => {
+                    event.currentTarget.outerHTML =
+                      '<div style="font-size:32px;font-weight:800;color:#003B6F;">SiBS</div>';
+                  }}
+                />
+              </div>
+
+              <div className="px-8 py-6 text-sm leading-6 text-black">
+                <p>Hi {candidateName},</p>
+
+                <p className="mt-4">
+                  Thank you for your interest in the {roleName} role at SiBS
+                  Contact Center! We're thrilled to have you take the next step
+                  in our selection process.
+                </p>
+
+                <p className="mt-4">
+                  Your next step is to complete our online assessment. This is a
+                  fantastic opportunity for you to showcase your skills and
+                  demonstrate how you handle various customer service scenarios.
+                  By completing this assessment, we will get to know you better
+                  and understand how we can best support you when you join our
+                  team.
+                </p>
+
+                <p className="mt-4 font-bold">Here's how to proceed:</p>
+                <ol className="ml-5 list-decimal">
+                  <li>
+                    Click on the following link to access the assessment:{" "}
+                    <a
+                      href={assessmentLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-blue-700 underline"
+                    >
+                      SiBS - Online Assessment
+                    </a>
+                  </li>
+                  <li>Complete the assessment by {deadlineText}.</li>
+                  <li>
+                    Ensure you have a quiet space and a stable internet
+                    connection.
+                  </li>
+                </ol>
+
+                <p className="mt-4 font-bold">Tips for Success:</p>
+                <ul className="ml-5 list-disc">
+                  <li>Take your time to read each question carefully.</li>
+                  <li>
+                    Keep your browser window open and stay within the assessment
+                    area during the test. Stepping away too many times could
+                    result in being locked out for security reasons.
+                  </li>
+                  <li>
+                    For the best experience, use a laptop or computer in a
+                    quiet, distraction-free space throughout the assessment.
+                  </li>
+                </ul>
+
+                <p className="mt-4">
+                  If you have any questions or encounter any issues, feel free to
+                  reach out to us at{" "}
+                  <span className="text-blue-700 underline">
+                    careers@thesiblingssolutions.com
+                  </span>{" "}
+                  or call us at 09178303126.
+                </p>
+
+                <p className="mt-4">
+                  We're looking forward to seeing your responses and moving
+                  further in the selection process!
+                </p>
+
+                <p className="mt-8">
+                  Best regards,
+                  <br />
+                  Talent Acquisition Team
+                  <br />
+                  SiBS Contact Center
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-6 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSending}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={isSending}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Mail size={16} />
+            )}
+            {isSending ? "Sending..." : "Send Assessment Email"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1539,6 +2252,13 @@ const CandidatePipelineModal = ({
   const [isSavingNhoFiles, setIsSavingNhoFiles] = useState(false);
   const [isSendingAssessmentEmail, setIsSendingAssessmentEmail] =
     useState(false);
+  const [showAssessmentEmailModal, setShowAssessmentEmailModal] = useState(false);
+  const [assessmentEmailForm, setAssessmentEmailForm] = useState({
+    recipientEmail: "",
+    emailSubject: "SiBS Online Assessment Invitation",
+    emailDeadline: addDaysToInputDate(7),
+    roleName: "",
+  });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
@@ -1843,15 +2563,44 @@ const CandidatePipelineModal = ({
     return mergedCandidate;
   }
 
-  async function handleSendAssessmentEmailClick(event) {
+  function handleSendAssessmentEmailClick(event) {
     event.preventDefault();
     event.stopPropagation();
+
+    setAssessmentEmailForm({
+      recipientEmail:
+        cleanText(
+          activeCandidate.assessmentEmailRecipient ||
+            activeCandidate.assessment_email_recipient,
+        ) ||
+        cleanText(activeCandidate.email) ||
+        "",
+      emailSubject: "SiBS Online Assessment Invitation",
+      emailDeadline: addDaysToInputDate(7),
+      roleName: getAssessmentEmailRole(activeCandidate),
+    });
+
+    setShowAssessmentEmailModal(true);
+  }
+
+  async function handleConfirmSendAssessmentEmail(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
 
     if (!candidateNhoUploadId) {
       showStatusModal({
         type: "error",
         title: "Unable to Send",
         message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    if (!cleanText(assessmentEmailForm.recipientEmail)) {
+      showStatusModal({
+        type: "error",
+        title: "Recipient Required",
+        message: "Please enter the recipient email address.",
       });
       return;
     }
@@ -1863,7 +2612,16 @@ const CandidatePipelineModal = ({
         `/api/candidate-pipeline/${encodeURIComponent(
           candidateNhoUploadId,
         )}/assessment/send-email`,
-        {},
+        {
+          recipientEmail: assessmentEmailForm.recipientEmail,
+          email: assessmentEmailForm.recipientEmail,
+          emailSubject: assessmentEmailForm.emailSubject,
+          subject: assessmentEmailForm.emailSubject,
+          emailDeadline: assessmentEmailForm.emailDeadline,
+          deadline: assessmentEmailForm.emailDeadline,
+          roleName: assessmentEmailForm.roleName,
+          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
+        },
         {
           withCredentials: true,
         },
@@ -1872,14 +2630,12 @@ const CandidatePipelineModal = ({
       const payload = response?.data || {};
 
       if (payload?.success === false) {
-        throw new Error(
-          payload?.message || "Failed to send assessment email.",
-        );
+        throw new Error(payload?.message || "Failed to send assessment email.");
       }
 
       const apiCandidate = getCandidateFromApiPayload(payload) || {};
 
-      const nextCandidate = syncCandidateAfterAction({
+      syncCandidateAfterAction({
         ...apiCandidate,
         assessmentEmailSent:
           apiCandidate.assessmentEmailSent ??
@@ -1897,23 +2653,30 @@ const CandidatePipelineModal = ({
           apiCandidate.assessment_email_sent_at ||
           apiCandidate.assessmentEmailSentAt ||
           new Date().toISOString(),
+        assessmentEmailRecipient:
+          apiCandidate.assessmentEmailRecipient ||
+          apiCandidate.assessment_email_recipient ||
+          assessmentEmailForm.recipientEmail,
+        assessment_email_recipient:
+          apiCandidate.assessment_email_recipient ||
+          apiCandidate.assessmentEmailRecipient ||
+          assessmentEmailForm.recipientEmail,
       });
+
+      setShowAssessmentEmailModal(false);
 
       showStatusModal({
         type: "success",
         title: "Assessment Email Sent",
         message:
           payload?.message ||
-          "Assessment email was marked as sent successfully.",
+          `Assessment email sent successfully to ${assessmentEmailForm.recipientEmail}.`,
       });
     } catch (error) {
       showStatusModal({
         type: "error",
         title: "Send Assessment Email Failed",
-        message: getApiErrorMessage(
-          error,
-          "Failed to send assessment email.",
-        ),
+        message: getApiErrorMessage(error, "Failed to send assessment email."),
       });
     } finally {
       setIsSendingAssessmentEmail(false);
@@ -2463,47 +3226,92 @@ const CandidatePipelineModal = ({
     onClose?.();
   }
 
-  async function handleStartOrContinueInterview() {
-    if (!isInterviewInProgress) {
-      await handleStartInterview(activeCandidate);
-    }
+ async function handleStartOrContinueInterview() {
+  if (!isInterviewInProgress) {
+    await handleStartInterview(activeCandidate);
+  }
 
-    if (activeCandidate.onlineInterviewLink) {
-      window.open(
-        activeCandidate.onlineInterviewLink,
-        "_blank",
-        "noopener,noreferrer",
-      );
-    }
-
-    onClose?.();
-
-    const positionId =
-      activeCandidate.positionId ||
-      activeCandidate.finalInterviewPositionId ||
-      activeCandidate.offerDetails?.positionId ||
-      activeCandidate.hiringRequirementId ||
-      "";
-
-    const formId =
-      activeCandidate.finalInterviewFormId ||
-      (positionId ? `final-interview-${positionId}` : "");
-
-    navigate(
-      `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
-        activeCandidate.candidateId || "",
-      )}&candidateApplicationId=${encodeURIComponent(
-        activeCandidate.candidateApplicationId || activeCandidate.id || "",
-      )}&positionId=${encodeURIComponent(positionId)}&formId=${encodeURIComponent(
-        formId,
-      )}`,
-      {
-        state: {
-          candidate: activeCandidate,
-        },
-      },
+  if (activeCandidate.onlineInterviewLink) {
+    window.open(
+      activeCandidate.onlineInterviewLink,
+      "_blank",
+      "noopener,noreferrer",
     );
   }
+
+  onClose?.();
+
+  const submittedForms = Array.isArray(activeCandidate.finalInterviewSubmittedForms)
+    ? activeCandidate.finalInterviewSubmittedForms
+    : [];
+
+  const latestSubmission = [...submittedForms].sort((a, b) => {
+    const aTime = new Date(
+      a.submittedAtIso ||
+        a.submittedAt ||
+        a.submitted_at ||
+        a.createdAt ||
+        a.created_at ||
+        0,
+    ).getTime();
+
+    const bTime = new Date(
+      b.submittedAtIso ||
+        b.submittedAt ||
+        b.submitted_at ||
+        b.createdAt ||
+        b.created_at ||
+        0,
+    ).getTime();
+
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+  })[0];
+
+  const positionId =
+    activeCandidate.positionId ||
+    activeCandidate.finalInterviewPositionId ||
+    activeCandidate.offerDetails?.positionId ||
+    activeCandidate.hiringRequirementId ||
+    latestSubmission?.positionId ||
+    latestSubmission?.position_id ||
+    "";
+
+  const formId =
+    activeCandidate.finalInterviewFormId ||
+    activeCandidate.final_interview_form_id ||
+    latestSubmission?.formId ||
+    latestSubmission?.form_id ||
+    (positionId ? `final-interview-${positionId}` : "default-job-evaluation");
+
+  const submissionId =
+    latestSubmission?.id ||
+    latestSubmission?.submissionId ||
+    latestSubmission?.submission_id ||
+    "";
+
+  const params = new URLSearchParams();
+
+  params.set("candidateId", activeCandidate.candidateId || "");
+  params.set(
+    "candidateApplicationId",
+    activeCandidate.candidateApplicationId || activeCandidate.id || "",
+  );
+  params.set("positionId", positionId);
+  params.set("formId", formId);
+  params.set("mode", "edit");
+  params.set("continue", "1");
+
+  if (submissionId) {
+    params.set("submissionId", submissionId);
+  }
+
+  navigate(`/recruitment/final-interview-form?${params.toString()}`, {
+    state: {
+      candidate: activeCandidate,
+      allowEditSubmitted: true,
+    },
+  });
+}
 
   const nhoScheduleSection = (
     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
@@ -2732,9 +3540,15 @@ const CandidatePipelineModal = ({
 
                       <div className="mt-5 space-y-4">
                         {(activeCandidate.timeline || []).map((item, index) => {
-                          const savedFormFullLink = item.savedFormLink
-                            ? `${window.location.origin}${item.savedFormLink}`
-                            : "";
+                          const finalInterviewFormLink = getTimelineFinalInterviewFormLink(
+                            item,
+                            activeCandidate,
+                          );
+
+                          const timelineItem = buildTimelineItemWithFinalInterviewLink(
+                            item,
+                            activeCandidate,
+                          );
 
                           return (
                             <div
@@ -2776,11 +3590,11 @@ const CandidatePipelineModal = ({
                                 )}
 
                                 <GetAssessmentTimelineFiles
-                                  item={item}
+                                  item={timelineItem}
                                   candidate={activeCandidate}
                                 />
 
-                                {item.savedFormLink && (
+                                {finalInterviewFormLink && (
                                   <div className="mt-3">
                                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
                                       Job Evaluation Link
@@ -2788,17 +3602,17 @@ const CandidatePipelineModal = ({
 
                                     <button
                                       type="button"
-                                      title={savedFormFullLink}
+                                      title={finalInterviewFormLink}
                                       onClick={() => {
                                         window.open(
-                                          item.savedFormLink,
+                                          finalInterviewFormLink,
                                           "_blank",
                                           "noopener,noreferrer",
                                         );
                                       }}
                                       className="mt-2 block w-full min-w-0 truncate rounded-lg border border-blue-100 bg-white px-3 py-2 text-left text-xs font-semibold text-blue-600 underline transition hover:cursor-pointer hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
                                     >
-                                      {savedFormFullLink}
+                                      {finalInterviewFormLink}
                                     </button>
                                   </div>
                                 )}
@@ -3336,6 +4150,20 @@ const CandidatePipelineModal = ({
         candidateId={candidateNhoUploadId}
         onClose={() => setShowAssessmentModal(false)}
         onSaved={handleAssessmentSaved}
+      />
+
+      <AssessmentEmailFormatModal
+        open={showAssessmentEmailModal}
+        candidate={activeCandidate}
+        form={assessmentEmailForm}
+        isSending={isSendingAssessmentEmail}
+        onChange={setAssessmentEmailForm}
+        onClose={() => {
+          if (!isSendingAssessmentEmail) {
+            setShowAssessmentEmailModal(false);
+          }
+        }}
+        onSend={handleConfirmSendAssessmentEmail}
       />
 
       <StatusModal

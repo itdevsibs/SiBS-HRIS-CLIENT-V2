@@ -42,7 +42,26 @@ function cleanText(value) {
 
 function getTodayDateOnly() {
   const today = new Date();
+
   return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function getMonthStart(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function isDateBeforeToday(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return true;
+
+  const todayStart = getTodayDateOnly();
+
+  const dateStart = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  return dateStart < todayStart;
 }
 
 function parseDateTimeValue(value) {
@@ -108,12 +127,11 @@ function formatDateTimeDisplay(value) {
 function buildYearOptions(baseDate) {
   const currentYear = new Date().getFullYear();
   const baseYear = baseDate?.getFullYear?.() || currentYear;
-  const startYear = Math.min(currentYear - 5, baseYear - 5);
   const endYear = Math.max(currentYear + 10, baseYear + 10);
 
   return Array.from(
-    { length: endYear - startYear + 1 },
-    (_, index) => startYear + index,
+    { length: endYear - currentYear + 1 },
+    (_, index) => currentYear + index,
   );
 }
 
@@ -165,14 +183,19 @@ function isSameDate(left, right) {
 }
 
 function DateTimePicker({ value, onChange }) {
-  const selectedDate = parseDateTimeValue(value);
+  const parsedValue = parseDateTimeValue(value);
+  const safeInitialDate =
+    parsedValue && !isDateBeforeToday(parsedValue)
+      ? parsedValue
+      : getTodayDateOnly();
+
   const pickerRef = useRef(null);
 
   const [open, setOpen] = useState(false);
-  const [viewDate, setViewDate] = useState(selectedDate || getTodayDateOnly());
-  const [activeDate, setActiveDate] = useState(
-    selectedDate || getTodayDateOnly(),
+  const [viewDate, setViewDate] = useState(() =>
+    getMonthStart(safeInitialDate),
   );
+  const [activeDate, setActiveDate] = useState(safeInitialDate);
 
   const currentTimeParts = useMemo(() => getTimeParts(value), [value]);
 
@@ -180,20 +203,38 @@ function DateTimePicker({ value, onChange }) {
   const [minute, setMinute] = useState(currentTimeParts.minute);
   const [period, setPeriod] = useState(currentTimeParts.period);
 
+  const todayDateOnly = getTodayDateOnly();
+  const currentMonthStart = getMonthStart(todayDateOnly);
+  const viewMonthStart = getMonthStart(viewDate);
+  const currentYear = todayDateOnly.getFullYear();
+  const currentMonth = todayDateOnly.getMonth();
+  const disablePreviousMonth = viewMonthStart <= currentMonthStart;
+
   const yearOptions = useMemo(() => buildYearOptions(viewDate), [viewDate]);
   const days = useMemo(() => buildCalendarDays(viewDate), [viewDate]);
+
+  const displayValue =
+    parsedValue && !isDateBeforeToday(parsedValue) ? value : "";
 
   useEffect(() => {
     const nextDate = parseDateTimeValue(value);
 
-    if (nextDate) {
+    if (nextDate && !isDateBeforeToday(nextDate)) {
       setActiveDate(nextDate);
-      setViewDate(nextDate);
+      setViewDate(getMonthStart(nextDate));
 
       const nextTimeParts = getTimeParts(value);
       setHour12(nextTimeParts.hour12);
       setMinute(nextTimeParts.minute);
       setPeriod(nextTimeParts.period);
+      return;
+    }
+
+    if (nextDate && isDateBeforeToday(nextDate)) {
+      const today = getTodayDateOnly();
+
+      setActiveDate(today);
+      setViewDate(getMonthStart(today));
     }
   }, [value]);
 
@@ -226,18 +267,40 @@ function DateTimePicker({ value, onChange }) {
     nextPeriod = period,
   ) {
     if (!nextDate) return;
+    if (isDateBeforeToday(nextDate)) return;
 
     onChange?.(toDateTimeInputValue(nextDate, nextHour, nextMinute, nextPeriod));
   }
 
   function handleDateSelect(nextDate) {
+    if (isDateBeforeToday(nextDate)) return;
+
     setActiveDate(nextDate);
-    setViewDate(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+    setViewDate(getMonthStart(nextDate));
     commitValue(nextDate, hour12, minute, period);
+  }
+
+  function handlePreviousMonth() {
+    if (disablePreviousMonth) return;
+
+    setViewDate(
+      new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1),
+    );
+  }
+
+  function handleNextMonth() {
+    setViewDate(
+      new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1),
+    );
   }
 
   function handleMonthChange(event) {
     const nextMonth = Number(event.target.value);
+
+    if (viewDate.getFullYear() === currentYear && nextMonth < currentMonth) {
+      return;
+    }
+
     const nextViewDate = new Date(viewDate.getFullYear(), nextMonth, 1);
 
     setViewDate(nextViewDate);
@@ -249,11 +312,15 @@ function DateTimePicker({ value, onChange }) {
         0,
       ).getDate();
 
-      const nextActiveDate = new Date(
+      const nextActiveDateCandidate = new Date(
         nextViewDate.getFullYear(),
         nextViewDate.getMonth(),
         Math.min(activeDate.getDate(), lastDayOfMonth),
       );
+
+      const nextActiveDate = isDateBeforeToday(nextActiveDateCandidate)
+        ? getTodayDateOnly()
+        : nextActiveDateCandidate;
 
       setActiveDate(nextActiveDate);
       commitValue(nextActiveDate, hour12, minute, period);
@@ -262,22 +329,31 @@ function DateTimePicker({ value, onChange }) {
 
   function handleYearChange(event) {
     const nextYear = Number(event.target.value);
-    const nextViewDate = new Date(nextYear, viewDate.getMonth(), 1);
+    const nextMonth =
+      nextYear === currentYear && viewDate.getMonth() < currentMonth
+        ? currentMonth
+        : viewDate.getMonth();
+
+    const nextViewDate = new Date(nextYear, nextMonth, 1);
 
     setViewDate(nextViewDate);
 
     if (activeDate) {
       const lastDayOfMonth = new Date(
         nextYear,
-        viewDate.getMonth() + 1,
+        nextMonth + 1,
         0,
       ).getDate();
 
-      const nextActiveDate = new Date(
+      const nextActiveDateCandidate = new Date(
         nextYear,
-        viewDate.getMonth(),
+        nextMonth,
         Math.min(activeDate.getDate(), lastDayOfMonth),
       );
+
+      const nextActiveDate = isDateBeforeToday(nextActiveDateCandidate)
+        ? getTodayDateOnly()
+        : nextActiveDateCandidate;
 
       setActiveDate(nextActiveDate);
       commitValue(nextActiveDate, hour12, minute, period);
@@ -303,8 +379,9 @@ function DateTimePicker({ value, onChange }) {
 
   function setToday() {
     const today = getTodayDateOnly();
+
     setActiveDate(today);
-    setViewDate(today);
+    setViewDate(getMonthStart(today));
     commitValue(today, hour12, minute, period);
   }
 
@@ -321,10 +398,10 @@ function DateTimePicker({ value, onChange }) {
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            value ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+            displayValue ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
           }`}
         >
-          {formatDateTimeDisplay(value)}
+          {formatDateTimeDisplay(displayValue)}
         </span>
 
         <CalendarDays size={18} className="shrink-0 text-sibs-primary-1" />
@@ -337,16 +414,9 @@ function DateTimePicker({ value, onChange }) {
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={() =>
-                    setViewDate(
-                      new Date(
-                        viewDate.getFullYear(),
-                        viewDate.getMonth() - 1,
-                        1,
-                      ),
-                    )
-                  }
-                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:flex"
+                  onClick={handlePreviousMonth}
+                  disabled={disablePreviousMonth}
+                  className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white sm:flex"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -358,11 +428,21 @@ function DateTimePicker({ value, onChange }) {
                       onChange={handleMonthChange}
                       className="h-10 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-3 pr-9 text-sm font-extrabold text-sibs-primary-1 outline-none transition hover:border-sibs-primary-1/50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                     >
-                      {MONTH_OPTIONS.map((month) => (
-                        <option key={month.value} value={month.value}>
-                          {month.label}
-                        </option>
-                      ))}
+                      {MONTH_OPTIONS.map((month) => {
+                        const disabledMonth =
+                          viewDate.getFullYear() === currentYear &&
+                          month.value < currentMonth;
+
+                        return (
+                          <option
+                            key={month.value}
+                            value={month.value}
+                            disabled={disabledMonth}
+                          >
+                            {month.label}
+                          </option>
+                        );
+                      })}
                     </select>
 
                     <ChevronDown
@@ -393,15 +473,7 @@ function DateTimePicker({ value, onChange }) {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setViewDate(
-                      new Date(
-                        viewDate.getFullYear(),
-                        viewDate.getMonth() + 1,
-                        1,
-                      ),
-                    )
-                  }
+                  onClick={handleNextMonth}
                   className="hidden h-9 w-9 items-center justify-center rounded-xl border border-[#D9E2EC] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:flex"
                 >
                   <ChevronRight size={18} />
@@ -410,16 +482,9 @@ function DateTimePicker({ value, onChange }) {
                 <div className="grid grid-cols-2 gap-2 sm:hidden">
                   <button
                     type="button"
-                    onClick={() =>
-                      setViewDate(
-                        new Date(
-                          viewDate.getFullYear(),
-                          viewDate.getMonth() - 1,
-                          1,
-                        ),
-                      )
-                    }
-                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                    onClick={handlePreviousMonth}
+                    disabled={disablePreviousMonth}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white"
                   >
                     <ChevronLeft size={16} />
                     Previous
@@ -427,15 +492,7 @@ function DateTimePicker({ value, onChange }) {
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setViewDate(
-                        new Date(
-                          viewDate.getFullYear(),
-                          viewDate.getMonth() + 1,
-                          1,
-                        ),
-                      )
-                    }
+                    onClick={handleNextMonth}
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D9E2EC] bg-white text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
                   >
                     Next
@@ -457,20 +514,24 @@ function DateTimePicker({ value, onChange }) {
                 {days.map((item) => {
                   const active = isSameDate(item.date, activeDate);
                   const today = isSameDate(item.date, getTodayDateOnly());
+                  const disabledDay = isDateBeforeToday(item.date);
 
                   return (
                     <button
                       key={item.date.toISOString()}
                       type="button"
+                      disabled={disabledDay}
                       onClick={() => handleDateSelect(item.date)}
                       className={`flex h-9 items-center justify-center rounded-xl text-xs font-extrabold transition ${
-                        active
-                          ? "bg-sibs-primary-1 text-white shadow-sm"
-                          : today
-                            ? "border border-sibs-primary-1/25 bg-[#EAF4FF] text-sibs-primary-1"
-                            : item.currentMonth
-                              ? "text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                              : "text-sibs-tertiary-5/60 hover:bg-[#F8FAFC]"
+                        disabledDay
+                          ? "cursor-not-allowed text-slate-300 opacity-45"
+                          : active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : today
+                              ? "border border-sibs-primary-1/25 bg-[#EAF4FF] text-sibs-primary-1"
+                              : item.currentMonth
+                                ? "text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                                : "text-sibs-tertiary-5/60 hover:bg-[#F8FAFC]"
                       }`}
                     >
                       {item.date.getDate()}
@@ -589,7 +650,7 @@ function DateTimePicker({ value, onChange }) {
                 </p>
 
                 <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                  {formatDateTimeDisplay(value)}
+                  {formatDateTimeDisplay(displayValue)}
                 </p>
               </div>
 
@@ -706,7 +767,8 @@ const ScheduleInterviewModal = ({
   return (
     <div
       className="fixed inset-0 z-[10001] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={onClose}
+      onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
     >
       <div
         className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
@@ -767,8 +829,6 @@ const ScheduleInterviewModal = ({
                 )}
               </div>
             </div>
-
-           
 
             <div>
               <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1">

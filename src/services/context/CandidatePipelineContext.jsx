@@ -96,54 +96,6 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-function isPlaceholderText(value = "") {
-  const text = cleanText(value).toLowerCase();
-
-  return (
-    !text ||
-    text === "unnamed candidate" ||
-    text === "unknown candidate" ||
-    text === "no name saved" ||
-    text === "no email saved" ||
-    text === "no email provided" ||
-    text === "n/a" ||
-    text === "na" ||
-    text === "null" ||
-    text === "undefined"
-  );
-}
-
-function getCandidateDisplayNameValue(candidate = {}) {
-  return cleanText(
-    candidate.name ||
-      candidate.candidateName ||
-      candidate.candidate_name ||
-      candidate.fullName ||
-      candidate.full_name ||
-      candidate.candidateSnapshot?.name ||
-      [
-        candidate.firstName || candidate.first_name,
-        candidate.middleName || candidate.middle_name,
-        candidate.lastName || candidate.last_name,
-      ]
-        .map(cleanText)
-        .filter(Boolean)
-        .join(" "),
-  );
-}
-
-function isDisplayablePipelineCandidate(candidate = {}) {
-  const name = getCandidateDisplayNameValue(candidate);
-
-  if (isPlaceholderText(name)) return false;
-
-  return true;
-}
-
-function filterDisplayablePipelineCandidates(candidates = []) {
-  return candidates.filter((candidate) => isDisplayablePipelineCandidate(candidate));
-}
-
 function normalizeStageKey(value) {
   return cleanText(value)
     .toLowerCase()
@@ -421,6 +373,29 @@ async function completeCandidatePipelineInterview(id, payload = {}) {
     );
 
     return apiErrorResponse(error, "Failed to complete interview.");
+  }
+}
+
+
+async function submitCandidatePipelineFinalInterview(id, payload = {}) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${id}/final-interview/submit`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error(
+      "Axios submitCandidatePipelineFinalInterview API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return apiErrorResponse(error, "Failed to submit final interview.");
   }
 }
 
@@ -800,9 +775,11 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
         candidate.candidate_id ||
         candidate.candidateSnapshot?.candidateId,
       name:
-        getCandidateDisplayNameValue(candidate) ||
+        candidate.name ||
+        candidate.candidateName ||
+        candidate.candidate_name ||
         candidate.candidateSnapshot?.name ||
-        "",
+        "Unnamed Candidate",
       email: candidate.email || candidate.candidateSnapshot?.email || "",
       roleTitle,
       account,
@@ -820,28 +797,18 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
 }
 
 function mergeUpdatedCandidateList(list = [], updatedCandidate = {}) {
-  if (!isDisplayablePipelineCandidate(updatedCandidate)) {
-    return filterDisplayablePipelineCandidates(list);
-  }
-
   const normalizedUpdated =
     normalizePipelineCandidateForBoard(updatedCandidate);
 
-  if (!isDisplayablePipelineCandidate(normalizedUpdated)) {
-    return filterDisplayablePipelineCandidates(list);
-  }
-
-  const cleanedList = filterDisplayablePipelineCandidates(list);
-
-  const existingIndex = cleanedList.findIndex((candidate) =>
+  const existingIndex = list.findIndex((candidate) =>
     isSamePipelineCandidate(candidate, normalizedUpdated),
   );
 
   if (existingIndex === -1) {
-    return [normalizedUpdated, ...cleanedList];
+    return [normalizedUpdated, ...list];
   }
 
-  return cleanedList.map((candidate, index) => {
+  return list.map((candidate, index) => {
     if (index !== existingIndex) return candidate;
 
     return normalizePipelineCandidateForBoard({
@@ -1108,9 +1075,7 @@ export function CandidatePipelineProvider({ children }) {
           ? response.candidates
           : [];
 
-      const normalizedRows = filterDisplayablePipelineCandidates(rows)
-        .map(normalizePipelineCandidateForBoard)
-        .filter(isDisplayablePipelineCandidate);
+      const normalizedRows = rows.map(normalizePipelineCandidateForBoard);
 
       setCandidateList(normalizedRows);
       setHasLoadedStorage(true);
@@ -1168,22 +1133,15 @@ export function CandidatePipelineProvider({ children }) {
       const payload = event?.detail || {};
       const eventCandidate = payload?.candidate || payload;
 
-      if (
-        eventCandidate &&
-        typeof eventCandidate === "object" &&
-        isDisplayablePipelineCandidate(eventCandidate)
-      ) {
+      if (eventCandidate && typeof eventCandidate === "object") {
         const normalizedCandidate =
           normalizePipelineCandidateForBoard(eventCandidate);
 
         if (
-          isDisplayablePipelineCandidate(normalizedCandidate) &&
-          (
-            normalizedCandidate.id ||
-            normalizedCandidate.candidateId ||
-            normalizedCandidate.candidateApplicationId ||
-            normalizedCandidate.email
-          )
+          normalizedCandidate.id ||
+          normalizedCandidate.candidateId ||
+          normalizedCandidate.candidateApplicationId ||
+          normalizedCandidate.email
         ) {
           setCandidateList((prev) =>
             mergeUpdatedCandidateList(prev, normalizedCandidate),
@@ -1231,9 +1189,7 @@ export function CandidatePipelineProvider({ children }) {
     const keyword = search.trim().toLowerCase();
 
     return candidateList
-      .filter(isDisplayablePipelineCandidate)
       .map(normalizePipelineCandidateForBoard)
-      .filter(isDisplayablePipelineCandidate)
       .filter((candidate) => {
         const role = getCandidateRoleForFilter(candidate);
         const account = getCandidateAccountForFilter(candidate);
@@ -2690,74 +2646,61 @@ export function CandidatePipelineProvider({ children }) {
   async function handleSubmitFinalInterview({
     candidateId,
     candidateApplicationId,
+    effectiveCandidateApplicationId,
     positionId,
     formId,
     formName = "",
+    passingScore = 80,
     answers = {},
     fieldsSnapshot = [],
+    scoreSummary = {},
   }) {
+    const resolvedCandidateApplicationId =
+      candidateApplicationId || effectiveCandidateApplicationId || "";
+
     const matchedCandidate = candidateList.find((candidate) => {
       return (
         String(candidate.candidateId || "") === String(candidateId || "") ||
         String(candidate.candidateApplicationId || "") ===
-          String(candidateApplicationId || "") ||
-        String(candidate.applicationId || "") === String(candidateApplicationId || "") ||
-        String(candidate.id || "") === String(candidateApplicationId || "")
+          String(resolvedCandidateApplicationId || "") ||
+        String(candidate.applicationId || "") ===
+          String(resolvedCandidateApplicationId || "") ||
+        String(candidate.id || "") === String(resolvedCandidateApplicationId || "")
       );
     });
 
     if (!matchedCandidate) {
       console.warn("FINAL INTERVIEW SUBMIT: Candidate not found", {
         candidateId,
-        candidateApplicationId,
+        candidateApplicationId: resolvedCandidateApplicationId,
       });
 
       showError("Candidate was not found for final interview submission.");
       return false;
     }
 
-    const submissionId = `final-interview-${Date.now()}`;
-
-    const savedFormLink = `/recruitment/final-interview-form?candidateId=${encodeURIComponent(
-      matchedCandidate.candidateId || candidateId || "",
-    )}&candidateApplicationId=${encodeURIComponent(
-      matchedCandidate.candidateApplicationId ||
-        matchedCandidate.id ||
-        candidateApplicationId ||
-        "",
-    )}&submissionId=${encodeURIComponent(submissionId)}&mode=view`;
-
     const id = getCandidateRecordId(matchedCandidate);
+    const finalFormId = formId || "default-job-evaluation";
+    const finalFormName = formName || "Job Evaluation Form";
 
     const response = await runCandidateAction(
       () =>
-        completeCandidatePipelineInterview(id, {
+        submitCandidatePipelineFinalInterview(id, {
+          candidateId: matchedCandidate.candidateId || candidateId || "",
+          candidateApplicationId:
+            matchedCandidate.candidateApplicationId ||
+            matchedCandidate.id ||
+            resolvedCandidateApplicationId ||
+            "",
+          positionId: positionId || "",
+          formId: finalFormId,
+          formName: finalFormName,
+          passingScore,
+          answers,
+          fieldsSnapshot,
+          scoreSummary,
           interviewNotes: "Final interview form was submitted.",
-          remarks: "Interview status changed to Completed.",
-          finalInterviewSubmitted: true,
-          finalInterviewSubmittedAt: new Date().toISOString(),
-          finalInterviewPositionId: positionId || "",
-          finalInterviewFormId: formId || "",
-          finalInterviewAnswers: answers,
-          finalInterviewSubmittedForms: [
-            {
-              id: submissionId,
-              candidateId: matchedCandidate.candidateId || candidateId || "",
-              candidateApplicationId:
-                matchedCandidate.candidateApplicationId ||
-                matchedCandidate.id ||
-                candidateApplicationId ||
-                "",
-              positionId: positionId || "",
-              formId: formId || "",
-              formName: formName || "Final Interview Form",
-              submittedAt: new Date().toISOString(),
-              submittedBy: currentUserName,
-              answers,
-              fieldsSnapshot,
-              savedFormLink,
-            },
-          ],
+          remarks: "Final interview / job evaluation submitted.",
         }),
       {
         activeStageAfter: "Interviewed",

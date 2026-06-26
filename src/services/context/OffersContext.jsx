@@ -255,22 +255,61 @@ function getApprovalRecordForUser(approvals = {}, user = {}) {
   return matched?.[1] || null;
 }
 
+function getDirectOfferApprovalStatus(offer = {}) {
+  return cleanText(
+    offer.offerApprovalStatus ||
+      offer.offer_approval_status ||
+      offer.approvalStatus ||
+      offer.approval_status ||
+      offer.status,
+  );
+}
+
+function getOfferDecisionStatus(offer = {}) {
+  return cleanText(
+    offer.offerDecision ||
+      offer.offer_decision ||
+      offer.candidateResponse ||
+      offer.candidate_response,
+  );
+}
+
+function normalizeTerminalOfferStatus(value = "") {
+  const key = cleanText(value).toLowerCase();
+
+  if (key === "approved" || key === "accepted") return "Approved";
+  if (key === "rejected" || key === "declined") return "Rejected";
+
+  return "";
+}
+
+function isTerminalOfferApprovalStatus(value = "") {
+  return Boolean(normalizeTerminalOfferStatus(value));
+}
+
 function getOfferApprovalSummaryFromUsers(offer = {}, approvalUsers = []) {
+  const directTerminalStatus = normalizeTerminalOfferStatus(
+    getDirectOfferApprovalStatus(offer),
+  );
+
+  if (directTerminalStatus) return directTerminalStatus;
+
+  const decisionTerminalStatus = normalizeTerminalOfferStatus(
+    getOfferDecisionStatus(offer),
+  );
+
+  if (decisionTerminalStatus) return decisionTerminalStatus;
+
   const approvals = getApprovalsObject(offer);
 
   if (!approvalUsers.length) {
-    return (
-      offer.offerApprovalStatus ||
-      offer.approvalStatus ||
-      offer.status ||
-      "For Review"
-    );
+    return getDirectOfferApprovalStatus(offer) || "For Review";
   }
 
   const hasRejected = approvalUsers.some((user) => {
     const approval = getApprovalRecordForUser(approvals, user);
 
-    return approval?.status === "Rejected";
+    return normalizeTerminalOfferStatus(approval?.status) === "Rejected";
   });
 
   if (hasRejected) return "Rejected";
@@ -278,12 +317,12 @@ function getOfferApprovalSummaryFromUsers(offer = {}, approvalUsers = []) {
   const allApproved = approvalUsers.every((user) => {
     const approval = getApprovalRecordForUser(approvals, user);
 
-    return approval?.status === "Approved";
+    return normalizeTerminalOfferStatus(approval?.status) === "Approved";
   });
 
   if (allApproved) return "Approved";
 
-  return "For Review";
+  return getDirectOfferApprovalStatus(offer) || "For Review";
 }
 
 function findCurrentApprovalUser({
@@ -383,6 +422,38 @@ function getMergedCandidateKey(candidate = {}) {
     cleanText(candidate.candidateId) ||
     cleanText(candidate.email || candidate.candidateEmail).toLowerCase()
   );
+}
+
+function getOfferMatchValues(record = {}) {
+  return [
+    getCandidateKey(record),
+    getMergedCandidateKey(record),
+    getCandidatePipelineRecordId(record),
+    record.offerId,
+    record.offer_id,
+    record.pipelineDbId,
+    record.dbId,
+    record.rawId,
+    record.id,
+    record.candidatePipelineId,
+    record.candidate_pipeline_id,
+    record.candidateApplicationId,
+    record.candidate_application_id,
+    record.applicationId,
+    record.application_id,
+    record.candidateId,
+    record.candidate_id,
+    cleanText(record.email || record.candidateEmail).toLowerCase(),
+  ]
+    .map(cleanText)
+    .filter(Boolean);
+}
+
+function isSameOfferRecord(first = {}, second = {}) {
+  const firstValues = new Set(getOfferMatchValues(first));
+  const secondValues = getOfferMatchValues(second);
+
+  return secondValues.some((value) => firstValues.has(value));
 }
 
 function getOfferDetailsObject(candidate = {}) {
@@ -649,16 +720,8 @@ function isOfferStageCandidate(candidate = {}) {
   const stage = getCandidateStage(normalizedCandidate);
   const rawStatus = getCandidateStatus(candidate);
   const normalizedStatus = getCandidateStatus(normalizedCandidate);
-
-  if (stage === "Offered") return true;
-  if (rawStatus === "Offered") return true;
-  if (normalizedStatus === "Offered") return true;
-
-  const offerApprovalStatus = cleanText(
-    normalizedCandidate.offerApprovalStatus ||
-      normalizedCandidate.approvalStatus ||
-      normalizedCandidate.status,
-  );
+  const directApprovalStatus = getDirectOfferApprovalStatus(normalizedCandidate);
+  const decisionStatus = getOfferDecisionStatus(normalizedCandidate);
 
   const excludedStages = [
     "Initial Screening",
@@ -667,24 +730,33 @@ function isOfferStageCandidate(candidate = {}) {
     "Interviewed",
     "Accepted",
     "For NHO",
+    "For Onboarding - Incomplete Requirements",
     "Onboarding",
+    "Hired / Active",
     "Drop-off",
     "Drop-offs",
   ];
 
+  if (isTerminalOfferApprovalStatus(directApprovalStatus)) return false;
+  if (isTerminalOfferApprovalStatus(decisionStatus)) return false;
   if (excludedStages.includes(stage)) return false;
 
-  if (
-    ["For Review", "Approved", "Rejected", "Contract Sent"].includes(
-      offerApprovalStatus,
-    )
-  ) {
-    return true;
+  if (stage === "Offered") return true;
+
+  if (!stage) {
+    if (rawStatus === "Offered") return true;
+    if (normalizedStatus === "Offered") return true;
   }
 
-  const offerDetails = getOfferDetailsObject(normalizedCandidate);
+  return false;
+}
 
-  return Object.keys(offerDetails).length > 0;
+function shouldDisplayOfferRecord(offer = {}, approvalUsers = []) {
+  if (!isOfferStageCandidate(offer)) return false;
+
+  const approvalStatus = getOfferApprovalSummaryFromUsers(offer, approvalUsers);
+
+  return !isTerminalOfferApprovalStatus(approvalStatus);
 }
 
 function updateCandidateStorageFromOffer(updatedOffer) {
@@ -914,10 +986,7 @@ export function OffersProvider({ children }) {
       .map((candidate, index) => {
         const normalizedCandidate = normalizeCandidateForOffers(candidate);
 
-        if (
-          !isOfferStageCandidate(normalizedCandidate) &&
-          !isOfferedCandidate(normalizedCandidate)
-        ) {
+        if (!isOfferStageCandidate(normalizedCandidate)) {
           return null;
         }
 
@@ -951,8 +1020,9 @@ export function OffersProvider({ children }) {
           },
         });
       })
-      .filter(Boolean);
-  }, [offerOverrides, sourceCandidates]);
+      .filter(Boolean)
+      .filter((offer) => shouldDisplayOfferRecord(offer, approvalUsers));
+  }, [approvalUsers, offerOverrides, sourceCandidates]);
 
   function getOfferApprovalStatus(offer = {}) {
     return getOfferApprovalSummaryFromUsers(offer, approvalUsers);
@@ -1059,8 +1129,64 @@ export function OffersProvider({ children }) {
     safeWriteArray(PIPELINE_SYNC_EVENTS_KEY, [event, ...current]);
   }
 
+  function removeOfferFromLocalSources(offerToRemove = {}) {
+    if (!offerToRemove || typeof offerToRemove !== "object") return;
+
+    setOfferOverrides((previous) =>
+      previous.filter((offer) => !isSameOfferRecord(offer, offerToRemove)),
+    );
+
+    setApiCandidates((previous) =>
+      previous.filter(
+        (candidate) => !isSameOfferRecord(candidate, offerToRemove),
+      ),
+    );
+
+    setSelectedOffer((previous) =>
+      previous && isSameOfferRecord(previous, offerToRemove) ? null : previous,
+    );
+
+    safeWriteArray(
+      OFFER_RECORDS_STORAGE_KEY,
+      readOfferOverrides().filter(
+        (offer) => !isSameOfferRecord(offer, offerToRemove),
+      ),
+    );
+
+    safeWriteArray(
+      OFFER_ELIGIBLE_STORAGE_KEY,
+      safeReadArray(OFFER_ELIGIBLE_STORAGE_KEY).filter(
+        (offer) => !isSameOfferRecord(offer, offerToRemove),
+      ),
+    );
+
+    safeWriteArray(
+      PIPELINE_CANDIDATES_STORAGE_KEY,
+      safeReadArray(PIPELINE_CANDIDATES_STORAGE_KEY).filter(
+        (candidate) => !isSameOfferRecord(candidate, offerToRemove),
+      ),
+    );
+
+    setStorageSyncTick((previous) => previous + 1);
+
+    window.dispatchEvent(
+      new CustomEvent("ta-offers-updated", {
+        detail: {
+          removed: true,
+          offer: offerToRemove,
+        },
+      }),
+    );
+  }
+
   function updateOffer(updatedOffer) {
     const payload = buildPipelineOfferPayload(updatedOffer);
+
+    if (!shouldDisplayOfferRecord(updatedOffer, approvalUsers)) {
+      updateCandidateFromOffer?.(payload);
+      removeOfferFromLocalSources(updatedOffer);
+      return;
+    }
 
     writeOfferOverride(updatedOffer);
     updateCandidateStorageFromOffer(updatedOffer);
