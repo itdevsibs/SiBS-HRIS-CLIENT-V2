@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -27,14 +27,59 @@ function formatPercent(value, decimals = 0) {
   return `${toNumber(value).toFixed(decimals)}%`;
 }
 
-function getBufferPercentClass(value) {
-  return toNumber(value) <= 25 ? "text-emerald-600" : "text-red-600";
+function formatAnimatedValue(value, decimals = 0, suffix = "") {
+  const cleanValue = toNumber(value);
+
+  return `${cleanValue.toLocaleString("en-PH", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}${suffix}`;
 }
 
-function getBufferPercentIconClass(value) {
-  return toNumber(value) <= 25
-    ? "bg-emerald-50 text-emerald-600"
-    : "bg-red-50 text-red-600";
+function AnimatedNumber({
+  value,
+  decimals = 0,
+  suffix = "",
+  duration = 650,
+  className = "",
+}) {
+  const [displayValue, setDisplayValue] = useState(toNumber(value));
+
+  useEffect(() => {
+    const target = toNumber(value);
+    const start = toNumber(displayValue);
+    const difference = target - start;
+
+    if (difference === 0) return undefined;
+
+    let frameId = 0;
+    const startTime = performance.now();
+
+    function animateNumber(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextValue = start + difference * easedProgress;
+
+      setDisplayValue(nextValue);
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animateNumber);
+      } else {
+        setDisplayValue(target);
+      }
+    }
+
+    frameId = requestAnimationFrame(animateNumber);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [value, duration]);
+
+  return (
+    <span className={`inline-block tabular-nums ${className}`}>
+      {formatAnimatedValue(displayValue, decimals, suffix)}
+    </span>
+  );
 }
 
 function getNumberValue(item, keys = [], fallback = 0) {
@@ -103,6 +148,25 @@ function getAttritionTotal(item = {}) {
   ]);
 }
 
+function getCoverageValue(item = {}) {
+  /*
+    Coverage should be computed from the row values by default:
+    Coverage = MAX(0, Required HC - (Actual HC - Absenteeism - Attrition))
+
+    This fixes the zero issue caused by treating missing direct coverage fields
+    as 0 before the formula could run.
+  */
+  const requiredHeadcount = getRequiredHeadcount(item);
+  const actualHeadcount = getActualHeadcount(item);
+  const absenteeismTotal = getAbsenteeismTotal(item);
+  const attritionTotal = getAttritionTotal(item);
+
+  return Math.max(
+    0,
+    requiredHeadcount - (actualHeadcount - absenteeismTotal - attritionTotal),
+  );
+}
+
 function getNhoCount(item = {}) {
   return getNumberValue(item, [
     "nhoCount",
@@ -164,22 +228,16 @@ function getProjectedFromTraining(item = {}) {
 }
 
 function getHiringNeeded(item = {}) {
-  const directHiringNeeded = getNumberValue(
-    item,
-    [
-      "hiringNeeded",
-      "hiring_needed",
-      "actualHeadcountNeeds",
-      "actual_headcount_needs",
-      "projectedEmployeeNeeds",
-      "projected_employee_needs",
-      "opsPrf",
-      "ops_prf",
-    ],
-    0,
-  );
-
-  return directHiringNeeded;
+  return getNumberValue(item, [
+    "hiringNeeded",
+    "hiring_needed",
+    "actualHeadcountNeeds",
+    "actual_headcount_needs",
+    "projectedEmployeeNeeds",
+    "projected_employee_needs",
+    "opsPrf",
+    "ops_prf",
+  ]);
 }
 
 function getLeadsToInterview(item = {}) {
@@ -188,6 +246,43 @@ function getLeadsToInterview(item = {}) {
     "leads_to_interview",
     "leadsNeeded",
     "leads_needed",
+  ]);
+}
+
+function getHiringIntakeCount(item = {}) {
+  return getNumberValue(item, [
+    "hiringIntakeCount",
+    "hiring_intake_count",
+    "intakeCount",
+    "intake_count",
+    "personnelRequisitionCount",
+    "personnel_requisition_count",
+    "prfCount",
+    "prf_count",
+    "totalPrf",
+    "total_prf",
+    "totalPRF",
+    "requisitionCount",
+    "requisition_count",
+    "hiringNeedsCount",
+    "hiring_needs_count",
+  ]);
+}
+
+function getHiringIntakeHeadcount(item = {}) {
+  return getNumberValue(item, [
+    "hiringIntakeHeadcount",
+    "hiring_intake_headcount",
+    "intakeHeadcount",
+    "intake_headcount",
+    "prfHeadcount",
+    "prf_headcount",
+    "totalPersonnel",
+    "total_personnel",
+    "requestedPersonnel",
+    "requested_personnel",
+    "requestedHeadcount",
+    "requested_headcount",
   ]);
 }
 
@@ -211,12 +306,162 @@ function getHiredCount(item = {}) {
 
   if (directHired > 0) return directHired;
 
-  /*
-    Based on your rule:
-    FST + PST are already hired, but still under training.
-    They are not counted in Actual HC until endorsed to the account.
-  */
   return getFstCount(item) + getPstCount(item);
+}
+
+function getStageAttritionDirectCount(item = {}, keys = []) {
+  return getNumberValue(item, keys, 0);
+}
+
+function getStageAttritionMetrics(item = {}) {
+  const interviewCount = getInterviewCount(item);
+  const nhoCount = getNhoCount(item);
+  const fstCount = getFstCount(item);
+  const pstCount = getPstCount(item);
+
+  /*
+    Force raw stage difference so negative values are visible:
+    - Interview → NHO = Interview Count - NHO Count
+    - NHO → FST = NHO Count - FST Count
+    - FST → PST = FST Count - PST Count
+    - NHO → PST = NHO Count - PST Count
+
+    Example:
+    NHO = 0, FST = 16
+    NHO → FST Attrition = 0 - 16 = -16
+  */
+  const interviewToNhoCount = interviewCount - nhoCount;
+  const nhoToFstCount = nhoCount - fstCount;
+  const fstToPstCount = fstCount - pstCount;
+  const nhoToPstCount = nhoCount - pstCount;
+
+  return {
+    interviewCount,
+    nhoCount,
+    fstCount,
+    pstCount,
+    interviewToNhoCount,
+    nhoToFstCount,
+    fstToPstCount,
+    nhoToPstCount,
+  };
+}
+
+function getAttritionRate(count, base) {
+  return base > 0 ? (count / base) * 100 : 0;
+}
+
+function getAttritionRateClass(rate) {
+  const cleanRate = toNumber(rate);
+
+  if (cleanRate < 0) return "text-blue-700";
+  return cleanRate <= 25 ? "text-emerald-600" : "text-red-600";
+}
+
+function getAttritionRateBadgeClass(rate) {
+  const cleanRate = toNumber(rate);
+
+  if (cleanRate < 0) {
+    return "bg-blue-50 text-blue-700 border-blue-100";
+  }
+
+  return cleanRate <= 25
+    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+    : "bg-red-50 text-red-600 border-red-100";
+}
+
+function getAttritionCountClass(count, fallbackClass = "") {
+  const cleanCount = toNumber(count);
+
+  if (cleanCount < 0) return "text-blue-700";
+  return fallbackClass;
+}
+
+function getAttritionCountAccentClass(count, fallbackClass = "") {
+  const cleanCount = toNumber(count);
+
+  if (cleanCount < 0) {
+    return "bg-blue-50 text-blue-700 border-blue-100";
+  }
+
+  return getCountAccentClass(fallbackClass);
+}
+
+function getCountAccentClass(colorClass = "") {
+  if (colorClass.includes("violet")) {
+    return "bg-violet-50 text-violet-700 border-violet-100";
+  }
+
+  if (colorClass.includes("emerald")) {
+    return "bg-emerald-50 text-emerald-700 border-emerald-100";
+  }
+
+  if (colorClass.includes("red")) {
+    return "bg-red-50 text-red-600 border-red-100";
+  }
+
+  return "bg-blue-50 text-blue-700 border-blue-100";
+}
+
+function TrainingAttritionCard({
+  title,
+  count,
+  rate,
+  countClassName = "text-blue-700",
+}) {
+  return (
+    <div
+      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[124px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
+    >
+      <div className="flex h-full flex-col justify-between">
+        <div className="flex items-start justify-center gap-2">
+          <p className="text-center text-[13px] font-extrabold text-slate-900">
+            {title}
+          </p>
+
+          <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[10px] font-extrabold text-blue-500">
+            i
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 items-center gap-3">
+          <div
+            className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionCountAccentClass(
+              count,
+              countClassName,
+            )}`}
+          >
+            <p
+              className={`whp-kpi-value text-3xl font-extrabold ${getAttritionCountClass(
+                count,
+                countClassName,
+              )}`}
+            >
+              <AnimatedNumber value={count} />
+            </p>
+
+            <p className="mt-1 text-[11px] font-bold text-slate-600">
+              Attrition Count
+            </p>
+          </div>
+
+          <div
+            className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionRateBadgeClass(
+              rate,
+            )}`}
+          >
+            <p className={`whp-kpi-value text-3xl font-extrabold ${getAttritionRateClass(rate)}`}>
+              <AnimatedNumber value={rate} decimals={0} suffix="%" />
+            </p>
+
+            <p className="mt-1 text-[11px] font-bold text-slate-600">
+              Attrition Rate
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function KpiCard({
@@ -230,7 +475,7 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`${EDGE} ${CARD_BORDER} min-h-[112px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-sibs-primary-1/20 hover:shadow-md`}
+      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[112px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
     >
       <div className="flex h-full items-start gap-3">
         <div
@@ -250,7 +495,7 @@ function KpiCard({
             </p>
           )}
 
-          <p className={`mt-2 truncate text-3xl font-extrabold ${valueClassName}`}>
+          <p className={`whp-kpi-value mt-2 truncate text-3xl font-extrabold ${valueClassName}`}>
             {value}
           </p>
 
@@ -289,13 +534,6 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       0,
     );
 
-    /*
-      Updated buffer logic:
-      - No more Buffer HC Ceiling.
-      - Buffer Count is the raw total of all absenteeism and attrition
-        from the past 6 weeks.
-      - Buffer % shows how big that raw buffer count is versus Actual HC.
-    */
     const absenteeismBufferCount = absenteeismTotal;
     const attritionBufferCount = attritionTotal;
     const bufferCount = absenteeismBufferCount + attritionBufferCount;
@@ -305,16 +543,20 @@ export default function HeadcountTable({ filteredPlans = [] }) {
 
     const effectiveDemand = requiredHeadcount + bufferCount;
 
-    /*
-      Projected Coverage:
-      Actual HC + training pipeline projected to be endorsed.
-      NHO/FST/PST are not Actual HC yet.
-    */
+    const baseCoverage = rows.reduce(
+      (sum, item) => sum + getCoverageValue(item),
+      0,
+    );
+
     const projectedFromTraining = rows.reduce(
       (sum, item) => sum + getProjectedFromTraining(item),
       0,
     );
 
+    /*
+      Still computed internally because Hiring Needed can use coverage logic.
+      The old "Projected Coverage" card is now replaced with Hiring Intake count.
+    */
     const projectedCoverage = actualHeadcount + projectedFromTraining;
 
     const computedHiringNeeded = Math.max(
@@ -327,10 +569,6 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       0,
     );
 
-    /*
-      Use direct backend/page hiring-needed if available.
-      Otherwise compute from Effective Demand - Projected Coverage.
-    */
     const hiringNeeded =
       directHiringNeeded > 0 ? directHiringNeeded : computedHiringNeeded;
 
@@ -378,14 +616,100 @@ export default function HeadcountTable({ filteredPlans = [] }) {
     const computedLeadsToInterview =
       hiringRateDecimal > 0 ? Math.ceil(hiringNeeded / hiringRateDecimal) : 0;
 
-    /*
-      Use direct page/backend leads if available.
-      Otherwise compute using Hiring Needed / Hiring Rate.
-    */
     const leadsToInterview =
       directLeadsToInterview > 0
         ? directLeadsToInterview
         : computedLeadsToInterview;
+
+    const directHiringIntakeCount = rows.reduce(
+      (sum, item) => sum + getHiringIntakeCount(item),
+      0,
+    );
+
+    const distinctHiringIntakeIds = new Set();
+
+    rows.forEach((item) => {
+      const intakeId =
+        item.hiringIntakeId ||
+        item.hiring_intake_id ||
+        item.prfId ||
+        item.prf_id ||
+        item.personnelRequisitionId ||
+        item.personnel_requisition_id ||
+        item.requisitionId ||
+        item.requisition_id;
+
+      if (intakeId !== undefined && intakeId !== null && intakeId !== "") {
+        distinctHiringIntakeIds.add(String(intakeId));
+      }
+    });
+
+    const hiringIntakeCount =
+      directHiringIntakeCount > 0
+        ? directHiringIntakeCount
+        : distinctHiringIntakeIds.size;
+
+    const hiringIntakeHeadcount = rows.reduce(
+      (sum, item) => sum + getHiringIntakeHeadcount(item),
+      0,
+    );
+
+    /*
+      Updated logic:
+      Coverage = Base Coverage + Hiring Intake Headcount
+      Leads to Interview = Coverage / Hiring Rate
+    */
+    const coverage = baseCoverage + hiringIntakeHeadcount;
+
+    const leadsToInterviewByCoverage =
+      hiringRateDecimal > 0 ? Math.ceil(coverage / hiringRateDecimal) : coverage;
+
+    const finalLeadsToInterview =
+      directLeadsToInterview > 0 ? directLeadsToInterview : leadsToInterviewByCoverage;
+
+    const trainingAttrition = rows.reduce(
+      (sum, item) => {
+        const metrics = getStageAttritionMetrics(item);
+
+        sum.interviewCount += metrics.interviewCount;
+        sum.nhoCount += metrics.nhoCount;
+        sum.fstCount += metrics.fstCount;
+        sum.pstCount += metrics.pstCount;
+        sum.interviewToNhoCount += metrics.interviewToNhoCount;
+        sum.nhoToFstCount += metrics.nhoToFstCount;
+        sum.fstToPstCount += metrics.fstToPstCount;
+        sum.nhoToPstCount += metrics.nhoToPstCount;
+
+        return sum;
+      },
+      {
+        interviewCount: 0,
+        nhoCount: 0,
+        fstCount: 0,
+        pstCount: 0,
+        interviewToNhoCount: 0,
+        nhoToFstCount: 0,
+        fstToPstCount: 0,
+        nhoToPstCount: 0,
+      },
+    );
+
+    trainingAttrition.interviewToNhoRate = getAttritionRate(
+      trainingAttrition.interviewToNhoCount,
+      trainingAttrition.interviewCount,
+    );
+    trainingAttrition.nhoToFstRate = getAttritionRate(
+      trainingAttrition.nhoToFstCount,
+      trainingAttrition.nhoCount,
+    );
+    trainingAttrition.fstToPstRate = getAttritionRate(
+      trainingAttrition.fstToPstCount,
+      trainingAttrition.fstCount,
+    );
+    trainingAttrition.nhoToPstRate = getAttritionRate(
+      trainingAttrition.nhoToPstCount,
+      trainingAttrition.nhoCount,
+    );
 
     return {
       records: rows.length,
@@ -398,21 +722,68 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       bufferCount,
       bufferPercentage,
       effectiveDemand,
+      baseCoverage,
+      coverage,
       projectedCoverage,
       projectedFromTraining,
       hiringNeeded,
+      totalInterviewed,
       hiringRate,
-      leadsToInterview,
+      leadsToInterview: finalLeadsToInterview,
+      hiringIntakeCount,
+      hiringIntakeHeadcount,
+      trainingAttrition,
     };
   }, [filteredPlans]);
 
   return (
     <div className="bg-white p-4 sm:p-5">
+      <style>
+        {`
+          @keyframes whpKpiFadeUp {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes whpKpiPulse {
+            0%, 100% {
+              transform: scale(1);
+            }
+            50% {
+              transform: scale(1.035);
+            }
+          }
+
+          .whp-kpi-card {
+            animation: whpKpiFadeUp 0.42s ease-out both;
+          }
+
+          .whp-kpi-card:hover .whp-kpi-value {
+            animation: whpKpiPulse 0.45s ease-out both;
+          }
+
+          .whp-kpi-card:nth-child(1) { animation-delay: 0ms; }
+          .whp-kpi-card:nth-child(2) { animation-delay: 45ms; }
+          .whp-kpi-card:nth-child(3) { animation-delay: 90ms; }
+          .whp-kpi-card:nth-child(4) { animation-delay: 135ms; }
+          .whp-kpi-card:nth-child(5) { animation-delay: 180ms; }
+          .whp-kpi-card:nth-child(6) { animation-delay: 225ms; }
+          .whp-kpi-card:nth-child(7) { animation-delay: 270ms; }
+          .whp-kpi-card:nth-child(8) { animation-delay: 315ms; }
+        `}
+      </style>
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Required HC"
           subtitle="Client Plan"
-          value={formatNumber(totals.requiredHeadcount)}
+          value={<AnimatedNumber value={totals.requiredHeadcount} />}
           footer={`Across ${formatNumber(totals.records)} Accounts`}
           icon={UsersRound}
           valueClassName="text-blue-700"
@@ -422,7 +793,7 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         <KpiCard
           title="Actual HC"
           subtitle="Endorsed"
-          value={formatNumber(totals.actualHeadcount)}
+          value={<AnimatedNumber value={totals.actualHeadcount} />}
           footer="Endorsed / On Floor"
           icon={UserRound}
           valueClassName="text-emerald-600"
@@ -430,83 +801,131 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         />
 
         <KpiCard
-          title="Buffer Count / %"
-          subtitle="Past 6 Weeks Total"
-          value={
-            <span className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
-              <span className="text-violet-700">
-                {formatNumber(totals.bufferCount)}
-              </span>
-              <span className={`text-2xl ${getBufferPercentClass(totals.bufferPercentage)}`}>
-                {formatPercent(totals.bufferPercentage, 2)}
-              </span>
+          title="Hiring Intake"
+          subtitle="PRF Count"
+          value={<AnimatedNumber value={totals.hiringIntakeCount} />}
+          footer={
+            <span>
+              Headcount:{" "}
+              <b>
+                <AnimatedNumber value={totals.hiringIntakeHeadcount} />
+              </b>
             </span>
           }
-          footer={
-            <div className="space-y-1">
-              <div>
-                Abs: <b>{formatNumber(totals.absenteeismBufferCount)}</b>
-                <span className="mx-2 text-slate-300">|</span>
-                Attr: <b>{formatNumber(totals.attritionBufferCount)}</b>
-              </div>
-              <div className={`font-extrabold ${getBufferPercentClass(totals.bufferPercentage)}`}>
-                Max Threshold: 25%
-              </div>
-            </div>
-          }
-          icon={ShieldCheck}
-          valueClassName="text-violet-700"
-          iconClassName={getBufferPercentIconClass(totals.bufferPercentage)}
-        />
-
-        <KpiCard
-          title="Effective Demand"
-          subtitle="Required + Buffer Count"
-          value={formatNumber(totals.effectiveDemand)}
-          footer="Required HC + Buffer Count"
-          icon={Target}
-          valueClassName="text-orange-500"
-          iconClassName="bg-orange-50 text-orange-500"
-        />
-
-        <KpiCard
-          title="Projected Coverage"
-          subtitle="Actual + Projected"
-          value={formatNumber(totals.projectedCoverage)}
-          footer={`Training: ${formatNumber(totals.projectedFromTraining)}`}
           icon={UsersRound}
           valueClassName="text-cyan-700"
           iconClassName="bg-cyan-50 text-cyan-700"
         />
 
         <KpiCard
-          title="Hiring Needed"
-          subtitle="Gap"
-          value={formatNumber(totals.hiringNeeded)}
-          footer="Gap to Cover"
+          title="Interview Count"
+          subtitle="Interview Pipeline"
+          value={<AnimatedNumber value={totals.totalInterviewed} />}
+          footer="People Under Interview"
           icon={AlertTriangle}
           valueClassName="text-red-600"
           iconClassName="bg-red-50 text-red-600"
         />
 
         <KpiCard
+          title="Buffer Count / %"
+          subtitle="Past 6 Weeks Total"
+          value={
+            <span className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
+              <AnimatedNumber
+                value={totals.bufferCount}
+                className="text-violet-700"
+              />
+              <AnimatedNumber
+                value={totals.bufferPercentage}
+                decimals={2}
+                suffix="%"
+                className="text-2xl text-red-600"
+              />
+            </span>
+          }
+          footer={
+            <span>
+              Abs:{" "}
+              <b>
+                <AnimatedNumber value={totals.absenteeismBufferCount} />
+              </b>
+              <span className="mx-2 text-slate-300">|</span>
+              Attr:{" "}
+              <b>
+                <AnimatedNumber value={totals.attritionBufferCount} />
+              </b>
+            </span>
+          }
+          icon={ShieldCheck}
+          valueClassName="text-violet-700"
+          iconClassName="bg-violet-50 text-violet-700"
+        />
+
+        <KpiCard
+          title="Coverage"
+          subtitle="Coverage + Hiring Intake"
+          value={<AnimatedNumber value={totals.coverage} />}
+          footer={
+            <span>
+              Base: <b><AnimatedNumber value={totals.baseCoverage} /></b>
+              <span className="mx-2 text-slate-300">|</span>
+              Intake: <b><AnimatedNumber value={totals.hiringIntakeHeadcount} /></b>
+            </span>
+          }
+          icon={Target}
+          valueClassName="text-amber-600"
+          iconClassName="bg-amber-50 text-amber-600"
+        />
+
+        <KpiCard
           title="Hiring Rate"
           subtitle="Conversion to Hire"
-          value={formatPercent(totals.hiringRate, 0)}
+          value={<AnimatedNumber value={totals.hiringRate} decimals={0} suffix="%" />}
           footer="FST + PST / Interview"
           icon={TrendingUp}
-          valueClassName="text-blue-700"
-          iconClassName="bg-blue-50 text-blue-600"
+          valueClassName="text-indigo-600"
+          iconClassName="bg-indigo-50 text-indigo-600"
         />
 
         <KpiCard
           title="Leads to Interview"
           subtitle="Needed"
-          value={formatNumber(totals.leadsToInterview)}
-          footer="To Achieve Need"
+          value={<AnimatedNumber value={totals.leadsToInterview} />}
+          footer="Coverage / Hiring Rate"
           icon={BarChart3}
           valueClassName="text-violet-700"
           iconClassName="bg-violet-50 text-violet-700"
+        />
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <TrainingAttritionCard
+          title="Interview → NHO Attrition"
+          count={totals.trainingAttrition.interviewToNhoCount}
+          rate={totals.trainingAttrition.interviewToNhoRate}
+          countClassName="text-blue-700"
+        />
+
+        <TrainingAttritionCard
+          title="NHO → FST Attrition"
+          count={totals.trainingAttrition.nhoToFstCount}
+          rate={totals.trainingAttrition.nhoToFstRate}
+          countClassName="text-violet-700"
+        />
+
+        <TrainingAttritionCard
+          title="FST → PST Attrition"
+          count={totals.trainingAttrition.fstToPstCount}
+          rate={totals.trainingAttrition.fstToPstRate}
+          countClassName="text-emerald-600"
+        />
+
+        <TrainingAttritionCard
+          title="NHO → PST Attrition"
+          count={totals.trainingAttrition.nhoToPstCount}
+          rate={totals.trainingAttrition.nhoToPstRate}
+          countClassName="text-red-600"
         />
       </div>
     </div>

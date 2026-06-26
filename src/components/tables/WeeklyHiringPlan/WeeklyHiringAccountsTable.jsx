@@ -33,13 +33,22 @@ function safeDivide(numerator, denominator) {
 }
 
 function formatPercent(value) {
+  /*
+    All percentage metrics in this table are computed as decimal ratios:
+    - Buffer % = ((Net Actual HC - Required HC) / Required HC)
+    - Absenteeism % = Absenteeism 6 Weeks / Actual HC
+    - Attrition % = Attrition 6 Weeks / Actual HC
+    - Stage Attrition % = Attrition Count / Stage Base Count
+    - Hiring Rate = Hired Count / Interview Count
+
+    Example:
+    405 / 96 = 4.21875 should display as 421.88%, not 4.22%.
+  */
   const numberValue = Number(value || 0);
 
-  if (Math.abs(numberValue) > 0 && Math.abs(numberValue) <= 1) {
-    return `${(numberValue * 100).toFixed(2)}%`;
-  }
+  if (!Number.isFinite(numberValue)) return "0.00%";
 
-  return `${numberValue.toFixed(2)}%`;
+  return `${(numberValue * 100).toFixed(2)}%`;
 }
 
 function formatNumber(value, maximumFractionDigits = 0) {

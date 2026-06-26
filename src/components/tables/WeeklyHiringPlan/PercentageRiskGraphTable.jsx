@@ -1433,6 +1433,209 @@ function MathCircle({ symbol }) {
   );
 }
 
+
+function normalizeHiringReason(value) {
+  const cleanValue = String(value || "").trim();
+
+  if (!cleanValue) return "Unspecified";
+
+  const lowerValue = cleanValue.toLowerCase();
+
+  if (lowerValue.includes("new")) return "New Position";
+  if (lowerValue.includes("forecast")) return "Forecasted Growth";
+  if (lowerValue.includes("growth")) return "Forecasted Growth";
+  if (lowerValue.includes("ramp")) return "Ramp-up";
+  if (lowerValue.includes("replacement")) return "Replacement";
+
+  return cleanValue;
+}
+
+function getHiringReasonValue(item = {}) {
+  return (
+    item.reasonForHiring ||
+    item.reason_for_hiring ||
+    item.hiringReason ||
+    item.hiring_reason ||
+    item.requisitionReason ||
+    item.requisition_reason ||
+    item.prfReason ||
+    item.prf_reason ||
+    item.requestReason ||
+    item.request_reason ||
+    item.reason ||
+    ""
+  );
+}
+
+function getHiringReasonCount(item = {}) {
+  return getNumberValue(item, [
+    "reasonCount",
+    "reason_count",
+    "hiringReasonCount",
+    "hiring_reason_count",
+    "requisitionReasonCount",
+    "requisition_reason_count",
+    "prfCount",
+    "prf_count",
+    "totalPrf",
+    "total_prf",
+    "totalPRF",
+  ]);
+}
+
+function getHiringReasonBreakdownFromRow(item = {}) {
+  const possibleBreakdowns = [
+    item.hiringReasonBreakdown,
+    item.hiring_reason_breakdown,
+    item.requisitionReasonBreakdown,
+    item.requisition_reason_breakdown,
+    item.reasonForHiringBreakdown,
+    item.reason_for_hiring_breakdown,
+  ];
+
+  for (const value of possibleBreakdowns) {
+    if (!value) continue;
+
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => ({
+          label: normalizeHiringReason(
+            entry.label ||
+              entry.reason ||
+              entry.reasonForHiring ||
+              entry.reason_for_hiring ||
+              entry.hiringReason ||
+              entry.hiring_reason,
+          ),
+          count: getNumberValue(entry, [
+            "count",
+            "total",
+            "value",
+            "prfCount",
+            "prf_count",
+          ]),
+        }))
+        .filter((entry) => entry.count > 0);
+    }
+
+    if (typeof value === "object") {
+      return Object.entries(value)
+        .map(([key, count]) => ({
+          label: normalizeHiringReason(key),
+          count: Number(count || 0),
+        }))
+        .filter((entry) => Number.isFinite(entry.count) && entry.count > 0);
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      try {
+        return getHiringReasonBreakdownFromRow({
+          hiringReasonBreakdown: JSON.parse(value),
+        });
+      } catch {
+        return [];
+      }
+    }
+  }
+
+  return [];
+}
+
+function HiringReasonChartCard({ reasons = [], delay = 0 }) {
+  const total = reasons.reduce((sum, item) => sum + toNumber(item.count), 0);
+  const safeTotal = Math.max(total, 1);
+
+  const palette = [
+    { dot: "bg-blue-600", color: "#2563EB" },
+    { dot: "bg-cyan-500", color: "#06B6D4" },
+    { dot: "bg-emerald-500", color: "#22C55E" },
+    { dot: "bg-amber-500", color: "#F59E0B" },
+    { dot: "bg-violet-500", color: "#8B5CF6" },
+    { dot: "bg-red-500", color: "#EF4444" },
+  ];
+
+  let accumulatedPercent = 0;
+
+  const gradientStops =
+    reasons.length > 0
+      ? reasons
+          .map((item, index) => {
+            const percent = (toNumber(item.count) / safeTotal) * 100;
+            const start = accumulatedPercent;
+            const end = accumulatedPercent + percent;
+            accumulatedPercent = end;
+
+            return `${palette[index % palette.length].color} ${start}% ${end}%`;
+          })
+          .join(", ")
+      : "#E5E7EB 0% 100%";
+
+  return (
+    <AnimatedCard delay={delay}>
+      <div>
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Requisition by Reason for Hiring
+        </h3>
+        <p className="mt-1 text-xs font-bold text-slate-500">
+          Based on Filtered Account
+        </p>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 items-center gap-5 sm:grid-cols-[150px_1fr]">
+        <div
+          className="relative mx-auto h-[132px] w-[132px] rounded-full"
+          style={{ background: `conic-gradient(${gradientStops})` }}
+        >
+          <div className="absolute inset-[28px] flex flex-col items-center justify-center rounded-full bg-white">
+            <p className="text-2xl font-extrabold text-[#101828]">
+              {formatNumber(total)}
+            </p>
+            <p className="text-xs font-semibold text-slate-600">PRF</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {reasons.length > 0 ? (
+            reasons.map((item, index) => {
+              const percent = total > 0 ? (toNumber(item.count) / total) * 100 : 0;
+
+              return (
+                <div
+                  key={`${item.label}-${index}`}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`h-3 w-3 shrink-0 rounded-full ${
+                        palette[index % palette.length].dot
+                      }`}
+                    />
+                    <span className="truncate font-semibold text-slate-700">
+                      {item.label}
+                    </span>
+                  </div>
+
+                  <span className="font-extrabold text-[#101828]">
+                    {formatNumber(item.count)}{" "}
+                    <span className="text-xs font-bold text-slate-500">
+                      ({formatPercent(percent, 0)})
+                    </span>
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-5 text-center text-sm font-bold text-slate-500">
+              No requisition reason data available.
+            </div>
+          )}
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+}
+
+
 function EffectiveCoverageCard({ coverage, delay = 0 }) {
   const maxValue = Math.max(coverage.effectiveDemand, coverage.projectedCoverage, 1);
   const effectiveWidth = Math.min(100, (coverage.effectiveDemand / maxValue) * 100);
@@ -2237,6 +2440,39 @@ export default function PercentageRiskGraphTable({
       gap: Math.max(0, coverageBase.effectiveDemand - coverageBase.projectedCoverage),
     };
 
+    const hiringReasonMap = new Map();
+
+    validPlans.forEach((item) => {
+      const rowBreakdown = getHiringReasonBreakdownFromRow(item);
+
+      if (rowBreakdown.length > 0) {
+        rowBreakdown.forEach((entry) => {
+          const label = normalizeHiringReason(entry.label);
+          hiringReasonMap.set(
+            label,
+            toNumber(hiringReasonMap.get(label)) + toNumber(entry.count),
+          );
+        });
+
+        return;
+      }
+
+      const reason = normalizeHiringReason(getHiringReasonValue(item));
+      const directCount = getHiringReasonCount(item);
+      const count = directCount > 0 ? directCount : reason === "Unspecified" ? 0 : 1;
+
+      if (count > 0) {
+        hiringReasonMap.set(reason, toNumber(hiringReasonMap.get(reason)) + count);
+      }
+    });
+
+    const hiringReasons = Array.from(hiringReasonMap.entries())
+      .map(([label, count]) => ({
+        label,
+        count,
+      }))
+      .sort((a, b) => toNumber(b.count) - toNumber(a.count));
+
     return {
       absenteeism: {
         total: absenteeismTotal,
@@ -2260,6 +2496,7 @@ export default function PercentageRiskGraphTable({
       forecast,
       trainingAttrition,
       coverage,
+      hiringReasons,
     };
   }, [validPlans]);
 
@@ -2450,7 +2687,7 @@ export default function PercentageRiskGraphTable({
             delay={500}
           />
 
-          <EffectiveCoverageCard coverage={data.coverage} delay={560} />
+          <HiringReasonChartCard reasons={data.hiringReasons} delay={560} />
         </div>
       </div>
 
