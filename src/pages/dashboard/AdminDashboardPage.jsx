@@ -1,6 +1,7 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
+  LayoutDashboard,
   FileText,
   Briefcase,
   ClipboardList,
@@ -9,16 +10,34 @@ import {
   Plus,
   UserPlus,
   BarChart3,
-  LayoutDashboard,
-  ArrowRight,
   Bell,
   Activity,
+  ArrowRight,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import AdminLoginModal from "../../components/modals/AdminLoginModal";
 import { useUser } from "../../services/context/UserContext";
 import { useAdmin } from "../../services/context/AdminContext";
+
+const dashboardTitleMap = {
+  hr: "Human Resource Dashboard",
+  ta: "Talent Acquisition Dashboard",
+  hr_admin: "HR Admin Dashboard",
+  super_admin: "Super Admin Dashboard",
+};
+
+const animationTiming = {
+  header: 0,
+  summary: 60,
+  panels: 120,
+  quickActions: 240,
+
+  summaryCardBase: 0,
+  summaryCardStagger: 60,
+
+  quickActionBase: 160,
+  quickActionStagger: 80,
+};
 
 const summaryCards = [
   {
@@ -77,42 +96,76 @@ const quickActions = [
   },
 ];
 
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
   });
 }
 
-export default function EmployeeDashboardPage() {
+export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
+
+  const userRole = normalizeRole(user?.role);
+
+  const adminRolesKey = Array.isArray(ADMIN_ROLES)
+    ? ADMIN_ROLES.map(normalizeRole).join("|")
+    : "";
+
+  const isAdminSide = useMemo(() => {
+    const adminRoles = adminRolesKey
+      .split("|")
+      .map(normalizeRole)
+      .filter(Boolean);
+
+    return adminRoles.includes(userRole);
+  }, [adminRolesKey, userRole]);
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      navigate("/login", { replace: true });
+      if (location.pathname !== "/login") {
+        navigate("/login", { replace: true });
+      }
       return;
     }
 
-    if (ADMIN_ROLES.includes(user.role)) {
-      navigate("/dashboard/admin", { replace: true });
-      return;
-    }
+    if (!isAdminSide) {
+      const targetPath = userRole === "employee" ? "/dashboard/employee" : "/login";
 
-    if (user.role !== "employee") {
-      navigate("/login", { replace: true });
+      if (location.pathname !== targetPath) {
+        navigate(targetPath, { replace: true });
+      }
     }
-  }, [user, loading, navigate, ADMIN_ROLES]);
+  }, [loading, user, isAdminSide, userRole, location.pathname, navigate]);
 
-  if (loading || !user || user.role !== "employee") {
+  if (loading || !user || !isAdminSide) {
     return (
-      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-        <Header />
+      <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+        <div className="shrink-0">
+          <Header />
+        </div>
 
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-          <div className="flex min-w-0 flex-col gap-6">
+          <div className="mx-auto max-w-[1600px] space-y-5">
             <div className="sibs-page-header-in min-w-0">
               <div className="mb-4 h-8 w-56 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
               <div className="h-4 w-72 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
@@ -129,7 +182,7 @@ export default function EmployeeDashboardPage() {
                   <div
                     key={item}
                     className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    style={getAnimationStyle(index * 60)}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
@@ -155,7 +208,7 @@ export default function EmployeeDashboardPage() {
                   <div
                     key={item}
                     className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    style={getAnimationStyle(index * 60)}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-4">
@@ -175,55 +228,66 @@ export default function EmployeeDashboardPage() {
             </section>
           </div>
         </main>
-
-        <AdminLoginModal />
       </div>
     );
   }
 
-  const displayName = (
-    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${
-      user?.firstName || ""
-    }${user?.middleName ? " " + user.middleName : ""}`.trim() || "User"
-  ).toUpperCase();
+  const fullName =
+    [user?.firstName, user?.middleName, user?.lastName]
+      .filter(Boolean)
+      .join(" ") || "User";
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="flex min-w-0 flex-col gap-6">
-          <section className="sibs-page-header-in min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <section
+            className="sibs-page-header-in min-w-0"
+            style={getAnimationStyle(animationTiming.header)}
+          >
+            <div className="flex min-w-0 items-center gap-3">
               <LayoutDashboard
-                size={28}
-                className="shrink-0 text-sibs-primary-1 transition-transform duration-300 hover:scale-110"
+                size={34}
+                strokeWidth={2.2}
+                className="shrink-0 text-sibs-primary-1"
               />
 
-              <h1 className="min-w-0 break-words text-[26px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                My Dashboard
+              <h1 className="min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                {dashboardTitleMap[userRole] || "Dashboard"}
               </h1>
             </div>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Welcome back,{" "}
               <span className="font-bold text-sibs-primary-2">
-                {displayName}
+                {fullName.toUpperCase()}
               </span>
             </p>
           </section>
 
-          <section className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={getAnimationStyle(animationTiming.summary)}
+          >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-base font-bold text-[#101828]">
-                  Dashboard Summary
+                  Admin Dashboard Summary
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Overview of your HRIS records, attendance, payroll, and tasks.
+                  Overview of employees, departments, attendance, interviews,
+                  and payroll records.
                 </p>
               </div>
+
+              <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                Admin View
+              </span>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
@@ -233,16 +297,22 @@ export default function EmployeeDashboardPage() {
                   label={item.label}
                   value={formatNumber(item.value)}
                   icon={item.icon}
-                  delay={index * 60}
+                  delay={
+                    animationTiming.summaryCardBase +
+                    index * animationTiming.summaryCardStagger
+                  }
                 />
               ))}
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <section
+            className="grid grid-cols-1 gap-4 lg:grid-cols-2"
+            style={getAnimationStyle(animationTiming.panels)}
+          >
             <DashboardPanel
               title="Recent Activity"
-              description="Latest employee activity"
+              description="Latest system and employee activity"
               icon={Activity}
               emptyText="No activity yet"
               buttonText="View all activity"
@@ -261,7 +331,7 @@ export default function EmployeeDashboardPage() {
 
           <section
             className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-            style={{ animationDelay: "240ms" }}
+            style={getAnimationStyle(animationTiming.quickActions)}
           >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -270,7 +340,7 @@ export default function EmployeeDashboardPage() {
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  Common employee shortcuts for HRIS tasks.
+                  Common admin shortcuts for HRIS tasks.
                 </p>
               </div>
             </div>
@@ -284,10 +354,15 @@ export default function EmployeeDashboardPage() {
                     key={item.title}
                     type="button"
                     onClick={() => {
-                      if (item.path) navigate(item.path);
+                      if (item.path && location.pathname !== item.path) {
+                        navigate(item.path);
+                      }
                     }}
                     className="group sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md active:scale-[0.99]"
-                    style={{ animationDelay: `${160 + index * 80}ms` }}
+                    style={getAnimationStyle(
+                      animationTiming.quickActionBase +
+                        index * animationTiming.quickActionStagger,
+                    )}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-4">
@@ -318,8 +393,6 @@ export default function EmployeeDashboardPage() {
           </section>
         </div>
       </main>
-
-      <AdminLoginModal />
     </div>
   );
 }
@@ -335,7 +408,7 @@ function DashboardStatCard({
   return (
     <div
       className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -370,8 +443,8 @@ function DashboardPanel({
 }) {
   return (
     <section
-      className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md sm:p-6"
+      style={getAnimationStyle(delay)}
     >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
@@ -384,7 +457,7 @@ function DashboardPanel({
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 hover:scale-105">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white transition-transform duration-200 hover:scale-105">
           <Icon size={18} />
         </div>
       </div>

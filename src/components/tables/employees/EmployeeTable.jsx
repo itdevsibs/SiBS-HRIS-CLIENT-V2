@@ -665,8 +665,8 @@ export default function EmployeeTable() {
     <div className="min-w-0 overflow-hidden rounded-xl bg-white">
       <div className="p-4 sm:p-5">
         <PaginationTable
-          title="Employee Records"
-          subtitle="Only 15 employee records are loaded from the backend per page."
+          title=""
+          subtitle=""
           loading={loading}
           searchValue={searchInput}
           searchPlaceholder="Search employee..."
