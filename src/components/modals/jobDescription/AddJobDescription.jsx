@@ -12,13 +12,15 @@ import HiringRequirementSection from "./HiringRequirementsSection";
 import DesiredCompetenciesTable from "../../tables/jobDescription/DesiredCompetenciesTable";
 import JobDescriptionContentSection from "./JobDescriptionContentSection";
 
+const JD_FOR_APPROVAL_STATUS = "For Approval";
+
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
 }
 
 function normalizeJdStatus(status) {
   if (status === "New JD") return "New Job Description";
-  return status || "New Job Description";
+  return status || JD_FOR_APPROVAL_STATUS;
 }
 
 function normalizeText(value) {
@@ -257,7 +259,8 @@ export default function AddJobDescription({
   async function handleCreateJobDescription(e) {
     e.preventDefault();
 
-    const documentTitle = normalizeText(form.documentTitle || form.roleTitle);
+    const documentTitle = normalizeText(form.documentTitle);
+    const roleTitle = normalizeText(form.roleTitle || form.documentTitle);
 
     const existingJdId = normalizeText(
       form.existingJdId || form.linkedHiringRequirement,
@@ -299,6 +302,15 @@ export default function AddJobDescription({
         type: "error",
         title: "Missing Document Title",
         message: "Document title / role title is required.",
+      });
+      return;
+    }
+
+    if (!roleTitle) {
+      onStatus?.({
+        type: "error",
+        title: "Missing Position",
+        message: "Position is required.",
       });
       return;
     }
@@ -377,14 +389,16 @@ export default function AddJobDescription({
       linkedHiringRequirement: existingJdId || null,
 
       documentTitle,
-      roleTitle: documentTitle,
+      roleTitle,
 
       accountId: form.accountId,
       departmentId: form.departmentId,
 
-      jdStatus: existingJdId
-        ? normalizeJdStatus(form.jdStatus || "Existing")
-        : "New Job Description",
+      jdStatus: JD_FOR_APPROVAL_STATUS,
+      jd_status: JD_FOR_APPROVAL_STATUS,
+      status: JD_FOR_APPROVAL_STATUS,
+      approvalStatus: "Pending",
+      approval_status: "Pending",
 
       requestedBySibsId,
       dateRequested: form.dateRequested || getTodayDate(),

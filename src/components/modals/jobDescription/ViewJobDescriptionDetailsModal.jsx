@@ -12,11 +12,10 @@ const detailTabs = ["Details", "Revision History"];
 
 export default function ViewJobDescriptionDetailsModal({
   open,
-  item,
   onClose,
   approvalPage = false,
 
-  // Optional callbacks from parent page
+  onOpenRevision,
   onUpdated,
   onRefresh,
   onStatus,
@@ -35,6 +34,8 @@ export default function ViewJobDescriptionDetailsModal({
   });
 
   const {
+    selectedJobDescription,
+    updateSelectedJobDescription,
     revisionComments,
     setRevisionComments,
     loadRevisionComments,
@@ -42,6 +43,8 @@ export default function ViewJobDescriptionDetailsModal({
     saveRevisionComments,
     revisionCommentsLoading,
   } = useJobDescription();
+
+  const item = selectedJobDescription;
 
   const hasRevisionComments = revisionComments.length > 0;
 
@@ -163,14 +166,17 @@ export default function ViewJobDescriptionDetailsModal({
       const updatedItem = {
         ...item,
         jdStatus: "For Revision",
+        jd_status: "For Revision",
         status: "For Revision",
         raw: {
           ...(item.raw || {}),
           jdStatus: "For Revision",
+          jd_status: "For Revision",
           status: "For Revision",
         },
       };
 
+      updateSelectedJobDescription(updatedItem);
       onUpdated?.(updatedItem);
       await onRefresh?.();
 
@@ -236,6 +242,14 @@ export default function ViewJobDescriptionDetailsModal({
       width: activeButton.offsetWidth,
     });
   }, [activeDetailTab, open, approvalPage]);
+
+  function handleOpenRevisionFromDetails(targetItem) {
+    const revisionTarget = targetItem || item;
+
+    if (!revisionTarget) return;
+
+    onOpenRevision?.(revisionTarget);
+  }
 
   if (!open || !item) return null;
 
@@ -336,9 +350,7 @@ export default function ViewJobDescriptionDetailsModal({
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {shouldShowDetails && (
             <Details
-              item={item}
-              revisionComments={revisionComments}
-              setRevisionComments={setRevisionComments}
+              onOpenRevision={handleOpenRevisionFromDetails}
               hasEditedChanges={hasEditedChanges}
               onEditedChange={setHasEditedChanges}
               editedChangeDetails={editedChangeDetails}

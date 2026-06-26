@@ -49,15 +49,20 @@ export default function JobDescriptionContentSection() {
       (option) => option.value === String(form.reportsTo || ""),
     )?.label || "";
 
+  function closeDropdowns() {
+    setReportsToOpen(false);
+    setPersonalityTypeOpen(false);
+  }
+
   return (
-    <div className="mt-5 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="relative z-[1] mt-5 overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
       <h3 className="mb-4 text-sm font-bold text-[#101828]">
         Job Description Content
       </h3>
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start">
-          <div className="min-w-0">
+      <div className="space-y-4 overflow-visible">
+        <div className="grid grid-cols-1 gap-4 overflow-visible md:grid-cols-2 md:items-start">
+          <div className="relative z-[40] min-w-0 overflow-visible">
             <SingleSelectDropdown
               refBox={reportsToRef}
               required
@@ -69,7 +74,10 @@ export default function JobDescriptionContentSection() {
               disabled={false}
               options={reportToOptions}
               selectedValue={form.reportsTo}
-              zIndex="z-[999]"
+              zIndex="z-[40]"
+              onBeforeOpen={() => {
+                setPersonalityTypeOpen(false);
+              }}
               onSelect={(value) => {
                 setForm((prev) => ({
                   ...prev,
@@ -81,7 +89,7 @@ export default function JobDescriptionContentSection() {
             />
           </div>
 
-          <div className="min-w-0">
+          <div className="relative z-[10] min-w-0">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
               Supervisory <span className="text-red-500">*</span>
             </label>
@@ -108,13 +116,11 @@ export default function JobDescriptionContentSection() {
                         supervisory: option,
                       }))
                     }
-                    className={`relative z-10 inline-flex h-full items-center 
-                        justify-center rounded-lg text-sm font-extrabold transition-colors 
-                        duration-300 ${
-                          isActive
-                            ? "text-white"
-                            : "text-sibs-primary-1 hover:text-sibs-primary-1"
-                        }`}
+                    className={`relative z-10 inline-flex h-full items-center justify-center rounded-lg text-sm font-extrabold transition-colors duration-300 ${
+                      isActive
+                        ? "text-white"
+                        : "text-sibs-primary-1 hover:text-sibs-primary-1"
+                    }`}
                   >
                     {option}
                   </button>
@@ -130,7 +136,7 @@ export default function JobDescriptionContentSection() {
           </div>
         </div>
 
-        <div>
+        <div className="relative z-[1]">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Position Overview <span className="text-red-500">*</span>
           </label>
@@ -139,6 +145,7 @@ export default function JobDescriptionContentSection() {
             required
             rows={4}
             value={form.description}
+            onFocus={closeDropdowns}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -150,7 +157,7 @@ export default function JobDescriptionContentSection() {
           />
         </div>
 
-        <div>
+        <div className="relative z-[1]">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Duties & Responsibilities <span className="text-red-500">*</span>
           </label>
@@ -159,6 +166,7 @@ export default function JobDescriptionContentSection() {
             required
             rows={4}
             value={form.qualifications}
+            onFocus={closeDropdowns}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -170,7 +178,7 @@ export default function JobDescriptionContentSection() {
           />
         </div>
 
-        <div>
+        <div className="relative z-[1]">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
             Qualifications & Characteristics{" "}
             <span className="text-red-500">*</span>
@@ -179,6 +187,7 @@ export default function JobDescriptionContentSection() {
           <textarea
             rows={3}
             value={form.remarks}
+            onFocus={closeDropdowns}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -190,7 +199,7 @@ export default function JobDescriptionContentSection() {
           />
         </div>
 
-        <div>
+        <div className="relative z-[30] overflow-visible">
           <MultiSelectDropdown
             refBox={personalityTypeRef}
             label="Preferred Personality Type"
@@ -201,8 +210,11 @@ export default function JobDescriptionContentSection() {
             setOpen={setPersonalityTypeOpen}
             disabled={false}
             options={personalityTypeOptions}
-            zIndex="z-[999]"
+            zIndex="z-[30]"
             required
+            onBeforeOpen={() => {
+              setReportsToOpen(false);
+            }}
             onChange={(values) => {
               setForm((prev) => ({
                 ...prev,

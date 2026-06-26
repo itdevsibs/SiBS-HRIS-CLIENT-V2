@@ -7,7 +7,6 @@ import { useUser } from "../../../../services/context/UserContext";
 import { useJobDescription } from "../../../../services/context/JobDescriptionContext";
 
 const Details = ({
-  item,
   onOpenRevision,
   hasEditedChanges = false,
   onEditedChange,
@@ -17,7 +16,10 @@ const Details = ({
 }) => {
   const { user } = useUser();
 
-  const { revisionComments, setRevisionComments } = useJobDescription();
+  const { selectedJobDescription, revisionComments, setRevisionComments } =
+    useJobDescription();
+
+  const item = selectedJobDescription;
 
   function getEffectiveDateValue(source = {}) {
     return (
@@ -25,12 +27,45 @@ const Details = ({
       source.effective_date ||
       source.effectiveDateRaw ||
       source.effective_date_raw ||
+      source.raw?.effectiveDate ||
+      source.raw?.effective_date ||
+      source.raw?.effectiveDateRaw ||
+      source.raw?.effective_date_raw ||
       ""
     );
   }
 
+  function getPersonalityTypeValue(source = {}) {
+    return String(
+      source.personalityType ||
+        source.personality_type ||
+        source.preferredPersonalityType ||
+        source.preferred_personality_type ||
+        source.personality ||
+        source.preferredPersonality ||
+        source.preferred_personality ||
+        source.raw?.personalityType ||
+        source.raw?.personality_type ||
+        source.raw?.preferredPersonalityType ||
+        source.raw?.preferred_personality_type ||
+        source.raw?.personality ||
+        source.raw?.preferredPersonality ||
+        source.raw?.preferred_personality ||
+        "",
+    ).trim();
+  }
+
   useEffect(() => {
     console.log("item from details:", item);
+    console.log("personality from details:", {
+      personalityType: item?.personalityType,
+      personality_type: item?.personality_type,
+      preferredPersonalityType: item?.preferredPersonalityType,
+      preferred_personality_type: item?.preferred_personality_type,
+      rawPersonalityType: item?.raw?.personalityType,
+      rawPersonalitySnake: item?.raw?.personality_type,
+      finalValue: getPersonalityTypeValue(item),
+    });
   }, [item]);
 
   const canManageJdDetails = useMemo(() => {
@@ -41,6 +76,7 @@ const Details = ({
     open: false,
     sectionKey: "",
     sectionTitle: "",
+    competencyId: null,
     selectedText: "",
     comment: "",
   });
@@ -49,27 +85,42 @@ const Details = ({
     description: item.description || "",
     responsibilities: item.responsibilities || "",
     qualifications: item.qualifications || "",
-    personalityType: item.personalityType || item.personality_type || "",
+    personalityType: getPersonalityTypeValue(item),
     remarks: item.remarks || "",
   });
 
   const [editingSection, setEditingSection] = useState("");
   const [editingDraft, setEditingDraft] = useState("");
-
   const [editingRecordInfo, setEditingRecordInfo] = useState(false);
 
   const [recordInfoDraft, setRecordInfoDraft] = useState({
-    roleTitle: item.roleTitle || "",
+    roleTitle:
+      item.roleTitle ||
+      item.role_title ||
+      item.documentTitle ||
+      item.document_title ||
+      "",
     department: item.department || "",
-    dateRequested: item.dateRequested || "",
-    linkedHiringRequirement: item.linkedHiringRequirement || "",
-    preparedFor: item.preparedFor || "",
-    requestedBy: item.requestedBy || "",
-    jdCode: item.jdCode || "",
-    currentVersion: item.currentVersion || "2.0",
+    dateRequested: item.dateRequested || item.date_requested || "",
+    linkedHiringRequirement:
+      item.linkedHiringRequirement ||
+      item.linked_hiring_requirement ||
+      item.existingJdId ||
+      item.existing_jd_id ||
+      "",
+    preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+    createdBy:
+      item.createdBy ||
+      item.created_by ||
+      item.requestedBy ||
+      item.requested_by ||
+      "",
+    jdCode: item.jdCode || item.jd_code || "",
+    currentVersion:
+      item.currentVersion || item.current_version || item.revisionNo || "2.0",
     effectiveDate: getEffectiveDateValue(item),
-    lastUpdated: item.lastUpdated || "",
-    reportsTo: item.reportsTo || "",
+    lastUpdated: item.lastUpdated || item.last_updated || item.updatedAt || "",
+    reportsTo: item.reportsTo || item.reports_to || "",
     supervisory: item.supervisory || "No",
   });
 
@@ -85,7 +136,7 @@ const Details = ({
       description: item.description || "",
       responsibilities: item.responsibilities || "",
       qualifications: item.qualifications || "",
-      personalityType: item.personalityType || item.personality_type || "",
+      personalityType: getPersonalityTypeValue(item),
       remarks: item.remarks || "",
     });
 
@@ -93,17 +144,38 @@ const Details = ({
     setEditingDraft("");
 
     setRecordInfoDraft({
-      roleTitle: item.roleTitle || "",
+      roleTitle:
+        item.roleTitle ||
+        item.role_title ||
+        item.documentTitle ||
+        item.document_title ||
+        "",
       department: item.department || "",
-      dateRequested: item.dateRequested || "",
-      linkedHiringRequirement: item.linkedHiringRequirement || "",
-      preparedFor: item.preparedFor || "",
-      requestedBy: item.requestedBy || "",
-      jdCode: item.jdCode || "",
-      currentVersion: item.currentVersion || "2.0",
+      dateRequested: item.dateRequested || item.date_requested || "",
+      linkedHiringRequirement:
+        item.linkedHiringRequirement ||
+        item.linked_hiring_requirement ||
+        item.existingJdId ||
+        item.existing_jd_id ||
+        "",
+      preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      createdBy:
+        item.createdBy ||
+        item.created_by ||
+        item.requestedBy ||
+        item.requested_by ||
+        "",
+      jdCode: item.jdCode || item.jd_code || "",
+      currentVersion:
+        item.currentVersion ||
+        item.current_version ||
+        item.revisionNo ||
+        item.revision_no ||
+        "2.0",
       effectiveDate: getEffectiveDateValue(item),
-      lastUpdated: item.lastUpdated || "",
-      reportsTo: item.reportsTo || "",
+      lastUpdated:
+        item.lastUpdated || item.last_updated || item.updatedAt || "",
+      reportsTo: item.reportsTo || item.reports_to || "",
       supervisory: item.supervisory || "No",
     });
 
@@ -123,7 +195,7 @@ const Details = ({
 
     const formattedLines = [];
 
-    function getListPrefix(liElement) {
+    function getListPrefix(liElement, depth = 0) {
       const parentList = liElement.parentElement;
 
       if (!parentList) return "- ";
@@ -140,9 +212,13 @@ const Details = ({
         );
 
         const index = siblings.indexOf(liElement);
-        const letter = String.fromCharCode(97 + Math.max(index, 0));
 
-        return `${letter}. `;
+        if (depth > 0) {
+          const letter = String.fromCharCode(97 + Math.max(index, 0));
+          return `${letter}. `;
+        }
+
+        return `${Math.max(index, 0) + 1}. `;
       }
 
       return "- ";
@@ -168,7 +244,7 @@ const Details = ({
       const tagName = node.tagName?.toLowerCase();
 
       if (tagName === "li") {
-        const prefix = getListPrefix(node);
+        const prefix = getListPrefix(node, depth);
         const indent = depth > 0 ? "  ".repeat(depth) : "";
 
         const directTextParts = [];
@@ -241,15 +317,17 @@ const Details = ({
     window.getSelection?.()?.removeAllRanges?.();
   }
 
-  function openSectionComment(sectionKey, sectionTitle) {
+  function openSectionComment(sectionKey, sectionTitle, options = {}) {
     if (!approvalPage || disableCommentBecauseEdited) return;
 
-    const selectedText = getSelectedText();
+    const selectedTextFromOptions = String(options.selectedText || "").trim();
+    const selectedText = selectedTextFromOptions || getSelectedText();
 
     setCommentModal({
       open: true,
       sectionKey,
       sectionTitle,
+      competencyId: options.competencyId || null,
       selectedText,
       comment: "",
     });
@@ -260,6 +338,7 @@ const Details = ({
       open: false,
       sectionKey: "",
       sectionTitle: "",
+      competencyId: null,
       selectedText: "",
       comment: "",
     });
@@ -279,6 +358,7 @@ const Details = ({
         jdId: item.id,
         sectionKey: commentModal.sectionKey,
         sectionTitle: commentModal.sectionTitle,
+        competencyId: commentModal.competencyId || null,
         selectedText: commentModal.selectedText,
         comment: commentText,
         status: "Open",
@@ -314,6 +394,7 @@ const Details = ({
     linkedHiringRequirement: "Linked Hiring Requirement",
     preparedFor: "Prepared For",
     requestedBy: "Created By",
+    createdBy: "Created By",
     jdCode: "Document Code",
     currentVersion: "Revision No.",
     effectiveDate: "Effective Date",
@@ -330,9 +411,10 @@ const Details = ({
   function saveEditSection(sectionKey) {
     const oldValue = String(
       sectionKey === "personalityType"
-        ? item?.personalityType || item?.personality_type || ""
+        ? getPersonalityTypeValue(item)
         : item?.[sectionKey] || "",
     );
+
     const newValue = String(editingDraft || "");
 
     setEditableContent((prev) => ({
@@ -374,17 +456,38 @@ const Details = ({
 
   function cancelRecordInfoEdit() {
     setRecordInfoDraft({
-      roleTitle: item.roleTitle || "",
+      roleTitle:
+        item.roleTitle ||
+        item.role_title ||
+        item.documentTitle ||
+        item.document_title ||
+        "",
       department: item.department || "",
-      dateRequested: item.dateRequested || "",
-      linkedHiringRequirement: item.linkedHiringRequirement || "",
-      preparedFor: item.preparedFor || "",
-      requestedBy: item.requestedBy || "",
-      jdCode: item.jdCode || "",
-      currentVersion: item.currentVersion || "2.0",
+      dateRequested: item.dateRequested || item.date_requested || "",
+      linkedHiringRequirement:
+        item.linkedHiringRequirement ||
+        item.linked_hiring_requirement ||
+        item.existingJdId ||
+        item.existing_jd_id ||
+        "",
+      preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      createdBy:
+        item.createdBy ||
+        item.created_by ||
+        item.requestedBy ||
+        item.requested_by ||
+        "",
+      jdCode: item.jdCode || item.jd_code || "",
+      currentVersion:
+        item.currentVersion ||
+        item.current_version ||
+        item.revisionNo ||
+        item.revision_no ||
+        "2.0",
       effectiveDate: getEffectiveDateValue(item),
-      lastUpdated: item.lastUpdated || "",
-      reportsTo: item.reportsTo || "",
+      lastUpdated:
+        item.lastUpdated || item.last_updated || item.updatedAt || "",
+      reportsTo: item.reportsTo || item.reports_to || "",
       supervisory: item.supervisory || "No",
     });
 
@@ -393,17 +496,38 @@ const Details = ({
 
   function saveRecordInfoEdit() {
     const originalRecordInfo = {
-      roleTitle: item.roleTitle || "",
+      roleTitle:
+        item.roleTitle ||
+        item.role_title ||
+        item.documentTitle ||
+        item.document_title ||
+        "",
       department: item.department || "",
-      dateRequested: item.dateRequested || "",
-      linkedHiringRequirement: item.linkedHiringRequirement || "",
-      preparedFor: item.preparedFor || "",
-      requestedBy: item.requestedBy || "",
-      jdCode: item.jdCode || "",
-      currentVersion: item.currentVersion || "2.0",
+      dateRequested: item.dateRequested || item.date_requested || "",
+      linkedHiringRequirement:
+        item.linkedHiringRequirement ||
+        item.linked_hiring_requirement ||
+        item.existingJdId ||
+        item.existing_jd_id ||
+        "",
+      preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      createdBy:
+        item.createdBy ||
+        item.created_by ||
+        item.requestedBy ||
+        item.requested_by ||
+        "",
+      jdCode: item.jdCode || item.jd_code || "",
+      currentVersion:
+        item.currentVersion ||
+        item.current_version ||
+        item.revisionNo ||
+        item.revision_no ||
+        "2.0",
       effectiveDate: getEffectiveDateValue(item),
-      lastUpdated: item.lastUpdated || "",
-      reportsTo: item.reportsTo || "",
+      lastUpdated:
+        item.lastUpdated || item.last_updated || item.updatedAt || "",
+      reportsTo: item.reportsTo || item.reports_to || "",
       supervisory: item.supervisory || "No",
     };
 
@@ -461,8 +585,34 @@ const Details = ({
     return defaultTitle;
   }
 
+  function normalizeRevisionCompareText(value = "") {
+    return String(value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  }
+
+  function getRecordFieldComments(fieldValue = "") {
+    const comments = getSectionComments("recordInformation");
+    const normalizedFieldValue = normalizeRevisionCompareText(fieldValue);
+
+    if (!normalizedFieldValue) return [];
+
+    return comments.filter((comment) => {
+      const selectedText = normalizeRevisionCompareText(comment.selectedText);
+
+      if (!selectedText) return false;
+
+      return (
+        selectedText === normalizedFieldValue ||
+        selectedText.includes(normalizedFieldValue) ||
+        normalizedFieldValue.includes(selectedText)
+      );
+    });
+  }
+
   return (
-    <div className="space-y-6 ">
+    <div className="space-y-6">
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -477,7 +627,6 @@ const Details = ({
               </p>
             </div>
 
-            {/* {approvalPage && ( */}
             <button
               type="button"
               onClick={() => onOpenRevision?.(item)}
@@ -486,12 +635,11 @@ const Details = ({
               <PencilLine size={16} />
               Revise Job Description
             </button>
-            {/* )} */}
           </div>
         </section>
       )}
 
-      <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-2xs">
+      <section className="relative isolate overflow-visible rounded-xl border border-[#E6ECF2] bg-white shadow-2xs">
         <div className="flex flex-col gap-3 border-b border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -581,7 +729,7 @@ const Details = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="relative grid grid-cols-1 overflow-visible lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="border-b border-[#E6ECF2] p-5 lg:border-b-0 lg:border-r">
             <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
               Document Title
@@ -606,6 +754,7 @@ const Details = ({
                 label="Position"
                 value={recordInfoDraft.roleTitle}
                 editable={editingRecordInfo}
+                comments={getRecordFieldComments(recordInfoDraft.roleTitle)}
                 onChange={(value) => handleRecordInfoChange("roleTitle", value)}
               />
 
@@ -613,6 +762,7 @@ const Details = ({
                 label="Department"
                 value={recordInfoDraft.department}
                 editable={editingRecordInfo}
+                comments={getRecordFieldComments(recordInfoDraft.department)}
                 onChange={(value) =>
                   handleRecordInfoChange("department", value)
                 }
@@ -624,6 +774,9 @@ const Details = ({
                 displayValue={formatDate(recordInfoDraft.dateRequested)}
                 editable={editingRecordInfo}
                 inputType="date"
+                comments={getRecordFieldComments(
+                  formatDate(recordInfoDraft.dateRequested),
+                )}
                 onChange={(value) =>
                   handleRecordInfoChange("dateRequested", value)
                 }
@@ -633,6 +786,9 @@ const Details = ({
                 label="Linked Hiring Requirement"
                 value={recordInfoDraft.linkedHiringRequirement}
                 editable={editingRecordInfo}
+                comments={getRecordFieldComments(
+                  recordInfoDraft.linkedHiringRequirement,
+                )}
                 onChange={(value) =>
                   handleRecordInfoChange("linkedHiringRequirement", value)
                 }
@@ -642,6 +798,7 @@ const Details = ({
                 label="Prepared For"
                 value={recordInfoDraft.preparedFor}
                 editable={editingRecordInfo}
+                comments={getRecordFieldComments(recordInfoDraft.preparedFor)}
                 onChange={(value) =>
                   handleRecordInfoChange("preparedFor", value)
                 }
@@ -649,87 +806,85 @@ const Details = ({
 
               <DocumentInfoInput
                 label="Created By"
-                value={recordInfoDraft.requestedBy}
+                value={recordInfoDraft.createdBy}
                 editable={editingRecordInfo}
-                onChange={(value) =>
-                  handleRecordInfoChange("requestedBy", value)
-                }
+                comments={getRecordFieldComments(recordInfoDraft.createdBy)}
+                onChange={(value) => handleRecordInfoChange("createdBy", value)}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-1">
-            <CompactSummaryRow
+          <div className="relative grid grid-cols-2 overflow-visible lg:grid-cols-1">
+            <CompactSummaryRowRight
               label="Document Code"
               value={recordInfoDraft.jdCode}
               editable={editingRecordInfo}
+              comments={getRecordFieldComments(recordInfoDraft.jdCode)}
               onChange={(value) => handleRecordInfoChange("jdCode", value)}
               className="border-b border-r border-[#E6ECF2] lg:border-r-0"
             />
 
-            <CompactSummaryRow
+            <CompactSummaryRowRight
               label="Revision No."
               value={recordInfoDraft.currentVersion}
               editable={editingRecordInfo}
+              comments={getRecordFieldComments(recordInfoDraft.currentVersion)}
               onChange={(value) =>
                 handleRecordInfoChange("currentVersion", value)
               }
               className="border-b border-[#E6ECF2]"
             />
 
-            <CompactSummaryRow
+            <CompactSummaryRowRight
               label="Effective Date"
               value={recordInfoDraft.effectiveDate}
               displayValue={formatDate(recordInfoDraft.effectiveDate)}
               editable={editingRecordInfo}
               inputType="date"
+              comments={getRecordFieldComments(
+                formatDate(recordInfoDraft.effectiveDate),
+              )}
               onChange={(value) =>
                 handleRecordInfoChange("effectiveDate", value)
               }
               className="border-r border-[#E6ECF2] lg:border-r-0 lg:border-b"
             />
 
-            <CompactSummaryRow
+            <CompactSummaryRowRight
               label="Last Reviewed"
               value={recordInfoDraft.lastUpdated}
               displayValue={formatDate(recordInfoDraft.lastUpdated)}
               editable={editingRecordInfo}
               inputType="date"
+              comments={getRecordFieldComments(
+                formatDate(recordInfoDraft.lastUpdated),
+              )}
               onChange={(value) => handleRecordInfoChange("lastUpdated", value)}
             />
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] p-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <CompactSummaryRow
+        <div className="relative overflow-visible rounded-b-lg border-t border-[#E6ECF2] bg-[#F8FAFC] p-5">
+          <div className="relative grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2">
+            <CompactSummaryRowBottom
               label="Reports To"
               value={recordInfoDraft.reportsTo}
               editable={editingRecordInfo}
+              comments={getRecordFieldComments(recordInfoDraft.reportsTo)}
               onChange={(value) => handleRecordInfoChange("reportsTo", value)}
             />
 
-            <CompactSummaryRow
+            <CompactSummaryRowBottom
               label="Supervisory"
               value={recordInfoDraft.supervisory || "No"}
               editable={editingRecordInfo}
+              comments={getRecordFieldComments(
+                recordInfoDraft.supervisory || "No",
+              )}
               onChange={(value) => handleRecordInfoChange("supervisory", value)}
             />
           </div>
         </div>
-
-        {getSectionComments("recordInformation").length > 0 && (
-          <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-5">
-            <div className="space-y-3">
-              {getSectionComments("recordInformation").map((comment) => (
-                <InlineRevisionCommentBlock
-                  key={comment.id}
-                  comment={comment}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </section>
 
       <section className="space-y-7">
@@ -790,32 +945,31 @@ const Details = ({
           approvalPage={approvalPage}
         />
 
-        {String(editableContent.personalityType || "").trim() && (
-          <PreferredPersonalityTypeSection
-            value={editableContent.personalityType}
-            comments={getSectionComments("personalityType")}
-            approvalPage={approvalPage}
-            canManageJdDetails={canManageJdDetails}
-            disableEdit={disableEditBecauseCommented}
-            disableComment={disableCommentBecauseEdited}
-            isEditing={editingSection === "personalityType"}
-            editingDraft={editingDraft}
-            setEditingDraft={setEditingDraft}
-            onStartEdit={() => startEditSection("personalityType")}
-            onCancelEdit={cancelEditSection}
-            onSaveEdit={() => saveEditSection("personalityType")}
-            onAddComment={() =>
-              openSectionComment(
-                "personalityType",
-                "Preferred Personality Type",
-              )
-            }
-          />
-        )}
+        <PreferredPersonalityTypeSection
+          value={editableContent.personalityType}
+          comments={getSectionComments("personalityType")}
+          approvalPage={approvalPage}
+          canManageJdDetails={canManageJdDetails}
+          disableEdit={disableEditBecauseCommented}
+          disableComment={disableCommentBecauseEdited}
+          isEditing={editingSection === "personalityType"}
+          editingDraft={editingDraft}
+          setEditingDraft={setEditingDraft}
+          onStartEdit={() => startEditSection("personalityType")}
+          onCancelEdit={cancelEditSection}
+          onSaveEdit={() => saveEditSection("personalityType")}
+          onAddComment={(options = {}) =>
+            openSectionComment(
+              "personalityType",
+              "Preferred Personality Type",
+              options,
+            )
+          }
+        />
 
         <div>
           <DesiredCompetenciesViewTable
-            competencies={item.competencies || []}
+            competencies={item.competencies || item.desiredCompetencies || []}
             comments={getSectionComments("competencies")}
             onAddComment={openSectionComment}
             disableEdit={disableEditBecauseCommented}
@@ -823,8 +977,6 @@ const Details = ({
             canManageActions={approvalPage && canManageJdDetails}
             onEditedChange={onEditedChange}
           />
-
-          <RevisionCommentList comments={getSectionComments("competencies")} />
         </div>
       </section>
 
@@ -868,12 +1020,14 @@ const Details = ({
 
             <div className="space-y-4 px-5 py-4">
               {commentModal.selectedText ? (
-                <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                    Highlighted Text
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
+                    {commentModal.sectionKey === "personalityType"
+                      ? "Selected Personality Type"
+                      : "Highlighted Text"}
                   </p>
 
-                  <div className="mt-3">
+                  <div className="mt-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
                     <HighlightedRevisionText
                       value={commentModal.selectedText}
                     />
@@ -939,51 +1093,113 @@ function DocumentInfoInput({
   displayValue,
   editable = false,
   inputType = "text",
+  comments = [],
   onChange,
 }) {
   const finalDisplayValue = displayValue || value || "—";
+  const hasComments = Array.isArray(comments) && comments.length > 0;
+  const firstComment = comments[0];
 
   return (
-    <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
-      <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-        {label}
-      </p>
+    <div
+      className={`group relative min-h-[68px] min-w-0 rounded-lg px-4 py-3 transition selection:bg-[#FFF3B8] selection:text-[#101828] ${
+        hasComments
+          ? "border border-amber-200 bg-amber-50 hover:cursor-pointer"
+          : "bg-[#F8FAFC]"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={`truncate text-[10px] font-extrabold uppercase tracking-wide ${
+            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+          }`}
+        >
+          {label}
+        </p>
+
+        {hasComments && (
+          <span className="shrink-0 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-amber-700">
+            Needs revision
+          </span>
+        )}
+      </div>
 
       {editable ? (
         <input
           type={inputType}
           value={value || ""}
           onChange={(e) => onChange?.(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition selection:bg-[#FFF3B8] selection:text-[#101828] focus:border-sibs-primary-1"
+          className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1"
         />
       ) : (
         <p
           title={finalDisplayValue}
-          className="mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 text-[#344054] selection:bg-[#FFF3B8] selection:text-[#101828] hover:cursor-pointer [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CBD5E1] [&::-webkit-scrollbar-track]:bg-transparent"
+          className={`mt-1 max-w-full overflow-x-auto whitespace-nowrap text-sm font-bold leading-5 selection:bg-[#FFF3B8] selection:text-[#101828] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#CBD5E1] [&::-webkit-scrollbar-track]:bg-transparent ${
+            hasComments ? "text-amber-800" : "text-[#344054]"
+          }`}
         >
           {finalDisplayValue}
         </p>
+      )}
+
+      {hasComments && (
+        <div className="pointer-events-none absolute left-0 right-0 top-[calc(100%-4px)] z-50 translate-y-1 rounded-xl border border-orange-100 bg-white p-3 opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-2 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-2 group-focus-within:opacity-100">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+              Reviewer Comment
+            </p>
+
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+              {firstComment?.status || "Open"}
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold leading-5 text-orange-800">
+            {firstComment?.comment || "No revision comment provided."}
+          </p>
+        </div>
       )}
     </div>
   );
 }
 
-function CompactSummaryRow({
+function CompactSummaryRowRight({
   label,
   value,
   displayValue,
   className = "",
   editable = false,
   inputType = "text",
+  comments = [],
   onChange,
 }) {
   const finalDisplayValue = displayValue || value || "—";
+  const hasComments = Array.isArray(comments) && comments.length > 0;
+  const firstComment = comments[0];
 
   return (
-    <div className={`bg-white px-4 py-3 ${className}`}>
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-        {label}
-      </p>
+    <div
+      className={`group relative z-0 min-h-[82px] overflow-visible px-4 py-3 transition selection:bg-[#FFF3B8] selection:text-[#101828] hover:z-[9999] focus-within:z-[9999] ${
+        hasComments
+          ? "border border-amber-200 bg-amber-50 hover:cursor-pointer"
+          : "bg-white"
+      } ${className}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={`text-[10px] font-extrabold uppercase tracking-wide ${
+            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+          }`}
+        >
+          {label}
+        </p>
+
+        {hasComments && (
+          <span className="shrink-0 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-amber-700">
+            Needs revision
+          </span>
+        )}
+      </div>
 
       {editable ? (
         <input
@@ -993,9 +1209,109 @@ function CompactSummaryRow({
           className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1"
         />
       ) : (
-        <p className="mt-1 break-words text-sm font-bold leading-5 text-[#344054]">
+        <p
+          title={finalDisplayValue}
+          className={`mt-1 break-words text-sm font-bold leading-5 selection:bg-[#FFF3B8] selection:text-[#101828] ${
+            hasComments ? "text-amber-800" : "text-[#344054]"
+          }`}
+        >
           {finalDisplayValue}
         </p>
+      )}
+
+      {hasComments && (
+        <div className="pointer-events-none absolute left-0 right-0 top-[calc(100%-4px)] z-999 translate-y-1 rounded-xl border border-orange-100 bg-white p-3 opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-2 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-2 group-focus-within:opacity-100">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+              Reviewer Comment
+            </p>
+
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+              {firstComment?.status || "Open"}
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold leading-5 text-orange-800">
+            {firstComment?.comment || "No revision comment provided."}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CompactSummaryRowBottom({
+  label,
+  value,
+  displayValue,
+  className = "",
+  editable = false,
+  inputType = "text",
+  comments = [],
+  onChange,
+}) {
+  const finalDisplayValue = displayValue || value || "—";
+  const hasComments = Array.isArray(comments) && comments.length > 0;
+  const firstComment = comments[0];
+
+  return (
+    <div
+      className={`group relative z-0 min-h-[82px] overflow-visible rounded-xl px-4 py-3 transition selection:bg-[#FFF3B8] selection:text-[#101828] hover:z-[9999] focus-within:z-[9999] ${
+        hasComments
+          ? "border border-amber-200 bg-amber-50 hover:cursor-pointer"
+          : "bg-white"
+      } ${className}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <p
+          className={`text-[10px] font-extrabold uppercase tracking-wide ${
+            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+          }`}
+        >
+          {label}
+        </p>
+
+        {hasComments && (
+          <span className="shrink-0 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-amber-700">
+            Needs revision
+          </span>
+        )}
+      </div>
+
+      {editable ? (
+        <input
+          type={inputType}
+          value={value || ""}
+          onChange={(e) => onChange?.(e.target.value)}
+          className="mt-1 w-full rounded-lg border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2 text-sm font-bold leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1"
+        />
+      ) : (
+        <p
+          title={finalDisplayValue}
+          className={`mt-1 break-words text-sm font-bold leading-5 selection:bg-[#FFF3B8] selection:text-[#101828] ${
+            hasComments ? "text-amber-800" : "text-[#344054]"
+          }`}
+        >
+          {finalDisplayValue}
+        </p>
+      )}
+
+      {hasComments && (
+        <div className="pointer-events-none absolute left-0 right-0 top-[calc(100%-4px)] z-999 translate-y-1 rounded-xl border border-orange-100 bg-white p-3 opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-2 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-2 group-focus-within:opacity-100">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+              Reviewer Comment
+            </p>
+
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+              {firstComment?.status || "Open"}
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold leading-5 text-orange-800">
+            {firstComment?.comment || "No revision comment provided."}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -1009,11 +1325,14 @@ function parseDetailContent(value) {
   const blocks = [];
   let listItems = [];
   let currentParent = null;
+  let currentChild = null;
+  let currentListOrdered = false;
 
   const flushCurrentParent = () => {
     if (currentParent) {
       listItems.push(currentParent);
       currentParent = null;
+      currentChild = null;
     }
   };
 
@@ -1023,49 +1342,150 @@ function parseDetailContent(value) {
     if (listItems.length > 0) {
       blocks.push({
         type: "list",
+        ordered: currentListOrdered,
         items: [...listItems],
       });
 
       listItems = [];
+      currentListOrdered = false;
+      currentChild = null;
     }
   };
 
-  lines.forEach((line) => {
+  const attachDecimalChild = (parentNumber, child) => {
+    if (
+      currentParent &&
+      String(currentParent.number || "") === String(parentNumber || "")
+    ) {
+      currentParent.children.push(child);
+      currentChild = child;
+      return;
+    }
+
+    flushCurrentParent();
+
+    const targetParent =
+      [...listItems]
+        .reverse()
+        .find(
+          (item) => String(item.number || "") === String(parentNumber || ""),
+        ) || listItems[listItems.length - 1];
+
+    if (targetParent) {
+      targetParent.children.push(child);
+      currentChild = child;
+      return;
+    }
+
+    currentListOrdered = true;
+    currentParent = {
+      text: `${child.prefix} ${child.text}`.trim(),
+      children: [],
+      number: null,
+    };
+    currentChild = null;
+  };
+
+  lines.forEach((rawLine) => {
+    const line = String(rawLine || "").replace(/\t/g, "    ");
     const trimmed = line.trim();
 
     if (!trimmed) {
+      currentChild = null;
       return;
     }
 
-    const isBullet = /^[-•*]\s+/.test(trimmed);
-    const isNumbered = /^\d+[.)]\s+/.test(trimmed);
-    const isLettered = /^[a-zA-Z][.)]\s+/.test(trimmed);
+    const decimalMatch = trimmed.match(/^(\d+)\.(\d+)(?:[.)])?\s+(.*)$/);
+    const numberMatch = trimmed.match(/^(\d+)[.)]\s+(.*)$/);
+    const bulletMatch = trimmed.match(/^[-•*]\s+(.*)$/);
+    const letterMatch = trimmed.match(/^([a-zA-Z])[.)]\s+(.*)$/);
 
-    if (isBullet || isNumbered) {
-      flushCurrentParent();
+    if (decimalMatch) {
+      const parentNumber = decimalMatch[1];
+      const childNumber = decimalMatch[2];
+      const childText = decimalMatch[3].trim();
 
-      currentParent = {
-        text: trimmed.replace(/^[-•*]\s+/, "").replace(/^\d+[.)]\s+/, ""),
-        children: [],
-      };
-
-      return;
-    }
-
-    if (isLettered) {
-      const childText = trimmed.replace(/^[a-zA-Z][.)]\s+/, "");
-
-      if (currentParent) {
-        currentParent.children.push(childText);
-      } else if (listItems.length > 0) {
-        listItems[listItems.length - 1].children.push(childText);
-      } else {
-        listItems.push({
-          text: "",
-          children: [childText],
-        });
+      if (listItems.length > 0 && !currentListOrdered) {
+        flushList();
       }
 
+      currentListOrdered = true;
+
+      attachDecimalChild(parentNumber, {
+        text: childText,
+        prefix: `${parentNumber}.${childNumber}.`,
+      });
+
+      return;
+    }
+
+    if (numberMatch) {
+      if (listItems.length > 0 && !currentListOrdered) {
+        flushList();
+      }
+
+      flushCurrentParent();
+      currentListOrdered = true;
+
+      currentParent = {
+        text: numberMatch[2].trim(),
+        children: [],
+        number: Number(numberMatch[1]),
+      };
+
+      currentChild = null;
+      return;
+    }
+
+    if (bulletMatch) {
+      if (listItems.length > 0 && currentListOrdered) {
+        flushList();
+      }
+
+      flushCurrentParent();
+      currentListOrdered = false;
+
+      currentParent = {
+        text: bulletMatch[1].trim(),
+        children: [],
+        number: null,
+      };
+
+      currentChild = null;
+      return;
+    }
+
+    if (letterMatch) {
+      const childText = letterMatch[2].trim();
+
+      const child = {
+        text: childText,
+        prefix: `${letterMatch[1].toLowerCase()}.`,
+      };
+
+      if (currentParent) {
+        currentParent.children.push(child);
+        currentChild = child;
+      } else if (listItems.length > 0) {
+        listItems[listItems.length - 1].children.push(child);
+        currentChild = child;
+      } else {
+        currentListOrdered = false;
+        currentParent = {
+          text: "",
+          children: [child],
+          number: null,
+        };
+        currentChild = child;
+      }
+
+      return;
+    }
+
+    if (currentChild) {
+      currentChild.text = `${currentChild.text} ${trimmed}`
+        .replace(/\s+/g, " ")
+        .trim();
       return;
     }
 
@@ -1087,6 +1507,16 @@ function parseDetailContent(value) {
   flushList();
 
   return blocks;
+}
+
+function getChildText(child = "") {
+  if (typeof child === "string") return child;
+  return String(child?.text || "");
+}
+
+function getChildPrefix(child = "") {
+  if (typeof child === "string") return "";
+  return String(child?.prefix || "");
 }
 
 function DetailArticleSection({
@@ -1189,6 +1619,7 @@ function DetailArticleSection({
             onChange={(e) => setEditingDraft?.(e.target.value)}
             className="min-h-[180px] w-full resize-y rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm font-medium leading-7 text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
           />
+
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"
@@ -1215,8 +1646,6 @@ function DetailArticleSection({
           comments={comments}
         />
       )}
-
-      {/* <RevisionCommentList comments={comments} /> */}
     </section>
   );
 }
@@ -1236,6 +1665,8 @@ function PreferredPersonalityTypeSection({
   onSaveEdit,
   onAddComment,
 }) {
+  const [selectedTypes, setSelectedTypes] = useState([]);
+
   const PERSONALITY_TYPE_LABELS = {
     INTJ: "Architect",
     INTP: "Logician",
@@ -1270,10 +1701,120 @@ function PreferredPersonalityTypeSection({
     return label ? `${code} (${label})` : cleanType;
   }
 
+  function normalizePersonalityCompare(value = "") {
+    return String(value || "")
+      .trim()
+      .replace(/[()]/g, " ")
+      .replace(/,/g, " ")
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  }
+
+  function getCommentSelectedText(comment = {}) {
+    return String(comment.selectedText || comment.selected_text || "").trim();
+  }
+
   const personalityTypes = String(value || "")
-    .split(/[,;\n]/)
+    .split(/[,;\n|]/)
     .map((item) => item.trim())
     .filter(Boolean);
+
+  useEffect(() => {
+    setSelectedTypes((prev) =>
+      prev.filter((selectedType) =>
+        personalityTypes.some(
+          (type) =>
+            normalizePersonalityCompare(type) ===
+              normalizePersonalityCompare(selectedType) ||
+            normalizePersonalityCompare(formatPersonalityTypeLabel(type)) ===
+              normalizePersonalityCompare(selectedType),
+        ),
+      ),
+    );
+  }, [value]);
+
+  function isTypeSelected(type = "") {
+    return selectedTypes.some(
+      (selectedType) =>
+        normalizePersonalityCompare(selectedType) ===
+          normalizePersonalityCompare(type) ||
+        normalizePersonalityCompare(selectedType) ===
+          normalizePersonalityCompare(formatPersonalityTypeLabel(type)),
+    );
+  }
+
+  function toggleSelectedType(type = "") {
+    if (!approvalPage || disableComment || isEditing) return;
+
+    const formattedType = formatPersonalityTypeLabel(type);
+
+    setSelectedTypes((prev) => {
+      const exists = prev.some(
+        (selectedType) =>
+          normalizePersonalityCompare(selectedType) ===
+            normalizePersonalityCompare(type) ||
+          normalizePersonalityCompare(selectedType) ===
+            normalizePersonalityCompare(formattedType),
+      );
+
+      if (exists) {
+        return prev.filter(
+          (selectedType) =>
+            normalizePersonalityCompare(selectedType) !==
+              normalizePersonalityCompare(type) &&
+            normalizePersonalityCompare(selectedType) !==
+              normalizePersonalityCompare(formattedType),
+        );
+      }
+
+      return [...prev, formattedType];
+    });
+  }
+
+  function clearSelectedTypes() {
+    setSelectedTypes([]);
+  }
+
+  function handleAddComment() {
+    const selectedText = selectedTypes.join(", ");
+
+    onAddComment?.({
+      selectedText,
+    });
+
+    clearSelectedTypes();
+  }
+
+  function getCommentsForPersonalityType(type = "") {
+    const formattedType = formatPersonalityTypeLabel(type);
+    const normalizedType = normalizePersonalityCompare(type);
+    const normalizedFormattedType = normalizePersonalityCompare(formattedType);
+
+    return comments.filter((comment) => {
+      const selectedText = getCommentSelectedText(comment);
+
+      if (!selectedText) return false;
+
+      const normalizedSelectedText = normalizePersonalityCompare(selectedText);
+
+      return (
+        normalizedSelectedText === normalizedType ||
+        normalizedSelectedText === normalizedFormattedType ||
+        normalizedSelectedText.includes(normalizedType) ||
+        normalizedSelectedText.includes(normalizedFormattedType) ||
+        normalizedFormattedType.includes(normalizedSelectedText)
+      );
+    });
+  }
+
+  const sectionLevelComments = comments.filter((comment) => {
+    const selectedText = getCommentSelectedText(comment);
+    return !selectedText;
+  });
+
+  const selectedCount = selectedTypes.length;
+  const hasSelectedTypes = selectedCount > 0;
+  const hasComments = comments.length > 0;
 
   function getEditTitle() {
     if (!canManageJdDetails) {
@@ -1296,7 +1837,13 @@ function PreferredPersonalityTypeSection({
       return "Commenting is disabled because this JD already has edited changes.";
     }
 
-    return "Add revision comment.";
+    if (!hasSelectedTypes) {
+      return "Select one or more personality capsules first.";
+    }
+
+    return `Add comment for ${selectedCount} selected personality type${
+      selectedCount > 1 ? "s" : ""
+    }.`;
   }
 
   return (
@@ -1308,16 +1855,38 @@ function PreferredPersonalityTypeSection({
               Preferred Personality Type
             </h4>
 
-            {comments.length > 0 && (
+            {hasComments && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700">
                 {comments.length} comment{comments.length > 1 ? "s" : ""}
               </span>
             )}
+
+            {hasSelectedTypes && !isEditing && (
+              <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-1 text-[11px] font-extrabold text-[#101828]">
+                {selectedCount} selected
+              </span>
+            )}
           </div>
+
+          {approvalPage && canManageJdDetails && !isEditing && (
+            <p className="mt-1 text-xs font-semibold text-sibs-primary-1/80">
+              Click one or more personality capsules, then click Add Comment.
+            </p>
+          )}
         </div>
 
         {approvalPage && !isEditing && canManageJdDetails && (
           <div className="flex shrink-0 items-center gap-2">
+            {hasSelectedTypes && (
+              <button
+                type="button"
+                onClick={clearSelectedTypes}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-2.5 py-1 text-xs font-bold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+              >
+                Clear
+              </button>
+            )}
+
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -1337,11 +1906,11 @@ function PreferredPersonalityTypeSection({
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={onAddComment}
-              disabled={disableComment}
+              onClick={handleAddComment}
+              disabled={disableComment || !hasSelectedTypes}
               title={getCommentTitle()}
               className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                disableComment
+                disableComment || !hasSelectedTypes
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
               }`}
@@ -1354,7 +1923,7 @@ function PreferredPersonalityTypeSection({
       </div>
 
       {isEditing ? (
-        <div className="rounded-xl border border-[#D7DEE8] bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-[#D7DEE8] bg-white p-4">
           <textarea
             rows={4}
             value={editingDraft}
@@ -1364,7 +1933,8 @@ function PreferredPersonalityTypeSection({
           />
 
           <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Separate personality types with commas, semicolons, or new lines.
+            Separate personality types with commas, semicolons, vertical bars,
+            or new lines.
           </p>
 
           {String(editingDraft || "").trim() && (
@@ -1375,7 +1945,7 @@ function PreferredPersonalityTypeSection({
 
               <div className="flex flex-wrap gap-2">
                 {String(editingDraft || "")
-                  .split(/[,;\n]/)
+                  .split(/[,;\n|]/)
                   .map((item) => item.trim())
                   .filter(Boolean)
                   .map((type) => (
@@ -1409,17 +1979,70 @@ function PreferredPersonalityTypeSection({
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#D7DEE8] bg-white px-4 py-4 shadow-sm">
+        <div
+          className={`rounded-xl border px-3 py-2 ${
+            hasComments
+              ? "border-amber-200 bg-amber-50/40"
+              : "border-[#D7DEE8] bg-white"
+          }`}
+        >
           {personalityTypes.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {personalityTypes.map((type) => (
-                <span
-                  key={type}
-                  className="inline-flex items-center rounded-full border border-[#BFD6F6] bg-[#EAF2FB] px-3 py-1.5 text-xs font-bold text-sibs-primary-1"
-                >
-                  {formatPersonalityTypeLabel(type)}
-                </span>
-              ))}
+              {personalityTypes.map((type) => {
+                const formattedType = formatPersonalityTypeLabel(type);
+                const typeComments = getCommentsForPersonalityType(type);
+                const hasTypeComments = typeComments.length > 0;
+                const firstComment = typeComments[0];
+                const selected = isTypeSelected(type);
+
+                return (
+                  <span key={type} className="group relative inline-flex">
+                    <button
+                      type="button"
+                      onClick={() => toggleSelectedType(type)}
+                      disabled={!approvalPage || disableComment}
+                      className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold transition active:scale-[0.98] ${
+                        selected
+                          ? "border-amber-300 bg-[#FFF3B8] text-[#101828] shadow-sm ring-1 ring-amber-300"
+                          : hasTypeComments
+                            ? "border-amber-300 bg-[#FFF3B8] text-[#101828] ring-1 ring-amber-300"
+                            : "border-[#BFD6F6] bg-[#EAF2FB] text-sibs-primary-1 hover:border-sibs-primary-1/40 hover:bg-blue-50"
+                      } ${
+                        !approvalPage || disableComment
+                          ? "cursor-default"
+                          : "cursor-pointer"
+                      }`}
+                    >
+                      {formattedType}
+                    </button>
+
+                    {hasTypeComments && (
+                      <div className="pointer-events-none absolute left-0 top-[calc(100%+8px)] z-[99999] w-[280px] rounded-xl border border-orange-100 bg-white p-3 opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-hover:pointer-events-auto group-hover:opacity-100">
+                        <div className="mb-1 flex items-center justify-between gap-2">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+                            Reviewer Comment
+                          </p>
+
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+                            {firstComment?.status || "Open"}
+                          </span>
+                        </div>
+
+                        {firstComment?.selectedText && (
+                          <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-bold text-amber-800">
+                            {firstComment.selectedText}
+                          </p>
+                        )}
+
+                        <p className="text-xs font-semibold leading-5 text-orange-800">
+                          {firstComment?.comment ||
+                            "No revision comment provided."}
+                        </p>
+                      </div>
+                    )}
+                  </span>
+                );
+              })}
             </div>
           ) : (
             <p className="text-sm font-semibold text-sibs-tertiary-5">
@@ -1429,7 +2052,59 @@ function PreferredPersonalityTypeSection({
         </div>
       )}
 
-      <RevisionCommentList comments={comments} />
+      {sectionLevelComments.length > 0 && (
+        <div className="space-y-3">
+          {sectionLevelComments.map((comment, index) => (
+            <InlineRevisionCommentBlock
+              key={getCommentUniqueKey(comment, `personality-${index}`)}
+              comment={comment}
+              showSelectedContent={false}
+            />
+          ))}
+        </div>
+      )}
+
+      {comments
+        .filter((comment) => getCommentSelectedText(comment))
+        .map((comment, index) => (
+          <div
+            key={getCommentUniqueKey(comment, `personality-selected-${index}`)}
+            className="overflow-hidden rounded-xl border border-amber-300 bg-amber-50 shadow-sm"
+          >
+            <div className="flex flex-col gap-3 border-b border-amber-300 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-wide text-orange-700">
+                  Personality Type Marked for Revision
+                </p>
+
+                <p className="mt-1 text-xs font-semibold text-orange-700/90">
+                  The selected personality capsule needs to be reviewed and
+                  updated.
+                </p>
+              </div>
+
+              <span className="w-fit rounded-full border border-amber-300 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+                {comment.status || "Open"}
+              </span>
+            </div>
+
+            <div className="space-y-4 px-4 py-4">
+              <div className="rounded-xl border border-orange-100 bg-white px-4 py-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-orange-700">
+                    Reviewer Comment
+                  </p>
+                </div>
+
+                <p className="whitespace-pre-line text-sm font-semibold leading-6 text-orange-800">
+                  {comment.comment || "No revision comment provided."}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
     </section>
   );
 }
@@ -1478,11 +2153,13 @@ function HighlightedRevisionText({ value = "" }) {
     <div className="space-y-3 text-sm font-semibold leading-6 text-amber-800">
       {blocks.map((block, index) => {
         if (block.type === "list") {
+          const ListTag = block.ordered ? "ol" : "ul";
+          const listClassName = block.ordered
+            ? "list-decimal space-y-2 pl-5"
+            : "list-disc space-y-2 pl-5";
+
           return (
-            <ul
-              key={`highlight-list-${index}`}
-              className="list-disc space-y-2 pl-5"
-            >
+            <ListTag key={`highlight-list-${index}`} className={listClassName}>
               {block.items.map((listItem, listIndex) => (
                 <li key={`highlight-item-${listIndex}`}>
                   {listItem.text}
@@ -1498,7 +2175,7 @@ function HighlightedRevisionText({ value = "" }) {
                   )}
                 </li>
               ))}
-            </ul>
+            </ListTag>
           );
         }
 
@@ -1508,148 +2185,344 @@ function HighlightedRevisionText({ value = "" }) {
   );
 }
 
-function normalizeContentLine(value = "") {
+function normalizeSelectedPhrase(value = "") {
   return String(value || "")
     .trim()
-    .replace(/^[-•*]\s+/, "")
-    .replace(/^\d+[.)]\s+/, "")
-    .replace(/^[a-zA-Z][.)]\s+/, "")
-    .replace(/\s+/g, " ")
-    .toLowerCase();
+    .replace(/^\d+\.\d+(?:[.)])?\s*/, "")
+    .replace(/^[-•*]\s*/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .replace(/^[a-zA-Z][.)]\s*/, "")
+    .replace(/\s+/g, " ");
 }
 
-function getContentLines(value = "") {
-  return String(value || "")
-    .replace(/\r/g, "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
+function buildNormalizedTextMap(value = "") {
+  const original = String(value || "");
+  let normalized = "";
+  const map = [];
+  let lastWasSpace = false;
 
-function findSelectedTextRange(contentLines = [], selectedText = "") {
-  const selectedLines = getContentLines(selectedText)
-    .map(normalizeContentLine)
-    .filter(Boolean);
+  for (let index = 0; index < original.length; index += 1) {
+    const char = original[index];
 
-  if (!selectedLines.length || !contentLines.length) {
-    return null;
-  }
-
-  const normalizedContentLines = contentLines.map(normalizeContentLine);
-
-  for (
-    let startIndex = 0;
-    startIndex < normalizedContentLines.length;
-    startIndex += 1
-  ) {
-    let selectedIndex = 0;
-    let contentIndex = startIndex;
-
-    while (
-      contentIndex < normalizedContentLines.length &&
-      selectedIndex < selectedLines.length
-    ) {
-      const contentLine = normalizedContentLines[contentIndex];
-      const selectedLine = selectedLines[selectedIndex];
-
-      if (
-        contentLine === selectedLine ||
-        contentLine.includes(selectedLine) ||
-        selectedLine.includes(contentLine)
-      ) {
-        selectedIndex += 1;
-        contentIndex += 1;
-        continue;
+    if (/\s/.test(char)) {
+      if (!lastWasSpace && normalized.length > 0) {
+        normalized += " ";
+        map.push(index);
+        lastWasSpace = true;
       }
 
-      break;
+      continue;
     }
 
-    if (selectedIndex === selectedLines.length) {
-      return {
-        start: startIndex,
-        end: contentIndex,
-      };
-    }
+    normalized += char.toLowerCase();
+    map.push(index);
+    lastWasSpace = false;
   }
 
-  return null;
+  return {
+    normalized: normalized.trim(),
+    map,
+  };
 }
 
-function buildRevisionContentParts(value = "", comments = []) {
-  const contentLines = getContentLines(value);
+function findSelectedPhraseRange(text = "", selectedText = "") {
+  const sourceText = String(text || "");
+  const cleanSelectedText = normalizeSelectedPhrase(selectedText);
 
-  if (!contentLines.length || !comments.length) {
-    return [
-      {
-        type: "content",
-        value,
-      },
-    ];
+  if (!sourceText.trim() || !cleanSelectedText.trim()) return null;
+
+  const directIndex = sourceText
+    .toLowerCase()
+    .indexOf(cleanSelectedText.toLowerCase());
+
+  if (directIndex >= 0) {
+    return {
+      start: directIndex,
+      end: directIndex + cleanSelectedText.length,
+    };
   }
 
-  const sortedComments = comments
-    .map((comment) => ({
-      ...comment,
-      range: findSelectedTextRange(contentLines, comment.selectedText),
-    }))
-    .filter((comment) => comment.range)
-    .sort((a, b) => a.range.start - b.range.start);
+  const source = buildNormalizedTextMap(sourceText);
+  const selected = buildNormalizedTextMap(cleanSelectedText);
 
-  if (!sortedComments.length) {
-    return [
-      {
-        type: "content",
-        value,
-      },
-      ...comments.map((comment) => ({
-        type: "comment",
-        comment,
-      })),
-    ];
-  }
+  if (!source.normalized || !selected.normalized) return null;
 
-  const parts = [];
+  const normalizedIndex = source.normalized.indexOf(selected.normalized);
+
+  if (normalizedIndex < 0) return null;
+
+  const start = source.map[normalizedIndex];
+  const endMapIndex = normalizedIndex + selected.normalized.length - 1;
+  const end = Number(source.map[endMapIndex] ?? start) + 1;
+
+  return {
+    start,
+    end,
+  };
+}
+
+function getSelectedTextCandidatePhrases(selectedText = "") {
+  const rawSelectedText = String(selectedText || "").trim();
+
+  if (!rawSelectedText) return [];
+
+  const phrases = [];
+
+  const pushPhrase = (value = "") => {
+    const cleanValue = normalizeSelectedPhrase(value);
+
+    if (!cleanValue) return;
+
+    const alreadyExists = phrases.some(
+      (phrase) =>
+        phrase.toLowerCase().replace(/\s+/g, " ").trim() ===
+        cleanValue.toLowerCase().replace(/\s+/g, " ").trim(),
+    );
+
+    if (!alreadyExists) {
+      phrases.push(cleanValue);
+    }
+  };
+
+  pushPhrase(rawSelectedText);
+
+  const blocks = parseDetailContent(rawSelectedText);
+
+  blocks.forEach((block) => {
+    if (block.type === "paragraph") {
+      pushPhrase(block.text);
+      return;
+    }
+
+    if (block.type === "list") {
+      block.items.forEach((item) => {
+        pushPhrase(item.text);
+
+        if (Array.isArray(item.children)) {
+          item.children.forEach((child) => pushPhrase(getChildText(child)));
+        }
+      });
+    }
+  });
+
+  return phrases.sort((a, b) => b.length - a.length);
+}
+
+function getInlineCommentMatches(text = "", comments = []) {
+  const matches = comments
+    .flatMap((comment) => {
+      const selectedText = comment.selectedText || comment.selected_text || "";
+      const candidatePhrases = getSelectedTextCandidatePhrases(selectedText);
+
+      return candidatePhrases
+        .map((phrase) => {
+          const range = findSelectedPhraseRange(text, phrase);
+
+          if (!range) return null;
+
+          return {
+            comment,
+            phrase,
+            start: range.start,
+            end: range.end,
+          };
+        })
+        .filter(Boolean);
+    })
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+
+  const nonOverlappingMatches = [];
   let cursor = 0;
 
-  sortedComments.forEach((comment) => {
-    const { start, end } = comment.range;
+  matches.forEach((match) => {
+    if (match.start < cursor) return;
 
-    if (start > cursor) {
-      parts.push({
-        type: "content",
-        value: contentLines.slice(cursor, start).join("\n"),
+    nonOverlappingMatches.push(match);
+    cursor = match.end;
+  });
+
+  return nonOverlappingMatches;
+}
+
+function InlineCommentedText({
+  text = "",
+  comments = [],
+  className = "",
+  approvalPage = false,
+  boundaryMap = {},
+}) {
+  const matches = getInlineCommentMatches(text, comments);
+
+  if (!matches.length) {
+    return (
+      <span
+        className={`${className} ${
+          approvalPage ? "selection:bg-[#FFF3B8] selection:text-[#101828]" : ""
+        }`}
+      >
+        {text}
+      </span>
+    );
+  }
+
+  const nodes = [];
+  let cursor = 0;
+
+  matches.forEach((match, index) => {
+    if (match.start > cursor) {
+      nodes.push(
+        <span key={`text-before-${index}`}>
+          {text.slice(cursor, match.start)}
+        </span>,
+      );
+    }
+
+    const commentKey = getCommentStableKey(match.comment);
+    const boundary = boundaryMap[commentKey] || {};
+    const isStart = Boolean(boundary.start);
+    const isEnd = Boolean(boundary.end);
+
+    nodes.push(
+      <React.Fragment key={`highlight-fragment-${commentKey}-${match.start}`}>
+        <span className="inline-flex items-center gap-1 align-middle">
+          {isStart && (
+            <span className="inline-flex items-center self-center text-sm font-extrabold leading-none text-orange-600">
+              &gt;&gt;&gt;
+            </span>
+          )}
+
+          <span
+            className="inline-flex items-center self-center rounded-md bg-[#FFF3B8] px-1.5 py-0.5 font-semibold leading-normal text-[#101828] ring-1 ring-amber-300"
+            title={match.comment.comment || "Marked for revision"}
+          >
+            {text.slice(match.start, match.end)}
+          </span>
+
+          {isEnd && (
+            <span className="inline-flex items-center self-center text-sm font-extrabold leading-none text-orange-600">
+              &lt;&lt;&lt;
+            </span>
+          )}
+        </span>
+      </React.Fragment>,
+    );
+
+    cursor = match.end;
+  });
+
+  if (cursor < text.length) {
+    nodes.push(<span key="text-after">{text.slice(cursor)}</span>);
+  }
+
+  return (
+    <span
+      className={`${className} ${
+        approvalPage ? "selection:bg-[#FFF3B8] selection:text-[#101828]" : ""
+      }`}
+    >
+      {nodes}
+    </span>
+  );
+}
+
+function getBlockTextUnits(block = {}) {
+  if (block.type === "paragraph") {
+    return [
+      {
+        key: "paragraph",
+        text: block.text || "",
+      },
+    ];
+  }
+
+  if (block.type !== "list") return [];
+
+  return block.items.flatMap((listItem, listIndex) => {
+    const units = [
+      {
+        key: `item-${listIndex}`,
+        text: listItem.text || "",
+      },
+    ];
+
+    if (Array.isArray(listItem.children)) {
+      listItem.children.forEach((child, childIndex) => {
+        units.push({
+          key: `child-${listIndex}-${childIndex}`,
+          text: getChildText(child),
+        });
       });
     }
 
-    parts.push({
-      type: "comment",
-      comment,
-    });
-
-    cursor = Math.max(cursor, end);
+    return units;
   });
+}
 
-  if (cursor < contentLines.length) {
-    parts.push({
-      type: "content",
-      value: contentLines.slice(cursor).join("\n"),
-    });
+function getCommentStableKey(comment = {}) {
+  return String(
+    comment.id ||
+      `${comment.sectionKey || ""}-${comment.selectedText || ""}-${
+        comment.comment || ""
+      }`,
+  );
+}
+
+function getFirstMatchedUnitKey(block = {}, comment = {}) {
+  const units = getBlockTextUnits(block);
+
+  for (const unit of units) {
+    const hasMatch = getInlineCommentMatches(unit.text, [comment]).length > 0;
+
+    if (hasMatch) {
+      return unit.key;
+    }
   }
 
-  return parts.filter((part) => {
-    if (part.type === "content") {
-      return String(part.value || "").trim();
-    }
+  return "";
+}
 
-    return true;
+function getLastMatchedUnitKey(block = {}, comment = {}) {
+  const units = getBlockTextUnits(block);
+  let lastKey = "";
+
+  units.forEach((unit) => {
+    const hasMatch = getInlineCommentMatches(unit.text, [comment]).length > 0;
+
+    if (hasMatch) {
+      lastKey = unit.key;
+    }
   });
+
+  return lastKey;
+}
+
+function getCommentsForTextUnit(text = "", comments = []) {
+  const matches = getInlineCommentMatches(text, comments);
+
+  const uniqueComments = [];
+
+  matches.forEach((match) => {
+    const exists = uniqueComments.some(
+      (comment) =>
+        String(comment.id || "") === String(match.comment.id || "") &&
+        String(comment.comment || "") === String(match.comment.comment || "") &&
+        String(comment.selectedText || "") ===
+          String(match.comment.selectedText || ""),
+    );
+
+    if (!exists) {
+      uniqueComments.push(match.comment);
+    }
+  });
+
+  return uniqueComments;
 }
 
 function DetailContentRenderer({
   value,
   emptyText = "No information provided.",
   approvalPage = false,
+  comments = [],
 }) {
   const blocks = useMemo(() => parseDetailContent(value), [value]);
 
@@ -1658,101 +2531,286 @@ function DetailContentRenderer({
   }
 
   const selectionClass = approvalPage
-    ? "selection:bg-amber-200 selection:text-[#101828]"
+    ? "selection:bg-[#FFF3B8] selection:text-[#101828]"
     : "selection:bg-transparent selection:text-inherit";
 
   return (
     <div className={`space-y-4 ${selectionClass}`}>
       {blocks.map((block, index) => {
         if (block.type === "list") {
-          return (
-            <ul
-              key={`list-${index}`}
-              className="list-disc space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]"
-            >
-              {block.items.map((listItem, listIndex) => (
-                <li key={`item-${listIndex}`}>
-                  {listItem.text}
+          const ListTag = block.ordered ? "ol" : "ul";
+          const listClassName = block.ordered
+            ? "list-decimal space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]"
+            : "list-disc space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]";
 
-                  {listItem.children?.length > 0 && (
-                    <ol className="mt-3 list-[lower-alpha] space-y-2 pl-6">
-                      {listItem.children.map((child, childIndex) => (
-                        <li key={`child-${listIndex}-${childIndex}`}>
-                          {child}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                </li>
-              ))}
-            </ul>
+          return (
+            <ListTag key={`list-${index}`} className={listClassName}>
+              {block.items.map((listItem, listIndex) => {
+                const itemUnitKey = `item-${listIndex}`;
+                const itemComments = getCommentsForTextUnit(
+                  listItem.text,
+                  comments,
+                );
+
+                const itemCommentsToDisplay = itemComments.filter(
+                  (comment) =>
+                    getLastMatchedUnitKey(block, comment) === itemUnitKey,
+                );
+
+                return (
+                  <li key={`item-${listIndex}`}>
+                    <InlineCommentedText
+                      text={listItem.text}
+                      comments={comments}
+                      approvalPage={approvalPage}
+                      boundaryMap={Object.fromEntries(
+                        itemComments.map((comment) => {
+                          const commentKey = getCommentStableKey(comment);
+
+                          return [
+                            commentKey,
+                            {
+                              start:
+                                getFirstMatchedUnitKey(block, comment) ===
+                                itemUnitKey,
+                              end:
+                                getLastMatchedUnitKey(block, comment) ===
+                                itemUnitKey,
+                            },
+                          ];
+                        }),
+                      )}
+                    />
+
+                    {itemCommentsToDisplay.length > 0 && (
+                      <div className="mt-3 space-y-3">
+                        {itemCommentsToDisplay.map((comment) => (
+                          <InlineRevisionCommentBlock
+                            key={
+                              comment.id || `${listIndex}-${comment.comment}`
+                            }
+                            comment={comment}
+                            showSelectedContent={false}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {listItem.children?.length > 0 && (
+                      <ol className="mt-3 space-y-2 pl-6">
+                        {listItem.children.map((child, childIndex) => {
+                          const childText = getChildText(child);
+                          const childPrefix = getChildPrefix(child);
+                          const childUnitKey = `child-${listIndex}-${childIndex}`;
+
+                          const childComments = getCommentsForTextUnit(
+                            childText,
+                            comments,
+                          );
+
+                          const childCommentsToDisplay = childComments.filter(
+                            (comment) =>
+                              getLastMatchedUnitKey(block, comment) ===
+                              childUnitKey,
+                          );
+
+                          return (
+                            <li
+                              key={`child-${listIndex}-${childIndex}`}
+                              className="list-none"
+                            >
+                              <div className="flex gap-2">
+                                {childPrefix && (
+                                  <span className="shrink-0 font-semibold text-[#344054]">
+                                    {childPrefix}
+                                  </span>
+                                )}
+
+                                <div className="min-w-0 flex-1">
+                                  <InlineCommentedText
+                                    text={childText}
+                                    comments={comments}
+                                    approvalPage={approvalPage}
+                                    boundaryMap={Object.fromEntries(
+                                      childComments.map((comment) => {
+                                        const commentKey =
+                                          getCommentStableKey(comment);
+
+                                        return [
+                                          commentKey,
+                                          {
+                                            start:
+                                              getFirstMatchedUnitKey(
+                                                block,
+                                                comment,
+                                              ) === childUnitKey,
+                                            end:
+                                              getLastMatchedUnitKey(
+                                                block,
+                                                comment,
+                                              ) === childUnitKey,
+                                          },
+                                        ];
+                                      }),
+                                    )}
+                                  />
+
+                                  {childCommentsToDisplay.length > 0 && (
+                                    <div className="mt-3 space-y-3">
+                                      {childCommentsToDisplay.map((comment) => (
+                                        <InlineRevisionCommentBlock
+                                          key={
+                                            comment.id ||
+                                            `${childIndex}-${comment.comment}`
+                                          }
+                                          comment={comment}
+                                          showSelectedContent={false}
+                                        />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    )}
+                  </li>
+                );
+              })}
+            </ListTag>
           );
         }
 
+        const paragraphComments = getCommentsForTextUnit(block.text, comments);
+
         return (
-          <p
-            key={`paragraph-${index}`}
-            className="text-[15px] font-medium leading-8 text-[#344054]"
-          >
-            {block.text}
-          </p>
+          <div key={`paragraph-wrap-${index}`}>
+            <p className="text-[15px] font-medium leading-8 text-[#344054]">
+              <InlineCommentedText
+                text={block.text}
+                comments={comments}
+                approvalPage={approvalPage}
+              />
+            </p>
+
+            {paragraphComments.length > 0 && (
+              <div className="mt-3 space-y-3">
+                {paragraphComments.map((comment) => (
+                  <InlineRevisionCommentBlock
+                    key={comment.id || `${index}-${comment.comment}`}
+                    comment={comment}
+                    showSelectedContent={false}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         );
       })}
     </div>
   );
 }
 
-function InlineRevisionCommentBlock({ comment }) {
+function InlineRevisionCommentBlock({ comment, showSelectedContent = true }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-amber-200/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-3 overflow-hidden rounded-xl border border-amber-300 bg-amber-50 shadow-sm">
+      <div className="flex flex-col gap-3 border-b border-amber-300 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-amber-700">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-orange-700">
             Text Marked for Revision
           </p>
 
-          <p className="mt-1 text-xs font-semibold text-amber-700/80">
-            The highlighted content below needs to be reviewed and updated.
+          <p className="mt-1 text-xs font-semibold text-orange-700/90">
+            The highlighted phrase above needs to be reviewed and updated.
           </p>
         </div>
 
-        <span className="w-fit rounded-full border border-amber-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+        <span className="w-fit rounded-full border border-amber-300 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
           {comment.status || "Open"}
         </span>
       </div>
 
-      <div className="px-4 py-4">
-        {comment.selectedText && (
-          <div className="rounded-xl border border-amber-200 bg-white/70 px-4 py-4">
+      <div className="space-y-4 px-4 py-4">
+        {showSelectedContent && comment.selectedText && (
+          <div className="rounded-xl border border-amber-300 bg-white/70 px-4 py-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
 
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-orange-700">
                 Selected JD Content
               </p>
             </div>
 
-            <div className="border-l-2 border-amber-400 pl-4">
+            <div className="flex min-h-[40px] items-center border-l-2 border-amber-400 pl-4">
               <HighlightedRevisionText value={comment.selectedText} />
             </div>
           </div>
         )}
 
-        <div className="mt-4 rounded-xl border border-orange-100 bg-white px-4 py-4">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-orange-500" />
+        <div className="rounded-xl border border-orange-100 bg-white px-4 py-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
 
             <p className="text-[11px] font-extrabold uppercase tracking-wide text-orange-700">
               Reviewer Comment
             </p>
           </div>
 
-          <p className="text-sm font-semibold leading-6 text-orange-800">
-            {comment.comment || "No revision comment provided."}
-          </p>
+          <div className="flex min-h-[40px] items-center">
+            <p className="whitespace-pre-line text-sm font-semibold leading-6 text-orange-800">
+              {comment.comment || "No revision comment provided."}
+            </p>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function getCommentUniqueKey(comment = {}, fallback = "") {
+  return String(
+    comment.id ||
+      `${comment.sectionKey || ""}-${comment.selectedText || ""}-${
+        comment.comment || ""
+      }-${fallback}`,
+  );
+}
+
+function doesCommentMatchText(text = "", comment = {}) {
+  return getInlineCommentMatches(text, [comment]).length > 0;
+}
+
+function doesCommentMatchAnyRenderedBlock(value = "", comment = {}) {
+  const blocks = parseDetailContent(value);
+
+  return blocks.some((block) => {
+    if (block.type === "paragraph") {
+      return doesCommentMatchText(block.text, comment);
+    }
+
+    if (block.type === "list") {
+      return block.items.some((listItem) => {
+        const parentMatches = doesCommentMatchText(listItem.text, comment);
+
+        const childMatches = Array.isArray(listItem.children)
+          ? listItem.children.some((child) =>
+              doesCommentMatchText(getChildText(child), comment),
+            )
+          : false;
+
+        return parentMatches || childMatches;
+      });
+    }
+
+    return false;
+  });
+}
+
+function getUnmatchedRevisionComments(value = "", comments = []) {
+  return comments.filter(
+    (comment) => !doesCommentMatchAnyRenderedBlock(value, comment),
   );
 }
 
@@ -1762,8 +2820,8 @@ function DetailRichContent({
   approvalPage = false,
   comments = [],
 }) {
-  const parts = useMemo(
-    () => buildRevisionContentParts(value, comments),
+  const unmatchedComments = useMemo(
+    () => getUnmatchedRevisionComments(value, comments),
     [value, comments],
   );
 
@@ -1773,25 +2831,24 @@ function DetailRichContent({
 
   return (
     <div className="space-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
-      {parts.map((part, index) => {
-        if (part.type === "comment") {
-          return (
-            <InlineRevisionCommentBlock
-              key={`revision-comment-${part.comment.id || index}`}
-              comment={part.comment}
-            />
-          );
-        }
+      <DetailContentRenderer
+        value={value}
+        emptyText={emptyText}
+        approvalPage={approvalPage}
+        comments={comments}
+      />
 
-        return (
-          <DetailContentRenderer
-            key={`content-${index}`}
-            value={part.value}
-            emptyText={emptyText}
-            approvalPage={approvalPage}
-          />
-        );
-      })}
+      {unmatchedComments.length > 0 && (
+        <div className="space-y-3">
+          {unmatchedComments.map((comment, index) => (
+            <InlineRevisionCommentBlock
+              key={getCommentUniqueKey(comment, index)}
+              comment={comment}
+              showSelectedContent={true}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

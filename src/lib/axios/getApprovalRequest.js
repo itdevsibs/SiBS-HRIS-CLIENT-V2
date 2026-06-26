@@ -300,6 +300,8 @@ export async function getJobDescriptionApprovalRequests({
       withCredentials: true,
     });
 
+    console.log("jd approval data", res.data)
+
     return res.data;
   } catch (error) {
     console.error("GET JOB DESCRIPTION APPROVAL REQUESTS ERROR:", error);
