@@ -6,6 +6,19 @@ import {
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import TalentPoolMobileCard from "./TalentPoolMobileCard";
 
+function getTalentPoolStatusLabel(status = "") {
+  const value = String(status || "").trim();
+
+  if (
+    value === "For Onboarding - Incomplete Requirements" ||
+    value === "Onboarding - Incomplete Requirements"
+  ) {
+    return "Incomplete Requirements";
+  }
+
+  return value || "—";
+}
+
 export default function TalentPoolTable() {
   const {
     filteredCandidates,
@@ -45,19 +58,30 @@ export default function TalentPoolTable() {
 
           <div className="hidden lg:block">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1250px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
+              <table className="w-full min-w-[1300px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                 <thead>
                   <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-                    <th className="w-[16%] px-5 py-4 first:rounded-tl-2xl">
+                    <th className="w-[18%] px-5 py-4 first:rounded-tl-2xl">
                       Candidate
                     </th>
-                    <th className="w-[18%] px-5 py-4">Applied Position</th>
-                    <th className="w-[17%] px-5 py-4">
+
+                    <th className="w-[18%] px-5 py-4">
+                      Applied Position
+                    </th>
+
+                    <th className="w-[24%] px-5 py-4">
                       Preferred Location / Final Account
                     </th>
-                    <th className="w-[14%] px-5 py-4 text-center">Status</th>
-                    <th className="w-[10%] px-5 py-4">Last Activity</th>
-                    <th className="w-[10%] px-5 py-4 text-right last:rounded-tr-2xl">
+
+                    <th className="w-[230px] px-5 py-4 text-center">
+                      Status
+                    </th>
+
+                    <th className="w-[150px] px-5 py-4">
+                      Last Activity
+                    </th>
+
+                    <th className="w-[140px] px-5 py-4 text-right last:rounded-tr-2xl">
                       Actions
                     </th>
                   </tr>
@@ -84,6 +108,12 @@ export default function TalentPoolTable() {
                         candidate.pipelineStatus ||
                         candidate.status ||
                         "—";
+
+                      const shortStatus = getTalentPoolStatusLabel(displayStatus);
+
+                      const lastActivity = formatDate(
+                        candidate.lastPipelineUpdate || candidate.lastActivity,
+                      );
 
                       return (
                         <tr
@@ -158,26 +188,22 @@ export default function TalentPoolTable() {
                           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
                             <span
                               title={displayStatus}
-                              className={`mx-auto inline-flex max-w-full items-center justify-center truncate rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+                              className={`mx-auto inline-flex max-w-[210px] items-center justify-center rounded-full border px-3 py-1.5 text-center text-[11px] font-extrabold leading-4 ${getStatusClass(
                                 displayStatus,
                               )}`}
                             >
-                              {displayStatus}
+                              <span className="line-clamp-2 break-words">
+                                {shortStatus}
+                              </span>
                             </span>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
                             <p
-                              title={formatDate(
-                                candidate.lastPipelineUpdate ||
-                                  candidate.lastActivity,
-                              )}
+                              title={lastActivity}
                               className="truncate text-sm font-semibold text-[#344054]"
                             >
-                              {formatDate(
-                                candidate.lastPipelineUpdate ||
-                                  candidate.lastActivity,
-                              )}
+                              {lastActivity}
                             </p>
                           </td>
 

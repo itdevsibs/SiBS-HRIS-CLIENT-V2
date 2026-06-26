@@ -515,7 +515,7 @@ function getInterviewAssessmentLink(item = {}, candidate = {}) {
       safeItem.formName ||
       itemExtra.formName ||
       safeCandidate.finalInterviewFormName ||
-      "Job Evaluation / Assessment Link",
+      "Job Evaluation Form",
     href: getResolvedUrl(link, safeCandidate),
     display: getDisplayUrl(link, safeCandidate),
     submittedBy:
@@ -551,17 +551,17 @@ function TimelineLinkCard({ link }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            {link.label || "Assessment Link"}
+          <p className="text-[11px] font-extrabold tracking-wide text-sibs-primary-1">
+            {link.label || "Job Evaluation Form"}
           </p>
 
           <button
             type="button"
             title={link.display}
             onClick={() => openReadableUrl(link.href)}
-            className="mt-1 block w-full min-w-0 break-all rounded-lg text-left text-xs font-bold leading-5 text-blue-700 underline underline-offset-2 outline-none transition hover:text-blue-900 focus-visible:ring-4 focus-visible:ring-blue-100"
+            className="mt-1 block w-full min-w-0 rounded-md text-left text-xs font-semibold leading-5 text-blue-700 underline underline-offset-2 outline-none transition hover:text-blue-900 focus-visible:ring-4 focus-visible:ring-blue-100"
           >
-            {link.display}
+            <span className="block max-w-full truncate">{link.display}</span>
           </button>
 
           {(link.submittedBy || link.submittedAt) && (
@@ -596,7 +596,7 @@ function TimelineFileCard({ file }) {
 
   return (
     <div className="mt-3 rounded-xl border border-[#CFE0F5] bg-white p-3">
-      <div className="mb-2 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+      <div className="mb-2 text-[11px] font-extrabold tracking-wide text-sibs-primary-1">
         {safeFile.label || "Assessment Attachment"}
       </div>
 
@@ -612,17 +612,19 @@ function TimelineFileCard({ file }) {
                 type="button"
                 title={resolvedUrl}
                 onClick={() => openReadableUrl(resolvedUrl)}
-                className="block w-full min-w-0 break-words text-left text-sm font-extrabold leading-5 text-blue-700 underline underline-offset-2 outline-none transition hover:text-blue-900 focus-visible:ring-4 focus-visible:ring-blue-100"
+                className="block w-full min-w-0 text-left text-sm font-extrabold leading-5 text-blue-700 underline underline-offset-2 outline-none transition hover:text-blue-900 focus-visible:ring-4 focus-visible:ring-blue-100"
               >
-                {safeFile.fileName || "Open assessment file"}
+                <span className="block max-w-full truncate">
+                  {safeFile.fileName || "Open assessment file"}
+                </span>
               </button>
             ) : (
-              <p className="break-words text-sm font-extrabold leading-5 text-[#101828]">
+              <p className="truncate text-sm font-extrabold leading-5 text-[#101828]">
                 {safeFile.fileName || "Assessment attachment"}
               </p>
             )}
 
-            <p className="mt-1 break-words text-xs font-semibold leading-5 text-[#667085]">
+            <p className="mt-1 truncate text-xs font-semibold leading-5 text-[#667085]">
               {safeFile.fileType || "File"} •{" "}
               {formatFileSize(safeFile.fileSize)}
             </p>

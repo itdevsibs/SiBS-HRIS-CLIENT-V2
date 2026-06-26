@@ -5,6 +5,7 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronDown,
+  Eye,
   FileImage,
   FileSpreadsheet,
   FileText,
@@ -318,6 +319,14 @@ function getCandidatePublicId(candidate = {}) {
       candidate.publicId ||
       candidate.public_id ||
       "",
+  );
+}
+
+function AnimatedProfileTabPanel({ children }) {
+  return (
+    <div className="candidate-profile-tab-panel-in">
+      {children}
+    </div>
   );
 }
 
@@ -1857,6 +1866,7 @@ export default function CandidateProfileModal() {
   const [showFullApplicationHistory, setShowFullApplicationHistory] =
     useState(false);
   const [activeTab, setActiveTab] = useState("personal");
+  const [tabAnimationKey, setTabAnimationKey] = useState(0);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -2256,6 +2266,13 @@ export default function CandidateProfileModal() {
       icon: FileText,
     },
   ];
+
+  function handleProfileTabChange(tabId) {
+    if (activeTab === tabId) return;
+
+    setActiveTab(tabId);
+    setTabAnimationKey((previous) => previous + 1);
+  }
 
   function handleCloseCandidateProfile() {
     setSelectedCandidate(null);
@@ -2749,7 +2766,7 @@ export default function CandidateProfileModal() {
             value={activeCandidate.openPosition || activeCandidate.roleCapability}
           />
           <DetailRow
-            label="How Heard About Us"
+            label="How did you hear about us"
             value={formatList(activeCandidate.hearAboutUs)}
           />
           <DetailRow label="Source" value={activeCandidate.source} />
@@ -2809,6 +2826,25 @@ export default function CandidateProfileModal() {
   }
 
   function renderQualifications() {
+    const qualificationItems = [
+      {
+        label: "Educational Attainment",
+        value: activeCandidate.educationalAttainment,
+      },
+      {
+        label: "Skills / Language",
+        value: activeCandidate.skillsLanguage,
+      },
+      {
+        label: "Affiliations",
+        value: formatList(activeCandidate.affiliations),
+      },
+      {
+        label: "Training Attended",
+        value: activeCandidate.trainingAttended,
+      },
+    ];
+
     return (
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
         <SectionTitle
@@ -2818,22 +2854,20 @@ export default function CandidateProfileModal() {
         />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <StatusTile
-            label="Educational Attainment"
-            value={activeCandidate.educationalAttainment}
-          />
-          <StatusTile
-            label="Skills / Language"
-            value={activeCandidate.skillsLanguage}
-          />
-          <StatusTile
-            label="Affiliations"
-            value={formatList(activeCandidate.affiliations)}
-          />
-          <StatusTile
-            label="Training Attended"
-            value={activeCandidate.trainingAttended}
-          />
+          {qualificationItems.map((item) => (
+            <div
+              key={item.label}
+              className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+            >
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                {item.label}
+              </p>
+
+              <p className="mt-3 break-words text-sm font-extrabold leading-6 text-[#101828]">
+                {item.value || "—"}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
     );
@@ -2921,6 +2955,38 @@ export default function CandidateProfileModal() {
   }
 
   function renderReadiness() {
+    const readinessItems = [
+      {
+        label: "Vaccinated",
+        value: activeCandidate.fullyVaccinated,
+      },
+      {
+        label: "On-site Ready",
+        value: activeCandidate.comfortableOnSite,
+      },
+      {
+        label: "Graveyard Shift",
+        value: activeCandidate.willingGraveyard,
+      },
+      {
+        label: "Employment Type",
+        value: activeCandidate.employmentInterest,
+      },
+      {
+        label: "Remote Access",
+        value: activeCandidate.remoteWorkAccess,
+      },
+      {
+        label: "Drug Test",
+        value: activeCandidate.willingDrugTest,
+      },
+      {
+        label: "Background Check",
+        value: activeCandidate.willingBackgroundCheck,
+        className: "sm:col-span-2 xl:col-span-3",
+      },
+    ];
+
     return (
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
         <SectionTitle
@@ -2930,31 +2996,22 @@ export default function CandidateProfileModal() {
         />
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <StatusTile label="Vaccinated" value={activeCandidate.fullyVaccinated} />
-          <StatusTile
-            label="On-site Ready"
-            value={activeCandidate.comfortableOnSite}
-          />
-          <StatusTile
-            label="Graveyard Shift"
-            value={activeCandidate.willingGraveyard}
-          />
-          <StatusTile
-            label="Employment Type"
-            value={activeCandidate.employmentInterest}
-          />
-          <StatusTile
-            label="Remote Access"
-            value={activeCandidate.remoteWorkAccess}
-          />
-          <StatusTile label="Drug Test" value={activeCandidate.willingDrugTest} />
+          {readinessItems.map((item) => (
+            <div
+              key={item.label}
+              className={`rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 ${
+                item.className || ""
+              }`}
+            >
+              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                {item.label}
+              </p>
 
-          <div className="sm:col-span-2 xl:col-span-3">
-            <StatusTile
-              label="Background Check"
-              value={activeCandidate.willingBackgroundCheck}
-            />
-          </div>
+              <p className="mt-3 break-words text-sm font-extrabold leading-6 text-[#101828]">
+                {item.value || "—"}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
     );
@@ -2989,6 +3046,24 @@ export default function CandidateProfileModal() {
   }
 
   function renderFiles() {
+    const audioFileUrl = getResolvedFileUrl(activeCandidate.audioFileUrl);
+    const attachmentFileUrl = getResolvedFileUrl(activeCandidate.attachmentFileUrl);
+
+    function openFile(fileUrl) {
+      const resolvedUrl = getResolvedFileUrl(fileUrl);
+
+      if (!resolvedUrl) {
+        showStatusModal({
+          type: "error",
+          title: "File Not Available",
+          message: "This file has no saved file URL.",
+        });
+        return;
+      }
+
+      window.open(resolvedUrl, "_blank", "noopener,noreferrer");
+    }
+
     return (
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
         <SectionTitle
@@ -2998,20 +3073,83 @@ export default function CandidateProfileModal() {
         />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <ViewableFileRow
-            label="Audio Recording"
-            fileName={activeCandidate.audioFileName}
-            fileUrl={activeCandidate.audioFileUrl}
-            fileType={activeCandidate.audioFileType}
-            audio
-          />
+          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Audio Recording
+                </p>
 
-          <ViewableFileRow
-            label="Attachment"
-            fileName={activeCandidate.attachmentFileName}
-            fileUrl={activeCandidate.attachmentFileUrl}
-            fileType={activeCandidate.attachmentFileType}
-          />
+                <p
+                  title={activeCandidate.audioFileName || "—"}
+                  className="mt-2 truncate text-sm font-extrabold text-[#344054]"
+                >
+                  {activeCandidate.audioFileName || "—"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={!audioFileUrl}
+                onClick={() => openFile(audioFileUrl)}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Eye size={16} />
+                View
+              </button>
+            </div>
+
+            {audioFileUrl ? (
+              <audio
+                controls
+                src={audioFileUrl}
+                className="mt-4 w-full"
+              >
+                Your browser does not support the audio element.
+              </audio>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+                No audio recording uploaded.
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Attachment
+                </p>
+
+                <p
+                  title={activeCandidate.attachmentFileName || "—"}
+                  className="mt-2 truncate text-sm font-extrabold text-[#344054]"
+                >
+                  {activeCandidate.attachmentFileName || "—"}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={!attachmentFileUrl}
+                onClick={() => openFile(attachmentFileUrl)}
+                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Eye size={16} />
+                View
+              </button>
+            </div>
+
+            {attachmentFileUrl ? (
+              <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white px-4 py-3 text-sm font-bold text-sibs-primary-1">
+                Click View to open the uploaded attachment.
+              </div>
+            ) : (
+              <div className="mt-4 rounded-xl border border-dashed border-[#C9D6E4] bg-white px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+                No attachment uploaded.
+              </div>
+            )}
+          </div>
         </div>
       </section>
     );
@@ -3211,6 +3349,35 @@ export default function CandidateProfileModal() {
 
   return (
     <>
+      <style>
+        {`
+          @keyframes candidateProfileTabPanelIn {
+            0% {
+              opacity: 0;
+              transform: translateY(16px) scale(0.985);
+              filter: blur(2px);
+            }
+
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0);
+            }
+          }
+
+          .candidate-profile-tab-panel-in {
+            animation: candidateProfileTabPanelIn 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+            will-change: opacity, transform, filter;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .candidate-profile-tab-panel-in {
+              animation: none;
+            }
+          }
+        `}
+      </style>
+
       <div
         className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/45 px-3 py-3 sm:px-4"
         onClick={handleCloseCandidateProfile}
@@ -3363,36 +3530,51 @@ export default function CandidateProfileModal() {
                 )}
               </section>
 
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
-                <section className="rounded-2xl border border-[#E6ECF2] bg-white p-3 shadow-sm lg:sticky lg:top-0 lg:self-start">
-                  <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                    {profileTabs.map((tab) => {
-                      const Icon = tab.icon;
-                      const active = activeTab === tab.id;
+              <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
+                <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
+                  {/* LEFT TABS */}
+                  <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
+                    <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
+                      {profileTabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
 
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`inline-flex min-h-11 shrink-0 items-center justify-start gap-3 rounded-xl px-4 py-3 text-left text-xs font-extrabold transition lg:w-full ${
-                            active
-                              ? "bg-sibs-primary-1 text-white shadow-sm"
-                              : "bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                          }`}
-                        >
-                          <Icon size={16} className="shrink-0" />
-                          <span className="whitespace-nowrap lg:whitespace-normal">
-                            {tab.label}
-                          </span>
-                        </button>
-                      );
-                    })}
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => handleProfileTabChange(tab.id)}
+                            className={`group inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] lg:min-w-0 ${
+                              isActive
+                                ? "bg-sibs-primary-1 text-white shadow-sm lg:translate-x-1"
+                                : "bg-white text-sibs-primary-1 hover:-translate-y-0.5 hover:bg-[#F2F6FA] hover:shadow-sm lg:hover:translate-x-1 lg:hover:translate-y-0"
+                            }`}
+                          >
+                            <span
+                              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+                                isActive
+                                  ? "bg-white/15 text-white"
+                                  : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
+                              }`}
+                            >
+                              <Icon size={16} />
+                            </span>
+
+                            <span className="truncate">{tab.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </aside>
+
+                  {/* RIGHT TAB CONTENT */}
+                  <div className="min-w-0 bg-[#F8FAFC] p-4 sm:p-5">
+                    <AnimatedProfileTabPanel key={`${activeTab}-${tabAnimationKey}`}>
+                      {renderActiveTabContent()}
+                    </AnimatedProfileTabPanel>
                   </div>
-                </section>
-
-                <div className="min-w-0">{renderActiveTabContent()}</div>
-              </div>
+                </div>
+              </section>
             </div>
           </div>
 

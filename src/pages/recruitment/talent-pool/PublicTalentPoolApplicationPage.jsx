@@ -227,6 +227,76 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+const uppercasePublicTextFields = new Set([
+  "nickname",
+  "referredBy",
+  "employeeId",
+  "firstName",
+  "lastName",
+  "middleName",
+  "suffix",
+  "physicalAddress",
+  "phone1",
+  "phone2",
+  "industryRelevantExperience",
+  "lengthOfWorkExperience",
+  "years",
+  "role",
+  "company",
+  "monthlyCompensation",
+  "reasonForLeaving",
+  "trainingAttended",
+  "reference1Name",
+  "reference1Phone",
+  "reference2Name",
+  "reference2Phone",
+  "reference3Name",
+  "reference3Phone",
+]);
+
+const uppercaseExperienceFields = new Set([
+  "industryRelevantExperience",
+  "years",
+  "role",
+  "company",
+  "monthlyCompensation",
+  "reasonForLeaving",
+]);
+
+function toUpperInputValue(value) {
+  return String(value ?? "").toUpperCase();
+}
+
+function normalizePublicFormFieldValue(field, value) {
+  if (typeof value !== "string") return value;
+
+  if (!uppercasePublicTextFields.has(field)) return value;
+
+  return toUpperInputValue(value);
+}
+
+function normalizePublicFormFields(fields = {}) {
+  return Object.entries(fields).reduce((normalizedFields, [field, value]) => {
+    normalizedFields[field] = normalizePublicFormFieldValue(field, value);
+    return normalizedFields;
+  }, {});
+}
+
+function normalizeExperienceFieldValue(field, value) {
+  if (typeof value !== "string") return value;
+
+  if (!uppercaseExperienceFields.has(field)) return value;
+
+  return toUpperInputValue(value);
+}
+
+function normalizeExperienceValues(experience = {}) {
+  return Object.entries(experience).reduce((normalizedExperience, [field, value]) => {
+    normalizedExperience[field] = normalizeExperienceFieldValue(field, value);
+    return normalizedExperience;
+  }, {});
+}
+
 function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
@@ -308,12 +378,16 @@ function buildCalendarDays(displayDate) {
   return days;
 }
 
-function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+function inputClass(extra = "", options = {}) {
+  const shouldUppercase = options.uppercase !== false;
+
+  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold ${
+    shouldUppercase ? "uppercase" : "normal-case"
+  } text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
 }
 
 function getOptionValue(option) {
@@ -1027,7 +1101,10 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                industryRelevantExperience: e.target.value,
+                industryRelevantExperience: normalizeExperienceFieldValue(
+                  "industryRelevantExperience",
+                  e.target.value,
+                ),
               })
             }
             placeholder="Example: BPO, Healthcare, RCM, Finance"
@@ -1065,7 +1142,10 @@ function ExperienceFields({
             step="0.1"
             value={experience.years}
             onChange={(e) =>
-              onChange({ ...experience, years: e.target.value })
+              onChange({
+                ...experience,
+                years: normalizeExperienceFieldValue("years", e.target.value),
+              })
             }
             placeholder="Example: 2"
             className={inputClass()}
@@ -1080,7 +1160,10 @@ function ExperienceFields({
             required
             value={experience.role}
             onChange={(e) =>
-              onChange({ ...experience, role: e.target.value })
+              onChange({
+                ...experience,
+                role: normalizeExperienceFieldValue("role", e.target.value),
+              })
             }
             placeholder="Previous role"
             className={inputClass()}
@@ -1095,7 +1178,10 @@ function ExperienceFields({
             required
             value={experience.company}
             onChange={(e) =>
-              onChange({ ...experience, company: e.target.value })
+              onChange({
+                ...experience,
+                company: normalizeExperienceFieldValue("company", e.target.value),
+              })
             }
             placeholder="Previous company"
             className={inputClass()}
@@ -1114,7 +1200,10 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                monthlyCompensation: e.target.value,
+                monthlyCompensation: normalizeExperienceFieldValue(
+                  "monthlyCompensation",
+                  e.target.value,
+                ),
               })
             }
             placeholder="Example: 20000"
@@ -1132,7 +1221,10 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                reasonForLeaving: e.target.value,
+                reasonForLeaving: normalizeExperienceFieldValue(
+                  "reasonForLeaving",
+                  e.target.value,
+                ),
               })
             }
             placeholder="Reason for leaving"
@@ -1345,14 +1437,14 @@ export default function PublicTalentPoolApplicationPage() {
   function updateFormField(field, value) {
     setForm((previous) => ({
       ...previous,
-      [field]: value,
+      [field]: normalizePublicFormFieldValue(field, value),
     }));
   }
 
   function updateFormFields(nextFields) {
     setForm((previous) => ({
       ...previous,
-      ...nextFields,
+      ...normalizePublicFormFields(nextFields),
     }));
   }
 
@@ -1456,11 +1548,13 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   function updateOtherExperience(index, nextExperience) {
+    const normalizedNextExperience = normalizeExperienceValues(nextExperience);
+
     setForm((previous) => ({
       ...previous,
       otherExperiences: previous.otherExperiences.map(
         (experience, itemIndex) =>
-          itemIndex === index ? nextExperience : experience,
+          itemIndex === index ? normalizedNextExperience : experience,
       ),
     }));
   }
@@ -1847,7 +1941,8 @@ export default function PublicTalentPoolApplicationPage() {
     setIsSubmitting(true);
 
     const submitForm = {
-      ...form,
+      ...normalizePublicFormFields(form),
+      otherExperiences: form.otherExperiences.map(normalizeExperienceValues),
       audioFile: audioFileRef.current || form.audioFile,
       attachmentFile: attachmentFileRef.current || form.attachmentFile,
     };
@@ -2123,6 +2218,18 @@ export default function PublicTalentPoolApplicationPage() {
                 </div>
 
                 <div>
+                  <FieldLabel>Middle Name</FieldLabel>
+                  <input
+                    value={form.middleName}
+                    onChange={(e) =>
+                      updateFormField("middleName", e.target.value)
+                    }
+                    placeholder="Enter middle name"
+                    className={inputClass()}
+                  />
+                </div>
+
+                <div>
                   <FieldLabel>
                     Last Name <RequiredMark />
                   </FieldLabel>
@@ -2132,18 +2239,6 @@ export default function PublicTalentPoolApplicationPage() {
                       updateFormField("lastName", e.target.value)
                     }
                     placeholder="Enter last name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Middle Name</FieldLabel>
-                  <input
-                    value={form.middleName}
-                    onChange={(e) =>
-                      updateFormField("middleName", e.target.value)
-                    }
-                    placeholder="Enter middle name"
                     className={inputClass()}
                   />
                 </div>
@@ -2193,7 +2288,7 @@ export default function PublicTalentPoolApplicationPage() {
                     value={form.email}
                     onChange={(e) => updateFormField("email", e.target.value)}
                     placeholder="Enter email"
-                    className={inputClass()}
+                    className={inputClass("", { uppercase: false })}
                   />
                 </div>
 

@@ -284,6 +284,121 @@ function normalizeDraftAsForm(draft = {}) {
   });
 }
 
+function getDraftPayloadFromResponse(response = {}) {
+  const root = response?.data ?? response;
+
+  const candidates = [
+    root?.data?.draft,
+    root?.draft,
+    root?.data,
+    root?.record,
+    root,
+  ];
+
+  return (
+    candidates.find((item) => {
+      const safeItem = safeObject(item);
+
+      return (
+        objectHasData(safeItem.answers || safeItem.answers_json) ||
+        objectHasData(safeItem.scoreSummary || safeItem.score_summary) ||
+        safeArray(
+          safeItem.fieldsSnapshot ||
+            safeItem.fields_snapshot ||
+            safeItem.fields_snapshot_json,
+        ).length > 0 ||
+        cleanText(safeItem.savedAt || safeItem.saved_at || safeItem.updatedAt)
+      );
+    }) || {}
+  );
+}
+
+function getDraftAnswers(draftPayload = {}) {
+  return safeObject(
+    draftPayload.answers ||
+      draftPayload.answers_json ||
+      draftPayload.data?.answers ||
+      draftPayload.data?.answers_json ||
+      draftPayload.draft?.answers ||
+      draftPayload.draft?.answers_json,
+  );
+}
+
+function getDraftScoreSummary(draftPayload = {}) {
+  return safeObject(
+    draftPayload.scoreSummary ||
+      draftPayload.score_summary ||
+      draftPayload.score_summary_json ||
+      draftPayload.data?.scoreSummary ||
+      draftPayload.data?.score_summary ||
+      draftPayload.data?.score_summary_json ||
+      draftPayload.draft?.scoreSummary ||
+      draftPayload.draft?.score_summary ||
+      draftPayload.draft?.score_summary_json,
+  );
+}
+
+function getDraftFieldsSnapshot(draftPayload = {}) {
+  return safeArray(
+    draftPayload.fieldsSnapshot ||
+      draftPayload.fields_snapshot ||
+      draftPayload.fields_snapshot_json ||
+      draftPayload.data?.fieldsSnapshot ||
+      draftPayload.data?.fields_snapshot ||
+      draftPayload.data?.fields_snapshot_json ||
+      draftPayload.draft?.fieldsSnapshot ||
+      draftPayload.draft?.fields_snapshot ||
+      draftPayload.draft?.fields_snapshot_json,
+  );
+}
+
+function getDraftSavedAt(draftPayload = {}) {
+  return (
+    draftPayload.savedAt ||
+    draftPayload.saved_at ||
+    draftPayload.updatedAt ||
+    draftPayload.updated_at ||
+    draftPayload.createdAt ||
+    draftPayload.created_at ||
+    draftPayload.data?.savedAt ||
+    draftPayload.data?.saved_at ||
+    draftPayload.data?.updatedAt ||
+    draftPayload.data?.updated_at ||
+    draftPayload.draft?.savedAt ||
+    draftPayload.draft?.saved_at ||
+    draftPayload.draft?.updatedAt ||
+    draftPayload.draft?.updated_at ||
+    ""
+  );
+}
+
+function normalizeDatabaseDraftAsSubmittedForm({
+  draftPayload = {},
+  effectiveFormId = DEFAULT_JOB_EVALUATION_FORM_ID,
+  fallbackFormName = "Job Evaluation Form",
+}) {
+  const answers = getDraftAnswers(draftPayload);
+
+  if (!objectHasData(answers)) return null;
+
+  return normalizeSubmittedForm({
+    id: draftPayload.id ? `DRAFT-${draftPayload.id}` : "DRAFT-DATABASE",
+    formId: draftPayload.formId || draftPayload.form_id || effectiveFormId,
+    formName: draftPayload.formName || draftPayload.form_name || fallbackFormName,
+    answers,
+    fieldsSnapshot: getDraftFieldsSnapshot(draftPayload),
+    scoreSummary: getDraftScoreSummary(draftPayload),
+    submittedBy:
+      draftPayload.savedBySibsId ||
+      draftPayload.saved_by_sibs_id ||
+      draftPayload.submittedBy ||
+      draftPayload.submitted_by ||
+      "Candidate",
+    submittedAt: getDraftSavedAt(draftPayload),
+    isDraftFallback: true,
+  });
+}
+
 function getSubmittedForms(candidate = {}) {
   const submittedForms = safeArray(
     candidate.finalInterviewSubmittedForms ||
@@ -906,55 +1021,85 @@ function SummaryMetricCard({
   );
 }
 
-function BreakdownPanel({ title, subtitle, items = [], type = "score" }) {
+function BreakdownPanel({ title, subtitle, children }) {
   return (
-    <div className="rounded-[22px] border border-[#D9E2EC] bg-white px-5 py-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-[16px] font-extrabold text-[#101828]">{title}</h3>
-          <p className="mt-1 text-[14px] font-medium text-[#3B6E9F]">
+    <div className="rounded-[22px] border border-[#D9E2EC] bg-white p-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)]">
+      <div className="mb-5">
+        <h3 className="text-[16px] font-extrabold text-[#101828]">{title}</h3>
+
+        {subtitle && (
+          <p className="mt-1 text-[14px] font-medium leading-6 text-[#3B6E9F]">
             {subtitle}
           </p>
-        </div>
-
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F4F7]">
-          <div className="h-4 w-4 rounded-full border-2 border-[#98A2B3]" />
-        </div>
+        )}
       </div>
 
-      <div className="space-y-3">
-        {items.map((item, index) => (
-          <div
-            key={`${item.label}-${index}`}
-            className="flex items-center justify-between gap-4 rounded-[16px] bg-[#F8FAFC] px-4 py-3"
-          >
-            <div className="min-w-0">
-              <p className="text-[14px] font-bold text-[#101828]">
-                {item.label}
-              </p>
-            </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
 
-            <div className="shrink-0 text-right">
-              <p
-                className={`text-[15px] font-extrabold ${
-                  type === "score"
-                    ? "text-sibs-primary-1"
-                    : type === "text"
-                      ? "text-[#101828]"
-                      : "text-[#365B85]"
-                }`}
-              >
-                {item.value}
-              </p>
-            </div>
-          </div>
-        ))}
+function BreakdownScoreLine({ label, subtext = "", value = 0, suffix = "pts" }) {
+  return (
+    <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            {label}
+          </p>
+
+          {subtext && (
+            <p className="mt-1 break-words text-sm font-semibold leading-6 text-[#2E5B89]">
+              {subtext}
+            </p>
+          )}
+        </div>
+
+        <p className="shrink-0 text-right text-[18px] font-extrabold text-[#101828]">
+          {value}
+          {suffix && (
+            <span className="ml-1 text-[14px] font-bold text-[#101828]">
+              {suffix}
+            </span>
+          )}
+        </p>
       </div>
     </div>
   );
 }
 
+function BreakdownTextLine({ label, value = "—" }) {
+  return (
+    <div className="rounded-[18px] bg-[#F8FAFC] px-4 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <p className="min-w-0 text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          {label}
+        </p>
+
+        <p className="shrink-0 text-right text-[15px] font-extrabold text-[#101828]">
+          {value || "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function BreakdownResultLine({ label, value = "—" }) {
+  return (
+    <div className="rounded-[18px] border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-4">
+      <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </p>
+
+      <p className="mt-2 text-[16px] font-extrabold text-[#101828]">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
 function ScoreSummaryCard({
+  answers = {},
   jobEvaluationScore,
   finalInterviewRatingScore,
   passingScore,
@@ -977,12 +1122,28 @@ function ScoreSummaryCard({
   const jobEvaluationRankTone = getRankTone(jobEvaluationScore.rank);
   const jobEvaluationRankStatus = getRankStatus(jobEvaluationScore.rank);
 
+  const selectedEducation = getSelectedOptionDetail(
+    educationOptions,
+    answers[JOB_EVALUATION_FIELDS.education],
+  );
+
+  const selectedExperience = getSelectedOptionDetail(
+    experienceOptions,
+    answers[JOB_EVALUATION_FIELDS.experience],
+  );
+
+  const selectedLocation = getSelectedOptionDetail(
+    locationOptions,
+    answers[JOB_EVALUATION_FIELDS.location],
+  );
+
   return (
     <section className="rounded-[24px] border border-[#D9E2EC] bg-white p-6 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
       <div className="mb-6">
         <h2 className="text-[18px] font-extrabold text-[#101828]">
           Evaluation Performance Summary
         </h2>
+
         <p className="mt-1 text-[14px] font-medium text-[#3B6E9F]">
           Combined overview of Job Evaluation and Final Interview results.
         </p>
@@ -1034,58 +1195,88 @@ function ScoreSummaryCard({
         <BreakdownPanel
           title="Job Evaluation Breakdown"
           subtitle="Score distribution by default JE sections."
-          type="score"
-          items={[
-            { label: "Education", value: jobEvaluationScore.educationScore },
-            { label: "Experience", value: jobEvaluationScore.experienceScore },
-            { label: "Location", value: jobEvaluationScore.locationScore },
-            {
-              label: "Duties and Responsibilities",
-              value: jobEvaluationScore.dutiesScore,
-            },
-            {
-              label: "Competencies",
-              value: jobEvaluationScore.competenciesScore,
-            },
-          ]}
-        />
+        >
+          <BreakdownScoreLine
+            label="Education"
+            subtext={selectedEducation?.label || "No selected education"}
+            value={jobEvaluationScore.educationScore}
+          />
+
+          <BreakdownScoreLine
+            label="Experience"
+            subtext={selectedExperience?.label || "No selected experience"}
+            value={jobEvaluationScore.experienceScore}
+          />
+
+          <BreakdownScoreLine
+            label="Location"
+            subtext={selectedLocation?.label || "No selected location"}
+            value={jobEvaluationScore.locationScore}
+          />
+
+          <BreakdownScoreLine
+            label="Duties"
+            subtext="Total score from selected duties."
+            value={jobEvaluationScore.dutiesScore}
+          />
+
+          <BreakdownScoreLine
+            label="Competencies"
+            subtext="Total score from selected competencies."
+            value={jobEvaluationScore.competenciesScore}
+          />
+
+          <BreakdownResultLine
+            label="Evaluation Result"
+            value={jobEvaluationRankStatus}
+          />
+        </BreakdownPanel>
 
         <BreakdownPanel
           title="Final Interview Breakdown"
           subtitle="Computed only from rating-type questions."
-          type="text"
-          items={[
-            {
-              label: "Average Rating",
-              value: finalInterviewHasScore
-                ? `${finalInterviewAverage} / 5`
-                : "—",
-            },
-            {
-              label: "Answered Rating Fields",
-              value: `${finalInterviewRatingScore.answeredRatingFields}/${finalInterviewRatingScore.totalRatingFields}`,
-            },
-            {
-              label: "Interview Result",
-              value: finalInterviewHasScore
+        >
+          <BreakdownTextLine
+            label="Average Rating"
+            value={finalInterviewHasScore ? `${finalInterviewAverage} / 5` : "—"}
+          />
+
+          <BreakdownTextLine
+            label="Answered Rating Fields"
+            value={`${finalInterviewRatingScore.answeredRatingFields}/${finalInterviewRatingScore.totalRatingFields}`}
+          />
+
+          <BreakdownTextLine
+            label="Interview Result"
+            value={
+              finalInterviewHasScore
                 ? finalInterviewPassed
                   ? "Passed"
                   : "Failed"
-                : "No rating",
-            },
-          ]}
-        />
+                : "No rating"
+            }
+          />
+        </BreakdownPanel>
 
         <BreakdownPanel
           title="Score Notes"
           subtitle="Scoring basis used in this evaluation."
-          type="note"
-          items={[
-            { label: "Job Evaluation", value: "Default JE criteria" },
-            { label: "Final Interview", value: "Rating questions only" },
-            { label: "Passing Rule", value: `${passingScore}% minimum` },
-          ]}
-        />
+        >
+          <BreakdownTextLine
+            label="Job Evaluation"
+            value="Default JE criteria"
+          />
+
+          <BreakdownTextLine
+            label="Final Interview"
+            value="Rating questions only"
+          />
+
+          <BreakdownTextLine
+            label="Passing Rule"
+            value={`${passingScore}% minimum`}
+          />
+        </BreakdownPanel>
       </div>
     </section>
   );
@@ -1151,119 +1342,6 @@ function SelectedAnswerCard({
         </p>
       )}
     </div>
-  );
-}
-
-function JobEvaluationScorePanel({
-  answers = {},
-  jobEvaluationScore,
-  passingScore,
-}) {
-  const education = getSelectedOptionDetail(
-    educationOptions,
-    answers[JOB_EVALUATION_FIELDS.education],
-  );
-
-  const experience = getSelectedOptionDetail(
-    experienceOptions,
-    answers[JOB_EVALUATION_FIELDS.experience],
-  );
-
-  const location = getSelectedOptionDetail(
-    locationOptions,
-    answers[JOB_EVALUATION_FIELDS.location],
-  );
-
-  const rankTone = getRankTone(jobEvaluationScore.rank);
-  const rankStatus = getRankStatus(jobEvaluationScore.rank);
-
-  return (
-    <aside className="rounded-[22px] border border-[#D9E2EC] bg-white p-5 shadow-[0_1px_6px_rgba(16,24,40,0.04)] xl:sticky xl:top-4 xl:self-start">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-[12px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            Job Evaluation Score
-          </p>
-
-          <h3 className="mt-2 text-4xl font-extrabold leading-none text-[#101828]">
-            {jobEvaluationScore.totalScore}
-            <span className="text-xl text-sibs-tertiary-5">/100</span>
-          </h3>
-
-          <p className="mt-2 text-sm font-bold text-sibs-tertiary-5">
-            Passing score: {passingScore}%
-          </p>
-        </div>
-
-        <StatusBadge label={`Rank ${jobEvaluationScore.rank}`} tone={rankTone} />
-      </div>
-
-      <div className="mt-5">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-[11px] font-extrabold uppercase tracking-[0.04em] text-[#667085]">
-            Total Progress
-          </span>
-
-          <span className="text-xs font-extrabold text-sibs-primary-1">
-            {jobEvaluationScore.percentageScore.toFixed(0)}%
-          </span>
-        </div>
-
-        <div className="h-2.5 overflow-hidden rounded-full bg-[#E4E7EC]">
-          <div
-            className="h-full rounded-full bg-sibs-primary-1 transition-all duration-300"
-            style={{
-              width: `${Math.min(
-                Math.max(Number(jobEvaluationScore.percentageScore), 0),
-                100,
-              )}%`,
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="mt-5 space-y-3">
-        <ScoreLine
-          label="Education"
-          value={`${jobEvaluationScore.educationScore} pts`}
-          subtext={education?.label || "No selected answer"}
-        />
-
-        <ScoreLine
-          label="Experience"
-          value={`${jobEvaluationScore.experienceScore} pts`}
-          subtext={experience?.label || "No selected answer"}
-        />
-
-        <ScoreLine
-          label="Location"
-          value={`${jobEvaluationScore.locationScore} pts`}
-          subtext={location?.label || "No selected answer"}
-        />
-
-        <ScoreLine
-          label="Duties"
-          value={`${jobEvaluationScore.dutiesScore} pts`}
-          subtext="Total score from selected duties."
-        />
-
-        <ScoreLine
-          label="Competencies"
-          value={`${jobEvaluationScore.competenciesScore} pts`}
-          subtext="Total score from selected competencies."
-        />
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
-        <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          Evaluation Result
-        </p>
-
-        <p className="mt-1 text-sm font-extrabold text-[#101828]">
-          {rankStatus}
-        </p>
-      </div>
-    </aside>
   );
 }
 
@@ -1545,9 +1623,11 @@ export default function FinalInterviewForms({ publicMode = false }) {
   const positionId = searchParams.get("positionId") || "";
   const formId = searchParams.get("formId") || "";
   const submissionId = searchParams.get("submissionId") || "";
-  const mode = searchParams.get("mode");
+  const mode = searchParams.get("mode") || "";
+  const continueMode = searchParams.get("continue") === "1";
 
-  const isViewMode = mode === "view";
+  const isEditMode = mode === "edit" || continueMode;
+  const isViewMode = mode === "view" && !isEditMode;
 
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1602,32 +1682,45 @@ export default function FinalInterviewForms({ publicMode = false }) {
   useEffect(() => {
     let active = true;
 
-    async function loadPublicCandidateAssessment() {
-      if (!publicMode) return;
+    async function loadCandidateAssessmentFromApi() {
+      if (!candidateId || candidateId === "—") {
+        return;
+      }
+
+      const shouldLoadPublic = publicMode;
+      const shouldLoadInternal = !publicMode && (isViewMode || submissionId);
+
+      if (!shouldLoadPublic && !shouldLoadInternal) {
+        return;
+      }
 
       setPublicLoading(true);
       setPublicError("");
 
       try {
-        if (!candidateId || candidateId === "—") {
-          throw new Error("Candidate ID is missing from the assessment link.");
-        }
-
         const response = await api.get(
-          `/api/candidate-pipeline/public-assessment/${encodeURIComponent(
-            candidateId,
-          )}`,
+          publicMode
+            ? `/api/candidate-pipeline/public-assessment/${encodeURIComponent(
+                candidateId,
+              )}`
+            : `/api/candidate-pipeline/${encodeURIComponent(candidateId)}`,
           {
-            params: {
-              email: emailFromUrl || undefined,
-              submissionId: submissionId || undefined,
-              formId: formId || undefined,
-            },
-            withCredentials: false,
+            params: publicMode
+              ? {
+                  email: emailFromUrl || undefined,
+                  submissionId: submissionId || undefined,
+                  formId: formId || undefined,
+                  _t: Date.now(),
+                }
+              : {
+                  _t: Date.now(),
+                },
+            withCredentials: !publicMode,
           },
         );
 
         const payload = response?.data || {};
+
         const rawCandidate =
           payload.candidate ||
           payload.data?.candidate ||
@@ -1641,20 +1734,28 @@ export default function FinalInterviewForms({ publicMode = false }) {
           );
         }
 
-        const assessment = safeObject(payload.assessment || rawCandidate.publicAssessment);
+        const assessment = safeObject(
+          payload.assessment || rawCandidate.publicAssessment,
+        );
+
         const payloadDisplayForm =
           payload.displayForm ||
           payload.submittedForm ||
+          payload.finishedForm ||
           assessment.displayForm ||
           assessment.submittedForm ||
+          assessment.finishedForm ||
           null;
+
         const payloadDraft = payload.draft || assessment.draft || null;
+
         const normalizedDisplayForm = payloadDisplayForm
           ? normalizeSubmittedForm(payloadDisplayForm)
           : null;
+
         const normalizedDraftForm = normalizeDraftAsForm(payloadDraft);
 
-        const candidateWithPublicData = {
+        const candidateWithFetchedData = {
           ...rawCandidate,
           publicAssessment: {
             ...assessment,
@@ -1669,7 +1770,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         };
 
         if (active) {
-          setPublicCandidate(candidateWithPublicData);
+          setPublicCandidate(candidateWithFetchedData);
         }
       } catch (error) {
         if (active) {
@@ -1687,12 +1788,19 @@ export default function FinalInterviewForms({ publicMode = false }) {
       }
     }
 
-    loadPublicCandidateAssessment();
+    loadCandidateAssessmentFromApi();
 
     return () => {
       active = false;
     };
-  }, [publicMode, candidateId, emailFromUrl, submissionId, formId]);
+  }, [
+    publicMode,
+    isViewMode,
+    candidateId,
+    emailFromUrl,
+    submissionId,
+    formId,
+  ]);
 
   const contextCandidate = useMemo(() => {
     return candidateList.find((candidate) => {
@@ -1839,9 +1947,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
     return getLatestSubmittedForm(currentCandidate, submissionId);
   }, [submissionId, currentCandidate]);
 
-  const isSubmittedView = Boolean(
-    isViewMode || submittedSuccessfully || savedSubmission,
-  );
+  const isSubmittedView =
+  !isEditMode && (isViewMode || submittedSuccessfully || Boolean(savedSubmission));
 
   const savedSubmissionScoreSummary = useMemo(() => {
     return safeObject(savedSubmission?.scoreSummary);
@@ -1866,6 +1973,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
   }, [answers]);
 
   const jobEvaluationScore = useMemo(() => {
+    if (isEditMode || hasUserChangedAnswers) {
+      return computedJobEvaluationScore;
+    }
+
     const savedJobEvaluationScore =
       savedSubmissionScoreSummary.jobEvaluation ||
       savedSubmissionScoreSummary.job_evaluation ||
@@ -1876,7 +1987,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
       savedJobEvaluationScore,
       computedJobEvaluationScore,
     );
-  }, [savedSubmissionScoreSummary, computedJobEvaluationScore]);
+  }, [
+    isEditMode,
+    hasUserChangedAnswers,
+    savedSubmissionScoreSummary,
+    computedJobEvaluationScore,
+  ]);
 
   const computedFinalInterviewRatingScore = useMemo(() => {
     return calculateRatingScore(
@@ -1886,6 +2002,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
   }, [activeForm, savedSubmission, answers]);
 
   const finalInterviewRatingScore = useMemo(() => {
+    if (isEditMode || hasUserChangedAnswers) {
+      return computedFinalInterviewRatingScore;
+    }
+
     const savedFinalInterviewScore =
       savedSubmissionScoreSummary.finalInterview ||
       savedSubmissionScoreSummary.final_interview ||
@@ -1896,7 +2016,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
       savedFinalInterviewScore,
       computedFinalInterviewRatingScore,
     );
-  }, [savedSubmissionScoreSummary, computedFinalInterviewRatingScore]);
+  }, [
+    isEditMode,
+    hasUserChangedAnswers,
+    savedSubmissionScoreSummary,
+    computedFinalInterviewRatingScore,
+  ]);
 
   const pageShellClass = publicMode
     ? "fixed inset-0 z-[99999] min-h-screen overflow-y-auto bg-[#E9EEF5] px-4 py-8 font-jakarta text-sibs-primary-1"
@@ -1977,20 +2102,31 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
         if (!active) return;
 
-        const draftAnswers =
-          response?.data?.answers ||
-          response?.data?.data?.answers ||
-          response?.data?.draft?.answers ||
-          null;
+        const draftPayload = getDraftPayloadFromResponse(response);
+        const draftAnswers = getDraftAnswers(draftPayload);
 
-        if (draftAnswers && typeof draftAnswers === "object") {
+        const databaseDraftForm = normalizeDatabaseDraftAsSubmittedForm({
+          draftPayload,
+          effectiveFormId,
+          fallbackFormName: jobEvaluationFormName || "Job Evaluation Form",
+        });
+
+        if (objectHasData(draftAnswers)) {
           setAnswers(draftAnswers);
-          setDraftSavedAt(
-            response?.data?.savedAt ||
-              response?.data?.data?.savedAt ||
-              response?.data?.draft?.savedAt ||
-              "",
-          );
+          setDraftSavedAt(getDraftSavedAt(draftPayload));
+
+          if (databaseDraftForm) {
+            setPublicCandidate((previous) =>
+              mergeCandidateRecords(previous || currentCandidate, {
+                publicAssessment: {
+                  ...(previous?.publicAssessment || {}),
+                  draft: draftPayload,
+                  displayForm: databaseDraftForm,
+                },
+                finalInterviewSubmittedForms: [databaseDraftForm],
+              }),
+            );
+          }
         } else {
           setAnswers({});
           setDraftSavedAt("");
@@ -2029,6 +2165,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
     effectiveCandidateApplicationId,
     effectiveFormId,
     savedSubmission,
+    currentCandidate,
+    jobEvaluationFormName,
   ]);
 
   useEffect(() => {
@@ -2232,6 +2370,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         positionId: effectivePositionId,
         formId: finalFormId,
         formName: finalFormName,
+        submissionId: submissionId || undefined,
         passingScore,
         answers,
         fieldsSnapshot: activeForm?.fields || [],
@@ -2373,6 +2512,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
           {isSubmittedView && (
             <ScoreSummaryCard
+              answers={answers}
               jobEvaluationScore={jobEvaluationScore}
               finalInterviewRatingScore={finalInterviewRatingScore}
               passingScore={passingScore}
@@ -2384,75 +2524,66 @@ export default function FinalInterviewForms({ publicMode = false }) {
             className="rounded-2xl border border-[#E6ECF2] bg-white p-8 shadow-sm"
           >
             <section>
-              <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-                <div className="min-w-0">
-                  <div>
-                    <h2 className="text-base font-extrabold text-[#101828]">
-                      Default Job Evaluation Contents
-                    </h2>
-                    <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                      These default fields follow the standard job evaluation
-                      scoring computation.
-                    </p>
-                  </div>
+              <div>
+                <h2 className="text-base font-extrabold text-[#101828]">
+                  Default Job Evaluation Contents
+                </h2>
 
-                  <div className="mt-6 grid grid-cols-1 gap-5">
-                    <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                      <JobEvaluationSelect
-                        label="Education"
-                        fieldKey={JOB_EVALUATION_FIELDS.education}
-                        options={educationOptions}
-                        value={answers[JOB_EVALUATION_FIELDS.education]}
-                        onChange={handleJobEvaluationChange}
-                        readOnly={isSubmittedView}
-                      />
+                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                  These default fields follow the standard job evaluation scoring
+                  computation.
+                </p>
+              </div>
 
-                      <JobEvaluationSelect
-                        label="Experience"
-                        fieldKey={JOB_EVALUATION_FIELDS.experience}
-                        options={experienceOptions}
-                        value={answers[JOB_EVALUATION_FIELDS.experience]}
-                        onChange={handleJobEvaluationChange}
-                        readOnly={isSubmittedView}
-                      />
+              <div className="mt-6 grid grid-cols-1 gap-5">
+                <div className="grid min-w-0 grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                  <JobEvaluationSelect
+                    label="Education"
+                    fieldKey={JOB_EVALUATION_FIELDS.education}
+                    options={educationOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.education]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isSubmittedView}
+                  />
 
-                      <JobEvaluationSelect
-                        label="Location"
-                        fieldKey={JOB_EVALUATION_FIELDS.location}
-                        options={locationOptions}
-                        value={answers[JOB_EVALUATION_FIELDS.location]}
-                        onChange={handleJobEvaluationChange}
-                        readOnly={isSubmittedView}
-                      />
-                    </div>
+                  <JobEvaluationSelect
+                    label="Experience"
+                    fieldKey={JOB_EVALUATION_FIELDS.experience}
+                    options={experienceOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.experience]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isSubmittedView}
+                  />
 
-                    <JobEvaluationCheckboxGroup
-                      title="Duties and Responsibilities"
-                      fieldKey={JOB_EVALUATION_FIELDS.duties}
-                      options={dutiesOptions}
-                      values={answers[JOB_EVALUATION_FIELDS.duties]}
-                      onToggle={handleJobEvaluationToggle}
-                      readOnly={isSubmittedView}
-                    />
-
-                    <JobEvaluationCheckboxGroup
-                      title="Competencies"
-                      fieldKey={JOB_EVALUATION_FIELDS.competencies}
-                      options={competenciesOptions}
-                      values={answers[JOB_EVALUATION_FIELDS.competencies]}
-                      onToggle={handleJobEvaluationToggle}
-                      readOnly={isSubmittedView}
-                    />
-
-                    <JobEvaluationSelectedAnswers answers={answers} />
-                  </div>
+                  <JobEvaluationSelect
+                    label="Location"
+                    fieldKey={JOB_EVALUATION_FIELDS.location}
+                    options={locationOptions}
+                    value={answers[JOB_EVALUATION_FIELDS.location]}
+                    onChange={handleJobEvaluationChange}
+                    readOnly={isSubmittedView}
+                  />
                 </div>
 
-                <JobEvaluationScorePanel
-                  answers={answers}
-                  jobEvaluationScore={jobEvaluationScore}
-                  passingScore={passingScore}
+                <JobEvaluationCheckboxGroup
+                  title="Duties and Responsibilities"
+                  fieldKey={JOB_EVALUATION_FIELDS.duties}
+                  options={dutiesOptions}
+                  values={answers[JOB_EVALUATION_FIELDS.duties]}
+                  onToggle={handleJobEvaluationToggle}
+                  readOnly={isSubmittedView}
                 />
+
+                <JobEvaluationCheckboxGroup
+                  title="Competencies"
+                  fieldKey={JOB_EVALUATION_FIELDS.competencies}
+                  options={competenciesOptions}
+                  values={answers[JOB_EVALUATION_FIELDS.competencies]}
+                  onToggle={handleJobEvaluationToggle}
+                  readOnly={isSubmittedView}
+                />
+
+                <JobEvaluationSelectedAnswers answers={answers} />
               </div>
             </section>
 
