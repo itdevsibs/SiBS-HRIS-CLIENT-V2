@@ -27,6 +27,16 @@ function formatPercent(value, decimals = 0) {
   return `${toNumber(value).toFixed(decimals)}%`;
 }
 
+function getBufferPercentClass(value) {
+  return toNumber(value) <= 25 ? "text-emerald-600" : "text-red-600";
+}
+
+function getBufferPercentIconClass(value) {
+  return toNumber(value) <= 25
+    ? "bg-emerald-50 text-emerald-600"
+    : "bg-red-50 text-red-600";
+}
+
 function getNumberValue(item, keys = [], fallback = 0) {
   for (const key of keys) {
     const value = item?.[key];
@@ -280,15 +290,20 @@ export default function HeadcountTable({ filteredPlans = [] }) {
     );
 
     /*
-      Buffer logic based on your latest rule:
-      - Absenteeism and Attrition are actual totals from the past 6 weeks.
-      - Buffer HC = CEILING(total absenteeism / 6) + CEILING(total attrition / 6)
+      Updated buffer logic:
+      - No more Buffer HC Ceiling.
+      - Buffer Count is the raw total of all absenteeism and attrition
+        from the past 6 weeks.
+      - Buffer % shows how big that raw buffer count is versus Actual HC.
     */
-    const absenteeismBuffer = Math.ceil(absenteeismTotal / 6);
-    const attritionBuffer = Math.ceil(attritionTotal / 6);
-    const bufferHeadcount = absenteeismBuffer + attritionBuffer;
+    const absenteeismBufferCount = absenteeismTotal;
+    const attritionBufferCount = attritionTotal;
+    const bufferCount = absenteeismBufferCount + attritionBufferCount;
 
-    const effectiveDemand = requiredHeadcount + bufferHeadcount;
+    const bufferPercentage =
+      actualHeadcount > 0 ? (bufferCount / actualHeadcount) * 100 : 0;
+
+    const effectiveDemand = requiredHeadcount + bufferCount;
 
     /*
       Projected Coverage:
@@ -378,9 +393,10 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       actualHeadcount,
       absenteeismTotal,
       attritionTotal,
-      absenteeismBuffer,
-      attritionBuffer,
-      bufferHeadcount,
+      absenteeismBufferCount,
+      attritionBufferCount,
+      bufferCount,
+      bufferPercentage,
       effectiveDemand,
       projectedCoverage,
       projectedFromTraining,
@@ -414,26 +430,40 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         />
 
         <KpiCard
-          title="Buffer HC"
-          subtitle="From Past 6 Weeks"
-          value={formatNumber(totals.bufferHeadcount)}
-          footer={
-            <span>
-              Abs: <b>{formatNumber(totals.absenteeismBuffer)}</b>
-              <span className="mx-2 text-slate-300">|</span>
-              Attr: <b>{formatNumber(totals.attritionBuffer)}</b>
+          title="Buffer Count / %"
+          subtitle="Past 6 Weeks Total"
+          value={
+            <span className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
+              <span className="text-violet-700">
+                {formatNumber(totals.bufferCount)}
+              </span>
+              <span className={`text-2xl ${getBufferPercentClass(totals.bufferPercentage)}`}>
+                {formatPercent(totals.bufferPercentage, 2)}
+              </span>
             </span>
+          }
+          footer={
+            <div className="space-y-1">
+              <div>
+                Abs: <b>{formatNumber(totals.absenteeismBufferCount)}</b>
+                <span className="mx-2 text-slate-300">|</span>
+                Attr: <b>{formatNumber(totals.attritionBufferCount)}</b>
+              </div>
+              <div className={`font-extrabold ${getBufferPercentClass(totals.bufferPercentage)}`}>
+                Max Threshold: 25%
+              </div>
+            </div>
           }
           icon={ShieldCheck}
           valueClassName="text-violet-700"
-          iconClassName="bg-violet-50 text-violet-700"
+          iconClassName={getBufferPercentIconClass(totals.bufferPercentage)}
         />
 
         <KpiCard
           title="Effective Demand"
-          subtitle="Required + Buffer"
+          subtitle="Required + Buffer Count"
           value={formatNumber(totals.effectiveDemand)}
-          footer="Required HC + Buffer HC"
+          footer="Required HC + Buffer Count"
           icon={Target}
           valueClassName="text-orange-500"
           iconClassName="bg-orange-50 text-orange-500"

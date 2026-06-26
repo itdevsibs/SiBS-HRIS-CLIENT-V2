@@ -1,9 +1,39 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 
 const EDGE = "rounded-[10px]";
-const FALLBACK_FALLBACK_WEEK_LABELS = ["W1", "W2", "W3", "W4", "W5", "W6"];
+const FALLBACK_WEEK_LABELS = ["W1", "W2", "W3", "W4", "W5", "W6"];
+
+function toNumber(value) {
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function formatNumber(value, decimals = 0) {
+  return toNumber(value).toLocaleString("en-PH", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+function formatPercent(value, decimals = 2) {
+  return `${toNumber(value).toFixed(decimals)}%`;
+}
+
+function getNumberValue(item, keys = [], fallback = 0) {
+  for (const key of keys) {
+    const value = item?.[key];
+
+    if (value !== undefined && value !== null && value !== "") {
+      const numberValue = Number(value);
+
+      if (Number.isFinite(numberValue)) return numberValue;
+    }
+  }
+
+  return toNumber(fallback);
+}
 
 function getWeekNumberFromAny(value) {
   const rawValue = String(value ?? "").trim();
@@ -30,9 +60,7 @@ function normalizeWeekLabels(labels = []) {
     .map((label) => String(label || "").trim())
     .filter(Boolean);
 
-  if (cleanLabels.length >= 6) {
-    return cleanLabels.slice(-6);
-  }
+  if (cleanLabels.length >= 6) return cleanLabels.slice(-6);
 
   return [];
 }
@@ -53,19 +81,19 @@ function getWeekLabelsFromRows(rows = []) {
     for (const value of possibleLabels) {
       if (Array.isArray(value)) {
         const labels = normalizeWeekLabels(value);
-
         if (labels.length === 6) return labels;
       }
 
       if (typeof value === "string" && value.trim()) {
         try {
           const parsed = JSON.parse(value);
-          const labels = Array.isArray(parsed) ? normalizeWeekLabels(parsed) : [];
+          const labels = Array.isArray(parsed)
+            ? normalizeWeekLabels(parsed)
+            : [];
 
           if (labels.length === 6) return labels;
         } catch {
           const labels = normalizeWeekLabels(value.split(","));
-
           if (labels.length === 6) return labels;
         }
       }
@@ -103,37 +131,7 @@ function buildWeekLabels(activeWeek, rows = []) {
     });
   }
 
-  return FALLBACK_FALLBACK_WEEK_LABELS;
-}
-
-function toNumber(value) {
-  const numberValue = Number(value || 0);
-  return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function formatNumber(value, decimals = 0) {
-  return toNumber(value).toLocaleString("en-PH", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-}
-
-function formatPercent(value, decimals = 0) {
-  return `${toNumber(value).toFixed(decimals)}%`;
-}
-
-function getNumberValue(item, keys = [], fallback = 0) {
-  for (const key of keys) {
-    const value = item?.[key];
-
-    if (value !== undefined && value !== null && value !== "") {
-      const numberValue = Number(value);
-
-      if (Number.isFinite(numberValue)) return numberValue;
-    }
-  }
-
-  return toNumber(fallback);
+  return FALLBACK_WEEK_LABELS;
 }
 
 function cleanSeries(values = []) {
@@ -224,6 +222,53 @@ function getArrayValue(item, keys = [], type = "") {
   }
 
   return [];
+}
+
+function getActualHeadcount(item = {}) {
+  return getNumberValue(item, [
+    "actualHeadcount",
+    "actual_headcount",
+    "actualHC",
+    "actual_hc",
+    "endorsedHeadcount",
+    "endorsed_headcount",
+  ]);
+}
+
+function getRateStatusClass(rate = 0) {
+  return toNumber(rate) <= 25 ? "text-emerald-600" : "text-red-600";
+}
+
+function getRowTotal(item, type) {
+  if (type === "absenteeism") {
+    return getNumberValue(item, [
+      "absenteeismCount",
+      "absenteeism_count",
+      "absenteeismPastSixWeeks",
+      "absenteeism_past_six_weeks",
+      "absenteeismSixWeeks",
+      "absenteeism_6_weeks",
+      "totalAbsenteeism",
+      "total_absenteeism",
+    ]);
+  }
+
+  if (type === "attrition") {
+    return getNumberValue(item, [
+      "attritionPastCount",
+      "attrition_past_count",
+      "attritionCount",
+      "attrition_count",
+      "attritionPastSixWeeks",
+      "attrition_past_six_weeks",
+      "attritionSixWeeks",
+      "attrition_6_weeks",
+      "totalAttrition",
+      "total_attrition",
+    ]);
+  }
+
+  return 0;
 }
 
 function getPerWeekSeries(item, type) {
@@ -394,47 +439,6 @@ function getPerWeekSeries(item, type) {
   };
 }
 
-function getRowTotal(item, type) {
-  if (type === "absenteeism") {
-    return getNumberValue(item, [
-      "absenteeismCount",
-      "absenteeism_count",
-      "absenteeismPastSixWeeks",
-      "absenteeism_past_six_weeks",
-      "absenteeismSixWeeks",
-      "absenteeism_6_weeks",
-    ]);
-  }
-
-  return getNumberValue(item, [
-    "attritionPastCount",
-    "attrition_past_count",
-    "attritionCount",
-    "attrition_count",
-    "attritionPastSixWeeks",
-    "attrition_past_six_weeks",
-    "attritionSixWeeks",
-    "attrition_6_weeks",
-  ]);
-}
-
-function getActualHeadcount(item = {}) {
-  return getNumberValue(item, [
-    "actualHeadcount",
-    "actual_headcount",
-    "actualHC",
-    "actual_hc",
-    "endorsedHeadcount",
-    "endorsed_headcount",
-  ]);
-}
-
-function getRateStatusClass(rate = 0) {
-  return toNumber(rate) <= 25
-    ? "text-emerald-600"
-    : "text-red-600";
-}
-
 function buildAggregateTrend(rows = [], type) {
   let hasRealWeeklyData = false;
 
@@ -458,8 +462,8 @@ function buildAggregateTrend(rows = [], type) {
   };
 }
 
-function getTrainingMetrics(item = {}) {
-  const nhoCount = getNumberValue(item, [
+function getNhoCount(item = {}) {
+  return getNumberValue(item, [
     "nhoCount",
     "nho_count",
     "nhoPopulationCount",
@@ -467,20 +471,30 @@ function getTrainingMetrics(item = {}) {
     "newHireOrientationCount",
     "new_hire_orientation_count",
   ]);
+}
 
-  const fstCount = getNumberValue(item, [
+function getFstCount(item = {}) {
+  return getNumberValue(item, [
     "fstCount",
     "fst_count",
     "fstPopulationCount",
     "fst_population_count",
   ]);
+}
 
-  const pstCount = getNumberValue(item, [
+function getPstCount(item = {}) {
+  return getNumberValue(item, [
     "pstCount",
     "pst_count",
     "pstPopulationCount",
     "pst_population_count",
   ]);
+}
+
+function getTrainingMetrics(item = {}) {
+  const nhoCount = getNhoCount(item);
+  const fstCount = getFstCount(item);
+  const pstCount = getPstCount(item);
 
   const projectedToBeEndorsed = getNumberValue(
     item,
@@ -523,6 +537,8 @@ function getHiringMetrics(item = {}) {
   const leadsToInterview = getNumberValue(item, [
     "leadsToInterview",
     "leads_to_interview",
+    "leadsNeeded",
+    "leads_needed",
   ]);
 
   const interviewCount = getNumberValue(item, [
@@ -534,33 +550,174 @@ function getHiringMetrics(item = {}) {
     "already_interviewed",
   ]);
 
-  const fstCount = getNumberValue(item, [
-    "fstCount",
-    "fst_count",
-    "fstPopulationCount",
-    "fst_population_count",
-  ]);
-
-  const pstCount = getNumberValue(item, [
-    "pstCount",
-    "pst_count",
-    "pstPopulationCount",
-    "pst_population_count",
-  ]);
-
   const hiredCount = getNumberValue(
     item,
-    ["hiredCount", "hired_count"],
-    fstCount + pstCount,
+    ["hiredCount", "hired_count", "hired"],
+    getFstCount(item) + getPstCount(item),
   );
+
+  const hiringRate = interviewCount > 0 ? (hiredCount / interviewCount) * 100 : 0;
+  const remainingLeadsToGenerate = Math.max(0, leadsToInterview - interviewCount);
 
   return {
     hiringNeeded,
     leadsToInterview,
     interviewCount,
     hiredCount,
+    hiringRate,
+    remainingLeadsToGenerate,
   };
 }
+
+
+function getRequiredHeadcount(item = {}) {
+  return getNumberValue(item, [
+    "requiredHeadcount",
+    "required_headcount",
+    "requiredHC",
+    "required_hc",
+    "clientPlan",
+    "client_plan",
+  ]);
+}
+
+function getStageAttritionDirectCount(item = {}, keys = []) {
+  return getNumberValue(item, keys, 0);
+}
+
+function getStageAttritionMetrics(item = {}) {
+  const interviewCount = getNumberValue(item, [
+    "interviewCount",
+    "interview_count",
+    "interviewPopulationCount",
+    "interview_population_count",
+    "alreadyInterviewed",
+    "already_interviewed",
+  ]);
+
+  const nhoCount = getNhoCount(item);
+  const fstCount = getFstCount(item);
+  const pstCount = getPstCount(item);
+
+  const interviewToNhoCount = getStageAttritionDirectCount(
+    item,
+    [
+      "attritionInterviewToNhoCount",
+      "attrition_interview_to_nho_count",
+      "interviewToNhoAttritionCount",
+      "interview_to_nho_attrition_count",
+    ],
+  ) || Math.max(0, interviewCount - nhoCount);
+
+  const nhoToFstCount = getStageAttritionDirectCount(
+    item,
+    [
+      "attritionNhoToFstCount",
+      "attrition_nho_to_fst_count",
+      "nhoToFstAttritionCount",
+      "nho_to_fst_attrition_count",
+    ],
+  ) || Math.max(0, nhoCount - fstCount);
+
+  const fstToPstCount = getStageAttritionDirectCount(
+    item,
+    [
+      "attritionFstToPstCount",
+      "attrition_fst_to_pst_count",
+      "fstToPstAttritionCount",
+      "fst_to_pst_attrition_count",
+    ],
+  ) || Math.max(0, fstCount - pstCount);
+
+  const nhoToPstCount = getStageAttritionDirectCount(
+    item,
+    [
+      "attritionNhoToPstCount",
+      "attrition_nho_to_pst_count",
+      "nhoToPstAttritionCount",
+      "nho_to_pst_attrition_count",
+    ],
+  ) || Math.max(0, nhoCount - pstCount);
+
+  return {
+    interviewCount,
+    nhoCount,
+    fstCount,
+    pstCount,
+    interviewToNhoCount,
+    nhoToFstCount,
+    fstToPstCount,
+    nhoToPstCount,
+  };
+}
+
+function getStageRate(count, denominator) {
+  return denominator > 0 ? (count / denominator) * 100 : 0;
+}
+
+function getAttritionStatus(rate = 0) {
+  return toNumber(rate) <= 25 ? "Healthy" : "High";
+}
+
+function getAttritionStatusClass(rate = 0) {
+  return toNumber(rate) <= 25
+    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+    : "bg-red-50 text-red-600 border-red-100";
+}
+
+function getRowCoverageStatus(item = {}) {
+  const required = getRequiredHeadcount(item);
+  const actual = getActualHeadcount(item);
+  const training = getTrainingMetrics(item);
+  const absenteeismBuffer = Math.ceil(getRowTotal(item, "absenteeism") / 6);
+  const attritionBuffer = Math.ceil(getRowTotal(item, "attrition") / 6);
+  const buffer = absenteeismBuffer + attritionBuffer;
+  const effectiveDemand = required + buffer;
+  const projectedCoverage = actual + training.projectedToBeEndorsed;
+
+  if (effectiveDemand <= 0) {
+    return {
+      status: "fullyCovered",
+      required,
+      actual,
+      buffer,
+      effectiveDemand,
+      projectedCoverage,
+    };
+  }
+
+  if (projectedCoverage >= effectiveDemand) {
+    return {
+      status: "fullyCovered",
+      required,
+      actual,
+      buffer,
+      effectiveDemand,
+      projectedCoverage,
+    };
+  }
+
+  if (projectedCoverage >= required) {
+    return {
+      status: "atRisk",
+      required,
+      actual,
+      buffer,
+      effectiveDemand,
+      projectedCoverage,
+    };
+  }
+
+  return {
+    status: "underCovered",
+    required,
+    actual,
+    buffer,
+    effectiveDemand,
+    projectedCoverage,
+  };
+}
+
 
 function buildLinePoints(values = [], width = 300, height = 132) {
   const paddingX = 24;
@@ -591,7 +748,7 @@ function buildLinePoints(values = [], width = 300, height = 132) {
 function MiniLineChart({
   values = [],
   hasRealWeeklyData = false,
-  labels = FALLBACK_FALLBACK_WEEK_LABELS,
+  labels = FALLBACK_WEEK_LABELS,
   color = "#155EEF",
 }) {
   const width = 300;
@@ -607,7 +764,7 @@ function MiniLineChart({
   return (
     <div className="relative mt-3 w-full">
       <svg
-        key={`${color}-${values.join("-")}-${hasRealWeeklyData}`}
+        key={`${color}-${values.join("-")}-${hasRealWeeklyData}-${labels.join("-")}`}
         viewBox={`0 0 ${width} ${height}`}
         className="h-[138px] w-full overflow-visible"
         role="img"
@@ -683,7 +840,7 @@ function MiniLineChart({
 
           return (
             <text
-              key={label}
+              key={`${label}-${index}`}
               x={x}
               y={height - 5}
               textAnchor="middle"
@@ -711,7 +868,9 @@ function AnimatedCard({ children, className = "", delay = 0, onClick }) {
     <Component
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`${EDGE} whp-animate-card whp-hover-lift h-full w-full border border-[#E6ECF2] bg-white p-4 text-left shadow-sm ${onClick ? "cursor-pointer focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10" : ""} ${className}`}
+      className={`${EDGE} whp-animate-card whp-hover-lift h-full w-full border border-[#E6ECF2] bg-white p-4 text-left shadow-sm ${
+        onClick ? "cursor-pointer focus:outline-none focus:ring-4 focus:ring-sibs-primary-1/10" : ""
+      } ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {children}
@@ -731,7 +890,7 @@ function TrendCard({
   color,
   accentClassName,
   hasRealWeeklyData,
-  labels = FALLBACK_FALLBACK_WEEK_LABELS,
+  labels = FALLBACK_WEEK_LABELS,
   onClick,
   delay,
 }) {
@@ -819,9 +978,10 @@ function TrainingPipelineCard({
   pst,
   projectedToBeEndorsed,
   delay,
+  onClick,
 }) {
   return (
-    <AnimatedCard delay={delay}>
+    <AnimatedCard delay={delay} onClick={onClick}>
       <div>
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
           Training Pipeline
@@ -887,9 +1047,10 @@ function HiringForecastCard({
   alreadyInterviewed,
   remainingLeadsToGenerate,
   delay,
+  onClick,
 }) {
   return (
-    <AnimatedCard delay={delay}>
+    <AnimatedCard delay={delay} onClick={onClick}>
       <div>
         <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
           Hiring Forecast
@@ -947,8 +1108,405 @@ function HiringForecastCard({
   );
 }
 
+function SummaryBox({
+  label,
+  value,
+  decimals = 0,
+  suffix = "",
+  colorClass = "text-blue-700",
+  borderClass = "border-blue-100",
+  children,
+}) {
+  return (
+    <div className={`${EDGE} border ${borderClass} bg-white px-4 py-3`}>
+      <p className="text-xs font-extrabold uppercase text-slate-500">
+        {label}
+      </p>
 
-function TrendDetailsModal({ open, type, rows = [], summary, weekLabels = FALLBACK_FALLBACK_WEEK_LABELS, onClose }) {
+      <p className={`mt-1 text-2xl font-extrabold ${colorClass}`}>
+        {formatNumber(value, decimals)}
+        {suffix}
+      </p>
+
+      {children}
+    </div>
+  );
+}
+
+
+function SimpleMetricRow({ icon, label, value, valueClassName = "text-sibs-primary-1" }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[10px] bg-blue-50 text-sm font-extrabold text-blue-700">
+          {icon}
+        </div>
+
+        <p className="truncate text-sm font-semibold text-slate-700">{label}</p>
+      </div>
+
+      <p className={`text-base font-extrabold ${valueClassName}`}>{value}</p>
+    </div>
+  );
+}
+
+function TrainingAttritionCountsCard({ metrics, delay = 0 }) {
+  return (
+    <AnimatedCard delay={delay}>
+      <div>
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Training Attrition Counts
+        </h3>
+        <p className="mt-1 text-xs font-bold text-slate-500">Past 6 Weeks</p>
+      </div>
+
+      <div className="mt-3">
+        <SimpleMetricRow
+          icon="IN"
+          label="Interview to NHO"
+          value={formatNumber(metrics.interviewToNhoCount)}
+          valueClassName="text-blue-700"
+        />
+        <SimpleMetricRow
+          icon="NF"
+          label="NHO to FST"
+          value={formatNumber(metrics.nhoToFstCount)}
+          valueClassName="text-violet-700"
+        />
+        <SimpleMetricRow
+          icon="FP"
+          label="FST to PST"
+          value={formatNumber(metrics.fstToPstCount)}
+          valueClassName="text-emerald-700"
+        />
+        <SimpleMetricRow
+          icon="NP"
+          label="NHO to PST"
+          value={formatNumber(metrics.nhoToPstCount)}
+          valueClassName="text-red-600"
+        />
+      </div>
+    </AnimatedCard>
+  );
+}
+
+function TrainingAttritionRatesCard({ metrics, delay = 0 }) {
+  const rows = [
+    {
+      icon: "IN",
+      label: "Interview to NHO",
+      rate: metrics.interviewToNhoRate,
+    },
+    {
+      icon: "NF",
+      label: "NHO to FST",
+      rate: metrics.nhoToFstRate,
+    },
+    {
+      icon: "FP",
+      label: "FST to PST",
+      rate: metrics.fstToPstRate,
+    },
+    {
+      icon: "NP",
+      label: "NHO to PST",
+      rate: metrics.nhoToPstRate,
+    },
+  ];
+
+  return (
+    <AnimatedCard delay={delay}>
+      <div>
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Training Attrition Rates
+        </h3>
+        <p className="mt-1 text-xs font-bold text-slate-500">
+          Past 6 Weeks · Max 25%
+        </p>
+      </div>
+
+      <div className="mt-3">
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-center justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[10px] bg-violet-50 text-sm font-extrabold text-violet-700">
+                {row.icon}
+              </div>
+
+              <p className="truncate text-sm font-semibold text-slate-700">
+                {row.label}
+              </p>
+            </div>
+
+            <span
+              className={`rounded-[8px] border px-3 py-1 text-sm font-extrabold ${getAttritionStatusClass(row.rate)}`}
+            >
+              {formatPercent(row.rate, 0)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </AnimatedCard>
+  );
+}
+
+function CoverageSummaryCard({ coverage, delay = 0 }) {
+  const total = Math.max(coverage.totalAccounts, 1);
+  const fullyPercent = (coverage.fullyCovered / total) * 100;
+  const atRiskPercent = (coverage.atRisk / total) * 100;
+  const underPercent = (coverage.underCovered / total) * 100;
+
+  const background = `conic-gradient(#16A34A 0 ${fullyPercent}%, #F59E0B ${fullyPercent}% ${
+    fullyPercent + atRiskPercent
+  }%, #EF4444 ${fullyPercent + atRiskPercent}% 100%)`;
+
+  return (
+    <AnimatedCard delay={delay}>
+      <div>
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Coverage Summary
+        </h3>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 items-center gap-5 sm:grid-cols-[150px_1fr]">
+        <div className="relative mx-auto h-[132px] w-[132px] rounded-full" style={{ background }}>
+          <div className="absolute inset-[28px] flex flex-col items-center justify-center rounded-full bg-white">
+            <p className="text-2xl font-extrabold text-[#101828]">
+              {formatNumber(coverage.totalAccounts)}
+            </p>
+            <p className="text-xs font-semibold text-slate-600">Accounts</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <CoverageLegendRow
+            color="bg-emerald-600"
+            label="Fully Covered"
+            count={coverage.fullyCovered}
+            total={coverage.totalAccounts}
+          />
+          <CoverageLegendRow
+            color="bg-amber-500"
+            label="At Risk"
+            count={coverage.atRisk}
+            total={coverage.totalAccounts}
+          />
+          <CoverageLegendRow
+            color="bg-red-500"
+            label="Under Covered"
+            count={coverage.underCovered}
+            total={coverage.totalAccounts}
+          />
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-[#E6ECF2] pt-3 text-center text-xs font-extrabold text-red-600">
+        Under Covered Accounts:{" "}
+        {coverage.underCoveredAccounts.length > 0
+          ? coverage.underCoveredAccounts.join(", ")
+          : "None"}
+      </div>
+    </AnimatedCard>
+  );
+}
+
+function CoverageLegendRow({ color, label, count, total }) {
+  const percent = total > 0 ? (count / total) * 100 : 0;
+
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={`h-3 w-3 shrink-0 rounded-full ${color}`} />
+        <span className="truncate font-semibold text-slate-700">{label}</span>
+      </div>
+
+      <span className="font-extrabold text-[#101828]">
+        {formatNumber(count)} ({formatPercent(percent, 0)})
+      </span>
+    </div>
+  );
+}
+
+function BufferBreakdownCard({ absenteeism, attrition, totalBuffer, delay = 0 }) {
+  return (
+    <AnimatedCard delay={delay}>
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Buffer HC Breakdown
+        </h3>
+        <span className="text-xs font-bold text-slate-500">
+          (Based on Past 6 Weeks)
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-[1fr_auto_1fr_auto_0.75fr]">
+        <BufferMiniCard
+          title="Absenteeism Buffer"
+          subtitle="Total Absences (6 Weeks)"
+          total={absenteeism.total}
+          average={absenteeism.average}
+          buffer={absenteeism.buffer}
+          colorClass="text-blue-700"
+          bgClass="bg-blue-50/60"
+          borderClass="border-blue-100"
+        />
+
+        <MathCircle symbol="+" />
+
+        <BufferMiniCard
+          title="Attrition Buffer"
+          subtitle="Total Attritions (6 Weeks)"
+          total={attrition.total}
+          average={attrition.average}
+          buffer={attrition.buffer}
+          colorClass="text-violet-700"
+          bgClass="bg-violet-50/60"
+          borderClass="border-violet-100"
+        />
+
+        <MathCircle symbol="=" />
+
+        <div className={`${EDGE} flex flex-col items-center justify-center border border-blue-100 bg-blue-50/60 px-4 py-5 text-center`}>
+          <p className="text-sm font-extrabold uppercase text-[#101828]">
+            Total Buffer HC
+          </p>
+          <p className="mt-1 text-xs font-bold text-slate-700">
+            (Abs + Attrition)
+          </p>
+          <p className="mt-4 text-4xl font-extrabold text-blue-700">
+            {formatNumber(totalBuffer)}
+          </p>
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+}
+
+function BufferMiniCard({
+  title,
+  subtitle,
+  total,
+  average,
+  buffer,
+  colorClass,
+  bgClass,
+  borderClass,
+}) {
+  return (
+    <div className={`${EDGE} border ${borderClass} ${bgClass} p-4 text-center`}>
+      <p className={`text-xs font-extrabold ${colorClass}`}>{title}</p>
+      <p className="mt-2 text-xs font-semibold text-[#101828]">{subtitle}</p>
+      <p className={`mt-2 text-3xl font-extrabold ${colorClass}`}>
+        {formatNumber(total)}
+      </p>
+
+      <div className="mt-4 grid grid-cols-2 border-t border-slate-200 pt-3">
+        <div className="border-r border-slate-200">
+          <p className="text-xs font-semibold text-[#101828]">Average / Week</p>
+          <p className={`mt-1 text-xl font-extrabold ${colorClass}`}>
+            {formatNumber(average, 2)}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-[#101828]">Buffer HC</p>
+          <p className="text-[10px] font-bold text-[#101828]">(EXCL NHO)</p>
+          <p className={`mt-1 text-xl font-extrabold ${colorClass}`}>
+            {formatNumber(buffer)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MathCircle({ symbol }) {
+  return (
+    <div className="hidden items-center justify-center md:flex">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-xl font-extrabold text-sibs-primary-1 shadow-sm">
+        {symbol}
+      </span>
+    </div>
+  );
+}
+
+function EffectiveCoverageCard({ coverage, delay = 0 }) {
+  const maxValue = Math.max(coverage.effectiveDemand, coverage.projectedCoverage, 1);
+  const effectiveWidth = Math.min(100, (coverage.effectiveDemand / maxValue) * 100);
+  const projectedWidth = Math.min(100, (coverage.projectedCoverage / maxValue) * 100);
+
+  return (
+    <AnimatedCard delay={delay}>
+      <div className="mb-5 flex items-center gap-2">
+        <h3 className="text-sm font-extrabold text-[#101828]">
+          Effective Demand vs Projected Coverage
+        </h3>
+      </div>
+
+      <div className="space-y-5">
+        <BarComparisonRow
+          label="Effective Demand"
+          subtitle="(Required + Buffer)"
+          value={coverage.effectiveDemand}
+          width={effectiveWidth}
+          barClassName="bg-blue-700"
+        />
+
+        <BarComparisonRow
+          label="Projected Coverage"
+          subtitle="(Actual + Projected)"
+          value={coverage.projectedCoverage}
+          width={projectedWidth}
+          barClassName="bg-emerald-600"
+        />
+
+        <div className="rounded-[8px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-center">
+          <span className="text-sm font-semibold text-[#101828]">
+            Gap (Hiring Needed)
+          </span>
+          <span className="ml-6 text-lg font-extrabold text-red-600">
+            {formatNumber(coverage.gap)}
+          </span>
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+}
+
+function BarComparisonRow({ label, subtitle, value, width, barClassName }) {
+  return (
+    <div className="grid grid-cols-[145px_1fr_64px] items-center gap-3">
+      <div>
+        <p className="text-xs font-bold text-[#101828]">{label}</p>
+        <p className="text-xs font-semibold text-slate-600">{subtitle}</p>
+      </div>
+
+      <div className="h-7 overflow-hidden rounded-sm bg-slate-100">
+        <div
+          className={`h-full rounded-sm ${barClassName}`}
+          style={{ width: `${width}%` }}
+        />
+      </div>
+
+      <p className="text-lg font-extrabold text-[#101828]">
+        {formatNumber(value)}
+      </p>
+    </div>
+  );
+}
+
+
+function DetailModal({
+  open,
+  type,
+  rows = [],
+  summary,
+  weekLabels = FALLBACK_WEEK_LABELS,
+  onClose,
+}) {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -970,43 +1528,103 @@ function TrendDetailsModal({ open, type, rows = [], summary, weekLabels = FALLBA
   if (!open || !type || typeof document === "undefined") return null;
 
   const isAbsenteeism = type === "absenteeism";
-  const title = isAbsenteeism ? "Absenteeism Details" : "Attrition Details";
-  const totalLabel = isAbsenteeism ? "Total Absences" : "Total Attritions";
-  const colorClass = isAbsenteeism ? "text-blue-700" : "text-violet-700";
-  const bgClass = isAbsenteeism ? "bg-blue-50" : "bg-violet-50";
-  const borderClass = isAbsenteeism ? "border-blue-100" : "border-violet-100";
+  const isAttrition = type === "attrition";
+  const isTraining = type === "training";
+  const isForecast = type === "forecast";
 
-  const detailRows = rows
-    .map((item) => {
-      const total = getRowTotal(item, type);
-      const average = total / 6;
-      const buffer = Math.ceil(average);
-      const weekly = getPerWeekSeries(item, type);
+  const title = isAbsenteeism
+    ? "Absenteeism Details"
+    : isAttrition
+      ? "Attrition Details"
+      : isTraining
+        ? "Training Pipeline Details"
+        : "Hiring Forecast Details";
 
-      const actualHeadcount = getActualHeadcount(item);
-      const detailPercentage =
-        actualHeadcount > 0 ? (total / actualHeadcount) * 100 : 0;
+  const description = isAbsenteeism
+    ? "Specific account breakdown for actual absenteeism."
+    : isAttrition
+      ? "Specific account breakdown for actual attrition."
+      : isTraining
+        ? "NHO, FST, PST, and projected endorsement details by account."
+        : "Hiring needed, hiring rate, leads, and remaining lead generation by account.";
 
-      return {
-        ...item,
-        detailTotal: total,
-        detailAverage: average,
-        detailBuffer: buffer,
-        detailActualHeadcount: actualHeadcount,
-        detailPercentage,
-        detailSeries: weekly.values,
-        hasRealWeeklyData: weekly.hasRealWeeklyData,
-      };
-    })
-    .sort((a, b) => Number(b.detailTotal || 0) - Number(a.detailTotal || 0));
+  const colorClass = isAbsenteeism
+    ? "text-blue-700"
+    : isAttrition
+      ? "text-violet-700"
+      : isTraining
+        ? "text-emerald-700"
+        : "text-orange-700";
+
+  const bgClass = isAbsenteeism
+    ? "bg-blue-50"
+    : isAttrition
+      ? "bg-violet-50"
+      : isTraining
+        ? "bg-emerald-50"
+        : "bg-orange-50";
+
+  const borderClass = isAbsenteeism
+    ? "border-blue-100"
+    : isAttrition
+      ? "border-violet-100"
+      : isTraining
+        ? "border-emerald-100"
+        : "border-orange-100";
+
+  const trendRows =
+    isAbsenteeism || isAttrition
+      ? rows
+          .map((item) => {
+            const total = getRowTotal(item, type);
+            const average = total / 6;
+            const buffer = Math.ceil(average);
+            const actualHeadcount = getActualHeadcount(item);
+            const percentage =
+              actualHeadcount > 0 ? (total / actualHeadcount) * 100 : 0;
+            const weekly = getPerWeekSeries(item, type);
+
+            return {
+              ...item,
+              detailTotal: total,
+              detailAverage: average,
+              detailBuffer: buffer,
+              detailActualHeadcount: actualHeadcount,
+              detailPercentage: percentage,
+              detailSeries: weekly.values,
+              hasRealWeeklyData: weekly.hasRealWeeklyData,
+            };
+          })
+          .sort((a, b) => Number(b.detailTotal || 0) - Number(a.detailTotal || 0))
+      : [];
+
+  const trainingRows = isTraining
+    ? rows
+        .map((item) => ({
+          ...item,
+          training: getTrainingMetrics(item),
+        }))
+        .sort((a, b) => b.training.nhoCount - a.training.nhoCount)
+    : [];
+
+  const forecastRows = isForecast
+    ? rows
+        .map((item) => ({
+          ...item,
+          forecast: getHiringMetrics(item),
+        }))
+        .sort((a, b) => b.forecast.hiringNeeded - a.forecast.hiringNeeded)
+    : [];
 
   return createPortal(
     <div className="fixed inset-0 z-[2147483647] isolate flex items-center justify-center bg-slate-950/55 px-3 py-4">
       <div className="whp-modal-in flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-[16px] bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
           <div className="min-w-0">
-            <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${borderClass} ${bgClass} ${colorClass}`}>
-              Past 6 Weeks Actual
+            <div
+              className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${borderClass} ${bgClass} ${colorClass}`}
+            >
+              Weekly Hiring Plan Report
             </div>
 
             <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
@@ -1014,7 +1632,7 @@ function TrendDetailsModal({ open, type, rows = [], summary, weekLabels = FALLBA
             </h2>
 
             <p className="mt-1 text-sm font-semibold text-slate-500">
-              Specific account breakdown for the selected report.
+              {description}
             </p>
           </div>
 
@@ -1029,147 +1647,141 @@ function TrendDetailsModal({ open, type, rows = [], summary, weekLabels = FALLBA
         </div>
 
         <div className="grid grid-cols-1 gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className={`${EDGE} border ${borderClass} bg-white px-4 py-3`}>
-            <p className="text-xs font-extrabold uppercase text-slate-500">
-              {totalLabel}
-            </p>
-            <p className={`mt-1 text-2xl font-extrabold ${colorClass}`}>
-              {formatNumber(summary?.total)}
-            </p>
-          </div>
+          {(isAbsenteeism || isAttrition) && (
+            <>
+              <SummaryBox
+                label={isAbsenteeism ? "Total Absences" : "Total Attritions"}
+                value={summary?.total}
+                colorClass={colorClass}
+                borderClass={borderClass}
+              />
 
-          <div className={`${EDGE} border ${borderClass} bg-white px-4 py-3`}>
-            <p className="text-xs font-extrabold uppercase text-slate-500">
-              Average / Week
-            </p>
-            <p className={`mt-1 text-2xl font-extrabold ${colorClass}`}>
-              {formatNumber(summary?.average, 2)}
-            </p>
-          </div>
+              <SummaryBox
+                label="Average / Week"
+                value={summary?.average}
+                decimals={2}
+                colorClass={colorClass}
+                borderClass={borderClass}
+              />
 
-          <div className={`${EDGE} border ${borderClass} bg-white px-4 py-3`}>
-            <p className="text-xs font-extrabold uppercase text-slate-500">
-              Buffer HC Ceiling
-            </p>
-            <p className={`mt-1 text-2xl font-extrabold ${colorClass}`}>
-              {formatNumber(summary?.buffer)}
-            </p>
-          </div>
+              <SummaryBox
+                label="Buffer HC Ceiling"
+                value={summary?.buffer}
+                colorClass={colorClass}
+                borderClass={borderClass}
+              />
 
-          <div className={`${EDGE} border ${borderClass} bg-white px-4 py-3`}>
-            <p className="text-xs font-extrabold uppercase text-slate-500">
-              {isAbsenteeism ? "Absenteeism %" : "Attrition %"} vs Actual HC
-            </p>
+              <SummaryBox
+                label={`${isAbsenteeism ? "Absenteeism" : "Attrition"} % vs Actual HC`}
+                value={summary?.percentage}
+                decimals={2}
+                suffix="%"
+                colorClass={getRateStatusClass(summary?.percentage)}
+                borderClass={borderClass}
+              >
+                <p className="mt-1 text-xs font-bold text-slate-500">
+                  Formula: Total / Actual HC. Max 25%.
+                </p>
+              </SummaryBox>
+            </>
+          )}
 
-            <p className={`mt-1 text-2xl font-extrabold ${getRateStatusClass(summary?.percentage)}`}>
-              {formatPercent(summary?.percentage, 2)}
-            </p>
+          {isTraining && (
+            <>
+              <SummaryBox
+                label="NHO"
+                value={summary?.nho}
+                colorClass="text-blue-700"
+                borderClass="border-blue-100"
+              />
 
-            <p className="mt-1 text-xs font-bold text-slate-500">
-              Formula: Total / Actual Headcount. Max allowed: 25%.
-            </p>
-          </div>
+              <SummaryBox
+                label="FST"
+                value={summary?.fst}
+                colorClass="text-emerald-700"
+                borderClass="border-emerald-100"
+              />
+
+              <SummaryBox
+                label="PST"
+                value={summary?.pst}
+                colorClass="text-orange-700"
+                borderClass="border-orange-100"
+              />
+
+              <SummaryBox
+                label="Projected Endorsed"
+                value={summary?.projectedToBeEndorsed}
+                colorClass="text-violet-700"
+                borderClass="border-violet-100"
+              />
+            </>
+          )}
+
+          {isForecast && (
+            <>
+              <SummaryBox
+                label="Hiring Needed"
+                value={summary?.hiringNeeded}
+                colorClass="text-red-600"
+                borderClass="border-red-100"
+              />
+
+              <SummaryBox
+                label="Hiring Rate"
+                value={summary?.hiringRate}
+                suffix="%"
+                decimals={0}
+                colorClass="text-slate-900"
+                borderClass="border-slate-200"
+              />
+
+              <SummaryBox
+                label="Leads Needed"
+                value={summary?.leadsToInterview}
+                colorClass="text-blue-700"
+                borderClass="border-blue-100"
+              />
+
+              <SummaryBox
+                label="Remaining Leads"
+                value={summary?.remainingLeadsToGenerate}
+                colorClass="text-red-600"
+                borderClass="border-red-100"
+              />
+            </>
+          )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-auto p-5">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] border-separate border-spacing-0 overflow-hidden rounded-[12px] border border-[#E1E7EF] text-left">
-              <thead>
-                <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  <th className="border-b border-[#E1E7EF] px-4 py-3">Account</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3">Cluster</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">{totalLabel}</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">Average / Week</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">Buffer HC</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">Actual HC</th>
-                  <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
-                    {isAbsenteeism ? "Absenteeism %" : "Attrition %"}
-                  </th>
-                  {weekLabels.map((label) => (
-                    <th key={label} className="border-b border-[#E1E7EF] px-4 py-3 text-center">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-
-              <tbody>
-                {detailRows.map((item, index) => (
-                  <tr key={`${type}-${item.id || item.account || index}`} className="transition hover:bg-[#FAFBFC]">
-                    <td className="border-b border-[#EDF1F5] px-4 py-3">
-                      <p className="text-sm font-extrabold text-[#101828]">
-                        {item.account || item.accountName || "—"}
-                      </p>
-                    </td>
-
-                    <td className="border-b border-[#EDF1F5] px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-600">
-                        {item.cluster || item.clusterName || "—"}
-                      </p>
-                    </td>
-
-                    <td className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${colorClass}`}>
-                      {formatNumber(item.detailTotal)}
-                    </td>
-
-                    <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700">
-                      {formatNumber(item.detailAverage, 2)}
-                    </td>
-
-                    <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
-                      {formatNumber(item.detailBuffer)}
-                    </td>
-
-                    <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700">
-                      {formatNumber(item.detailActualHeadcount)}
-                    </td>
-
-                    <td className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${getRateStatusClass(item.detailPercentage)}`}>
-                      {formatPercent(item.detailPercentage, 2)}
-                    </td>
-
-                    {weekLabels.map((label, weekIndex) => (
-                      <td key={label} className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700">
-                        {item.hasRealWeeklyData
-                          ? formatNumber(item.detailSeries[weekIndex])
-                          : "—"}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-
-                {!detailRows.length && (
-                  <tr>
-                    <td colSpan={13} className="px-4 py-10 text-center text-sm font-bold text-slate-500">
-                      No details available.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-
-              {detailRows.length > 0 && (
-                <tfoot>
-                  <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
-                    <td className="px-4 py-3" colSpan={2}>TOTAL</td>
-                    <td className="px-4 py-3 text-center">{formatNumber(summary?.total)}</td>
-                    <td className="px-4 py-3 text-center">{formatNumber(summary?.average, 2)}</td>
-                    <td className="px-4 py-3 text-center">{formatNumber(summary?.buffer)}</td>
-                    <td className="px-4 py-3 text-center">{formatNumber(summary?.actualHeadcountTotal)}</td>
-                    <td className={`px-4 py-3 text-center ${getRateStatusClass(summary?.percentage)}`}>
-                      {formatPercent(summary?.percentage, 2)}
-                    </td>
-                    {weekLabels.map((label, index) => (
-                      <td key={label} className="px-4 py-3 text-center">
-                        {summary?.hasRealWeeklyData
-                          ? formatNumber(summary?.series?.[index])
-                          : "—"}
-                      </td>
-                    ))}
-                  </tr>
-                </tfoot>
-              )}
-            </table>
+        {(isAbsenteeism || isAttrition) && !summary?.hasRealWeeklyData && (
+          <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm font-bold text-amber-700">
+            <div className="flex items-start gap-2">
+              <Info size={18} className="mt-0.5 shrink-0" />
+              <p>
+                The API is only returning the 6-week total. To show week-by-week
+                movement, return weekly breakdown fields like{" "}
+                <span className="font-extrabold">absenteeismWeeklyCounts</span>{" "}
+                or <span className="font-extrabold">attritionWeeklyCounts</span>.
+              </p>
+            </div>
           </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-auto p-5">
+          {(isAbsenteeism || isAttrition) && (
+            <TrendDetailsTable
+              rows={trendRows}
+              type={type}
+              colorClass={colorClass}
+              summary={summary}
+              weekLabels={weekLabels}
+              isAbsenteeism={isAbsenteeism}
+            />
+          )}
+
+          {isTraining && <TrainingDetailsTable rows={trainingRows} />}
+
+          {isForecast && <ForecastDetailsTable rows={forecastRows} />}
         </div>
       </div>
     </div>,
@@ -1177,12 +1789,286 @@ function TrendDetailsModal({ open, type, rows = [], summary, weekLabels = FALLBA
   );
 }
 
+function TrendDetailsTable({
+  rows = [],
+  type,
+  colorClass,
+  summary,
+  weekLabels = FALLBACK_WEEK_LABELS,
+  isAbsenteeism,
+}) {
+  const totalLabel =
+    type === "absenteeism" ? "Total Absences" : "Total Attritions";
 
-export default function PercentageRiskGraphTable({ filteredPlans = [], activeWeek = null }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[1040px] border-separate border-spacing-0 overflow-hidden rounded-[12px] border border-[#E1E7EF] text-left">
+        <thead>
+          <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Account</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Cluster</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              {totalLabel}
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Average / Week
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Buffer HC
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Actual HC
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              {isAbsenteeism ? "Absenteeism %" : "Attrition %"}
+            </th>
+
+            {weekLabels.map((label) => (
+              <th
+                key={label}
+                className="border-b border-[#E1E7EF] px-4 py-3 text-center"
+              >
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((item, index) => (
+            <tr
+              key={`${type}-${item.id || item.account || index}`}
+              className="transition hover:bg-[#FAFBFC]"
+            >
+              <td className="border-b border-[#EDF1F5] px-4 py-3">
+                <p className="text-sm font-extrabold text-[#101828]">
+                  {item.account || item.accountName || "—"}
+                </p>
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3">
+                <p className="text-sm font-semibold text-slate-600">
+                  {item.cluster || item.clusterName || "—"}
+                </p>
+              </td>
+
+              <td
+                className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${colorClass}`}
+              >
+                {formatNumber(item.detailTotal)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700">
+                {formatNumber(item.detailAverage, 2)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-sibs-primary-1">
+                {formatNumber(item.detailBuffer)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700">
+                {formatNumber(item.detailActualHeadcount)}
+              </td>
+
+              <td
+                className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${getRateStatusClass(item.detailPercentage)}`}
+              >
+                {formatPercent(item.detailPercentage, 2)}
+              </td>
+
+              {weekLabels.map((label, weekIndex) => (
+                <td
+                  key={label}
+                  className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-bold text-slate-700"
+                >
+                  {item.hasRealWeeklyData
+                    ? formatNumber(item.detailSeries[weekIndex])
+                    : "—"}
+                </td>
+              ))}
+            </tr>
+          ))}
+
+          {!rows.length && (
+            <tr>
+              <td
+                colSpan={13}
+                className="px-4 py-10 text-center text-sm font-bold text-slate-500"
+              >
+                No details available.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TrainingDetailsTable({ rows = [] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[760px] border-separate border-spacing-0 overflow-hidden rounded-[12px] border border-[#E1E7EF] text-left">
+        <thead>
+          <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Account</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Cluster</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              NHO
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              FST
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              PST
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Projected Endorsed
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((item, index) => (
+            <tr
+              key={`training-${item.id || item.account || index}`}
+              className="transition hover:bg-[#FAFBFC]"
+            >
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-sm font-extrabold text-[#101828]">
+                {item.account || item.accountName || "—"}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-sm font-semibold text-slate-600">
+                {item.cluster || item.clusterName || "—"}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-blue-700">
+                {formatNumber(item.training.nhoCount)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-emerald-700">
+                {formatNumber(item.training.fstCount)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-orange-700">
+                {formatNumber(item.training.pstCount)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-violet-700">
+                {formatNumber(item.training.projectedToBeEndorsed)}
+              </td>
+            </tr>
+          ))}
+
+          {!rows.length && (
+            <tr>
+              <td
+                colSpan={6}
+                className="px-4 py-10 text-center text-sm font-bold text-slate-500"
+              >
+                No training pipeline details available.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ForecastDetailsTable({ rows = [] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[880px] border-separate border-spacing-0 overflow-hidden rounded-[12px] border border-[#E1E7EF] text-left">
+        <thead>
+          <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Account</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3">Cluster</th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Hiring Needed
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Hiring Rate
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Leads Needed
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Interviewed
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Hired
+            </th>
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Remaining Leads
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {rows.map((item, index) => (
+            <tr
+              key={`forecast-${item.id || item.account || index}`}
+              className="transition hover:bg-[#FAFBFC]"
+            >
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-sm font-extrabold text-[#101828]">
+                {item.account || item.accountName || "—"}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-sm font-semibold text-slate-600">
+                {item.cluster || item.clusterName || "—"}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-red-600">
+                {formatNumber(item.forecast.hiringNeeded)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-slate-900">
+                {formatPercent(item.forecast.hiringRate, 0)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-blue-700">
+                {formatNumber(item.forecast.leadsToInterview)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-slate-900">
+                {formatNumber(item.forecast.interviewCount)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-emerald-700">
+                {formatNumber(item.forecast.hiredCount)}
+              </td>
+
+              <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-red-600">
+                {formatNumber(item.forecast.remainingLeadsToGenerate)}
+              </td>
+            </tr>
+          ))}
+
+          {!rows.length && (
+            <tr>
+              <td
+                colSpan={8}
+                className="px-4 py-10 text-center text-sm font-bold text-slate-500"
+              >
+                No hiring forecast details available.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default function PercentageRiskGraphTable({
+  filteredPlans = [],
+  activeWeek = null,
+}) {
   const [activeDetailsType, setActiveDetailsType] = useState("");
 
   const validPlans = useMemo(
-    () => filteredPlans.filter((item) => !item.isAssignedEmptyRow),
+    () => (filteredPlans || []).filter((item) => !item.isAssignedEmptyRow),
     [filteredPlans],
   );
 
@@ -1207,6 +2093,13 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
       0,
     );
 
+    const absenteeismAggregate = buildAggregateTrend(
+      validPlans,
+      "absenteeism",
+    );
+
+    const attritionAggregate = buildAggregateTrend(validPlans, "attrition");
+
     const absenteeismPercentage =
       actualHeadcountTotal > 0
         ? (absenteeismTotal / actualHeadcountTotal) * 100
@@ -1216,13 +2109,6 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
       actualHeadcountTotal > 0
         ? (attritionTotal / actualHeadcountTotal) * 100
         : 0;
-
-    const absenteeismAggregate = buildAggregateTrend(
-      validPlans,
-      "absenteeism",
-    );
-
-    const attritionAggregate = buildAggregateTrend(validPlans, "attrition");
 
     const training = validPlans.reduce(
       (sum, item) => {
@@ -1267,6 +2153,90 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
         ? (forecastBase.hiredCount / forecastBase.alreadyInterviewed) * 100
         : 0;
 
+    const forecast = {
+      ...forecastBase,
+      hiringRate,
+      remainingLeadsToGenerate: Math.max(
+        0,
+        forecastBase.leadsToInterview - forecastBase.alreadyInterviewed,
+      ),
+    };
+
+    const stageBase = validPlans.reduce(
+      (sum, item) => {
+        const metrics = getStageAttritionMetrics(item);
+
+        sum.interviewCount += metrics.interviewCount;
+        sum.nhoCount += metrics.nhoCount;
+        sum.fstCount += metrics.fstCount;
+        sum.pstCount += metrics.pstCount;
+        sum.interviewToNhoCount += metrics.interviewToNhoCount;
+        sum.nhoToFstCount += metrics.nhoToFstCount;
+        sum.fstToPstCount += metrics.fstToPstCount;
+        sum.nhoToPstCount += metrics.nhoToPstCount;
+
+        return sum;
+      },
+      {
+        interviewCount: 0,
+        nhoCount: 0,
+        fstCount: 0,
+        pstCount: 0,
+        interviewToNhoCount: 0,
+        nhoToFstCount: 0,
+        fstToPstCount: 0,
+        nhoToPstCount: 0,
+      },
+    );
+
+    const trainingAttrition = {
+      ...stageBase,
+      interviewToNhoRate: getStageRate(
+        stageBase.interviewToNhoCount,
+        stageBase.interviewCount,
+      ),
+      nhoToFstRate: getStageRate(stageBase.nhoToFstCount, stageBase.nhoCount),
+      fstToPstRate: getStageRate(stageBase.fstToPstCount, stageBase.fstCount),
+      nhoToPstRate: getStageRate(stageBase.nhoToPstCount, stageBase.nhoCount),
+    };
+
+    const coverageBase = validPlans.reduce(
+      (sum, item) => {
+        const coverageStatus = getRowCoverageStatus(item);
+        const accountName = item.account || item.accountName || item.account_name || "—";
+
+        sum.effectiveDemand += coverageStatus.effectiveDemand;
+        sum.projectedCoverage += coverageStatus.projectedCoverage;
+
+        if (coverageStatus.status === "fullyCovered") {
+          sum.fullyCovered += 1;
+        } else if (coverageStatus.status === "atRisk") {
+          sum.atRisk += 1;
+        } else {
+          sum.underCovered += 1;
+          if (accountName && accountName !== "—") {
+            sum.underCoveredAccounts.push(accountName);
+          }
+        }
+
+        return sum;
+      },
+      {
+        totalAccounts: validPlans.length,
+        fullyCovered: 0,
+        atRisk: 0,
+        underCovered: 0,
+        underCoveredAccounts: [],
+        effectiveDemand: 0,
+        projectedCoverage: 0,
+      },
+    );
+
+    const coverage = {
+      ...coverageBase,
+      gap: Math.max(0, coverageBase.effectiveDemand - coverageBase.projectedCoverage),
+    };
+
     return {
       absenteeism: {
         total: absenteeismTotal,
@@ -1287,14 +2257,9 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
         hasRealWeeklyData: attritionAggregate.hasRealWeeklyData,
       },
       training,
-      forecast: {
-        ...forecastBase,
-        hiringRate,
-        remainingLeadsToGenerate: Math.max(
-          0,
-          forecastBase.leadsToInterview - forecastBase.alreadyInterviewed,
-        ),
-      },
+      forecast,
+      trainingAttrition,
+      coverage,
     };
   }, [validPlans]);
 
@@ -1390,10 +2355,6 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
             animation: whpPointPop 0.35s ease-out both;
           }
 
-          .whp-modal-in {
-            animation: whpModalIn 0.22s ease-out both;
-          }
-
           .whp-funnel-segment {
             transition:
               transform 0.18s ease,
@@ -1403,6 +2364,10 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
           .whp-funnel-segment:hover {
             transform: scale(1.02);
             filter: brightness(1.04);
+          }
+
+          .whp-modal-in {
+            animation: whpModalIn 0.22s ease-out both;
           }
         `}
       </style>
@@ -1448,6 +2413,7 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
             fst={data.training.fst}
             pst={data.training.pst}
             projectedToBeEndorsed={data.training.projectedToBeEndorsed}
+            onClick={() => setActiveDetailsType("training")}
             delay={180}
           />
 
@@ -1457,12 +2423,38 @@ export default function PercentageRiskGraphTable({ filteredPlans = [], activeWee
             leadsToInterview={data.forecast.leadsToInterview}
             alreadyInterviewed={data.forecast.alreadyInterviewed}
             remainingLeadsToGenerate={data.forecast.remainingLeadsToGenerate}
+            onClick={() => setActiveDetailsType("forecast")}
             delay={270}
           />
         </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.25fr]">
+          <TrainingAttritionCountsCard
+            metrics={data.trainingAttrition}
+            delay={320}
+          />
+
+          <TrainingAttritionRatesCard
+            metrics={data.trainingAttrition}
+            delay={380}
+          />
+
+          <CoverageSummaryCard coverage={data.coverage} delay={440} />
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_1fr]">
+          <BufferBreakdownCard
+            absenteeism={data.absenteeism}
+            attrition={data.attrition}
+            totalBuffer={data.absenteeism.buffer + data.attrition.buffer}
+            delay={500}
+          />
+
+          <EffectiveCoverageCard coverage={data.coverage} delay={560} />
+        </div>
       </div>
 
-      <TrendDetailsModal
+      <DetailModal
         open={!!activeDetailsType}
         type={activeDetailsType}
         rows={validPlans}
