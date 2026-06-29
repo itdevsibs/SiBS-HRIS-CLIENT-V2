@@ -33,7 +33,7 @@ import {
 
 const POSITIONS_PER_PAGE = 8;
 
-const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Both Davao and Tagum"];
+const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Mabini", "Both Davao and Tagum"];
 
 const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];
 
@@ -178,11 +178,24 @@ function normalizeDropdownOptions(options = []) {
           id: option,
           value: option,
           label: String(option),
+          description: "",
+          searchText: String(option),
         };
       }
 
       const value = option?.value ?? option?.id ?? "";
       const label = option?.label ?? option?.name ?? option?.value ?? "";
+      const description = option?.description ?? "";
+      const searchText = [
+        option?.searchText,
+        option?.label,
+        option?.name,
+        option?.value,
+        option?.id,
+        option?.description,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
       if (!cleanText(value) && !cleanText(label)) return null;
 
@@ -190,6 +203,8 @@ function normalizeDropdownOptions(options = []) {
         id: option?.id ?? value ?? label,
         value: value || label,
         label: label || String(value),
+        description,
+        searchText: searchText || label || String(value),
       };
     })
     .filter(Boolean);
@@ -205,9 +220,14 @@ function DropdownField({
   required = false,
   zIndex = "z-[100]",
   menuClassName = "",
+  searchable = false,
+  searchPlaceholder = "Search...",
 }) {
   const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+
   const [open, setOpen] = useState(false);
+  const [dropdownSearch, setDropdownSearch] = useState("");
 
   const normalizedOptions = normalizeDropdownOptions(options);
 
@@ -216,6 +236,26 @@ function DropdownField({
   );
 
   const displayLabel = selectedOption?.label || placeholder;
+
+  const searchKeyword = dropdownSearch.trim().toLowerCase();
+
+  const visibleOptions =
+    searchable && searchKeyword
+      ? normalizedOptions.filter((option) => {
+          const searchableText = [
+            option.label,
+            option.value,
+            option.id,
+            option.description,
+            option.searchText,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+
+          return searchableText.includes(searchKeyword);
+        })
+      : normalizedOptions;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -241,9 +281,50 @@ function DropdownField({
     };
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      setDropdownSearch("");
+      return;
+    }
+
+    if (searchable) {
+      window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [open, searchable]);
+
+  function handleOpen() {
+    if (disabled) return;
+
+    setOpen(true);
+  }
+
+  function handleToggle() {
+    if (disabled) return;
+
+    setOpen((previous) => !previous);
+  }
+
   function handleSelect(nextValue) {
     onChange?.(nextValue);
+    setDropdownSearch("");
     setOpen(false);
+  }
+
+  function handleSearchKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (visibleOptions.length > 0) {
+        handleSelect(visibleOptions[0].value);
+      }
+    }
   }
 
   return (
@@ -253,43 +334,66 @@ function DropdownField({
     >
       {label && <FieldLabel required={required}>{label}</FieldLabel>}
 
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
-        }`}
-      >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+      {searchable && open && !disabled ? (
+        <div className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-sibs-primary-1 bg-white px-4 text-left text-sm font-bold shadow-sm outline-none ring-4 ring-sibs-primary-1/10 transition">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={dropdownSearch}
+            onChange={(event) => setDropdownSearch(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            placeholder={searchPlaceholder}
+            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5"
+          />
+
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="shrink-0 text-sibs-primary-1"
+            tabIndex={-1}
+          >
+            <ChevronDown size={18} className="rotate-180 transition-transform" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={searchable ? handleOpen : handleToggle}
+          className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+            open
+              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D0D5DD] hover:border-sibs-primary-1"
+          } ${
+            disabled
+              ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+              : "text-[#344054]"
           }`}
         >
-          {displayLabel}
-        </span>
+          <span
+            className={`min-w-0 flex-1 truncate ${
+              selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
+          >
+            {displayLabel}
+          </span>
 
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+          <ChevronDown
+            size={18}
+            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      )}
 
       {open && !disabled && (
         <div
           className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
         >
           <div className="max-h-72 overflow-y-auto">
-            {normalizedOptions.length > 0 ? (
-              normalizedOptions.map((option) => {
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((option) => {
                 const active = String(option.value) === String(value ?? "");
 
                 return (
@@ -306,12 +410,26 @@ function DropdownField({
                     <span className="block min-w-0 truncate">
                       {option.label}
                     </span>
+
+                    {option.description && (
+                      <span
+                        className={`mt-0.5 block min-w-0 truncate text-xs font-bold ${
+                          active
+                            ? "text-sibs-primary-1/70"
+                            : "text-sibs-tertiary-5"
+                        }`}
+                      >
+                        {option.description}
+                      </span>
+                    )}
                   </button>
                 );
               })
             ) : (
               <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                No options found.
+                {searchable && dropdownSearch
+                  ? "No matching account found."
+                  : "No options found."}
               </div>
             )}
           </div>
@@ -412,6 +530,15 @@ function PositionFormModal({
     id: account.accountId,
     value: account.accountId,
     label: account.accountName,
+    description: account.accountGhlName || account.accountId || "",
+    searchText: [
+      account.accountId,
+      account.accountName,
+      account.accountGhlName,
+      account.departmentId,
+    ]
+      .filter(Boolean)
+      .join(" "),
   }));
 
   const statusDropdownOptions = statusOptions.map((status) => ({
@@ -517,19 +644,21 @@ function PositionFormModal({
 
               <div>
                 <DropdownField
-                  label="Account"
-                  required
-                  value={form.accountId}
-                  onChange={handleAccountChange}
-                  options={accountDropdownOptions}
-                  placeholder={
-                    form.departmentId
-                      ? "Select account"
-                      : "Select department first"
-                  }
-                  disabled={isSaving || !form.departmentId}
-                  zIndex="z-[170]"
-                />
+                label="Account"
+                required
+                searchable
+                searchPlaceholder="Search account..."
+                value={form.accountId}
+                onChange={handleAccountChange}
+                options={accountDropdownOptions}
+                placeholder={
+                  form.departmentId
+                    ? "Select account"
+                    : "Select department first"
+                }
+                disabled={isSaving || !form.departmentId}
+                zIndex="z-[170]"
+              />
 
                 {form.departmentId && filteredAccounts.length === 0 && (
                   <p className="mt-1 text-xs font-bold text-red-600">
@@ -895,8 +1024,11 @@ export default function AvailablePositionsPage() {
     });
   }
 
-  const refreshPositions = useCallback(async () => {
-    setIsLoading(true);
+  const refreshPositions = useCallback(async ({ showPageLoading = true } = {}) => {
+    if (showPageLoading) {
+      setIsLoading(true);
+    }
+
     setLoadError("");
 
     try {
@@ -941,21 +1073,26 @@ export default function AvailablePositionsPage() {
       );
     } catch (error) {
       console.error("Load available positions error:", error);
-      setLoadError(error?.message || "Failed to load available positions.");
-      setPositionList([]);
-      setMeta({
-        statusOptions: [],
-        departments: [],
-        accounts: [],
-      });
 
-      openStatusModal(
-        "error",
-        "Unable to load positions",
-        error?.message || "Failed to load available positions.",
-      );
+      if (showPageLoading) {
+        setLoadError(error?.message || "Failed to load available positions.");
+        setPositionList([]);
+        setMeta({
+          statusOptions: [],
+          departments: [],
+          accounts: [],
+        });
+
+        openStatusModal(
+          "error",
+          "Unable to load positions",
+          error?.message || "Failed to load available positions.",
+        );
+      }
     } finally {
-      setIsLoading(false);
+      if (showPageLoading) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -1059,6 +1196,8 @@ export default function AvailablePositionsPage() {
   }
 
   async function savePosition() {
+    if (isSaving) return;
+
     setIsSaving(true);
 
     try {
@@ -1089,7 +1228,28 @@ export default function AvailablePositionsPage() {
         return;
       }
 
-      await refreshPositions();
+      const savedPosition = response?.data || null;
+
+      if (savedPosition?.id) {
+        setPositionList((previousList = []) => {
+          const positionExists = previousList.some(
+            (position) => String(position.id) === String(savedPosition.id),
+          );
+
+          if (positionExists) {
+            return previousList.map((position) =>
+              String(position.id) === String(savedPosition.id)
+                ? {
+                    ...position,
+                    ...savedPosition,
+                  }
+                : position,
+            );
+          }
+
+          return [savedPosition, ...previousList];
+        });
+      }
 
       closeFormAfterSave();
       scrollToTop("auto");
@@ -1105,6 +1265,10 @@ export default function AvailablePositionsPage() {
           ? "The available position was updated successfully."
           : "The available position was saved successfully.",
       );
+
+      window.setTimeout(() => {
+        refreshPositions({ showPageLoading: false });
+      }, 150);
     } catch (error) {
       console.error("Save available position error:", error);
       openStatusModal(
@@ -1772,7 +1936,7 @@ export default function AvailablePositionsPage() {
               This page does not use localStorage. Departments and accounts are
               loaded from the database, and accounts are filtered based on the
               selected department. Location / Site is limited to Davao, Tagum,
-              or Both Davao and Tagum.
+              Mabini, or Both Davao and Tagum.
             </p>
           </section>
         </div>

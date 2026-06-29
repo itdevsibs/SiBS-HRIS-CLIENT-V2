@@ -19,49 +19,55 @@ import {
 } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
-
-import { textareaClass } from "../../../lib/utils/talentPool/talentPoolHelpers";
-
-import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
 import StatusModal from "../StatusModal";
 
-const ACCEPTED_DOCUMENT_TYPES =
+const acceptedAudioTypes =
+  ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
+
+const acceptedDocumentTypes =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif";
 
-const WEEK_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-const MONTH_OPTIONS = [
-  { value: 0, label: "January" },
-  { value: 1, label: "February" },
-  { value: 2, label: "March" },
-  { value: 3, label: "April" },
-  { value: 4, label: "May" },
-  { value: 5, label: "June" },
-  { value: 6, label: "July" },
-  { value: 7, label: "August" },
-  { value: 8, label: "September" },
-  { value: 9, label: "October" },
-  { value: 10, label: "November" },
-  { value: 11, label: "December" },
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-const FORM_LABEL_ROW_CLASS = "mb-1 flex min-h-[26px] items-end";
-const FORM_LABEL_CLASS =
-  "block text-[11px] font-extrabold uppercase leading-[14px] tracking-wide text-[#174A7C]";
-const FORM_CONTROL_CLASS =
-  "h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10";
+const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-function RequiredMark() {
-  return <span className="text-red-500">*</span>;
-}
+const uppercaseCandidateFields = new Set([
+  "nickname",
+  "referredBy",
+  "employeeId",
+  "firstName",
+  "lastName",
+  "middleName",
+  "suffix",
+  "phoneNumber1",
+  "phoneNumber2",
+  "physicalAddress",
+  "trainingAttended",
+  "remarks",
+]);
 
-function FormLabel({ children }) {
-  return (
-    <div className={FORM_LABEL_ROW_CLASS}>
-      <label className={FORM_LABEL_CLASS}>{children}</label>
-    </div>
-  );
-}
+const uppercaseExperienceFields = new Set([
+  "industry",
+  "industryRelevantExperience",
+  "years",
+  "role",
+  "company",
+  "monthlyCompensation",
+  "reasonForLeaving",
+]);
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -71,130 +77,1033 @@ function toArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function pad2(value) {
+function normalizeUpperText(value) {
+  return String(value ?? "").toUpperCase();
+}
+
+function normalizeCandidateFieldValue(field, value) {
+  if (typeof value !== "string") return value;
+  if (!uppercaseCandidateFields.has(field)) return value;
+  return normalizeUpperText(value);
+}
+
+function normalizeExperienceFieldValue(field, value) {
+  if (typeof value !== "string") return value;
+  if (!uppercaseExperienceFields.has(field)) return value;
+  return normalizeUpperText(value);
+}
+
+function getOptionValue(option) {
+  if (typeof option === "string") return option;
+  return option?.value || "";
+}
+
+function getOptionLabel(option) {
+  if (typeof option === "string") return option;
+  return option?.label || option?.value || "";
+}
+
+function normalizeDropdownOptions(options = []) {
+  return toArray(options)
+    .map((option) => {
+      const optionValue = getOptionValue(option);
+      const optionLabel = getOptionLabel(option);
+
+      if (!cleanText(optionValue) && !cleanText(optionLabel)) return null;
+
+      return {
+        id: option?.id || optionValue || optionLabel,
+        value: optionValue || optionLabel,
+        label: optionLabel || optionValue,
+      };
+    })
+    .filter(Boolean);
+}
+
+function getFileExtensionFromName(fileName = "") {
+  const name = String(fileName || "");
+  const dotIndex = name.lastIndexOf(".");
+
+  if (dotIndex === -1) return "";
+
+  return name.slice(dotIndex).toLowerCase();
+}
+
+function formatFileSizeFromBytes(size = 0) {
+  const numberSize = Number(size || 0);
+
+  if (!numberSize) return "";
+
+  const sizeInMb = numberSize / (1024 * 1024);
+
+  if (sizeInMb >= 1) return `${sizeInMb.toFixed(2)} MB`;
+
+  return `${Math.max(numberSize / 1024, 1).toFixed(0)} KB`;
+}
+
+function getCandidateFileSize(candidateForm = {}, type = "audio") {
+  const keys =
+    type === "audio"
+      ? ["audioFile", "audioFileObject", "audio"]
+      : ["attachmentFile", "attachmentFileObject", "attachment"];
+
+  const file = keys.map((key) => candidateForm?.[key]).find(Boolean);
+
+  return file?.size ? formatFileSizeFromBytes(file.size) : "";
+}
+
+function getCandidateFileName(candidateForm = {}, type = "audio") {
+  if (type === "audio") {
+    return (
+      candidateForm.audioFileName ||
+      candidateForm.audio_file_name ||
+      candidateForm.audioName ||
+      candidateForm.audio?.name ||
+      candidateForm.audioFile?.name ||
+      ""
+    );
+  }
+
+  return (
+    candidateForm.attachmentFileName ||
+    candidateForm.attachment_file_name ||
+    candidateForm.attachmentName ||
+    candidateForm.attachment?.name ||
+    candidateForm.attachmentFile?.name ||
+    ""
+  );
+}
+
+function inputClass(extra = "", options = {}) {
+  const shouldUppercase = options.uppercase !== false;
+
+  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold ${
+    shouldUppercase ? "uppercase" : "normal-case"
+  } text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-[var(--sibs-primary-1)] focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+}
+
+function textareaInputClass(extra = "") {
+  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-[var(--sibs-primary-1)] focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+}
+
+function FieldLabel({ children }) {
+  return (
+    <label className="mb-1 flex min-h-0 items-end text-xs font-bold uppercase leading-4 tracking-wide text-gray-400 md:min-h-[36px]">
+      <span>{children}</span>
+    </label>
+  );
+}
+
+function RequiredMark() {
+  return <span className="text-red-500">*</span>;
+}
+
+function SectionCard({ icon: Icon, title, description, children }) {
+  return (
+    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-start gap-3">
+        {Icon && (
+          <div className="rounded-2xl bg-[var(--sibs-primary-1)]/10 p-3 text-sibs-primary-1">
+            <Icon size={18} />
+          </div>
+        )}
+
+        <div>
+          <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
+
+          {description && (
+            <p className="mt-1 text-sm leading-6 text-gray-500">
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+function EmptyOptionNotice({ message = "No options configured in database." }) {
+  return (
+    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+      {message}
+    </div>
+  );
+}
+
+function HiringNeedsDropdown({
+  value,
+  onChange,
+  options,
+  placeholder = "Select option",
+  required = true,
+  disabled = false,
+  zIndex = "z-[90]",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const normalizedOptions = normalizeDropdownOptions(options);
+  const selectedOption = normalizedOptions.find(
+    (option) => String(option.value) === String(value || ""),
+  );
+
+  const displayText = selectedOption?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange?.(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-gray-800"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-gray-800" : "text-gray-400"
+          }`}
+        >
+          {displayText}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {required && (
+        <input
+          tabIndex={-1}
+          value={value || ""}
+          onChange={() => {}}
+          required
+          className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
+        />
+      )}
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto">
+            {normalizedOptions.length > 0 ? (
+              normalizedOptions.map((option) => {
+                const active = String(option.value) === String(value || "");
+
+                return (
+                  <button
+                    key={option.id || option.value}
+                    type="button"
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+                No options found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DatabaseSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select option",
+  required = true,
+  disabled = false,
+  zIndex = "z-[90]",
+}) {
+  return (
+    <HiringNeedsDropdown
+      required={required}
+      value={value}
+      disabled={disabled}
+      options={options}
+      placeholder={placeholder}
+      zIndex={zIndex}
+      onChange={onChange}
+    />
+  );
+}
+
+function YesNoSelect({ value, onChange, options, required = true }) {
+  return (
+    <DatabaseSelect
+      required={required}
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder="Select answer"
+    />
+  );
+}
+
+function CalendarHeaderDropdown({
+  value,
+  options = [],
+  onChange,
+  className = "",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  const displayText = selectedOption?.label || "Select";
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={dropdownRef} className={`relative min-w-0 ${className}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-xs font-extrabold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
+        } text-sibs-primary-1`}
+      >
+        <span className="min-w-0 flex-1 truncate">{displayText}</span>
+
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+        >
+          <div className="max-h-72 overflow-y-auto">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    active
+                      ? "bg-[#EAF4FF] text-sibs-primary-1"
+                      : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                  }`}
+                >
+                  <span className="block min-w-0 truncate">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function padNumber(value) {
   return String(value).padStart(2, "0");
 }
 
-function toDateOnly(date) {
-  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
-
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getMinimumAgeCutoffDate(minAge = 18) {
-  const today = new Date();
-
-  return new Date(
-    today.getFullYear() - minAge,
-    today.getMonth(),
-    today.getDate(),
-  );
-}
-
-function isAfterDateOnly(date, maxDate) {
-  const normalizedDate = toDateOnly(date);
-  const normalizedMaxDate = toDateOnly(maxDate);
-
-  if (!normalizedDate || !normalizedMaxDate) return false;
-
-  return normalizedDate.getTime() > normalizedMaxDate.getTime();
-}
-
-function clampVisibleMonth(monthDate, maxSelectableDate) {
-  const date = monthDate instanceof Date ? monthDate : new Date();
-
-  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
-  const maxMonthStart = new Date(
-    maxSelectableDate.getFullYear(),
-    maxSelectableDate.getMonth(),
-    1,
-  );
-
-  if (monthStart.getTime() > maxMonthStart.getTime()) {
-    return maxMonthStart;
-  }
-
-  return monthStart;
-}
-
-function toDateValue(date) {
+function toDateInputValue(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
 
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(
     date.getDate(),
   )}`;
 }
 
-function parseDateValue(value) {
-  const text = cleanText(value);
+function parseDateInputValue(value) {
+  if (!value) return null;
 
-  if (!text) return null;
+  const parts = String(value).split("-");
 
-  const [year, month, day] = text.split("-").map(Number);
+  if (parts.length !== 3) return null;
 
-  if (!year || !month || !day) return null;
+  const year = Number(parts[0]);
+  const month = Number(parts[1]) - 1;
+  const day = Number(parts[2]);
 
-  const date = new Date(year, month - 1, day);
+  const date = new Date(year, month, day);
 
   if (Number.isNaN(date.getTime())) return null;
 
   return date;
 }
 
-function formatDisplayDate(value) {
-  const date = parseDateValue(value);
+function isSameDate(firstDate, secondDate) {
+  if (!firstDate || !secondDate) return false;
+
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatDateDisplay(value) {
+  const date = parseDateInputValue(value);
 
   if (!date) return "";
 
-  return date.toLocaleDateString("en-PH", {
+  return date.toLocaleDateString("en-US", {
     month: "short",
-    day: "2-digit",
+    day: "numeric",
     year: "numeric",
   });
 }
 
-function getCalendarDays(monthDate) {
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
+function buildCalendarDays(displayDate) {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
 
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0);
+  const firstDayOfMonth = new Date(year, month, 1);
+  const startDay = firstDayOfMonth.getDay();
 
-  const blanks = Array.from({ length: firstDay.getDay() }, (_, index) => ({
-    id: `blank-${index}`,
-    blank: true,
-  }));
+  const calendarStart = new Date(year, month, 1 - startDay);
+  const days = [];
 
-  const days = Array.from({ length: lastDay.getDate() }, (_, index) => {
-    const date = new Date(year, month, index + 1);
+  for (let index = 0; index < 42; index += 1) {
+    const date = new Date(calendarStart);
+    date.setDate(calendarStart.getDate() + index);
 
-    return {
-      id: toDateValue(date),
+    days.push({
       date,
-      blank: false,
-    };
-  });
+      dateValue: toDateInputValue(date),
+      dayNumber: date.getDate(),
+      isCurrentMonth: date.getMonth() === month,
+    });
+  }
 
-  return [...blanks, ...days];
+  return days;
 }
 
-function isSameDay(a, b) {
-  if (!a || !b) return false;
+function CalendarDatePicker({
+  value,
+  onChange,
+  placeholder = "Select date",
+  disabled = false,
+}) {
+  const calendarRef = useRef(null);
+  const selectedDate = parseDateInputValue(value);
+  const today = new Date();
+
+  const currentYear = today.getFullYear();
+  const minimumYear = currentYear - 80;
+  const maximumYear = currentYear;
+
+  const monthOptions = useMemo(() => {
+    return monthNames.map((month, index) => ({
+      value: index,
+      label: month,
+    }));
+  }, []);
+
+  const yearOptions = useMemo(() => {
+    const years = [];
+
+    for (let year = maximumYear; year >= minimumYear; year -= 1) {
+      years.push({
+        value: year,
+        label: String(year),
+      });
+    }
+
+    return years;
+  }, [maximumYear, minimumYear]);
+
+  const [open, setOpen] = useState(false);
+  const [displayDate, setDisplayDate] = useState(
+    selectedDate || new Date(currentYear - 18, today.getMonth(), 1),
+  );
+
+  const calendarDays = useMemo(
+    () => buildCalendarDays(displayDate),
+    [displayDate],
+  );
+
+  const displayText = value ? formatDateDisplay(value) : placeholder;
+
+  useEffect(() => {
+    if (selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!calendarRef.current) return;
+
+      if (!calendarRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function goPreviousMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() - 1, 1),
+    );
+  }
+
+  function goNextMonth() {
+    setDisplayDate(
+      (previous) =>
+        new Date(previous.getFullYear(), previous.getMonth() + 1, 1),
+    );
+  }
+
+  function handleMonthChange(monthIndex) {
+    setDisplayDate(
+      (previous) => new Date(previous.getFullYear(), Number(monthIndex), 1),
+    );
+  }
+
+  function handleYearChange(year) {
+    setDisplayDate(
+      (previous) => new Date(Number(year), previous.getMonth(), 1),
+    );
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange("");
+    setOpen(false);
+  }
+
+  function handleToday() {
+    onChange(toDateInputValue(today));
+    setDisplayDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setOpen(false);
+  }
 
   return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
+    <div ref={calendarRef} className="relative z-[220] min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-gray-800"
+        }`}
+      >
+        <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
+          <CalendarDays
+            size={16}
+            className="shrink-0 text-[var(--sibs-primary-1)]"
+          />
+
+          <span
+            className={`min-w-0 truncate ${
+              value ? "text-gray-800" : "text-gray-400"
+            }`}
+          >
+            {displayText}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+            <button
+              type="button"
+              onClick={goPreviousMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <div className="grid min-w-0 flex-1 grid-cols-[1fr_96px] gap-2 px-3">
+              <CalendarHeaderDropdown
+                value={displayDate.getMonth()}
+                options={monthOptions}
+                onChange={handleMonthChange}
+                className="z-[100002]"
+                menuClassName="w-[180px]"
+              />
+
+              <CalendarHeaderDropdown
+                value={displayDate.getFullYear()}
+                options={yearOptions}
+                onChange={handleYearChange}
+                className="z-[100001]"
+                menuClassName="w-[120px]"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={goNextMonth}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="px-4 py-4">
+            <div className="grid grid-cols-7 gap-1">
+              {weekdayLabels.map((dayLabel) => (
+                <div
+                  key={dayLabel}
+                  className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                >
+                  {dayLabel}
+                </div>
+              ))}
+
+              {calendarDays.map((day) => {
+                const active =
+                  selectedDate && isSameDate(day.date, selectedDate);
+                const currentDay = isSameDate(day.date, today);
+
+                return (
+                  <button
+                    key={day.dateValue}
+                    type="button"
+                    onClick={() => handleSelectDate(day.date)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                      active
+                        ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
+                        : currentDay
+                          ? "bg-[#F2F6FA] text-sibs-primary-1"
+                          : day.isCurrentMonth
+                            ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                            : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                    }`}
+                  >
+                    {day.dayNumber}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-[#E6ECF2] px-5 py-3">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
-function getYearOptions(maxSelectableDate) {
-  const endYear = maxSelectableDate.getFullYear();
-  const startYear = endYear - 80;
+function MultiCheckGroup({ options = [], value = [], onChange }) {
+  const safeValue = Array.isArray(value) ? value : [];
 
-  return Array.from({ length: endYear - startYear + 1 }, (_, index) => {
-    return endYear - index;
-  });
+  function toggle(optionValue) {
+    if (safeValue.includes(optionValue)) {
+      onChange(safeValue.filter((item) => item !== optionValue));
+      return;
+    }
+
+    onChange([...safeValue, optionValue]);
+  }
+
+  if (!options.length) {
+    return <EmptyOptionNotice />;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      {options.map((option) => {
+        const optionValue = getOptionValue(option);
+        const optionLabel = getOptionLabel(option);
+
+        return (
+          <label
+            key={option?.id || optionValue}
+            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+          >
+            <input
+              type="checkbox"
+              checked={safeValue.includes(optionValue)}
+              onChange={() => toggle(optionValue)}
+              className="h-4 w-4 accent-[var(--sibs-primary-1)]"
+            />
+
+            <span className="text-sm font-semibold text-gray-700">
+              {optionLabel}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder = "",
+  type = "text",
+  required = false,
+  extra = "",
+  uppercase = true,
+}) {
+  return (
+    <div className={`min-w-0 ${extra}`}>
+      <FieldLabel>
+        {label} {required && <RequiredMark />}
+      </FieldLabel>
+
+      <input
+        type={type}
+        value={value || ""}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        className={inputClass("", { uppercase })}
+      />
+    </div>
+  );
+}
+
+function createEmptyExperience(baseExperience = {}) {
+  return {
+    ...baseExperience,
+    id: Date.now(),
+    industry: "",
+    industryRelevantExperience: "",
+    lengthOfWorkExperience: "",
+    years: "",
+    role: "",
+    company: "",
+    monthlyCompensation: "",
+    reasonForLeaving: "",
+    hasOtherExperience: "No",
+  };
+}
+
+function normalizeExperienceForForm(experience = {}) {
+  return {
+    ...experience,
+    industry:
+      experience.industry || experience.industryRelevantExperience || "",
+    industryRelevantExperience:
+      experience.industryRelevantExperience || experience.industry || "",
+    lengthOfWorkExperience: experience.lengthOfWorkExperience || "",
+    years: experience.years || "",
+    role: experience.role || "",
+    company: experience.company || "",
+    monthlyCompensation: experience.monthlyCompensation || "",
+    reasonForLeaving: experience.reasonForLeaving || "",
+    hasOtherExperience: experience.hasOtherExperience || "No",
+  };
+}
+
+function ExperienceFields({
+  experience,
+  index,
+  title,
+  onChange,
+  lengthOptions,
+  showRemove = false,
+  onRemove,
+}) {
+  const normalizedExperience = normalizeExperienceForForm(experience);
+
+  function updateExperienceField(field, value) {
+    const normalizedValue = normalizeExperienceFieldValue(field, value);
+
+    const nextExperience = {
+      ...normalizedExperience,
+      [field]: normalizedValue,
+    };
+
+    if (field === "industryRelevantExperience") {
+      nextExperience.industry = normalizedValue;
+    }
+
+    if (field === "industry") {
+      nextExperience.industryRelevantExperience = normalizedValue;
+    }
+
+    onChange(index, nextExperience);
+  }
+
+  return (
+    <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
+
+        {showRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 text-xs font-bold text-red-600 transition hover:bg-red-50"
+          >
+            <Trash2 size={14} />
+            Remove
+          </button>
+        )}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <FieldLabel>Industry or Relevant Experience</FieldLabel>
+          <input
+            value={normalizedExperience.industryRelevantExperience}
+            onChange={(event) =>
+              updateExperienceField(
+                "industryRelevantExperience",
+                event.target.value,
+              )
+            }
+            placeholder="Example: BPO, Healthcare, RCM, Finance"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Length of work experience <RequiredMark />
+          </FieldLabel>
+          <DatabaseSelect
+            required
+            value={normalizedExperience.lengthOfWorkExperience}
+            options={lengthOptions}
+            placeholder="Select length"
+            onChange={(value) =>
+              updateExperienceField("lengthOfWorkExperience", value)
+            }
+            zIndex="z-[150]"
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Years <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            type="number"
+            min="0"
+            step="0.1"
+            value={normalizedExperience.years}
+            onChange={(event) => updateExperienceField("years", event.target.value)}
+            placeholder="Example: 2"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Role <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={normalizedExperience.role}
+            onChange={(event) => updateExperienceField("role", event.target.value)}
+            placeholder="Previous role"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Company <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={normalizedExperience.company}
+            onChange={(event) =>
+              updateExperienceField("company", event.target.value)
+            }
+            placeholder="Previous company"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Monthly Compensation <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            type="number"
+            min="0"
+            value={normalizedExperience.monthlyCompensation}
+            onChange={(event) =>
+              updateExperienceField("monthlyCompensation", event.target.value)
+            }
+            placeholder="Example: 20000"
+            className={inputClass()}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            Reason for leaving <RequiredMark />
+          </FieldLabel>
+          <input
+            required
+            value={normalizedExperience.reasonForLeaving}
+            onChange={(event) =>
+              updateExperienceField("reasonForLeaving", event.target.value)
+            }
+            placeholder="Reason for leaving"
+            className={inputClass()}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PositionInfoItem({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-4">
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words text-sm font-bold text-gray-700">
+        {value || "—"}
+      </p>
+    </div>
+  );
 }
 
 function normalizePositionOption(position) {
@@ -253,10 +1162,7 @@ function normalizePositionOption(position) {
     "";
 
   const accountId =
-    position.accountId ||
-    position.account_id ||
-    position.gy_acc_id ||
-    "";
+    position.accountId || position.account_id || position.gy_acc_id || "";
 
   const accountName =
     position.accountName ||
@@ -279,10 +1185,7 @@ function normalizePositionOption(position) {
     "";
 
   const status =
-    position.status ||
-    position.positionStatus ||
-    position.position_status ||
-    "";
+    position.status || position.positionStatus || position.position_status || "";
 
   const finalTitle = cleanText(positionTitle);
   const finalId = cleanText(positionId);
@@ -325,909 +1228,6 @@ function getUniquePositionOptions(positions = []) {
 
   return Array.from(map.values()).sort((a, b) =>
     a.positionTitle.localeCompare(b.positionTitle),
-  );
-}
-
-function SectionCard({ icon: Icon, title, description, children }) {
-  return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start gap-3">
-        {Icon && (
-          <div className="rounded-2xl bg-sibs-primary-1/10 p-3 text-sibs-primary-1">
-            <Icon size={18} />
-          </div>
-        )}
-
-        <div>
-          <h3 className="text-sm font-extrabold text-[#101828]">{title}</h3>
-
-          {description && (
-            <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
-              {description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {children}
-    </section>
-  );
-}
-
-function PositionInfoItem({ label, value }) {
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
-        {label}
-      </p>
-
-      <p className="mt-1 break-words text-sm font-bold text-[#344054]">
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function getOptionValue(option) {
-  if (typeof option === "string") return option;
-  return option?.value || "";
-}
-
-function getOptionLabel(option) {
-  if (typeof option === "string") return option;
-  return option?.label || option?.value || "";
-}
-
-function normalizeDropdownOptions(options = []) {
-  return toArray(options)
-    .map((option) => {
-      const value = getOptionValue(option);
-      const label = getOptionLabel(option);
-
-      if (!cleanText(value) && !cleanText(label)) return null;
-
-      return {
-        id: option?.id || value || label,
-        value: value || label,
-        label: label || value,
-      };
-    })
-    .filter(Boolean);
-}
-
-function HiringNeedsDropdown({
-  label,
-  value,
-  onValueChange,
-  options = [],
-  placeholder = "Select",
-  required = false,
-  disabled = false,
-  zIndex = "z-[120]",
-}) {
-  const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
-
-  const normalizedOptions = normalizeDropdownOptions(options);
-
-  const selectedOption = normalizedOptions.find(
-    (option) => String(option.value) === String(value || ""),
-  );
-
-  const displayLabel = selectedOption?.label || placeholder;
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
-
-      if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function handleSelect(nextValue) {
-    onValueChange(nextValue);
-    setOpen(false);
-  }
-
-  return (
-    <div
-      ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
-    >
-      <FormLabel>
-        {label} {required && <RequiredMark />}
-      </FormLabel>
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
-        }`}
-      >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
-          }`}
-        >
-          {displayLabel}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto">
-            {normalizedOptions.length > 0 ? (
-              normalizedOptions.map((option) => {
-                const active = String(option.value) === String(value || "");
-
-                return (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
-                      active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                    }`}
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                No options found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DateMiniSelect({
-  value,
-  label,
-  options = [],
-  onChange,
-  className = "",
-}) {
-  const wrapperRef = useRef(null);
-  const [open, setOpen] = useState(false);
-
-  const enabledOptions = options.filter((option) => !option.disabled);
-
-  const selectedOption =
-    options.find((option) => String(option.value) === String(value)) ||
-    enabledOptions[0] ||
-    options[0];
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!wrapperRef.current) return;
-
-      if (!wrapperRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function handleSelect(option) {
-    if (option.disabled) return;
-
-    onChange(option.value);
-    setOpen(false);
-  }
-
-  return (
-    <div ref={wrapperRef} className={`relative min-w-0 ${className}`}>
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-10 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-sm font-extrabold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/60"
-        } text-sibs-primary-1`}
-        title={label}
-      >
-        <span className="min-w-0 flex-1 truncate">
-          {selectedOption?.label || label}
-        </span>
-
-        <ChevronDown
-          size={16}
-          className={`shrink-0 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.2)]">
-          <div className="max-h-60 overflow-y-auto py-1">
-            {options.map((option) => {
-              const active = String(option.value) === String(value);
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  disabled={option.disabled}
-                  onClick={() => handleSelect(option)}
-                  className={`block w-full px-3 py-2.5 text-left text-sm font-bold transition ${
-                    option.disabled
-                      ? "cursor-not-allowed bg-[#F8FAFC] text-slate-300"
-                      : active
-                        ? "bg-sibs-primary-1 text-white"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                  }`}
-                  title={
-                    option.disabled
-                      ? "Disabled because applicant would be below 18 years old"
-                      : option.label
-                  }
-                >
-                  <span className="block truncate">{option.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-  required = false,
-  disabled = false,
-  placeholder = "Select date",
-}) {
-  const wrapperRef = useRef(null);
-
-  const maxSelectableDate = useMemo(() => getMinimumAgeCutoffDate(18), []);
-  const selectedDate = parseDateValue(value);
-
-  const [open, setOpen] = useState(false);
-  const [visibleMonth, setVisibleMonth] = useState(() => {
-    const baseDate = selectedDate || maxSelectableDate;
-    return clampVisibleMonth(
-      new Date(baseDate.getFullYear(), baseDate.getMonth(), 1),
-      maxSelectableDate,
-    );
-  });
-
-  const displayValue = formatDisplayDate(value);
-
-  const yearOptions = useMemo(() => {
-    return getYearOptions(maxSelectableDate).map((year) => ({
-      value: year,
-      label: String(year),
-      disabled: year > maxSelectableDate.getFullYear(),
-    }));
-  }, [maxSelectableDate]);
-
-  const monthOptions = useMemo(() => {
-    return MONTH_OPTIONS.map((month) => ({
-      ...month,
-      disabled:
-        visibleMonth.getFullYear() === maxSelectableDate.getFullYear() &&
-        month.value > maxSelectableDate.getMonth(),
-    }));
-  }, [maxSelectableDate, visibleMonth]);
-
-  const canGoNextMonth = useMemo(() => {
-    const nextMonth = new Date(
-      visibleMonth.getFullYear(),
-      visibleMonth.getMonth() + 1,
-      1,
-    );
-
-    const maxMonth = new Date(
-      maxSelectableDate.getFullYear(),
-      maxSelectableDate.getMonth(),
-      1,
-    );
-
-    return nextMonth.getTime() <= maxMonth.getTime();
-  }, [maxSelectableDate, visibleMonth]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (selectedDate) {
-      setVisibleMonth(
-        clampVisibleMonth(
-          new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-          maxSelectableDate,
-        ),
-      );
-      return;
-    }
-
-    setVisibleMonth(
-      clampVisibleMonth(
-        new Date(
-          maxSelectableDate.getFullYear(),
-          maxSelectableDate.getMonth(),
-          1,
-        ),
-        maxSelectableDate,
-      ),
-    );
-  }, [open, value, maxSelectableDate]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!wrapperRef.current) return;
-
-      if (!wrapperRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function emitChange(nextValue) {
-    onChange?.({
-      target: {
-        value: nextValue,
-      },
-    });
-  }
-
-  function selectDate(date) {
-    if (isAfterDateOnly(date, maxSelectableDate)) return;
-
-    emitChange(toDateValue(date));
-    setOpen(false);
-  }
-
-  function clearDate() {
-    emitChange("");
-    setOpen(false);
-  }
-
-  function goToPreviousMonth() {
-    setVisibleMonth(
-      (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
-    );
-  }
-
-  function goToNextMonth() {
-    if (!canGoNextMonth) return;
-
-    setVisibleMonth((current) =>
-      clampVisibleMonth(
-        new Date(current.getFullYear(), current.getMonth() + 1, 1),
-        maxSelectableDate,
-      ),
-    );
-  }
-
-  function handleMonthChange(nextMonth) {
-    setVisibleMonth((current) =>
-      clampVisibleMonth(
-        new Date(current.getFullYear(), Number(nextMonth), 1),
-        maxSelectableDate,
-      ),
-    );
-  }
-
-  function handleYearChange(nextYear) {
-    setVisibleMonth((current) =>
-      clampVisibleMonth(
-        new Date(Number(nextYear), current.getMonth(), 1),
-        maxSelectableDate,
-      ),
-    );
-  }
-
-  const calendarDays = getCalendarDays(visibleMonth);
-
-  return (
-    <div
-      ref={wrapperRef}
-      className={`relative min-w-0 ${open ? "z-[99999]" : "z-[1]"}`}
-    >
-      <FormLabel>
-        {label} {required && <RequiredMark />}
-      </FormLabel>
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-[#344054]"
-        }`}
-      >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            displayValue ? "text-[#344054]" : "text-sibs-tertiary-5"
-          }`}
-        >
-          {displayValue || placeholder}
-        </span>
-
-        <CalendarDays size={18} className="shrink-0 text-sibs-primary-1" />
-      </button>
-
-      <input
-        tabIndex={-1}
-        value={value || ""}
-        required={required}
-        readOnly
-        className="pointer-events-none absolute h-px w-px opacity-0"
-      />
-
-      {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[360px] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_20px_55px_rgba(15,23,42,0.22)]">
-          <div className="border-b border-[#E6ECF2] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={goToPreviousMonth}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_96px] gap-2">
-                <DateMiniSelect
-                  label="Month"
-                  value={visibleMonth.getMonth()}
-                  options={monthOptions}
-                  onChange={handleMonthChange}
-                />
-
-                <DateMiniSelect
-                  label="Year"
-                  value={visibleMonth.getFullYear()}
-                  options={yearOptions}
-                  onChange={handleYearChange}
-                />
-              </div>
-
-              <button
-                type="button"
-                disabled={!canGoNextMonth}
-                onClick={goToNextMonth}
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${
-                  canGoNextMonth
-                    ? "text-sibs-primary-1 hover:bg-[#F2F6FA]"
-                    : "cursor-not-allowed text-slate-300"
-                }`}
-                title={
-                  canGoNextMonth
-                    ? "Next month"
-                    : "Disabled because applicant would be below 18 years old"
-                }
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-
-            <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-              Only applicants who are at least 18 years old can be selected.
-            </p>
-          </div>
-
-          <div className="p-4">
-            <div className="grid grid-cols-7 gap-1">
-              {WEEK_DAYS.map((day) => (
-                <div
-                  key={day}
-                  className="flex h-8 items-center justify-center text-[11px] font-extrabold text-sibs-tertiary-5"
-                >
-                  {day}
-                </div>
-              ))}
-
-              {calendarDays.map((item) => {
-                if (item.blank) {
-                  return <div key={item.id} className="h-9" />;
-                }
-
-                const active = isSameDay(item.date, selectedDate);
-                const disabledDay = isAfterDateOnly(
-                  item.date,
-                  maxSelectableDate,
-                );
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={disabledDay}
-                    onClick={() => selectDate(item.date)}
-                    className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition ${
-                      disabledDay
-                        ? "cursor-not-allowed bg-[#F8FAFC] text-slate-300"
-                        : active
-                          ? "bg-sibs-primary-1 text-white shadow-sm"
-                          : "text-[#344054] hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
-                    }`}
-                    title={
-                      disabledDay
-                        ? "Disabled because applicant would be below 18 years old"
-                        : toDateValue(item.date)
-                    }
-                  >
-                    {item.date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
-              <button
-                type="button"
-                onClick={clearDate}
-                className="text-xs font-extrabold text-sibs-tertiary-5 transition hover:text-red-600"
-              >
-                Clear
-              </button>
-
-              <button
-                type="button"
-                onClick={() => selectDate(maxSelectableDate)}
-                className="rounded-xl bg-[#F2F6FA] px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
-              >
-                Latest allowed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MultiCheckGroup({ options = [], value = [], onChange }) {
-  const safeValue = Array.isArray(value) ? value : [];
-
-  function toggle(optionValue) {
-    if (safeValue.includes(optionValue)) {
-      onChange(safeValue.filter((item) => item !== optionValue));
-      return;
-    }
-
-    onChange([...safeValue, optionValue]);
-  }
-
-  if (!options.length) {
-    return (
-      <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
-        No database options configured.
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      {options.map((option) => {
-        const optionValue = getOptionValue(option);
-        const optionLabel = getOptionLabel(option);
-
-        return (
-          <label
-            key={option?.id || optionValue}
-            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
-          >
-            <input
-              type="checkbox"
-              checked={safeValue.includes(optionValue)}
-              onChange={() => toggle(optionValue)}
-              className="h-4 w-4"
-            />
-
-            <span className="text-sm font-semibold text-gray-700">
-              {optionLabel}
-            </span>
-          </label>
-        );
-      })}
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  options = [],
-  placeholder = "Select",
-  required = false,
-  disabled = false,
-}) {
-  return (
-    <HiringNeedsDropdown
-      label={label}
-      value={value}
-      options={options}
-      placeholder={placeholder}
-      required={required}
-      disabled={disabled}
-      onValueChange={(nextValue) =>
-        onChange?.({
-          target: {
-            value: nextValue,
-          },
-        })
-      }
-    />
-  );
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  placeholder = "",
-  type = "text",
-  required = false,
-  extra = "",
-}) {
-  return (
-    <div className={`min-w-0 ${extra}`}>
-      <FormLabel>
-        {label} {required && <RequiredMark />}
-      </FormLabel>
-
-      <input
-        type={type}
-        value={value || ""}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        className={FORM_CONTROL_CLASS}
-      />
-    </div>
-  );
-}
-
-function YesNoSelect({ label, value, onChange, options, required = true }) {
-  return (
-    <SelectField
-      label={label}
-      value={value}
-      onChange={onChange}
-      options={options}
-      placeholder="Select answer"
-      required={required}
-    />
-  );
-}
-
-function createEmptyExperience(baseExperience) {
-  return {
-    ...baseExperience,
-    id: Date.now(),
-    industry: "",
-    industryRelevantExperience: "",
-    lengthOfWorkExperience: "",
-    years: "",
-    role: "",
-    company: "",
-    monthlyCompensation: "",
-    reasonForLeaving: "",
-    hasOtherExperience: "No",
-  };
-}
-
-function normalizeExperienceForForm(experience = {}) {
-  return {
-    ...experience,
-    industry:
-      experience.industry || experience.industryRelevantExperience || "",
-    industryRelevantExperience:
-      experience.industryRelevantExperience || experience.industry || "",
-    lengthOfWorkExperience: experience.lengthOfWorkExperience || "",
-    years: experience.years || "",
-    role: experience.role || "",
-    company: experience.company || "",
-    monthlyCompensation: experience.monthlyCompensation || "",
-    reasonForLeaving: experience.reasonForLeaving || "",
-    hasOtherExperience: experience.hasOtherExperience || "No",
-  };
-}
-
-function ExperienceFields({
-  experience,
-  index,
-  title,
-  onChange,
-  lengthOptions,
-  showRemove = false,
-  onRemove,
-}) {
-  const normalizedExperience = normalizeExperienceForForm(experience);
-
-  function updateExperienceField(field, value) {
-    const nextExperience = {
-      ...normalizedExperience,
-      [field]: value,
-    };
-
-    if (field === "industryRelevantExperience") {
-      nextExperience.industry = value;
-    }
-
-    if (field === "industry") {
-      nextExperience.industryRelevantExperience = value;
-    }
-
-    onChange(index, nextExperience);
-  }
-
-  return (
-    <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
-
-        {showRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-100 bg-white px-4 text-xs font-bold text-red-600 transition hover:bg-red-50"
-          >
-            <Trash2 size={14} />
-            Remove
-          </button>
-        )}
-      </div>
-
-      <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-        <TextField
-          label="Industry or Relevant Experience"
-          value={normalizedExperience.industryRelevantExperience}
-          onChange={(event) =>
-            updateExperienceField(
-              "industryRelevantExperience",
-              event.target.value,
-            )
-          }
-          placeholder="Example: BPO, Healthcare, RCM, Finance"
-          extra="md:col-span-2"
-        />
-
-        <SelectField
-          label="Length of Work Experience"
-          value={normalizedExperience.lengthOfWorkExperience}
-          onChange={(event) =>
-            updateExperienceField("lengthOfWorkExperience", event.target.value)
-          }
-          options={lengthOptions}
-          placeholder="Select length"
-          required
-        />
-
-        <TextField
-          label="Years"
-          type="number"
-          value={normalizedExperience.years}
-          onChange={(event) =>
-            updateExperienceField("years", event.target.value)
-          }
-          placeholder="Example: 2"
-          required
-        />
-
-        <TextField
-          label="Role"
-          value={normalizedExperience.role}
-          onChange={(event) =>
-            updateExperienceField("role", event.target.value)
-          }
-          placeholder="Previous role"
-          required
-        />
-
-        <TextField
-          label="Company"
-          value={normalizedExperience.company}
-          onChange={(event) =>
-            updateExperienceField("company", event.target.value)
-          }
-          placeholder="Previous company"
-          required
-        />
-
-        <TextField
-          label="Monthly Compensation"
-          type="number"
-          value={normalizedExperience.monthlyCompensation}
-          onChange={(event) =>
-            updateExperienceField("monthlyCompensation", event.target.value)
-          }
-          placeholder="Example: 20000"
-          required
-        />
-
-        <TextField
-          label="Reason for Leaving"
-          value={normalizedExperience.reasonForLeaving}
-          onChange={(event) =>
-            updateExperienceField("reasonForLeaving", event.target.value)
-          }
-          placeholder="Reason for leaving"
-          required
-        />
-      </div>
-    </div>
   );
 }
 
@@ -1364,17 +1364,27 @@ export default function AddCandidateModal() {
     candidateForm.openPosition ||
     "";
 
-  const hasRelevantExperience = isRelevantWorkExperience(
+  const checkRelevantWorkExperience =
+    typeof isRelevantWorkExperience === "function"
+      ? isRelevantWorkExperience
+      : (value) => cleanText(value).toLowerCase().includes("has work");
+
+  const hasRelevantExperience = checkRelevantWorkExperience(
     candidateForm.workExperience,
   );
 
   const hasOtherExperience =
     hasRelevantExperience && candidateForm.workExperiences?.length > 1;
 
+  const audioFileName = getCandidateFileName(candidateForm, "audio");
+  const attachmentFileName = getCandidateFileName(candidateForm, "attachment");
+  const audioFileSize = getCandidateFileSize(candidateForm, "audio");
+  const attachmentFileSize = getCandidateFileSize(candidateForm, "attachment");
+
   function updateField(field, value) {
     setCandidateForm({
       ...candidateForm,
-      [field]: value,
+      [field]: normalizeCandidateFieldValue(field, value),
     });
   }
 
@@ -1416,7 +1426,12 @@ export default function AddCandidateModal() {
     setCandidateForm({
       ...candidateForm,
       references: references.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item,
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: normalizeUpperText(value),
+            }
+          : item,
       ),
     });
   }
@@ -1461,7 +1476,7 @@ export default function AddCandidateModal() {
     setCandidateForm({
       ...candidateForm,
       workExperience: value,
-      workExperiences: isRelevantWorkExperience(value)
+      workExperiences: checkRelevantWorkExperience(value)
         ? ensurePrimaryExperience()
         : [{ ...emptyExperience }],
     });
@@ -1543,7 +1558,7 @@ export default function AddCandidateModal() {
         onClick={closeAddCandidateModal}
       >
         <div
-          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
@@ -1592,16 +1607,27 @@ export default function AddCandidateModal() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <HiringNeedsDropdown
-                    label="Check our open positions"
-                    value={selectedPositionValue}
-                    onValueChange={handleOpenPositionChange}
-                    options={positionDropdownOptions}
-                    placeholder="Select open position"
-                    required
-                    disabled={isSaving}
-                    zIndex="z-[180]"
-                  />
+                  <div>
+                    <FieldLabel>
+                      Check our open positions <RequiredMark />
+                    </FieldLabel>
+                    <DatabaseSelect
+                      required
+                      value={selectedPositionValue}
+                      disabled={isSaving || !positionDropdownOptions.length}
+                      options={positionDropdownOptions}
+                      placeholder={
+                        positionDropdownOptions.length
+                          ? "Select open position"
+                          : "No active positions found"
+                      }
+                      onChange={handleOpenPositionChange}
+                      zIndex="z-[200]"
+                    />
+                    <p className="mt-2 text-xs font-semibold text-gray-500">
+                      Only active positions from the database are shown here.
+                    </p>
+                  </div>
 
                   <TextField
                     label="Nickname"
@@ -1612,16 +1638,19 @@ export default function AddCandidateModal() {
                     placeholder="Preferred nickname"
                   />
 
-                  <SelectField
-                    label="Which location are you applying for?"
-                    value={candidateForm.applyingLocation}
-                    onChange={(event) =>
-                      updateField("applyingLocation", event.target.value)
-                    }
-                    options={safeFormOptions.locations}
-                    placeholder="Select location"
-                    required
-                  />
+                  <div>
+                    <FieldLabel>
+                      Which location are you applying for? <RequiredMark />
+                    </FieldLabel>
+                    <DatabaseSelect
+                      required
+                      value={candidateForm.applyingLocation}
+                      options={safeFormOptions.locations}
+                      placeholder="Select location"
+                      onChange={(value) => updateField("applyingLocation", value)}
+                      zIndex="z-[190]"
+                    />
+                  </div>
 
                   <TextField
                     label="Who referred you to us?"
@@ -1651,7 +1680,7 @@ export default function AddCandidateModal() {
                 )}
 
                 {selectedPosition && (
-                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <div className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
                         <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -1712,17 +1741,7 @@ export default function AddCandidateModal() {
                   onChange={(event) =>
                     updateField("firstName", event.target.value)
                   }
-                  placeholder="Juan"
-                  required
-                />
-
-                <TextField
-                  label="Last Name"
-                  value={candidateForm.lastName}
-                  onChange={(event) =>
-                    updateField("lastName", event.target.value)
-                  }
-                  placeholder="Dela Cruz"
+                  placeholder="Enter first name"
                   required
                 />
 
@@ -1732,35 +1751,45 @@ export default function AddCandidateModal() {
                   onChange={(event) =>
                     updateField("middleName", event.target.value)
                   }
-                  placeholder="Santos"
+                  placeholder="Enter middle name"
+                />
+
+                <TextField
+                  label="Last Name"
+                  value={candidateForm.lastName}
+                  onChange={(event) =>
+                    updateField("lastName", event.target.value)
+                  }
+                  placeholder="Enter last name"
+                  required
                 />
 
                 <TextField
                   label="Suffix"
                   value={candidateForm.suffix}
-                  onChange={(event) =>
-                    updateField("suffix", event.target.value)
-                  }
+                  onChange={(event) => updateField("suffix", event.target.value)}
                   placeholder="Jr., Sr., III"
                 />
 
-                <DateField
-                  label="Date of Birth"
-                  value={candidateForm.dateOfBirth}
-                  onChange={(event) =>
-                    updateField("dateOfBirth", event.target.value)
-                  }
-                  placeholder="Select date of birth"
-                  required
-                />
+                <div>
+                  <FieldLabel>
+                    Date of Birth <RequiredMark />
+                  </FieldLabel>
+                  <CalendarDatePicker
+                    value={candidateForm.dateOfBirth}
+                    onChange={(value) => updateField("dateOfBirth", value)}
+                    placeholder="Select date"
+                  />
+                </div>
 
                 <TextField
                   label="Email"
                   type="email"
                   value={candidateForm.email}
                   onChange={(event) => updateField("email", event.target.value)}
-                  placeholder="candidate@email.com"
+                  placeholder="Enter email"
                   required
+                  uppercase={false}
                 />
 
                 <TextField
@@ -1800,16 +1829,19 @@ export default function AddCandidateModal() {
               description="Additional work experience fields will appear when Has work Experience is selected."
             >
               <div className="space-y-4">
-                <SelectField
-                  label="Work Experience"
-                  value={candidateForm.workExperience}
-                  onChange={(event) =>
-                    handleWorkExperienceChange(event.target.value)
-                  }
-                  options={safeFormOptions.workExperience}
-                  placeholder="Select work experience"
-                  required
-                />
+                <div>
+                  <FieldLabel>
+                    Work experience <RequiredMark />
+                  </FieldLabel>
+                  <DatabaseSelect
+                    required
+                    value={candidateForm.workExperience}
+                    options={safeFormOptions.workExperience}
+                    placeholder="Select work experience"
+                    onChange={handleWorkExperienceChange}
+                    zIndex="z-[180]"
+                  />
+                </div>
 
                 {hasRelevantExperience && (
                   <div className="space-y-4">
@@ -1821,23 +1853,23 @@ export default function AddCandidateModal() {
                       lengthOptions={safeFormOptions.lengthOfExperience}
                     />
 
-                    <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
+                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
-                        <SelectField
-                          label="Do you have other experience?"
-                          value={hasOtherExperience ? "Yes" : "No"}
-                          onChange={(event) =>
-                            handleOtherExperienceAnswer(event.target.value)
-                          }
-                          options={safeFormOptions.yesNo}
-                          placeholder="Select answer"
-                        />
+                        <div>
+                          <FieldLabel>Do you have other experience?</FieldLabel>
+                          <YesNoSelect
+                            required={false}
+                            value={hasOtherExperience ? "Yes" : "No"}
+                            options={safeFormOptions.yesNo}
+                            onChange={handleOtherExperienceAnswer}
+                          />
+                        </div>
 
                         {hasOtherExperience && (
                           <button
                             type="button"
                             onClick={addOtherExperience}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white transition hover:opacity-90"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-4 text-sm font-bold text-white transition hover:opacity-90"
                           >
                             <Plus size={16} />
                             Add Other Experience
@@ -1874,20 +1906,24 @@ export default function AddCandidateModal() {
               description="Select educational attainment and any applicable affiliations or certifications."
             >
               <div className="space-y-5">
-                <SelectField
-                  label="Highest Educational Attainment"
-                  value={candidateForm.educationalAttainment}
-                  onChange={(event) =>
-                    updateField("educationalAttainment", event.target.value)
-                  }
-                  options={safeFormOptions.educationalAttainment}
-                  placeholder="Select educational attainment"
-                  required
-                />
+                <div>
+                  <FieldLabel>
+                    Highest Educational Attainment <RequiredMark />
+                  </FieldLabel>
+                  <DatabaseSelect
+                    required
+                    value={candidateForm.educationalAttainment}
+                    options={safeFormOptions.educationalAttainment}
+                    placeholder="Select educational attainment"
+                    onChange={(value) =>
+                      updateField("educationalAttainment", value)
+                    }
+                    zIndex="z-[170]"
+                  />
+                </div>
 
                 <div>
                   <FieldLabel>Affiliations and Certifications</FieldLabel>
-
                   <MultiCheckGroup
                     options={safeFormOptions.affiliationCertification}
                     value={candidateForm.affiliations}
@@ -1897,7 +1933,6 @@ export default function AddCandidateModal() {
 
                 <div>
                   <FieldLabel>Training Attended</FieldLabel>
-
                   <textarea
                     value={candidateForm.trainingAttended || ""}
                     onChange={(event) =>
@@ -1905,7 +1940,7 @@ export default function AddCandidateModal() {
                     }
                     placeholder="List trainings attended"
                     rows={4}
-                    className={textareaClass()}
+                    className={textareaInputClass()}
                   />
                 </div>
               </div>
@@ -1917,72 +1952,91 @@ export default function AddCandidateModal() {
               description="These questions help Talent Acquisition review work setup and compliance readiness."
             >
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <YesNoSelect
-                  label="Are you fully vaccinated?"
-                  value={candidateForm.fullyVaccinated}
-                  options={safeFormOptions.yesNo}
-                  onChange={(event) =>
-                    updateField("fullyVaccinated", event.target.value)
-                  }
-                />
-
-                <YesNoSelect
-                  label="Are you comfortable working on site?"
-                  value={candidateForm.comfortableOnSite}
-                  options={safeFormOptions.yesNo}
-                  onChange={(event) =>
-                    updateField("comfortableOnSite", event.target.value)
-                  }
-                />
-
-                <YesNoSelect
-                  label="Are you willing to work in graveyard shift?"
-                  value={candidateForm.willingGraveyard}
-                  options={safeFormOptions.yesNo}
-                  onChange={(event) =>
-                    updateField("willingGraveyard", event.target.value)
-                  }
-                />
-
-                <SelectField
-                  label="Full-time, part-time, or either?"
-                  value={candidateForm.employmentInterest}
-                  onChange={(event) =>
-                    updateField("employmentInterest", event.target.value)
-                  }
-                  options={safeFormOptions.employmentInterest}
-                  placeholder="Select employment preference"
-                  required
-                />
-
-                <div className="md:col-span-2">
+                <div>
+                  <FieldLabel>
+                    Are you fully vaccinated? <RequiredMark />
+                  </FieldLabel>
                   <YesNoSelect
-                    label="If this is a remote position, do you have access to a computer, Internet connection, and a private space to work remotely?"
-                    value={candidateForm.remoteWorkAccess}
+                    value={candidateForm.fullyVaccinated}
                     options={safeFormOptions.yesNo}
-                    onChange={(event) =>
-                      updateField("remoteWorkAccess", event.target.value)
-                    }
+                    onChange={(value) => updateField("fullyVaccinated", value)}
                   />
                 </div>
 
-                <YesNoSelect
-                  label="Are you willing to undertake a drug test as part of this hiring process?"
-                  value={candidateForm.willingDrugTest}
-                  options={safeFormOptions.yesNo}
-                  onChange={(event) =>
-                    updateField("willingDrugTest", event.target.value)
-                  }
-                />
+                <div>
+                  <FieldLabel>
+                    Are you comfortable working on site? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={candidateForm.comfortableOnSite}
+                    options={safeFormOptions.yesNo}
+                    onChange={(value) => updateField("comfortableOnSite", value)}
+                  />
+                </div>
 
-                <YesNoSelect
-                  label="Are you willing to allow SiBS to undergo a background check as part of this hiring process?"
-                  value={candidateForm.willingBackgroundCheck}
-                  options={safeFormOptions.yesNo}
-                  onChange={(event) =>
-                    updateField("willingBackgroundCheck", event.target.value)
-                  }
-                />
+                <div>
+                  <FieldLabel>
+                    Are you willing to work in graveyard shift? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={candidateForm.willingGraveyard}
+                    options={safeFormOptions.yesNo}
+                    onChange={(value) => updateField("willingGraveyard", value)}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Full-time, part-time, or either? <RequiredMark />
+                  </FieldLabel>
+                  <DatabaseSelect
+                    required
+                    value={candidateForm.employmentInterest}
+                    options={safeFormOptions.employmentInterest}
+                    placeholder="Select employment preference"
+                    onChange={(value) => updateField("employmentInterest", value)}
+                    zIndex="z-[160]"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <FieldLabel>
+                    If this is a remote position, do you have access to a
+                    computer, Internet connection, and a private space to work
+                    remotely? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={candidateForm.remoteWorkAccess}
+                    options={safeFormOptions.yesNo}
+                    onChange={(value) => updateField("remoteWorkAccess", value)}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you willing to undertake a drug test as part of this
+                    hiring process? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={candidateForm.willingDrugTest}
+                    options={safeFormOptions.yesNo}
+                    onChange={(value) => updateField("willingDrugTest", value)}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>
+                    Are you willing to allow SiBS to undergo a background check
+                    as part of this hiring process? <RequiredMark />
+                  </FieldLabel>
+                  <YesNoSelect
+                    value={candidateForm.willingBackgroundCheck}
+                    options={safeFormOptions.yesNo}
+                    onChange={(value) =>
+                      updateField("willingBackgroundCheck", value)
+                    }
+                  />
+                </div>
               </div>
             </SectionCard>
 
@@ -2020,10 +2074,10 @@ export default function AddCandidateModal() {
             <SectionCard
               icon={Mic}
               title="Audio and File Upload"
-              description="Optional audio file and one supporting document/file."
+              description="Upload a single audio file and one supporting document/file."
             >
               <div className="space-y-5">
-                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
+                <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
                   <p className="font-extrabold">
                     The audio file may answer these questions:
                   </p>
@@ -2045,21 +2099,35 @@ export default function AddCandidateModal() {
 
                 <div>
                   <FieldLabel>Upload single audio file</FieldLabel>
-
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] px-5 py-8 text-center transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5">
-                    <Mic size={26} className="text-sibs-primary-1" />
-
-                    <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#101828]">
-                      {candidateForm.audioFileName || "Choose audio file"}
+                  <label
+                    className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                      audioFileName
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-gray-300 bg-gray-50"
+                    }`}
+                  >
+                    <Mic
+                      size={26}
+                      className={
+                        audioFileName ? "text-emerald-700" : "text-sibs-primary-1"
+                      }
+                    />
+                    <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                      {audioFileName || "Choose audio file"}
                     </p>
-
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      Accepted: audio files only
+                    {audioFileName && (
+                      <p className="mt-1 text-xs font-bold text-emerald-700">
+                        Audio selected
+                        {audioFileSize ? ` • ${audioFileSize}` : ""}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs font-semibold text-gray-500">
+                      Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC,
+                      AMR, 3GP, OPUS, AIFF, CAF, WMA
                     </p>
-
                     <input
                       type="file"
-                      accept="audio/*"
+                      accept={acceptedAudioTypes}
                       className="hidden"
                       onChange={(event) =>
                         handleCandidateFileChange(
@@ -2075,21 +2143,36 @@ export default function AddCandidateModal() {
 
                 <div>
                   <FieldLabel>Upload supporting file</FieldLabel>
-
-                  <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] px-5 py-8 text-center transition hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5">
-                    <UploadCloud size={26} className="text-sibs-primary-1" />
-
-                    <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#101828]">
-                      {candidateForm.attachmentFileName || "Choose file"}
+                  <label
+                    className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                      attachmentFileName
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-gray-300 bg-gray-50"
+                    }`}
+                  >
+                    <UploadCloud
+                      size={26}
+                      className={
+                        attachmentFileName
+                          ? "text-emerald-700"
+                          : "text-sibs-primary-1"
+                      }
+                    />
+                    <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                      {attachmentFileName || "Choose file"}
                     </p>
-
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                    {attachmentFileName && (
+                      <p className="mt-1 text-xs font-bold text-emerald-700">
+                        File selected
+                        {attachmentFileSize ? ` • ${attachmentFileSize}` : ""}
+                      </p>
+                    )}
+                    <p className="mt-1 text-xs font-semibold text-gray-500">
                       PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                     </p>
-
                     <input
                       type="file"
-                      accept={ACCEPTED_DOCUMENT_TYPES}
+                      accept={acceptedDocumentTypes}
                       className="hidden"
                       onChange={(event) =>
                         handleCandidateFileChange(
@@ -2113,23 +2196,23 @@ export default function AddCandidateModal() {
                 rows={4}
                 value={candidateForm.remarks || ""}
                 onChange={(event) => updateField("remarks", event.target.value)}
-                className={textareaClass()}
+                className={textareaInputClass()}
                 placeholder="Candidate notes, screening observations, or other details."
               />
             </SectionCard>
 
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5">
-              <label className="flex items-start gap-3">
+            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
+              <label className="flex cursor-pointer items-start gap-3">
                 <input
                   type="checkbox"
                   checked={Boolean(candidateForm.consent)}
                   onChange={(event) =>
                     updateField("consent", event.target.checked)
                   }
-                  className="mt-1 h-4 w-4"
+                  className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
                 />
 
-                <span className="text-sm font-medium leading-6 text-[#344054]">
+                <span className="text-sm font-semibold leading-6 text-gray-600">
                   I agree to terms & conditions provided by the company. By
                   providing the candidate phone number, I confirm that the
                   candidate agreed to the collection and use of these details for
@@ -2140,12 +2223,12 @@ export default function AddCandidateModal() {
           </form>
 
           <div className="border-t border-gray-100 bg-white px-5 py-4 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div className="flex flex-col justify-end gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={handleResetCandidate}
                 disabled={isSaving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={16} />
                 Reset
@@ -2155,7 +2238,7 @@ export default function AddCandidateModal() {
                 type="submit"
                 form="add-candidate-form"
                 disabled={isSaving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />
                 {isSaving ? "Saving..." : "Save Candidate"}

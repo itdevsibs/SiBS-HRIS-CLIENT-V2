@@ -12,9 +12,26 @@ import api, { handleLogout } from "../../lib/axios/api-template";
 const UserContext = createContext(null);
 const REFRESH_GAP = 3000; // testing only
 
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/online-assessment",
+  "/apply",
+  "/public/talent-pool/apply",
+  "/recruitment/talent-pool/apply",
+];
+
+function isPublicPath(pathname = "") {
+  return PUBLIC_PATHS.some((path) => {
+    if (path === "/") return pathname === "/";
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+}
+
 export function UserProvider({ children }) {
   const location = useLocation();
   const pathname = location.pathname;
+  const publicRoute = isPublicPath(pathname);
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,11 +55,19 @@ export function UserProvider({ children }) {
     clearLogoutTimer();
     clearStoredSession();
     setUser(null);
+
+    if (isPublicPath(window.location.pathname)) {
+      setLoading(false);
+      return;
+    }
+
     handleLogout();
   }, [clearLogoutTimer, clearStoredSession]);
 
   const startLogoutTimer = useCallback(() => {
     clearLogoutTimer();
+
+    if (isPublicPath(window.location.pathname)) return;
 
     const expiresAtRaw = sessionStorage.getItem("accessTokenExpiresAt");
     if (!expiresAtRaw) return;
@@ -63,6 +88,13 @@ export function UserProvider({ children }) {
   }, [clearLogoutTimer, forceLogout]);
 
   const fetchUser = useCallback(async () => {
+    if (isPublicPath(window.location.pathname)) {
+      clearLogoutTimer();
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
+
     try {
       const res = await api.get("/api/users/me", {
         withCredentials: true,
@@ -88,11 +120,12 @@ export function UserProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [startLogoutTimer, clearStoredSession]);
+  }, [startLogoutTimer, clearStoredSession, clearLogoutTimer]);
 
   const refreshSession = useCallback(async () => {
     const now = Date.now();
 
+    if (isPublicPath(window.location.pathname)) return false;
     if (pathname === "/login") return false;
     if (!user) return false;
     if (refreshInProgressRef.current) return false;
@@ -132,10 +165,11 @@ export function UserProvider({ children }) {
   }, [pathname, user, startLogoutTimer, clearStoredSession]);
 
   useEffect(() => {
-    if (pathname === "/login") {
-      setLoading(false);
+    if (publicRoute) {
       clearLogoutTimer();
       clearStoredSession();
+      setUser(null);
+      setLoading(false);
       return;
     }
 
@@ -147,6 +181,7 @@ export function UserProvider({ children }) {
     };
   }, [
     pathname,
+    publicRoute,
     fetchUser,
     startLogoutTimer,
     clearLogoutTimer,
@@ -154,7 +189,7 @@ export function UserProvider({ children }) {
   ]);
 
   useEffect(() => {
-    if (!user || pathname === "/login") return;
+    if (publicRoute || !user) return;
 
     const handleActivity = () => {
       refreshSession();
@@ -189,14 +224,14 @@ export function UserProvider({ children }) {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [user, pathname, fetchUser, refreshSession, startLogoutTimer]);
+  }, [user, publicRoute, fetchUser, refreshSession, startLogoutTimer]);
 
   useEffect(() => {
-    if (pathname === "/login" || !user) return;
+    if (publicRoute || !user) return;
 
     refreshSession();
     startLogoutTimer();
-  }, [pathname, user, refreshSession, startLogoutTimer]);
+  }, [pathname, publicRoute, user, refreshSession, startLogoutTimer]);
 
   const updateUser = useCallback((newUser) => {
     setUser(newUser);
