@@ -175,6 +175,36 @@ const movementStages = [
   "Hired",
 ];
 
+const animationTiming = {
+  header: 0,
+
+  summarySection: 0,
+  summaryCardBase: 0,
+  summaryCardStagger: 60,
+
+  progressPanel: 90,
+  movementPanel: 150,
+
+  tablePanel: 240,
+  filterNotice: 160,
+
+  mobileRoleBase: 160,
+  mobileRoleStagger: 80,
+
+  recruiterPanel: 240,
+  recruiterCardBase: 160,
+  recruiterCardStagger: 80,
+
+  ruleCard: 320,
+};
+
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
@@ -233,7 +263,7 @@ function getLoadClass(load) {
 function Badge({ children, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold whitespace-nowrap transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
     >
       {children}
     </span>
@@ -251,7 +281,7 @@ function StatCard({
   return (
     <div
       className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -276,7 +306,7 @@ function StatCard({
   );
 }
 
-function ProgressBar({ label, value, total }) {
+function ProgressBar({ label, value, total, delay = 0 }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
 
   return (
@@ -292,14 +322,17 @@ function ProgressBar({ label, value, total }) {
       <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f6]">
         <div
           className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
-          style={{ width: `${percentage}%` }}
+          style={{
+            width: `${percentage}%`,
+            transitionDelay: `${delay}ms`,
+          }}
         />
       </div>
     </div>
   );
 }
 
-function MovementBar({ label, value, max }) {
+function MovementBar({ label, value, max, delay = 0 }) {
   const percentage = max > 0 ? Math.round((value / max) * 100) : 0;
 
   return (
@@ -313,7 +346,10 @@ function MovementBar({ label, value, max }) {
       <div className="h-2.5 overflow-hidden rounded-full bg-[#eef2f6]">
         <div
           className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
-          style={{ width: `${percentage}%` }}
+          style={{
+            width: `${percentage}%`,
+            transitionDelay: `${delay}ms`,
+          }}
         />
       </div>
     </div>
@@ -340,7 +376,7 @@ function RoleMobileCard({ role, onView, delay = 0 }) {
       type="button"
       onClick={onView}
       className="sibs-page-card-in w-full rounded-xl border border-[#e6ecf2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -630,64 +666,64 @@ export default function TADashboardPage() {
 
   const totals = useMemo(() => {
     const totalOpenRoles = dashboardRoles.filter(
-      (role) => role.openSlots > 0
+      (role) => role.openSlots > 0,
     ).length;
 
     const totalApproved = dashboardRoles.reduce(
       (sum, role) => sum + role.approvedRequirement,
-      0
+      0,
     );
 
     const totalFilled = dashboardRoles.reduce(
       (sum, role) => sum + role.currentFilled,
-      0
+      0,
     );
 
     const atRisk = dashboardRoles.filter(
-      (role) => role.status === "At Risk"
+      (role) => role.status === "At Risk",
     ).length;
 
     const delayed = dashboardRoles.filter(
-      (role) => role.status === "Delayed"
+      (role) => role.status === "Delayed",
     ).length;
 
     const totalDropOffs = dashboardRoles.reduce(
       (sum, role) => sum + role.dropOffs,
-      0
+      0,
     );
 
     const agingRoles = dashboardRoles.filter(
-      (role) => role.agingDays >= 15
+      (role) => role.agingDays >= 15,
     ).length;
 
     const totalSourced = dashboardRoles.reduce(
       (sum, role) => sum + role.sourced,
-      0
+      0,
     );
 
     const totalScreened = dashboardRoles.reduce(
       (sum, role) => sum + role.screened,
-      0
+      0,
     );
 
     const totalInterviewed = dashboardRoles.reduce(
       (sum, role) => sum + role.interviewed,
-      0
+      0,
     );
 
     const totalOffered = dashboardRoles.reduce(
       (sum, role) => sum + role.offered,
-      0
+      0,
     );
 
     const totalAccepted = dashboardRoles.reduce(
       (sum, role) => sum + role.accepted,
-      0
+      0,
     );
 
     const totalHired = dashboardRoles.reduce(
       (sum, role) => sum + role.hired,
-      0
+      0,
     );
 
     return {
@@ -711,6 +747,61 @@ export default function TADashboardPage() {
 
   const maxMovement = Math.max(...Object.values(totals.movement));
 
+  const statCards = [
+    {
+      title: "Total Open Roles",
+      value: formatNumber(totals.totalOpenRoles),
+      icon: BriefcaseBusiness,
+    },
+    {
+      title: "Requirement vs Filled",
+      value: `${formatNumber(totals.totalFilled)} / ${formatNumber(
+        totals.totalApproved,
+      )}`,
+      icon: UserRoundCheck,
+    },
+    {
+      title: "At-Risk Roles",
+      value: formatNumber(totals.atRisk),
+      icon: AlertTriangle,
+      valueClassName: "text-amber-500",
+      iconClassName: "bg-amber-50 text-amber-600",
+    },
+    {
+      title: "Delayed Roles",
+      value: formatNumber(totals.delayed),
+      icon: CircleAlert,
+      valueClassName: "text-red-600",
+      iconClassName: "bg-red-50 text-red-600",
+    },
+    {
+      title: "Weekly Movement",
+      value: formatNumber(totals.movement.Hired),
+      icon: Activity,
+      valueClassName: "text-emerald-600",
+      iconClassName: "bg-emerald-50 text-emerald-600",
+    },
+    {
+      title: "Drop-Offs",
+      value: formatNumber(totals.totalDropOffs),
+      icon: UserX,
+      valueClassName: "text-red-600",
+      iconClassName: "bg-red-50 text-red-600",
+    },
+    {
+      title: "Recruiter Load",
+      value: formatNumber(recruiterLoads.length),
+      icon: UsersRound,
+    },
+    {
+      title: "Aging Roles",
+      value: formatNumber(totals.agingRoles),
+      icon: Clock3,
+      valueClassName: "text-amber-500",
+      iconClassName: "bg-amber-50 text-amber-600",
+    },
+  ];
+
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
       <Header />
@@ -719,7 +810,10 @@ export default function TADashboardPage() {
         ref={mainScrollRef}
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6"
       >
-        <section className="sibs-page-header-in mb-6">
+        <section
+          className="sibs-page-header-in mb-6"
+          style={getAnimationStyle(animationTiming.header)}
+        >
           <div className="flex items-center gap-2 text-sibs-primary-1">
             <LayoutDashboard size={28} className="shrink-0" />
 
@@ -733,7 +827,10 @@ export default function TADashboardPage() {
           </p>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section
+          className="sibs-page-card-in mb-6 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+          style={getAnimationStyle(animationTiming.summarySection)}
+        >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-base font-bold text-[#101828]">
@@ -748,80 +845,27 @@ export default function TADashboardPage() {
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            <StatCard
-              title="Total Open Roles"
-              value={formatNumber(totals.totalOpenRoles)}
-              icon={BriefcaseBusiness}
-              delay={0}
-            />
-
-            <StatCard
-              title="Requirement vs Filled"
-              value={`${formatNumber(totals.totalFilled)} / ${formatNumber(
-                totals.totalApproved
-              )}`}
-              icon={UserRoundCheck}
-              delay={60}
-            />
-
-            <StatCard
-              title="At-Risk Roles"
-              value={formatNumber(totals.atRisk)}
-              icon={AlertTriangle}
-              valueClassName="text-amber-500"
-              iconClassName="bg-amber-50 text-amber-600"
-              delay={120}
-            />
-
-            <StatCard
-              title="Delayed Roles"
-              value={formatNumber(totals.delayed)}
-              icon={CircleAlert}
-              valueClassName="text-red-600"
-              iconClassName="bg-red-50 text-red-600"
-              delay={180}
-            />
-
-            <StatCard
-              title="Weekly Movement"
-              value={formatNumber(totals.movement.Hired)}
-              icon={Activity}
-              valueClassName="text-emerald-600"
-              iconClassName="bg-emerald-50 text-emerald-600"
-              delay={240}
-            />
-
-            <StatCard
-              title="Drop-Offs"
-              value={formatNumber(totals.totalDropOffs)}
-              icon={UserX}
-              valueClassName="text-red-600"
-              iconClassName="bg-red-50 text-red-600"
-              delay={300}
-            />
-
-            <StatCard
-              title="Recruiter Load"
-              value={formatNumber(recruiterLoads.length)}
-              icon={UsersRound}
-              delay={360}
-            />
-
-            <StatCard
-              title="Aging Roles"
-              value={formatNumber(totals.agingRoles)}
-              icon={Clock3}
-              valueClassName="text-amber-500"
-              iconClassName="bg-amber-50 text-amber-600"
-              delay={420}
-            />
+            {statCards.map((card, index) => (
+              <StatCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                valueClassName={card.valueClassName}
+                iconClassName={card.iconClassName}
+                delay={
+                  animationTiming.summaryCardBase +
+                  index * animationTiming.summaryCardStagger
+                }
+              />
+            ))}
           </div>
         </section>
 
         <section className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <div
-            className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
-            style={{ animationDelay: "80ms" }}
+            className="sibs-page-card-in rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            style={getAnimationStyle(animationTiming.progressPanel)}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
@@ -838,20 +882,21 @@ export default function TADashboardPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              {dashboardRoles.map((role) => (
+              {dashboardRoles.map((role, index) => (
                 <ProgressBar
                   key={role.id}
                   label={role.roleAccount}
                   value={role.currentFilled}
                   total={role.approvedRequirement}
+                  delay={100 + index * 70}
                 />
               ))}
             </div>
           </div>
 
           <div
-            className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
-            style={{ animationDelay: "140ms" }}
+            className="sibs-page-card-in rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+            style={getAnimationStyle(animationTiming.movementPanel)}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
@@ -868,12 +913,13 @@ export default function TADashboardPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              {movementStages.map((stage) => (
+              {movementStages.map((stage, index) => (
                 <MovementBar
                   key={stage}
                   label={stage}
                   value={totals.movement[stage]}
                   max={maxMovement}
+                  delay={100 + index * 70}
                 />
               ))}
             </div>
@@ -882,8 +928,8 @@ export default function TADashboardPage() {
 
         <section className="grid grid-cols-1 gap-4 2xl:grid-cols-[1fr_380px]">
           <div
-            className="sibs-profile-tab-panel overflow-hidden rounded-xl bg-white shadow-sm"
-            style={{ animationDelay: "180ms" }}
+            className="sibs-page-card-in overflow-hidden rounded-xl bg-white shadow-sm"
+            style={getAnimationStyle(animationTiming.tablePanel)}
           >
             <div className="flex items-center justify-between gap-4 border-b border-[#f3f4f6] p-5 max-lg:flex-col max-lg:items-stretch sm:p-6">
               <div>
@@ -919,12 +965,18 @@ export default function TADashboardPage() {
                     <RoleMobileCard
                       key={role.id}
                       role={role}
-                      delay={Math.min(index * 40, 300)}
+                      delay={
+                        animationTiming.mobileRoleBase +
+                        Math.min(
+                          index * animationTiming.mobileRoleStagger,
+                          300,
+                        )
+                      }
                       onView={() => setSelectedRole(role)}
                     />
                   ))
                 ) : (
-                  <div className="sibs-profile-tab-panel rounded-xl border border-[#e6ecf2] bg-white p-10 text-center text-sm font-bold text-gray-500">
+                  <div className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-white p-10 text-center text-sm font-bold text-gray-500">
                     No role records found.
                   </div>
                 )}
@@ -965,7 +1017,7 @@ export default function TADashboardPage() {
                       </tr>
                     </thead>
 
-                    <tbody key={search} className="sibs-profile-tab-panel">
+                    <tbody key={search}>
                       {filteredRoles.length > 0 ? (
                         filteredRoles.map((role) => (
                           <tr
@@ -1071,11 +1123,11 @@ export default function TADashboardPage() {
             </div>
           </div>
 
-          <aside
-            className="sibs-profile-tab-panel flex flex-col gap-4"
-            style={{ animationDelay: "240ms" }}
-          >
-            <div className="rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6">
+          <aside className="flex flex-col gap-4">
+            <div
+              className="sibs-page-card-in rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
+              style={getAnimationStyle(animationTiming.recruiterPanel)}
+            >
               <h2 className="m-0 text-lg font-bold text-sibs-primary-1">
                 Recruiter Load
               </h2>
@@ -1089,9 +1141,10 @@ export default function TADashboardPage() {
                   <div
                     key={item.recruiter}
                     className="sibs-page-card-in rounded-xl border border-[#e6ecf2] bg-slate-50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-                    style={{
-                      animationDelay: `${Math.min(index * 60, 300)}ms`,
-                    }}
+                    style={getAnimationStyle(
+                      animationTiming.recruiterCardBase +
+                        index * animationTiming.recruiterCardStagger,
+                    )}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -1142,7 +1195,10 @@ export default function TADashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+            <div
+              className="sibs-page-card-in rounded-xl border border-blue-200 bg-blue-50 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              style={getAnimationStyle(animationTiming.ruleCard)}
+            >
               <h3 className="m-0 text-sm font-bold text-sibs-primary-1">
                 TA Dashboard Rule
               </h3>

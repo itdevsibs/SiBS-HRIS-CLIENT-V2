@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -24,6 +24,19 @@ const dashboardTitleMap = {
   ta: "Talent Acquisition Dashboard",
   hr_admin: "HR Admin Dashboard",
   super_admin: "Super Admin Dashboard",
+};
+
+const animationTiming = {
+  header: 0,
+  summary: 60,
+  panels: 120,
+  quickActions: 240,
+
+  summaryCardBase: 0,
+  summaryCardStagger: 60,
+
+  quickActionBase: 160,
+  quickActionStagger: 80,
 };
 
 const summaryCards = [
@@ -74,6 +87,7 @@ const quickActions = [
     title: "Attendance",
     desc: "Track attendance",
     icon: ClipboardList,
+    path: "/attendance",
   },
   {
     title: "View Reports",
@@ -81,6 +95,20 @@ const quickActions = [
     icon: BarChart3,
   },
 ];
+
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
+function normalizeRole(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
@@ -90,31 +118,54 @@ function formatNumber(value) {
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const { user, loading } = useUser();
   const { ADMIN_ROLES } = useAdmin();
 
-  const isAdminSide = ADMIN_ROLES.includes(user?.role);
+  const userRole = normalizeRole(user?.role);
+
+  const adminRolesKey = Array.isArray(ADMIN_ROLES)
+    ? ADMIN_ROLES.map(normalizeRole).join("|")
+    : "";
+
+  const isAdminSide = useMemo(() => {
+    const adminRoles = adminRolesKey
+      .split("|")
+      .map(normalizeRole)
+      .filter(Boolean);
+
+    return adminRoles.includes(userRole);
+  }, [adminRolesKey, userRole]);
 
   useEffect(() => {
     if (loading) return;
 
     if (!user) {
-      navigate("/login", { replace: true });
+      if (location.pathname !== "/login") {
+        navigate("/login", { replace: true });
+      }
       return;
     }
 
-    if (!ADMIN_ROLES.includes(user.role)) {
-      navigate("/dashboard/employee", { replace: true });
+    if (!isAdminSide) {
+      const targetPath = userRole === "employee" ? "/dashboard/employee" : "/login";
+
+      if (location.pathname !== targetPath) {
+        navigate(targetPath, { replace: true });
+      }
     }
-  }, [user, loading, navigate, ADMIN_ROLES]);
+  }, [loading, user, isAdminSide, userRole, location.pathname, navigate]);
 
   if (loading || !user || !isAdminSide) {
     return (
-      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-        <Header />
+      <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+        <div className="shrink-0">
+          <Header />
+        </div>
 
         <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-          <div className="flex min-w-0 flex-col gap-6">
+          <div className="mx-auto max-w-[1600px] space-y-5">
             <div className="sibs-page-header-in min-w-0">
               <div className="mb-4 h-8 w-56 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
               <div className="h-4 w-72 max-w-full animate-sibs-pulse rounded-lg bg-gray-300" />
@@ -131,7 +182,7 @@ export default function AdminDashboardPage() {
                   <div
                     key={item}
                     className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    style={getAnimationStyle(index * 60)}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
@@ -157,7 +208,7 @@ export default function AdminDashboardPage() {
                   <div
                     key={item}
                     className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    style={getAnimationStyle(index * 60)}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-4">
@@ -187,20 +238,26 @@ export default function AdminDashboardPage() {
       .join(" ") || "User";
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6">
-        <div className="flex min-w-0 flex-col gap-6">
-          <section className="sibs-page-header-in min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <section
+            className="sibs-page-header-in min-w-0"
+            style={getAnimationStyle(animationTiming.header)}
+          >
+            <div className="flex min-w-0 items-center gap-3">
               <LayoutDashboard
-                size={28}
-                className="shrink-0 text-sibs-primary-1 transition-transform duration-300 hover:scale-110"
+                size={34}
+                strokeWidth={2.2}
+                className="shrink-0 text-sibs-primary-1"
               />
 
-              <h1 className="min-w-0 break-words text-[26px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                {dashboardTitleMap[user?.role] || "Dashboard"}
+              <h1 className="min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+                {dashboardTitleMap[userRole] || "Dashboard"}
               </h1>
             </div>
 
@@ -212,7 +269,10 @@ export default function AdminDashboardPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={getAnimationStyle(animationTiming.summary)}
+          >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-base font-bold text-[#101828]">
@@ -224,6 +284,10 @@ export default function AdminDashboardPage() {
                   and payroll records.
                 </p>
               </div>
+
+              <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                Admin View
+              </span>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
@@ -233,13 +297,19 @@ export default function AdminDashboardPage() {
                   label={item.label}
                   value={formatNumber(item.value)}
                   icon={item.icon}
-                  delay={index * 60}
+                  delay={
+                    animationTiming.summaryCardBase +
+                    index * animationTiming.summaryCardStagger
+                  }
                 />
               ))}
             </div>
           </section>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <section
+            className="grid grid-cols-1 gap-4 lg:grid-cols-2"
+            style={getAnimationStyle(animationTiming.panels)}
+          >
             <DashboardPanel
               title="Recent Activity"
               description="Latest system and employee activity"
@@ -259,7 +329,10 @@ export default function AdminDashboardPage() {
             />
           </section>
 
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <section
+            className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+            style={getAnimationStyle(animationTiming.quickActions)}
+          >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-base font-bold text-[#101828]">
@@ -273,37 +346,49 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {quickActions.map((item, index) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  className="group sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md active:scale-[0.99]"
-                  style={{ animationDelay: `${index * 60}ms` }}
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
-                        <item.icon size={22} />
+              {quickActions.map((item, index) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => {
+                      if (item.path && location.pathname !== item.path) {
+                        navigate(item.path);
+                      }
+                    }}
+                    className="group sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md active:scale-[0.99]"
+                    style={getAnimationStyle(
+                      animationTiming.quickActionBase +
+                        index * animationTiming.quickActionStagger,
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sibs-primary-1 text-white transition-transform duration-200 group-hover:scale-105">
+                          <Icon size={22} />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-extrabold text-sibs-primary-1">
+                            {item.title}
+                          </p>
+
+                          <p className="mt-0.5 truncate text-xs font-semibold text-sibs-tertiary-5">
+                            {item.desc}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-extrabold text-sibs-primary-1">
-                          {item.title}
-                        </p>
-
-                        <p className="mt-0.5 truncate text-xs font-semibold text-sibs-tertiary-5">
-                          {item.desc}
-                        </p>
-                      </div>
+                      <ArrowRight
+                        size={18}
+                        className="shrink-0 text-sibs-primary-1 transition-transform duration-200 group-hover:translate-x-1"
+                      />
                     </div>
-
-                    <ArrowRight
-                      size={18}
-                      className="shrink-0 text-sibs-primary-1 transition-transform duration-200 group-hover:translate-x-1"
-                    />
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </section>
         </div>
@@ -323,7 +408,7 @@ function DashboardStatCard({
   return (
     <div
       className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={getAnimationStyle(delay)}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -358,8 +443,8 @@ function DashboardPanel({
 }) {
   return (
     <section
-      className="sibs-profile-tab-panel rounded-xl bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6"
-      style={{ animationDelay: `${delay}ms` }}
+      className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md sm:p-6"
+      style={getAnimationStyle(delay)}
     >
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
@@ -372,7 +457,7 @@ function DashboardPanel({
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-sibs-primary-1 text-white transition-transform duration-200 hover:scale-105">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white transition-transform duration-200 hover:scale-105">
           <Icon size={18} />
         </div>
       </div>

@@ -1260,61 +1260,72 @@ export default function AttendanceTable() {
       : 10;
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
-      <div className="p-4 sm:p-5">
-        <div className="mb-5 rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-base font-bold text-[#101828]">
-                Current Page Summary
-              </h2>
+  <>
+    {/* SUMMARY SECTION */}
+    <section
+      className="sibs-profile-tab-panel"
+      style={{ animationDelay: "60ms" }}
+    >
+      <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-base font-bold text-[#101828]">
+              Current Page Summary
+            </h2>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                These totals are based only on the current attendance records
-                loaded for this page.
-              </p>
-            </div>
-
-            <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-              Page {currentPage}
-            </Badge>
+            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              These totals are based only on the current attendance records
+              loaded for this page.
+            </p>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Loaded Attendance"
-              value={loading ? "..." : formatNumber(pageStats.totalLoaded)}
-              icon={CalendarDays}
-              delay={0}
-            />
-
-            <StatCard
-              title="Approved"
-              value={loading ? "..." : formatNumber(pageStats.approvedCount)}
-              icon={CircleCheckBig}
-              valueClassName="text-emerald-600"
-              iconClassName="bg-emerald-50 text-emerald-600"
-              delay={60}
-            />
-
-            <StatCard
-              title="Pending"
-              value={loading ? "..." : formatNumber(pageStats.pendingCount)}
-              icon={CircleX}
-              valueClassName="text-amber-500"
-              iconClassName="bg-amber-50 text-amber-600"
-              delay={120}
-            />
-
-            <StatCard
-              title="Page WH"
-              value={loading ? "..." : formatNumber(pageStats.totalWorkHours)}
-              icon={Timer}
-              delay={180}
-            />
-          </div>
+          <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+            Page {currentPage}
+          </Badge>
         </div>
 
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Loaded Attendance"
+            value={loading ? "..." : formatNumber(pageStats.totalLoaded)}
+            icon={CalendarDays}
+            delay={0}
+          />
+
+          <StatCard
+            title="Approved"
+            value={loading ? "..." : formatNumber(pageStats.approvedCount)}
+            icon={CircleCheckBig}
+            valueClassName="text-emerald-600"
+            iconClassName="bg-emerald-50 text-emerald-600"
+            delay={60}
+          />
+
+          <StatCard
+            title="Pending"
+            value={loading ? "..." : formatNumber(pageStats.pendingCount)}
+            icon={CircleX}
+            valueClassName="text-amber-500"
+            iconClassName="bg-amber-50 text-amber-600"
+            delay={120}
+          />
+
+          <StatCard
+            title="Page WH"
+            value={loading ? "..." : formatNumber(pageStats.totalWorkHours)}
+            icon={Timer}
+            delay={180}
+          />
+        </div>
+      </div>
+    </section>
+
+    {/* RECORDS SECTION */}
+    <section
+      className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+      style={{ animationDelay: "120ms" }}
+    >
+      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
         <PaginationTable
           title="Attendance Records"
           subtitle={
@@ -1359,10 +1370,10 @@ export default function AttendanceTable() {
             <InlineDateRangeFilter visible={attendanceDateRangeView} />
           }
           showPagination={false}
-          className="mb-3"
+          className="mb-0"
         />
 
-        <div className="mb-5 block sm:hidden">
+        <div className="mt-4 block sm:hidden">
           <button
             type="button"
             onClick={handleAttendanceSearchSubmit}
@@ -1373,234 +1384,238 @@ export default function AttendanceTable() {
             Search
           </button>
         </div>
+      </div>
 
-        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-          <div
-            ref={tableScrollRef}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            className={`max-h-[580px] select-none overflow-auto ${
-              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
-            }`}
-          >
-            <table className="w-full min-w-[1480px] border-collapse bg-white">
-              <thead className="sticky top-0 z-10 bg-slate-50">
-                <tr>
-                  {adminView && (
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      SiBS ID
-                    </th>
-                  )}
-
-                  {adminView && (
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Employee Name
-                    </th>
-                  )}
-
-                  {attendanceFiltersView && (
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Department
-                    </th>
-                  )}
-
-                  {attendanceFiltersView && (
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Account
-                    </th>
-                  )}
-
-                  {attendanceFiltersView && (
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Site
-                    </th>
-                  )}
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Tracker Date
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Login
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Start Break
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    End Break
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Logout
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    WH
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    BH
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    OT
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    ATH
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody
-                key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
-              >
-                {loading ? (
-                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                    <tr key={index}>
-                      <td
-                        colSpan={emptyColSpan}
-                        className="border-t border-[#f3f4f6] px-5 py-4"
-                      >
-                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-                      </td>
-                    </tr>
-                  ))
-                ) : attendance.length === 0 ? (
+      <div className="p-4 sm:p-6">
+        <div className="hidden lg:block">
+          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
+            <div
+              ref={tableScrollRef}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleDragEnd}
+              className={`max-h-[580px] select-none overflow-auto ${
+                isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+              }`}
+            >
+              <table className="w-full min-w-[1480px] border-collapse bg-white">
+                <thead className="sticky top-0 z-10 bg-slate-50">
                   <tr>
-                    <td
-                      colSpan={emptyColSpan}
-                      className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
-                    >
-                      No attendance records found.
-                    </td>
+                    {adminView && (
+                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                        SiBS ID
+                      </th>
+                    )}
+
+                    {adminView && (
+                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                        Employee Name
+                      </th>
+                    )}
+
+                    {attendanceFiltersView && (
+                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                        Department
+                      </th>
+                    )}
+
+                    {attendanceFiltersView && (
+                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                        Account
+                      </th>
+                    )}
+
+                    {attendanceFiltersView && (
+                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                        Site
+                      </th>
+                    )}
+
+                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Tracker Date
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Login
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Start Break
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      End Break
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Logout
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      WH
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      BH
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      OT
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      ATH
+                    </th>
+
+                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
+                      Status
+                    </th>
                   </tr>
-                ) : (
-                  attendance.map((item, index) => {
-                    const loginTime = formatTime(item.gy_tracker_login);
-                    const breakoutTime = formatTime(item.gy_tracker_breakout);
-                    const breakinTime = formatTime(item.gy_tracker_breakin);
-                    const logoutTime = formatTime(item.gy_tracker_logout);
-                    const employeeName = formatEmployeeName(item);
+                </thead>
 
-                    return (
-                      <tr
-                        key={`${
-                          item.gy_tracker_id || item.gy_tracker_date || "row"
-                        }-${index}`}
-                        className="transition-all duration-200 hover:bg-slate-50"
-                      >
-                        {adminView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
-                            {item.gy_emp_code || "—"}
-                          </td>
-                        )}
-
-                        {adminView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
-                            {employeeName}
-                          </td>
-                        )}
-
-                        {attendanceFiltersView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {item.department || "—"}
-                          </td>
-                        )}
-
-                        {attendanceFiltersView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {item.gy_emp_account || "—"}
-                          </td>
-                        )}
-
-                        {attendanceFiltersView && (
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                            {getAssignedSite(item)}
-                          </td>
-                        )}
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#344054]">
-                          {formatDate(item.gy_tracker_date)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                          <TimeBadge
-                            value={loginTime}
-                            className={getLoginBadgeClass(
-                              item,
-                              loginTime,
-                              item.login_status,
-                            )}
-                          />
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                          <TimeBadge
-                            value={breakoutTime}
-                            className={
-                              breakoutTime === "—"
-                                ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
-                                : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                            }
-                          />
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                          <TimeBadge
-                            value={breakinTime}
-                            className={getManagerSafeTimeBadgeClass(
-                              item,
-                              breakinTime,
-                              item.breakin_status,
-                            )}
-                          />
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                          <TimeBadge
-                            value={logoutTime}
-                            className={getManagerSafeTimeBadgeClass(
-                              item,
-                              logoutTime,
-                              item.logout_status,
-                            )}
-                          />
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
-                          {displayCappedWorkHours(item)}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {item.gy_tracker_bh ?? "—"}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {item.gy_tracker_ot ?? "—"}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                          {item.gy_tracker_ath ?? "—"}
-                        </td>
-
-                        <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                          {renderStatusBadge(item.gy_tracker_status)}
+                <tbody
+                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
+                >
+                  {loading ? (
+                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                      <tr key={index}>
+                        <td
+                          colSpan={emptyColSpan}
+                          className="border-t border-[#f3f4f6] px-5 py-4"
+                        >
+                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
                         </td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                    ))
+                  ) : attendance.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={emptyColSpan}
+                        className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
+                      >
+                        No attendance records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    attendance.map((item, index) => {
+                      const loginTime = formatTime(item.gy_tracker_login);
+                      const breakoutTime = formatTime(item.gy_tracker_breakout);
+                      const breakinTime = formatTime(item.gy_tracker_breakin);
+                      const logoutTime = formatTime(item.gy_tracker_logout);
+                      const employeeName = formatEmployeeName(item);
+
+                      return (
+                        <tr
+                          key={`${
+                            item.gy_tracker_id || item.gy_tracker_date || "row"
+                          }-${index}`}
+                          className="transition-all duration-200 hover:bg-slate-50"
+                        >
+                          {adminView && (
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
+                              {item.gy_emp_code || "—"}
+                            </td>
+                          )}
+
+                          {adminView && (
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
+                              {employeeName}
+                            </td>
+                          )}
+
+                          {attendanceFiltersView && (
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                              {item.department || "—"}
+                            </td>
+                          )}
+
+                          {attendanceFiltersView && (
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                              {item.gy_emp_account || "—"}
+                            </td>
+                          )}
+
+                          {attendanceFiltersView && (
+                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
+                              {getAssignedSite(item)}
+                            </td>
+                          )}
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#344054]">
+                            {formatDate(item.gy_tracker_date)}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                            <TimeBadge
+                              value={loginTime}
+                              className={getLoginBadgeClass(
+                                item,
+                                loginTime,
+                                item.login_status,
+                              )}
+                            />
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                            <TimeBadge
+                              value={breakoutTime}
+                              className={
+                                breakoutTime === "—"
+                                  ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
+                                  : "border-emerald-200 bg-emerald-50 text-emerald-600"
+                              }
+                            />
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                            <TimeBadge
+                              value={breakinTime}
+                              className={getManagerSafeTimeBadgeClass(
+                                item,
+                                breakinTime,
+                                item.breakin_status,
+                              )}
+                            />
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                            <TimeBadge
+                              value={logoutTime}
+                              className={getManagerSafeTimeBadgeClass(
+                                item,
+                                logoutTime,
+                                item.logout_status,
+                              )}
+                            />
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
+                            {displayCappedWorkHours(item)}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                            {item.gy_tracker_bh ?? "—"}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                            {item.gy_tracker_ot ?? "—"}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
+                            {item.gy_tracker_ath ?? "—"}
+                          </td>
+
+                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
+                            {renderStatusBadge(item.gy_tracker_status)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
@@ -1608,7 +1623,7 @@ export default function AttendanceTable() {
           </p>
         </div>
 
-        <div className="mt-5 block lg:hidden">
+        <div className="block lg:hidden">
           <div ref={mobileScrollRef} className="max-h-[580px] overflow-y-auto">
             {loading ? (
               <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
@@ -1742,19 +1757,22 @@ export default function AttendanceTable() {
           </div>
         </div>
 
-        <PaginationTable
-          loading={loading}
-          showSearch={false}
-          showPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadedCount={attendance.length}
-          totalRecords={totalRecords}
-          recordLabel="attendance records"
-          onPrevious={goPreviousPage}
-          onNext={goNextPage}
-        />
+        <div className="mt-5">
+          <PaginationTable
+            loading={loading}
+            showSearch={false}
+            showPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            loadedCount={attendance.length}
+            totalRecords={totalRecords}
+            recordLabel="attendance records"
+            onPrevious={goPreviousPage}
+            onNext={goNextPage}
+          />
+        </div>
       </div>
-    </div>
-  );
+    </section>
+  </>
+);
 }

@@ -1355,39 +1355,65 @@ function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
 
 function SectionTitle({ icon: Icon, title, description }) {
   return (
-    <div className="mb-5 flex min-w-0 items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF2F6] text-sibs-primary-1">
-        <Icon size={20} />
-      </div>
-
-      <div className="min-w-0">
-        <h3 className="text-base font-extrabold uppercase tracking-wide text-sibs-primary-1">
-          {title}
-        </h3>
-
-        {description && (
-          <p className="mt-1 text-sm font-semibold leading-5 text-sibs-primary-1/80">
-            {description}
-          </p>
+    <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="flex min-w-0 items-start gap-3">
+        {Icon && (
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1 sm:h-10 sm:w-10">
+            <Icon size={18} className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+          </div>
         )}
+
+        <div className="min-w-0">
+          <h3 className="break-words text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-base">
+            {title}
+          </h3>
+
+          {description && (
+            <p className="mt-1 break-words text-xs font-medium leading-5 text-sibs-tertiary-5 sm:text-sm">
+              {description}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function DetailRow({ label, value }) {
+function ProfileGrid({ children, cols = "md:grid-cols-2" }) {
+  return (
+    <div className={`grid min-w-0 grid-cols-1 gap-3 ${cols}`}>
+      {children}
+    </div>
+  );
+}
+
+function ProfileDetail({ label, value }) {
   const displayValue =
     value === null || value === undefined || value === "" ? "—" : value;
 
+  const isLongText = [
+    "email",
+    "address",
+    "physical address",
+    "preferred location",
+    "how did you hear about us",
+    "training attended",
+    "skills / language",
+    "affiliations",
+    "general remarks",
+  ].includes(String(label || "").toLowerCase());
+
   return (
-    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
-      <p className="shrink-0 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+    <div className="flex min-h-[84px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-3 py-2.5 sm:px-4">
+      <p className="mb-1.5 break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
         {label}
       </p>
 
       <p
         title={String(displayValue)}
-        className="min-w-0 break-words text-right text-sm font-extrabold leading-6 text-[#101828]"
+        className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
+          isLongText ? "break-all" : "break-words"
+        }`}
       >
         {displayValue}
       </p>
@@ -1395,18 +1421,9 @@ function DetailRow({ label, value }) {
   );
 }
 
-function EmptyState({ title, description }) {
-  return (
-    <div className="rounded-xl border border-dashed border-[#C9D6E4] bg-[#F8FAFC] p-5 text-center">
-      <p className="text-sm font-extrabold text-[#101828]">{title}</p>
-      {description && (
-        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-          {description}
-        </p>
-      )}
-    </div>
-  );
-}
+
+
+
 
 function NhoRequirementCard({
   requirement,
@@ -1511,6 +1528,41 @@ function NhoRequirementCard({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ProfileTextarea({ label, value }) {
+  const displayValue =
+    value === null || value === undefined || value === "" ? "—" : value;
+
+  return (
+    <div className="min-w-0 rounded-[10px] bg-[#F8FAFC] px-3 py-3 sm:px-4">
+      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
+        {label}
+      </p>
+
+      <p className="whitespace-pre-wrap break-words text-sm font-extrabold leading-6 text-[#344054]">
+        {displayValue}
+      </p>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return <ProfileDetail label={label} value={value} />;
+}
+
+function EmptyState({ title, description }) {
+  return (
+    <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+      <p>{title}</p>
+
+      {description && (
+        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+          {description}
+        </p>
+      )}
     </div>
   );
 }
@@ -2695,183 +2747,194 @@ export default function CandidateProfileModal() {
   }
 
   function renderPersonalInformation() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={UserRound}
-          title="Personal Information"
-          description="Candidate master profile and contact information."
-        />
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={UserRound}
+        title="Personal Information"
+        description="Candidate master profile and contact information."
+      />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="rounded-xl bg-[#F8FAFC] p-4">
-            <DetailRow label="First Name" value={activeCandidate.firstName} />
-            <DetailRow label="Middle Name" value={activeCandidate.middleName} />
-            <DetailRow label="Last Name" value={activeCandidate.lastName} />
-            <DetailRow label="Suffix" value={activeCandidate.suffix} />
-            <DetailRow label="Nickname" value={activeCandidate.nickname} />
-            <DetailRow
-              label="Date of Birth"
-              value={formatDate(activeCandidate.dateOfBirth)}
-            />
-            <DetailRow
-              label="Age"
-              value={
-                activeCandidate.ageAsOfApplication
-                  ? `${activeCandidate.ageAsOfApplication}`
-                  : "—"
-              }
-            />
-          </div>
+      <div className="space-y-3">
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+          <ProfileDetail label="First Name" value={activeCandidate.firstName} />
+          <ProfileDetail label="Middle Name" value={activeCandidate.middleName} />
+          <ProfileDetail label="Last Name" value={activeCandidate.lastName} />
+          <ProfileDetail label="Suffix" value={activeCandidate.suffix} />
+        </ProfileGrid>
 
-          <div className="rounded-xl bg-[#F8FAFC] p-4">
-            <DetailRow label="Email" value={activeCandidate.email} />
-            <DetailRow
-              label="Phone 1"
-              value={
-                activeCandidate.phoneNumber1 ||
-                activeCandidate.contactNumber ||
-                activeCandidate.phone
-              }
-            />
-            <DetailRow label="Phone 2" value={activeCandidate.phoneNumber2} />
-            <DetailRow label="Address" value={activeCandidate.physicalAddress} />
-            <DetailRow
-              label="Preferred Location"
-              value={activeCandidate.applyingLocation}
-            />
-            <DetailRow label="Encoded By" value={encodedBy} />
-            <DetailRow
-              label="Created At"
-              value={formatDate(activeCandidate.createdAt)}
-            />
-          </div>
-        </div>
-      </section>
-    );
-  }
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+          <ProfileDetail label="Nickname" value={activeCandidate.nickname} />
+
+          <ProfileDetail
+            label="Date of Birth"
+            value={formatDate(activeCandidate.dateOfBirth)}
+          />
+
+          <ProfileDetail
+            label="Age"
+            value={
+              activeCandidate.ageAsOfApplication
+                ? `${activeCandidate.ageAsOfApplication}`
+                : "—"
+            }
+          />
+
+          <ProfileDetail label="Encoded By" value={encodedBy} />
+        </ProfileGrid>
+
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+          <ProfileDetail label="Email" value={activeCandidate.email} />
+
+          <ProfileDetail
+            label="Phone 1"
+            value={
+              activeCandidate.phoneNumber1 ||
+              activeCandidate.contactNumber ||
+              activeCandidate.phone
+            }
+          />
+
+          <ProfileDetail label="Phone 2" value={activeCandidate.phoneNumber2} />
+        </ProfileGrid>
+
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+          <ProfileDetail
+            label="Address"
+            value={activeCandidate.physicalAddress}
+          />
+
+          <ProfileDetail
+            label="Preferred Location"
+            value={activeCandidate.applyingLocation}
+          />
+
+          <ProfileDetail
+            label="Created At"
+            value={formatDate(activeCandidate.createdAt)}
+          />
+        </ProfileGrid>
+      </div>
+    </section>
+  );
+}
 
   function renderApplicationSource() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={BriefcaseBusiness}
-          title="Application Source"
-          description="Candidate source information and referral details."
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={BriefcaseBusiness}
+        title="Application Source"
+        description="Candidate source information and referral details."
+      />
+
+      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+        <ProfileDetail
+          label="Applied Position"
+          value={activeCandidate.openPosition || activeCandidate.roleCapability}
         />
 
-        <div className="rounded-xl bg-[#F8FAFC] p-4">
-          <DetailRow
-            label="Applied Position"
-            value={activeCandidate.openPosition || activeCandidate.roleCapability}
-          />
-          <DetailRow
-            label="How did you hear about us"
-            value={formatList(activeCandidate.hearAboutUs)}
-          />
-          <DetailRow label="Source" value={activeCandidate.source} />
-          <DetailRow label="Referred By" value={activeCandidate.referredBy} />
-          <DetailRow label="Employee ID" value={activeCandidate.employeeId} />
-        </div>
-      </section>
-    );
-  }
+        <ProfileDetail
+          label="How did you hear about us"
+          value={formatList(activeCandidate.hearAboutUs)}
+        />
+
+        <ProfileDetail label="Source" value={activeCandidate.source} />
+
+        <ProfileDetail label="Referred By" value={activeCandidate.referredBy} />
+
+        <ProfileDetail label="Employee ID" value={activeCandidate.employeeId} />
+      </ProfileGrid>
+    </section>
+  );
+}
 
   function renderPipelineLink() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={Network}
-          title="Pipeline Link"
-          description="Current pipeline status, assignment, and TA ownership."
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={Network}
+        title="Pipeline Link"
+        description="Current pipeline status, assignment, and TA ownership."
+      />
+
+      {pipelineCandidateDetailsLoading && (
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+          Loading Candidate Pipeline details...
+        </div>
+      )}
+
+      {pipelineCandidateDetailsError && (
+        <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+          {pipelineCandidateDetailsError}
+        </div>
+      )}
+
+      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+        <ProfileDetail
+          label="Pipeline ID"
+          value={resolvedPipelineId || candidatePipelineLookupId || "—"}
         />
 
-        {pipelineCandidateDetailsLoading && (
-          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-            Loading Candidate Pipeline details...
-          </div>
-        )}
+        <ProfileDetail
+          label="Pipeline Status"
+          value={activeCandidate.pipelineStatus || "—"}
+        />
 
-        {pipelineCandidateDetailsError && (
-          <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
-            {pipelineCandidateDetailsError}
-          </div>
-        )}
+        <ProfileDetail label="Current Stage" value={currentStage || "—"} />
 
-        <div className="rounded-xl bg-[#F8FAFC] p-4">
-          <DetailRow
-            label="Pipeline ID"
-            value={resolvedPipelineId || candidatePipelineLookupId || "—"}
-          />
-          <DetailRow
-            label="Pipeline Status"
-            value={activeCandidate.pipelineStatus || "—"}
-          />
-          <DetailRow label="Current Stage" value={currentStage || "—"} />
-          <DetailRow
-            label="Final Role"
-            value={activeCandidate.currentAppliedRole || "Not assigned yet"}
-          />
-          <DetailRow
-            label="Final Account"
-            value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
-          />
-          <DetailRow
-            label="TA Owner"
-            value={activeCandidate.currentTaOwner || "—"}
-          />
-        </div>
-      </section>
-    );
-  }
+        <ProfileDetail
+          label="Final Role"
+          value={activeCandidate.currentAppliedRole || "Not assigned yet"}
+        />
+
+        <ProfileDetail
+          label="Final Account"
+          value={activeCandidate.currentAppliedAccount || "Not assigned yet"}
+        />
+
+        <ProfileDetail
+          label="TA Owner"
+          value={activeCandidate.currentTaOwner || "—"}
+        />
+      </ProfileGrid>
+    </section>
+  );
+}
 
   function renderQualifications() {
-    const qualificationItems = [
-      {
-        label: "Educational Attainment",
-        value: activeCandidate.educationalAttainment,
-      },
-      {
-        label: "Skills / Language",
-        value: activeCandidate.skillsLanguage,
-      },
-      {
-        label: "Affiliations",
-        value: formatList(activeCandidate.affiliations),
-      },
-      {
-        label: "Training Attended",
-        value: activeCandidate.trainingAttended,
-      },
-    ];
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={GraduationCap}
+        title="Qualifications"
+        description="Education, skills, trainings, and certifications."
+      />
 
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={GraduationCap}
-          title="Qualifications"
-          description="Education, skills, trainings, and certifications."
+      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+        <ProfileDetail
+          label="Educational Attainment"
+          value={activeCandidate.educationalAttainment}
         />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {qualificationItems.map((item) => (
-            <div
-              key={item.label}
-              className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
-            >
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                {item.label}
-              </p>
+        <ProfileDetail
+          label="Skills / Language"
+          value={activeCandidate.skillsLanguage}
+        />
 
-              <p className="mt-3 break-words text-sm font-extrabold leading-6 text-[#101828]">
-                {item.value || "—"}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
+        <ProfileDetail
+          label="Affiliations"
+          value={formatList(activeCandidate.affiliations)}
+        />
+
+        <ProfileDetail
+          label="Training Attended"
+          value={activeCandidate.trainingAttended}
+        />
+      </ProfileGrid>
+    </section>
+  );
+}
 
   function renderWorkExperience() {
     return (
@@ -2917,28 +2980,32 @@ export default function CandidateProfileModal() {
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <StatusTile label="Industry" value={experience.industry} />
-                  <StatusTile
-                    label="Compensation"
-                    value={
-                      experience.monthlyCompensation
-                        ? formatCurrency(experience.monthlyCompensation)
-                        : "—"
-                    }
-                  />
-                  <StatusTile
-                    label="Length of Experience"
-                    value={experience.lengthOfWorkExperience}
-                  />
+                <div className="mt-4">
+  <ProfileGrid cols="md:grid-cols-3">
+    <ProfileDetail label="Industry" value={experience.industry} />
 
-                  <div className="md:col-span-3">
-                    <StatusTile
-                      label="Reason for Leaving"
-                      value={experience.reasonForLeaving}
-                    />
-                  </div>
-                </div>
+    <ProfileDetail
+      label="Compensation"
+      value={
+        experience.monthlyCompensation
+          ? formatCurrency(experience.monthlyCompensation)
+          : "—"
+      }
+    />
+
+    <ProfileDetail
+      label="Length of Experience"
+      value={experience.lengthOfWorkExperience}
+    />
+
+    <div className="md:col-span-3">
+      <ProfileDetail
+        label="Reason for Leaving"
+        value={experience.reasonForLeaving}
+      />
+    </div>
+  </ProfileGrid>
+</div>
               </div>
             ))}
           </div>
@@ -2954,68 +3021,50 @@ export default function CandidateProfileModal() {
     );
   }
 
-  function renderReadiness() {
-    const readinessItems = [
-      {
-        label: "Vaccinated",
-        value: activeCandidate.fullyVaccinated,
-      },
-      {
-        label: "On-site Ready",
-        value: activeCandidate.comfortableOnSite,
-      },
-      {
-        label: "Graveyard Shift",
-        value: activeCandidate.willingGraveyard,
-      },
-      {
-        label: "Employment Type",
-        value: activeCandidate.employmentInterest,
-      },
-      {
-        label: "Remote Access",
-        value: activeCandidate.remoteWorkAccess,
-      },
-      {
-        label: "Drug Test",
-        value: activeCandidate.willingDrugTest,
-      },
-      {
-        label: "Background Check",
-        value: activeCandidate.willingBackgroundCheck,
-        className: "sm:col-span-2 xl:col-span-3",
-      },
-    ];
+ function renderReadiness() {
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={ShieldCheck}
+        title="Readiness and Compliance"
+        description="Availability, work setup, and compliance readiness."
+      />
 
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={ShieldCheck}
-          title="Readiness and Compliance"
-          description="Availability, work setup, and compliance readiness."
+      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+        <ProfileDetail label="Vaccinated" value={activeCandidate.fullyVaccinated} />
+
+        <ProfileDetail
+          label="On-site Ready"
+          value={activeCandidate.comfortableOnSite}
         />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {readinessItems.map((item) => (
-            <div
-              key={item.label}
-              className={`rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 ${
-                item.className || ""
-              }`}
-            >
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                {item.label}
-              </p>
+        <ProfileDetail
+          label="Graveyard Shift"
+          value={activeCandidate.willingGraveyard}
+        />
 
-              <p className="mt-3 break-words text-sm font-extrabold leading-6 text-[#101828]">
-                {item.value || "—"}
-              </p>
-            </div>
-          ))}
+        <ProfileDetail
+          label="Employment Type"
+          value={activeCandidate.employmentInterest}
+        />
+
+        <ProfileDetail
+          label="Remote Access"
+          value={activeCandidate.remoteWorkAccess}
+        />
+
+        <ProfileDetail label="Drug Test" value={activeCandidate.willingDrugTest} />
+
+        <div className="sm:col-span-2 xl:col-span-3">
+          <ProfileDetail
+            label="Background Check"
+            value={activeCandidate.willingBackgroundCheck}
+          />
         </div>
-      </section>
-    );
-  }
+      </ProfileGrid>
+    </section>
+  );
+}
 
   function renderReferences() {
     return (
@@ -3316,20 +3365,21 @@ export default function CandidateProfileModal() {
   }
 
   function renderRemarks() {
-    return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-        <SectionTitle
-          icon={FileText}
-          title="General Remarks"
-          description="Additional notes for this candidate."
-        />
+  return (
+    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <SectionTitle
+        icon={FileText}
+        title="General Remarks"
+        description="Additional notes for this candidate."
+      />
 
-        <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm font-medium leading-6 text-[#475467]">
-          {activeCandidate.remarks || "No additional remarks."}
-        </div>
-      </section>
-    );
-  }
+      <ProfileTextarea
+        label="General Remarks"
+        value={activeCandidate.remarks || "No additional remarks."}
+      />
+    </section>
+  );
+}
 
   function renderActiveTabContent() {
     if (activeTab === "personal") return renderPersonalInformation();

@@ -335,6 +335,14 @@ function ProfileAvatar({ item, size = "md" }) {
     window.open(imageUrl, "_blank", "noopener,noreferrer");
   }
 
+  function handleProfileKeyDown(e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    handleOpenProfile(e);
+  }
+
   const sizeClass =
     size === "lg"
       ? "h-12 w-12"
@@ -358,14 +366,16 @@ function ProfileAvatar({ item, size = "md" }) {
 
   if (imageUrl && !imageFailed) {
     return (
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleOpenProfile}
+        onKeyDown={handleProfileKeyDown}
         title="Open profile picture"
-        className={`group flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm outline-none transition hover:scale-[1.03] hover:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+        className={`group flex ${sizeClass} shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm outline-none transition hover:scale-[1.03] hover:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
       >
         {avatarContent}
-      </button>
+      </div>
     );
   }
 

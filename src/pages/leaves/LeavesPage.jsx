@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+LeavesPage
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Header from "../../components/layout/Header";
 import {
   CalendarDays,
@@ -193,23 +200,33 @@ export default function LeavesPage() {
 
   const showAccountFilter = canViewAccountFilter(user);
 
-  function scrollPageToTop() {
+  function scrollPageToTop(behavior = "auto") {
     requestAnimationFrame(() => {
       if (mainScrollRef.current) {
         mainScrollRef.current.scrollTo({
           top: 0,
           left: 0,
-          behavior: "auto",
+          behavior,
         });
       }
-
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto",
-      });
     });
   }
+
+  useLayoutEffect(() => {
+    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    scrollPageToTop("auto");
+
+    const timer = window.setTimeout(() => {
+      scrollPageToTop("auto");
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   async function fetchLeaves({
     pageValue = page,
@@ -221,7 +238,7 @@ export default function LeavesPage() {
     shouldScrollTop = false,
   } = {}) {
     if (shouldScrollTop) {
-      scrollPageToTop();
+      scrollPageToTop("auto");
     }
 
     setLoading(true);
@@ -281,7 +298,7 @@ export default function LeavesPage() {
       setLoading(false);
 
       if (shouldScrollTop) {
-        scrollPageToTop();
+        scrollPageToTop("auto");
       }
     }
   }
@@ -450,21 +467,23 @@ export default function LeavesPage() {
   }, [accountOptions]);
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main
         ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden bg-sibs-tertiary-10 px-4 py-6 sm:px-6 lg:px-8"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
-        <div className="flex min-w-0 flex-col gap-6">
-          <section className="sibs-page-header-in flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <section className="sibs-page-header-in">
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-3">
                 <CalendarDays
                   size={34}
                   strokeWidth={2.2}
-                  className="shrink-0 text-sibs-primary-1 transition-transform duration-300 group-hover:scale-105"
+                  className="shrink-0 text-sibs-primary-1"
                 />
 
                 <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
@@ -480,102 +499,120 @@ export default function LeavesPage() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="text-base font-bold text-[#101828]">
-                  {isPersonalView
-                    ? "My Current Page Summary"
-                    : "Current Page Summary"}
-                </h2>
+          <section
+            className="sibs-profile-tab-panel"
+            style={{ animationDelay: "60ms" }}
+          >
+            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-[#101828]">
+                    {isPersonalView
+                      ? "My Current Page Summary"
+                      : "Current Page Summary"}
+                  </h2>
 
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  These totals are based only on the current 15 records loaded
-                  for this page.
-                </p>
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    These totals are based only on the current 15 records loaded
+                    for this page.
+                  </p>
+                </div>
+
+                {isPersonalView && (
+                  <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
+                    Personal View
+                  </Badge>
+                )}
               </div>
 
-              {isPersonalView && (
-                <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-                  Personal View
-                </Badge>
-              )}
-            </div>
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                <StatCard
+                  title="Loaded Leaves"
+                  value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
+                  icon={FileText}
+                  delay={0}
+                />
 
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-              <StatCard
-                title="Loaded Leaves"
-                value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
-                icon={FileText}
-                delay={0}
-              />
+                <StatCard
+                  title="Approved"
+                  value={
+                    loading ? "..." : formatNumber(pageStats.approvedLeaves)
+                  }
+                  icon={CheckCircle2}
+                  valueClassName="text-emerald-600"
+                  iconClassName="bg-emerald-50 text-emerald-600"
+                  delay={60}
+                />
 
-              <StatCard
-                title="Approved"
-                value={
-                  loading ? "..." : formatNumber(pageStats.approvedLeaves)
-                }
-                icon={CheckCircle2}
-                valueClassName="text-emerald-600"
-                iconClassName="bg-emerald-50 text-emerald-600"
-                delay={60}
-              />
+                <StatCard
+                  title="Pending"
+                  value={
+                    loading ? "..." : formatNumber(pageStats.pendingLeaves)
+                  }
+                  icon={Clock}
+                  valueClassName="text-amber-500"
+                  iconClassName="bg-amber-50 text-amber-600"
+                  delay={120}
+                />
 
-              <StatCard
-                title="Pending"
-                value={loading ? "..." : formatNumber(pageStats.pendingLeaves)}
-                icon={Clock}
-                valueClassName="text-amber-500"
-                iconClassName="bg-amber-50 text-amber-600"
-                delay={120}
-              />
+                <StatCard
+                  title="Rejected"
+                  value={
+                    loading ? "..." : formatNumber(pageStats.rejectedLeaves)
+                  }
+                  icon={XCircle}
+                  valueClassName="text-red-600"
+                  iconClassName="bg-red-50 text-red-600"
+                  delay={180}
+                />
 
-              <StatCard
-                title="Rejected"
-                value={loading ? "..." : formatNumber(pageStats.rejectedLeaves)}
-                icon={XCircle}
-                valueClassName="text-red-600"
-                iconClassName="bg-red-50 text-red-600"
-                delay={180}
-              />
+                <StatCard
+                  title="Page Leave Days"
+                  value={
+                    loading ? "..." : formatNumber(pageStats.totalLeaveDays)
+                  }
+                  icon={CalendarDays}
+                  delay={240}
+                />
 
-              <StatCard
-                title="Page Leave Days"
-                value={loading ? "..." : formatNumber(pageStats.totalLeaveDays)}
-                icon={CalendarDays}
-                delay={240}
-              />
-
-              <StatCard
-                title="Page Remaining"
-                value={loading ? "..." : formatNumber(pageStats.totalRemaining)}
-                icon={UserRound}
-                valueClassName="text-emerald-600"
-                iconClassName="bg-emerald-50 text-emerald-600"
-                delay={300}
-              />
+                <StatCard
+                  title="Page Remaining"
+                  value={
+                    loading ? "..." : formatNumber(pageStats.totalRemaining)
+                  }
+                  icon={UserRound}
+                  valueClassName="text-emerald-600"
+                  iconClassName="bg-emerald-50 text-emerald-600"
+                  delay={300}
+                />
+              </div>
             </div>
           </section>
 
-          <LeavesTable
-            leaves={paginatedLeaves}
-            loading={loading}
-            page={page}
-            searchInput={searchInput}
-            searchKeyword={search}
-            setSearchInput={setSearchInput}
-            setSearchKeyword={handleSetSearchKeyword}
-            setPage={setPage}
-            pagination={pagination}
-            statusFilter={statusFilter}
-            onStatusChange={handleStatusChange}
-            showAccountFilter={showAccountFilter}
-            accountFilter={accountFilter}
-            onAccountSelect={handleAccountSelect}
-            accountDropdownOptions={accountDropdownOptions}
-            isPersonalView={isPersonalView}
-            filterValues={filterValues}
-          />
+          <section
+            className="sibs-profile-tab-panel"
+            style={{ animationDelay: "120ms" }}
+          >
+            <LeavesTable
+              leaves={paginatedLeaves}
+              loading={loading}
+              page={page}
+              searchInput={searchInput}
+              searchKeyword={search}
+              setSearchInput={setSearchInput}
+              setSearchKeyword={handleSetSearchKeyword}
+              setPage={setPage}
+              pagination={pagination}
+              statusFilter={statusFilter}
+              onStatusChange={handleStatusChange}
+              showAccountFilter={showAccountFilter}
+              accountFilter={accountFilter}
+              onAccountSelect={handleAccountSelect}
+              accountDropdownOptions={accountDropdownOptions}
+              isPersonalView={isPersonalView}
+              filterValues={filterValues}
+            />
+          </section>
         </div>
       </main>
     </div>

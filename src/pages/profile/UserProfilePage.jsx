@@ -1,12 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   User,
-  Phone,
   Mail,
-  Building2,
   Briefcase,
   MapPin,
-  CalendarDays,
   UserRoundPen,
   X,
   UploadCloud,
@@ -29,6 +26,7 @@ import {
   StickyNote,
   ShieldAlert,
   MoreHorizontal,
+  ChevronRight,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -44,45 +42,92 @@ import {
   uploadMyEmployeeProfilePicture,
 } from "../../lib/axios/employeeProfile";
 
-const tabs = [
-  "Personal",
-  "Job",
-  "Time Off",
-  "Documents",
-  "Benefits",
-  "Performance",
-  "Training",
-  "Assets",
-  "Notes",
-  "Emergency",
-  "Resignation",
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+const PROFILE_TABS = [
+  {
+    key: "personal",
+    label: "Personal",
+    icon: User,
+    children: [
+      { key: "personal.basic", label: "Basic Info" },
+      { key: "personal.contact", label: "Contact" },
+      { key: "personal.address", label: "Address" },
+      { key: "personal.ids", label: "Government IDs" },
+    ],
+  },
+  {
+    key: "job",
+    label: "Job",
+    icon: Briefcase,
+    children: [
+      { key: "job.info", label: "Job Info" },
+      { key: "job.experience", label: "Experience" },
+    ],
+  },
+  {
+    key: "timeOff",
+    label: "Time Off",
+    icon: Clock3,
+  },
+  {
+    key: "documents",
+    label: "Documents",
+    icon: FileText,
+  },
+  {
+    key: "benefits",
+    label: "Benefits",
+    icon: WalletCards,
+  },
+  {
+    key: "performance",
+    label: "Performance",
+    icon: LineChart,
+  },
+  {
+    key: "training",
+    label: "Training",
+    icon: Dumbbell,
+    children: [
+      { key: "training.education", label: "Education" },
+      { key: "training.skills", label: "Skills" },
+    ],
+  },
+  {
+    key: "assets",
+    label: "Assets",
+    icon: Laptop,
+  },
+  {
+    key: "notes",
+    label: "Notes",
+    icon: StickyNote,
+  },
+  {
+    key: "emergency",
+    label: "Emergency",
+    icon: ShieldAlert,
+  },
+  {
+    key: "resignation",
+    label: "Resignation",
+    icon: UserRoundPen,
+  },
 ];
 
-const tabIcons = {
-  Personal: User,
-  Job: Briefcase,
-  "Time Off": Clock3,
-  Documents: FileText,
-  Benefits: WalletCards,
-  Performance: LineChart,
-  Training: Dumbbell,
-  Assets: Laptop,
-  Notes: StickyNote,
-  Emergency: ShieldAlert,
-  Resignation: UserRoundPen,
-};
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function firstValue(...values) {
+  return values.find((value) => cleanText(value)) || "";
+}
 
 function getFullName(user) {
   return [user?.firstName, user?.middleName, user?.lastName]
     .filter(Boolean)
     .join(" ");
-}
-
-function normalizeRole(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
 }
 
 function canEditProfileDetails(user) {
@@ -95,25 +140,7 @@ function canEditProfileDetails(user) {
       0,
   );
 
-  // admin_access mapping:
-  // 1 = TA
-  // 2 = HR
-  // 3 = HR Admin
-  // 4 = Finance
-  // 5 = Manager
-  // 6 = Executive
-  // 7 = Super Admin
-
   return access >= 1 && access <= 7;
-}
-
-
-function cleanText(value) {
-  return String(value ?? "").trim();
-}
-
-function firstValue(...values) {
-  return values.find((value) => cleanText(value)) || "";
 }
 
 function getProfileSibsId(user) {
@@ -134,6 +161,18 @@ function getProfileSibsId(user) {
   return cleaned;
 }
 
+function toInputDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
 function normalizeProfileData(user) {
   const sibsId = getProfileSibsId(user);
 
@@ -143,12 +182,16 @@ function normalizeProfileData(user) {
     sibsId,
 
     firstName: firstValue(user?.firstName, user?.first_name, user?.gy_emp_fname),
+
     middleName: firstValue(
       user?.middleName,
       user?.middle_name,
       user?.gy_emp_mname,
     ),
+
     lastName: firstValue(user?.lastName, user?.last_name, user?.gy_emp_lname),
+
+    preferredName: firstValue(user?.preferredName, user?.preferred_name),
 
     email: firstValue(user?.email, user?.gy_email, user?.gy_user_email),
 
@@ -160,7 +203,9 @@ function normalizeProfileData(user) {
     ),
 
     department: firstValue(user?.department, user?.departmentName),
+
     account: firstValue(user?.account, user?.accountName),
+
     position: firstValue(user?.position, user?.jobTitle, user?.roleTitle),
 
     location: firstValue(
@@ -176,6 +221,8 @@ function normalizeProfileData(user) {
 
     birthdate: firstValue(user?.birthdate, user?.birthDate, user?.gy_emp_dob),
 
+    gender: firstValue(user?.gender, user?.gy_emp_gender),
+
     civilStatus: firstValue(
       user?.civilStatus,
       user?.maritalStatus,
@@ -183,43 +230,41 @@ function normalizeProfileData(user) {
     ),
 
     status: firstValue(user?.status, "Active"),
+
     workSetup: firstValue(user?.workSetup, "On-site"),
 
     sss: firstValue(user?.sss),
     phic: firstValue(user?.phic),
     hdmf: firstValue(user?.hdmf),
     tin: firstValue(user?.tin),
-  };
-}
-
-function buildEditableUser(user) {
-  const normalizedUser = normalizeProfileData(user);
-
-  return {
-    ...normalizedUser,
 
     education: Array.isArray(user?.education) ? user.education : [],
     experience: Array.isArray(user?.experience) ? user.experience : [],
     skills: Array.isArray(user?.skills) ? user.skills : [],
 
-    preferredName: firstValue(user?.preferredName, user?.preferred_name),
-
     emergencyName: firstValue(
       user?.emergencyName,
       user?.emergencyContactName,
     ),
+
     emergencyRelationship: firstValue(
       user?.emergencyRelationship,
       user?.emergencyContactRelationship,
     ),
+
     emergencyPhone: firstValue(
       user?.emergencyPhone,
       user?.emergencyContactNumber,
     ),
+
     emergencyEmail: firstValue(user?.emergencyEmail),
 
     notes: firstValue(user?.notes),
   };
+}
+
+function buildEditableUser(user) {
+  return normalizeProfileData(user);
 }
 
 function ProfilePictureModal({
@@ -439,7 +484,7 @@ export default function UserProfilePage() {
   const { user } = useUser();
   const { openEditResignationModal } = useResignationList();
 
-  const [activeTab, setActiveTab] = useState("Personal");
+  const [activeTab, setActiveTab] = useState("personal.basic");
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openAddResignation, setOpenAddResignation] = useState(false);
   const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
@@ -480,7 +525,7 @@ export default function UserProfilePage() {
 
   const skills = Array.isArray(displayUser?.skills) ? displayUser.skills : [];
 
-  const formatDate = (dateString) => {
+  function formatDate(dateString) {
     if (!dateString) return "N/A";
 
     const date = new Date(dateString);
@@ -492,62 +537,67 @@ export default function UserProfilePage() {
       month: "long",
       day: "numeric",
     });
-  };
-
-  useEffect(() => {
-  if (!user) return;
-
-  setLocalProfile((prev) => {
-    const prevKey = getProfileSibsId(prev) || prev?.email;
-    const nextKey = getProfileSibsId(user) || user?.email;
-
-    if (prev && prevKey === nextKey) return prev;
-
-    return buildEditableUser(user);
-  });
-}, [user]);
-
-useEffect(() => {
-  if (!tokenSibsId) return;
-
-  const controller = new AbortController();
-
-  async function fetchCurrentEmployeeProfile() {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/employees/${encodeURIComponent(tokenSibsId)}`,
-        {
-          method: "GET",
-          credentials: "include",
-          signal: controller.signal,
-        },
-      );
-
-      if (!response.ok) return;
-
-      const result = await response.json();
-
-      if (result?.success && result?.data) {
-        setLocalProfile(
-          buildEditableUser({
-            ...user,
-            ...result.data,
-          }),
-        );
-      }
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        console.error("USER PROFILE FETCH ERROR:", error);
-      }
-    }
   }
 
-  fetchCurrentEmployeeProfile();
+  function openResignationModal() {
+    setOpenProfileDropdown(false);
+    setOpenAddResignation(true);
+  }
 
-  return () => {
-    controller.abort();
-  };
-}, [tokenSibsId, user]);
+  useEffect(() => {
+    if (!user) return;
+
+    setLocalProfile((prev) => {
+      const prevKey = getProfileSibsId(prev) || prev?.email;
+      const nextKey = getProfileSibsId(user) || user?.email;
+
+      if (prev && prevKey === nextKey) return prev;
+
+      return buildEditableUser(user);
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (!tokenSibsId) return;
+
+    const controller = new AbortController();
+
+    async function fetchCurrentEmployeeProfile() {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/employees/${encodeURIComponent(tokenSibsId)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+
+        if (result?.success && result?.data) {
+          setLocalProfile(
+            buildEditableUser({
+              ...user,
+              ...result.data,
+            }),
+          );
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.error("USER PROFILE FETCH ERROR:", error);
+        }
+      }
+    }
+
+    fetchCurrentEmployeeProfile();
+
+    return () => {
+      controller.abort();
+    };
+  }, [tokenSibsId, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -587,7 +637,9 @@ useEffect(() => {
   }, [user, activeTab, displayUser]);
 
   useEffect(() => {
-    setOpenAddResignation(openEditResignationModal);
+    if (openEditResignationModal) {
+      setOpenAddResignation(true);
+    }
   }, [openEditResignationModal]);
 
   async function handleUploadProfilePicture(file, modalStatus) {
@@ -647,6 +699,7 @@ useEffect(() => {
   }
 
   function startEditing() {
+    setOpenProfileDropdown(false);
     setDraftProfile(buildEditableUser(displayUser));
     setIsEditing(true);
   }
@@ -687,9 +740,10 @@ useEffect(() => {
   }
 
   function renderActiveTabContent() {
-    if (activeTab === "Personal") {
+    if (activeTab.startsWith("personal.")) {
       return (
         <PersonalProfileTab
+          activeSubTab={activeTab.replace("personal.", "")}
           user={displayUser}
           isEditing={isEditing}
           onChange={updateDraftField}
@@ -698,9 +752,10 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Job") {
+    if (activeTab.startsWith("job.")) {
       return (
         <JobProfileTab
+          activeSubTab={activeTab.replace("job.", "")}
           user={displayUser}
           experience={experience}
           isEditing={isEditing}
@@ -713,9 +768,10 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Training") {
+    if (activeTab.startsWith("training.")) {
       return (
         <TrainingProfileTab
+          activeSubTab={activeTab.replace("training.", "")}
           education={education}
           skills={skills}
           isEditing={isEditing}
@@ -727,7 +783,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Benefits") {
+    if (activeTab === "benefits") {
       return (
         <BenefitsProfileTab
           user={displayUser}
@@ -737,7 +793,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Emergency") {
+    if (activeTab === "emergency") {
       return (
         <EmergencyProfileTab
           user={displayUser}
@@ -747,7 +803,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Notes") {
+    if (activeTab === "notes") {
       return (
         <NotesProfileTab
           user={displayUser}
@@ -757,7 +813,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Time Off") {
+    if (activeTab === "timeOff") {
       return (
         <PlaceholderProfileTab
           title="Time Off"
@@ -767,7 +823,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Documents") {
+    if (activeTab === "documents") {
       return (
         <PlaceholderProfileTab
           title="Documents"
@@ -777,7 +833,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Performance") {
+    if (activeTab === "performance") {
       return (
         <PlaceholderProfileTab
           title="Performance"
@@ -787,7 +843,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Assets") {
+    if (activeTab === "assets") {
       return (
         <PlaceholderProfileTab
           title="Assets"
@@ -797,7 +853,7 @@ useEffect(() => {
       );
     }
 
-    if (activeTab === "Resignation") {
+    if (activeTab === "resignation") {
       return <ResignationTab maxHeight={contentHeight || undefined} />;
     }
 
@@ -817,143 +873,146 @@ useEffect(() => {
             Loading...
           </div>
         ) : (
-          <div className="w-full space-y-5">
+          <div className="sibs-page-header-in w-full space-y-5">
             <section className="overflow-visible rounded-[22px] bg-sibs-primary-1 shadow-sm ring-1 ring-[#D9E2EC]">
-  <div className="relative z-10 overflow-visible rounded-[22px] bg-sibs-primary-1 px-5 py-5 text-white">
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpenProfilePictureModal(true);
-          }}
-          className="group relative flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
-          title="View or upload profile picture"
-        >
-          {profilePicture ? (
-            <img
-              src={profilePicture}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <User
-              size={36}
-              className="text-white transition-transform duration-300 group-hover:scale-110"
-            />
-          )}
+              <div className="relative z-10 overflow-visible rounded-[22px] bg-sibs-primary-1 px-5 py-5 text-white">
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenProfilePictureModal(true);
+                      }}
+                      className="group relative flex h-[96px] w-[96px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
+                      title="View or upload profile picture"
+                    >
+                      {profilePicture ? (
+                        <img
+                          src={profilePicture}
+                          alt="Profile"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <User
+                          size={36}
+                          className="text-white transition-transform duration-300 group-hover:scale-110"
+                        />
+                      )}
 
-          <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 shadow-sm">
-              Edit
-            </span>
-          </div>
-        </button>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 shadow-sm">
+                          Edit
+                        </span>
+                      </div>
+                    </button>
 
-        <div className="min-w-0 pt-1">
-          <h1 className="break-words text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl">
-            {fullName || "User Name"}
-          </h1>
+                    <div className="min-w-0 pt-1">
+                      <h1 className="break-words text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl">
+                        {fullName || "User Name"}
+                      </h1>
 
-          <p className="mt-1 text-sm font-bold text-white/85">
-            {displayUser?.account || "User"}
-          </p>
+                      <p className="mt-1 text-sm font-bold text-white/85">
+                        {displayUser?.account || "User"}
+                      </p>
 
-          {resolvedSibsId && (
-          <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-white/70">
-            SIBS ID: {resolvedSibsId}
-          </p>
-        )}
-        </div>
-      </div>
+                      {resolvedSibsId && (
+                        <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-white/70">
+                          SIBS ID: {resolvedSibsId}
+                        </p>
+                      )}
+                    </div>
+                  </div>
 
-      <div
-        className="flex flex-wrap items-center gap-2 lg:justify-end"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {canEditDetails ? (
-          isEditing ? (
-            <>
-              <button
-                type="button"
-                onClick={cancelEditing}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
-              >
-                <RotateCcw size={16} />
-                Cancel
-              </button>
+                  <div
+                    className="flex flex-wrap items-center gap-2 lg:justify-end"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {canEditDetails ? (
+                      isEditing ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={cancelEditing}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20"
+                          >
+                            <RotateCcw size={16} />
+                            Cancel
+                          </button>
 
-              <button
-                type="button"
-                onClick={saveLocalChanges}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-              >
-                <Save size={16} />
-                Save Changes
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-            >
-              <Edit3 size={16} />
-              Edit Profile
-            </button>
-          )
-        ) : (
-          <button
-            type="button"
-            onClick={() => setOpenProfileDropdown((prev) => !prev)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
-          >
-            <UserRoundPen size={16} />
-            Request a Change
-          </button>
-        )}
+                          <button
+                            type="button"
+                            onClick={saveLocalChanges}
+                            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                          >
+                            <Save size={16} />
+                            Save Changes
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={startEditing}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                        >
+                          <Edit3 size={16} />
+                          Edit Profile
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openResignationModal}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90"
+                      >
+                        <UserRoundPen size={16} />
+                        Request a Change
+                      </button>
+                    )}
 
-        <div className="relative z-[60]">
-          <button
-            type="button"
-            onClick={() => setOpenProfileDropdown((prev) => !prev)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90"
-            aria-label="More profile actions"
-          >
-            <MoreHorizontal size={18} />
-          </button>
+                    <div className="relative z-[60]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenProfileDropdown((prev) => !prev);
+                        }}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90"
+                        aria-label="More profile actions"
+                      >
+                        <MoreHorizontal size={18} />
+                      </button>
 
-          {openProfileDropdown && (
-            <div className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2">
-              <ProfileDropdown
-                openModal={setOpenAddResignation}
-                openDropdown={setOpenProfileDropdown}
+                      {openProfileDropdown && (
+                        <div
+                          className="sibs-profile-dropdown-panel absolute right-0 top-full z-[70] mt-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ProfileDropdown
+                            openModal={openResignationModal}
+                            openDropdown={setOpenProfileDropdown}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="sibs-page-card-in grid min-h-[calc(100vh-300px)] grid-cols-1 items-stretch gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
+              <ProfileSideNav
+                tabs={PROFILE_TABS}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
               />
+
+              <section ref={contentRef} className="min-w-0">
+                <AnimatedTabPanel activeKey={activeTab}>
+                  {renderActiveTabContent()}
+                </AnimatedTabPanel>
+              </section>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-            <div className="grid min-h-[calc(100vh-300px)] grid-cols-1 items-stretch gap-5 xl:grid-cols-[260px_minmax(0,1fr)]">
-  <ProfileSideNav
-    tabs={tabs}
-    activeTab={activeTab}
-    onTabChange={setActiveTab}
-  />
-
-  <section ref={contentRef} className="min-w-0">
-    <div
-      key={activeTab}
-      className="sibs-profile-tab-panel h-full min-h-[calc(100vh-300px)]"
-    >
-      {renderActiveTabContent()}
-    </div>
-  </section>
-</div>
           </div>
         )}
       </main>
@@ -968,9 +1027,12 @@ useEffect(() => {
       />
 
       <ResignationModal
-        open={openAddResignation}
+        open={Boolean(openAddResignation)}
         onClose={() => setOpenAddResignation(false)}
-        onSuccess={() => {}}
+        onSuccess={() => {
+          setOpenAddResignation(false);
+          setActiveTab("resignation");
+        }}
         setStatusModal={setStatusModal}
       />
 
@@ -992,48 +1054,167 @@ useEffect(() => {
   );
 }
 
-function SummaryStripItem({ label, value }) {
-  return (
-    <div className="min-w-0 border-t border-[#E6ECF2] px-5 py-4 first:border-t-0 md:border-l md:border-t-0 md:first:border-l-0">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-        {label}
-      </p>
+function AnimatedTabPanel({ activeKey, children }) {
+  const [show, setShow] = useState(false);
 
-      <p className="mt-1 truncate text-sm font-extrabold text-[#101828]">
-        {value || "N/A"}
-      </p>
+  useEffect(() => {
+    setShow(false);
+
+    const frame = requestAnimationFrame(() => {
+      setShow(true);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [activeKey]);
+
+  return (
+    <div
+      key={activeKey}
+      className={`h-full min-h-[calc(100vh-300px)] transform-gpu transition-all duration-300 ease-out ${
+        show
+          ? "translate-y-0 scale-100 opacity-100"
+          : "translate-y-3 scale-[0.995] opacity-0"
+      }`}
+    >
+      {children}
     </div>
   );
 }
 
 function ProfileSideNav({ tabs, activeTab, onTabChange }) {
+  const activeParent = String(activeTab || "").split(".")[0];
+  const [openParent, setOpenParent] = useState(activeParent);
+
+  useEffect(() => {
+    if (!activeParent) return;
+
+    setOpenParent(activeParent);
+  }, [activeParent]);
+
+  function isParentActive(tab) {
+    return (
+      activeTab === tab.key ||
+      String(activeTab || "").startsWith(`${tab.key}.`)
+    );
+  }
+
+  function handleParentClick(tab) {
+    const hasChildren = Array.isArray(tab.children) && tab.children.length > 0;
+
+    if (!hasChildren) {
+      setOpenParent("");
+      onTabChange(tab.key);
+      return;
+    }
+
+    const nextOpenParent = openParent === tab.key ? "" : tab.key;
+
+    setOpenParent(nextOpenParent);
+
+    if (!isParentActive(tab)) {
+      onTabChange(tab.children[0].key);
+    }
+  }
+
   return (
-    <aside className="h-full min-h-[calc(100vh-300px)] rounded-[18px] border border-[#E6ECF2] bg-white p-3 shadow-sm">
+    <aside className="sticky top-4 h-full min-h-[calc(100vh-300px)] self-start rounded-[18px] border border-[#E6ECF2] bg-white p-3 shadow-sm xl:max-h-[calc(100vh-120px)] xl:overflow-y-auto">
       <div className="flex h-full gap-2 overflow-x-auto no-scrollbar xl:flex-col xl:overflow-visible">
         {tabs.map((tab) => {
-          const Icon = tabIcons[tab] || FileText;
-          const isActive = activeTab === tab;
+          const Icon = tab.icon || FileText;
+          const hasChildren =
+            Array.isArray(tab.children) && tab.children.length > 0;
+          const parentActive = isParentActive(tab);
+          const isOpen = openParent === tab.key;
 
           return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => onTabChange(tab)}
-              className={`flex h-11 min-w-max items-center gap-3 rounded-xl px-4 text-left text-sm font-extrabold transition xl:min-w-0 ${
-                isActive
-                  ? "bg-sibs-primary-1 text-white shadow-sm"
-                  : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-              }`}
-            >
-              <Icon size={17} className="shrink-0" />
-              <span className="truncate">{tab}</span>
-            </button>
+            <div key={tab.key} className="min-w-max xl:min-w-0">
+              <button
+                type="button"
+                onClick={() => handleParentClick(tab)}
+                aria-expanded={hasChildren ? isOpen : undefined}
+                aria-current={parentActive ? "page" : undefined}
+                className={`group flex h-11 w-full min-w-max items-center gap-3 rounded-xl px-4 text-left text-sm font-extrabold transition-all duration-300 ease-out active:scale-[0.98] xl:min-w-0 ${
+                  parentActive
+                    ? "bg-sibs-primary-1 text-white shadow-sm hover:bg-sibs-primary-1/95 hover:shadow-md"
+                    : "bg-white text-sibs-primary-1 hover:translate-x-1 hover:bg-[#F8FAFC]"
+                }`}
+              >
+                {hasChildren ? (
+                  <ChevronRight
+                    size={14}
+                    className={`shrink-0 transition-transform duration-300 ${
+                      isOpen ? "rotate-90" : "rotate-0"
+                    }`}
+                  />
+                ) : (
+                  <span className="w-[14px] shrink-0" />
+                )}
+
+                <Icon
+                  size={17}
+                  className={`shrink-0 transition-transform duration-300 ${
+                    parentActive ? "scale-110" : "group-hover:scale-110"
+                  }`}
+                />
+
+                <span className="truncate">{tab.label}</span>
+              </button>
+
+              {hasChildren && (
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div
+                      className={`mt-1 space-y-1 pl-8 pr-1 transition-all duration-300 ease-out ${
+                        isOpen
+                          ? "translate-y-0 opacity-100"
+                          : "-translate-y-2 opacity-0"
+                      }`}
+                    >
+                      {tab.children.map((child) => {
+                        const childActive = activeTab === child.key;
+
+                        return (
+                          <button
+                            key={child.key}
+                            type="button"
+                            onClick={() => onTabChange(child.key)}
+                            aria-current={childActive ? "page" : undefined}
+                            className={`group/sub flex h-9 w-full min-w-max items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-300 xl:min-w-0 ${
+                              childActive
+                                ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
+                                : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
+                                childActive
+                                  ? "scale-125 bg-sibs-primary-1"
+                                  : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
+                              }`}
+                            />
+
+                            <span className="truncate">{child.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
     </aside>
   );
 }
+
 function ProfileCard({ title, subtitle, icon: Icon, children, className = "" }) {
   return (
     <section
@@ -1077,6 +1258,10 @@ function ProfileDetail({
   onChange,
   type = "text",
 }) {
+  const isLongText = ["email", "address"].includes(
+    String(label || "").toLowerCase(),
+  );
+
   return (
     <div className="flex h-[84px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-4 py-2.5">
       <p className="mb-1.5 text-[11px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70">
@@ -1091,7 +1276,11 @@ function ProfileDetail({
           className="h-9 w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
         />
       ) : (
-        <p className="flex min-h-9 items-center break-words text-sm font-extrabold leading-[18px] text-[#344054]">
+        <p
+          className={`flex min-h-9 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
+            isLongText ? "break-all" : "break-words"
+          }`}
+        >
           {value || "—"}
         </p>
       )}
@@ -1138,86 +1327,100 @@ function PlaceholderProfileTab({ title, message, icon }) {
   );
 }
 
-function PersonalProfileTab({ user, isEditing, onChange, formatDate }) {
+function PersonalProfileTab({
+  activeSubTab = "basic",
+  user,
+  isEditing,
+  onChange,
+  formatDate,
+}) {
   return (
     <div className="flex h-full min-h-[calc(100vh-300px)] flex-col gap-5">
-      <ProfileCard
-        title="Personal Information"
-        subtitle="Basic identity and personal details."
-        icon={User}
-        className="shrink-0"
-      >
-        <div className="space-y-3">
-          <ProfileGrid cols="md:grid-cols-2">
-            <ProfileDetail label="SIBS ID" value={getProfileSibsId(user)} />
+      {activeSubTab === "basic" && (
+        <ProfileCard
+          title="Personal Information"
+          subtitle="Basic identity and personal details."
+          icon={User}
+          className="shrink-0"
+        >
+          <div className="space-y-3">
+            <ProfileGrid cols="md:grid-cols-2">
+              <ProfileDetail label="SIBS ID" value={getProfileSibsId(user)} />
 
-            <ProfileDetail
-              label="Status"
-              value={user?.status || "Active"}
-              editable={isEditing}
-              onChange={(value) => onChange("status", value)}
-            />
-          </ProfileGrid>
+              <ProfileDetail
+                label="Status"
+                value={user?.status || "Active"}
+                editable={isEditing}
+                onChange={(value) => onChange("status", value)}
+              />
+            </ProfileGrid>
 
-          <ProfileGrid cols="md:grid-cols-2 xl:grid-cols-4">
-            <ProfileDetail
-              label="First Name"
-              value={user?.firstName}
-              editable={isEditing}
-              onChange={(value) => onChange("firstName", value)}
-            />
+            <ProfileGrid cols="md:grid-cols-2 xl:grid-cols-4">
+              <ProfileDetail
+                label="First Name"
+                value={user?.firstName}
+                editable={isEditing}
+                onChange={(value) => onChange("firstName", value)}
+              />
 
-            <ProfileDetail
-              label="Middle Name"
-              value={user?.middleName}
-              editable={isEditing}
-              onChange={(value) => onChange("middleName", value)}
-            />
+              <ProfileDetail
+                label="Middle Name"
+                value={user?.middleName}
+                editable={isEditing}
+                onChange={(value) => onChange("middleName", value)}
+              />
 
-            <ProfileDetail
-              label="Last Name"
-              value={user?.lastName}
-              editable={isEditing}
-              onChange={(value) => onChange("lastName", value)}
-            />
+              <ProfileDetail
+                label="Last Name"
+                value={user?.lastName}
+                editable={isEditing}
+                onChange={(value) => onChange("lastName", value)}
+              />
 
-            <ProfileDetail
-              label="Preferred Name"
-              value={user?.preferredName}
-              editable={isEditing}
-              onChange={(value) => onChange("preferredName", value)}
-            />
-          </ProfileGrid>
+              <ProfileDetail
+                label="Preferred Name"
+                value={user?.preferredName}
+                editable={isEditing}
+                onChange={(value) => onChange("preferredName", value)}
+              />
+            </ProfileGrid>
 
-          <ProfileGrid cols="md:grid-cols-3">
-            <ProfileDetail
-              label="Birth Date"
-              value={formatDate(user?.birthdate || user?.birthDate)}
-            />
+            <ProfileGrid cols="md:grid-cols-3">
+              <ProfileDetail
+                label="Birth Date"
+                value={
+                  isEditing
+                    ? toInputDate(user?.birthdate || user?.birthDate)
+                    : formatDate(user?.birthdate || user?.birthDate)
+                }
+                editable={isEditing}
+                type="date"
+                onChange={(value) => onChange("birthdate", value)}
+              />
 
-            <ProfileDetail
-              label="Gender"
-              value={user?.gender}
-              editable={isEditing}
-              onChange={(value) => onChange("gender", value)}
-            />
+              <ProfileDetail
+                label="Gender"
+                value={user?.gender}
+                editable={isEditing}
+                onChange={(value) => onChange("gender", value)}
+              />
 
-            <ProfileDetail
-              label="Marital Status"
-              value={user?.civilStatus || user?.maritalStatus}
-              editable={isEditing}
-              onChange={(value) => onChange("civilStatus", value)}
-            />
-          </ProfileGrid>
-        </div>
-      </ProfileCard>
+              <ProfileDetail
+                label="Marital Status"
+                value={user?.civilStatus || user?.maritalStatus}
+                editable={isEditing}
+                onChange={(value) => onChange("civilStatus", value)}
+              />
+            </ProfileGrid>
+          </div>
+        </ProfileCard>
+      )}
 
-      <div className="grid flex-1 grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+      {activeSubTab === "contact" && (
         <ProfileCard
           title="Contact Information"
           subtitle="Email and phone details."
           icon={Mail}
-          className="h-full"
         >
           <ProfileGrid cols="md:grid-cols-[minmax(0,1.6fr)_minmax(180px,0.8fr)]">
             <ProfileDetail
@@ -1229,18 +1432,19 @@ function PersonalProfileTab({ user, isEditing, onChange, formatDate }) {
 
             <ProfileDetail
               label="Phone Number"
-              value={user?.contactNum || user?.contact}
+              value={user?.contact}
               editable={isEditing}
               onChange={(value) => onChange("contact", value)}
             />
           </ProfileGrid>
         </ProfileCard>
+      )}
 
+      {activeSubTab === "address" && (
         <ProfileCard
           title="Location"
           subtitle="Address and work setup."
           icon={MapPin}
-          className="h-full"
         >
           <ProfileGrid cols="md:grid-cols-[minmax(0,1.3fr)_minmax(180px,0.8fr)]">
             <ProfileDetail
@@ -1258,12 +1462,51 @@ function PersonalProfileTab({ user, isEditing, onChange, formatDate }) {
             />
           </ProfileGrid>
         </ProfileCard>
-      </div>
+      )}
+
+      {activeSubTab === "ids" && (
+        <ProfileCard
+          title="Government IDs"
+          subtitle="Government and statutory identification numbers."
+          icon={WalletCards}
+        >
+          <ProfileGrid cols="md:grid-cols-2 xl:grid-cols-4">
+            <ProfileDetail
+              label="SSS"
+              value={user?.sss}
+              editable={isEditing}
+              onChange={(value) => onChange("sss", value)}
+            />
+
+            <ProfileDetail
+              label="PHIC"
+              value={user?.phic}
+              editable={isEditing}
+              onChange={(value) => onChange("phic", value)}
+            />
+
+            <ProfileDetail
+              label="HDMF"
+              value={user?.hdmf}
+              editable={isEditing}
+              onChange={(value) => onChange("hdmf", value)}
+            />
+
+            <ProfileDetail
+              label="TIN"
+              value={user?.tin}
+              editable={isEditing}
+              onChange={(value) => onChange("tin", value)}
+            />
+          </ProfileGrid>
+        </ProfileCard>
+      )}
     </div>
   );
 }
 
 function JobProfileTab({
+  activeSubTab = "info",
   user,
   experience = [],
   isEditing,
@@ -1273,61 +1516,76 @@ function JobProfileTab({
 }) {
   return (
     <div className="space-y-5">
-      <ProfileCard
-        title="Job Information"
-        subtitle="Employment assignment and work details."
-        icon={Briefcase}
-      >
-        <ProfileGrid cols="md:grid-cols-2 xl:grid-cols-3">
-          <ProfileDetail
-            label="Department"
-            value={user?.department}
-            editable={isEditing}
-            onChange={(value) => onChange("department", value)}
-          />
+      {activeSubTab === "info" && (
+        <ProfileCard
+          title="Job Information"
+          subtitle="Employment assignment and work details."
+          icon={Briefcase}
+        >
+          <ProfileGrid cols="md:grid-cols-2 xl:grid-cols-3">
+            <ProfileDetail
+              label="Department"
+              value={user?.department}
+              editable={isEditing}
+              onChange={(value) => onChange("department", value)}
+            />
 
-          <ProfileDetail
-            label="Account"
-            value={user?.account}
-            editable={isEditing}
-            onChange={(value) => onChange("account", value)}
-          />
+            <ProfileDetail
+              label="Account"
+              value={user?.account}
+              editable={isEditing}
+              onChange={(value) => onChange("account", value)}
+            />
 
-          <ProfileDetail
-            label="Position / Role"
-            value={user?.position || user?.jobTitle}
-            editable={isEditing}
-            onChange={(value) => onChange("position", value)}
-          />
+            <ProfileDetail
+              label="Position / Role"
+              value={user?.position || user?.jobTitle}
+              editable={isEditing}
+              onChange={(value) => onChange("position", value)}
+            />
 
-          <ProfileDetail label="Hire Date" value={formatDate(user?.hireDate)} />
+            <ProfileDetail
+              label="Hire Date"
+              value={
+                isEditing
+                  ? toInputDate(user?.hireDate)
+                  : formatDate(user?.hireDate)
+              }
+              editable={isEditing}
+              type="date"
+              onChange={(value) => onChange("hireDate", value)}
+            />
 
-          <ProfileDetail
-            label="Employment Status"
-            value={user?.status || "Active"}
-            editable={isEditing}
-            onChange={(value) => onChange("status", value)}
-          />
+            <ProfileDetail
+              label="Employment Status"
+              value={user?.status || "Active"}
+              editable={isEditing}
+              onChange={(value) => onChange("status", value)}
+            />
 
-          <ProfileDetail
-            label="Manager / Supervisor"
-            value={user?.manager || user?.supervisor || user?.accountManager}
-            editable={isEditing}
-            onChange={(value) => onChange("manager", value)}
-          />
-        </ProfileGrid>
-      </ProfileCard>
+            <ProfileDetail
+              label="Manager / Supervisor"
+              value={user?.manager || user?.supervisor || user?.accountManager}
+              editable={isEditing}
+              onChange={(value) => onChange("manager", value)}
+            />
+          </ProfileGrid>
+        </ProfileCard>
+      )}
 
-      <ExperienceProfileSection
-        experience={experience}
-        isEditing={isEditing}
-        onChange={onExperienceChange}
-      />
+      {activeSubTab === "experience" && (
+        <ExperienceProfileSection
+          experience={experience}
+          isEditing={isEditing}
+          onChange={onExperienceChange}
+        />
+      )}
     </div>
   );
 }
 
 function TrainingProfileTab({
+  activeSubTab = "education",
   education = [],
   skills = [],
   isEditing,
@@ -1336,17 +1594,21 @@ function TrainingProfileTab({
 }) {
   return (
     <div className="space-y-5">
-      <EducationProfileSection
-        education={education}
-        isEditing={isEditing}
-        onChange={onEducationChange}
-      />
+      {activeSubTab === "education" && (
+        <EducationProfileSection
+          education={education}
+          isEditing={isEditing}
+          onChange={onEducationChange}
+        />
+      )}
 
-      <SkillsProfileSection
-        skills={skills}
-        isEditing={isEditing}
-        onChange={onSkillsChange}
-      />
+      {activeSubTab === "skills" && (
+        <SkillsProfileSection
+          skills={skills}
+          isEditing={isEditing}
+          onChange={onSkillsChange}
+        />
+      )}
     </div>
   );
 }
@@ -1628,6 +1890,7 @@ function SkillsProfileSection({ skills = [], isEditing, onChange }) {
               ) : (
                 <>
                   <BadgeCheck size={14} />
+
                   {typeof skill === "string"
                     ? skill
                     : skill?.name || skill?.skillName || "Skill"}
