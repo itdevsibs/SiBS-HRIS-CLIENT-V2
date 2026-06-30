@@ -4,6 +4,8 @@ import api from "./api-template";
    AVAILABLE POSITION API
 ========================================= */
 
+const REQUEST_TIMEOUT_MS = 30000;
+
 function normalizeApiError(err, fallbackMessage) {
   return {
     success: false,
@@ -20,6 +22,7 @@ export async function getAvailablePositionMeta() {
   try {
     const res = await api.get("/api/available-position/meta", {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -65,6 +68,7 @@ export async function getAvailablePositions({
         accountId,
       },
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -100,6 +104,7 @@ export async function getActiveAvailablePositions() {
   try {
     const res = await api.get("/api/available-position/active", {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -126,6 +131,7 @@ export async function getAvailablePositionById(id) {
   try {
     const res = await api.get(`/api/available-position/${id}`, {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -144,6 +150,7 @@ export async function createAvailablePosition(payload) {
   try {
     const res = await api.post("/api/available-position", payload, {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -162,6 +169,7 @@ export async function updateAvailablePosition(id, payload) {
   try {
     const res = await api.put(`/api/available-position/${id}`, payload, {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -180,6 +188,7 @@ export async function updateAvailablePositionStatus(id, payload) {
   try {
     const res = await api.patch(`/api/available-position/${id}/status`, payload, {
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;
@@ -202,6 +211,7 @@ export async function deleteAvailablePosition(id, payload = {}) {
     const res = await api.delete(`/api/available-position/${id}`, {
       data: payload,
       withCredentials: true,
+      timeout: REQUEST_TIMEOUT_MS,
     });
 
     return res.data;

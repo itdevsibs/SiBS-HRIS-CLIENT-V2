@@ -15,12 +15,12 @@ import {
   ChevronRight,
   CalendarDays,
 } from "lucide-react";
+import StatusModal from "@/components/modals/StatusModal";
 import {
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
   submitPublicTalentPoolApplication,
-} from "@/lib/axios/getTalentPool";
-import StatusModal from "@/components/modals/StatusModal";
+} from "@/lib/axios/publicTalentPool";
 
 const acceptedAudioTypes =
   ".mp3,.wav,.wave,.m4a,.aac,.ogg,.oga,.webm,.mp4,.mpeg,.mpga,.flac,.amr,.3gp,.opus,.aif,.aiff,.caf,.wma,audio/*,video/mp4,video/3gpp";
@@ -2015,9 +2015,62 @@ export default function PublicTalentPoolApplicationPage() {
 
   return (
     <div className="min-h-screen bg-[var(--sibs-tertiary-10)] px-4 py-8">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-6xl space-y-5">
         <section className="overflow-hidden rounded-3xl bg-white shadow-sm">
           <div className="bg-[var(--sibs-primary-1)] px-6 py-8 text-white">
+            <div className="mb-8 flex w-full justify-center">
+              <style>
+                {`
+                  @keyframes sibsLogoReflect {
+                    0% {
+                      transform: translateX(-160%) skewX(-18deg);
+                      opacity: 0;
+                    }
+                    18% {
+                      opacity: 0.75;
+                    }
+                    45% {
+                      opacity: 0.95;
+                    }
+                    70% {
+                      opacity: 0.35;
+                    }
+                    100% {
+                      transform: translateX(260%) skewX(-18deg);
+                      opacity: 0;
+                    }
+                  }
+
+                  @keyframes sibsLogoGlow {
+                    0%, 100% {
+                      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+                    }
+                    50% {
+                      filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.45));
+                    }
+                  }
+                `}
+              </style>
+
+              <div className="relative inline-flex overflow-hidden rounded-2xl">
+                <img
+                  src="/SiBS_Logo%20w%20Tagline-white.png"
+                  alt="SiBS Logo"
+                  className="h-16 w-auto md:h-20"
+                  style={{
+                    animation: "sibsLogoGlow 2.8s ease-in-out infinite",
+                  }}
+                />
+
+                <span
+                  className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/80 to-transparent"
+                  style={{
+                    animation: "sibsLogoReflect 2.6s ease-in-out infinite",
+                  }}
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide">

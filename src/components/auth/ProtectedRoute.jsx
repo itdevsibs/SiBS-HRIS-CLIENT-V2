@@ -2,9 +2,29 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useUser } from "../../services/context/UserContext";
 import { canAccessPath, cleanRole } from "../../config/accessControl";
 
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/online-assessment",
+  "/apply",
+  "/public/talent-pool/apply",
+  "/recruitment/talent-pool/apply",
+];
+
+function isPublicPath(pathname = "") {
+  return PUBLIC_PATHS.some((path) => {
+    if (path === "/") return pathname === "/";
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+}
+
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useUser();
   const location = useLocation();
+
+  if (isPublicPath(location.pathname)) {
+    return children;
+  }
 
   if (loading) {
     return (

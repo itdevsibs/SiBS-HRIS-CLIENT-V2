@@ -53,27 +53,6 @@ function getHeadcountStatusText(item) {
   ).trim();
 }
 
-function getStatusClass(status) {
-  switch (status) {
-    case "Approved":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "Rejected":
-      return "border-red-200 bg-red-50 text-red-700";
-    case "Pending":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    case "Kronos":
-      return "border-blue-200 bg-blue-50 text-blue-700";
-    case "Completed":
-      return "border-blue-200 bg-blue-50 text-blue-700";
-    case "In Progress":
-      return "border-cyan-200 bg-cyan-50 text-cyan-700";
-    case "Not Started":
-      return "border-slate-200 bg-slate-50 text-slate-700";
-    default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
-  }
-}
-
 function FieldLabel({ children, required = false }) {
   return (
     <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-wide text-[#174A7C]">
@@ -247,37 +226,38 @@ export default function ActionItemModal({
     item.required_headcount
   );
 
-  const kronosRequiredHeadcount = getNumberValue(
-    item.kronosRequiredHeadcount,
-    item.kronos_required_headcount,
-    item.kronosBasedRequiredHeadcount,
-    item.kronos_based_required_headcount,
-    item.kronosHeadcount,
-    item.kronos_headcount,
-    requiredHeadcount
-  );
-
-  const requestedRequiredHeadcount = getNumberValue(
-    item.requestedRequiredHeadcount,
-    item.requested_required_headcount,
-    item.savedRequiredHeadcount,
-    item.saved_required_headcount,
-    item.pendingRequiredHeadcount,
-    item.pending_required_headcount
-  );
-
   const actualHeadcount = getNumberValue(
     item.actualHeadcount,
     item.actual_headcount
   );
 
-  const leadsToInterview = getNumberValue(
+  const leadsNeeded = getNumberValue(
+    item.leadsNeeded,
+    item.leads_needed,
     item.leadsToInterview,
-    item.leads_to_interview
+    item.leads_to_interview,
+    item.leadsRequired,
+    item.leads_required,
+    item.requiredLeads,
+    item.required_leads
   );
 
-  const showPendingRequestedHeadcount =
-    headcountStatus === "Pending" && requestedRequiredHeadcount > 0;
+  const currentLeadsInterviewed = getNumberValue(
+    item.currentLeadsInterviewed,
+    item.current_leads_interviewed,
+    item.currentInterviewed,
+    item.current_interviewed,
+    item.currentInterviewCount,
+    item.current_interview_count,
+    item.interviewCount,
+    item.interview_count,
+    item.interviewedCount,
+    item.interviewed_count,
+    item.totalInterviewed,
+    item.total_interviewed,
+    item.interviews,
+    item.interviewed
+  );
 
   function updateField(field, value) {
     setForm((prev) => ({
@@ -348,60 +328,39 @@ export default function ActionItemModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5">
           <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-sm font-extrabold text-sibs-primary-1">
-                  {item.account || "—"} / {item.cluster || "—"}
-                </p>
+            <div className="min-w-0">
+              <p className="text-sm font-extrabold text-sibs-primary-1">
+                {item.account || "—"} / {item.cluster || "—"}
+              </p>
 
-                <p className="mt-1 text-xs font-semibold leading-5 text-sibs-primary-1/75">
-                  Required: {formatNumber(requiredHeadcount)} / Actual:{" "}
-                  {formatNumber(actualHeadcount)} / Leads:{" "}
-                  {formatNumber(leadsToInterview)}
-                </p>
-              </div>
-
-              <span
-                className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                  headcountStatus
-                )}`}
-              >
-                {headcountStatus || "Kronos"}
-              </span>
+              <p className="mt-1 text-xs font-semibold leading-5 text-sibs-primary-1/75">
+                Required: {formatNumber(requiredHeadcount)} / Actual:{" "}
+                {formatNumber(actualHeadcount)} / Leads Needed:{" "}
+                {formatNumber(leadsNeeded)} / Current Interviewed:{" "}
+                {formatNumber(currentLeadsInterviewed)}
+              </p>
             </div>
 
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
                 <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                  Kronos Required
+                  Leads Needed
                 </p>
 
                 <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                  {formatNumber(kronosRequiredHeadcount)}
+                  {formatNumber(leadsNeeded)}
                 </p>
               </div>
 
-              {showPendingRequestedHeadcount ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
-                    Pending Requested
-                  </p>
+              <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                  Current Leads Interviewed
+                </p>
 
-                  <p className="mt-1 text-sm font-extrabold text-amber-700">
-                    {formatNumber(requestedRequiredHeadcount)}
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-blue-100 bg-white/80 px-3 py-2">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-                    Display Source
-                  </p>
-
-                  <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                    {headcountStatus === "Approved" ? "Approved" : "Kronos"}
-                  </p>
-                </div>
-              )}
+                <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                  {formatNumber(currentLeadsInterviewed)}
+                </p>
+              </div>
             </div>
           </div>
 

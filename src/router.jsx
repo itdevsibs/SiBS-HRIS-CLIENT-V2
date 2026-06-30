@@ -52,7 +52,23 @@ export default function Router() {
       <Route path="/login" element={<LoginPage />} />
 
       {/* PUBLIC ONLINE ASSESSMENT / JOB EVALUATION FORM */}
-      <Route path="/online-assessment" element={<FinalInterviewForms publicMode />} />
+      <Route
+        path="/online-assessment"
+        element={<FinalInterviewForms publicMode />}
+      />
+
+      {/* PUBLIC TALENT POOL APPLICATION FORM */}
+      <Route path="/apply" element={<TalentPoolApplyPage />} />
+
+      <Route
+        path="/recruitment/talent-pool/apply"
+        element={<TalentPoolApplyPage />}
+      />
+
+      <Route
+        path="/public/talent-pool/apply"
+        element={<TalentPoolApplyPage />}
+      />
 
       {/* ROUTE ALIASES */}
       <Route
@@ -68,12 +84,6 @@ export default function Router() {
       <Route
         path="/offers"
         element={<Navigate to="/recruitment/offers" replace />}
-      />
-
-      {/* PUBLIC RECRUITMENT FORM */}
-      <Route
-        path="/recruitment/talent-pool/apply"
-        element={<TalentPoolApplyPage />}
       />
 
       {/* DASHBOARDS */}

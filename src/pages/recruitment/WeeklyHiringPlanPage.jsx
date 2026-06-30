@@ -1390,6 +1390,77 @@ export default function WeeklyHiringPlanPage() {
         getWeekHiringPlanPercent(activeWeek),
       );
 
+      const interviewPopulationCount = getBackendNumber(account, [
+        "interviewPopulationCount",
+        "interview_population_count",
+        "interviewCount",
+        "interview_count",
+        "alreadyInterviewed",
+        "already_interviewed",
+      ]);
+
+      const nhoCount = getBackendNumber(account, [
+        "nhoCount",
+        "nho_count",
+        "nhoPopulationCount",
+        "nho_population_count",
+        "nhoTotal",
+        "nho_total",
+        "trainingNho",
+        "training_nho",
+        "pipelineNho",
+        "pipeline_nho",
+      ]);
+
+      const fstCount = getBackendNumber(account, [
+        "fstCount",
+        "fst_count",
+        "fstPopulationCount",
+        "fst_population_count",
+        "fstTotal",
+        "fst_total",
+        "trainingFst",
+        "training_fst",
+        "pipelineFst",
+        "pipeline_fst",
+      ]);
+
+      const pstCount = getBackendNumber(account, [
+        "pstCount",
+        "pst_count",
+        "pstPopulationCount",
+        "pst_population_count",
+        "pstTotal",
+        "pst_total",
+        "trainingPst",
+        "training_pst",
+        "pipelinePst",
+        "pipeline_pst",
+      ]);
+
+      const projectedToBeEndorsed = getBackendNumber(
+        account,
+        [
+          "projectedToBeEndorsed",
+          "projected_to_be_endorsed",
+          "projectedToBeEndorsedCount",
+          "projected_to_be_endorsed_count",
+          "projectedEndorsed",
+          "projected_endorsed",
+          "projectEndorsed",
+          "project_endorsed",
+          "pstEndorsedCount",
+          "pst_endorsed_count",
+        ],
+        pstCount,
+      );
+
+      const hiredCount = getBackendNumber(
+        account,
+        ["hiredCount", "hired_count", "hired"],
+        fstCount + pstCount,
+      );
+
       const row = {
         id: String(
           account.id ||
@@ -1585,22 +1656,74 @@ export default function WeeklyHiringPlanPage() {
         actualHeadcountNeeds,
         actual_headcount_needs: actualHeadcountNeeds,
 
-        attritionFstToPstCount: Number(account.attritionFstToPstCount || 0),
-        attritionFstToPstPercent: Number(account.attritionFstToPstPercent || 0),
+        attritionFstToPstCount: getBackendNumber(account, [
+          "attritionFstToPstCount",
+          "attrition_fst_to_pst_count",
+          "fstToPstAttritionCount",
+          "fst_to_pst_attrition_count",
+        ]),
+        attritionFstToPstPercent: getBackendNumber(account, [
+          "attritionFstToPstPercent",
+          "attrition_fst_to_pst_percent",
+        ]),
 
-        attritionNhoToFstPstCount: Number(
-          account.attritionNhoToFstPstCount || 0,
-        ),
-        attritionNhoToFstPstPercent: Number(
-          account.attritionNhoToFstPstPercent || 0,
-        ),
+        attritionNhoToFstPstCount: getBackendNumber(account, [
+          "attritionNhoToFstPstCount",
+          "attrition_nho_to_fst_pst_count",
+          "attritionNhoToFstCount",
+          "attrition_nho_to_fst_count",
+          "nhoToFstAttritionCount",
+          "nho_to_fst_attrition_count",
+        ]),
+        attritionNhoToFstPstPercent: getBackendNumber(account, [
+          "attritionNhoToFstPstPercent",
+          "attrition_nho_to_fst_pst_percent",
+          "attritionNhoToFstPercent",
+          "attrition_nho_to_fst_percent",
+        ]),
 
-        attritionInterviewToNhoCount: Number(
-          account.attritionInterviewToNhoCount || 0,
-        ),
-        attritionInterviewToNhoPercent: Number(
-          account.attritionInterviewToNhoPercent || 0,
-        ),
+        attritionInterviewToNhoCount: getBackendNumber(account, [
+          "attritionInterviewToNhoCount",
+          "attrition_interview_to_nho_count",
+          "interviewToNhoAttritionCount",
+          "interview_to_nho_attrition_count",
+        ]),
+        attritionInterviewToNhoPercent: getBackendNumber(account, [
+          "attritionInterviewToNhoPercent",
+          "attrition_interview_to_nho_percent",
+        ]),
+
+        interviewPopulationCount,
+        interview_population_count: interviewPopulationCount,
+        interviewCount: interviewPopulationCount,
+        interview_count: interviewPopulationCount,
+
+        nhoPopulationCount: nhoCount,
+        nho_population_count: nhoCount,
+        nhoCount,
+        nho_count: nhoCount,
+
+        fstPopulationCount: fstCount,
+        fst_population_count: fstCount,
+        fstCount,
+        fst_count: fstCount,
+
+        pstPopulationCount: pstCount,
+        pst_population_count: pstCount,
+        pstCount,
+        pst_count: pstCount,
+
+        projectedToBeEndorsed,
+        projected_to_be_endorsed: projectedToBeEndorsed,
+        projectedToBeEndorsedCount: projectedToBeEndorsed,
+        projected_to_be_endorsed_count: projectedToBeEndorsed,
+        projectedEndorsed: projectedToBeEndorsed,
+        projected_endorsed: projectedToBeEndorsed,
+        projectEndorsed: projectedToBeEndorsed,
+        project_endorsed: projectedToBeEndorsed,
+
+        hiredCount,
+        hired_count: hiredCount,
 
         leadsToInterview: getBackendNumber(account, [
           "leadsToInterview",
@@ -1842,6 +1965,38 @@ export default function WeeklyHiringPlanPage() {
           attritionNhoToFstPstPercent: 0,
           attritionInterviewToNhoCount: 0,
           attritionInterviewToNhoPercent: 0,
+
+          interviewPopulationCount: 0,
+          interview_population_count: 0,
+          interviewCount: 0,
+          interview_count: 0,
+
+          nhoPopulationCount: 0,
+          nho_population_count: 0,
+          nhoCount: 0,
+          nho_count: 0,
+
+          fstPopulationCount: 0,
+          fst_population_count: 0,
+          fstCount: 0,
+          fst_count: 0,
+
+          pstPopulationCount: 0,
+          pst_population_count: 0,
+          pstCount: 0,
+          pst_count: 0,
+
+          projectedToBeEndorsed: 0,
+          projected_to_be_endorsed: 0,
+          projectedToBeEndorsedCount: 0,
+          projected_to_be_endorsed_count: 0,
+          projectedEndorsed: 0,
+          projected_endorsed: 0,
+          projectEndorsed: 0,
+          project_endorsed: 0,
+
+          hiredCount: 0,
+          hired_count: 0,
 
           leadsToInterview: 0,
           leads_to_interview: 0,
