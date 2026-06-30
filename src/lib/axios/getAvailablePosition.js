@@ -4,17 +4,23 @@ import api from "./api-template";
    AVAILABLE POSITION API
 ========================================= */
 
-const REQUEST_TIMEOUT_MS = 30000;
+const REQUEST_TIMEOUT = 30000;
 
 function normalizeApiError(err, fallbackMessage) {
+  const isTimeout =
+    err?.code === "ECONNABORTED" ||
+    String(err?.message || "").toLowerCase().includes("timeout");
+
   return {
     success: false,
     data: null,
-    message:
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      err?.message ||
-      fallbackMessage,
+    message: isTimeout
+      ? "The request took too long. Please try again."
+      : err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        fallbackMessage,
+    status: err?.response?.status || 500,
   };
 }
 
@@ -22,7 +28,7 @@ export async function getAvailablePositionMeta() {
   try {
     const res = await api.get("/api/available-position/meta", {
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -41,10 +47,11 @@ export async function getAvailablePositionMeta() {
         accounts: [],
       },
       message:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to load available position metadata.",
+        normalizeApiError(
+          err,
+          "Failed to load available position metadata.",
+        ).message,
+      status: err?.response?.status || 500,
     };
   }
 }
@@ -68,7 +75,7 @@ export async function getAvailablePositions({
         accountId,
       },
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -92,10 +99,8 @@ export async function getAvailablePositions({
         totalPages: 1,
       },
       message:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to load available positions.",
+        normalizeApiError(err, "Failed to load available positions.").message,
+      status: err?.response?.status || 500,
     };
   }
 }
@@ -104,7 +109,7 @@ export async function getActiveAvailablePositions() {
   try {
     const res = await api.get("/api/available-position/active", {
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -119,10 +124,9 @@ export async function getActiveAvailablePositions() {
       success: false,
       data: [],
       message:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to load active available positions.",
+        normalizeApiError(err, "Failed to load active available positions.")
+          .message,
+      status: err?.response?.status || 500,
     };
   }
 }
@@ -131,7 +135,7 @@ export async function getAvailablePositionById(id) {
   try {
     const res = await api.get(`/api/available-position/${id}`, {
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -150,7 +154,7 @@ export async function createAvailablePosition(payload) {
   try {
     const res = await api.post("/api/available-position", payload, {
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -169,7 +173,7 @@ export async function updateAvailablePosition(id, payload) {
   try {
     const res = await api.put(`/api/available-position/${id}`, payload, {
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
@@ -186,10 +190,14 @@ export async function updateAvailablePosition(id, payload) {
 
 export async function updateAvailablePositionStatus(id, payload) {
   try {
-    const res = await api.patch(`/api/available-position/${id}/status`, payload, {
-      withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
-    });
+    const res = await api.patch(
+      `/api/available-position/${id}/status`,
+      payload,
+      {
+        withCredentials: true,
+        timeout: REQUEST_TIMEOUT,
+      },
+    );
 
     return res.data;
   } catch (err) {
@@ -211,7 +219,7 @@ export async function deleteAvailablePosition(id, payload = {}) {
     const res = await api.delete(`/api/available-position/${id}`, {
       data: payload,
       withCredentials: true,
-      timeout: REQUEST_TIMEOUT_MS,
+      timeout: REQUEST_TIMEOUT,
     });
 
     return res.data;
