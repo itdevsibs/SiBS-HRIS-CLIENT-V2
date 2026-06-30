@@ -23,6 +23,7 @@ import ProfileUserPage from "./pages/profile/UserProfilePage";
 import TADashboardPage from "./pages/recruitment/TADashboardPage";
 import HiringNeedsPage from "./pages/recruitment/HiringNeedsPage";
 import JobDescriptionPage from "./pages/recruitment/JobDescriptionPage";
+import JobDescriptionViewPage from "./pages/recruitment/JobDescriptionViewPage";
 import WeeklyHiringPlanPage from "./pages/recruitment/WeeklyHiringPlanPage";
 import TalentPoolPage from "./pages/recruitment/talent-pool/TalentPoolPage";
 import TalentPoolApplyPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage";
@@ -221,6 +222,15 @@ export default function Router() {
         element={
           <PrivateRoute>
             <JobDescriptionPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/recruitment/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
           </PrivateRoute>
         }
       />

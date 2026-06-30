@@ -55,19 +55,6 @@ const Details = ({
     ).trim();
   }
 
-  useEffect(() => {
-    console.log("item from details:", item);
-    console.log("personality from details:", {
-      personalityType: item?.personalityType,
-      personality_type: item?.personality_type,
-      preferredPersonalityType: item?.preferredPersonalityType,
-      preferred_personality_type: item?.preferred_personality_type,
-      rawPersonalityType: item?.raw?.personalityType,
-      rawPersonalitySnake: item?.raw?.personality_type,
-      finalValue: getPersonalityTypeValue(item),
-    });
-  }, [item]);
-
   const canManageJdDetails = useMemo(() => {
     return [6, 7].includes(Number(user?.adminAccess));
   }, [user?.adminAccess]);
@@ -612,7 +599,39 @@ const Details = ({
   }
 
   return (
-    <div className="space-y-6">
+    <article className="mx-auto w-full max-w-[816px] space-y-8 bg-white px-6 py-8 text-[#1D2939] shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:px-10 sm:py-10 lg:min-h-[1056px] print:shadow-none">
+      <header className="border-b border-[#D9E2EC] pb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-sibs-primary-1/70">
+              Job Description
+            </p>
+
+            <h1 className="mt-2 break-words text-2xl font-extrabold leading-tight text-sibs-primary-1 sm:text-[28px]">
+              {recordInfoDraft.roleTitle || item.roleTitle || "Job Description"}
+            </h1>
+
+            <p className="mt-2 text-sm font-bold text-[#475467]">
+              {recordInfoDraft.department || item.department || "—"} • {recordInfoDraft.preparedFor || item.account || "—"}
+            </p>
+          </div>
+
+          <p className="shrink-0 text-xs font-bold text-sibs-tertiary-5">
+            Page 1 of 1
+          </p>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[#EEF2F6] pt-5 text-xs sm:grid-cols-4">
+          <DocumentMeta label="Document Code" value={recordInfoDraft.jdCode} />
+          <DocumentMeta label="Revision No." value={recordInfoDraft.currentVersion} />
+          <DocumentMeta label="Effective Date" value={formatDate(recordInfoDraft.effectiveDate)} />
+          <DocumentMeta label="Last Reviewed" value={formatDate(recordInfoDraft.lastUpdated)} />
+          <DocumentMeta label="Prepared For" value={recordInfoDraft.preparedFor} />
+          <DocumentMeta label="Created By" value={recordInfoDraft.createdBy} />
+          <DocumentMeta label="Reports To" value={recordInfoDraft.reportsTo} />
+          <DocumentMeta label="Supervisory" value={recordInfoDraft.supervisory || "No"} />
+        </div>
+      </header>
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -639,8 +658,8 @@ const Details = ({
         </section>
       )}
 
-      <section className="relative isolate overflow-visible rounded-xl border border-[#E6ECF2] bg-white shadow-2xs">
-        <div className="flex flex-col gap-3 border-b border-[#E6ECF2] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+      <section className="relative isolate overflow-visible border-b border-[#D9E2EC] bg-white pb-8">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-extrabold text-[#101828]">
@@ -729,7 +748,7 @@ const Details = ({
           )}
         </div>
 
-        <div className="relative grid grid-cols-1 overflow-visible lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="relative grid grid-cols-1 overflow-visible rounded-xl border border-[#E6ECF2] lg:grid-cols-[minmax(0,1fr)_220px]">
           <div className="border-b border-[#E6ECF2] p-5 lg:border-b-0 lg:border-r">
             <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
               Document Title
@@ -864,7 +883,7 @@ const Details = ({
           </div>
         </div>
 
-        <div className="relative overflow-visible rounded-b-lg border-t border-[#E6ECF2] bg-[#F8FAFC] p-5">
+        <div className="relative overflow-visible rounded-b-xl border-t border-[#E6ECF2] bg-[#F8FAFC] p-5">
           <div className="relative grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2">
             <CompactSummaryRowBottom
               label="Reports To"
@@ -980,20 +999,7 @@ const Details = ({
         </div>
       </section>
 
-      <section className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 shadow-2xs">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-sm font-extrabold text-sibs-primary-1">
-              Connection Rule
-            </h3>
 
-            <p className="mt-1 text-sm font-medium leading-6 text-sibs-primary-1/80">
-              When JD Status is Existing, the role can proceed to sourcing and
-              weekly hiring plan execution.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {commentModal.open && approvalPage && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4">
@@ -1083,9 +1089,22 @@ const Details = ({
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
 };
+
+function DocumentMeta({ label, value }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60">
+        {label}
+      </p>
+      <p className="mt-1 break-words text-xs font-extrabold text-[#344054]">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
 
 function DocumentInfoInput({
   label,
@@ -1561,11 +1580,19 @@ function DetailArticleSection({
     return "Add revision comment.";
   }
 
+  const sectionNumber = {
+    description: "1",
+    responsibilities: "2",
+    qualifications: "3",
+  }[sectionKey];
+
   return (
-    <section>
+    <section className="break-inside-avoid">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <h4 className="text-base font-extrabold text-[#101828]">{title}</h4>
+          <h4 className="text-[15px] font-extrabold uppercase tracking-wide text-[#101828]">
+            {sectionNumber ? `${sectionNumber}. ${title}` : title}
+          </h4>
 
           {comments.length > 0 && (
             <span className="shrink-0 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-extrabold text-amber-700">
@@ -1851,8 +1878,8 @@ function PreferredPersonalityTypeSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-[15px] font-extrabold text-[#101828]">
-              Preferred Personality Type
+            <h4 className="text-[15px] font-extrabold uppercase tracking-wide text-[#101828]">
+              4. Preferred Personality Type
             </h4>
 
             {hasComments && (
@@ -2830,7 +2857,7 @@ function DetailRichContent({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+    <div className="space-y-4 rounded-none border-0 bg-white px-0 py-0">
       <DetailContentRenderer
         value={value}
         emptyText={emptyText}
