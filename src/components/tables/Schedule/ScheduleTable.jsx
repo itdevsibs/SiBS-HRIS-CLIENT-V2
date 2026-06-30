@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from "react";
-import { CalendarDays, Clock } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, Clock, Search } from "lucide-react";
 
 import { formatDate } from "@/components/layout/FormatDateTime";
 import PaginationTable from "@/services/pagination/PaginationTable";
@@ -91,7 +91,7 @@ function StatCard({
   return (
     <div
       className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: "both" }}
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
@@ -116,6 +116,103 @@ function StatCard({
   );
 }
 
+function InlineScheduleDateRangeFilter({ visible }) {
+  if (!visible) return null;
+
+  return (
+    <div className="schedule-date-filter-inline w-full lg:w-auto">
+      <style>
+        {`
+          .schedule-date-filter-inline {
+            width: 100%;
+          }
+
+          .schedule-date-filter-inline > div {
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            flex-wrap: wrap !important;
+          }
+
+          .schedule-date-filter-inline > div > button,
+          .schedule-date-filter-inline > div > div > button,
+          .schedule-date-filter-inline > div > div > div > button,
+          .schedule-date-filter-inline button[aria-haspopup="dialog"],
+          .schedule-date-filter-inline button[data-state] {
+            height: 44px !important;
+            min-height: 44px !important;
+            min-width: 220px !important;
+            border-radius: 10px !important;
+            border: 1px solid #D0D5DD !important;
+            background: #FFFFFF !important;
+            padding: 0 16px !important;
+            color: #0D4676 !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            transition:
+              border-color 180ms ease,
+              background-color 180ms ease,
+              box-shadow 180ms ease,
+              transform 180ms ease !important;
+          }
+
+          .schedule-date-filter-inline > div > button:hover,
+          .schedule-date-filter-inline > div > div > button:hover,
+          .schedule-date-filter-inline > div > div > div > button:hover,
+          .schedule-date-filter-inline button[aria-haspopup="dialog"]:hover,
+          .schedule-date-filter-inline button[data-state]:hover {
+            border-color: rgba(13, 70, 118, 0.3) !important;
+            background: #F8FAFC !important;
+          }
+
+          .schedule-date-filter-inline > div > button:focus,
+          .schedule-date-filter-inline > div > div > button:focus,
+          .schedule-date-filter-inline > div > div > div > button:focus,
+          .schedule-date-filter-inline button[aria-haspopup="dialog"]:focus,
+          .schedule-date-filter-inline button[data-state="open"] {
+            border-color: #0D4676 !important;
+            box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
+          }
+
+          .schedule-date-filter-inline > div > button:active,
+          .schedule-date-filter-inline > div > div > button:active,
+          .schedule-date-filter-inline > div > div > div > button:active,
+          .schedule-date-filter-inline button[aria-haspopup="dialog"]:active {
+            transform: scale(0.98) !important;
+          }
+
+          .schedule-date-filter-inline > div > button svg,
+          .schedule-date-filter-inline > div > div > button svg,
+          .schedule-date-filter-inline > div > div > div > button svg,
+          .schedule-date-filter-inline button[aria-haspopup="dialog"] svg {
+            color: #0D4676 !important;
+          }
+
+          @media (max-width: 1023px) {
+            .schedule-date-filter-inline,
+            .schedule-date-filter-inline > div,
+            .schedule-date-filter-inline > div > button,
+            .schedule-date-filter-inline > div > div,
+            .schedule-date-filter-inline > div > div > button,
+            .schedule-date-filter-inline > div > div > div,
+            .schedule-date-filter-inline > div > div > div > button {
+              width: 100% !important;
+            }
+          }
+
+          .schedule-date-filter-inline [data-radix-popper-content-wrapper] {
+            z-index: 999999 !important;
+          }
+        `}
+      </style>
+
+      <PaginationDateRangeFilter entity="schedule" visible className="m-0" />
+    </div>
+  );
+}
+
 export default function ScheduleTable({
   schedule = [],
   loading = false,
@@ -135,6 +232,7 @@ export default function ScheduleTable({
   filterValues = {},
 }) {
   const tableScrollRef = useRef(null);
+  const [searchSubmitVersion, setSearchSubmitVersion] = useState(0);
 
   const dateFrom = filterValues?.dateFrom || "";
   const dateTo = filterValues?.dateTo || "";
@@ -147,29 +245,48 @@ export default function ScheduleTable({
       left: 0,
       behavior: "smooth",
     });
-  }, [page, searchKeyword, dateFrom, dateTo]);
+  }, [page, searchKeyword, searchSubmitVersion, dateFrom, dateTo]);
 
   function runSearch() {
-    setSearchKeyword(searchInput.trim());
-    setPage(1);
+    const cleanSearch = String(searchInput || "").trim();
+    const currentSearch = String(searchKeyword || "").trim();
+
+    setPage?.(1);
+    setSearchSubmitVersion((prev) => prev + 1);
+
+    if (cleanSearch === currentSearch) {
+      setSearchKeyword?.("");
+
+      window.setTimeout(() => {
+        setPage?.(1);
+        setSearchKeyword?.(cleanSearch);
+      }, 0);
+
+      return;
+    }
+
+    setSearchKeyword?.(cleanSearch);
   }
 
   function handleSearchKeyDown(e) {
-    if (e.key === "Enter") {
-      runSearch();
-    }
+    if (e.key !== "Enter") return;
+
+    e.preventDefault();
+    runSearch();
   }
 
   function handlePreviousPage() {
     if (loading || page <= 1) return;
-    setPage((prev) => Math.max(prev - 1, 1));
+
+    setPage?.((prev) => Math.max(Number(prev || 1) - 1, 1));
   }
 
   function handleNextPage() {
-    const totalPages = Math.max(Number(pagination.totalPages || 1), 1);
+    const safeTotalPages = Math.max(Number(pagination.totalPages || 1), 1);
 
-    if (loading || page >= totalPages) return;
-    setPage((prev) => Math.min(prev + 1, totalPages));
+    if (loading || page >= safeTotalPages) return;
+
+    setPage?.((prev) => Math.min(Number(prev || 1) + 1, safeTotalPages));
   }
 
   const pageStats = useMemo(() => {
@@ -203,7 +320,10 @@ export default function ScheduleTable({
 
   return (
     <>
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section
+        className="sibs-profile-tab-panel rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
+        style={{ animationDelay: "60ms", animationFillMode: "both" }}
+      >
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-base font-bold text-[#101828]">
@@ -259,8 +379,8 @@ export default function ScheduleTable({
       </section>
 
       <section
-        className="sibs-profile-tab-panel min-w-0 overflow-visible rounded-xl bg-white shadow-sm"
-        style={{ animationDelay: "80ms" }}
+        className="sibs-profile-tab-panel min-w-0 overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+        style={{ animationDelay: "120ms", animationFillMode: "both" }}
       >
         <div className="relative overflow-visible p-4 sm:p-5">
           <PaginationTable
@@ -268,18 +388,25 @@ export default function ScheduleTable({
             subtitle="View your current page of schedule records."
             loading={loading}
             searchValue={searchInput}
-            searchPlaceholder="Search schedule then press Enter"
-            onSearchChange={(value) => setSearchInput(value)}
+            searchPlaceholder="Search..."
+            onSearchChange={(value) => setSearchInput?.(value)}
             onSearchKeyDown={handleSearchKeyDown}
+            rightContent={<InlineScheduleDateRangeFilter visible />}
             showPagination={false}
-            className="mb-3"
-          />
-
-          <PaginationDateRangeFilter
-            entity="schedule"
-            visible
             className="mb-5"
           />
+
+          <div className="mb-5 block sm:hidden">
+            <button
+              type="button"
+              onClick={runSearch}
+              disabled={loading}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Search size={17} />
+              Search
+            </button>
+          </div>
 
           <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
             <div ref={tableScrollRef} className="max-h-[580px] overflow-auto">
@@ -317,7 +444,7 @@ export default function ScheduleTable({
                 </thead>
 
                 <tbody
-                  key={`${page}-${searchKeyword}-${dateFrom}-${dateTo}-${loading}`}
+                  key={`${page}-${searchKeyword}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${loading}`}
                 >
                   {loading ? (
                     Array.from({ length: PAGE_LIMIT }).map((_, index) => (
