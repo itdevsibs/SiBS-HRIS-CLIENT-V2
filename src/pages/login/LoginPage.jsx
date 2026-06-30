@@ -4,9 +4,40 @@ import { Activity, AlertCircle } from "lucide-react";
 import { useUser } from "../../services/context/UserContext";
 import { getLogin } from "../../lib/axios/getLogin";
 
+function getResponseUser(result) {
+  return (
+    result?.user ||
+    result?.data?.user ||
+    result?.data ||
+    null
+  );
+}
+
+function getUserRole(user) {
+  return String(
+    user?.role ||
+      user?.userRole ||
+      user?.user_role ||
+      user?.access ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function getDashboardPath(user) {
+  const role = getUserRole(user);
+
+  if (role === "employee") {
+    return "/dashboard/employee";
+  }
+
+  return "/dashboard/admin";
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { setUser, refetchUser } = useUser();
+  const { setUser } = useUser();
 
   const [sibsId, setSibsId] = useState("");
   const [password, setPassword] = useState("");
@@ -25,10 +56,30 @@ export default function LoginPage() {
     setShowError(false);
   };
 
+  const saveExpiry = (result) => {
+    const expiresAt =
+      result?.expiresAt ||
+      result?.data?.expiresAt ||
+      result?.accessTokenExpiresAt ||
+      result?.data?.accessTokenExpiresAt;
+
+    if (expiresAt) {
+      sessionStorage.setItem("accessTokenExpiresAt", String(expiresAt));
+      localStorage.setItem("token_expires_at", String(expiresAt));
+      return;
+    }
+
+    sessionStorage.removeItem("accessTokenExpiresAt");
+    localStorage.removeItem("token_expires_at");
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if (!sibsId.trim() || !password.trim()) {
+    const finalSibsId = sibsId.trim();
+    const finalPassword = password.trim();
+
+    if (!finalSibsId || !finalPassword) {
       showPopup("Please enter your SIBS ID and password.");
       setPassword("");
       return;
@@ -38,40 +89,41 @@ export default function LoginPage() {
     clearError();
 
     try {
-      const result = await getLogin(sibsId, password);
+      const result = await getLogin(finalSibsId, finalPassword);
 
       if (!result?.success) {
         setPassword("");
-        showPopup("Invalid SIBS ID or password.");
+        showPopup(result?.message || "Invalid SIBS ID or password.");
         return;
       }
 
-      if (result?.expiresAt) {
-        localStorage.setItem("token_expires_at", String(result.expiresAt));
-      } else {
-        localStorage.removeItem("token_expires_at");
-      }
+      const user = getResponseUser(result);
 
-      if (result?.user) setUser(result.user);
-
-      const freshUser = await refetchUser();
-      const finalUser = freshUser || result?.user;
-
-      if (!finalUser) {
+      if (!user) {
+        console.error("Login success but no user returned:", result);
         setPassword("");
-        showPopup("Unable to load user session.");
+        showPopup("Login successful, but user details were not returned.");
         return;
       }
 
-      if (finalUser.role === "employee") {
-        navigate("/dashboard/employee", { replace: true });
-      } else {
-        navigate("/dashboard/admin", { replace: true });
-      }
+      saveExpiry(result);
+      setUser(user);
+
+      const dashboardPath = getDashboardPath(user);
+
+      navigate(dashboardPath, { replace: true });
     } catch (err) {
+      console.error("Login error:", err?.response?.data || err?.message);
+
+      sessionStorage.removeItem("accessTokenExpiresAt");
       localStorage.removeItem("token_expires_at");
+
       setPassword("");
-      showPopup("Invalid SIBS ID or password.");
+      showPopup(
+        err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          "Invalid SIBS ID or password.",
+      );
     } finally {
       setLoading(false);
     }
@@ -103,6 +155,7 @@ export default function LoginPage() {
             <input
               type="text"
               value={sibsId}
+              disabled={loading}
               onChange={(e) => {
                 setSibsId(e.target.value);
                 if (showError) clearError();
@@ -116,6 +169,7 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
+              disabled={loading}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (showError) clearError();

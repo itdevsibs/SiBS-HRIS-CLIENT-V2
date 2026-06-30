@@ -1,6 +1,18 @@
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+function getBaseURL() {
+  const rawBaseURL =
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:5001";
+
+  return String(rawBaseURL)
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/api$/, "");
+}
+
+const BASE_URL = getBaseURL();
 
 const PUBLIC_PATHS = [
   "/",
@@ -11,32 +23,61 @@ const PUBLIC_PATHS = [
   "/recruitment/talent-pool/apply",
 ];
 
-const PUBLIC_API_ROUTES = [
+const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/users/login",
   "/api/users/logout",
+  "/api/users/refresh",
   "/api/users/admin-login",
   "/api/users/manager-login",
 
-  // Public Talent Pool endpoints
+  "/users/login",
+  "/users/logout",
+  "/users/refresh",
+  "/users/admin-login",
+  "/users/manager-login",
+
   "/api/talent-pool/options",
   "/api/talent-pool/open-positions",
   "/api/talent-pool/public-applications",
 ];
 
-function isPublicPath(pathname = "") {
+function getCurrentPathname() {
+  if (typeof window === "undefined") return "";
+  return window.location.pathname || "";
+}
+
+function isPublicPath(pathname = getCurrentPathname()) {
   return PUBLIC_PATHS.some((path) => {
     if (path === "/") return pathname === "/";
     return pathname === path || pathname.startsWith(`${path}/`);
   });
 }
 
-function isPublicApiRoute(requestUrl = "") {
-  return PUBLIC_API_ROUTES.some((route) => requestUrl.includes(route));
+function shouldIgnoreAuthRedirect(requestUrl = "") {
+  return IGNORE_AUTH_REDIRECT_ROUTES.some((route) =>
+    String(requestUrl).includes(route),
+  );
 }
 
-function getCurrentPathname() {
-  if (typeof window === "undefined") return "";
-  return window.location.pathname || "";
+function normalizeApiUrl(url = "") {
+  const textUrl = String(url || "");
+
+  if (!textUrl) return textUrl;
+
+  if (
+    textUrl.startsWith("http://") ||
+    textUrl.startsWith("https://") ||
+    textUrl.startsWith("/api/") ||
+    textUrl.startsWith("/uploads/")
+  ) {
+    return textUrl;
+  }
+
+  if (textUrl.startsWith("/")) {
+    return `/api${textUrl}`;
+  }
+
+  return `/api/${textUrl}`;
 }
 
 const api = axios.create({
@@ -44,6 +85,11 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
+});
+
+const logoutApi = axios.create({
+  baseURL: BASE_URL,
   withCredentials: true,
 });
 
@@ -59,15 +105,9 @@ function clearClientSession() {
 }
 
 export async function handleLogout(redirect = true) {
-  const currentPathname = getCurrentPathname();
-  const currentlyPublic = isPublicPath(currentPathname);
+  const pathname = getCurrentPathname();
 
-  /*
-    IMPORTANT:
-    Never redirect public pages to login.
-    This keeps /recruitment/talent-pool/apply usable in incognito.
-  */
-  if (redirect && currentlyPublic) {
+  if (redirect && isPublicPath(pathname)) {
     clearClientSession();
     return;
   }
@@ -79,7 +119,7 @@ export async function handleLogout(redirect = true) {
   }
 
   try {
-    await api.post("/api/users/logout");
+    await logoutApi.post("/api/users/logout");
   } catch (err) {
     console.error("Logout error:", err?.response?.data || err?.message);
   } finally {
@@ -95,25 +135,7 @@ export async function handleLogout(redirect = true) {
 
 api.interceptors.request.use(
   (config) => {
-    const currentPathname = getCurrentPathname();
-
-    /*
-      Public page should not force auth behavior.
-      Still allow the request to continue normally.
-    */
-    if (isPublicPath(currentPathname)) {
-      if (config.method?.toLowerCase() === "get") {
-        config.params = {
-          ...(config.params || {}),
-          _t: Date.now(),
-        };
-
-        config.headers["Cache-Control"] = "no-cache";
-        config.headers["Pragma"] = "no-cache";
-      }
-
-      return config;
-    }
+    config.url = normalizeApiUrl(config.url);
 
     if (config.method?.toLowerCase() === "get") {
       config.params = {
@@ -135,15 +157,12 @@ api.interceptors.response.use(
   async (error) => {
     const status = error.response?.status;
     const requestUrl = error.config?.url || "";
-    const currentPathname = getCurrentPathname();
+    const pathname = getCurrentPathname();
 
-    const shouldIgnoreAuthRedirect =
-      isPublicPath(currentPathname) || isPublicApiRoute(requestUrl);
+    const ignoreRedirect =
+      isPublicPath(pathname) || shouldIgnoreAuthRedirect(requestUrl);
 
-    if (
-      (status === 401 || status === 403) &&
-      !shouldIgnoreAuthRedirect
-    ) {
+    if ((status === 401 || status === 403) && !ignoreRedirect) {
       await handleLogout(true);
     }
 
