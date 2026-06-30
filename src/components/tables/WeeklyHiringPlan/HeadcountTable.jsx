@@ -17,6 +17,14 @@ function toNumber(value) {
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
+function getPositiveNumber(value) {
+  const numberValue = toNumber(value);
+
+  if (!Number.isFinite(numberValue)) return 0;
+
+  return Math.abs(numberValue);
+}
+
 function formatNumber(value) {
   return toNumber(value).toLocaleString("en-PH", {
     maximumFractionDigits: 0,
@@ -309,31 +317,23 @@ function getHiredCount(item = {}) {
   return getFstCount(item) + getPstCount(item);
 }
 
-function getStageAttritionDirectCount(item = {}, keys = []) {
-  return getNumberValue(item, keys, 0);
-}
-
 function getStageAttritionMetrics(item = {}) {
-  const interviewCount = getInterviewCount(item);
-  const nhoCount = getNhoCount(item);
-  const fstCount = getFstCount(item);
-  const pstCount = getPstCount(item);
+  const interviewCount = getPositiveNumber(getInterviewCount(item));
+  const nhoCount = getPositiveNumber(getNhoCount(item));
+  const fstCount = getPositiveNumber(getFstCount(item));
+  const pstCount = getPositiveNumber(getPstCount(item));
 
   /*
-    Force raw stage difference so negative values are visible:
-    - Interview → NHO = Interview Count - NHO Count
-    - NHO → FST = NHO Count - FST Count
-    - FST → PST = FST Count - PST Count
-    - NHO → PST = NHO Count - PST Count
-
-    Example:
-    NHO = 0, FST = 16
-    NHO → FST Attrition = 0 - 16 = -16
+    Display attrition as positive values only:
+    - Interview → NHO = ABS(Interview Count - NHO Count)
+    - NHO → FST = ABS(NHO Count - FST Count)
+    - FST → PST = ABS(FST Count - PST Count)
+    - NHO → PST = ABS(NHO Count - PST Count)
   */
-  const interviewToNhoCount = interviewCount - nhoCount;
-  const nhoToFstCount = nhoCount - fstCount;
-  const fstToPstCount = fstCount - pstCount;
-  const nhoToPstCount = nhoCount - pstCount;
+  const interviewToNhoCount = Math.abs(interviewCount - nhoCount);
+  const nhoToFstCount = Math.abs(nhoCount - fstCount);
+  const fstToPstCount = Math.abs(fstCount - pstCount);
+  const nhoToPstCount = Math.abs(nhoCount - pstCount);
 
   return {
     interviewCount,
@@ -348,43 +348,24 @@ function getStageAttritionMetrics(item = {}) {
 }
 
 function getAttritionRate(count, base) {
-  return base > 0 ? (count / base) * 100 : 0;
+  const cleanCount = getPositiveNumber(count);
+  const cleanBase = getPositiveNumber(base);
+
+  return cleanBase > 0 ? (cleanCount / cleanBase) * 100 : 0;
 }
 
 function getAttritionRateClass(rate) {
-  const cleanRate = toNumber(rate);
+  const cleanRate = getPositiveNumber(rate);
 
-  if (cleanRate < 0) return "text-blue-700";
   return cleanRate <= 25 ? "text-emerald-600" : "text-red-600";
 }
 
 function getAttritionRateBadgeClass(rate) {
-  const cleanRate = toNumber(rate);
-
-  if (cleanRate < 0) {
-    return "bg-blue-50 text-blue-700 border-blue-100";
-  }
+  const cleanRate = getPositiveNumber(rate);
 
   return cleanRate <= 25
     ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-    : "bg-red-50 text-red-600 border-red-100";
-}
-
-function getAttritionCountClass(count, fallbackClass = "") {
-  const cleanCount = toNumber(count);
-
-  if (cleanCount < 0) return "text-blue-700";
-  return fallbackClass;
-}
-
-function getAttritionCountAccentClass(count, fallbackClass = "") {
-  const cleanCount = toNumber(count);
-
-  if (cleanCount < 0) {
-    return "bg-blue-50 text-blue-700 border-blue-100";
-  }
-
-  return getCountAccentClass(fallbackClass);
+    : "bg-blue-50 text-blue-700 border-blue-100";
 }
 
 function getCountAccentClass(colorClass = "") {
@@ -409,6 +390,9 @@ function TrainingAttritionCard({
   rate,
   countClassName = "text-blue-700",
 }) {
+  const positiveCount = getPositiveNumber(count);
+  const positiveRate = getPositiveNumber(rate);
+
   return (
     <div
       className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[124px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
@@ -426,18 +410,12 @@ function TrainingAttritionCard({
 
         <div className="mt-4 grid grid-cols-2 items-center gap-3">
           <div
-            className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionCountAccentClass(
-              count,
+            className={`rounded-[10px] border px-3 py-3 text-center ${getCountAccentClass(
               countClassName,
             )}`}
           >
-            <p
-              className={`whp-kpi-value text-3xl font-extrabold ${getAttritionCountClass(
-                count,
-                countClassName,
-              )}`}
-            >
-              <AnimatedNumber value={count} />
+            <p className={`whp-kpi-value text-3xl font-extrabold ${countClassName}`}>
+              <AnimatedNumber value={positiveCount} />
             </p>
 
             <p className="mt-1 text-[11px] font-bold text-slate-600">
@@ -447,11 +425,15 @@ function TrainingAttritionCard({
 
           <div
             className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionRateBadgeClass(
-              rate,
+              positiveRate,
             )}`}
           >
-            <p className={`whp-kpi-value text-3xl font-extrabold ${getAttritionRateClass(rate)}`}>
-              <AnimatedNumber value={rate} decimals={0} suffix="%" />
+            <p
+              className={`whp-kpi-value text-3xl font-extrabold ${getAttritionRateClass(
+                positiveRate,
+              )}`}
+            >
+              <AnimatedNumber value={positiveRate} decimals={0} suffix="%" />
             </p>
 
             <p className="mt-1 text-[11px] font-bold text-slate-600">
@@ -495,7 +477,9 @@ function KpiCard({
             </p>
           )}
 
-          <p className={`whp-kpi-value mt-2 truncate text-3xl font-extrabold ${valueClassName}`}>
+          <p
+            className={`whp-kpi-value mt-2 truncate text-3xl font-extrabold ${valueClassName}`}
+          >
             {value}
           </p>
 
@@ -665,7 +649,9 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       hiringRateDecimal > 0 ? Math.ceil(coverage / hiringRateDecimal) : coverage;
 
     const finalLeadsToInterview =
-      directLeadsToInterview > 0 ? directLeadsToInterview : leadsToInterviewByCoverage;
+      directLeadsToInterview > 0
+        ? directLeadsToInterview
+        : leadsToInterviewByCoverage;
 
     const trainingAttrition = rows.reduce(
       (sum, item) => {
@@ -868,9 +854,15 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           value={<AnimatedNumber value={totals.coverage} />}
           footer={
             <span>
-              Base: <b><AnimatedNumber value={totals.baseCoverage} /></b>
+              Base:{" "}
+              <b>
+                <AnimatedNumber value={totals.baseCoverage} />
+              </b>
               <span className="mx-2 text-slate-300">|</span>
-              Intake: <b><AnimatedNumber value={totals.hiringIntakeHeadcount} /></b>
+              Intake:{" "}
+              <b>
+                <AnimatedNumber value={totals.hiringIntakeHeadcount} />
+              </b>
             </span>
           }
           icon={Target}
@@ -881,7 +873,9 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         <KpiCard
           title="Hiring Rate"
           subtitle="Conversion to Hire"
-          value={<AnimatedNumber value={totals.hiringRate} decimals={0} suffix="%" />}
+          value={
+            <AnimatedNumber value={totals.hiringRate} decimals={0} suffix="%" />
+          }
           footer="FST + PST / Interview"
           icon={TrendingUp}
           valueClassName="text-indigo-600"

@@ -6,7 +6,21 @@ const EDGE = "rounded-[10px]";
 const FALLBACK_WEEK_LABELS = ["W1", "W2", "W3", "W4", "W5", "W6"];
 
 function toNumber(value) {
-  const numberValue = Number(value ?? 0);
+  if (value === undefined || value === null || value === "") return 0;
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  const cleanValue = String(value)
+    .trim()
+    .replace(/,/g, "")
+    .replace(/%/g, "");
+
+  if (!cleanValue) return 0;
+
+  const numberValue = Number(cleanValue);
+
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
@@ -21,12 +35,22 @@ function formatPercent(value, decimals = 2) {
   return `${toNumber(value).toFixed(decimals)}%`;
 }
 
+function getNestedValue(item, key) {
+  if (!item || !key) return undefined;
+
+  if (!String(key).includes(".")) return item?.[key];
+
+  return String(key)
+    .split(".")
+    .reduce((value, pathKey) => value?.[pathKey], item);
+}
+
 function getNumberValue(item, keys = [], fallback = 0) {
   for (const key of keys) {
-    const value = item?.[key];
+    const value = getNestedValue(item, key);
 
     if (value !== undefined && value !== null && value !== "") {
-      const numberValue = Number(value);
+      const numberValue = toNumber(value);
 
       if (Number.isFinite(numberValue)) return numberValue;
     }
@@ -464,63 +488,150 @@ function buildAggregateTrend(rows = [], type) {
 
 function getNhoCount(item = {}) {
   return getNumberValue(item, [
+    "nho",
+    "NHO",
     "nhoCount",
     "nho_count",
+    "nhoTotal",
+    "nho_total",
     "nhoPopulationCount",
     "nho_population_count",
+    "newHireOrientation",
+    "new_hire_orientation",
     "newHireOrientationCount",
     "new_hire_orientation_count",
+    "trainingNho",
+    "training_nho",
+    "pipelineNho",
+    "pipeline_nho",
+    "pipelineNhoCount",
+    "pipeline_nho_count",
+    "candidateNhoCount",
+    "candidate_nho_count",
+    "training.nho",
+    "training.nhoCount",
+    "training.nho_count",
+    "training.nhoPopulationCount",
   ]);
 }
 
 function getFstCount(item = {}) {
   return getNumberValue(item, [
+    "fst",
+    "FST",
     "fstCount",
     "fst_count",
+    "fstTotal",
+    "fst_total",
     "fstPopulationCount",
     "fst_population_count",
+    "firstStageTraining",
+    "first_stage_training",
+    "firstStageTrainingCount",
+    "first_stage_training_count",
+    "trainingFst",
+    "training_fst",
+    "pipelineFst",
+    "pipeline_fst",
+    "pipelineFstCount",
+    "pipeline_fst_count",
+    "candidateFstCount",
+    "candidate_fst_count",
+    "training.fst",
+    "training.fstCount",
+    "training.fst_count",
+    "training.fstPopulationCount",
   ]);
 }
 
 function getPstCount(item = {}) {
   return getNumberValue(item, [
+    "pst",
+    "PST",
     "pstCount",
     "pst_count",
+    "pstTotal",
+    "pst_total",
     "pstPopulationCount",
     "pst_population_count",
+    "productionStageTraining",
+    "production_stage_training",
+    "productionStageTrainingCount",
+    "production_stage_training_count",
+    "trainingPst",
+    "training_pst",
+    "pipelinePst",
+    "pipeline_pst",
+    "pipelinePstCount",
+    "pipeline_pst_count",
+    "candidatePstCount",
+    "candidate_pst_count",
+    "training.pst",
+    "training.pstCount",
+    "training.pst_count",
+    "training.pstPopulationCount",
   ]);
+}
+
+function getProjectedEndorsedCount(item = {}) {
+  const explicitValue = getNumberValue(
+    item,
+    [
+      "projectedToBeEndorsed",
+      "projected_to_be_endorsed",
+      "projectedToBeEndorsedCount",
+      "projected_to_be_endorsed_count",
+      "projectedEndorsed",
+      "projected_endorsed",
+      "projectEndorsed",
+      "project_endorsed",
+      "projectedEndorsement",
+      "projected_endorsement",
+      "toBeEndorsed",
+      "to_be_endorsed",
+      "endorsedProjected",
+      "endorsed_projected",
+      "endorsedCount",
+      "endorsed_count",
+      "endorsementCount",
+      "endorsement_count",
+      "pstEndorsedCount",
+      "pst_endorsed_count",
+      "training.projectedToBeEndorsed",
+      "training.projected_to_be_endorsed",
+      "training.projectedEndorsed",
+      "training.projected_endorsed",
+      "training.projectEndorsed",
+    ],
+    null,
+  );
+
+  if (explicitValue > 0) return explicitValue;
+
+  const pstCount = getPstCount(item);
+  const fstToPstAttrition = getNumberValue(item, [
+    "attritionFstToPstCount",
+    "attrition_fst_to_pst_count",
+    "fstToPstAttritionCount",
+    "fst_to_pst_attrition_count",
+  ]);
+
+  return Math.max(0, pstCount - fstToPstAttrition);
 }
 
 function getTrainingMetrics(item = {}) {
   const nhoCount = getNhoCount(item);
   const fstCount = getFstCount(item);
   const pstCount = getPstCount(item);
-
-  const projectedToBeEndorsed = getNumberValue(
-    item,
-    [
-      "projectedToBeEndorsed",
-      "projected_to_be_endorsed",
-      "projectedEndorsed",
-      "projected_endorsed",
-      "pstEndorsedCount",
-      "pst_endorsed_count",
-    ],
-    Math.max(
-      0,
-      pstCount -
-        getNumberValue(item, [
-          "attritionFstToPstCount",
-          "attrition_fst_to_pst_count",
-        ]),
-    ),
-  );
+  const projectedToBeEndorsed = getProjectedEndorsedCount(item);
 
   return {
     nhoCount,
     fstCount,
     pstCount,
     projectedToBeEndorsed,
+    totalTrainingPipeline:
+      nhoCount + fstCount + pstCount + projectedToBeEndorsed,
   };
 }
 
@@ -581,63 +692,75 @@ function getRequiredHeadcount(item = {}) {
   ]);
 }
 
+function getPositiveNumber(value) {
+  const numberValue = toNumber(value);
+
+  if (!Number.isFinite(numberValue)) return 0;
+
+  return Math.abs(numberValue);
+}
+
 function getStageAttritionDirectCount(item = {}, keys = []) {
-  return getNumberValue(item, keys, 0);
+  return Math.abs(getNumberValue(item, keys, 0));
 }
 
 function getStageAttritionMetrics(item = {}) {
-  const interviewCount = getNumberValue(item, [
-    "interviewCount",
-    "interview_count",
-    "interviewPopulationCount",
-    "interview_population_count",
-    "alreadyInterviewed",
-    "already_interviewed",
+  const interviewCount = getPositiveNumber(
+    getNumberValue(item, [
+      "interviewCount",
+      "interview_count",
+      "interviewPopulationCount",
+      "interview_population_count",
+      "alreadyInterviewed",
+      "already_interviewed",
+    ]),
+  );
+
+  const nhoCount = getPositiveNumber(getNhoCount(item));
+  const fstCount = getPositiveNumber(getFstCount(item));
+  const pstCount = getPositiveNumber(getPstCount(item));
+
+  const interviewToNhoDirect = getStageAttritionDirectCount(item, [
+    "attritionInterviewToNhoCount",
+    "attrition_interview_to_nho_count",
+    "interviewToNhoAttritionCount",
+    "interview_to_nho_attrition_count",
   ]);
 
-  const nhoCount = getNhoCount(item);
-  const fstCount = getFstCount(item);
-  const pstCount = getPstCount(item);
+  const nhoToFstDirect = getStageAttritionDirectCount(item, [
+    "attritionNhoToFstCount",
+    "attrition_nho_to_fst_count",
+    "nhoToFstAttritionCount",
+    "nho_to_fst_attrition_count",
+  ]);
 
-  const interviewToNhoCount = getStageAttritionDirectCount(
-    item,
-    [
-      "attritionInterviewToNhoCount",
-      "attrition_interview_to_nho_count",
-      "interviewToNhoAttritionCount",
-      "interview_to_nho_attrition_count",
-    ],
-  ) || Math.max(0, interviewCount - nhoCount);
+  const fstToPstDirect = getStageAttritionDirectCount(item, [
+    "attritionFstToPstCount",
+    "attrition_fst_to_pst_count",
+    "fstToPstAttritionCount",
+    "fst_to_pst_attrition_count",
+  ]);
 
-  const nhoToFstCount = getStageAttritionDirectCount(
-    item,
-    [
-      "attritionNhoToFstCount",
-      "attrition_nho_to_fst_count",
-      "nhoToFstAttritionCount",
-      "nho_to_fst_attrition_count",
-    ],
-  ) || Math.max(0, nhoCount - fstCount);
+  const nhoToPstDirect = getStageAttritionDirectCount(item, [
+    "attritionNhoToPstCount",
+    "attrition_nho_to_pst_count",
+    "nhoToPstAttritionCount",
+    "nho_to_pst_attrition_count",
+  ]);
 
-  const fstToPstCount = getStageAttritionDirectCount(
-    item,
-    [
-      "attritionFstToPstCount",
-      "attrition_fst_to_pst_count",
-      "fstToPstAttritionCount",
-      "fst_to_pst_attrition_count",
-    ],
-  ) || Math.max(0, fstCount - pstCount);
+  const interviewToNhoCount =
+    interviewToNhoDirect > 0
+      ? interviewToNhoDirect
+      : Math.abs(interviewCount - nhoCount);
 
-  const nhoToPstCount = getStageAttritionDirectCount(
-    item,
-    [
-      "attritionNhoToPstCount",
-      "attrition_nho_to_pst_count",
-      "nhoToPstAttritionCount",
-      "nho_to_pst_attrition_count",
-    ],
-  ) || Math.max(0, nhoCount - pstCount);
+  const nhoToFstCount =
+    nhoToFstDirect > 0 ? nhoToFstDirect : Math.abs(nhoCount - fstCount);
+
+  const fstToPstCount =
+    fstToPstDirect > 0 ? fstToPstDirect : Math.abs(fstCount - pstCount);
+
+  const nhoToPstCount =
+    nhoToPstDirect > 0 ? nhoToPstDirect : Math.abs(nhoCount - pstCount);
 
   return {
     interviewCount,
@@ -652,7 +775,10 @@ function getStageAttritionMetrics(item = {}) {
 }
 
 function getStageRate(count, denominator) {
-  return denominator > 0 ? (count / denominator) * 100 : 0;
+  const cleanCount = Math.abs(toNumber(count));
+  const cleanDenominator = Math.abs(toNumber(denominator));
+
+  return cleanDenominator > 0 ? (cleanCount / cleanDenominator) * 100 : 0;
 }
 
 function getAttritionStatus(rate = 0) {
@@ -1807,7 +1933,13 @@ function DetailModal({
           ...item,
           training: getTrainingMetrics(item),
         }))
-        .sort((a, b) => b.training.nhoCount - a.training.nhoCount)
+        .sort(
+          (a, b) =>
+            b.training.totalTrainingPipeline - a.training.totalTrainingPipeline ||
+            String(a.account || a.accountName || "").localeCompare(
+              String(b.account || b.accountName || ""),
+            ),
+        )
     : [];
 
   const forecastRows = isForecast
