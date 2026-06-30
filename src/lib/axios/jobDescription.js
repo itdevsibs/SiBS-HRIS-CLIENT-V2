@@ -1401,3 +1401,54 @@ export async function getJobDescriptionRevisionComments(id, params = {}) {
     };
   }
 }
+
+export async function getApprovedJobDescriptions({
+  page = 1,
+  limit = 500,
+  search = "",
+} = {}) {
+  try {
+    const res = await api.get("/api/job-description/jd-approved", {
+      params: {
+        page,
+        limit,
+        search,
+      },
+      withCredentials: true,
+    });
+
+    const responseData = res.data;
+
+    if (!responseData?.success) {
+      return {
+        success: false,
+        data: [],
+        pagination: null,
+        message:
+          responseData?.message || "Failed to load approved job descriptions.",
+      };
+    }
+
+    return {
+      success: true,
+      data: Array.isArray(responseData.data)
+        ? responseData.data.map(normalizeJobDescriptionResponseItem)
+        : [],
+      pagination: responseData.pagination || null,
+      message:
+        responseData.message || "Approved job descriptions loaded successfully.",
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: [],
+      pagination: null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to load approved job descriptions.",
+      status: err?.response?.status || 500,
+    };
+  }
+}

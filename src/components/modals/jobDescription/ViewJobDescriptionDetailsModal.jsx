@@ -7,6 +7,7 @@ import RevisionHistory from "../../layout/tabs/JobDescriptionView/RevisionHistor
 import LinkedERCases from "../../layout/tabs/JobDescriptionView/LinkedERCases";
 import { saveJobDescriptionRevisionComments } from "../../../lib/axios/jobDescription";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
+import { approveJobDescriptionRequest } from "../../../lib/axios/getApprovalRequest";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -93,12 +94,23 @@ export default function ViewJobDescriptionDetailsModal({
 
   function getJdStatusClass(status) {
     switch (normalizeJdStatus(status)) {
+      case "Approved":
       case "Existing":
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
-      case "For Revision":
-        return "border-amber-200 bg-amber-50 text-amber-700";
+
+      case "For Approval":
+      case "Pending":
       case "New Job Description":
         return "border-blue-200 bg-blue-50 text-blue-700";
+
+      case "For Revision":
+      case "For Review":
+        return "border-amber-200 bg-amber-50 text-amber-700";
+
+      case "Rejected":
+      case "Declined":
+        return "border-red-200 bg-red-50 text-red-700";
+
       default:
         return "border-gray-200 bg-gray-50 text-gray-600";
     }
@@ -194,6 +206,87 @@ export default function ViewJobDescriptionDetailsModal({
     }
   }
 
+  async function handleApproveJobDescription() {
+    if (saving) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      onStatus?.({
+        type: "error",
+        title: "Invalid Job Description",
+        message: "Unable to identify the selected job description.",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const result = await approveJobDescriptionRequest(jdId, {
+        remarks: "",
+        module: "Job Description",
+        type: "Job Description",
+      });
+
+      if (!result?.success) {
+        onStatus?.({
+          type: "error",
+          title: "Approval Failed",
+          message: result?.message || "Failed to approve job description.",
+        });
+        return;
+      }
+
+      const updatedItem = {
+        ...item,
+        jdStatus: "Approved",
+        jd_status: "Approved",
+        status: "Approved",
+        approvalStatus: "Approved",
+        approval_status: "Approved",
+        approvedBy: result?.data?.approvedBy || result?.data?.approved_by || "",
+        approved_by:
+          result?.data?.approved_by || result?.data?.approvedBy || "",
+        approveRemarks:
+          result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+        approve_remarks:
+          result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        raw: {
+          ...(item.raw || {}),
+          jdStatus: "Approved",
+          jd_status: "Approved",
+          status: "Approved",
+          approvalStatus: "Approved",
+          approval_status: "Approved",
+          approvedBy:
+            result?.data?.approvedBy || result?.data?.approved_by || "",
+          approved_by:
+            result?.data?.approved_by || result?.data?.approvedBy || "",
+          approveRemarks:
+            result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+          approve_remarks:
+            result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        },
+      };
+
+      updateSelectedJobDescription(updatedItem);
+      onUpdated?.(updatedItem);
+      await onRefresh?.();
+
+      onStatus?.({
+        type: "success",
+        title: "Job Description Approved",
+        message:
+          result?.message || "Job description request approved successfully.",
+      });
+
+      onClose?.();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handlePrimaryAction() {
     if (hasRevisionComments) {
       await handleSaveRevisionComments();
@@ -209,11 +302,7 @@ export default function ViewJobDescriptionDetailsModal({
       return;
     }
 
-    onStatus?.({
-      type: "info",
-      title: "Not Yet Connected",
-      message: "Approve action is not connected yet.",
-    });
+    await handleApproveJobDescription();
   }
 
   useEffect(() => {
