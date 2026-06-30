@@ -34,7 +34,12 @@ import { getApprovedJobDescriptions } from "../../lib/axios/jobDescription";
 
 const POSITIONS_PER_PAGE = 8;
 
-const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Mabini", "Both Davao and Tagum"];
+const LOCATION_SITE_OPTIONS = [
+  "Davao",
+  "Tagum",
+  "Mabini",
+  "Both Davao and Tagum",
+];
 
 const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];
 
@@ -62,6 +67,10 @@ const emptyForm = {
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function sameText(left = "", right = "") {
+  return cleanText(left).toLowerCase() === cleanText(right).toLowerCase();
 }
 
 function formatDate(date) {
@@ -190,23 +199,13 @@ function normalizeDropdownOptions(options = []) {
           value: option,
           label: String(option),
           description: "",
+          searchText: String(option),
           raw: null,
         };
       }
 
       const value = option?.value ?? option?.id ?? "";
       const label = option?.label ?? option?.name ?? option?.value ?? "";
-      const description = option?.description ?? "";
-      const searchText = [
-        option?.searchText,
-        option?.label,
-        option?.name,
-        option?.value,
-        option?.id,
-        option?.description,
-      ]
-        .filter(Boolean)
-        .join(" ");
 
       if (!cleanText(value) && !cleanText(label)) return null;
 
@@ -216,6 +215,16 @@ function normalizeDropdownOptions(options = []) {
         value: value || label,
         label: label || String(value),
         description: option?.description || "",
+        searchText: [
+          option?.searchText,
+          option?.label,
+          option?.name,
+          option?.value,
+          option?.id,
+          option?.description,
+        ]
+          .filter(Boolean)
+          .join(" "),
         raw: option?.raw || option,
       };
     })
@@ -236,17 +245,18 @@ function DropdownField({
   menuClassName = "",
   searchable = false,
   searchPlaceholder = "Search...",
-  searchable = false,
-  searchPlaceholder = "Search...",
+  emptyMessage = "No options found.",
 }) {
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
-  const [dropdownSearch, setDropdownSearch] = useState("");
 
-  const normalizedOptions = normalizeDropdownOptions(options);
+  const normalizedOptions = useMemo(
+    () => normalizeDropdownOptions(options),
+    [options],
+  );
 
   const selectedOption = normalizedOptions.find(
     (option) => String(option.value) === String(value ?? ""),
@@ -255,15 +265,19 @@ function DropdownField({
   const displayLabel =
     selectedOption?.label || cleanText(displayValue) || cleanText(value) || "";
 
-  const inputDisplayValue = open ? dropdownSearch : displayLabel;
-
   const filteredOptions = useMemo(() => {
     const keyword = cleanText(dropdownSearch).toLowerCase();
 
     if (!keyword) return normalizedOptions;
 
     return normalizedOptions.filter((option) =>
-      [option.label, option.value, option.description]
+      [
+        option.label,
+        option.value,
+        option.id,
+        option.description,
+        option.searchText,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -271,27 +285,8 @@ function DropdownField({
     );
   }, [normalizedOptions, dropdownSearch]);
 
+  const inputDisplayValue = open && searchable ? dropdownSearch : displayLabel;
   const hasDisplayValue = Boolean(displayLabel);
-
-  const searchKeyword = dropdownSearch.trim().toLowerCase();
-
-  const visibleOptions =
-    searchable && searchKeyword
-      ? normalizedOptions.filter((option) => {
-          const searchableText = [
-            option.label,
-            option.value,
-            option.id,
-            option.description,
-            option.searchText,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          return searchableText.includes(searchKeyword);
-        })
-      : normalizedOptions;
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -319,40 +314,32 @@ function DropdownField({
     };
   }, []);
 
-  useEffect(() => {
-    if (!open) {
-      setDropdownSearch("");
-      return;
-    }
+  function openDropdown() {
+    if (disabled) return;
+
+    setOpen(true);
 
     if (searchable) {
+      setDropdownSearch("");
+
       window.setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
+        inputRef.current?.focus?.();
+      }, 0);
     }
-  }, [open, searchable]);
-
-  function handleOpen() {
-    if (disabled) return;
-
-    setOpen(true);
   }
 
-  function handleToggle() {
+  function toggleDropdown() {
     if (disabled) return;
 
-    setOpen((previous) => !previous);
-  }
+    setOpen((previous) => {
+      const nextOpen = !previous;
 
-  function handleOpen() {
-    if (disabled) return;
+      if (!nextOpen) {
+        setDropdownSearch("");
+      }
 
-    setOpen(true);
-    setDropdownSearch("");
-
-    window.setTimeout(() => {
-      inputRef.current?.focus?.();
-    }, 0);
+      return nextOpen;
+    });
   }
 
   function handleSelect(option) {
@@ -362,29 +349,30 @@ function DropdownField({
     setDropdownSearch("");
   }
 
-  function handleSearchKeyDown(event) {
+  function handleInputKeyDown(event) {
     if (event.key === "Escape") {
       setOpen(false);
+      setDropdownSearch("");
       return;
     }
 
     if (event.key === "Enter") {
       event.preventDefault();
 
-      if (visibleOptions.length > 0) {
-        handleSelect(visibleOptions[0].value);
+      if (filteredOptions.length > 0) {
+        handleSelect(filteredOptions[0]);
       }
     }
   }
 
-  if (searchable) {
-    return (
-      <div
-        ref={dropdownRef}
-        className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
-      >
-        {label && <FieldLabel required={required}>{label}</FieldLabel>}
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      {label && <FieldLabel required={required}>{label}</FieldLabel>}
 
+      {searchable ? (
         <div
           className={`flex h-11 w-full min-w-0 items-center rounded-xl border bg-white px-4 shadow-sm transition ${
             open
@@ -395,18 +383,19 @@ function DropdownField({
               ? "cursor-not-allowed bg-gray-50 opacity-70"
               : "cursor-text"
           }`}
-          onClick={handleOpen}
+          onClick={openDropdown}
         >
           <input
             ref={inputRef}
             value={inputDisplayValue}
             readOnly={!open}
             disabled={disabled}
-            onFocus={handleOpen}
+            onFocus={openDropdown}
             onChange={(event) => {
               setDropdownSearch(event.target.value);
               setOpen(true);
             }}
+            onKeyDown={handleInputKeyDown}
             placeholder={searchPlaceholder || placeholder}
             className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold outline-none placeholder:text-sibs-tertiary-5 ${
               hasDisplayValue || open
@@ -422,87 +411,11 @@ function DropdownField({
             }`}
           />
         </div>
-
-        {open && !disabled && (
-          <div
-            className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
-          >
-            <div className="max-h-72 overflow-y-auto">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
-                  const active = String(option.value) === String(value ?? "");
-
-                  return (
-                    <button
-                      key={option.id || option.value}
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => handleSelect(option)}
-                      className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
-                        active
-                          ? "bg-[#EAF4FF] text-sibs-primary-1"
-                          : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                      }`}
-                    >
-                      <span className="block min-w-0 truncate">
-                        {option.label}
-                      </span>
-
-                      {option.description && (
-                        <span className="mt-0.5 block min-w-0 truncate text-xs font-semibold text-sibs-tertiary-5">
-                          {option.description}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                  No approved JD positions found.
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  const displayText = selectedOption?.label || placeholder;
-
-  return (
-    <div
-      ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
-    >
-      {label && <FieldLabel required={required}>{label}</FieldLabel>}
-
-      {searchable && open && !disabled ? (
-        <div className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-sibs-primary-1 bg-white px-4 text-left text-sm font-bold shadow-sm outline-none ring-4 ring-sibs-primary-1/10 transition">
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={dropdownSearch}
-            onChange={(event) => setDropdownSearch(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder={searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5"
-          />
-
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="shrink-0 text-sibs-primary-1"
-            tabIndex={-1}
-          >
-            <ChevronDown size={18} className="rotate-180 transition-transform" />
-          </button>
-        </div>
       ) : (
         <button
           type="button"
           disabled={disabled}
-          onClick={searchable ? handleOpen : handleToggle}
+          onClick={toggleDropdown}
           className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
             open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
@@ -515,10 +428,10 @@ function DropdownField({
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+              hasDisplayValue ? "text-[#344054]" : "text-sibs-tertiary-5"
             }`}
           >
-            {displayText}
+            {displayLabel || placeholder}
           </span>
 
           <ChevronDown
@@ -535,14 +448,15 @@ function DropdownField({
           className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
         >
           <div className="max-h-72 overflow-y-auto">
-            {visibleOptions.length > 0 ? (
-              visibleOptions.map((option) => {
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => {
                 const active = String(option.value) === String(value ?? "");
 
                 return (
                   <button
                     key={option.id || option.value}
                     type="button"
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => handleSelect(option)}
                     className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
                       active
@@ -570,9 +484,7 @@ function DropdownField({
               })
             ) : (
               <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                {searchable && dropdownSearch
-                  ? "No matching account found."
-                  : "No options found."}
+                {emptyMessage}
               </div>
             )}
           </div>
@@ -658,31 +570,6 @@ function PositionFormModal({
     ? meta.statusOptions
     : [];
 
-  const filteredAccounts = accounts.filter(
-    (account) => String(account.departmentId) === String(form.departmentId || ""),
-  );
-
-  const departmentDropdownOptions = departments.map((department) => ({
-    id: department.departmentId,
-    value: department.departmentId,
-    label: department.departmentName,
-  }));
-
-  const accountDropdownOptions = filteredAccounts.map((account) => ({
-    id: account.accountId,
-    value: account.accountId,
-    label: account.accountName,
-    description: account.accountGhlName || account.accountId || "",
-    searchText: [
-      account.accountId,
-      account.accountName,
-      account.accountGhlName,
-      account.departmentId,
-    ]
-      .filter(Boolean)
-      .join(" "),
-  }));
-
   const statusDropdownOptions = statusOptions.map((status) => ({
     id: status,
     value: status,
@@ -708,18 +595,21 @@ function PositionFormModal({
       if (!cleanText(roleTitle)) return null;
 
       const jdCode = jd.jdCode || jd.jd_code || "";
+      const documentTitle = jd.documentTitle || jd.document_title || "";
+      const department =
+        jd.department || jd.departmentName || jd.department_name || "";
+      const account = jd.account || jd.preparedFor || jd.prepared_for || "";
 
       return {
         id: jd.id || jd.rawId || jd.raw_id || roleTitle,
         value: roleTitle,
         label: `${roleTitle}${jdCode ? ` (${jdCode})` : ""}`,
-        description: [
-          jd.documentTitle || jd.document_title,
-          jd.department || jd.departmentName || jd.department_name,
-          jd.account || jd.preparedFor || jd.prepared_for,
-        ]
+        description: [documentTitle, department, account]
           .filter(Boolean)
           .join(" • "),
+        searchText: [roleTitle, jdCode, documentTitle, department, account]
+          .filter(Boolean)
+          .join(" "),
         raw: jd,
       };
     })
@@ -750,7 +640,6 @@ function PositionFormModal({
     }
 
     const jdId = selectedJd.id || selectedJd.rawId || selectedJd.raw_id || "";
-
     const jdCode = selectedJd.jdCode || selectedJd.jd_code || "";
 
     const documentTitle =
@@ -881,6 +770,7 @@ function PositionFormModal({
                   options={approvedJdDropdownOptions}
                   placeholder="Search approved JD position"
                   searchPlaceholder="Search approved JD position..."
+                  emptyMessage="No approved JD positions found."
                   disabled={isSaving}
                   searchable
                   zIndex="z-[190]"
@@ -1224,6 +1114,15 @@ export default function AvailablePositionsPage() {
         id: account.accountId,
         value: account.accountId,
         label: account.accountName,
+        description: account.accountGhlName || "",
+        searchText: [
+          account.accountId,
+          account.accountName,
+          account.accountGhlName,
+          account.departmentId,
+        ]
+          .filter(Boolean)
+          .join(" "),
       })),
     ];
   }, [filteredAccountOptions]);
@@ -1268,88 +1167,93 @@ export default function AvailablePositionsPage() {
     });
   }
 
-  const refreshPositions = useCallback(async ({ showPageLoading = true } = {}) => {
-    if (showPageLoading) {
-      setIsLoading(true);
-    }
-
-    setLoadError("");
-
-    try {
-      const [metaResponse, positionsResponse, approvedJdResponse] =
-        await Promise.all([
-          getAvailablePositionMeta(),
-          getAvailablePositions({
-            page: 1,
-            limit: 500,
-            search: "",
-            status: "All",
-            departmentId: "All",
-            accountId: "All",
-          }),
-          getApprovedJobDescriptions({
-            page: 1,
-            limit: 500,
-            search: "",
-          }),
-        ]);
-
-      if (!metaResponse?.success) {
-        throw new Error(
-          metaResponse?.message || "Failed to load position metadata.",
-        );
-      }
-
-      if (!positionsResponse?.success) {
-        throw new Error(
-          positionsResponse?.message || "Failed to load available positions.",
-        );
-      }
-
-      setMeta({
-        statusOptions: Array.isArray(metaResponse.data?.statusOptions)
-          ? metaResponse.data.statusOptions.filter(Boolean)
-          : [],
-        departments: Array.isArray(metaResponse.data?.departments)
-          ? metaResponse.data.departments.filter(Boolean)
-          : [],
-        accounts: Array.isArray(metaResponse.data?.accounts)
-          ? metaResponse.data.accounts.filter(Boolean)
-          : [],
-      });
-
-      setPositionList(
-        Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
-      );
-
-      setApprovedJdPositions(
-        approvedJdResponse?.success && Array.isArray(approvedJdResponse.data)
-          ? approvedJdResponse.data
-          : [],
-      );
-    } catch (error) {
-      console.error("Load available positions error:", error);
-      setLoadError(error?.message || "Failed to load available positions.");
-      setPositionList([]);
-      setApprovedJdPositions([]);
-      setMeta({
-        statusOptions: [],
-        departments: [],
-        accounts: [],
-      });
-
-        openStatusModal(
-          "error",
-          "Unable to load positions",
-          error?.message || "Failed to load available positions.",
-        );
-      }
-    } finally {
+  const refreshPositions = useCallback(
+    async ({ showPageLoading = true } = {}) => {
       if (showPageLoading) {
-        setIsLoading(false);
+        setIsLoading(true);
       }
-    }
-  }, []);
+
+      setLoadError("");
+
+      try {
+        const [metaResponse, positionsResponse, approvedJdResponse] =
+          await Promise.all([
+            getAvailablePositionMeta(),
+            getAvailablePositions({
+              page: 1,
+              limit: 500,
+              search: "",
+              status: "All",
+              departmentId: "All",
+              accountId: "All",
+            }),
+            getApprovedJobDescriptions({
+              page: 1,
+              limit: 500,
+              search: "",
+            }),
+          ]);
+
+        if (!metaResponse?.success) {
+          throw new Error(
+            metaResponse?.message || "Failed to load position metadata.",
+          );
+        }
+
+        if (!positionsResponse?.success) {
+          throw new Error(
+            positionsResponse?.message || "Failed to load available positions.",
+          );
+        }
+
+        setMeta({
+          statusOptions: Array.isArray(metaResponse.data?.statusOptions)
+            ? metaResponse.data.statusOptions.filter(Boolean)
+            : [],
+          departments: Array.isArray(metaResponse.data?.departments)
+            ? metaResponse.data.departments.filter(Boolean)
+            : [],
+          accounts: Array.isArray(metaResponse.data?.accounts)
+            ? metaResponse.data.accounts.filter(Boolean)
+            : [],
+        });
+
+        setPositionList(
+          Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
+        );
+
+        setApprovedJdPositions(
+          approvedJdResponse?.success && Array.isArray(approvedJdResponse.data)
+            ? approvedJdResponse.data
+            : [],
+        );
+      } catch (error) {
+        console.error("Load available positions error:", error);
+
+        setLoadError(error?.message || "Failed to load available positions.");
+        setPositionList([]);
+        setApprovedJdPositions([]);
+        setMeta({
+          statusOptions: [],
+          departments: [],
+          accounts: [],
+        });
+
+        if (showPageLoading) {
+          openStatusModal(
+            "error",
+            "Unable to load positions",
+            error?.message || "Failed to load available positions.",
+          );
+        }
+      } finally {
+        if (showPageLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     if (
@@ -1471,10 +1375,6 @@ export default function AvailablePositionsPage() {
     setFormMode("add");
     setEditTarget(null);
     setPositionForm(emptyForm);
-  }
-
-  function sameText(left = "", right = "") {
-    return cleanText(left).toLowerCase() === cleanText(right).toLowerCase();
   }
 
   async function verifySavedPosition(payload = {}) {
@@ -1621,7 +1521,7 @@ export default function AvailablePositionsPage() {
           : "The available position was saved successfully.",
       );
 
-      void refreshPositions();
+      void refreshPositions({ showPageLoading: false });
     } catch (error) {
       console.error("Save available position error:", error);
 
@@ -1753,7 +1653,7 @@ export default function AvailablePositionsPage() {
             return;
           }
 
-          await refreshPositions();
+          await refreshPositions({ showPageLoading: false });
 
           scrollToTop("auto");
 
@@ -2068,6 +1968,9 @@ export default function AvailablePositionsPage() {
                       !filteredAccountOptions.length)
                   }
                   zIndex="z-[120]"
+                  searchable
+                  searchPlaceholder="Search account..."
+                  emptyMessage="No matching account found."
                 />
 
                 <DropdownField
@@ -2365,7 +2268,10 @@ export default function AvailablePositionsPage() {
         onConfirm={() => {
           const action = confirmState?.onConfirm;
           setConfirmState(null);
-          if (typeof action === "function") action();
+
+          if (typeof action === "function") {
+            action();
+          }
         }}
       />
 
