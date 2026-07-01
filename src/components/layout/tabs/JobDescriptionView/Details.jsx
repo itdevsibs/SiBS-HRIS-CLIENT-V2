@@ -7,6 +7,138 @@ import DesiredCompetenciesViewTable from "../../../tables/jobDescription/Desired
 import { useUser } from "../../../../services/context/UserContext";
 import { useJobDescription } from "../../../../services/context/JobDescriptionContext";
 
+const detailsResponsiveAuditStyles = `
+  .jd-details-document,
+  .jd-details-document * {
+    box-sizing: border-box;
+  }
+
+  .jd-details-document {
+    overflow-wrap: anywhere;
+  }
+
+  .jd-mobile-actions-row {
+    min-width: 0;
+  }
+
+  .jd-competencies-mobile-fix {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .jd-competencies-mobile-fix,
+  .jd-competencies-mobile-fix * {
+    box-sizing: border-box;
+  }
+
+  .jd-competencies-mobile-fix > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .jd-competencies-mobile-fix h1,
+  .jd-competencies-mobile-fix h2,
+  .jd-competencies-mobile-fix h3,
+  .jd-competencies-mobile-fix h4,
+  .jd-competencies-mobile-fix p,
+  .jd-competencies-mobile-fix span,
+  .jd-competencies-mobile-fix div {
+    min-width: 0;
+  }
+
+  .jd-competencies-mobile-fix table {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  @media (max-width: 640px) {
+    .jd-details-document {
+      max-width: calc(100vw - 1.25rem) !important;
+      border-radius: 0.875rem;
+    }
+
+    .jd-details-section-header {
+      align-items: stretch !important;
+    }
+
+    .jd-mobile-actions-row {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      width: 100% !important;
+      gap: 0.5rem !important;
+    }
+
+    .jd-mobile-actions-row > button {
+      width: 100% !important;
+      min-width: 0 !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+    }
+
+    .jd-competencies-mobile-fix {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+      overflow: hidden !important;
+    }
+
+    .jd-competencies-mobile-fix > * > :first-child {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 0.75rem !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    .jd-competencies-mobile-fix > * > :first-child > * {
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    .jd-competencies-mobile-fix > * > :first-child > :last-child {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 0.5rem !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    .jd-competencies-mobile-fix > * > :first-child > :last-child button {
+      width: 100% !important;
+      min-width: 0 !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+    }
+
+    .jd-competencies-mobile-fix [class*="grid-cols-"] {
+      min-width: 0 !important;
+    }
+
+    .jd-competencies-mobile-fix [class*="min-w-"] {
+      min-width: 0 !important;
+    }
+
+    .jd-competencies-mobile-fix [class*="overflow-x-auto"] {
+      max-width: 100% !important;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .jd-mobile-actions-row,
+    .jd-competencies-mobile-fix > * > :first-child > :last-child {
+      grid-template-columns: 1fr !important;
+    }
+  }
+`;
+
+
 const Details = ({
   onOpenRevision,
   hasEditedChanges = false,
@@ -604,7 +736,8 @@ const Details = ({
   }
 
   return (
-    <article className="mx-auto w-full max-w-[816px] space-y-6 bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
+    <article className="jd-details-document mx-auto w-full max-w-[900px] space-y-6 overflow-hidden bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
+      <style>{detailsResponsiveAuditStyles}</style>
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -632,7 +765,7 @@ const Details = ({
       )}
 
       <section className="relative isolate overflow-visible border-b border-[#D9E2EC] bg-white pb-6 sm:pb-8">
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="jd-details-section-header mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-extrabold text-[#101828]">
@@ -655,7 +788,7 @@ const Details = ({
           </div>
 
           {approvalPage && canManageJdDetails && (
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+            <div className="jd-mobile-actions-row flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
               {!editingRecordInfo ? (
                 <>
                   <button
@@ -809,7 +942,7 @@ const Details = ({
           }
         />
 
-        <div>
+        <div className="jd-competencies-mobile-fix">
           <DesiredCompetenciesViewTable
             competencies={item.competencies || item.desiredCompetencies || []}
             comments={getSectionComments("competencies")}
@@ -938,26 +1071,30 @@ function DocumentRecordInfoTable({
   getRecordFieldComments,
   onChange,
 }) {
+  const divider = "border-[#D6E3F0]";
+
   return (
-    <div className="rounded-2xl border border-[#D9E2EC] bg-white p-3 shadow-sm sm:p-4">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+    <div className={`overflow-hidden rounded-xl border ${divider} bg-white shadow-[0_12px_34px_rgba(13,70,118,0.055)]`}>
+      <div className={`border-b ${divider}`}>
         <RecordInfoDocumentCell
           label="Document Title"
           value={recordInfoDraft.roleTitle}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
           onChange={(value) => onChange?.("roleTitle", value)}
-          className="sm:col-span-2 lg:col-span-4"
-          valueClassName="text-base font-extrabold leading-7 text-[#101828] sm:text-lg"
+          variant="title"
         />
+      </div>
 
+      <div className={`grid grid-cols-1 border-b ${divider} md:grid-cols-2`}>
         <RecordInfoDocumentCell
           label="Position"
           value={recordInfoDraft.roleTitle}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
           onChange={(value) => onChange?.("roleTitle", value)}
-          className="sm:col-span-1 lg:col-span-2"
+          className={`border-b ${divider} md:border-b-0 md:border-r`}
+          variant="primary"
         />
 
         <RecordInfoDocumentCell
@@ -966,15 +1103,18 @@ function DocumentRecordInfoTable({
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.department)}
           onChange={(value) => onChange?.("department", value)}
-          className="sm:col-span-1 lg:col-span-2"
+          variant="primary"
         />
+      </div>
 
+      <div className={`grid grid-cols-1 border-b ${divider} sm:grid-cols-2 lg:grid-cols-4`}>
         <RecordInfoDocumentCell
           label="Document Code"
           value={recordInfoDraft.jdCode}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.jdCode)}
           onChange={(value) => onChange?.("jdCode", value)}
+          className={`border-b ${divider} sm:border-r lg:border-b-0`}
         />
 
         <RecordInfoDocumentCell
@@ -983,6 +1123,7 @@ function DocumentRecordInfoTable({
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.currentVersion)}
           onChange={(value) => onChange?.("currentVersion", value)}
+          className={`border-b ${divider} lg:border-b-0 lg:border-r`}
         />
 
         <RecordInfoDocumentCell
@@ -995,6 +1136,7 @@ function DocumentRecordInfoTable({
             formatDate(recordInfoDraft.effectiveDate),
           )}
           onChange={(value) => onChange?.("effectiveDate", value)}
+          className={`border-b ${divider} sm:border-b-0 sm:border-r`}
         />
 
         <RecordInfoDocumentCell
@@ -1008,7 +1150,9 @@ function DocumentRecordInfoTable({
           )}
           onChange={(value) => onChange?.("lastUpdated", value)}
         />
+      </div>
 
+      <div className={`grid grid-cols-1 border-b ${divider} sm:grid-cols-2 lg:grid-cols-4`}>
         <RecordInfoDocumentCell
           label="Date Requested"
           value={recordInfoDraft.dateRequested}
@@ -1019,6 +1163,7 @@ function DocumentRecordInfoTable({
             formatDate(recordInfoDraft.dateRequested),
           )}
           onChange={(value) => onChange?.("dateRequested", value)}
+          className={`border-b ${divider} sm:border-r lg:border-b-0`}
         />
 
         <RecordInfoDocumentCell
@@ -1029,6 +1174,7 @@ function DocumentRecordInfoTable({
             recordInfoDraft.linkedHiringRequirement,
           )}
           onChange={(value) => onChange?.("linkedHiringRequirement", value)}
+          className={`border-b ${divider} lg:border-b-0 lg:border-r`}
         />
 
         <RecordInfoDocumentCell
@@ -1037,6 +1183,7 @@ function DocumentRecordInfoTable({
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.preparedFor)}
           onChange={(value) => onChange?.("preparedFor", value)}
+          className={`border-b ${divider} sm:border-b-0 sm:border-r`}
         />
 
         <RecordInfoDocumentCell
@@ -1046,14 +1193,16 @@ function DocumentRecordInfoTable({
           comments={getRecordFieldComments?.(recordInfoDraft.createdBy)}
           onChange={(value) => onChange?.("createdBy", value)}
         />
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2">
         <RecordInfoDocumentCell
           label="Reports To"
           value={recordInfoDraft.reportsTo}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.reportsTo)}
           onChange={(value) => onChange?.("reportsTo", value)}
-          className="sm:col-span-1 lg:col-span-2"
+          className={`border-b ${divider} md:border-b-0 md:border-r`}
         />
 
         <RecordInfoDocumentCell
@@ -1064,7 +1213,6 @@ function DocumentRecordInfoTable({
             recordInfoDraft.supervisory || "No",
           )}
           onChange={(value) => onChange?.("supervisory", value)}
-          className="sm:col-span-1 lg:col-span-2"
         />
       </div>
     </div>
@@ -1081,23 +1229,36 @@ function RecordInfoDocumentCell({
   onChange,
   className = "",
   valueClassName = "",
+  variant = "default",
 }) {
   const finalDisplayValue = displayValue || value || "—";
   const hasComments = Array.isArray(comments) && comments.length > 0;
   const firstComment = comments?.[0];
 
+  const cellSizeClass =
+    variant === "title"
+      ? "min-h-[124px] px-5 py-5 sm:px-6 sm:py-6"
+      : variant === "primary"
+        ? "min-h-[104px] px-4 py-4 sm:px-5 sm:py-5"
+        : "min-h-[82px] px-4 py-3.5 sm:px-5 sm:py-4";
+
+  const valueTextClass =
+    variant === "title"
+      ? "text-lg font-extrabold leading-7 tracking-[-0.01em] text-[#101828] sm:text-[22px] sm:leading-8"
+      : variant === "primary"
+        ? "mt-3 text-sm font-extrabold leading-6 text-[#344054] sm:text-[15px]"
+        : "mt-2 text-sm font-extrabold leading-6 text-[#344054]";
+
+  const cellBgClass = hasComments ? "bg-amber-50" : "bg-white";
+
   return (
     <div
-      className={`group relative min-h-[76px] rounded-xl border px-3 py-3 transition selection:bg-[#FFF3B8] selection:text-[#101828] sm:min-h-[86px] sm:px-4 ${
-        hasComments
-          ? "border-amber-300 bg-amber-50 shadow-[0_1px_0_rgba(245,158,11,0.12)]"
-          : "border-[#E6ECF2] bg-[#F8FAFC]"
-      } ${className}`}
+      className={`group relative min-w-0 transition selection:bg-[#FFF3B8] selection:text-[#101828] ${cellBgClass} ${cellSizeClass} ${className}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p
-          className={`text-[10px] font-extrabold uppercase tracking-wide ${
-            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+          className={`break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide ${
+            hasComments ? "text-amber-700" : "text-[#315F8C]"
           }`}
         >
           {label}
@@ -1115,13 +1276,27 @@ function RecordInfoDocumentCell({
           type={inputType}
           value={value || ""}
           onChange={(event) => onChange?.(event.target.value)}
-          className="mt-2 h-10 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
+          className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+            variant === "title" ? "sm:h-12 sm:text-base" : ""
+          }`}
         />
+      ) : variant === "title" ? (
+        <div className="relative mt-4 pl-4">
+          <span className="absolute bottom-1 left-0 top-1 w-[3px] rounded-full bg-[#0D4676]" />
+          <p
+            title={finalDisplayValue}
+            className={`min-w-0 break-words ${valueTextClass} ${
+              hasComments ? "text-amber-800" : ""
+            } ${valueClassName}`}
+          >
+            {finalDisplayValue}
+          </p>
+        </div>
       ) : (
         <p
           title={finalDisplayValue}
-          className={`mt-2 max-w-full break-words text-[13px] font-bold leading-6 sm:text-sm ${
-            hasComments ? "text-amber-800" : "text-[#344054]"
+          className={`min-w-0 break-words ${valueTextClass} ${
+            hasComments ? "text-amber-800" : ""
           } ${valueClassName}`}
         >
           {finalDisplayValue}
@@ -1173,7 +1348,7 @@ function DocumentInfoInput({
       <div className="flex items-center justify-between gap-2">
         <p
           className={`truncate text-[10px] font-extrabold uppercase tracking-wide ${
-            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+            hasComments ? "text-amber-700" : "text-[#315F8C]"
           }`}
         >
           {label}
@@ -1250,7 +1425,7 @@ function CompactSummaryRowRight({
       <div className="flex items-center justify-between gap-2">
         <p
           className={`text-[10px] font-extrabold uppercase tracking-wide ${
-            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+            hasComments ? "text-amber-700" : "text-[#315F8C]"
           }`}
         >
           {label}
@@ -1327,7 +1502,7 @@ function CompactSummaryRowBottom({
       <div className="flex items-center justify-between gap-2">
         <p
           className={`text-[10px] font-extrabold uppercase tracking-wide ${
-            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+            hasComments ? "text-amber-700" : "text-[#315F8C]"
           }`}
         >
           {label}
@@ -1645,7 +1820,7 @@ function DetailArticleSection({
         </div>
 
         {approvalPage && !isEditing && canManageJdDetails && (
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          <div className="jd-mobile-actions-row flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
@@ -1918,7 +2093,7 @@ function PreferredPersonalityTypeSection({
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="jd-details-section-header flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
@@ -1946,7 +2121,7 @@ function PreferredPersonalityTypeSection({
         </div>
 
         {approvalPage && !isEditing && canManageJdDetails && (
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+          <div className="jd-mobile-actions-row flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {hasSelectedTypes && (
               <button
                 type="button"
@@ -2030,7 +2205,7 @@ function PreferredPersonalityTypeSection({
             </div>
           )}
 
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onCancelEdit}
@@ -2605,7 +2780,7 @@ function DetailContentRenderer({
     : "selection:bg-transparent selection:text-inherit";
 
   return (
-    <div className={`space-y-4 ${selectionClass}`}>
+    <div className={`min-w-0 space-y-4 ${selectionClass}`}>
       {blocks.map((block, index) => {
         if (block.type === "list") {
           const ListTag = block.ordered ? "ol" : "ul";
@@ -2900,7 +3075,7 @@ function DetailRichContent({
   }
 
   return (
-    <div className="space-y-4 rounded-none border-0 bg-white px-0 py-0">
+    <div className="min-w-0 space-y-4 rounded-none border-0 bg-white px-0 py-0">
       <DetailContentRenderer
         value={value}
         emptyText={emptyText}
