@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Eye, Filter, RotateCcw, Search } from "lucide-react";
+import { ChevronDown, Eye, RotateCcw, Search } from "lucide-react";
 import { usePagination } from "../../../services/context/PaginationContext";
 import TableFooter from "../footer/TableFooter";
+import { useNavigate } from "react-router-dom";
+
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
 
@@ -15,6 +17,7 @@ const JD_VIEW_OPTIONS = [
 const JD_STATUS_OPTIONS = [
   { label: "All Status", value: "All Status" },
   { label: "Existing", value: "Existing" },
+  { label: "Approved", value: "Approved" },
   { label: "For Revision", value: "For Revision" },
   { label: "For Approval", value: "For Approval" },
   { label: "New Job Description", value: "New Job Description" },
@@ -24,7 +27,11 @@ const JD_STATUS_OPTIONS = [
 function formatDate(date) {
   if (!date) return "—";
 
-  return new Date(date).toLocaleDateString("en-PH", {
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) return "—";
+
+  return parsedDate.toLocaleDateString("en-PH", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -57,27 +64,31 @@ function getJdStatusClass(status) {
   switch (normalizeJdStatus(status)) {
     case "Existing":
     case "Active":
-      return "border border-emerald-200 bg-emerald-50 text-emerald-700";
-
-    case "For Revision":
-      return "border border-amber-200 bg-amber-50 text-amber-700";
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
     case "For Approval":
-      return "border border-orange-200 bg-orange-50 text-orange-700";
+      return "border-[#FFBFA8] bg-[#FFF3ED] text-sibs-primary-2";
 
     case "New Job Description":
+    case "New JD":
     case "Draft":
-      return "border border-blue-200 bg-blue-50 text-blue-700";
+      return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
+
+    case "For Revision":
+      return "border-[#F6C84C] bg-[#FFF8E6] text-[#9A6400]";
 
     case "Returned for Revision":
-      return "border border-red-200 bg-red-50 text-red-700";
+    case "Rejected":
+    case "Declined":
+      return "border-red-200 bg-red-50 text-red-700";
 
     case "Archived":
     case "Archived JD":
-      return "border border-gray-200 bg-gray-50 text-gray-700";
+      return "border-[#D6DEE8] bg-[#F8FAFC] text-[#475467]";
 
     default:
-      return "border border-gray-200 bg-gray-50 text-gray-600";
+      return "border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
@@ -87,6 +98,12 @@ function getJdStatusLabel(status) {
   switch (normalizedStatus) {
     case "Existing":
       return "Existing";
+
+    case "Active":
+      return "Active";
+
+    case "Approved":
+      return "Approved";
 
     case "For Revision":
       return "For Revision";
@@ -109,7 +126,7 @@ function getJdStatusLabel(status) {
 function getJdViewStatus(item) {
   const status = getRealJdStatus(item);
 
-  if (status === "Existing" || status === "Active") {
+  if (status === "Existing" || status === "Active" || status === "Approved") {
     return "Active JD";
   }
 
@@ -129,7 +146,7 @@ function JdStatusBadge({ status }) {
 
   return (
     <span
-      className={`inline-flex w-fit items-center justify-center whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold leading-none ${getJdStatusClass(
+      className={`inline-flex w-fit min-w-[92px] items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-xs font-extrabold leading-none ${getJdStatusClass(
         realStatus,
       )}`}
     >
@@ -344,7 +361,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
   const jdViewDropdownRef = useRef(null);
   const statusDropdownRef = useRef(null);
-
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState("");
 
   const [jdViewFilter, setJdViewFilter] = useState("All JD");
@@ -433,10 +450,22 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
     setShowStatusDropdown(false);
   }
 
+  function handleOpenFullPageView(item) {
+    const jdId = item?.rawId || item?.raw?.id || item?.id;
+
+    if (!jdId) return;
+
+    navigate(`/recruitment/job-description/view/${jdId}`, {
+      state: {
+        jobDescription: item,
+      },
+    });
+  }
+
   return (
-    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-xl bg-white shadow-sm">
-      <div className="shrink-0 border-b border-gray-100">
-        <section className="overflow-visible rounded-t-xl border-[#E6ECF2] bg-white">
+    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="shrink-0 border-b border-[#E6ECF2]">
+        <section className="overflow-visible rounded-t-2xl bg-white">
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_0.5fr_0.5fr_auto] xl:items-end">
               <div>
@@ -512,7 +541,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
 
       <div
         key={`${jdViewFilter}-${statusFilter}-${searchInput}`}
-        className="min-h-0 flex-1 p-4 sm:p-6 sibs-profile-tab-panel"
+        className="min-h-0 flex-1 p-4 sibs-profile-tab-panel sm:p-6"
       >
         <div className="h-full lg:hidden">
           <div className="thin-scroll h-full overflow-y-auto">
@@ -522,7 +551,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                   <JobDescriptionMobileCard
                     key={item.id}
                     item={item}
-                    onView={() => onView?.(item)}
+                    onView={() => handleOpenFullPageView(item)}
                   />
                 ))}
               </div>
@@ -534,18 +563,22 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
           </div>
         </div>
 
-        <div className="hidden h-full overflow-hidden rounded-lg border border-[#E5E7EB] bg-white lg:block">
+        <div className="hidden h-full overflow-hidden rounded-2xl bg-white lg:block">
           <div className="thin-scroll h-full overflow-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-100">
-                <tr className="border-b border-[#E5E7EB] text-[12px] font-bold text-[#344054]">
-                  <th className="px-5 py-4">Job Title</th>
+            <table className="w-full min-w-[980px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left text-sm">
+              <thead>
+                <tr className="bg-[#F5F7FA] text-[12px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                  <th className="px-5 py-4 first:rounded-tl-2xl">
+                    Job Title
+                  </th>
                   <th className="px-5 py-4">JD Code</th>
                   <th className="px-5 py-4">Department</th>
                   <th className="px-5 py-4 text-center">Status</th>
                   <th className="px-5 py-4 text-center">Version</th>
                   <th className="px-5 py-4">Last Approved</th>
-                  <th className="px-5 py-4 text-center">Action</th>
+                  <th className="px-5 py-4 text-center last:rounded-tr-2xl">
+                    Action
+                  </th>
                 </tr>
               </thead>
 
@@ -557,36 +590,36 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                     return (
                       <tr
                         key={item.id}
-                        className="border-b border-[#EEF2F6] transition hover:bg-[#F8FAFC]"
+                        className="transition hover:bg-[#F8FAFC]"
                       >
-                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
                           {item.roleTitle || "—"}
                         </td>
 
-                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
                           {item.jdCode || "—"}
                         </td>
 
-                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
                           {item.department || "—"}
                         </td>
 
-                        <td className="px-5 py-4 text-center">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
                           <JdStatusBadge status={realStatus} />
                         </td>
 
-                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054] text-center">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center text-[13px] font-semibold text-[#344054]">
                           {getVersion(item)}
                         </td>
 
-                        <td className="px-5 py-4 text-[13px] font-semibold text-[#344054]">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
                           {formatDate(getLastApproved(item))}
                         </td>
 
-                        <td className="px-5 py-4 text-center">
+                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
                           <button
                             type="button"
-                            onClick={() => onView?.(item)}
+                            onClick={() => handleOpenFullPageView(item)}
                             className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
                           >
                             <Eye size={15} />
@@ -600,7 +633,7 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                      className="border-b border-[#E6ECF2] px-5 py-12 text-center text-sm font-bold text-gray-500"
                     >
                       No job description records found.
                     </td>

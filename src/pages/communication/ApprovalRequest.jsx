@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   BriefcaseBusiness,
@@ -30,7 +31,6 @@ import {
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
 import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
-import ViewJobDescriptionDetailsModal from "../../components/modals/jobDescription/ViewJobDescriptionDetailsModal";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 
@@ -1019,13 +1019,27 @@ export default function ApprovalRequest() {
     message: "",
   });
 
-  const {
-    selectedJobDescription,
-    openJobDescriptionDetails,
-    closeJobDescriptionDetails,
-  } = useJobDescription();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { updateSelectedJobDescription, closeJobDescriptionDetails } =
+    useJobDescription();
 
   const typeOptions = TYPE_OPTIONS_BY_MODULE[activeModule] || ["All"];
+
+  useEffect(() => {
+    const requestedModule = location.state?.activeModule;
+
+    if (requestedModule && REQUEST_MODULES.includes(requestedModule)) {
+      setActiveModule(requestedModule);
+      setSearch("");
+      setSearchInput("");
+      setStatusFilter("All");
+      setTypeFilter(requestedModule === "Attrition" ? "Resignation" : "All");
+      setPage(1);
+
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const hasActiveFilters =
     search || searchInput || statusFilter !== "All" || typeFilter !== "All";
@@ -1268,7 +1282,8 @@ export default function ApprovalRequest() {
     setTypeFilter(moduleName === "Attrition" ? "Resignation" : "All");
     setPage(1);
     setSelectedRequest(null);
-    setSelectedJobDescription(null);
+    updateSelectedJobDescription?.(null);
+    closeJobDescriptionDetails?.();
   }
 
   function handleRefresh() {
@@ -1483,14 +1498,207 @@ export default function ApprovalRequest() {
   //   };
   // }
 
+
+  function parseRevisionHistoryJson(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function mapJobDescriptionApprovalToFullPageItem(request = {}) {
+    const raw = request?.raw || {};
+
+    const competencies = Array.isArray(request?.competencies)
+      ? request.competencies
+      : Array.isArray(request?.desiredCompetencies)
+        ? request.desiredCompetencies
+        : Array.isArray(raw?.competencies)
+          ? raw.competencies
+          : Array.isArray(raw?.desiredCompetencies)
+            ? raw.desiredCompetencies
+            : [];
+
+    return {
+      ...request,
+      raw,
+      rawId: request?.rawId || request?.raw_id || raw?.id || request?.id,
+      id: request?.rawId || request?.raw_id || raw?.id || request?.id,
+      jdCode: request?.jdCode || raw?.jdCode || request?.id || "—",
+
+      roleTitle:
+        request?.roleTitle ||
+        raw?.roleTitle ||
+        request?.title ||
+        raw?.title ||
+        "Job Description",
+
+      title:
+        request?.roleTitle ||
+        raw?.roleTitle ||
+        request?.title ||
+        raw?.title ||
+        "Job Description",
+
+      jdStatus: request?.jdStatus || raw?.jdStatus || request?.status,
+      jd_status: request?.jd_status || raw?.jd_status || request?.status,
+      status: request?.status || raw?.status,
+
+      department:
+        request?.departmentName ||
+        request?.department ||
+        raw?.departmentName ||
+        raw?.department ||
+        raw?.departmentId ||
+        "—",
+
+      account:
+        request?.accountName ||
+        request?.account ||
+        raw?.accountName ||
+        raw?.account ||
+        raw?.accountId ||
+        "—",
+
+      linkedHiringRequirement:
+        request?.linkedHiringRequirement || raw?.linkedHiringRequirement || "—",
+
+      dateRequested:
+        request?.dateRequested ||
+        request?.requestDate ||
+        raw?.dateRequested ||
+        raw?.createdAt ||
+        "",
+
+      createdBy:
+        request?.createdByName ||
+        request?.createdBy ||
+        raw?.createdByName ||
+        raw?.createdBy ||
+        raw?.createdBySibsId ||
+        request?.requester ||
+        "—",
+
+      owner:
+        request?.ownerName ||
+        request?.owner ||
+        raw?.ownerName ||
+        raw?.owner ||
+        raw?.ownerSibsId ||
+        request?.approver ||
+        "—",
+
+      preparedFor:
+        request?.preparedFor ||
+        raw?.preparedFor ||
+        request?.accountName ||
+        request?.account ||
+        raw?.accountName ||
+        raw?.account ||
+        "—",
+
+      reportsTo: request?.reportsTo || raw?.reportsTo || "—",
+      supervisory: request?.supervisory || raw?.supervisory || "No",
+
+      version:
+        request?.version ||
+        request?.jdVersion ||
+        request?.currentVersion ||
+        raw?.version ||
+        raw?.jdVersion ||
+        raw?.currentVersion ||
+        "1",
+
+      currentVersion:
+        request?.currentVersion ||
+        request?.jdVersion ||
+        request?.version ||
+        raw?.currentVersion ||
+        raw?.jdVersion ||
+        raw?.version ||
+        "1",
+
+      revisionNo:
+        request?.revisionNo ||
+        request?.revision_no ||
+        raw?.revisionNo ||
+        raw?.revision_no ||
+        request?.currentVersion ||
+        raw?.currentVersion ||
+        "1",
+
+      effectiveDate: request?.effectiveDate || raw?.effectiveDate || "",
+
+      lastUpdated:
+        request?.approveDate ||
+        request?.updatedAt ||
+        raw?.approveDate ||
+        raw?.updatedAt ||
+        request?.dateRequested ||
+        "",
+
+      description: request?.description || raw?.description || "",
+      responsibilities:
+        request?.responsibilities || raw?.responsibilities || "",
+      qualifications: request?.qualifications || raw?.qualifications || "",
+      personalityType:
+        request?.personalityType ||
+        request?.personality_type ||
+        request?.preferredPersonalityType ||
+        request?.preferred_personality_type ||
+        raw?.personalityType ||
+        raw?.personality_type ||
+        raw?.preferredPersonalityType ||
+        raw?.preferred_personality_type ||
+        "",
+      remarks: request?.jdRemarks || request?.remarks || raw?.remarks || "",
+
+      revisionHistory:
+        request?.revisionHistory ||
+        raw?.revisionHistory ||
+        parseRevisionHistoryJson(
+          request?.revisionHistoryJson || raw?.revisionHistoryJson,
+        ),
+
+      competencies,
+      desiredCompetencies: competencies,
+    };
+  }
+
   function handleViewRequest(request) {
     if (activeModule === "Job Description") {
+      const jdItem = mapJobDescriptionApprovalToFullPageItem(request);
+      const jdId = jdItem?.rawId || jdItem?.raw?.id || jdItem?.id;
+
+      if (!jdId) {
+        openStatus({
+          type: "error",
+          title: "Invalid Job Description",
+          message: "Unable to identify the selected job description.",
+        });
+        return;
+      }
+
       setSelectedRequest(null);
-      openJobDescriptionDetails(request);
+      closeJobDescriptionDetails?.();
+      updateSelectedJobDescription?.(null);
+
+      navigate(`/approval-request/job-description/view/${jdId}`, {
+        state: {
+          jobDescription: jdItem,
+        },
+      });
+
       return;
     }
 
-    closeJobDescriptionDetails();
+    closeJobDescriptionDetails?.();
+    updateSelectedJobDescription?.(null);
     setSelectedRequest(request);
   }
 
@@ -1886,14 +2094,6 @@ export default function ApprovalRequest() {
         />
       )}
 
-      <ViewJobDescriptionDetailsModal
-        open={!!selectedJobDescription}
-        approvalPage={true}
-        onClose={closeJobDescriptionDetails}
-        onUpdated={openJobDescriptionDetails}
-        onRefresh={loadApprovalRequests}
-        onStatus={openStatus}
-      />
 
       <DecisionModal
         open={decisionModal.open}
