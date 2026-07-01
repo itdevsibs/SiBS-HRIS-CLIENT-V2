@@ -23,6 +23,7 @@ import ProfileUserPage from "./pages/profile/UserProfilePage";
 import TADashboardPage from "./pages/recruitment/TADashboardPage";
 import HiringNeedsPage from "./pages/recruitment/HiringNeedsPage";
 import JobDescriptionPage from "./pages/recruitment/JobDescriptionPage";
+import JobDescriptionViewPage from "./pages/recruitment/JobDescriptionViewPage";
 import WeeklyHiringPlanPage from "./pages/recruitment/WeeklyHiringPlanPage";
 import TalentPoolPage from "./pages/recruitment/talent-pool/TalentPoolPage";
 import TalentPoolApplyPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage";
@@ -84,6 +85,17 @@ export default function Router() {
       <Route
         path="/offers"
         element={<Navigate to="/recruitment/offers" replace />}
+      />
+
+      <Route
+        path="/approval-requests"
+        element={<Navigate to="/approval-request" replace />}
+      />
+
+      {/* PUBLIC RECRUITMENT FORM */}
+      <Route
+        path="/recruitment/talent-pool/apply"
+        element={<TalentPoolApplyPage />}
       />
 
       {/* DASHBOARDS */}
@@ -226,6 +238,15 @@ export default function Router() {
       />
 
       <Route
+        path="/recruitment/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
         path="/recruitment/weekly-hiring-plan"
         element={
           <PrivateRoute>
@@ -340,6 +361,24 @@ export default function Router() {
         element={
           <PrivateRoute>
             <ApprovalRequest />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/approval-request/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/approval-requests/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
           </PrivateRoute>
         }
       />
