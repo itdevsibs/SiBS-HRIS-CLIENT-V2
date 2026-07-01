@@ -117,6 +117,15 @@ const PROFILE_TABS = [
   },
 ];
 
+
+const EDUCATION_LEVEL_OPTIONS = [
+  { value: "Elementary", label: "Elementary" },
+  { value: "Secondary", label: "Secondary" },
+  { value: "Vocational / Trade Course", label: "Vocational / Trade Course" },
+  { value: "College", label: "College" },
+  { value: "Graduate Studies", label: "Graduate Studies" },
+];
+
 function cleanText(value) {
   return String(value ?? "").trim();
 }
@@ -1301,6 +1310,8 @@ function ProfileDetail({
   editable = false,
   onChange,
   type = "text",
+  options = [],
+  placeholder = "Select option",
 }) {
   const isLongText = [
     "email",
@@ -1316,12 +1327,42 @@ function ProfileDetail({
       </p>
 
       {editable ? (
-        <input
-          type={type}
-          value={value || ""}
-          onChange={(e) => onChange?.(e.target.value)}
-          className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        />
+        type === "select" ? (
+          <select
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          >
+            <option value="">{placeholder}</option>
+
+            {value &&
+              !options.some((option) =>
+                typeof option === "string"
+                  ? option === value
+                  : String(option.value) === String(value),
+              ) && <option value={value}>{value}</option>}
+
+            {options.map((option) => {
+              const optionValue =
+                typeof option === "string" ? option : option.value;
+              const optionLabel =
+                typeof option === "string" ? option : option.label;
+
+              return (
+                <option key={optionValue} value={optionValue}>
+                  {optionLabel}
+                </option>
+              );
+            })}
+          </select>
+        ) : (
+          <input
+            type={type}
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          />
+        )
       ) : (
         <p
           className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
@@ -1835,7 +1876,7 @@ function EducationPdsTab({ education = [], isEditing, onChange }) {
         honors: "",
       }}
       fields={[
-        { key: "level", label: "Level" },
+        { key: "level", label: "Level", type: "select", options: EDUCATION_LEVEL_OPTIONS, placeholder: "Select education level" },
         { key: "school", label: "Name of School" },
         { key: "degree", label: "Degree / Course" },
         { key: "from", label: "From" },
@@ -2416,6 +2457,8 @@ function EditableRecordList({
                         }
                         editable
                         type={field.type || "text"}
+                        options={field.options}
+                        placeholder={field.placeholder}
                         onChange={(value) =>
                           updateRecord(index, field.key, value)
                         }

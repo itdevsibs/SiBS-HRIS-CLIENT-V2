@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   BriefcaseBusiness,
@@ -1020,10 +1020,26 @@ export default function ApprovalRequest() {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { updateSelectedJobDescription, closeJobDescriptionDetails } =
     useJobDescription();
 
   const typeOptions = TYPE_OPTIONS_BY_MODULE[activeModule] || ["All"];
+
+  useEffect(() => {
+    const requestedModule = location.state?.activeModule;
+
+    if (requestedModule && REQUEST_MODULES.includes(requestedModule)) {
+      setActiveModule(requestedModule);
+      setSearch("");
+      setSearchInput("");
+      setStatusFilter("All");
+      setTypeFilter(requestedModule === "Attrition" ? "Resignation" : "All");
+      setPage(1);
+
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   const hasActiveFilters =
     search || searchInput || statusFilter !== "All" || typeFilter !== "All";

@@ -87,6 +87,17 @@ export default function Router() {
         element={<Navigate to="/recruitment/offers" replace />}
       />
 
+      <Route
+        path="/approval-requests"
+        element={<Navigate to="/approval-request" replace />}
+      />
+
+      {/* PUBLIC RECRUITMENT FORM */}
+      <Route
+        path="/recruitment/talent-pool/apply"
+        element={<TalentPoolApplyPage />}
+      />
+
       {/* DASHBOARDS */}
       <Route
         path="/dashboard/admin"
@@ -350,6 +361,24 @@ export default function Router() {
         element={
           <PrivateRoute>
             <ApprovalRequest />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/approval-request/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/approval-requests/job-description/view/:id"
+        element={
+          <PrivateRoute>
+            <JobDescriptionViewPage />
           </PrivateRoute>
         }
       />

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { PencilLine, SquarePen, X } from "lucide-react";
 import { normalizeJdStatus } from "../../../../lib/utils/NormalizeJDStatus";
 import { formatDate } from "../../FormatDateTime";
@@ -56,8 +57,12 @@ const Details = ({
   }
 
   const canManageJdDetails = useMemo(() => {
+    // Approval reviewers should be able to use the full-page approval tools
+    // even when their adminAccess is not 6 or 7.
+    if (approvalPage) return true;
+
     return [6, 7].includes(Number(user?.adminAccess));
-  }, [user?.adminAccess]);
+  }, [approvalPage, user?.adminAccess]);
 
   const [commentModal, setCommentModal] = useState({
     open: false,
@@ -550,7 +555,7 @@ const Details = ({
 
   function getEditDisabledTitle(defaultTitle) {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can edit this JD.";
+      return "Only authorized JD reviewers can edit this JD.";
     }
 
     if (disableEditBecauseCommented) {
@@ -562,7 +567,7 @@ const Details = ({
 
   function getCommentDisabledTitle(defaultTitle) {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can add revision comments.";
+      return "Only authorized JD reviewers can add revision comments.";
     }
 
     if (disableCommentBecauseEdited) {
@@ -599,39 +604,7 @@ const Details = ({
   }
 
   return (
-    <article className="mx-auto w-full max-w-[816px] space-y-8 bg-white px-6 py-8 text-[#1D2939] shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:px-10 sm:py-10 lg:min-h-[1056px] print:shadow-none">
-      <header className="border-b border-[#D9E2EC] pb-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-sibs-primary-1/70">
-              Job Description
-            </p>
-
-            <h1 className="mt-2 break-words text-2xl font-extrabold leading-tight text-sibs-primary-1 sm:text-[28px]">
-              {recordInfoDraft.roleTitle || item.roleTitle || "Job Description"}
-            </h1>
-
-            <p className="mt-2 text-sm font-bold text-[#475467]">
-              {recordInfoDraft.department || item.department || "—"} • {recordInfoDraft.preparedFor || item.account || "—"}
-            </p>
-          </div>
-
-          <p className="shrink-0 text-xs font-bold text-sibs-tertiary-5">
-            Page 1 of 1
-          </p>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-3 border-t border-[#EEF2F6] pt-5 text-xs sm:grid-cols-4">
-          <DocumentMeta label="Document Code" value={recordInfoDraft.jdCode} />
-          <DocumentMeta label="Revision No." value={recordInfoDraft.currentVersion} />
-          <DocumentMeta label="Effective Date" value={formatDate(recordInfoDraft.effectiveDate)} />
-          <DocumentMeta label="Last Reviewed" value={formatDate(recordInfoDraft.lastUpdated)} />
-          <DocumentMeta label="Prepared For" value={recordInfoDraft.preparedFor} />
-          <DocumentMeta label="Created By" value={recordInfoDraft.createdBy} />
-          <DocumentMeta label="Reports To" value={recordInfoDraft.reportsTo} />
-          <DocumentMeta label="Supervisory" value={recordInfoDraft.supervisory || "No"} />
-        </div>
-      </header>
+    <article className="mx-auto w-full max-w-[816px] space-y-6 bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -649,7 +622,7 @@ const Details = ({
             <button
               type="button"
               onClick={() => onOpenRevision?.(item)}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700"
+              className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-700 md:w-auto"
             >
               <PencilLine size={16} />
               Revise Job Description
@@ -658,10 +631,10 @@ const Details = ({
         </section>
       )}
 
-      <section className="relative isolate overflow-visible border-b border-[#D9E2EC] bg-white pb-8">
+      <section className="relative isolate overflow-visible border-b border-[#D9E2EC] bg-white pb-6 sm:pb-8">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-extrabold text-[#101828]">
                 Record Information
               </h3>
@@ -682,7 +655,7 @@ const Details = ({
           </div>
 
           {approvalPage && canManageJdDetails && (
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
               {!editingRecordInfo ? (
                 <>
                   <button
@@ -694,7 +667,7 @@ const Details = ({
                     }}
                     disabled={disableEditBecauseCommented}
                     title={getEditDisabledTitle("Edit record information.")}
-                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                    className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                       disableEditBecauseCommented
                         ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                         : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
@@ -715,7 +688,7 @@ const Details = ({
                     }
                     disabled={disableCommentBecauseEdited}
                     title={getCommentDisabledTitle("Add revision comment.")}
-                    className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+                    className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                       disableCommentBecauseEdited
                         ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                         : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
@@ -730,7 +703,7 @@ const Details = ({
                   <button
                     type="button"
                     onClick={cancelRecordInfoEdit}
-                    className="inline-flex h-8 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+                    className="inline-flex h-9 flex-1 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:flex-none"
                   >
                     Cancel
                   </button>
@@ -738,7 +711,7 @@ const Details = ({
                   <button
                     type="button"
                     onClick={saveRecordInfoEdit}
-                    className="inline-flex h-8 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90"
+                    className="inline-flex h-9 flex-1 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white transition hover:opacity-90 sm:flex-none"
                   >
                     Save
                   </button>
@@ -748,162 +721,12 @@ const Details = ({
           )}
         </div>
 
-        <div className="relative grid grid-cols-1 overflow-visible rounded-xl border border-[#E6ECF2] lg:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="border-b border-[#E6ECF2] p-5 lg:border-b-0 lg:border-r">
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
-              Document Title
-            </p>
-
-            {editingRecordInfo ? (
-              <input
-                value={recordInfoDraft.roleTitle}
-                onChange={(e) =>
-                  handleRecordInfoChange("roleTitle", e.target.value)
-                }
-                className="mt-2 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 py-2 text-xl font-extrabold leading-7 text-[#101828] outline-none transition focus:border-sibs-primary-1"
-              />
-            ) : (
-              <h3 className="mt-2 text-xl font-extrabold leading-7 text-[#101828]">
-                {recordInfoDraft.roleTitle || "—"}
-              </h3>
-            )}
-
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <DocumentInfoInput
-                label="Position"
-                value={recordInfoDraft.roleTitle}
-                editable={editingRecordInfo}
-                comments={getRecordFieldComments(recordInfoDraft.roleTitle)}
-                onChange={(value) => handleRecordInfoChange("roleTitle", value)}
-              />
-
-              <DocumentInfoInput
-                label="Department"
-                value={recordInfoDraft.department}
-                editable={editingRecordInfo}
-                comments={getRecordFieldComments(recordInfoDraft.department)}
-                onChange={(value) =>
-                  handleRecordInfoChange("department", value)
-                }
-              />
-
-              <DocumentInfoInput
-                label="Date Requested"
-                value={recordInfoDraft.dateRequested}
-                displayValue={formatDate(recordInfoDraft.dateRequested)}
-                editable={editingRecordInfo}
-                inputType="date"
-                comments={getRecordFieldComments(
-                  formatDate(recordInfoDraft.dateRequested),
-                )}
-                onChange={(value) =>
-                  handleRecordInfoChange("dateRequested", value)
-                }
-              />
-
-              <DocumentInfoInput
-                label="Linked Hiring Requirement"
-                value={recordInfoDraft.linkedHiringRequirement}
-                editable={editingRecordInfo}
-                comments={getRecordFieldComments(
-                  recordInfoDraft.linkedHiringRequirement,
-                )}
-                onChange={(value) =>
-                  handleRecordInfoChange("linkedHiringRequirement", value)
-                }
-              />
-
-              <DocumentInfoInput
-                label="Prepared For"
-                value={recordInfoDraft.preparedFor}
-                editable={editingRecordInfo}
-                comments={getRecordFieldComments(recordInfoDraft.preparedFor)}
-                onChange={(value) =>
-                  handleRecordInfoChange("preparedFor", value)
-                }
-              />
-
-              <DocumentInfoInput
-                label="Created By"
-                value={recordInfoDraft.createdBy}
-                editable={editingRecordInfo}
-                comments={getRecordFieldComments(recordInfoDraft.createdBy)}
-                onChange={(value) => handleRecordInfoChange("createdBy", value)}
-              />
-            </div>
-          </div>
-
-          <div className="relative grid grid-cols-2 overflow-visible lg:grid-cols-1">
-            <CompactSummaryRowRight
-              label="Document Code"
-              value={recordInfoDraft.jdCode}
-              editable={editingRecordInfo}
-              comments={getRecordFieldComments(recordInfoDraft.jdCode)}
-              onChange={(value) => handleRecordInfoChange("jdCode", value)}
-              className="border-b border-r border-[#E6ECF2] lg:border-r-0"
-            />
-
-            <CompactSummaryRowRight
-              label="Revision No."
-              value={recordInfoDraft.currentVersion}
-              editable={editingRecordInfo}
-              comments={getRecordFieldComments(recordInfoDraft.currentVersion)}
-              onChange={(value) =>
-                handleRecordInfoChange("currentVersion", value)
-              }
-              className="border-b border-[#E6ECF2]"
-            />
-
-            <CompactSummaryRowRight
-              label="Effective Date"
-              value={recordInfoDraft.effectiveDate}
-              displayValue={formatDate(recordInfoDraft.effectiveDate)}
-              editable={editingRecordInfo}
-              inputType="date"
-              comments={getRecordFieldComments(
-                formatDate(recordInfoDraft.effectiveDate),
-              )}
-              onChange={(value) =>
-                handleRecordInfoChange("effectiveDate", value)
-              }
-              className="border-r border-[#E6ECF2] lg:border-r-0 lg:border-b"
-            />
-
-            <CompactSummaryRowRight
-              label="Last Reviewed"
-              value={recordInfoDraft.lastUpdated}
-              displayValue={formatDate(recordInfoDraft.lastUpdated)}
-              editable={editingRecordInfo}
-              inputType="date"
-              comments={getRecordFieldComments(
-                formatDate(recordInfoDraft.lastUpdated),
-              )}
-              onChange={(value) => handleRecordInfoChange("lastUpdated", value)}
-            />
-          </div>
-        </div>
-
-        <div className="relative overflow-visible rounded-b-xl border-t border-[#E6ECF2] bg-[#F8FAFC] p-5">
-          <div className="relative grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2">
-            <CompactSummaryRowBottom
-              label="Reports To"
-              value={recordInfoDraft.reportsTo}
-              editable={editingRecordInfo}
-              comments={getRecordFieldComments(recordInfoDraft.reportsTo)}
-              onChange={(value) => handleRecordInfoChange("reportsTo", value)}
-            />
-
-            <CompactSummaryRowBottom
-              label="Supervisory"
-              value={recordInfoDraft.supervisory || "No"}
-              editable={editingRecordInfo}
-              comments={getRecordFieldComments(
-                recordInfoDraft.supervisory || "No",
-              )}
-              onChange={(value) => handleRecordInfoChange("supervisory", value)}
-            />
-          </div>
-        </div>
+        <DocumentRecordInfoTable
+          recordInfoDraft={recordInfoDraft}
+          editingRecordInfo={editingRecordInfo}
+          getRecordFieldComments={getRecordFieldComments}
+          onChange={handleRecordInfoChange}
+        />
       </section>
 
       <section className="space-y-7">
@@ -1001,107 +824,327 @@ const Details = ({
 
 
 
-      {commentModal.open && approvalPage && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
-              <div>
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Add Revision Comment
-                </h3>
+      {commentModal.open &&
+        approvalPage &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[999999] flex h-dvh items-end justify-center bg-black/45 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-6">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="add-revision-comment-title"
+              className="max-h-[94dvh] w-full max-w-xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
+                <div>
+                  <h3
+                    id="add-revision-comment-title"
+                    className="text-base font-extrabold text-[#101828]"
+                  >
+                    Add Revision Comment
+                  </h3>
 
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  {commentModal.sectionTitle}
-                </p>
+                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                    {commentModal.sectionTitle}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeCommentModal}
+                  className="rounded-lg p-1 text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                  aria-label="Close revision comment modal"
+                >
+                  <X size={20} />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={closeCommentModal}
-                className="rounded-lg p-1 text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
-              >
-                <X size={20} />
-              </button>
-            </div>
+              <div className="thin-scroll max-h-[calc(94dvh-180px)] space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+                {commentModal.selectedText ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
+                      {commentModal.sectionKey === "personalityType"
+                        ? "Selected Personality Type"
+                        : "Highlighted Text"}
+                    </p>
 
-            <div className="space-y-4 px-5 py-4">
-              {commentModal.selectedText ? (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">
-                    {commentModal.sectionKey === "personalityType"
-                      ? "Selected Personality Type"
-                      : "Highlighted Text"}
-                  </p>
-
-                  <div className="mt-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
-                    <HighlightedRevisionText
-                      value={commentModal.selectedText}
-                    />
+                    <div className="mt-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
+                      <HighlightedRevisionText
+                        value={commentModal.selectedText}
+                      />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <p className="text-sm font-semibold leading-6 text-amber-700">
-                    No highlighted text detected. This comment will apply to the
-                    whole section.
-                  </p>
-                </div>
-              )}
+                ) : (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <p className="text-sm font-semibold leading-6 text-amber-700">
+                      No highlighted text detected. This comment will apply to
+                      the whole section.
+                    </p>
+                  </div>
+                )}
 
-              <div>
-                <label className="mb-1 block text-sm font-bold text-sibs-primary-1">
-                  Revision Comment <span className="text-red-500">*</span>
-                </label>
+                <div>
+                  <label className="mb-1 block text-sm font-bold text-sibs-primary-1">
+                    Revision Comment <span className="text-red-500">*</span>
+                  </label>
 
-                <textarea
-                  rows={5}
-                  value={commentModal.comment}
-                  onChange={(e) =>
-                    setCommentModal((prev) => ({
-                      ...prev,
-                      comment: e.target.value,
-                    }))
-                  }
-                  placeholder="Explain what needs to be changed..."
-                  className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
-                />
+                  <textarea
+                    rows={5}
+                    value={commentModal.comment}
+                    onChange={(e) =>
+                      setCommentModal((prev) => ({
+                        ...prev,
+                        comment: e.target.value,
+                      }))
+                    }
+                    placeholder="Explain what needs to be changed..."
+                    className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:justify-end sm:gap-3 sm:px-5">
+                <button
+                  type="button"
+                  onClick={closeCommentModal}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={saveRevisionComment}
+                  disabled={!String(commentModal.comment || "").trim()}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-2 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  Save Comment
+                </button>
               </div>
             </div>
-
-            <div className="flex justify-end gap-3 border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
-              <button
-                type="button"
-                onClick={closeCommentModal}
-                className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={saveRevisionComment}
-                disabled={!String(commentModal.comment || "").trim()}
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-2 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Save Comment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </article>
   );
 };
 
-function DocumentMeta({ label, value }) {
+
+
+function DocumentRecordInfoTable({
+  recordInfoDraft = {},
+  editingRecordInfo = false,
+  getRecordFieldComments,
+  onChange,
+}) {
   return (
-    <div className="min-w-0">
-      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60">
-        {label}
-      </p>
-      <p className="mt-1 break-words text-xs font-extrabold text-[#344054]">
-        {value || "—"}
-      </p>
+    <div className="rounded-2xl border border-[#D9E2EC] bg-white p-3 shadow-sm sm:p-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4">
+        <RecordInfoDocumentCell
+          label="Document Title"
+          value={recordInfoDraft.roleTitle}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
+          onChange={(value) => onChange?.("roleTitle", value)}
+          className="sm:col-span-2 lg:col-span-4"
+          valueClassName="text-base font-extrabold leading-7 text-[#101828] sm:text-lg"
+        />
+
+        <RecordInfoDocumentCell
+          label="Position"
+          value={recordInfoDraft.roleTitle}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
+          onChange={(value) => onChange?.("roleTitle", value)}
+          className="sm:col-span-1 lg:col-span-2"
+        />
+
+        <RecordInfoDocumentCell
+          label="Department"
+          value={recordInfoDraft.department}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.department)}
+          onChange={(value) => onChange?.("department", value)}
+          className="sm:col-span-1 lg:col-span-2"
+        />
+
+        <RecordInfoDocumentCell
+          label="Document Code"
+          value={recordInfoDraft.jdCode}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.jdCode)}
+          onChange={(value) => onChange?.("jdCode", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Revision No."
+          value={recordInfoDraft.currentVersion}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.currentVersion)}
+          onChange={(value) => onChange?.("currentVersion", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Effective Date"
+          value={recordInfoDraft.effectiveDate}
+          displayValue={formatDate(recordInfoDraft.effectiveDate)}
+          inputType="date"
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(
+            formatDate(recordInfoDraft.effectiveDate),
+          )}
+          onChange={(value) => onChange?.("effectiveDate", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Last Reviewed"
+          value={recordInfoDraft.lastUpdated}
+          displayValue={formatDate(recordInfoDraft.lastUpdated)}
+          inputType="date"
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(
+            formatDate(recordInfoDraft.lastUpdated),
+          )}
+          onChange={(value) => onChange?.("lastUpdated", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Date Requested"
+          value={recordInfoDraft.dateRequested}
+          displayValue={formatDate(recordInfoDraft.dateRequested)}
+          inputType="date"
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(
+            formatDate(recordInfoDraft.dateRequested),
+          )}
+          onChange={(value) => onChange?.("dateRequested", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Linked Hiring Requirement"
+          value={recordInfoDraft.linkedHiringRequirement || "—"}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(
+            recordInfoDraft.linkedHiringRequirement,
+          )}
+          onChange={(value) => onChange?.("linkedHiringRequirement", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Prepared For"
+          value={recordInfoDraft.preparedFor}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.preparedFor)}
+          onChange={(value) => onChange?.("preparedFor", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Created By"
+          value={recordInfoDraft.createdBy}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.createdBy)}
+          onChange={(value) => onChange?.("createdBy", value)}
+        />
+
+        <RecordInfoDocumentCell
+          label="Reports To"
+          value={recordInfoDraft.reportsTo}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(recordInfoDraft.reportsTo)}
+          onChange={(value) => onChange?.("reportsTo", value)}
+          className="sm:col-span-1 lg:col-span-2"
+        />
+
+        <RecordInfoDocumentCell
+          label="Supervisory"
+          value={recordInfoDraft.supervisory || "No"}
+          editable={editingRecordInfo}
+          comments={getRecordFieldComments?.(
+            recordInfoDraft.supervisory || "No",
+          )}
+          onChange={(value) => onChange?.("supervisory", value)}
+          className="sm:col-span-1 lg:col-span-2"
+        />
+      </div>
+    </div>
+  );
+}
+
+function RecordInfoDocumentCell({
+  label,
+  value,
+  displayValue,
+  editable = false,
+  inputType = "text",
+  comments = [],
+  onChange,
+  className = "",
+  valueClassName = "",
+}) {
+  const finalDisplayValue = displayValue || value || "—";
+  const hasComments = Array.isArray(comments) && comments.length > 0;
+  const firstComment = comments?.[0];
+
+  return (
+    <div
+      className={`group relative min-h-[76px] rounded-xl border px-3 py-3 transition selection:bg-[#FFF3B8] selection:text-[#101828] sm:min-h-[86px] sm:px-4 ${
+        hasComments
+          ? "border-amber-300 bg-amber-50 shadow-[0_1px_0_rgba(245,158,11,0.12)]"
+          : "border-[#E6ECF2] bg-[#F8FAFC]"
+      } ${className}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <p
+          className={`text-[10px] font-extrabold uppercase tracking-wide ${
+            hasComments ? "text-amber-700" : "text-sibs-primary-1/70"
+          }`}
+        >
+          {label}
+        </p>
+
+        {hasComments && (
+          <span className="shrink-0 rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[10px] font-extrabold text-amber-700">
+            Needs revision
+          </span>
+        )}
+      </div>
+
+      {editable ? (
+        <input
+          type={inputType}
+          value={value || ""}
+          onChange={(event) => onChange?.(event.target.value)}
+          className="mt-2 h-10 w-full rounded-lg border border-[#D7DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-2 focus:ring-blue-100"
+        />
+      ) : (
+        <p
+          title={finalDisplayValue}
+          className={`mt-2 max-w-full break-words text-[13px] font-bold leading-6 sm:text-sm ${
+            hasComments ? "text-amber-800" : "text-[#344054]"
+          } ${valueClassName}`}
+        >
+          {finalDisplayValue}
+        </p>
+      )}
+
+      {hasComments && (
+        <div className="pointer-events-none absolute left-3 right-3 top-[calc(100%-4px)] z-50 translate-y-1 rounded-xl border border-orange-100 bg-white p-3 opacity-0 shadow-lg ring-1 ring-black/5 transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-2 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-2 group-focus-within:opacity-100">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
+              Reviewer Comment
+            </p>
+
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+              {firstComment?.status || "Open"}
+            </span>
+          </div>
+
+          <p className="text-xs font-semibold leading-5 text-orange-800">
+            {firstComment?.comment || "No revision comment provided."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1558,7 +1601,7 @@ function DetailArticleSection({
 }) {
   function getEditTitle() {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can edit this JD.";
+      return "Only authorized JD reviewers can edit this JD.";
     }
 
     if (disableEdit) {
@@ -1570,7 +1613,7 @@ function DetailArticleSection({
 
   function getCommentTitle() {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can add revision comments.";
+      return "Only authorized JD reviewers can add revision comments.";
     }
 
     if (disableComment) {
@@ -1588,9 +1631,9 @@ function DetailArticleSection({
 
   return (
     <section className="break-inside-avoid">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <h4 className="text-[15px] font-extrabold uppercase tracking-wide text-[#101828]">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
             {sectionNumber ? `${sectionNumber}. ${title}` : title}
           </h4>
 
@@ -1602,14 +1645,14 @@ function DetailArticleSection({
         </div>
 
         {approvalPage && !isEditing && canManageJdDetails && (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onStartEdit?.(sectionKey)}
               disabled={disableEdit}
               title={getEditTitle()}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
@@ -1625,7 +1668,7 @@ function DetailArticleSection({
               onClick={() => onAddComment?.(sectionKey, title)}
               disabled={disableComment}
               title={getCommentTitle()}
-              className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableComment
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
@@ -1639,19 +1682,19 @@ function DetailArticleSection({
       </div>
 
       {isEditing ? (
-        <div className="rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-sm">
+        <div className="rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-sm sm:p-4">
           <textarea
             rows={8}
             value={editingDraft}
             onChange={(e) => setEditingDraft?.(e.target.value)}
-            className="min-h-[180px] w-full resize-y rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-4 py-3 text-sm font-medium leading-7 text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1"
+            className="min-h-[180px] w-full resize-y rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-3 text-sm font-medium leading-7 text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 sm:px-4"
           />
 
-          <div className="mt-3 flex justify-end gap-2">
+          <div className="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
             >
               Cancel
             </button>
@@ -1659,7 +1702,7 @@ function DetailArticleSection({
             <button
               type="button"
               onClick={() => onSaveEdit?.(sectionKey)}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90 sm:w-auto"
             >
               Save Changes
             </button>
@@ -1845,7 +1888,7 @@ function PreferredPersonalityTypeSection({
 
   function getEditTitle() {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can edit this JD.";
+      return "Only authorized JD reviewers can edit this JD.";
     }
 
     if (disableEdit) {
@@ -1857,7 +1900,7 @@ function PreferredPersonalityTypeSection({
 
   function getCommentTitle() {
     if (!canManageJdDetails) {
-      return "Only admin access roles 6 and 7 can add revision comments.";
+      return "Only authorized JD reviewers can add revision comments.";
     }
 
     if (disableComment) {
@@ -1878,7 +1921,7 @@ function PreferredPersonalityTypeSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-[15px] font-extrabold uppercase tracking-wide text-[#101828]">
+            <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
               4. Preferred Personality Type
             </h4>
 
@@ -1903,12 +1946,12 @@ function PreferredPersonalityTypeSection({
         </div>
 
         {approvalPage && !isEditing && canManageJdDetails && (
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {hasSelectedTypes && (
               <button
                 type="button"
                 onClick={clearSelectedTypes}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-2.5 py-1 text-xs font-bold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-[#D7DEE8] bg-white px-2.5 py-1.5 text-xs font-bold text-sibs-tertiary-5 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 sm:flex-none"
               >
                 Clear
               </button>
@@ -1920,7 +1963,7 @@ function PreferredPersonalityTypeSection({
               onClick={onStartEdit}
               disabled={disableEdit}
               title={getEditTitle()}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
@@ -1936,7 +1979,7 @@ function PreferredPersonalityTypeSection({
               onClick={handleAddComment}
               disabled={disableComment || !hasSelectedTypes}
               title={getCommentTitle()}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableComment || !hasSelectedTypes
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
@@ -1991,7 +2034,7 @@ function PreferredPersonalityTypeSection({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
             >
               Cancel
             </button>
@@ -1999,7 +2042,7 @@ function PreferredPersonalityTypeSection({
             <button
               type="button"
               onClick={onSaveEdit}
-              className="inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90 sm:w-auto"
             >
               Save Changes
             </button>
@@ -2567,8 +2610,8 @@ function DetailContentRenderer({
         if (block.type === "list") {
           const ListTag = block.ordered ? "ol" : "ul";
           const listClassName = block.ordered
-            ? "list-decimal space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]"
-            : "list-disc space-y-3 pl-6 text-[15px] font-medium leading-7 text-[#344054]";
+            ? "list-decimal space-y-3 pl-5 text-sm font-medium leading-7 text-[#344054] sm:pl-6 sm:text-[15px]"
+            : "list-disc space-y-3 pl-5 text-sm font-medium leading-7 text-[#344054] sm:pl-6 sm:text-[15px]";
 
           return (
             <ListTag key={`list-${index}`} className={listClassName}>
@@ -2714,7 +2757,7 @@ function DetailContentRenderer({
 
         return (
           <div key={`paragraph-wrap-${index}`}>
-            <p className="text-[15px] font-medium leading-8 text-[#344054]">
+            <p className="text-sm font-medium leading-7 text-[#344054] sm:text-[15px] sm:leading-8">
               <InlineCommentedText
                 text={block.text}
                 comments={comments}

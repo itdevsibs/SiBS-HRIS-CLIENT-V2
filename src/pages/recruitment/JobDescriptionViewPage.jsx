@@ -1,6 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Eye, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Eye,
+  Loader2,
+  Printer,
+} from "lucide-react";
 
 import StatusModal from "../../components/modals/StatusModal";
 import Details from "../../components/layout/tabs/JobDescriptionView/Details";
@@ -8,6 +14,7 @@ import RevisionHistory from "../../components/layout/tabs/JobDescriptionView/Rev
 import ReviseJobDescriptionModal from "../../components/modals/jobDescription/ReviseJobDescriptionModal";
 import { normalizeJdStatus } from "../../lib/utils/NormalizeJDStatus";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
+import { approveJobDescriptionRequest } from "../../lib/axios/getApprovalRequest";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -148,6 +155,17 @@ const jdViewAnimationStyles = `
 
   .jd-view-action-button:active:not(:disabled) {
     transform: scale(0.98);
+  }
+
+
+  @media (max-width: 640px) {
+    .jd-view-page-shell {
+      min-width: 0;
+    }
+
+    .jd-view-content-panel {
+      transform-origin: top center;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -359,9 +377,9 @@ export default function JobDescriptionViewPage() {
   const location = useLocation();
   const { id } = useParams();
 
-  const approvalPage = location.pathname.includes(
-    "/approval-request/job-description/view",
-  );
+  const approvalPage =
+    location.pathname.includes("/approval-request/job-description/view") ||
+    location.pathname.includes("/approval-requests/job-description/view");
 
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
   const [hasEditedChanges, setHasEditedChanges] = useState(false);
@@ -532,7 +550,20 @@ export default function JobDescriptionViewPage() {
     setRevisionComments?.([]);
     closeJobDescriptionDetails?.();
     updateSelectedJobDescription?.(null);
+
+    if (approvalPage) {
+      navigate("/approval-request", {
+        replace: true,
+        state: { activeModule: "Job Description" },
+      });
+      return;
+    }
+
     navigate(-1);
+  }
+
+  function handlePrintJobDescription() {
+    window.print();
   }
 
   function handleContentScroll(e) {
@@ -725,6 +756,92 @@ export default function JobDescriptionViewPage() {
     }
   }
 
+  async function handleApproveJobDescription() {
+    if (saving) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      openStatus({
+        type: "error",
+        title: "Invalid Job Description",
+        message: "Unable to identify the selected job description.",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const result = await approveJobDescriptionRequest(jdId, {
+        remarks: "",
+        module: "Job Description",
+        type: "Job Description",
+      });
+
+      if (!result?.success) {
+        openStatus({
+          type: "error",
+          title: "Approval Failed",
+          message: result?.message || "Failed to approve job description.",
+        });
+        return;
+      }
+
+      const updatedItem = {
+        ...item,
+        jdStatus: "Approved",
+        jd_status: "Approved",
+        status: "Approved",
+        approvalStatus: "Approved",
+        approval_status: "Approved",
+        approvedBy: result?.data?.approvedBy || result?.data?.approved_by || "",
+        approved_by: result?.data?.approved_by || result?.data?.approvedBy || "",
+        approveRemarks:
+          result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+        approve_remarks:
+          result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        raw: {
+          ...(item.raw || {}),
+          jdStatus: "Approved",
+          jd_status: "Approved",
+          status: "Approved",
+          approvalStatus: "Approved",
+          approval_status: "Approved",
+          approvedBy:
+            result?.data?.approvedBy || result?.data?.approved_by || "",
+          approved_by:
+            result?.data?.approved_by || result?.data?.approvedBy || "",
+          approveRemarks:
+            result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+          approve_remarks:
+            result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        },
+      };
+
+      updateSelectedJobDescription?.(updatedItem);
+
+      openStatus({
+        type: "success",
+        title: "Job Description Approved",
+        message:
+          result?.message || "Job description request approved successfully.",
+      });
+    } catch (error) {
+      openStatus({
+        type: "error",
+        title: "Approval Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Something went wrong while approving the job description.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handlePrimaryAction() {
     if (hasRevisionComments) {
       await handleSaveRevisionComments();
@@ -740,11 +857,7 @@ export default function JobDescriptionViewPage() {
       return;
     }
 
-    openStatus({
-      type: "info",
-      title: "Not Yet Connected",
-      message: "Approve action is not connected yet.",
-    });
+    await handleApproveJobDescription();
   }
 
   function handleOpenRevisionFromDetails(targetItem) {
@@ -807,6 +920,9 @@ export default function JobDescriptionViewPage() {
     item.revisionNo || item.currentVersion || "1"
   }.0`;
 
+  const jdCode = item.jdCode || item.jd_code || item.raw?.jdCode || item.raw?.jd_code || "JD";
+  const jdScreenTitle = `${jdCode} • ${item.roleTitle || "Job Description"}`;
+
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
@@ -820,28 +936,28 @@ export default function JobDescriptionViewPage() {
       <div
         className={`shrink-0 overflow-hidden border-b bg-white transition-all duration-300 ease-in-out ${
           headerHidden
-            ? "max-h-0 border-transparent px-4 py-0 opacity-0 -translate-y-full sm:px-6"
-            : "max-h-[210px] border-[#D9E2EC] px-4 pt-4 opacity-100 translate-y-0 sm:px-6"
+            ? "max-h-0 border-transparent px-3 py-0 opacity-0 -translate-y-full sm:px-6"
+            : "max-h-[230px] border-[#D9E2EC] px-3 pt-3 opacity-100 translate-y-0 sm:max-h-[210px] sm:px-6 sm:pt-4"
         }`}
       >
-        <div className="jd-view-header-content mx-auto flex w-full max-w-[1760px] flex-col gap-4">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+        <div className="jd-view-header-content mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
             <div className="min-w-0">
               <div className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
                 Job Description Overview
               </div>
 
-              <h1 className="mt-1 min-w-0 break-words text-lg font-extrabold leading-tight text-sibs-primary-1 sm:text-2xl">
-                {jdTitle}
+              <h1 className="mt-1 min-w-0 break-words text-sm font-extrabold leading-tight text-sibs-primary-1 sm:text-xl">
+                {jdScreenTitle}
               </h1>
 
-              <p className="mt-1 text-sm font-semibold text-[#475467]">
+              <p className="mt-1 text-xs font-semibold text-[#475467] sm:text-sm">
                 {item.department || "—"} • {item.account || "—"}
               </p>
             </div>
 
             <span
-              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-xs font-extrabold leading-none ${getJdStatusClass(
+              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3 py-1.5 text-center text-[11px] font-extrabold leading-none sm:px-3.5 sm:text-xs ${getJdStatusClass(
                 displayJdStatus,
               )}`}
             >
@@ -849,7 +965,7 @@ export default function JobDescriptionViewPage() {
             </span>
           </div>
 
-          <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar">
+          <div className="relative flex gap-5 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar sm:gap-8">
             <span
               className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
               style={{
@@ -869,7 +985,7 @@ export default function JobDescriptionViewPage() {
                   }}
                   type="button"
                   onClick={() => setActiveDetailTab(tab)}
-                  className={`jd-view-tab-button relative z-10 whitespace-nowrap px-4 pb-3 transition ${
+                  className={`jd-view-tab-button relative z-10 whitespace-nowrap px-2 pb-3 transition sm:px-4 ${
                     isActive
                       ? "text-blue-600"
                       : "text-[#344054] hover:text-blue-600"
@@ -883,11 +999,20 @@ export default function JobDescriptionViewPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
+        {approvalPage && (
+          <div className="pointer-events-none absolute right-3 top-3 z-[30] sm:right-6 sm:top-5">
+            <PrintApprovalAction
+              onClick={handlePrintJobDescription}
+              disabled={saving}
+            />
+          </div>
+        )}
+
         <div
           ref={contentScrollRef}
           onScroll={handleContentScroll}
-          className="thin-scroll h-full overflow-y-auto px-3 py-5 sm:px-5 sm:py-7 lg:px-8"
+          className="thin-scroll h-full overflow-y-auto px-2.5 py-4 pb-24 sm:px-5 sm:py-7 sm:pb-28 lg:px-8"
         >
           <div key={activeDetailTab} className="jd-view-content-panel">
             {shouldShowDetails && (
@@ -910,10 +1035,11 @@ export default function JobDescriptionViewPage() {
         </div>
       </div>
 
-      <div className="jd-view-footer shrink-0 border-t border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 sm:py-4">
-        <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+
+      <div className="jd-view-footer shrink-0 border-t border-[#D9E2EC] bg-white px-3 py-3 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-4">
+        <div className="mx-auto flex w-full max-w-[1760px] flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
           {!hasRevisionComments && hasEditedChanges && (
-            <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-amber-700">
+            <div className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-extrabold text-amber-700 sm:w-auto sm:py-0">
               <AlertTriangle size={16} />
               Tagged for revision
             </div>
@@ -921,7 +1047,7 @@ export default function JobDescriptionViewPage() {
 
           {!hasRevisionComments && hasEditedChanges && (
             <>
-              <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 text-sm font-extrabold text-sibs-primary-1">
+              <div className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-extrabold text-sibs-primary-1 sm:w-auto sm:py-0">
                 <AlertTriangle size={16} />
                 New version changes
               </div>
@@ -929,7 +1055,7 @@ export default function JobDescriptionViewPage() {
               <button
                 type="button"
                 onClick={() => setShowEditedChanges(true)}
-                className="jd-view-action-button inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC]"
+                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] sm:w-auto"
               >
                 <Eye size={16} />
                 View Changes
@@ -941,7 +1067,7 @@ export default function JobDescriptionViewPage() {
             type="button"
             onClick={handleBack}
             disabled={saving}
-            className="jd-view-action-button inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+            className="jd-view-action-button inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
             <ArrowLeft size={16} />
             Back
@@ -953,7 +1079,7 @@ export default function JobDescriptionViewPage() {
               onClick={handlePrimaryAction}
               disabled={saving}
               title={primaryButtonTitle}
-              className={`jd-view-action-button inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 ${
+              className={`jd-view-action-button inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg px-5 text-sm font-extrabold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto ${
                 hasRevisionComments
                   ? "bg-sibs-primary-2 hover:opacity-90"
                   : "bg-sibs-primary-1 hover:opacity-90"
@@ -967,9 +1093,9 @@ export default function JobDescriptionViewPage() {
       </div>
 
       {showEditedChanges && (
-        <div className="jd-view-overlay fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4">
+        <div className="jd-view-overlay fixed inset-0 z-[10000] flex items-end justify-center bg-black/40 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
           <div
-            className="jd-view-dialog w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="jd-view-dialog max-h-[94dvh] w-full max-w-3xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
@@ -992,7 +1118,7 @@ export default function JobDescriptionViewPage() {
               </button>
             </div>
 
-            <div className="max-h-[60dvh] overflow-y-auto p-5">
+            <div className="thin-scroll max-h-[65dvh] overflow-y-auto p-4 sm:p-5">
               {editedChangeDetails.length > 0 ? (
                 <div className="space-y-3">
                   {editedChangeDetails.map((change) => (
@@ -1043,11 +1169,11 @@ export default function JobDescriptionViewPage() {
               )}
             </div>
 
-            <div className="flex justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+            <div className="flex justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
               <button
                 type="button"
                 onClick={() => setShowEditedChanges(false)}
-                className="jd-view-action-button inline-flex h-10 items-center justify-center rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
+                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 sm:w-auto"
               >
                 Done
               </button>
@@ -1073,5 +1199,20 @@ export default function JobDescriptionViewPage() {
         onClose={closeStatusModal}
       />
     </div>
+  );
+}
+
+function PrintApprovalAction({ onClick, disabled = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="pointer-events-auto flex h-12 w-12 flex-col items-center justify-center gap-1 rounded-2xl border border-[#DDE7F3] bg-white text-sibs-primary-1 shadow-[0_10px_24px_rgba(4,44,81,0.12)] transition hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:shadow-[0_18px_36px_rgba(4,44,81,0.18)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 sm:h-[74px] sm:w-[74px] sm:gap-2 sm:shadow-[0_14px_30px_rgba(4,44,81,0.14)]"
+      title="Print job description"
+    >
+      <Printer size={18} strokeWidth={2.2} className="sm:h-[22px] sm:w-[22px]" />
+      <span className="text-[10px] font-extrabold leading-none sm:text-xs">Print</span>
+    </button>
   );
 }
