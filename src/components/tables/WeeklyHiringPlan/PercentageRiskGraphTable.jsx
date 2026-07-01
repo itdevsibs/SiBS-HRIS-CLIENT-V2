@@ -263,6 +263,60 @@ function getRateStatusClass(rate = 0) {
   return toNumber(rate) <= 25 ? "text-emerald-600" : "text-red-600";
 }
 
+function getSignedPercentClass(value = 0) {
+  const cleanValue = toNumber(value);
+
+  if (cleanValue < 0) return "text-red-600";
+  if (cleanValue > 0) return "text-emerald-600";
+
+  return "text-slate-700";
+}
+
+function getSignedCountClass(value = 0, positiveClass = "text-sibs-primary-1") {
+  const cleanValue = toNumber(value);
+
+  if (cleanValue < 0) return "text-red-600";
+  if (cleanValue > 0) return positiveClass;
+
+  return "text-slate-700";
+}
+
+function getExcelBufferPercentage(item = {}) {
+  const requiredHeadcount = getRequiredHeadcount(item);
+  const actualHeadcount = getActualHeadcount(item);
+  const absenteeism = getRowTotal(item, "absenteeism");
+  const attrition = getRowTotal(item, "attrition");
+
+  /*
+    Excel equivalent:
+    =IF(AND(D2="",E2="",G2="",I2=""),"",IFERROR(((E2-G2-I2)-D2)/D2,0))
+
+    JavaScript percentage:
+    (((Actual HC - Absenteeism - Attrition) - Required HC) / Required HC) * 100
+  */
+  if (
+    requiredHeadcount === 0 &&
+    actualHeadcount === 0 &&
+    absenteeism === 0 &&
+    attrition === 0
+  ) {
+    return "";
+  }
+
+  if (requiredHeadcount <= 0) return 0;
+
+  return (
+    ((actualHeadcount - absenteeism - attrition) - requiredHeadcount) /
+    requiredHeadcount
+  ) * 100;
+}
+
+function formatSignedPercent(value, decimals = 2) {
+  if (value === "") return "";
+
+  return `${toNumber(value).toFixed(decimals)}%`;
+}
+
 function getRowTotal(item, type) {
   if (type === "absenteeism") {
     return getNumberValue(item, [
@@ -692,20 +746,20 @@ function getRequiredHeadcount(item = {}) {
   ]);
 }
 
-function getPositiveNumber(value) {
+function getSignedNumber(value) {
   const numberValue = toNumber(value);
 
   if (!Number.isFinite(numberValue)) return 0;
 
-  return Math.abs(numberValue);
+  return numberValue;
 }
 
 function getStageAttritionDirectCount(item = {}, keys = []) {
-  return Math.abs(getNumberValue(item, keys, 0));
+  return getNumberValue(item, keys, 0);
 }
 
 function getStageAttritionMetrics(item = {}) {
-  const interviewCount = getPositiveNumber(
+  const interviewCount = getSignedNumber(
     getNumberValue(item, [
       "interviewCount",
       "interview_count",
@@ -716,9 +770,9 @@ function getStageAttritionMetrics(item = {}) {
     ]),
   );
 
-  const nhoCount = getPositiveNumber(getNhoCount(item));
-  const fstCount = getPositiveNumber(getFstCount(item));
-  const pstCount = getPositiveNumber(getPstCount(item));
+  const nhoCount = getSignedNumber(getNhoCount(item));
+  const fstCount = getSignedNumber(getFstCount(item));
+  const pstCount = getSignedNumber(getPstCount(item));
 
   const interviewToNhoDirect = getStageAttritionDirectCount(item, [
     "attritionInterviewToNhoCount",
@@ -748,19 +802,24 @@ function getStageAttritionMetrics(item = {}) {
     "nho_to_pst_attrition_count",
   ]);
 
+  const signedInterviewToNhoCount = interviewCount - nhoCount;
+  const signedNhoToFstCount = nhoCount - fstCount;
+  const signedFstToPstCount = fstCount - pstCount;
+  const signedNhoToPstCount = nhoCount - pstCount;
+
   const interviewToNhoCount =
-    interviewToNhoDirect > 0
-      ? interviewToNhoDirect
-      : Math.abs(interviewCount - nhoCount);
+    interviewToNhoDirect !== 0
+      ? Math.abs(interviewToNhoDirect)
+      : Math.abs(signedInterviewToNhoCount);
 
   const nhoToFstCount =
-    nhoToFstDirect > 0 ? nhoToFstDirect : Math.abs(nhoCount - fstCount);
+    nhoToFstDirect !== 0 ? Math.abs(nhoToFstDirect) : Math.abs(signedNhoToFstCount);
 
   const fstToPstCount =
-    fstToPstDirect > 0 ? fstToPstDirect : Math.abs(fstCount - pstCount);
+    fstToPstDirect !== 0 ? Math.abs(fstToPstDirect) : Math.abs(signedFstToPstCount);
 
   const nhoToPstCount =
-    nhoToPstDirect > 0 ? nhoToPstDirect : Math.abs(nhoCount - pstCount);
+    nhoToPstDirect !== 0 ? Math.abs(nhoToPstDirect) : Math.abs(signedNhoToPstCount);
 
   return {
     interviewCount,
@@ -771,14 +830,18 @@ function getStageAttritionMetrics(item = {}) {
     nhoToFstCount,
     fstToPstCount,
     nhoToPstCount,
+    signedInterviewToNhoCount,
+    signedNhoToFstCount,
+    signedFstToPstCount,
+    signedNhoToPstCount,
   };
 }
 
 function getStageRate(count, denominator) {
-  const cleanCount = Math.abs(toNumber(count));
-  const cleanDenominator = Math.abs(toNumber(denominator));
+  const cleanCount = toNumber(count);
+  const cleanDenominator = toNumber(denominator);
 
-  return cleanDenominator > 0 ? (cleanCount / cleanDenominator) * 100 : 0;
+  return cleanDenominator !== 0 ? (cleanCount / cleanDenominator) * 100 : 0;
 }
 
 function getAttritionStatus(rate = 0) {
@@ -786,7 +849,13 @@ function getAttritionStatus(rate = 0) {
 }
 
 function getAttritionStatusClass(rate = 0) {
-  return toNumber(rate) <= 25
+  const cleanRate = toNumber(rate);
+
+  if (cleanRate < 0) {
+    return "bg-red-50 text-red-600 border-red-100";
+  }
+
+  return cleanRate <= 25
     ? "bg-emerald-50 text-emerald-700 border-emerald-100"
     : "bg-red-50 text-red-600 border-red-100";
 }
@@ -2158,6 +2227,10 @@ function TrendDetailsTable({
               {isAbsenteeism ? "Absenteeism %" : "Attrition %"}
             </th>
 
+            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
+              Buffer %
+            </th>
+
             {weekLabels.map((label) => (
               <th
                 key={label}
@@ -2211,6 +2284,14 @@ function TrendDetailsTable({
                 {formatPercent(item.detailPercentage, 2)}
               </td>
 
+              <td
+                className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${getSignedPercentClass(
+                  getExcelBufferPercentage(item),
+                )}`}
+              >
+                {formatSignedPercent(getExcelBufferPercentage(item), 2)}
+              </td>
+
               {weekLabels.map((label, weekIndex) => (
                 <td
                   key={label}
@@ -2227,7 +2308,7 @@ function TrendDetailsTable({
           {!rows.length && (
             <tr>
               <td
-                colSpan={13}
+                colSpan={14}
                 className="px-4 py-10 text-center text-sm font-bold text-slate-500"
               >
                 No details available.
@@ -2509,6 +2590,10 @@ export default function PercentageRiskGraphTable({
         sum.nhoToFstCount += metrics.nhoToFstCount;
         sum.fstToPstCount += metrics.fstToPstCount;
         sum.nhoToPstCount += metrics.nhoToPstCount;
+        sum.signedInterviewToNhoCount += metrics.signedInterviewToNhoCount;
+        sum.signedNhoToFstCount += metrics.signedNhoToFstCount;
+        sum.signedFstToPstCount += metrics.signedFstToPstCount;
+        sum.signedNhoToPstCount += metrics.signedNhoToPstCount;
 
         return sum;
       },
@@ -2521,18 +2606,22 @@ export default function PercentageRiskGraphTable({
         nhoToFstCount: 0,
         fstToPstCount: 0,
         nhoToPstCount: 0,
+        signedInterviewToNhoCount: 0,
+        signedNhoToFstCount: 0,
+        signedFstToPstCount: 0,
+        signedNhoToPstCount: 0,
       },
     );
 
     const trainingAttrition = {
       ...stageBase,
       interviewToNhoRate: getStageRate(
-        stageBase.interviewToNhoCount,
+        stageBase.signedInterviewToNhoCount,
         stageBase.interviewCount,
       ),
-      nhoToFstRate: getStageRate(stageBase.nhoToFstCount, stageBase.nhoCount),
-      fstToPstRate: getStageRate(stageBase.fstToPstCount, stageBase.fstCount),
-      nhoToPstRate: getStageRate(stageBase.nhoToPstCount, stageBase.nhoCount),
+      nhoToFstRate: getStageRate(stageBase.signedNhoToFstCount, stageBase.nhoCount),
+      fstToPstRate: getStageRate(stageBase.signedFstToPstCount, stageBase.fstCount),
+      nhoToPstRate: getStageRate(stageBase.signedNhoToPstCount, stageBase.nhoCount),
     };
 
     const coverageBase = validPlans.reduce(

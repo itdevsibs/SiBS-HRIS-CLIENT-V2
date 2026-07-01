@@ -8,7 +8,8 @@ const PAGE_LIMIT = 15;
 function getNumberValue(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== "") {
-      const numberValue = Number(value);
+      const cleanValue = String(value).replace(/,/g, "").replace(/%/g, "").trim();
+      const numberValue = Number(cleanValue);
 
       if (Number.isFinite(numberValue)) {
         return numberValue;
@@ -32,29 +33,51 @@ function safeDivide(numerator, denominator) {
   return cleanNumerator / cleanDenominator;
 }
 
-function formatPercent(value) {
-  /*
-    All percentage metrics in this table are computed as decimal ratios:
-    - Buffer % = ((Net Actual HC - Required HC) / Required HC)
-    - Absenteeism % = Absenteeism 6 Weeks / Actual HC
-    - Attrition % = Attrition 6 Weeks / Actual HC
-    - Stage Attrition % = Attrition Count / Stage Base Count
-    - Hiring Rate = Hired Count / Interview Count
-
-    Example:
-    405 / 96 = 4.21875 should display as 421.88%, not 4.22%.
-  */
+function formatPercent(value, decimals = 2) {
   const numberValue = Number(value || 0);
 
   if (!Number.isFinite(numberValue)) return "0.00%";
 
-  return `${(numberValue * 100).toFixed(2)}%`;
+  if (Math.abs(numberValue) > 0 && Math.abs(numberValue) <= 1) {
+    return `${(numberValue * 100).toFixed(decimals)}%`;
+  }
+
+  return `${numberValue.toFixed(decimals)}%`;
 }
 
 function formatNumber(value, maximumFractionDigits = 0) {
   return Number(value || 0).toLocaleString("en-PH", {
     maximumFractionDigits,
   });
+}
+
+function getSignedNumberClass(value = 0) {
+  const numberValue = Number(value || 0);
+
+  if (numberValue < 0) return "text-red-700";
+  if (numberValue > 0) return "text-emerald-700";
+
+  return "text-slate-700";
+}
+
+function getRiskNumberClass(value = 0) {
+  const numberValue = Number(value || 0);
+
+  if (numberValue < 0) return "text-emerald-700";
+  if (numberValue > 0) return "text-red-700";
+
+  return "text-slate-700";
+}
+
+function getRateRiskClass(value = 0) {
+  const numberValue = Number(value || 0);
+  const percentValue = Math.abs(numberValue) <= 1 ? numberValue * 100 : numberValue;
+
+  if (percentValue < 0) return "text-emerald-700";
+  if (percentValue > 25) return "text-red-700";
+  if (percentValue > 0) return "text-emerald-700";
+
+  return "text-slate-700";
 }
 
 function getStatusClass(status) {
@@ -112,8 +135,6 @@ function getRowMetrics(item) {
     item.absenteeism_count,
     item.absenteeismPastCount,
     item.absenteeism_past_count,
-    item.absenteeismPastSixWeeksAverage,
-    item.absenteeism_past_six_weeks_average,
   );
 
   const attritionSixWeeks = getNumberValue(
@@ -125,17 +146,19 @@ function getRowMetrics(item) {
     item.attrition_past_count,
     item.attritionCount,
     item.attrition_count,
-    item.attritionPastSixWeeksAverage,
-    item.attrition_past_six_weeks_average,
   );
 
   const netActualHeadcount =
     actualHeadcount - absenteeismSixWeeks - attritionSixWeeks;
 
-  const bufferPercentage = safeDivide(
-    netActualHeadcount - requiredHeadcount,
-    requiredHeadcount,
-  );
+  // Excel equivalent:
+  // =IF(AND(D2="",E2="",G2="",I2=""),"",IFERROR(((E2-G2-I2)-D2)/D2,0))
+  // JS decimal result: ((Actual HC - Absenteeism - Attrition) - Required HC) / Required HC
+  // Example: Required 30, Actual 30, Abs 3, Attr 0 = -0.10 = -10.00%
+  const bufferPercentage =
+    requiredHeadcount > 0
+      ? (netActualHeadcount - requiredHeadcount) / requiredHeadcount
+      : 0;
 
   const absenteeismPercentage = safeDivide(
     absenteeismSixWeeks,
@@ -174,31 +197,72 @@ function getRowMetrics(item) {
     item.pst_population_count,
   );
 
-  const attritionInterviewToNhoCount = Math.max(0, interviewCount - nhoCount);
+  const signedAttritionInterviewToNhoCount = interviewCount - nhoCount;
+  const signedAttritionNhoToFstCount = nhoCount - fstCount;
+  const signedAttritionFstToPstCount = fstCount - pstCount;
+  const signedAttritionNhoToPstCount = nhoCount - pstCount;
+
+  const directAttritionInterviewToNhoCount = getNumberValue(
+    item.attritionInterviewToNhoCount,
+    item.attrition_interview_to_nho_count,
+    item.interviewToNhoAttritionCount,
+    item.interview_to_nho_attrition_count,
+  );
+
+  const attritionInterviewToNhoCount = Math.abs(
+    directAttritionInterviewToNhoCount || signedAttritionInterviewToNhoCount,
+  );
 
   const attritionInterviewToNhoPercent = safeDivide(
-    attritionInterviewToNhoCount,
+    signedAttritionInterviewToNhoCount,
     interviewCount,
   );
 
-  const attritionNhoToFstCount = Math.max(0, nhoCount - fstCount);
+  const directAttritionNhoToFstCount = getNumberValue(
+    item.attritionNhoToFstCount,
+    item.attrition_nho_to_fst_count,
+    item.nhoToFstAttritionCount,
+    item.nho_to_fst_attrition_count,
+  );
+
+  const attritionNhoToFstCount = Math.abs(
+    directAttritionNhoToFstCount || signedAttritionNhoToFstCount,
+  );
 
   const attritionNhoToFstPercent = safeDivide(
-    attritionNhoToFstCount,
+    signedAttritionNhoToFstCount,
     nhoCount,
   );
 
-  const attritionFstToPstCount = Math.max(0, fstCount - pstCount);
+  const directAttritionFstToPstCount = getNumberValue(
+    item.attritionFstToPstCount,
+    item.attrition_fst_to_pst_count,
+    item.fstToPstAttritionCount,
+    item.fst_to_pst_attrition_count,
+  );
+
+  const attritionFstToPstCount = Math.abs(
+    directAttritionFstToPstCount || signedAttritionFstToPstCount,
+  );
 
   const attritionFstToPstPercent = safeDivide(
-    attritionFstToPstCount,
+    signedAttritionFstToPstCount,
     fstCount,
   );
 
-  const attritionNhoToPstCount = Math.max(0, nhoCount - pstCount);
+  const directAttritionNhoToPstCount = getNumberValue(
+    item.attritionNhoToPstCount,
+    item.attrition_nho_to_pst_count,
+    item.nhoToPstAttritionCount,
+    item.nho_to_pst_attrition_count,
+  );
+
+  const attritionNhoToPstCount = Math.abs(
+    directAttritionNhoToPstCount || signedAttritionNhoToPstCount,
+  );
 
   const attritionNhoToPstPercent = safeDivide(
-    attritionNhoToPstCount,
+    signedAttritionNhoToPstCount,
     nhoCount,
   );
 
@@ -339,85 +403,60 @@ function DesktopTableHeader() {
           </th>
 
           <HeaderCell>Required Headcount</HeaderCell>
-
           <HeaderCell>Actual Headcount</HeaderCell>
-
           <HeaderCell note="((Actual HC - Absenteeism - Attrition) - Required HC) ÷ Required HC">
             Buffer %
           </HeaderCell>
-
           <HeaderCell>Absenteeism 6 Weeks</HeaderCell>
-
           <HeaderCell note="Absenteeism 6 Weeks ÷ Actual HC">
             Absenteeism %
           </HeaderCell>
-
           <HeaderCell>Attrition 6 Weeks</HeaderCell>
-
           <HeaderCell note="Attrition 6 Weeks ÷ Actual HC">
             Attrition %
           </HeaderCell>
-
           <HeaderCell note="Actual HC - Absenteeism - Attrition">
             Net Actual HC
           </HeaderCell>
-
           <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
             Hiring Needed
           </HeaderCell>
-
           <HeaderCell>Interview Count</HeaderCell>
-
           <HeaderCell>NHO Count</HeaderCell>
-
           <HeaderCell>FST Count</HeaderCell>
-
           <HeaderCell>PST Count</HeaderCell>
-
-          <HeaderCell note="MAX(0, Interview - NHO)">
+          <HeaderCell note="Interview - NHO">
             Attrition Count Interview to NHO
           </HeaderCell>
-
           <HeaderCell note="Attrition Interview to NHO ÷ Interview">
             Attrition % Interview to NHO
           </HeaderCell>
-
-          <HeaderCell note="MAX(0, NHO - FST)">
+          <HeaderCell note="NHO - FST">
             Attrition Count NHO to FST
           </HeaderCell>
-
           <HeaderCell note="Attrition NHO to FST ÷ NHO">
             Attrition % NHO to FST
           </HeaderCell>
-
-          <HeaderCell note="MAX(0, FST - PST)">
+          <HeaderCell note="FST - PST">
             Attrition Count FST to PST
           </HeaderCell>
-
           <HeaderCell note="Attrition FST to PST ÷ FST">
             Attrition % FST to PST
           </HeaderCell>
-
-          <HeaderCell note="MAX(0, NHO - PST)">
+          <HeaderCell note="NHO - PST">
             Attrition Count NHO to PST
           </HeaderCell>
-
           <HeaderCell note="Attrition NHO to PST ÷ NHO">
             Attrition % NHO to PST
           </HeaderCell>
-
           <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
-
           <HeaderCell note="Hired Count ÷ Interview Count">
             Hiring Rate
           </HeaderCell>
-
           <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
             Leads to Interview
           </HeaderCell>
-
           <HeaderCell>Status</HeaderCell>
-
           <th className="px-5 py-4 text-left align-top last:rounded-tr-2xl">
             Status Note
           </th>
@@ -578,11 +617,11 @@ export default function WeeklyHiringAccountsTable({
         item.statusNote,
         metrics.requiredHeadcount,
         metrics.actualHeadcount,
-        metrics.bufferPercentage,
+        formatPercent(metrics.bufferPercentage),
         metrics.absenteeismSixWeeks,
-        metrics.absenteeismPercentage,
+        formatPercent(metrics.absenteeismPercentage),
         metrics.attritionSixWeeks,
-        metrics.attritionPercentage,
+        formatPercent(metrics.attritionPercentage),
         metrics.netActualHeadcount,
         metrics.hiringNeeded,
         metrics.interviewCount,
@@ -590,15 +629,15 @@ export default function WeeklyHiringAccountsTable({
         metrics.fstCount,
         metrics.pstCount,
         metrics.attritionInterviewToNhoCount,
-        metrics.attritionInterviewToNhoPercent,
+        formatPercent(metrics.attritionInterviewToNhoPercent),
         metrics.attritionNhoToFstCount,
-        metrics.attritionNhoToFstPercent,
+        formatPercent(metrics.attritionNhoToFstPercent),
         metrics.attritionFstToPstCount,
-        metrics.attritionFstToPstPercent,
+        formatPercent(metrics.attritionFstToPstPercent),
         metrics.attritionNhoToPstCount,
-        metrics.attritionNhoToPstPercent,
+        formatPercent(metrics.attritionNhoToPstPercent),
         metrics.hiredCount,
-        metrics.hiringRate,
+        formatPercent(metrics.hiringRate),
         metrics.leadsToInterview,
       ]
         .filter((value) => value !== undefined && value !== null)
@@ -733,6 +772,239 @@ export default function WeeklyHiringAccountsTable({
     handleRowClick(item);
   }
 
+  function renderRow(item) {
+    const metrics = item.excelMetrics || getRowMetrics(item);
+
+    return (
+      <tr
+        key={item.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => handleRowClick(item)}
+        onKeyDown={(e) => handleRowKeyDown(e, item)}
+        className="cursor-pointer transition hover:bg-[#F3F7FB] focus:bg-[#F3F7FB] focus:outline-none"
+      >
+        <td className="border-b border-[#E6ECF2] px-5 py-5">
+          <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+            {item.account || "--"}
+          </p>
+
+          <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+            {item.cluster || "--"}
+          </p>
+
+          {item.week && (
+            <p className="mt-1 max-w-[220px] truncate text-[11px] font-bold text-[#667085]">
+              {item.week}
+            </p>
+          )}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.requiredHeadcount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.actualHeadcount)}
+        </td>
+
+        <td
+          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${getSignedNumberClass(
+            metrics.bufferPercentage,
+          )}`}
+        >
+          {formatPercent(metrics.bufferPercentage)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.absenteeismSixWeeks)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.absenteeismPercentage)}`}>
+          {formatPercent(metrics.absenteeismPercentage)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.attritionSixWeeks)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.attritionPercentage)}`}>
+          {formatPercent(metrics.attritionPercentage)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${getSignedNumberClass(metrics.netActualHeadcount)}`}>
+          {formatNumber(metrics.netActualHeadcount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+          {formatNumber(metrics.hiringNeeded)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.interviewCount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.nhoCount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.fstCount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+          {formatNumber(metrics.pstCount)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRiskNumberClass(metrics.attritionInterviewToNhoCount)}`}>
+          {formatNumber(metrics.attritionInterviewToNhoCount)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.attritionInterviewToNhoPercent)}`}>
+          {formatPercent(metrics.attritionInterviewToNhoPercent)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRiskNumberClass(metrics.attritionNhoToFstCount)}`}>
+          {formatNumber(metrics.attritionNhoToFstCount)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.attritionNhoToFstPercent)}`}>
+          {formatPercent(metrics.attritionNhoToFstPercent)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRiskNumberClass(metrics.attritionFstToPstCount)}`}>
+          {formatNumber(metrics.attritionFstToPstCount)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.attritionFstToPstPercent)}`}>
+          {formatPercent(metrics.attritionFstToPstPercent)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRiskNumberClass(metrics.attritionNhoToPstCount)}`}>
+          {formatNumber(metrics.attritionNhoToPstCount)}
+        </td>
+
+        <td className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold ${getRateRiskClass(metrics.attritionNhoToPstPercent)}`}>
+          {formatPercent(metrics.attritionNhoToPstPercent)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+          {formatNumber(metrics.hiredCount)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+          {formatPercent(metrics.hiringRate)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+          {formatNumber(metrics.leadsToInterview)}
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+          <span
+            className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+              item.pipelineStatus,
+            )}`}
+          >
+            {item.pipelineStatus || "--"}
+          </span>
+        </td>
+
+        <td className="border-b border-[#E6ECF2] px-5 py-5">
+          <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
+            {item.statusNote || "--"}
+          </p>
+        </td>
+      </tr>
+    );
+  }
+
+  function renderMobileCard(item) {
+    const metrics = item.excelMetrics || getRowMetrics(item);
+
+    return (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => handleRowClick(item)}
+        className="w-full rounded-2xl border border-[#D9E2EC] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-extrabold text-[#101828]">
+              {item.account || "--"}
+            </p>
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {item.cluster || "--"}
+            </p>
+            {item.week && (
+              <p className="mt-1 truncate text-[11px] font-bold text-[#667085]">
+                {item.week}
+              </p>
+            )}
+          </div>
+
+          <span
+            className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
+              item.pipelineStatus,
+            )}`}
+          >
+            {item.pipelineStatus || "--"}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <MobileMetric
+            label="Required HC"
+            value={formatNumber(metrics.requiredHeadcount)}
+          />
+          <MobileMetric
+            label="Actual HC"
+            value={formatNumber(metrics.actualHeadcount)}
+          />
+          <MobileMetric
+            label="Buffer %"
+            value={formatPercent(metrics.bufferPercentage)}
+            valueClassName={getSignedNumberClass(metrics.bufferPercentage)}
+          />
+          <MobileMetric
+            label="Net Actual HC"
+            value={formatNumber(metrics.netActualHeadcount)}
+            valueClassName={getSignedNumberClass(metrics.netActualHeadcount)}
+          />
+          <MobileMetric
+            label="Absenteeism 6 Weeks"
+            value={formatNumber(metrics.absenteeismSixWeeks)}
+          />
+          <MobileMetric
+            label="Absenteeism %"
+            value={formatPercent(metrics.absenteeismPercentage)}
+            valueClassName={getRateRiskClass(metrics.absenteeismPercentage)}
+          />
+          <MobileMetric
+            label="Attrition 6 Weeks"
+            value={formatNumber(metrics.attritionSixWeeks)}
+          />
+          <MobileMetric
+            label="Attrition %"
+            value={formatPercent(metrics.attritionPercentage)}
+            valueClassName={getRateRiskClass(metrics.attritionPercentage)}
+          />
+          <MobileMetric
+            label="Hiring Needed"
+            value={formatNumber(metrics.hiringNeeded)}
+            valueClassName="text-violet-700"
+          />
+          <MobileMetric
+            label="Leads to Interview"
+            value={formatNumber(metrics.leadsToInterview)}
+            valueClassName="text-violet-700"
+          />
+        </div>
+      </button>
+    );
+  }
+
   return (
     <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
       <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
@@ -793,83 +1065,59 @@ export default function WeeklyHiringAccountsTable({
                   </th>
 
                   <HeaderCell>Required Headcount</HeaderCell>
-
                   <HeaderCell>Actual Headcount</HeaderCell>
-
                   <HeaderCell note="((Actual HC - Absenteeism - Attrition) - Required HC) ÷ Required HC">
                     Buffer %
                   </HeaderCell>
-
                   <HeaderCell>Absenteeism 6 Weeks</HeaderCell>
-
                   <HeaderCell note="Absenteeism 6 Weeks ÷ Actual HC">
                     Absenteeism %
                   </HeaderCell>
-
                   <HeaderCell>Attrition 6 Weeks</HeaderCell>
-
                   <HeaderCell note="Attrition 6 Weeks ÷ Actual HC">
                     Attrition %
                   </HeaderCell>
-
                   <HeaderCell note="Actual HC - Absenteeism - Attrition">
                     Net Actual HC
                   </HeaderCell>
-
                   <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
                     Hiring Needed
                   </HeaderCell>
-
                   <HeaderCell>Interview Count</HeaderCell>
-
                   <HeaderCell>NHO Count</HeaderCell>
-
                   <HeaderCell>FST Count</HeaderCell>
-
                   <HeaderCell>PST Count</HeaderCell>
-
-                  <HeaderCell note="MAX(0, Interview - NHO)">
+                  <HeaderCell note="Interview - NHO">
                     Attrition Count Interview to NHO
                   </HeaderCell>
-
                   <HeaderCell note="Attrition Interview to NHO ÷ Interview">
                     Attrition % Interview to NHO
                   </HeaderCell>
-
-                  <HeaderCell note="MAX(0, NHO - FST)">
+                  <HeaderCell note="NHO - FST">
                     Attrition Count NHO to FST
                   </HeaderCell>
-
                   <HeaderCell note="Attrition NHO to FST ÷ NHO">
                     Attrition % NHO to FST
                   </HeaderCell>
-
-                  <HeaderCell note="MAX(0, FST - PST)">
+                  <HeaderCell note="FST - PST">
                     Attrition Count FST to PST
                   </HeaderCell>
-
                   <HeaderCell note="Attrition FST to PST ÷ FST">
                     Attrition % FST to PST
                   </HeaderCell>
-
-                  <HeaderCell note="MAX(0, NHO - PST)">
+                  <HeaderCell note="NHO - PST">
                     Attrition Count NHO to PST
                   </HeaderCell>
-
                   <HeaderCell note="Attrition NHO to PST ÷ NHO">
                     Attrition % NHO to PST
                   </HeaderCell>
-
                   <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
-
                   <HeaderCell note="Hired Count ÷ Interview Count">
                     Hiring Rate
                   </HeaderCell>
-
                   <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
                     Leads to Interview
                   </HeaderCell>
-
                   <HeaderCell>Status</HeaderCell>
 
                   <th className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-top last:rounded-tr-2xl">
@@ -900,392 +1148,68 @@ export default function WeeklyHiringAccountsTable({
                     </td>
                   </tr>
                 ) : (
-                  paginatedPlans.map((item) => {
-                    const metrics = item.excelMetrics || getRowMetrics(item);
-
-                    return (
-                      <tr
-                        key={item.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleRowClick(item)}
-                        onKeyDown={(e) => handleRowKeyDown(e, item)}
-                        className="cursor-pointer transition hover:bg-[#F3F7FB] focus:bg-[#F3F7FB] focus:outline-none"
-                      >
-                        <td className="border-b border-[#E6ECF2] px-5 py-5">
-                          <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
-                            {item.account || "--"}
-                          </p>
-
-                          <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-                            {item.cluster || "--"}
-                          </p>
-
-                          {item.week && (
-                            <p className="mt-1 max-w-[220px] truncate text-[11px] font-bold text-[#667085]">
-                              {item.week}
-                            </p>
-                          )}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.requiredHeadcount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.actualHeadcount)}
-                        </td>
-
-                        <td
-                          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${
-                            metrics.bufferPercentage < 0
-                              ? "text-red-700"
-                              : "text-emerald-700"
-                          }`}
-                        >
-                          {formatPercent(metrics.bufferPercentage)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.absenteeismSixWeeks)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatPercent(metrics.absenteeismPercentage)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.attritionSixWeeks)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatPercent(metrics.attritionPercentage)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                          {formatNumber(metrics.netActualHeadcount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
-                          {formatNumber(metrics.hiringNeeded)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.interviewCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.nhoCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.fstCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                          {formatNumber(metrics.pstCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatNumber(metrics.attritionInterviewToNhoCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatPercent(metrics.attritionInterviewToNhoPercent)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatNumber(metrics.attritionNhoToFstCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatPercent(metrics.attritionNhoToFstPercent)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatNumber(metrics.attritionFstToPstCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatPercent(metrics.attritionFstToPstPercent)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatNumber(metrics.attritionNhoToPstCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-red-700">
-                          {formatPercent(metrics.attritionNhoToPstPercent)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                          {formatNumber(metrics.hiredCount)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                          {formatPercent(metrics.hiringRate)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
-                          {formatNumber(metrics.leadsToInterview)}
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                          <span
-                            className={`inline-flex items-center justify-center rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              item.pipelineStatus,
-                            )}`}
-                          >
-                            {item.pipelineStatus || "--"}
-                          </span>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5">
-                          <p className="line-clamp-2 max-w-[260px] text-sm font-semibold leading-5 text-[#344054]">
-                            {item.statusNote || "--"}
-                          </p>
-                        </td>
-                      </tr>
-                    );
-                  })
+                  paginatedPlans.map(renderRow)
                 )}
               </tbody>
             </table>
           </div>
 
           <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table. Click any row to
-            view details.
+            Hold left click and drag left or right to scroll the table. Click any row to view details.
           </p>
         </div>
 
-        <div className="block lg:hidden">
-          <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto">
-            {accountsLoading ? (
-              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-                Loading weekly hiring plan records...
-              </div>
-            ) : paginatedPlans.length === 0 ? (
-              <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-                No weekly hiring plan records found.
-              </div>
-            ) : (
+        <div ref={mobileScrollRef} className="space-y-3 lg:hidden">
+          <DesktopTableHeader />
+
+          {accountsLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
               <div
-                key={`${currentPage}-${search}-${statusFilter}`}
-                className="space-y-3"
-              >
-                {paginatedPlans.map((item) => {
-                  const metrics = item.excelMetrics || getRowMetrics(item);
-
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onViewPlan?.(item)}
-                      className="w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
-                            {item.account || "--"}
-                          </h3>
-
-                          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                            {item.cluster || "--"}
-                          </p>
-
-                          {item.week && (
-                            <p className="mt-1 text-[11px] font-bold text-[#667085]">
-                              {item.week}
-                            </p>
-                          )}
-                        </div>
-
-                        <span
-                          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-                            item.pipelineStatus,
-                          )}`}
-                        >
-                          {item.pipelineStatus || "--"}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2">
-                        <MobileMetric
-                          label="Required HC"
-                          value={formatNumber(metrics.requiredHeadcount)}
-                        />
-
-                        <MobileMetric
-                          label="Actual HC"
-                          value={formatNumber(metrics.actualHeadcount)}
-                        />
-
-                        <MobileMetric
-                          label="Buffer %"
-                          value={formatPercent(metrics.bufferPercentage)}
-                          valueClassName={
-                            metrics.bufferPercentage < 0
-                              ? "text-red-700"
-                              : "text-emerald-700"
-                          }
-                        />
-
-                        <MobileMetric
-                          label="Absenteeism 6 Weeks"
-                          value={formatNumber(metrics.absenteeismSixWeeks)}
-                        />
-
-                        <MobileMetric
-                          label="Absenteeism %"
-                          value={formatPercent(metrics.absenteeismPercentage)}
-                        />
-
-                        <MobileMetric
-                          label="Attrition 6 Weeks"
-                          value={formatNumber(metrics.attritionSixWeeks)}
-                        />
-
-                        <MobileMetric
-                          label="Attrition %"
-                          value={formatPercent(metrics.attritionPercentage)}
-                        />
-
-                        <MobileMetric
-                          label="Net Actual HC"
-                          value={formatNumber(metrics.netActualHeadcount)}
-                        />
-
-                        <MobileMetric
-                          label="Hiring Needed"
-                          value={formatNumber(metrics.hiringNeeded)}
-                          valueClassName="text-violet-700"
-                        />
-
-                        <MobileMetric
-                          label="Interview Count"
-                          value={formatNumber(metrics.interviewCount)}
-                        />
-
-                        <MobileMetric
-                          label="NHO Count"
-                          value={formatNumber(metrics.nhoCount)}
-                        />
-
-                        <MobileMetric
-                          label="FST Count"
-                          value={formatNumber(metrics.fstCount)}
-                        />
-
-                        <MobileMetric
-                          label="PST Count"
-                          value={formatNumber(metrics.pstCount)}
-                        />
-
-                        <MobileMetric
-                          label="Attrition Interview to NHO"
-                          value={formatNumber(
-                            metrics.attritionInterviewToNhoCount,
-                          )}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition % Interview to NHO"
-                          value={formatPercent(
-                            metrics.attritionInterviewToNhoPercent,
-                          )}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition NHO to FST"
-                          value={formatNumber(metrics.attritionNhoToFstCount)}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition % NHO to FST"
-                          value={formatPercent(
-                            metrics.attritionNhoToFstPercent,
-                          )}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition FST to PST"
-                          value={formatNumber(metrics.attritionFstToPstCount)}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition % FST to PST"
-                          value={formatPercent(
-                            metrics.attritionFstToPstPercent,
-                          )}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition NHO to PST"
-                          value={formatNumber(metrics.attritionNhoToPstCount)}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Attrition % NHO to PST"
-                          value={formatPercent(
-                            metrics.attritionNhoToPstPercent,
-                          )}
-                          valueClassName="text-red-700"
-                        />
-
-                        <MobileMetric
-                          label="Hired Count"
-                          value={formatNumber(metrics.hiredCount)}
-                        />
-
-                        <MobileMetric
-                          label="Hiring Rate"
-                          value={formatPercent(metrics.hiringRate)}
-                        />
-
-                        <MobileMetric
-                          label="Leads to Interview"
-                          value={formatNumber(metrics.leadsToInterview)}
-                          valueClassName="text-violet-700"
-                        />
-                      </div>
-
-                      <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                          Status Note
-                        </p>
-
-                        <p className="mt-1 text-sm font-bold text-[#344054]">
-                          {item.statusNote || "--"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                key={index}
+                className="h-36 animate-sibs-pulse rounded-2xl bg-gray-200"
+              />
+            ))
+          ) : paginatedPlans.length === 0 ? (
+            <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500">
+              No weekly hiring plan records found.
+            </div>
+          ) : (
+            paginatedPlans.map(renderMobileCard)
+          )}
         </div>
 
-        <PaginationTable
-          loading={accountsLoading}
-          showSearch={false}
-          showPagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          loadedCount={paginatedPlans.length}
-          totalRecords={totalRecords}
-          recordLabel="weekly hiring account records"
-          onPrevious={handlePreviousPage}
-          onNext={handleNextPage}
-        />
+        {totalRecords > PAGE_LIMIT && (
+          <div className="mt-4 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-semibold text-sibs-tertiary-5">
+              Showing {(currentPage - 1) * PAGE_LIMIT + 1} -{" "}
+              {Math.min(currentPage * PAGE_LIMIT, totalRecords)} of {totalRecords}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handlePreviousPage}
+                disabled={!hasPreviousPage || accountsLoading}
+                className="rounded-xl border border-[#D9E2EC] bg-white px-4 py-2 text-sm font-bold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Previous
+              </button>
+
+              <span className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-2 text-sm font-extrabold text-sibs-primary-1">
+                Page {currentPage} of {totalPages}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleNextPage}
+                disabled={!hasNextPage || accountsLoading}
+                className="rounded-xl border border-[#D9E2EC] bg-white px-4 py-2 text-sm font-bold text-[#344054] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

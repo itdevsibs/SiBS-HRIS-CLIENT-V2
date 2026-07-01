@@ -324,48 +324,90 @@ function getStageAttritionMetrics(item = {}) {
   const pstCount = getPositiveNumber(getPstCount(item));
 
   /*
-    Display attrition as positive values only:
-    - Interview → NHO = ABS(Interview Count - NHO Count)
-    - NHO → FST = ABS(NHO Count - FST Count)
-    - FST → PST = ABS(FST Count - PST Count)
-    - NHO → PST = ABS(NHO Count - PST Count)
+    Count display should never be negative.
+    Percentage stays signed to show movement direction:
+    - Positive = drop / attrition from previous stage.
+    - Negative = next stage has more people than previous stage.
   */
-  const interviewToNhoCount = Math.abs(interviewCount - nhoCount);
-  const nhoToFstCount = Math.abs(nhoCount - fstCount);
-  const fstToPstCount = Math.abs(fstCount - pstCount);
-  const nhoToPstCount = Math.abs(nhoCount - pstCount);
+  const signedInterviewToNhoCount = interviewCount - nhoCount;
+  const signedNhoToFstCount = nhoCount - fstCount;
+  const signedFstToPstCount = fstCount - pstCount;
+  const signedNhoToPstCount = nhoCount - pstCount;
 
   return {
     interviewCount,
     nhoCount,
     fstCount,
     pstCount,
-    interviewToNhoCount,
-    nhoToFstCount,
-    fstToPstCount,
-    nhoToPstCount,
+    interviewToNhoCount: Math.abs(signedInterviewToNhoCount),
+    nhoToFstCount: Math.abs(signedNhoToFstCount),
+    fstToPstCount: Math.abs(signedFstToPstCount),
+    nhoToPstCount: Math.abs(signedNhoToPstCount),
+    signedInterviewToNhoCount,
+    signedNhoToFstCount,
+    signedFstToPstCount,
+    signedNhoToPstCount,
   };
 }
 
 function getAttritionRate(count, base) {
-  const cleanCount = getPositiveNumber(count);
-  const cleanBase = getPositiveNumber(base);
+  const cleanCount = Math.abs(toNumber(count));
+  const cleanBase = Math.abs(toNumber(base));
 
-  return cleanBase > 0 ? (cleanCount / cleanBase) * 100 : 0;
+  if (cleanBase <= 0 || cleanCount <= 0) return 0;
+
+  /*
+    Count stays positive for readability, but attrition rate is displayed
+    as negative because it represents a loss/gap from one stage to the next.
+  */
+  return -((cleanCount / cleanBase) * 100);
 }
 
 function getAttritionRateClass(rate) {
-  const cleanRate = getPositiveNumber(rate);
+  const cleanRate = toNumber(rate);
+
+  if (cleanRate < 0) return "text-red-600";
 
   return cleanRate <= 25 ? "text-emerald-600" : "text-red-600";
 }
 
+function getSignedPercentClass(value, positiveClass = "text-emerald-600") {
+  const cleanValue = toNumber(value);
+
+  if (cleanValue < 0) return "text-red-600";
+  if (cleanValue > 0) return positiveClass;
+
+  return "text-slate-700";
+}
+
+function getBufferGapPercentageFromTotals({
+  requiredHeadcount = 0,
+  actualHeadcount = 0,
+  absenteeismTotal = 0,
+  attritionTotal = 0,
+}) {
+  const required = toNumber(requiredHeadcount);
+
+  if (required <= 0) return 0;
+
+  const netActualHeadcount =
+    toNumber(actualHeadcount) -
+    toNumber(absenteeismTotal) -
+    toNumber(attritionTotal);
+
+  return ((netActualHeadcount - required) / required) * 100;
+}
+
 function getAttritionRateBadgeClass(rate) {
-  const cleanRate = getPositiveNumber(rate);
+  const cleanRate = toNumber(rate);
+
+  if (cleanRate < 0) {
+    return "bg-red-50 text-red-600 border-red-100";
+  }
 
   return cleanRate <= 25
     ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-    : "bg-blue-50 text-blue-700 border-blue-100";
+    : "bg-red-50 text-red-600 border-red-100";
 }
 
 function getCountAccentClass(colorClass = "") {
@@ -391,7 +433,7 @@ function TrainingAttritionCard({
   countClassName = "text-blue-700",
 }) {
   const positiveCount = getPositiveNumber(count);
-  const positiveRate = getPositiveNumber(rate);
+  const signedRate = toNumber(rate);
 
   return (
     <div
@@ -425,15 +467,15 @@ function TrainingAttritionCard({
 
           <div
             className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionRateBadgeClass(
-              positiveRate,
+              signedRate,
             )}`}
           >
             <p
               className={`whp-kpi-value text-3xl font-extrabold ${getAttritionRateClass(
-                positiveRate,
+                signedRate,
               )}`}
             >
-              <AnimatedNumber value={positiveRate} decimals={0} suffix="%" />
+              <AnimatedNumber value={signedRate} decimals={0} suffix="%" />
             </p>
 
             <p className="mt-1 text-[11px] font-bold text-slate-600">
@@ -522,8 +564,17 @@ export default function HeadcountTable({ filteredPlans = [] }) {
     const attritionBufferCount = attritionTotal;
     const bufferCount = absenteeismBufferCount + attritionBufferCount;
 
-    const bufferPercentage =
-      actualHeadcount > 0 ? (bufferCount / actualHeadcount) * 100 : 0;
+    /*
+      Count remains positive: Absenteeism + Attrition.
+      Percentage is signed Excel-style to show if there is a gap.
+      Negative = gap. Positive = surplus after Absenteeism and Attrition.
+    */
+    const bufferPercentage = getBufferGapPercentageFromTotals({
+      requiredHeadcount,
+      actualHeadcount,
+      absenteeismTotal,
+      attritionTotal,
+    });
 
     const effectiveDemand = requiredHeadcount + bufferCount;
 
@@ -665,6 +716,10 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         sum.nhoToFstCount += metrics.nhoToFstCount;
         sum.fstToPstCount += metrics.fstToPstCount;
         sum.nhoToPstCount += metrics.nhoToPstCount;
+        sum.signedInterviewToNhoCount += metrics.signedInterviewToNhoCount;
+        sum.signedNhoToFstCount += metrics.signedNhoToFstCount;
+        sum.signedFstToPstCount += metrics.signedFstToPstCount;
+        sum.signedNhoToPstCount += metrics.signedNhoToPstCount;
 
         return sum;
       },
@@ -677,23 +732,27 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         nhoToFstCount: 0,
         fstToPstCount: 0,
         nhoToPstCount: 0,
+        signedInterviewToNhoCount: 0,
+        signedNhoToFstCount: 0,
+        signedFstToPstCount: 0,
+        signedNhoToPstCount: 0,
       },
     );
 
     trainingAttrition.interviewToNhoRate = getAttritionRate(
-      trainingAttrition.interviewToNhoCount,
+      trainingAttrition.signedInterviewToNhoCount,
       trainingAttrition.interviewCount,
     );
     trainingAttrition.nhoToFstRate = getAttritionRate(
-      trainingAttrition.nhoToFstCount,
+      trainingAttrition.signedNhoToFstCount,
       trainingAttrition.nhoCount,
     );
     trainingAttrition.fstToPstRate = getAttritionRate(
-      trainingAttrition.fstToPstCount,
+      trainingAttrition.signedFstToPstCount,
       trainingAttrition.fstCount,
     );
     trainingAttrition.nhoToPstRate = getAttritionRate(
-      trainingAttrition.nhoToPstCount,
+      trainingAttrition.signedNhoToPstCount,
       trainingAttrition.nhoCount,
     );
 
@@ -814,8 +873,8 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         />
 
         <KpiCard
-          title="Buffer Count / %"
-          subtitle="Past 6 Weeks Total"
+          title="Buffer Count / Gap %"
+          subtitle="Count + Signed Gap"
           value={
             <span className="flex flex-wrap items-baseline justify-center gap-x-3 gap-y-1">
               <AnimatedNumber
@@ -826,7 +885,10 @@ export default function HeadcountTable({ filteredPlans = [] }) {
                 value={totals.bufferPercentage}
                 decimals={2}
                 suffix="%"
-                className="text-2xl text-red-600"
+                className={`text-2xl ${getSignedPercentClass(
+                  totals.bufferPercentage,
+                  "text-emerald-600",
+                )}`}
               />
             </span>
           }
