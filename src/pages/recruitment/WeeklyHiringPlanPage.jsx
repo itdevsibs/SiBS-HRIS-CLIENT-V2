@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Send, Sparkles, X } from "lucide-react";
 import api from "../../lib/axios/api-template";
 import StatusModal from "../../components/modals/StatusModal";
 import PercentageRiskGraphTable from "../../components/tables/WeeklyHiringPlan/PercentageRiskGraphTable";
@@ -607,6 +607,531 @@ function buildWeeklyAccess(user) {
   };
 }
 
+
+function normalizeAiList(value) {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(/\n|•|-/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+
+function cleanAiJsonText(value) {
+  let text = String(value || "").trim();
+
+  text = text
+    .replace(/^```json/i, "")
+    .replace(/^```/i, "")
+    .replace(/```$/i, "")
+    .trim();
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.slice(firstBrace, lastBrace + 1);
+  }
+
+  return text.trim();
+}
+
+function parseAiResponsePayload(payload) {
+  const rawInsight =
+    payload?.insight ||
+    payload?.answer ||
+    payload?.message ||
+    payload?.response ||
+    payload?.data?.insight ||
+    payload?.raw?.insight ||
+    "";
+
+  let parsed = null;
+
+  if (typeof rawInsight === "string") {
+    const cleaned = cleanAiJsonText(rawInsight);
+
+    if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        parsed = null;
+      }
+    }
+  } else if (rawInsight && typeof rawInsight === "object") {
+    parsed = rawInsight;
+  }
+
+  const source = parsed || payload || {};
+
+  return {
+    insight:
+      source?.insight ||
+      source?.summary ||
+      source?.answer ||
+      source?.message ||
+      source?.response ||
+      (typeof rawInsight === "string" ? rawInsight : "") ||
+      "",
+    highlights:
+      source?.highlights ||
+      source?.keyHighlights ||
+      payload?.highlights ||
+      payload?.data?.highlights ||
+      payload?.raw?.highlights ||
+      [],
+    recommendations:
+      source?.recommendations ||
+      source?.recommendedActions ||
+      source?.actions ||
+      payload?.recommendations ||
+      payload?.data?.recommendations ||
+      payload?.raw?.recommendations ||
+      [],
+    risks:
+      source?.risks ||
+      source?.keyRisks ||
+      payload?.risks ||
+      payload?.data?.risks ||
+      payload?.raw?.risks ||
+      [],
+  };
+}
+
+function formatAiTextForDisplay(value) {
+  const text = String(value || "").trim();
+
+  if (!text) return "";
+
+  return text
+    .replace(/\s*(\d+)\.\s+/g, "\n$1. ")
+    .replace(/\s+-\s+/g, "\n- ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+
+function parseAiDisplayBlocks(value) {
+  const rawText = String(value || "").trim();
+
+  if (!rawText) return [];
+
+  const normalized = rawText
+    .replace(/\r\n/g, "\n")
+    .replace(/\s*(\d+)\.\s+/g, "\n$1. ")
+    .replace(/\s*[-•]\s+/g, "\n- ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const lines = normalized
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocks = [];
+  let paragraph = [];
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+
+    blocks.push({
+      type: "paragraph",
+      text: paragraph.join(" "),
+    });
+
+    paragraph = [];
+  }
+
+  lines.forEach((line) => {
+    const numberedMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    const bulletMatch = line.match(/^[-•]\s+(.*)$/);
+
+    if (numberedMatch) {
+      flushParagraph();
+      blocks.push({
+        type: "numbered",
+        number: numberedMatch[1],
+        text: numberedMatch[2],
+      });
+      return;
+    }
+
+    if (bulletMatch) {
+      flushParagraph();
+      blocks.push({
+        type: "bullet",
+        text: bulletMatch[1],
+      });
+      return;
+    }
+
+    paragraph.push(line);
+  });
+
+  flushParagraph();
+
+  return blocks.length
+    ? blocks
+    : [
+        {
+          type: "paragraph",
+          text: normalized,
+        },
+      ];
+}
+
+function ChatFormattedText({ value, compact = false }) {
+  const blocks = parseAiDisplayBlocks(value);
+
+  if (!blocks.length) return null;
+
+  return (
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      {blocks.map((block, index) => {
+        if (block.type === "numbered") {
+          return (
+            <div
+              key={`ai-numbered-${index}`}
+              className="flex gap-3 rounded-[12px] border border-[#E6ECF2] bg-white px-3 py-2"
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-[11px] font-extrabold text-white">
+                {block.number}
+              </span>
+              <p className="text-sm font-medium leading-7 text-[#344054]">
+                {block.text}
+              </p>
+            </div>
+          );
+        }
+
+        if (block.type === "bullet") {
+          return (
+            <div
+              key={`ai-bullet-${index}`}
+              className="flex gap-3 rounded-[12px] bg-white px-3 py-2"
+            >
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-primary-1" />
+              <p className="text-sm font-medium leading-7 text-[#344054]">
+                {block.text}
+              </p>
+            </div>
+          );
+        }
+
+        return (
+          <p
+            key={`ai-paragraph-${index}`}
+            className="text-sm font-medium leading-7 text-[#344054]"
+          >
+            {block.text}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function AISectionCard({ title, items = [], tone = "blue" }) {
+  const cleanItems = normalizeAiList(items);
+
+  if (!cleanItems.length) return null;
+
+  const toneMap = {
+    red: {
+      wrap: "border-red-100 bg-red-50",
+      title: "text-red-700",
+      dot: "bg-red-500",
+    },
+    blue: {
+      wrap: "border-blue-100 bg-blue-50",
+      title: "text-sibs-primary-1",
+      dot: "bg-blue-500",
+    },
+    green: {
+      wrap: "border-emerald-100 bg-emerald-50",
+      title: "text-emerald-700",
+      dot: "bg-emerald-500",
+    },
+  };
+
+  const toneStyle = toneMap[tone] || toneMap.blue;
+
+  return (
+    <section className={`rounded-[16px] border p-4 ${toneStyle.wrap}`}>
+      <h3 className={`text-sm font-extrabold uppercase tracking-wide ${toneStyle.title}`}>
+        {title}
+      </h3>
+
+      <div className="mt-3 space-y-2">
+        {cleanItems.map((item, index) => (
+          <div
+            key={`${title}-${index}`}
+            className="flex gap-3 rounded-[12px] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,0.03)]"
+          >
+            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${toneStyle.dot}`} />
+            <p className={`text-sm font-semibold leading-6 ${toneStyle.title}`}>
+              {item}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ChatMessageBubble({ role = "assistant", children }) {
+  const isUser = role === "user";
+
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={
+          isUser
+            ? "max-w-[86%] rounded-[18px] rounded-br-[6px] bg-sibs-primary-1 px-4 py-3 text-sm font-bold leading-6 text-white shadow-sm"
+            : "max-w-[92%] rounded-[18px] rounded-bl-[6px] border border-[#DDE7F2] bg-white px-4 py-3 text-sm font-medium leading-7 text-[#344054] shadow-sm"
+        }
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function AIInsightModal({
+  open,
+  loading,
+  insight,
+  highlights = [],
+  recommendations = [],
+  risks = [],
+  error = "",
+  question,
+  setQuestion,
+  conversation = [],
+  onClose,
+  onRegenerate,
+  onAskFollowUp,
+}) {
+  if (!open) return null;
+
+  const cleanHighlights = normalizeAiList(highlights);
+  const cleanRecommendations = normalizeAiList(recommendations);
+  const cleanRisks = normalizeAiList(risks);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-3 py-4">
+      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <Sparkles size={14} />
+              AI Insight
+            </div>
+
+            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
+              Weekly Hiring Plan AI Insight
+            </h2>
+
+            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+              Analysis generated from the selected week, cluster, and account filters.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
+            aria-label="Minimize AI insight"
+            title="Minimize"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          {loading ? (
+            <div className="rounded-[14px] border border-blue-100 bg-blue-50 px-5 py-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sibs-primary-1 shadow-sm">
+                <Sparkles className="animate-pulse" size={24} />
+              </div>
+
+              <p className="text-base font-extrabold text-sibs-primary-1">
+                Analyzing weekly hiring plan...
+              </p>
+
+              <p className="mt-2 text-sm font-semibold text-sibs-tertiary-5">
+                Please wait while n8n reads the database and generates the AI insight.
+              </p>
+            </div>
+          ) : error ? (
+            <div className="rounded-[14px] border border-red-100 bg-red-50 px-5 py-5">
+              <p className="text-sm font-extrabold text-red-700">
+                Failed to generate AI insight
+              </p>
+
+              <p className="mt-2 text-sm font-semibold text-red-600">
+                {error}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <section className="rounded-[14px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Summary
+                </h3>
+
+                <div className="mt-3 rounded-[16px] bg-white p-4 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                  {insight ? (
+                    <ChatFormattedText value={insight} />
+                  ) : (
+                    <p className="text-sm font-medium leading-7 text-[#344054]">
+                      No AI summary returned.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {cleanRisks.length > 0 && (
+                <section className="rounded-[14px] border border-red-100 bg-red-50 p-4">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-red-700">
+                    Key Risks
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {cleanRisks.map((item, index) => (
+                      <li key={`risk-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-red-700">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {cleanHighlights.length > 0 && (
+                <section className="rounded-[14px] border border-blue-100 bg-blue-50 p-4">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    Highlights
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {cleanHighlights.map((item, index) => (
+                      <li key={`highlight-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-[#344054]">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {cleanRecommendations.length > 0 && (
+                <section className="rounded-[14px] border border-emerald-100 bg-emerald-50 p-4">
+                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-emerald-700">
+                    Recommended Actions
+                  </h3>
+                  <ul className="mt-3 space-y-2">
+                    {cleanRecommendations.map((item, index) => (
+                      <li key={`recommendation-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-emerald-700">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              {conversation.length > 0 && (
+                <section className="rounded-[18px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                      Conversation
+                    </h3>
+
+                    <span className="rounded-full border border-[#DDE7F2] bg-white px-3 py-1 text-[11px] font-extrabold text-slate-500">
+                      {conversation.length} message{conversation.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    {conversation.map((item, index) => (
+                      <div key={`ai-chat-${index}`} className="space-y-3">
+                        {item.question && (
+                          <ChatMessageBubble role="user">
+                            {item.question}
+                          </ChatMessageBubble>
+                        )}
+
+                        {item.answer && (
+                          <ChatMessageBubble role="assistant">
+                            <ChatFormattedText value={item.answer} compact />
+                          </ChatMessageBubble>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              onAskFollowUp();
+            }}
+            className="flex flex-col gap-3"
+          >
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                disabled={loading}
+                placeholder="Message AI about this hiring plan..."
+                className="min-h-[44px] flex-1 rounded-[12px] border border-[#D9E2EC] bg-white px-4 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+
+              <button
+                type="submit"
+                disabled={loading || !String(question || "").trim()}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Send size={15} />
+                Ask
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-[10px] border border-[#D9E2EC] bg-white px-4 py-2.5 text-sm font-extrabold text-[#344054] transition hover:bg-slate-50"
+              >
+                Minimize
+              </button>
+
+              <button
+                type="button"
+                onClick={onRegenerate}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Sparkles size={16} />
+                {loading ? "Analyzing..." : "Regenerate Insight"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WeeklyHiringPlanPage() {
   const { user } = useUser();
 
@@ -696,6 +1221,18 @@ export default function WeeklyHiringPlanPage() {
     title: "",
     message: "",
   });
+
+  const [aiInsightOpen, setAiInsightOpen] = useState(false);
+  const [aiInsightLoading, setAiInsightLoading] = useState(false);
+  const [aiInsightError, setAiInsightError] = useState("");
+  const [aiInsightResult, setAiInsightResult] = useState({
+    insight: "",
+    highlights: [],
+    recommendations: [],
+    risks: [],
+  });
+  const [aiInsightQuestion, setAiInsightQuestion] = useState("");
+  const [aiInsightConversation, setAiInsightConversation] = useState([]);
 
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
@@ -2167,6 +2704,163 @@ export default function WeeklyHiringPlanPage() {
     }
   }
 
+  async function handleAskAiInsight(options = {}) {
+    if (aiInsightLoading) return;
+
+    const question = String(options.question || "").trim();
+    const isFollowUp = Boolean(question);
+    const shouldResetConversation = Boolean(options.resetConversation);
+
+    setAiInsightOpen(true);
+    setAiInsightLoading(true);
+    setAiInsightError("");
+
+    if (!isFollowUp) {
+      setAiInsightResult({
+        insight: "",
+        highlights: [],
+        recommendations: [],
+        risks: [],
+      });
+
+      if (shouldResetConversation) {
+        setAiInsightConversation([]);
+      }
+    }
+
+    try {
+      const response = await api.post(
+        "/api/ai-insight/weekly-hiring-plan",
+        {
+          weekId: activeWeekId,
+          week: activeWeek?.label || activeWeek?.weekRange || "",
+          weekNumber: activeWeek?.weekNumber || activeWeek?.week_number || null,
+          weekStart: activeWeekStartDate,
+          weekEnd: activeWeekEndDate,
+          clusters: selectedClusters,
+          accounts: selectedAccounts,
+          search,
+          accountSearch,
+          status: "All",
+          question,
+          previousInsight: aiInsightResult.insight,
+          conversation: aiInsightConversation,
+          filteredAccounts: (filteredPlans || []).map((item) => ({
+            account: item.account || item.accountName || "",
+            cluster: item.cluster || item.clusterName || "",
+            requiredHeadcount:
+              item.requiredHeadcount || item.required_headcount || 0,
+            actualHeadcount: item.actualHeadcount || item.actual_headcount || 0,
+            absenteeism:
+              item.absenteeismCount ||
+              item.absenteeismPastCount ||
+              item.absenteeismSixWeeks ||
+              item.absenteeism_6_weeks ||
+              0,
+            attrition:
+              item.attritionPastCount ||
+              item.attritionCount ||
+              item.attritionSixWeeks ||
+              item.attrition_6_weeks ||
+              0,
+            hiringIntake:
+              item.hiringIntakeCount ||
+              item.prfCount ||
+              item.totalPrf ||
+              item.requisitionCount ||
+              0,
+            hiringIntakeHeadcount:
+              item.hiringIntakeHeadcount ||
+              item.intakeHeadcount ||
+              item.prfHeadcount ||
+              item.requestedHeadcount ||
+              0,
+            interviewCount:
+              item.interviewCount ||
+              item.interview_count ||
+              item.interviewPopulationCount ||
+              item.interview_population_count ||
+              0,
+            nhoCount: item.nhoCount || item.nho_count || 0,
+            fstCount: item.fstCount || item.fst_count || 0,
+            pstCount: item.pstCount || item.pst_count || 0,
+            hiringRate: item.hiringRate || item.hiring_rate || 0,
+            leadsToInterview: item.leadsToInterview || item.leads_to_interview || 0,
+            pipelineStatus: item.pipelineStatus || item.pipeline_status || "",
+          })),
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const result = response?.data || {};
+
+      if (!result?.success) {
+        throw new Error(result?.message || "Failed to generate AI insight.");
+      }
+
+      const formattedAiResponse = parseAiResponsePayload(result);
+      const nextInsight = formattedAiResponse.insight;
+
+      if (isFollowUp) {
+        setAiInsightConversation((prev) => [
+          ...prev,
+          {
+            question,
+            answer: nextInsight || "No answer returned.",
+          },
+        ]);
+
+        setAiInsightQuestion("");
+      } else {
+        setAiInsightResult({
+          insight: nextInsight,
+          highlights: formattedAiResponse.highlights,
+          recommendations: formattedAiResponse.recommendations,
+          risks: formattedAiResponse.risks,
+        });
+      }
+    } catch (error) {
+      console.error("ASK AI WEEKLY HIRING ERROR:", error);
+
+      setAiInsightError(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to generate AI insight.",
+      );
+    } finally {
+      setAiInsightLoading(false);
+    }
+  }
+
+  function handleAskAiFollowUp() {
+    const question = String(aiInsightQuestion || "").trim();
+
+    if (!question) return;
+
+    handleAskAiInsight({
+      question,
+    });
+  }
+
+  function handleOpenAiInsight() {
+    const hasExistingAiSession =
+      Boolean(aiInsightResult.insight) ||
+      aiInsightConversation.length > 0 ||
+      Boolean(aiInsightError);
+
+    if (hasExistingAiSession) {
+      setAiInsightOpen(true);
+      return;
+    }
+
+    handleAskAiInsight({
+      resetConversation: true,
+    });
+  }
+
   async function handleLockWeeklyHiringPlan() {
     if (!canManageHiringPlanPercent) {
       openStatusModal({
@@ -2888,7 +3582,7 @@ export default function WeeklyHiringPlanPage() {
         ref={mainScrollRef}
         className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-3 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-6"
       >
-        <div className="sibs-page-header-in mb-5 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+        <div className="sibs-page-header-in mb-5 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 xl:max-w-[520px]">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <ClipboardList size={14} />
@@ -2903,9 +3597,24 @@ export default function WeeklyHiringPlanPage() {
               Manage weekly manpower requirement, OPS PRF, hiring plan
               percentage, leads needed, and action items.
             </p>
+
           </div>
 
-          <div className="w-full xl:flex xl:flex-1 xl:justify-end">
+          <div className="w-full xl:flex xl:flex-1 xl:flex-col xl:items-end">
+            <button
+              type="button"
+              onClick={handleOpenAiInsight}
+              disabled={aiInsightLoading || accountsLoading}
+              className="mb-3 inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#D9E2EC] bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Sparkles size={14} />
+              {aiInsightLoading
+                ? "Thinking..."
+                : aiInsightResult.insight || aiInsightConversation.length > 0
+                  ? "Open AI"
+                  : "Ask AI"}
+            </button>
+
             <WeeklyVersionTable
               weekDropdownRef={weekDropdownRef}
               clusterDropdownRef={clusterDropdownRef}
@@ -3019,6 +3728,22 @@ export default function WeeklyHiringPlanPage() {
         week={activeWeek}
         records={filteredPlans}
         onClose={() => setShowKpiSnapshot(false)}
+      />
+
+      <AIInsightModal
+        open={aiInsightOpen}
+        loading={aiInsightLoading}
+        insight={aiInsightResult.insight}
+        highlights={aiInsightResult.highlights}
+        recommendations={aiInsightResult.recommendations}
+        risks={aiInsightResult.risks}
+        error={aiInsightError}
+        question={aiInsightQuestion}
+        setQuestion={setAiInsightQuestion}
+        conversation={aiInsightConversation}
+        onClose={() => setAiInsightOpen(false)}
+        onRegenerate={() => handleAskAiInsight({ resetConversation: true })}
+        onAskFollowUp={handleAskAiFollowUp}
       />
     </div>
   );
