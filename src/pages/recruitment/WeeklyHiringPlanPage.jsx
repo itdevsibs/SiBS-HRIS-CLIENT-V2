@@ -645,14 +645,45 @@ function cleanAiJsonText(value) {
   return text.trim();
 }
 
+
+function isWeakAiText(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  const weakValues = [
+    "",
+    "{",
+    "}",
+    "{}",
+    "[]",
+    "here",
+    "ok",
+    "okay",
+    "done",
+    "sure",
+    "ready",
+    "ai insight generated successfully.",
+  ];
+
+  return weakValues.includes(text) || text.length < 20;
+}
+
 function parseAiResponsePayload(payload) {
+  /*
+    IMPORTANT:
+    payload.message is only the backend status message.
+    Example: "AI insight generated successfully."
+    Do NOT use payload.message as the AI answer.
+  */
   const rawInsight =
     payload?.insight ||
     payload?.answer ||
-    payload?.message ||
     payload?.response ||
     payload?.data?.insight ||
+    payload?.data?.answer ||
+    payload?.data?.response ||
     payload?.raw?.insight ||
+    payload?.raw?.answer ||
+    payload?.raw?.response ||
     "";
 
   let parsed = null;
@@ -673,37 +704,51 @@ function parseAiResponsePayload(payload) {
 
   const source = parsed || payload || {};
 
+  const insight =
+    source?.insight ||
+    source?.summary ||
+    source?.answer ||
+    source?.response ||
+    payload?.data?.insight ||
+    payload?.data?.answer ||
+    payload?.data?.response ||
+    payload?.raw?.insight ||
+    payload?.raw?.answer ||
+    payload?.raw?.response ||
+    "";
+
   return {
-    insight:
-      source?.insight ||
-      source?.summary ||
-      source?.answer ||
-      source?.message ||
-      source?.response ||
-      (typeof rawInsight === "string" ? rawInsight : "") ||
-      "",
-    highlights:
+    insight: isWeakAiText(insight)
+      ? "The AI returned an incomplete response. Please regenerate the insight."
+      : insight,
+
+    highlights: normalizeAiList(
       source?.highlights ||
-      source?.keyHighlights ||
-      payload?.highlights ||
-      payload?.data?.highlights ||
-      payload?.raw?.highlights ||
-      [],
-    recommendations:
+        source?.keyHighlights ||
+        payload?.highlights ||
+        payload?.data?.highlights ||
+        payload?.raw?.highlights ||
+        [],
+    ),
+
+    recommendations: normalizeAiList(
       source?.recommendations ||
-      source?.recommendedActions ||
-      source?.actions ||
-      payload?.recommendations ||
-      payload?.data?.recommendations ||
-      payload?.raw?.recommendations ||
-      [],
-    risks:
+        source?.recommendedActions ||
+        source?.actions ||
+        payload?.recommendations ||
+        payload?.data?.recommendations ||
+        payload?.raw?.recommendations ||
+        [],
+    ),
+
+    risks: normalizeAiList(
       source?.risks ||
-      source?.keyRisks ||
-      payload?.risks ||
-      payload?.data?.risks ||
-      payload?.raw?.risks ||
-      [],
+        source?.keyRisks ||
+        payload?.risks ||
+        payload?.data?.risks ||
+        payload?.raw?.risks ||
+        [],
+    ),
   };
 }
 
@@ -713,9 +758,8 @@ function formatAiTextForDisplay(value) {
   if (!text) return "";
 
   return text
-    .replace(/\s*(\d+)\.\s+/g, "\n$1. ")
-    .replace(/\s+-\s+/g, "\n- ")
     .replace(/\n{3,}/g, "\n\n")
+    .replace(/\s+-\s+(\d+[.,]\s+)/g, " $1")
     .trim();
 }
 
@@ -725,59 +769,108 @@ function parseAiDisplayBlocks(value) {
 
   if (!rawText) return [];
 
+  /*
+    Smart formatter:
+    - Keeps sentence numbers like "Week 27" and "by 326." as normal text.
+    - Only formats numbered lists when they start at 1 and continue in sequence.
+    - Prevents large values like 326, 434, or 500 from becoming list badges.
+  */
   const normalized = rawText
     .replace(/\r\n/g, "\n")
-    .replace(/\s*(\d+)\.\s+/g, "\n$1. ")
-    .replace(/\s*[-•]\s+/g, "\n- ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  const lines = normalized
-    .split("\n")
-    .map((line) => line.trim())
+  const sections = normalized
+    .split(/\n{2,}/)
+    .map((section) => section.trim())
     .filter(Boolean);
 
   const blocks = [];
-  let paragraph = [];
 
-  function flushParagraph() {
-    if (!paragraph.length) return;
+  sections.forEach((section) => {
+    const lines = section
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
 
-    blocks.push({
-      type: "paragraph",
-      text: paragraph.join(" "),
+    let paragraph = [];
+    let expectedNumber = 1;
+
+    function flushParagraph() {
+      if (!paragraph.length) return;
+
+      blocks.push({
+        type: "paragraph",
+        text: paragraph.join(" "),
+      });
+
+      paragraph = [];
+    }
+
+    lines.forEach((line) => {
+      const numberedMatch = line.match(/^(\d+)[.)]\s+(.+)$/);
+      const bulletMatch = line.match(/^[-•]\s+(.+)$/);
+
+      if (numberedMatch) {
+        const itemNumber = Number(numberedMatch[1]);
+        const itemText = numberedMatch[2];
+
+        /*
+          Treat as a real numbered list only when the list starts at 1
+          and follows sequence. This prevents "326. This..." from becoming
+          a numbered/bulleted block.
+        */
+        const isRealNumberedList =
+          itemNumber === expectedNumber &&
+          itemNumber >= 1 &&
+          itemNumber <= 20;
+
+        if (isRealNumberedList) {
+          flushParagraph();
+
+          blocks.push({
+            type: "numbered",
+            number: numberedMatch[1],
+            text: itemText,
+          });
+
+          expectedNumber += 1;
+          return;
+        }
+
+        paragraph.push(line);
+        return;
+      }
+
+      if (bulletMatch) {
+        const bulletText = bulletMatch[1];
+
+        /*
+          If a bullet starts with a large number, it is usually a sentence
+          fragment from the AI like "- 326. This leaves..." not an actual list.
+        */
+        const startsWithNumericFragment = /^\d+([.,]|$)/.test(bulletText);
+
+        if (startsWithNumericFragment) {
+          paragraph.push(bulletText);
+          return;
+        }
+
+        flushParagraph();
+
+        blocks.push({
+          type: "bullet",
+          text: bulletText,
+        });
+
+        return;
+      }
+
+      paragraph.push(line);
     });
 
-    paragraph = [];
-  }
-
-  lines.forEach((line) => {
-    const numberedMatch = line.match(/^(\d+)\.\s+(.*)$/);
-    const bulletMatch = line.match(/^[-•]\s+(.*)$/);
-
-    if (numberedMatch) {
-      flushParagraph();
-      blocks.push({
-        type: "numbered",
-        number: numberedMatch[1],
-        text: numberedMatch[2],
-      });
-      return;
-    }
-
-    if (bulletMatch) {
-      flushParagraph();
-      blocks.push({
-        type: "bullet",
-        text: bulletMatch[1],
-      });
-      return;
-    }
-
-    paragraph.push(line);
+    flushParagraph();
   });
-
-  flushParagraph();
 
   return blocks.length
     ? blocks
@@ -989,7 +1082,7 @@ function AIInsightModal({
                   Summary
                 </h3>
 
-                <div className="mt-3 rounded-[16px] bg-white p-4 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
+                <div className="mt-3 rounded-[14px] bg-white px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
                   {insight ? (
                     <ChatFormattedText value={insight} />
                   ) : (
@@ -2802,6 +2895,13 @@ export default function WeeklyHiringPlanPage() {
 
       const formattedAiResponse = parseAiResponsePayload(result);
       const nextInsight = formattedAiResponse.insight;
+
+      console.log("[AI INSIGHT FRONTEND PARSED]", {
+        insightPreview: String(nextInsight || "").slice(0, 250),
+        rawKeys: Object.keys(result || {}),
+        rawInsight: result?.insight,
+        rawMessage: result?.message,
+      });
 
       if (isFollowUp) {
         setAiInsightConversation((prev) => [

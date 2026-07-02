@@ -77,7 +77,8 @@ function getSafeValue(...values) {
 function getNumberValue(...values) {
   for (const value of values) {
     if (value !== undefined && value !== null && value !== "") {
-      const numberValue = Number(value);
+      const cleanValue = String(value).replace(/,/g, "").replace(/%/g, "").trim();
+      const numberValue = Number(cleanValue);
 
       if (Number.isFinite(numberValue)) {
         return numberValue;
@@ -86,6 +87,87 @@ function getNumberValue(...values) {
   }
 
   return 0;
+}
+
+function getArrayValue(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function getSixWeekSeriesTotal(item, type = "absenteeism") {
+  const arrayKeys =
+    type === "absenteeism"
+      ? [
+          "absenteeismTrend",
+          "absenteeism_trend",
+          "absenteeismWeeklyCounts",
+          "absenteeism_weekly_counts",
+        ]
+      : [
+          "attritionTrend",
+          "attrition_trend",
+          "attritionWeeklyCounts",
+          "attrition_weekly_counts",
+        ];
+
+  for (const key of arrayKeys) {
+    const series = getArrayValue(item?.[key]);
+
+    if (series.length > 0) {
+      return series.reduce((sum, value) => sum + getNumberValue(value), 0);
+    }
+  }
+
+  const prefix = type === "absenteeism" ? "absenteeism" : "attrition";
+
+  return [1, 2, 3, 4, 5, 6].reduce((sum, weekNumber) => {
+    return (
+      sum +
+      getNumberValue(
+        item?.[`${prefix}Week${weekNumber}`],
+        item?.[`${prefix}_week_${weekNumber}`],
+      )
+    );
+  }, 0);
+}
+
+function calculateActualHiringRate({ fstCount = 0, interviewCount = 0 }) {
+  const cleanFstCount = getNumberValue(fstCount);
+  const cleanInterviewCount = getNumberValue(interviewCount);
+
+  /*
+    Hiring Rate is actual pipeline conversion only.
+    Formula: FST Count / Interview Count.
+    Do not use PST, FST + PST, hiring plan percent, or default weekly rate.
+  */
+  if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
+
+  return Math.min(cleanFstCount / cleanInterviewCount, 1);
+}
+
+function calculateLeadsToInterview({ hiringNeeded = 0, hiringRate = 0 }) {
+  const cleanHiringNeeded = Math.max(0, getNumberValue(hiringNeeded));
+  const cleanHiringRate = getNumberValue(hiringRate);
+
+  if (cleanHiringNeeded <= 0) return 0;
+  if (cleanHiringRate <= 0) return cleanHiringNeeded;
+
+  return Math.ceil(cleanHiringNeeded / cleanHiringRate);
 }
 
 function normalizeStatusValue(value, fallback = "") {
@@ -747,39 +829,6 @@ export default function ViewPlanModal({
   const [isClosing, setIsClosing] = useState(false);
 
   const computed = useMemo(() => {
-    const projectedEmployeeNeeds = Number(
-      getSafeValue(
-        item?.projectedEmployeeNeeds,
-        item?.projected_employee_needs,
-        item?.opsPrf,
-        item?.ops_prf,
-        0,
-      ),
-    );
-
-    const hiringPlanPercent = Number(
-      getSafeValue(
-        item?.hiringPlanPercent,
-        item?.hiring_plan_percent,
-        item?.hiringRate,
-        item?.hiring_rate,
-        5,
-      ),
-    );
-
-    const hiringPlanDecimal =
-      hiringPlanPercent > 0 ? hiringPlanPercent / 100 : 0.05;
-
-    const leadsToInterview = Number(
-      getSafeValue(
-        item?.leadsToInterview,
-        item?.leads_to_interview,
-        hiringPlanDecimal > 0
-          ? Math.round(projectedEmployeeNeeds / hiringPlanDecimal)
-          : 0,
-      ),
-    );
-
     const recruitmentSettingsStatus = getRecruitmentSettingsStatusText(item);
     const updateHeadcountStatus = getUpdateHeadcountStatusText(item);
     const headcountStatus = getHeadcountStatusText(item);
@@ -803,87 +852,246 @@ export default function ViewPlanModal({
       item?.actual_headcount,
     );
 
-    const requiredBufferHeadcount = getNumberValue(
-      item?.requiredBufferHeadcount,
-      item?.required_buffer_headcount,
-      item?.bufferHeadcount,
-      item?.buffer_headcount,
+    const currentWeekAbsenteeismCount = getNumberValue(
+      item?.absenteeismCurrentWeekCount,
+      item?.absenteeism_current_week_count,
+      item?.currentWeekAbsenteeismCount,
+      item?.current_week_absenteeism_count,
     );
 
-    const requiredBufferPercent = getNumberValue(
-      item?.requiredBufferPercent,
-      item?.required_buffer_percent,
-      item?.bufferPercent,
-      item?.buffer_percent,
+    const absenteeismTrendTotal = getSixWeekSeriesTotal(item, "absenteeism");
+
+    const absenteeismSixWeeks =
+      absenteeismTrendTotal > 0
+        ? absenteeismTrendTotal
+        : getNumberValue(
+            item?.absenteeismSixWeeks,
+            item?.absenteeism_6_weeks,
+            item?.absenteeismPastSixWeeks,
+            item?.absenteeism_past_six_weeks,
+            item?.totalAbsenteeism,
+            item?.total_absenteeism,
+            item?.absenteeismCount,
+            item?.absenteeism_count,
+          );
+
+    const attritionTrendTotal = getSixWeekSeriesTotal(item, "attrition");
+
+    const attritionSixWeeks =
+      attritionTrendTotal > 0
+        ? attritionTrendTotal
+        : getNumberValue(
+            item?.attritionSixWeeks,
+            item?.attrition_6_weeks,
+            item?.attritionPastSixWeeks,
+            item?.attrition_past_six_weeks,
+            item?.totalAttrition,
+            item?.total_attrition,
+            item?.attritionPastCount,
+            item?.attrition_past_count,
+            item?.attritionCount,
+            item?.attrition_count,
+          );
+
+    const absenteeismPastSixWeeksAverage =
+      absenteeismSixWeeks > 0 ? absenteeismSixWeeks / 6 : 0;
+
+    const attritionPastSixWeeksAverage =
+      attritionSixWeeks > 0 ? attritionSixWeeks / 6 : 0;
+
+    const absenteeismPercent =
+      actualHeadcount > 0 ? absenteeismSixWeeks / actualHeadcount : 0;
+
+    const attritionPercent =
+      actualHeadcount > 0 ? attritionSixWeeks / actualHeadcount : 0;
+
+    const netActualHeadcount =
+      actualHeadcount - absenteeismSixWeeks - attritionSixWeeks;
+
+    const bufferGapCount = netActualHeadcount - requiredHeadcount;
+
+    const bufferGapPercent =
+      requiredHeadcount > 0 ? bufferGapCount / requiredHeadcount : 0;
+
+    const coverageNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+
+    const opsPrf = getNumberValue(
+      item?.opsPrf,
+      item?.ops_prf,
+      item?.prfCount,
+      item?.prf_count,
+      item?.hiringIntake,
+      item?.hiring_intake,
+      item?.hiringIntakeHeadcount,
+      item?.hiring_intake_headcount,
     );
 
-    const actualBufferCount = getNumberValue(
-      item?.actualBufferCount,
-      item?.actual_buffer_count,
-      item?.missingHeadcount,
-      item?.missing_headcount,
+    const interviewCount = getNumberValue(
+      item?.interviewCount,
+      item?.interview_count,
+      item?.interviewPopulationCount,
+      item?.interview_population_count,
     );
 
-    const actualBufferPercent = getNumberValue(
-      item?.actualBufferPercent,
-      item?.actual_buffer_percent,
+    const nhoCount = getNumberValue(
+      item?.nhoCount,
+      item?.nho_count,
+      item?.nhoPopulationCount,
+      item?.nho_population_count,
     );
 
-    const requiredActualHeadcountWithBuffer = getNumberValue(
-      item?.requiredActualHeadcountWithBuffer,
-      item?.required_actual_headcount_with_buffer,
-      requiredHeadcount + requiredBufferHeadcount,
+    const fstCount = getNumberValue(
+      item?.fstCount,
+      item?.fst_count,
+      item?.fstPopulationCount,
+      item?.fst_population_count,
     );
 
-    const absenteeismPastSixWeeksAverage = getNumberValue(
-      item?.absenteeismPastSixWeeksAverage,
-      item?.absenteeism_past_six_weeks_average,
-      item?.absenteeismOpsCount,
-      item?.absenteeism_ops_count,
-      item?.absenteeismCount,
-      item?.absenteeism_count,
+    const pstCount = getNumberValue(
+      item?.pstCount,
+      item?.pst_count,
+      item?.pstPopulationCount,
+      item?.pst_population_count,
     );
 
-    const attritionPastSixWeeksAverage = getNumberValue(
-      item?.attritionPastSixWeeksAverage,
-      item?.attrition_past_six_weeks_average,
-      item?.attritionPastCount,
-      item?.attrition_past_count,
+    /*
+      Latest business rule:
+      Hired Count = FST only.
+      Hiring Needed = Coverage Needed + PRF / Hiring Intake - Hired Count.
+      Hiring Rate = FST / Interview Count.
+    */
+    const hiredCount = fstCount;
+
+    const actualHeadcountNeeds = Math.max(
+      0,
+      coverageNeeded + opsPrf - hiredCount,
     );
 
-    const opsPrf = getNumberValue(item?.opsPrf, item?.ops_prf);
+    const hiringRate = calculateActualHiringRate({
+      fstCount: hiredCount,
+      interviewCount,
+    });
 
-    const actualHeadcountNeeds = getNumberValue(
-      item?.actualHeadcountNeeds,
-      item?.actual_headcount_needs,
-      requiredBufferHeadcount +
-        absenteeismPastSixWeeksAverage +
-        attritionPastSixWeeksAverage +
-        opsPrf,
+    const hiringPlanPercent = hiringRate * 100;
+
+    const leadsToInterview = calculateLeadsToInterview({
+      hiringNeeded: actualHeadcountNeeds,
+      hiringRate,
+    });
+
+    const signedAttritionInterviewToNhoCount = interviewCount - nhoCount;
+    const signedAttritionNhoToFstCount = nhoCount - fstCount;
+    const signedAttritionFstToPstCount = fstCount - pstCount;
+    const signedAttritionNhoToPstCount = nhoCount - pstCount;
+
+    const attritionInterviewToNhoCount = Math.abs(
+      getNumberValue(
+        item?.attritionInterviewToNhoCount,
+        item?.attrition_interview_to_nho_count,
+        item?.interviewToNhoAttritionCount,
+        item?.interview_to_nho_attrition_count,
+        signedAttritionInterviewToNhoCount,
+      ),
     );
+
+    const attritionNhoToFstCount = Math.abs(
+      getNumberValue(
+        item?.attritionNhoToFstCount,
+        item?.attrition_nho_to_fst_count,
+        item?.nhoToFstAttritionCount,
+        item?.nho_to_fst_attrition_count,
+        signedAttritionNhoToFstCount,
+      ),
+    );
+
+    const attritionFstToPstCount = Math.abs(
+      getNumberValue(
+        item?.attritionFstToPstCount,
+        item?.attrition_fst_to_pst_count,
+        item?.fstToPstAttritionCount,
+        item?.fst_to_pst_attrition_count,
+        signedAttritionFstToPstCount,
+      ),
+    );
+
+    const attritionNhoToPstCount = Math.abs(
+      getNumberValue(
+        item?.attritionNhoToPstCount,
+        item?.attrition_nho_to_pst_count,
+        item?.nhoToPstAttritionCount,
+        item?.nho_to_pst_attrition_count,
+        signedAttritionNhoToPstCount,
+      ),
+    );
+
+    const attritionInterviewToNhoPercent =
+      interviewCount > 0 ? signedAttritionInterviewToNhoCount / interviewCount : 0;
+
+    const attritionNhoToFstPercent =
+      nhoCount > 0 ? signedAttritionNhoToFstCount / nhoCount : 0;
+
+    const attritionFstToPstPercent =
+      fstCount > 0 ? signedAttritionFstToPstCount / fstCount : 0;
+
+    const attritionNhoToPstPercent =
+      nhoCount > 0 ? signedAttritionNhoToPstCount / nhoCount : 0;
+
+    const requiredBufferHeadcount = Math.ceil(absenteeismPastSixWeeksAverage);
+    const requiredBufferPercent =
+      requiredHeadcount > 0 ? requiredBufferHeadcount / requiredHeadcount : 0;
+
+    const requiredActualHeadcountWithBuffer =
+      requiredHeadcount + requiredBufferHeadcount;
 
     return {
-      projectedEmployeeNeeds,
-      hiringPlanPercent,
-      leadsToInterview,
-
       recruitmentSettingsStatus,
       updateHeadcountStatus,
       headcountStatus,
 
       requiredHeadcount,
       requestedRequiredHeadcount,
-
       actualHeadcount,
+
+      currentWeekAbsenteeismCount,
+      absenteeismSixWeeks,
+      absenteeismPastSixWeeksAverage,
+      absenteeismPercent,
+
+      attritionSixWeeks,
+      attritionPastSixWeeksAverage,
+      attritionPercent,
+
+      netActualHeadcount,
+      bufferGapCount,
+      bufferGapPercent,
+
       requiredBufferHeadcount,
       requiredBufferPercent,
-      actualBufferCount,
-      actualBufferPercent,
+      actualBufferCount: bufferGapCount,
+      actualBufferPercent: bufferGapPercent,
       requiredActualHeadcountWithBuffer,
-      absenteeismPastSixWeeksAverage,
-      attritionPastSixWeeksAverage,
+
+      coverageNeeded,
       opsPrf,
+      interviewCount,
+      nhoCount,
+      fstCount,
+      pstCount,
+
+      hiredCount,
       actualHeadcountNeeds,
+      hiringPlanPercent,
+      hiringRate,
+      leadsToInterview,
+
+      attritionInterviewToNhoCount,
+      attritionInterviewToNhoPercent,
+      attritionNhoToFstCount,
+      attritionNhoToFstPercent,
+      attritionFstToPstCount,
+      attritionFstToPstPercent,
+      attritionNhoToPstCount,
+      attritionNhoToPstPercent,
     };
   }, [item]);
 
@@ -1100,19 +1308,19 @@ export default function ViewPlanModal({
             />
 
             <MetricCard
-              title="OPS PRF"
-              value={formatNumber(computed.opsPrf)}
-              subtitle="Projected PRF need"
-              icon={CheckCircle2}
-              iconClassName="bg-emerald-50 text-emerald-600"
-              valueClassName="text-emerald-600"
+              title="Hiring Needed"
+              value={formatNumber(computed.actualHeadcountNeeds)}
+              subtitle="Coverage + PRF - Hired"
+              icon={Target}
+              iconClassName="bg-red-50 text-red-600"
+              valueClassName="text-red-600"
             />
 
             <MetricCard
-              title="Hiring Plan"
-              value={formatPercent(computed.hiringPlanPercent)}
-              subtitle="Selected hiring rate"
-              icon={Target}
+              title="Hiring Rate"
+              value={formatPercent(computed.hiringRate)}
+              subtitle="FST / Interview"
+              icon={CheckCircle2}
               iconClassName="bg-blue-50 text-blue-600"
               valueClassName="text-blue-600"
             />
@@ -1120,7 +1328,7 @@ export default function ViewPlanModal({
             <MetricCard
               title="Leads Needed"
               value={formatNumber(computed.leadsToInterview)}
-              subtitle="Projected need / hiring plan"
+              subtitle="Hiring needed / hiring rate"
               icon={TrendingUp}
               iconClassName="bg-violet-50 text-violet-600"
               valueClassName="text-violet-600"
@@ -1198,18 +1406,18 @@ export default function ViewPlanModal({
               />
 
               <InfoBox
-                label="Required Buffer Headcount"
+                label="Absenteeism Buffer HC"
                 value={formatNumber(computed.requiredBufferHeadcount, 2)}
                 valueClassName="text-sibs-primary-1"
               />
 
               <InfoBox
-                label="Required Buffer %"
+                label="Absenteeism Buffer %"
                 value={formatPercent(computed.requiredBufferPercent)}
               />
 
               <InfoBox
-                label="Actual Buffer Count"
+                label="Buffer Gap Count"
                 value={formatNumber(computed.actualBufferCount)}
                 valueClassName={
                   computed.actualBufferCount < 0
@@ -1219,7 +1427,7 @@ export default function ViewPlanModal({
               />
 
               <InfoBox
-                label="Actual Buffer %"
+                label="Buffer Gap %"
                 value={formatPercent(computed.actualBufferPercent)}
                 valueClassName={
                   computed.actualBufferPercent < 0
@@ -1229,7 +1437,7 @@ export default function ViewPlanModal({
               />
 
               <InfoBox
-                label="Required Actual HC with Buffer"
+                label="Required HC + Abs Buffer"
                 value={formatNumber(
                   computed.requiredActualHeadcountWithBuffer,
                   2,
@@ -1238,25 +1446,64 @@ export default function ViewPlanModal({
               />
 
               <InfoBox
-                label="Absenteeism Past 6 Weeks Average"
+                label="Absenteeism Average / Week"
                 value={formatNumber(computed.absenteeismPastSixWeeksAverage)}
               />
 
               <InfoBox
-                label="Attrition Past 6 Weeks Average"
+                label="Attrition Average / Week"
                 value={formatNumber(computed.attritionPastSixWeeksAverage)}
               />
 
               <InfoBox
-                label="OPS PRF"
+                label="Coverage Needed"
+                value={formatNumber(computed.coverageNeeded)}
+                valueClassName="text-orange-700"
+              />
+
+              <InfoBox
+                label="PRF / Hiring Intake"
                 value={formatNumber(computed.opsPrf)}
                 valueClassName="text-sibs-primary-1"
               />
 
               <InfoBox
-                label="Actual Headcount Needs"
-                value={formatNumber(computed.actualHeadcountNeeds, 2)}
+                label="Hired Count"
+                value={formatNumber(computed.hiredCount)}
+                valueClassName="text-emerald-700"
+              />
+
+              <InfoBox
+                label="Hiring Needed"
+                value={
+                  <span>
+                    {formatNumber(computed.coverageNeeded)} +{" "}
+                    {formatNumber(computed.opsPrf)} -{" "}
+                    {formatNumber(computed.hiredCount)} ={" "}
+                    <b>{formatNumber(computed.actualHeadcountNeeds)}</b>
+                  </span>
+                }
                 valueClassName="text-violet-700"
+              />
+
+              <InfoBox
+                label="Interview Count"
+                value={formatNumber(computed.interviewCount)}
+              />
+
+              <InfoBox
+                label="NHO Count"
+                value={formatNumber(computed.nhoCount)}
+              />
+
+              <InfoBox
+                label="FST Count"
+                value={formatNumber(computed.fstCount)}
+              />
+
+              <InfoBox
+                label="PST Count"
+                value={formatNumber(computed.pstCount)}
               />
 
               <InfoBox
@@ -1266,7 +1513,7 @@ export default function ViewPlanModal({
 
               <InfoBox
                 label="Hiring Rate"
-                value={formatPercent(computed.hiringPlanPercent)}
+                value={formatPercent(computed.hiringRate)}
               />
 
               <InfoBox
@@ -1286,23 +1533,23 @@ export default function ViewPlanModal({
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <InfoBox
-                  label="Absenteeism Count"
-                  value={formatNumber(item.absenteeismCount)}
+                  label="Absenteeism 6 Weeks"
+                  value={formatNumber(computed.absenteeismSixWeeks)}
                 />
 
                 <InfoBox
-                  label="Absenteeism %"
-                  value={formatPercent(item.absenteeismPercent)}
+                  label="Absenteeism % vs Actual HC"
+                  value={formatPercent(computed.absenteeismPercent)}
                 />
 
                 <InfoBox
-                  label="Attrition Count"
-                  value={formatNumber(item.attritionPastCount)}
+                  label="Attrition 6 Weeks"
+                  value={formatNumber(computed.attritionSixWeeks)}
                 />
 
                 <InfoBox
-                  label="Attrition %"
-                  value={formatPercent(item.attritionPastPercent)}
+                  label="Attrition % vs Actual HC"
+                  value={formatPercent(computed.attritionPercent)}
                 />
               </div>
             </section>
@@ -1345,7 +1592,7 @@ export default function ViewPlanModal({
                 />
 
                 <InfoBox
-                  label="Previous Hiring Plan"
+                  label="Previous Hiring Rate"
                   value={formatPercent(
                     getSafeValue(
                       previousWeekItem.hiringPlanPercent,

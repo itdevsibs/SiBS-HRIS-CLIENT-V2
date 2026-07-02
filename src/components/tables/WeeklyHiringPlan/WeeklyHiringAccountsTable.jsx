@@ -33,6 +33,77 @@ function safeDivide(numerator, denominator) {
   return cleanNumerator / cleanDenominator;
 }
 
+function getArrayValue(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function getSixWeekSeriesTotal(item, type = "absenteeism") {
+  const arrayKeys =
+    type === "absenteeism"
+      ? [
+          "absenteeismTrend",
+          "absenteeism_trend",
+          "absenteeismWeeklyCounts",
+          "absenteeism_weekly_counts",
+        ]
+      : [
+          "attritionTrend",
+          "attrition_trend",
+          "attritionWeeklyCounts",
+          "attrition_weekly_counts",
+        ];
+
+  for (const key of arrayKeys) {
+    const series = getArrayValue(item?.[key]);
+
+    if (series.length > 0) {
+      return series.reduce((sum, value) => sum + getNumberValue(value), 0);
+    }
+  }
+
+  const prefix = type === "absenteeism" ? "absenteeism" : "attrition";
+
+  return [1, 2, 3, 4, 5, 6].reduce((sum, weekNumber) => {
+    return (
+      sum +
+      getNumberValue(
+        item?.[`${prefix}Week${weekNumber}`],
+        item?.[`${prefix}_week_${weekNumber}`],
+      )
+    );
+  }, 0);
+}
+
+function calculateActualHiringRate({ fstCount = 0, interviewCount = 0 }) {
+  const cleanFstCount = getNumberValue(fstCount);
+  const cleanInterviewCount = getNumberValue(interviewCount);
+
+  /*
+    Hiring Rate is actual pipeline conversion only.
+    Formula: FST Count / Interview Count.
+    Do not use PST, FST + PST, hiring plan percent, or default weekly rate.
+  */
+  if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
+
+  return Math.min(cleanFstCount / cleanInterviewCount, 1);
+}
+
 function formatPercent(value, decimals = 2) {
   const numberValue = Number(value || 0);
 
@@ -126,27 +197,44 @@ function getRowMetrics(item) {
     item.actual_headcount,
   );
 
-  const absenteeismSixWeeks = getNumberValue(
-    item.absenteeismSixWeeks,
-    item.absenteeism_6_weeks,
-    item.absenteeismPastSixWeeks,
-    item.absenteeism_past_six_weeks,
-    item.absenteeismCount,
-    item.absenteeism_count,
-    item.absenteeismPastCount,
-    item.absenteeism_past_count,
+  const absenteeismSixWeekTrendTotal = getSixWeekSeriesTotal(
+    item,
+    "absenteeism",
   );
 
-  const attritionSixWeeks = getNumberValue(
-    item.attritionSixWeeks,
-    item.attrition_6_weeks,
-    item.attritionPastSixWeeks,
-    item.attrition_past_six_weeks,
-    item.attritionPastCount,
-    item.attrition_past_count,
-    item.attritionCount,
-    item.attrition_count,
-  );
+  const attritionSixWeekTrendTotal = getSixWeekSeriesTotal(item, "attrition");
+
+  const absenteeismSixWeeks =
+    absenteeismSixWeekTrendTotal > 0
+      ? absenteeismSixWeekTrendTotal
+      : getNumberValue(
+          item.absenteeismSixWeeks,
+          item.absenteeism_6_weeks,
+          item.absenteeismPastSixWeeks,
+          item.absenteeism_past_six_weeks,
+          item.totalAbsenteeism,
+          item.total_absenteeism,
+          item.absenteeismCount,
+          item.absenteeism_count,
+          item.absenteeismPastCount,
+          item.absenteeism_past_count,
+        );
+
+  const attritionSixWeeks =
+    attritionSixWeekTrendTotal > 0
+      ? attritionSixWeekTrendTotal
+      : getNumberValue(
+          item.attritionSixWeeks,
+          item.attrition_6_weeks,
+          item.attritionPastSixWeeks,
+          item.attrition_past_six_weeks,
+          item.totalAttrition,
+          item.total_attrition,
+          item.attritionPastCount,
+          item.attrition_past_count,
+          item.attritionCount,
+          item.attrition_count,
+        );
 
   const netActualHeadcount =
     actualHeadcount - absenteeismSixWeeks - attritionSixWeeks;
@@ -167,7 +255,25 @@ function getRowMetrics(item) {
 
   const attritionPercentage = safeDivide(attritionSixWeeks, actualHeadcount);
 
-  const hiringNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+  const prfCount = getNumberValue(
+    item.opsPrf,
+    item.ops_prf,
+    item.hiringIntake,
+    item.hiring_intake,
+    item.hiringIntakeHeadcount,
+    item.hiring_intake_headcount,
+    item.prfCount,
+    item.prf_count,
+  );
+
+  const coverageNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+
+  /*
+    Latest business rule:
+    Hiring Needed = Coverage Needed + PRF / Hiring Intake - Hired Count.
+    Hired Count is FST only.
+  */
+  const hiringNeededBeforeHired = coverageNeeded + prfCount;
 
   const interviewCount = getNumberValue(
     item.interviewCount,
@@ -266,9 +372,14 @@ function getRowMetrics(item) {
     nhoCount,
   );
 
-  const hiredCount = fstCount + pstCount;
+  const hiredCount = fstCount;
 
-  const hiringRate = safeDivide(hiredCount, interviewCount);
+  const hiringNeeded = Math.max(0, hiringNeededBeforeHired - hiredCount);
+
+  const hiringRate = calculateActualHiringRate({
+    fstCount: hiredCount,
+    interviewCount,
+  });
 
   const leadsToInterview =
     hiringNeeded <= 0
@@ -296,6 +407,8 @@ function getRowMetrics(item) {
 
     netActualHeadcount,
     bufferPercentage,
+    coverageNeeded,
+    prfCount,
     hiringNeeded,
 
     interviewCount,
@@ -418,7 +531,7 @@ function DesktopTableHeader() {
           <HeaderCell note="Actual HC - Absenteeism - Attrition">
             Net Actual HC
           </HeaderCell>
-          <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
+          <HeaderCell note="MAX(0, Coverage Needed + PRF - Hired Count)">
             Hiring Needed
           </HeaderCell>
           <HeaderCell>Interview Count</HeaderCell>
@@ -449,8 +562,8 @@ function DesktopTableHeader() {
           <HeaderCell note="Attrition NHO to PST ÷ NHO">
             Attrition % NHO to PST
           </HeaderCell>
-          <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
-          <HeaderCell note="Hired Count ÷ Interview Count">
+          <HeaderCell note="FST Count only">Hired Count</HeaderCell>
+          <HeaderCell note="FST Count ÷ Interview Count">
             Hiring Rate
           </HeaderCell>
           <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
@@ -519,6 +632,13 @@ export default function WeeklyHiringAccountsTable({
         buffer_percentage: metrics.bufferPercentage,
         bufferPercent: metrics.bufferPercentage,
         buffer_percent: metrics.bufferPercentage,
+
+        coverageNeeded: metrics.coverageNeeded,
+        coverage_needed: metrics.coverageNeeded,
+        prfCount: metrics.prfCount,
+        prf_count: metrics.prfCount,
+        opsPrf: metrics.prfCount,
+        ops_prf: metrics.prfCount,
 
         hiringNeeded: metrics.hiringNeeded,
         hiring_needed: metrics.hiringNeeded,
@@ -623,6 +743,8 @@ export default function WeeklyHiringAccountsTable({
         metrics.attritionSixWeeks,
         formatPercent(metrics.attritionPercentage),
         metrics.netActualHeadcount,
+        metrics.coverageNeeded,
+        metrics.prfCount,
         metrics.hiringNeeded,
         metrics.interviewCount,
         metrics.nhoCount,
@@ -991,9 +1113,29 @@ export default function WeeklyHiringAccountsTable({
             valueClassName={getRateRiskClass(metrics.attritionPercentage)}
           />
           <MobileMetric
+            label="Coverage Needed"
+            value={formatNumber(metrics.coverageNeeded)}
+            valueClassName="text-orange-700"
+          />
+          <MobileMetric
+            label="PRF / Intake"
+            value={formatNumber(metrics.prfCount)}
+            valueClassName="text-sibs-primary-1"
+          />
+          <MobileMetric
+            label="Hired Count"
+            value={formatNumber(metrics.hiredCount)}
+            valueClassName="text-emerald-700"
+          />
+          <MobileMetric
             label="Hiring Needed"
             value={formatNumber(metrics.hiringNeeded)}
             valueClassName="text-violet-700"
+          />
+          <MobileMetric
+            label="Hiring Rate"
+            value={formatPercent(metrics.hiringRate)}
+            valueClassName="text-sibs-primary-1"
           />
           <MobileMetric
             label="Leads to Interview"
@@ -1024,7 +1166,7 @@ export default function WeeklyHiringAccountsTable({
         <div className="mt-4">
           <PaginationTable
             title="Weekly Hiring Accounts"
-            subtitle="Excel-based computation: Net Actual HC, Hiring Needed, Stage Attrition, Hiring Rate, and Leads to Interview."
+            subtitle="Excel-based computation: Net Actual HC, Coverage Needed, PRF, Hired Count, Hiring Needed, Stage Attrition, Hiring Rate, and Leads to Interview."
             loading={accountsLoading}
             searchValue={searchInput}
             searchPlaceholder="Search account then press Enter"
@@ -1080,7 +1222,7 @@ export default function WeeklyHiringAccountsTable({
                   <HeaderCell note="Actual HC - Absenteeism - Attrition">
                     Net Actual HC
                   </HeaderCell>
-                  <HeaderCell note="MAX(0, Required HC - Net Actual HC)">
+                  <HeaderCell note="MAX(0, Coverage Needed + PRF - Hired Count)">
                     Hiring Needed
                   </HeaderCell>
                   <HeaderCell>Interview Count</HeaderCell>
@@ -1111,8 +1253,8 @@ export default function WeeklyHiringAccountsTable({
                   <HeaderCell note="Attrition NHO to PST ÷ NHO">
                     Attrition % NHO to PST
                   </HeaderCell>
-                  <HeaderCell note="FST Count + PST Count">Hired Count</HeaderCell>
-                  <HeaderCell note="Hired Count ÷ Interview Count">
+                  <HeaderCell note="FST Count only">Hired Count</HeaderCell>
+                  <HeaderCell note="FST Count ÷ Interview Count">
                     Hiring Rate
                   </HeaderCell>
                   <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
