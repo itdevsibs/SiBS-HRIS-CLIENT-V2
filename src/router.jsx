@@ -13,6 +13,7 @@ import EmployeeDataPage from "./pages/employee/EmployeeDataPage";
 import EmployeesPage from "./pages/employee/EmployeesPage";
 
 import AttendancePage from "./pages/attendance/AttendancePage";
+import KronosAttendancePage from "./pages/kronos-attendance/KronosAttendancePage";
 import LeavesPage from "./pages/leaves/LeavesPage";
 import ResignationManagementPage from "./pages/resignation-management/ResignationManagementPage";
 import RequisitionsPage from "./pages/requisitions/RequisitionPage";
@@ -39,6 +40,7 @@ import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewFo
 import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
 
 import ApprovalRequest from "./pages/communication/ApprovalRequest";
+import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
 
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -139,6 +141,15 @@ export default function Router() {
         element={
           <PrivateRoute>
             <AttendancePage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/kronos-attendance"
+        element={
+          <PrivateRoute>
+            <KronosAttendancePage />
           </PrivateRoute>
         }
       />
@@ -340,6 +351,25 @@ export default function Router() {
         element={
           <PrivateRoute>
             <ApprovalRequest />
+          </PrivateRoute>
+        }
+      />
+
+      {/* KRONOS */}
+      <Route
+        path="/kronos-datas"
+        element={
+          <PrivateRoute>
+            <KronosDatasPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/kronos-attendance"
+        element={
+          <PrivateRoute>
+            <KronosAttendancePage />
           </PrivateRoute>
         }
       />

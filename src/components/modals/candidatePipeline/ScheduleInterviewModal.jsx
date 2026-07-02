@@ -32,9 +32,36 @@ const MONTH_OPTIONS = [
   { value: 11, label: "December" },
 ];
 
+const MINUTE_OPTIONS = [
+  "00",
+  "05",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+].map((minute) => ({
+  value: minute,
+  label: minute,
+}));
+
 function pad(value) {
   return String(value).padStart(2, "0");
 }
+
+const HOUR_OPTIONS = Array.from({ length: 12 }, (_, index) => {
+  const hour = index + 1;
+
+  return {
+    value: hour,
+    label: pad(hour),
+  };
+});
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -129,10 +156,14 @@ function buildYearOptions(baseDate) {
   const baseYear = baseDate?.getFullYear?.() || currentYear;
   const endYear = Math.max(currentYear + 10, baseYear + 10);
 
-  return Array.from(
-    { length: endYear - currentYear + 1 },
-    (_, index) => currentYear + index,
-  );
+  return Array.from({ length: endYear - currentYear + 1 }, (_, index) => {
+    const year = currentYear + index;
+
+    return {
+      value: year,
+      label: String(year),
+    };
+  });
 }
 
 function buildCalendarDays(viewDate) {
@@ -182,6 +213,155 @@ function isSameDate(left, right) {
   );
 }
 
+function PickerDropdown({
+  dropdownId = "",
+  openDropdown = "",
+  setOpenDropdown,
+  value,
+  options = [],
+  onChange,
+  placeholder = "Select option",
+  disabled = false,
+  buttonClassName = "",
+  menuClassName = "",
+}) {
+  const dropdownRef = useRef(null);
+  const [localOpen, setLocalOpen] = useState(false);
+
+  const isControlled =
+    typeof setOpenDropdown === "function" && cleanText(dropdownId);
+
+  const open = isControlled ? openDropdown === dropdownId : localOpen;
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        if (isControlled) {
+          setOpenDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        if (isControlled) {
+          setOpenDropdown("");
+        } else {
+          setLocalOpen(false);
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isControlled, setOpenDropdown]);
+
+  function toggleOpen() {
+    if (disabled) return;
+
+    if (isControlled) {
+      setOpenDropdown(open ? "" : dropdownId);
+      return;
+    }
+
+    setLocalOpen((previous) => !previous);
+  }
+
+  function closeDropdown() {
+    if (isControlled) {
+      setOpenDropdown("");
+      return;
+    }
+
+    setLocalOpen(false);
+  }
+
+  function handleSelect(option) {
+    if (disabled || option.disabled) return;
+
+    onChange?.(option.value);
+    closeDropdown();
+  }
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={toggleOpen}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          open
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
+            : "text-sibs-primary-1"
+        } ${buttonClassName}`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
+          }`}
+        >
+          {selectedOption?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div
+          className={`absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)] ${menuClassName}`}
+        >
+          <div className="max-h-[260px] overflow-y-auto py-1">
+            {options.map((option) => {
+              const active = String(option.value) === String(value);
+
+              return (
+                <button
+                  key={String(option.value)}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option)}
+                  className={`flex min-h-[42px] w-full items-center justify-between gap-3 px-4 text-left text-sm font-semibold transition ${
+                    option.disabled
+                      ? "cursor-not-allowed bg-white text-slate-300"
+                      : active
+                        ? "bg-[#EAF2FB] text-sibs-primary-1"
+                        : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {active && !option.disabled && <Check size={15} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DateTimePicker({ value, onChange }) {
   const parsedValue = parseDateTimeValue(value);
   const safeInitialDate =
@@ -192,6 +372,7 @@ function DateTimePicker({ value, onChange }) {
   const pickerRef = useRef(null);
 
   const [open, setOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState("");
   const [viewDate, setViewDate] = useState(() =>
     getMonthStart(safeInitialDate),
   );
@@ -211,6 +392,15 @@ function DateTimePicker({ value, onChange }) {
   const disablePreviousMonth = viewMonthStart <= currentMonthStart;
 
   const yearOptions = useMemo(() => buildYearOptions(viewDate), [viewDate]);
+
+  const monthOptions = useMemo(() => {
+    return MONTH_OPTIONS.map((month) => ({
+      ...month,
+      disabled:
+        viewDate.getFullYear() === currentYear && month.value < currentMonth,
+    }));
+  }, [currentMonth, currentYear, viewDate]);
+
   const days = useMemo(() => buildCalendarDays(viewDate), [viewDate]);
 
   const displayValue =
@@ -244,11 +434,15 @@ function DateTimePicker({ value, onChange }) {
 
       if (!pickerRef.current.contains(event.target)) {
         setOpen(false);
+        setOpenDropdown("");
       }
     }
 
     function handleEscape(event) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        setOpenDropdown("");
+      }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -275,6 +469,7 @@ function DateTimePicker({ value, onChange }) {
   function handleDateSelect(nextDate) {
     if (isDateBeforeToday(nextDate)) return;
 
+    setOpenDropdown("");
     setActiveDate(nextDate);
     setViewDate(getMonthStart(nextDate));
     commitValue(nextDate, hour12, minute, period);
@@ -283,19 +478,21 @@ function DateTimePicker({ value, onChange }) {
   function handlePreviousMonth() {
     if (disablePreviousMonth) return;
 
+    setOpenDropdown("");
     setViewDate(
       new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1),
     );
   }
 
   function handleNextMonth() {
+    setOpenDropdown("");
     setViewDate(
       new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1),
     );
   }
 
-  function handleMonthChange(event) {
-    const nextMonth = Number(event.target.value);
+  function handleMonthChange(nextMonthValue) {
+    const nextMonth = Number(nextMonthValue);
 
     if (viewDate.getFullYear() === currentYear && nextMonth < currentMonth) {
       return;
@@ -327,8 +524,8 @@ function DateTimePicker({ value, onChange }) {
     }
   }
 
-  function handleYearChange(event) {
-    const nextYear = Number(event.target.value);
+  function handleYearChange(nextYearValue) {
+    const nextYear = Number(nextYearValue);
     const nextMonth =
       nextYear === currentYear && viewDate.getMonth() < currentMonth
         ? currentMonth
@@ -360,19 +557,20 @@ function DateTimePicker({ value, onChange }) {
     }
   }
 
-  function handleHourChange(event) {
-    const nextHour = Number(event.target.value);
+  function handleHourChange(nextHourValue) {
+    const nextHour = Number(nextHourValue);
+
     setHour12(nextHour);
     commitValue(activeDate, nextHour, minute, period);
   }
 
-  function handleMinuteChange(event) {
-    const nextMinute = event.target.value;
+  function handleMinuteChange(nextMinute) {
     setMinute(nextMinute);
     commitValue(activeDate, hour12, nextMinute, period);
   }
 
   function handlePeriodChange(nextPeriod) {
+    setOpenDropdown("");
     setPeriod(nextPeriod);
     commitValue(activeDate, hour12, minute, nextPeriod);
   }
@@ -380,6 +578,7 @@ function DateTimePicker({ value, onChange }) {
   function setToday() {
     const today = getTodayDateOnly();
 
+    setOpenDropdown("");
     setActiveDate(today);
     setViewDate(getMonthStart(today));
     commitValue(today, hour12, minute, period);
@@ -389,7 +588,17 @@ function DateTimePicker({ value, onChange }) {
     <div ref={pickerRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((previous) => !previous)}
+        onClick={() => {
+          setOpen((previous) => {
+            const nextOpen = !previous;
+
+            if (!nextOpen) {
+              setOpenDropdown("");
+            }
+
+            return nextOpen;
+          });
+        }}
         className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
@@ -408,7 +617,7 @@ function DateTimePicker({ value, onChange }) {
       </button>
 
       {open && (
-        <div className="mt-3 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
+        <div className="mt-3 overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.13)]">
           <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
             <div className="border-b border-[#E6ECF2] p-4 lg:border-b-0 lg:border-r">
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -422,53 +631,25 @@ function DateTimePicker({ value, onChange }) {
                 </button>
 
                 <div className="grid flex-1 grid-cols-2 gap-2">
-                  <div className="relative">
-                    <select
-                      value={viewDate.getMonth()}
-                      onChange={handleMonthChange}
-                      className="h-10 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-3 pr-9 text-sm font-extrabold text-sibs-primary-1 outline-none transition hover:border-sibs-primary-1/50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    >
-                      {MONTH_OPTIONS.map((month) => {
-                        const disabledMonth =
-                          viewDate.getFullYear() === currentYear &&
-                          month.value < currentMonth;
+                  <PickerDropdown
+                    dropdownId="month"
+                    openDropdown={openDropdown}
+                    setOpenDropdown={setOpenDropdown}
+                    value={viewDate.getMonth()}
+                    options={monthOptions}
+                    onChange={handleMonthChange}
+                    placeholder="Month"
+                  />
 
-                        return (
-                          <option
-                            key={month.value}
-                            value={month.value}
-                            disabled={disabledMonth}
-                          >
-                            {month.label}
-                          </option>
-                        );
-                      })}
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sibs-primary-1"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <select
-                      value={viewDate.getFullYear()}
-                      onChange={handleYearChange}
-                      className="h-10 w-full appearance-none rounded-xl border border-[#D0D5DD] bg-white px-3 pr-9 text-sm font-extrabold text-sibs-primary-1 outline-none transition hover:border-sibs-primary-1/50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    >
-                      {yearOptions.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-
-                    <ChevronDown
-                      size={16}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sibs-primary-1"
-                    />
-                  </div>
+                  <PickerDropdown
+                    dropdownId="year"
+                    openDropdown={openDropdown}
+                    setOpenDropdown={setOpenDropdown}
+                    value={viewDate.getFullYear()}
+                    options={yearOptions}
+                    onChange={handleYearChange}
+                    placeholder="Year"
+                  />
                 </div>
 
                 <button
@@ -546,6 +727,7 @@ function DateTimePicker({ value, onChange }) {
                   onClick={() => {
                     onChange?.("");
                     setOpen(false);
+                    setOpenDropdown("");
                   }}
                   className="text-xs font-extrabold text-red-500 transition hover:text-red-600"
                 >
@@ -574,19 +756,16 @@ function DateTimePicker({ value, onChange }) {
                     Hour
                   </label>
 
-                  <select
+                  <PickerDropdown
+                    dropdownId="hour"
+                    openDropdown={openDropdown}
+                    setOpenDropdown={setOpenDropdown}
                     value={hour12}
+                    options={HOUR_OPTIONS}
                     onChange={handleHourChange}
-                    className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    {Array.from({ length: 12 }, (_, index) => index + 1).map(
-                      (hour) => (
-                        <option key={hour} value={hour}>
-                          {pad(hour)}
-                        </option>
-                      ),
-                    )}
-                  </select>
+                    placeholder="Hour"
+                    buttonClassName="h-11"
+                  />
                 </div>
 
                 <div>
@@ -594,30 +773,16 @@ function DateTimePicker({ value, onChange }) {
                     Minute
                   </label>
 
-                  <select
+                  <PickerDropdown
+                    dropdownId="minute"
+                    openDropdown={openDropdown}
+                    setOpenDropdown={setOpenDropdown}
                     value={minute}
+                    options={MINUTE_OPTIONS}
                     onChange={handleMinuteChange}
-                    className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-3 text-sm font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  >
-                    {[
-                      "00",
-                      "05",
-                      "10",
-                      "15",
-                      "20",
-                      "25",
-                      "30",
-                      "35",
-                      "40",
-                      "45",
-                      "50",
-                      "55",
-                    ].map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Minute"
+                    buttonClassName="h-11"
+                  />
                 </div>
 
                 <div>
@@ -659,6 +824,7 @@ function DateTimePicker({ value, onChange }) {
                 onClick={() => {
                   commitValue(activeDate, hour12, minute, period);
                   setOpen(false);
+                  setOpenDropdown("");
                 }}
                 className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90"
               >
@@ -674,81 +840,22 @@ function DateTimePicker({ value, onChange }) {
 }
 
 function InterviewTypeDropdown({ value, onChange }) {
-  const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
-
   const selectedValue = cleanText(value);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
-
-      if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  function handleSelect(type) {
-    onChange?.(type);
-    setOpen(false);
-  }
+  const options = interviewTypeOptions.map((type) => ({
+    value: type,
+    label: type,
+  }));
 
   return (
-    <div ref={dropdownRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
-        }`}
-      >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selectedValue ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
-          }`}
-        >
-          {selectedValue || "Select interview type"}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[10050] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          {interviewTypeOptions.map((type) => {
-            const active = selectedValue === type;
-
-            return (
-              <button
-                key={type}
-                type="button"
-                onClick={() => handleSelect(type)}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-extrabold transition ${
-                  active
-                    ? "bg-[#EAF4FF] text-sibs-primary-1"
-                    : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                }`}
-              >
-                <span>{type}</span>
-                {active && <Check size={16} />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+    <PickerDropdown
+      value={selectedValue}
+      options={options}
+      onChange={onChange}
+      placeholder="Select interview type"
+      buttonClassName="h-12 px-4"
+      menuClassName="z-[10050]"
+    />
   );
 }
 
