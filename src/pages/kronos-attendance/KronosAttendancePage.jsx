@@ -17,6 +17,7 @@ import { getKronosAttendance } from "../../lib/axios/getKronosAttendance";
 
 const PAGE_LIMIT = 15;
 const KRONOS_ATTENDANCE_STATE_KEY = "kronosAttendancePageState";
+const LIVE_REFRESH_INTERVAL_MS = 5000;
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -161,6 +162,10 @@ function getStatusBadgeClass(status) {
     return "border-red-200 bg-red-50 text-red-600";
   }
 
+  if (cleanStatus === "ongoing" || cleanStatus === "active") {
+    return "border-blue-200 bg-blue-50 text-sibs-primary-1";
+  }
+
   return "border-amber-200 bg-amber-50 text-amber-600";
 }
 
@@ -302,9 +307,21 @@ function normalizeAccountOption(option) {
 
 export default function KronosAttendancePage() {
   const { user } = useUser();
+
   const mainRef = useRef(null);
   const latestRequestIdRef = useRef(0);
   const restoredRef = useRef(false);
+  const isMountedRef = useRef(false);
+  const latestLoadingRef = useRef(false);
+
+  const latestFiltersRef = useRef({
+    page: 1,
+    search: "",
+    dateFrom: "",
+    dateTo: "",
+    department: "All",
+    account: "All",
+  });
 
   const [attendance, setAttendance] = useState([]);
   const [departmentOptions, setDepartmentOptions] = useState([]);
@@ -319,7 +336,9 @@ export default function KronosAttendancePage() {
   const [accountFilter, setAccountFilter] = useState("All");
 
   const [loading, setLoading] = useState(false);
+  const [liveSyncing, setLiveSyncing] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
   const [access, setAccess] = useState({
     isAdmin: false,
@@ -449,16 +468,24 @@ export default function KronosAttendancePage() {
     nextDateTo = dateTo,
     nextDepartment = departmentFilter,
     nextAccount = accountFilter,
+    silent = false,
+    latestPage = false,
   } = {}) {
     const requestId = latestRequestIdRef.current + 1;
     latestRequestIdRef.current = requestId;
 
-    setLoading(true);
-    setLoadError("");
+    const resolvedPage = latestPage ? 1 : nextPage;
+
+    if (!silent) {
+      setLoading(true);
+      setLoadError("");
+    } else {
+      setLiveSyncing(true);
+    }
 
     try {
       const result = await getKronosAttendance(
-        nextPage,
+        resolvedPage,
         nextSearch,
         nextAccount,
         {
@@ -471,27 +498,36 @@ export default function KronosAttendancePage() {
         },
       );
 
-      if (latestRequestIdRef.current !== requestId) return;
+      if (!isMountedRef.current || latestRequestIdRef.current !== requestId) {
+        return;
+      }
 
       if (!result?.success) {
-        setAttendance([]);
-        setDepartmentOptions([]);
-        setAccountOptions([]);
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          total: 0,
-          limit: PAGE_LIMIT,
-          hasPreviousPage: false,
-          hasNextPage: false,
-        });
-        setLoadError(result?.message || "Failed to fetch Kronos attendance.");
+        if (!silent) {
+          setAttendance([]);
+          setDepartmentOptions([]);
+          setAccountOptions([]);
+          setPagination({
+            currentPage: 1,
+            totalPages: 1,
+            total: 0,
+            limit: PAGE_LIMIT,
+            hasPreviousPage: false,
+            hasNextPage: false,
+          });
+          setLoadError(result?.message || "Failed to fetch Kronos attendance.");
+        } else {
+          console.warn(
+            "Live Kronos attendance refresh failed:",
+            result?.message || "Unknown error",
+          );
+        }
 
         return;
       }
 
       const nextPagination = {
-        currentPage: Number(result.pagination?.currentPage || nextPage || 1),
+        currentPage: Number(result.pagination?.currentPage || resolvedPage || 1),
         totalPages: Number(result.pagination?.totalPages || 1),
         total: Number(result.pagination?.total || 0),
         limit: Number(result.pagination?.limit || PAGE_LIMIT),
@@ -515,6 +551,8 @@ export default function KronosAttendancePage() {
       setDateTo(result.selectedDateTo || nextDateTo || "");
       setDepartmentFilter(result.selectedDepartment || nextDepartment || "All");
       setAccountFilter(result.selectedAccount || nextAccount || "All");
+      setLastUpdatedAt(new Date());
+      setLoadError("");
 
       savePageState({
         page: nextPagination.currentPage,
@@ -525,24 +563,34 @@ export default function KronosAttendancePage() {
         account: result.selectedAccount || nextAccount || "All",
       });
     } catch (error) {
-      if (latestRequestIdRef.current !== requestId) return;
+      if (!isMountedRef.current || latestRequestIdRef.current !== requestId) {
+        return;
+      }
 
       console.error("Kronos attendance load error:", error);
 
-      setAttendance([]);
-      setLoadError(error?.message || "Failed to fetch Kronos attendance.");
-      setPagination({
-        currentPage: 1,
-        totalPages: 1,
-        total: 0,
-        limit: PAGE_LIMIT,
-        hasPreviousPage: false,
-        hasNextPage: false,
-      });
+      if (!silent) {
+        setAttendance([]);
+        setLoadError(error?.message || "Failed to fetch Kronos attendance.");
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          total: 0,
+          limit: PAGE_LIMIT,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        });
+      }
     } finally {
-      if (latestRequestIdRef.current === requestId) {
+      if (!isMountedRef.current || latestRequestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (!silent) {
         setLoading(false);
       }
+
+      setLiveSyncing(false);
     }
   }
 
@@ -560,6 +608,62 @@ export default function KronosAttendancePage() {
     return () => {
       window.clearTimeout(timer);
     };
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    latestLoadingRef.current = loading || liveSyncing;
+  }, [loading, liveSyncing]);
+
+  useEffect(() => {
+    latestFiltersRef.current = {
+      page,
+      search,
+      dateFrom,
+      dateTo,
+      department: departmentFilter,
+      account: accountFilter,
+    };
+  }, [page, search, dateFrom, dateTo, departmentFilter, accountFilter]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      if (!restoredRef.current) return;
+      if (latestLoadingRef.current) return;
+
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState === "hidden"
+      ) {
+        return;
+      }
+
+      const latestFilters = latestFiltersRef.current;
+
+      loadAttendance({
+        nextPage: 1,
+        nextSearch: latestFilters.search,
+        nextDateFrom: latestFilters.dateFrom,
+        nextDateTo: latestFilters.dateTo,
+        nextDepartment: latestFilters.department,
+        nextAccount: latestFilters.account,
+        silent: true,
+        latestPage: true,
+      });
+    }, LIVE_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -631,12 +735,13 @@ export default function KronosAttendancePage() {
 
   function handleRefresh() {
     loadAttendance({
-      nextPage: page,
+      nextPage: 1,
       nextSearch: search,
       nextDateFrom: dateFrom,
       nextDateTo: dateTo,
       nextDepartment: departmentFilter,
       nextAccount: accountFilter,
+      latestPage: true,
     });
   }
 
@@ -818,10 +923,33 @@ export default function KronosAttendancePage() {
                     Page {currentPage}
                   </Badge>
 
+                  <Badge className="border-emerald-200 bg-emerald-50 text-emerald-600">
+                    Live 5s
+                  </Badge>
+
+                  {liveSyncing ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-sibs-tertiary-5">
+                      <RefreshCw size={13} className="animate-spin" />
+                      Syncing
+                    </span>
+                  ) : null}
+
+                  {lastUpdatedAt ? (
+                    <span className="text-xs font-bold text-sibs-tertiary-5">
+                      Updated{" "}
+                      {lastUpdatedAt.toLocaleTimeString("en-US", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: true,
+                      })}
+                    </span>
+                  ) : null}
+
                   <button
                     type="button"
                     onClick={handleRefresh}
-                    disabled={loading}
+                    disabled={loading || liveSyncing}
                     className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#0b3d68] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RefreshCw
@@ -1341,7 +1469,7 @@ export default function KronosAttendancePage() {
                   <button
                     type="button"
                     onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={loading || !hasPreviousPage}
+                    disabled={loading || liveSyncing || !hasPreviousPage}
                     className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ChevronLeft size={16} />
@@ -1356,7 +1484,7 @@ export default function KronosAttendancePage() {
                         key={pageNumber}
                         type="button"
                         onClick={() => handlePageChange(pageNumber)}
-                        disabled={loading || isActive}
+                        disabled={loading || liveSyncing || isActive}
                         className={`h-9 min-w-9 rounded-lg px-3 text-sm font-bold transition disabled:cursor-default ${
                           isActive
                             ? "bg-sibs-primary-1 text-white"
@@ -1371,7 +1499,7 @@ export default function KronosAttendancePage() {
                   <button
                     type="button"
                     onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={loading || !hasNextPage}
+                    disabled={loading || liveSyncing || !hasNextPage}
                     className="inline-flex h-9 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Next

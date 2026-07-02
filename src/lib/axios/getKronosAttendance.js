@@ -18,7 +18,6 @@ export async function getKronosAttendance(
         includeDepartments: options?.includeDepartments ? 1 : 0,
         includeAccounts: options?.includeAccounts ? 1 : 0,
         limit: options?.limit || 15,
-
         _fresh: 1,
         _ts: Date.now(),
       },
