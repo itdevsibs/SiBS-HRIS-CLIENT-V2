@@ -130,6 +130,47 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+const PROFILE_FIELD_EDITING_CLASS = "bg-[#F1F5F9]";
+const PROFILE_FIELD_FILLED_CLASS = "bg-[#F1F5F9]";
+const PROFILE_FIELD_EMPTY_CLASS = "bg-[#E2E8F0]";
+
+function hasMeaningfulValue(value) {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasMeaningfulValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).some((item) => hasMeaningfulValue(item));
+  }
+
+  if (value === null || value === undefined) return false;
+
+  const normalized = String(value).trim().toLowerCase();
+
+  return ![
+    "",
+    "—",
+    "-",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "undefined",
+  ].includes(normalized);
+}
+
+function getProfileFieldClasses(value, editable = false) {
+  if (editable) return PROFILE_FIELD_EDITING_CLASS;
+
+  return hasMeaningfulValue(value)
+    ? PROFILE_FIELD_FILLED_CLASS
+    : PROFILE_FIELD_EMPTY_CLASS;
+}
+
+function getProfileValueClasses(value) {
+  return hasMeaningfulValue(value) ? "text-[#344054]" : "text-[#667085] italic";
+}
+
 function firstValue(...values) {
   return values.find((value) => cleanText(value)) || "";
 }
@@ -814,11 +855,11 @@ export default function EmployeeDataPage() {
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#DDE4EC] font-jakarta"
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#DDE4EC] px-3 py-4 sm:p-6">
         <button
           type="button"
           onClick={() => navigate("/employee")}
@@ -1320,8 +1361,14 @@ function ProfileDetail({
     "permanent address",
   ].includes(String(label || "").toLowerCase());
 
+  const hasValue = hasMeaningfulValue(value);
+  const fieldClasses = getProfileFieldClasses(value, editable);
+  const valueClasses = getProfileValueClasses(value);
+
   return (
-    <div className="flex min-h-[76px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-3 py-2.5 sm:min-h-[84px] sm:px-4">
+    <div
+      className={`flex min-h-[76px] min-w-0 flex-col justify-center rounded-[10px] px-3 py-2.5 transition-colors sm:min-h-[84px] sm:px-4 ${fieldClasses}`}
+    >
       <p className="mb-1.5 break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
         {label}
       </p>
@@ -1365,11 +1412,11 @@ function ProfileDetail({
         )
       ) : (
         <p
-          className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
+          className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] ${
             isLongText ? "break-all" : "break-words"
-          }`}
+          } ${valueClasses}`}
         >
-          {value || "—"}
+          {hasValue ? value : "—"}
         </p>
       )}
     </div>
@@ -1377,8 +1424,14 @@ function ProfileDetail({
 }
 
 function ProfileTextarea({ label, value, editable = false, onChange }) {
+  const hasValue = hasMeaningfulValue(value);
+  const fieldClasses = getProfileFieldClasses(value, editable);
+  const valueClasses = getProfileValueClasses(value);
+
   return (
-    <div className="min-w-0 rounded-[10px] bg-[#F8FAFC] px-3 py-3 sm:px-4">
+    <div
+      className={`min-w-0 rounded-[10px] px-3 py-3 transition-colors sm:px-4 ${fieldClasses}`}
+    >
       <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
         {label}
       </p>
@@ -1391,8 +1444,10 @@ function ProfileTextarea({ label, value, editable = false, onChange }) {
           className="w-full min-w-0 resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-3 py-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
         />
       ) : (
-        <p className="whitespace-pre-wrap break-words text-sm font-extrabold leading-6 text-[#344054]">
-          {value || "—"}
+        <p
+          className={`whitespace-pre-wrap break-words text-sm font-extrabold leading-6 ${valueClasses}`}
+        >
+          {hasValue ? value : "—"}
         </p>
       )}
     </div>
@@ -1401,7 +1456,7 @@ function ProfileTextarea({ label, value, editable = false, onChange }) {
 
 function EmptyProfileState({ message }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+    <div className="rounded-xl border border-dashed border-[#C8D3DF] bg-[#E2E8F0] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
       {message}
     </div>
   );
@@ -2352,7 +2407,7 @@ function EditableTextList({
           {items.map((item, index) => (
             <div
               key={index}
-              className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+              className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
             >
               {isEditing ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -2372,8 +2427,16 @@ function EditableTextList({
                   </button>
                 </div>
               ) : (
-                <p className="break-words text-sm font-extrabold text-[#344054]">
-                  {typeof item === "string" ? item : item?.name || "—"}
+                <p
+                  className={`break-words text-sm font-extrabold ${getProfileValueClasses(
+                    typeof item === "string" ? item : item?.name,
+                  )}`}
+                >
+                  {hasMeaningfulValue(typeof item === "string" ? item : item?.name)
+                    ? typeof item === "string"
+                      ? item
+                      : item?.name
+                    : "—"}
                 </p>
               )}
             </div>
@@ -2443,7 +2506,7 @@ function EditableRecordList({
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
                 >
                   <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {fields.map((field) => (
@@ -2481,30 +2544,53 @@ function EditableRecordList({
             return (
               <div
                 key={index}
-                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+                className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
               >
-                <p className="break-words text-sm font-extrabold text-[#101828]">
-                  {primaryField
-                    ? item?.[primaryField] || "N/A"
-                    : getRecordTitle(item)}
+                <p
+                  className={`break-words text-sm font-extrabold ${getProfileValueClasses(
+                    primaryField ? item?.[primaryField] : getRecordTitle(item),
+                  )}`}
+                >
+                  {hasMeaningfulValue(primaryField ? item?.[primaryField] : getRecordTitle(item))
+                    ? primaryField
+                      ? item?.[primaryField]
+                      : getRecordTitle(item)
+                    : "—"}
                 </p>
 
                 {secondaryField && (
-                  <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-                    {item?.[secondaryField] || "N/A"}
+                  <p
+                    className={`mt-1 break-words text-sm font-bold ${
+                      hasMeaningfulValue(item?.[secondaryField])
+                        ? "text-sibs-primary-1"
+                        : "text-[#667085] italic"
+                    }`}
+                  >
+                    {hasMeaningfulValue(item?.[secondaryField])
+                      ? item?.[secondaryField]
+                      : "—"}
                   </p>
                 )}
 
                 {metaFields.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {metaFields.map((fieldKey) => (
-                      <span
-                        key={fieldKey}
-                        className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1"
-                      >
-                        {item?.[fieldKey] || "—"}
-                      </span>
-                    ))}
+                    {metaFields.map((fieldKey) => {
+                      const metaValue = item?.[fieldKey];
+                      const metaHasValue = hasMeaningfulValue(metaValue);
+
+                      return (
+                        <span
+                          key={fieldKey}
+                          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+                            metaHasValue
+                              ? "border-blue-100 bg-blue-50 text-sibs-primary-1"
+                              : "border-[#C8D3DF] bg-[#E2E8F0] text-[#667085] italic"
+                          }`}
+                        >
+                          {metaHasValue ? metaValue : "—"}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
 
