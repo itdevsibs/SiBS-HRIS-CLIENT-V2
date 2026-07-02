@@ -96,14 +96,16 @@ export function getStatusTone(status) {
     return "border-amber-200 bg-amber-50 text-amber-700";
   }
 
+  if (normalizedStatus.includes("new applicant")) {
+    return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
+  }
+
   if (normalizedStatus.includes("archive")) {
     return "border-gray-200 bg-gray-50 text-gray-600";
   }
 
   return "border-blue-200 bg-blue-50 text-sibs-primary-1";
 }
-
-
 
 export function normalizeDropdownOptions(options = []) {
   return options

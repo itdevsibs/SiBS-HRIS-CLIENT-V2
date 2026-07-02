@@ -1,7 +1,10 @@
 import React from "react";
 import { LOCATION_SITE_OPTIONS } from "../../../lib/utils/availablePositions/availablePositionsConstants";
-import { cleanText, textareaClass } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
-import { RotateCcw, Save, X } from "lucide-react";
+import {
+  cleanText,
+  textareaClass,
+} from "../../../lib/utils/availablePositions/availablePositionsHelpers";
+import { Loader2, RotateCcw, Save, X } from "lucide-react";
 import DropdownField from "../../recruitment/availablePositions/DropdownField";
 import { FieldLabel } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";
 

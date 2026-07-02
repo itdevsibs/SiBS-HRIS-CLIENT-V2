@@ -5,6 +5,60 @@ import { formatDate } from "../../layout/FormatDateTime";
 import { formatPersonName } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 import { StatusBadge } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";
 
+function normalizeText(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isSameStatus(left = "", right = "") {
+  return normalizeText(left) === normalizeText(right);
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled = false,
+  variant = "default",
+  title,
+}) {
+  const variantClass =
+    variant === "active"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 hover:bg-emerald-100"
+      : variant === "inactive"
+        ? "border-red-200 bg-red-50 text-red-700 hover:border-red-300 hover:bg-red-100"
+        : "border-[#D6DEE8] bg-white text-sibs-primary-1 hover:border-sibs-primary-1 hover:bg-[#F8FAFC]";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`inline-flex h-9 items-center justify-center whitespace-nowrap rounded-xl border px-3 text-xs font-extrabold shadow-sm transition-all duration-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${variantClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EmptyTableRow() {
+  return (
+    <tr>
+      <td colSpan={6} className="px-5 py-14 text-center">
+        <div className="mx-auto max-w-sm rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-6">
+          <p className="text-sm font-extrabold text-[#344054]">
+            No positions found.
+          </p>
+          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+            Try adjusting the filters or add a new available position.
+          </p>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 export default function AvailablePositionsTable({
   isLoading = false,
   paginatedPositions = [],
@@ -23,7 +77,7 @@ export default function AvailablePositionsTable({
   return (
     <div className="relative z-[1] p-4 sm:p-6">
       {isLoading ? (
-        <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-12 text-center text-sm font-bold text-sibs-primary-1">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-12 text-center text-sm font-extrabold text-sibs-primary-1">
           Loading available positions from database...
         </div>
       ) : (
@@ -42,134 +96,176 @@ export default function AvailablePositionsTable({
                 />
               ))
             ) : (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
+              <div className="rounded-2xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-extrabold text-gray-500">
                 No positions found.
               </div>
             )}
           </div>
 
           <div className="hidden lg:block">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1500px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-                <thead>
-                  <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                    <th className="px-5 py-4 first:rounded-tl-2xl">Pos. ID</th>
-                    <th className="px-5 py-4 first:rounded-tl-2xl">Position</th>
-                    <th className="px-5 py-4">Location / Site</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4">Last Updated</th>
-                    <th className="px-5 py-4 text-right last:rounded-tr-2xl">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+            <div className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1120px] table-fixed border-separate border-spacing-0 text-left">
+                  <thead>
+                    <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                      <th className="w-[120px] px-5 py-4 text-center first:rounded-tl-2xl">
+                        Pos. ID
+                      </th>
 
-                <tbody>
-                  {paginatedPositions.length > 0 ? (
-                    paginatedPositions.map((position) => (
-                      <tr
-                        key={position.id}
-                        className="align-top transition hover:bg-[#FAFBFC]"
-                      >
-                        <td className="border-b border-[#E6ECF2] px-5 py-5">
-                          <p className="mt-1 text-xs font-bold text-sibs-primary-1">
-                            {position.positionId}
-                          </p>
-                        </td>
+                      <th className="w-[390px] px-5 py-4">Position</th>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5">
-                          <p className="text-sm font-bold text-[#101828]">
-                            {position.positionTitle}
-                          </p>
+                      <th className="w-[200px] px-5 py-4">Location / Site</th>
 
-                          {position.jdCode && (
-                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                              {position.jdCode}
-                            </p>
-                          )}
-                        </td>
+                      <th className="w-[220px] px-5 py-4 text-center">
+                        Status
+                      </th>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                          {position.locationSite || "—"}
-                        </td>
+                      <th className="w-[190px] px-5 py-4">Last Updated</th>
 
-                        <td className="border-b border-[#E6ECF2] px-5 py-5">
-                          <StatusBadge status={position.status} />
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                          <p>{formatDate(position.updatedAt)}</p>
-
-                          <p className="mt-1 text-xs text-sibs-tertiary-5">
-                            By:{" "}
-                            {formatPersonName(
-                              position.updatedBy || position.createdBy,
-                            )}
-                          </p>
-                        </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                          <div className="inline-flex items-center gap-2">
-                            {activeStatus && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onSetStatus?.(position, activeStatus)
-                                }
-                                disabled={
-                                  isSaving || position.status === activeStatus
-                                }
-                                className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Set {activeStatus}
-                              </button>
-                            )}
-
-                            {inactiveStatus && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  onSetStatus?.(position, inactiveStatus)
-                                }
-                                disabled={
-                                  isSaving || position.status === inactiveStatus
-                                }
-                                className="inline-flex h-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                Set {inactiveStatus}
-                              </button>
-                            )}
-
-                            <button
-                              type="button"
-                              onClick={() => onEdit?.(position)}
-                              disabled={isSaving}
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-                              title="Edit"
-                            >
-                              <Pencil size={15} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      >
-                        No positions found.
-                      </td>
+                      <th className="w-[250px] px-5 py-4 text-center last:rounded-tr-2xl">
+                        Actions
+                      </th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+
+                  <tbody>
+                    {paginatedPositions.length > 0 ? (
+                      paginatedPositions.map((position) => {
+                        const isActive = isSameStatus(
+                          position.status,
+                          activeStatus,
+                        );
+
+                        const isInactive = isSameStatus(
+                          position.status,
+                          inactiveStatus,
+                        );
+
+                        const positionSubText = [
+                          position.jdCode,
+                          position.documentTitle &&
+                          position.documentTitle !== position.positionTitle
+                            ? position.documentTitle
+                            : "",
+                        ]
+                          .filter(Boolean)
+                          .join("  ");
+
+                        return (
+                          <tr
+                            key={position.id}
+                            className="align-middle transition hover:bg-[#FAFBFC]"
+                          >
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                              <span className="inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-extrabold text-sibs-primary-1">
+                                {position.positionId || "—"}
+                              </span>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <div className="min-w-0">
+                                <p
+                                  className="truncate whitespace-nowrap text-sm font-extrabold text-[#101828]"
+                                  title={position.positionTitle || ""}
+                                >
+                                  {position.positionTitle || "—"}
+                                </p>
+
+                                {positionSubText && (
+                                  <p
+                                    className="mt-1 truncate whitespace-nowrap text-xs font-semibold text-sibs-primary-1"
+                                    title={positionSubText}
+                                  >
+                                    {positionSubText}
+                                  </p>
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <p
+                                className="truncate whitespace-nowrap text-sm font-bold text-[#344054]"
+                                title={position.locationSite || ""}
+                              >
+                                {position.locationSite || "—"}
+                              </p>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                              <div className="flex justify-center">
+                                <StatusBadge status={position.status} />
+                              </div>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5">
+                              <p className="truncate whitespace-nowrap text-sm font-extrabold text-[#344054]">
+                                {formatDate(position.updatedAt)}
+                              </p>
+
+                              <p
+                                className="mt-1 truncate whitespace-nowrap text-xs font-bold text-sibs-primary-1"
+                                title={formatPersonName(
+                                  position.updatedBy || position.createdBy,
+                                )}
+                              >
+                                By:{" "}
+                                {formatPersonName(
+                                  position.updatedBy || position.createdBy,
+                                )}
+                              </p>
+                            </td>
+
+                            <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                              <div className="inline-flex items-center justify-center gap-2">
+                                {activeStatus && (
+                                  <ActionButton
+                                    variant="active"
+                                    onClick={() =>
+                                      onSetStatus?.(position, activeStatus)
+                                    }
+                                    disabled={isSaving || isActive}
+                                  >
+                                    Set Active
+                                  </ActionButton>
+                                )}
+
+                                {inactiveStatus && (
+                                  <ActionButton
+                                    variant="inactive"
+                                    onClick={() =>
+                                      onSetStatus?.(position, inactiveStatus)
+                                    }
+                                    disabled={isSaving || isInactive}
+                                  >
+                                    Set Inactive
+                                  </ActionButton>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => onEdit?.(position)}
+                                  disabled={isSaving}
+                                  title="Edit"
+                                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0"
+                                >
+                                  <Pencil size={15} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <EmptyTableRow />
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <p className="text-sm font-semibold text-sibs-tertiary-5">
+            <p className="text-sm font-bold text-sibs-primary-1">
               Showing {showingFrom} to {showingTo} of {filteredPositionsCount}{" "}
               positions
             </p>
@@ -179,7 +275,7 @@ export default function AvailablePositionsTable({
                 type="button"
                 onClick={() => onPageChange?.(currentPage - 1)}
                 disabled={currentPage <= 1}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 shadow-sm transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:text-gray-300 disabled:opacity-60"
               >
                 <ChevronLeft size={16} />
               </button>
@@ -193,10 +289,10 @@ export default function AvailablePositionsTable({
                     key={pageNumber}
                     type="button"
                     onClick={() => onPageChange?.(pageNumber)}
-                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-bold transition ${
+                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-sm font-extrabold shadow-sm transition ${
                       active
-                        ? "bg-sibs-primary-1 text-white shadow-sm"
-                        : "border border-[#E6ECF2] bg-white text-gray-500 hover:bg-gray-50"
+                        ? "bg-sibs-primary-1 text-white"
+                        : "border border-[#E6ECF2] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
                     }`}
                   >
                     {pageNumber}
@@ -208,7 +304,7 @@ export default function AvailablePositionsTable({
                 type="button"
                 onClick={() => onPageChange?.(currentPage + 1)}
                 disabled={currentPage >= totalPages}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 shadow-sm transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:text-gray-300 disabled:opacity-60"
               >
                 <ChevronRight size={16} />
               </button>

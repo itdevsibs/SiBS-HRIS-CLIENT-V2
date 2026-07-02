@@ -954,14 +954,6 @@ export default function AvailablePositionsPage() {
                     <Filter size={14} />
                     Position Filters
                   </div>
-
-                  <h2 className="mt-3 text-base font-extrabold text-[#101828]">
-                    Available Position Filters
-                  </h2>
-
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    Accounts are filtered based on the selected department.
-                  </p>
                 </div>
 
                 <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">

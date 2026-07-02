@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
-
+import {
+  cleanText,
+  normalizeDropdownOptions,
+} from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 import { FieldLabel } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";
-import { cleanText, normalizeDropdownOptions } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 
-const DropdownField = ({
+export default function DropdownField({
   label,
   value,
   displayValue = "",
@@ -19,12 +22,19 @@ const DropdownField = ({
   searchable = false,
   searchPlaceholder = "Search...",
   emptyMessage = "No options found.",
-}) => {
+}) {
   const dropdownRef = useRef(null);
+  const menuRef = useRef(null);
   const inputRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
+  const [menuStyle, setMenuStyle] = useState({
+    left: 0,
+    top: 0,
+    width: 0,
+    maxHeight: 224,
+  });
 
   const normalizedOptions = useMemo(
     () => normalizeDropdownOptions(options),
@@ -61,11 +71,71 @@ const DropdownField = ({
   const inputDisplayValue = open && searchable ? dropdownSearch : displayLabel;
   const hasDisplayValue = Boolean(displayLabel);
 
+  function updateMenuPosition() {
+    if (!dropdownRef.current) return;
+
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const gap = 8;
+    const viewportHeight =
+      window.innerHeight || document.documentElement.clientHeight;
+    const viewportWidth =
+      window.innerWidth || document.documentElement.clientWidth;
+
+    const availableBelow = viewportHeight - rect.bottom - gap - 16;
+    const availableAbove = rect.top - gap - 16;
+
+    const preferredHeight = 224;
+    const shouldOpenUp =
+      availableBelow < 160 && availableAbove > availableBelow;
+
+    const maxHeight = Math.max(
+      120,
+      Math.min(preferredHeight, shouldOpenUp ? availableAbove : availableBelow),
+    );
+
+    const left = Math.min(
+      Math.max(rect.left, 12),
+      Math.max(viewportWidth - rect.width - 12, 12),
+    );
+
+    const top = shouldOpenUp
+      ? Math.max(rect.top - gap - maxHeight, 12)
+      : Math.min(rect.bottom + gap, viewportHeight - maxHeight - 12);
+
+    setMenuStyle({
+      left,
+      top,
+      width: rect.width,
+      maxHeight,
+    });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+
+    updateMenuPosition();
+
+    function handleScrollOrResize() {
+      updateMenuPosition();
+    }
+
+    window.addEventListener("resize", handleScrollOrResize);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+
+    return () => {
+      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+    };
+  }, [open, filteredOptions.length]);
+
   useEffect(() => {
     function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
+      const target = event.target;
 
-      if (!dropdownRef.current.contains(event.target)) {
+      const clickedInput = dropdownRef.current?.contains(target);
+      const clickedMenu = menuRef.current?.contains(target);
+
+      if (!clickedInput && !clickedMenu) {
         setOpen(false);
         setDropdownSearch("");
       }
@@ -92,13 +162,13 @@ const DropdownField = ({
 
     setOpen(true);
 
-    if (searchable) {
-      setDropdownSearch("");
+    window.setTimeout(() => {
+      updateMenuPosition();
 
-      window.setTimeout(() => {
+      if (searchable) {
         inputRef.current?.focus?.();
-      }, 0);
-    }
+      }
+    }, 0);
   }
 
   function toggleDropdown() {
@@ -110,6 +180,8 @@ const DropdownField = ({
       if (!nextOpen) {
         setDropdownSearch("");
       }
+
+      window.setTimeout(updateMenuPosition, 0);
 
       return nextOpen;
     });
@@ -137,6 +209,69 @@ const DropdownField = ({
       }
     }
   }
+
+  const menu =
+    open && !disabled
+      ? createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: "fixed",
+              left: `${menuStyle.left}px`,
+              top: `${menuStyle.top}px`,
+              width: `${menuStyle.width}px`,
+              zIndex: 20000,
+            }}
+            className={`overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+          >
+            <div
+              className="overflow-y-auto"
+              style={{ maxHeight: `${menuStyle.maxHeight}px` }}
+            >
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => {
+                  const active = String(option.value) === String(value ?? "");
+
+                  return (
+                    <button
+                      key={option.id || option.value}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => handleSelect(option)}
+                      className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                        active
+                          ? "bg-[#EAF4FF] text-sibs-primary-1"
+                          : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                      }`}
+                    >
+                      <span className="block min-w-0 truncate">
+                        {option.label}
+                      </span>
+
+                      {option.description && (
+                        <span
+                          className={`mt-0.5 block min-w-0 truncate text-xs font-bold ${
+                            active
+                              ? "text-sibs-primary-1/70"
+                              : "text-sibs-tertiary-5"
+                          }`}
+                        >
+                          {option.description}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
+                  {emptyMessage}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div
@@ -167,6 +302,7 @@ const DropdownField = ({
             onChange={(event) => {
               setDropdownSearch(event.target.value);
               setOpen(true);
+              window.setTimeout(updateMenuPosition, 0);
             }}
             onKeyDown={handleInputKeyDown}
             placeholder={searchPlaceholder || placeholder}
@@ -216,55 +352,7 @@ const DropdownField = ({
         </button>
       )}
 
-      {open && !disabled && (
-        <div
-          className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
-        >
-          <div className="max-h-72 overflow-y-auto">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
-                const active = String(option.value) === String(value ?? "");
-
-                return (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => handleSelect(option)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
-                      active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                    }`}
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-
-                    {option.description && (
-                      <span
-                        className={`mt-0.5 block min-w-0 truncate text-xs font-bold ${
-                          active
-                            ? "text-sibs-primary-1/70"
-                            : "text-sibs-tertiary-5"
-                        }`}
-                      >
-                        {option.description}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                {emptyMessage}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {menu}
     </div>
   );
-};
-
-export default DropdownField;
+}
