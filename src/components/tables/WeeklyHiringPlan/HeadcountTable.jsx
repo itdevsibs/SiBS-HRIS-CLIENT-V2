@@ -31,7 +31,7 @@ function formatNumber(value) {
   });
 }
 
-function formatPercent(value, decimals = 0) {
+function formatPercent(value, decimals = 2) {
   return `${toNumber(value).toFixed(decimals)}%`;
 }
 
@@ -106,6 +106,56 @@ function getNumberValue(item, keys = [], fallback = 0) {
   return toNumber(fallback);
 }
 
+function getSixWeekSeriesTotal(item = {}, type = "absenteeism") {
+  const arrayKeys =
+    type === "absenteeism"
+      ? [
+          "absenteeismTrend",
+          "absenteeism_trend",
+          "absenteeismWeeklyCounts",
+          "absenteeism_weekly_counts",
+        ]
+      : [
+          "attritionTrend",
+          "attrition_trend",
+          "attritionWeeklyCounts",
+          "attrition_weekly_counts",
+        ];
+
+  for (const key of arrayKeys) {
+    const value = item?.[key];
+
+    if (Array.isArray(value)) {
+      return value.reduce((sum, entry) => sum + toNumber(entry), 0);
+    }
+
+    if (typeof value === "string" && value.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.reduce((sum, entry) => sum + toNumber(entry), 0);
+        }
+      } catch {
+        // ignore invalid JSON array strings
+      }
+    }
+  }
+
+  const prefix = type === "absenteeism" ? "absenteeism" : "attrition";
+
+  const keyedTotal = [1, 2, 3, 4, 5, 6].reduce((sum, weekNumber) => {
+    return (
+      sum +
+      getNumberValue(item, [
+        `${prefix}Week${weekNumber}`,
+        `${prefix}_week_${weekNumber}`,
+      ])
+    );
+  }, 0);
+
+  return keyedTotal;
+}
+
 function getRequiredHeadcount(item = {}) {
   return getNumberValue(item, [
     "requiredHeadcount",
@@ -129,30 +179,38 @@ function getActualHeadcount(item = {}) {
 }
 
 function getAbsenteeismTotal(item = {}) {
+  const weeklyTotal = getSixWeekSeriesTotal(item, "absenteeism");
+
+  if (weeklyTotal > 0) return weeklyTotal;
+
   return getNumberValue(item, [
-    "absenteeismCount",
-    "absenteeism_count",
-    "absenteeismPastSixWeeks",
-    "absenteeism_past_six_weeks",
     "absenteeismSixWeeks",
     "absenteeism_6_weeks",
+    "absenteeismPastSixWeeks",
+    "absenteeism_past_six_weeks",
     "totalAbsenteeism",
     "total_absenteeism",
+    "absenteeismCount",
+    "absenteeism_count",
   ]);
 }
 
 function getAttritionTotal(item = {}) {
+  const weeklyTotal = getSixWeekSeriesTotal(item, "attrition");
+
+  if (weeklyTotal > 0) return weeklyTotal;
+
   return getNumberValue(item, [
+    "attritionSixWeeks",
+    "attrition_6_weeks",
+    "attritionPastSixWeeks",
+    "attrition_past_six_weeks",
+    "totalAttrition",
+    "total_attrition",
     "attritionPastCount",
     "attrition_past_count",
     "attritionCount",
     "attrition_count",
-    "attritionPastSixWeeks",
-    "attrition_past_six_weeks",
-    "attritionSixWeeks",
-    "attrition_6_weeks",
-    "totalAttrition",
-    "total_attrition",
   ]);
 }
 
@@ -306,16 +364,48 @@ function getInterviewCount(item = {}) {
 }
 
 function getHiredCount(item = {}) {
-  const directHired = getNumberValue(
-    item,
-    ["hiredCount", "hired_count", "hired"],
-    0,
-  );
-
-  if (directHired > 0) return directHired;
-
-  return getFstCount(item) + getPstCount(item);
+  /*
+    Updated business rule:
+    Hired count for Hiring Rate should be FST only.
+    Do NOT use backend hiredCount.
+    Do NOT use FST + PST.
+  */
+  return getFstCount(item);
 }
+
+
+function calculateHiringRateFromFst({ fstCount = 0, interviewCount = 0 }) {
+  const cleanFstCount = getPositiveNumber(fstCount);
+  const cleanInterviewCount = getPositiveNumber(interviewCount);
+
+  if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
+
+  /*
+    Hiring Rate is based on real pipeline conversion only.
+    Formula:
+    Hired = FST count only
+    Hiring Rate = MIN(FST / Interview Count, 100%)
+
+    No Interview Count or no FST count means 0.00%.
+    Do not use Hiring Plan %, displayHiringPlanPercent, or default week rate.
+  */
+  return Math.min((cleanFstCount / cleanInterviewCount) * 100, 100);
+}
+
+function calculateLeadsToInterviewFromCoverage({
+  coverageNeeded = 0,
+  hiringRate = 0,
+}) {
+  const cleanCoverageNeeded = Math.max(0, getPositiveNumber(coverageNeeded));
+  const cleanHiringRate = getPositiveNumber(hiringRate);
+
+  if (cleanCoverageNeeded <= 0) return 0;
+  if (cleanHiringRate <= 0) return cleanCoverageNeeded;
+
+  return Math.ceil(cleanCoverageNeeded / (cleanHiringRate / 100));
+}
+
+
 
 function getStageAttritionMetrics(item = {}) {
   const interviewCount = getPositiveNumber(getInterviewCount(item));
@@ -350,17 +440,28 @@ function getStageAttritionMetrics(item = {}) {
   };
 }
 
-function getAttritionRate(count, base) {
-  const cleanCount = Math.abs(toNumber(count));
-  const cleanBase = Math.abs(toNumber(base));
-
-  if (cleanBase <= 0 || cleanCount <= 0) return 0;
-
+function getAttritionRate(attritionCount, baseCount) {
   /*
-    Count stays positive for readability, but attrition rate is displayed
-    as negative because it represents a loss/gap from one stage to the next.
+    Stage attrition rate is signed.
+
+    Examples:
+    NHO = 4, FST = 0
+    signed count = 4 - 0 = 4
+    rate = 4 / 4 = 100.00%
+
+    FST = 35, PST = 245
+    signed count = 35 - 245 = -210
+    rate = -210 / 35 = -600.00%
+
+    Count display stays positive through Math.abs(), but the rate keeps
+    the sign to show direction.
   */
-  return -((cleanCount / cleanBase) * 100);
+  const signedAttritionCount = toNumber(attritionCount);
+  const cleanBaseCount = Math.abs(toNumber(baseCount));
+
+  if (cleanBaseCount <= 0 || signedAttritionCount === 0) return 0;
+
+  return (signedAttritionCount / cleanBaseCount) * 100;
 }
 
 function getAttritionRateClass(rate) {
@@ -433,55 +534,62 @@ function TrainingAttritionCard({
   countClassName = "text-blue-700",
 }) {
   const positiveCount = getPositiveNumber(count);
-  const signedRate = toNumber(rate);
+
+  /*
+    Do not force Math.abs() here.
+    Normal stage attrition is already computed as positive by getAttritionRate().
+    If a future calculation intentionally passes a negative rate, this card will
+    still display the negative sign.
+  */
+  const displayRate = toNumber(rate);
 
   return (
     <div
-      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[124px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
+      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[126px] bg-white p-5 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
     >
-      <div className="flex h-full flex-col justify-between">
-        <div className="flex items-start justify-center gap-2">
-          <p className="text-center text-[13px] font-extrabold text-slate-900">
-            {title}
-          </p>
+      <div className="flex h-full items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-extrabold text-sibs-primary-1">
+              {title}
+            </p>
 
-          <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[10px] font-extrabold text-blue-500">
-            i
-          </span>
+            <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-[10px] font-extrabold text-blue-500">
+              i
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-2">
+            <div>
+              <p className={`whp-kpi-value text-3xl font-extrabold leading-none ${countClassName}`}>
+                <AnimatedNumber value={positiveCount} />
+              </p>
+              <p className="mt-2 text-[11px] font-bold text-slate-600">
+                Attrition Count
+              </p>
+            </div>
+
+            <div>
+              <p
+                className={`whp-kpi-value text-3xl font-extrabold leading-none ${getAttritionRateClass(
+                  displayRate,
+                )}`}
+              >
+                <AnimatedNumber value={displayRate} decimals={2} suffix="%" />
+              </p>
+              <p className="mt-2 text-[11px] font-bold text-slate-600">
+                Attrition Rate
+              </p>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 items-center gap-3">
-          <div
-            className={`rounded-[10px] border px-3 py-3 text-center ${getCountAccentClass(
-              countClassName,
-            )}`}
-          >
-            <p className={`whp-kpi-value text-3xl font-extrabold ${countClassName}`}>
-              <AnimatedNumber value={positiveCount} />
-            </p>
-
-            <p className="mt-1 text-[11px] font-bold text-slate-600">
-              Attrition Count
-            </p>
-          </div>
-
-          <div
-            className={`rounded-[10px] border px-3 py-3 text-center ${getAttritionRateBadgeClass(
-              signedRate,
-            )}`}
-          >
-            <p
-              className={`whp-kpi-value text-3xl font-extrabold ${getAttritionRateClass(
-                signedRate,
-              )}`}
-            >
-              <AnimatedNumber value={signedRate} decimals={0} suffix="%" />
-            </p>
-
-            <p className="mt-1 text-[11px] font-bold text-slate-600">
-              Attrition Rate
-            </p>
-          </div>
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border ${getAttritionRateBadgeClass(
+            displayRate,
+          )}`}
+        >
+          <AlertTriangle size={23} />
         </div>
       </div>
     </div>
@@ -495,41 +603,41 @@ function KpiCard({
   footer,
   icon: Icon,
   valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-blue-50 text-blue-600",
+  iconClassName = "bg-slate-100 text-sibs-primary-1",
 }) {
   return (
     <div
-      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[112px] bg-white p-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
+      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[124px] bg-white px-5 py-5 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
     >
-      <div className="flex h-full items-start gap-3">
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
-        >
-          <Icon size={24} />
-        </div>
-
-        <div className="min-w-0 flex-1 text-center">
-          <p className="truncate text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+      <div className="flex h-full items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[12px] font-extrabold uppercase tracking-wide text-[#255C95]">
             {title}
           </p>
 
+          <div
+            className={`whp-kpi-value mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-3xl font-extrabold leading-none ${valueClassName}`}
+          >
+            {value}
+          </div>
+
           {subtitle && (
-            <p className="mt-0.5 truncate text-[10px] font-bold text-slate-500">
+            <p className="mt-2 text-[12px] font-bold text-sibs-primary-1">
               {subtitle}
             </p>
           )}
 
-          <p
-            className={`whp-kpi-value mt-2 truncate text-3xl font-extrabold ${valueClassName}`}
-          >
-            {value}
-          </p>
-
           {footer && (
-            <div className="mt-2 text-[11px] font-semibold text-slate-600">
+            <div className="mt-1 flex flex-wrap items-center gap-x-1 text-[12px] font-semibold text-[#255C95]">
               {footer}
             </div>
           )}
+        </div>
+
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] ${iconClassName}`}
+        >
+          <Icon size={24} />
         </div>
       </div>
     </div>
@@ -599,14 +707,6 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       effectiveDemand - projectedCoverage,
     );
 
-    const directHiringNeeded = rows.reduce(
-      (sum, item) => sum + getHiringNeeded(item),
-      0,
-    );
-
-    const hiringNeeded =
-      directHiringNeeded > 0 ? directHiringNeeded : computedHiringNeeded;
-
     const totalInterviewed = rows.reduce(
       (sum, item) => sum + getInterviewCount(item),
       0,
@@ -636,25 +736,15 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           ) / rows.length
         : 0;
 
-    const hiringRate =
-      totalInterviewed > 0
-        ? (totalHired / totalInterviewed) * 100
-        : directHiringRateAverage;
-
-    const directLeadsToInterview = rows.reduce(
-      (sum, item) => sum + getLeadsToInterview(item),
-      0,
-    );
-
-    const hiringRateDecimal = hiringRate > 0 ? hiringRate / 100 : 0;
-
-    const computedLeadsToInterview =
-      hiringRateDecimal > 0 ? Math.ceil(hiringNeeded / hiringRateDecimal) : 0;
-
-    const leadsToInterview =
-      directLeadsToInterview > 0
-        ? directLeadsToInterview
-        : computedLeadsToInterview;
+    /*
+      Hiring Rate must come from actual pipeline conversion only.
+      Do NOT fallback to display/default Hiring Plan %.
+      If there is no Interview Count or no FST count, Hiring Rate = 0.00%.
+    */
+    const hiringRate = calculateHiringRateFromFst({
+      fstCount: totalHired,
+      interviewCount: totalInterviewed,
+    });
 
     const directHiringIntakeCount = rows.reduce(
       (sum, item) => sum + getHiringIntakeCount(item),
@@ -691,18 +781,31 @@ export default function HeadcountTable({ filteredPlans = [] }) {
 
     /*
       Updated logic:
-      Coverage = Base Coverage + Hiring Intake Headcount
-      Leads to Interview = Coverage / Hiring Rate
+      Hiring Needed must include PRF / Hiring Intake.
+      Formula:
+      Hiring Needed = Base Coverage + Hiring Intake Headcount - Hired Count
+      Leads to Interview = Hiring Needed / Hiring Rate
     */
-    const coverage = baseCoverage + hiringIntakeHeadcount;
+    const coverage = baseCoverage;
+    const hiringNeeded = Math.max(
+      0,
+      baseCoverage + hiringIntakeHeadcount - totalHired,
+    );
 
-    const leadsToInterviewByCoverage =
-      hiringRateDecimal > 0 ? Math.ceil(coverage / hiringRateDecimal) : coverage;
+    const leadsToInterviewByCoverage = calculateLeadsToInterviewFromCoverage({
+      coverageNeeded: hiringNeeded,
+      hiringRate,
+    });
 
-    const finalLeadsToInterview =
-      directLeadsToInterview > 0
-        ? directLeadsToInterview
-        : leadsToInterviewByCoverage;
+    /*
+      Correct card logic:
+      Leads to Interview = Hiring Needed / Hiring Rate
+
+      Do NOT use direct backend leads here because some saved/backend rows still
+      carry older leads_to_interview values based on Hiring Needed. The card
+      should always follow the current dashboard formula.
+    */
+    const finalLeadsToInterview = leadsToInterviewByCoverage;
 
     const trainingAttrition = rows.reduce(
       (sum, item) => {
@@ -773,6 +876,7 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       projectedFromTraining,
       hiringNeeded,
       totalInterviewed,
+      totalHired,
       hiringRate,
       leadsToInterview: finalLeadsToInterview,
       hiringIntakeCount,
@@ -824,7 +928,17 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         `}
       </style>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className={`${EDGE} border border-[#E1E7EF] bg-white p-5 shadow-sm`}>
+        <div className="mb-5 flex flex-col gap-1">
+          <h2 className="text-base font-extrabold text-[#101828]">
+            Weekly Hiring Plan Summary
+          </h2>
+          <p className="text-sm font-semibold text-[#255C95]">
+            Track required headcount, actual headcount, interview pipeline, buffer gap, PRF intake, hired count, hiring needed, hiring rate, and leads needed.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           title="Required HC"
           subtitle="Client Plan"
@@ -843,23 +957,6 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           icon={UserRound}
           valueClassName="text-emerald-600"
           iconClassName="bg-emerald-50 text-emerald-600"
-        />
-
-        <KpiCard
-          title="Hiring Intake"
-          subtitle="PRF Count"
-          value={<AnimatedNumber value={totals.hiringIntakeCount} />}
-          footer={
-            <span>
-              Headcount:{" "}
-              <b>
-                <AnimatedNumber value={totals.hiringIntakeHeadcount} />
-              </b>
-            </span>
-          }
-          icon={UsersRound}
-          valueClassName="text-cyan-700"
-          iconClassName="bg-cyan-50 text-cyan-700"
         />
 
         <KpiCard
@@ -911,34 +1008,50 @@ export default function HeadcountTable({ filteredPlans = [] }) {
         />
 
         <KpiCard
-          title="Coverage"
-          subtitle="Coverage + Hiring Intake"
-          value={<AnimatedNumber value={totals.coverage} />}
+          title="Hiring Needed"
+          subtitle="Coverage + PRF - Hired Count"
+          value={<AnimatedNumber value={totals.hiringNeeded} />}
           footer={
             <span>
-              Base:{" "}
               <b>
-                <AnimatedNumber value={totals.baseCoverage} />
+                <AnimatedNumber value={totals.coverage} />
               </b>
-              <span className="mx-2 text-slate-300">|</span>
-              Intake:{" "}
+              <span className="mx-1 text-slate-400">+</span>
               <b>
                 <AnimatedNumber value={totals.hiringIntakeHeadcount} />
               </b>
+              <span className="mx-1 text-slate-400">-</span>
+              <b>
+                <AnimatedNumber value={totals.totalHired} />
+              </b>
+              <span className="mx-1 text-slate-400">=</span>
+              <b className="text-red-600">
+                <AnimatedNumber value={totals.hiringNeeded} />
+              </b>
             </span>
           }
-          icon={Target}
-          valueClassName="text-amber-600"
-          iconClassName="bg-amber-50 text-amber-600"
+          icon={AlertTriangle}
+          valueClassName="text-red-600"
+          iconClassName="bg-red-50 text-red-600"
+        />
+
+        <KpiCard
+          title="Hired Count"
+          subtitle="FST Count"
+          value={<AnimatedNumber value={totals.totalHired} />}
+          footer="Candidates in FST"
+          icon={UserRound}
+          valueClassName="text-emerald-600"
+          iconClassName="bg-emerald-50 text-emerald-600"
         />
 
         <KpiCard
           title="Hiring Rate"
-          subtitle="Conversion to Hire"
+          subtitle="Conversion to FST"
           value={
-            <AnimatedNumber value={totals.hiringRate} decimals={0} suffix="%" />
+            <AnimatedNumber value={totals.hiringRate} decimals={2} suffix="%" />
           }
-          footer="FST + PST / Interview"
+          footer="FST / Interview"
           icon={TrendingUp}
           valueClassName="text-indigo-600"
           iconClassName="bg-indigo-50 text-indigo-600"
@@ -948,14 +1061,24 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           title="Leads to Interview"
           subtitle="Needed"
           value={<AnimatedNumber value={totals.leadsToInterview} />}
-          footer="Coverage / Hiring Rate"
+          footer="Hiring Needed / Hiring Rate"
           icon={BarChart3}
           valueClassName="text-violet-700"
           iconClassName="bg-violet-50 text-violet-700"
         />
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-5 border-t border-[#E6ECF2] pt-5">
+          <div className="mb-4 flex flex-col gap-1">
+            <h3 className="text-base font-extrabold text-[#101828]">
+              Stage Attrition Summary
+            </h3>
+            <p className="text-sm font-semibold text-[#255C95]">
+              Track attrition count and signed attrition rate from Interview, NHO, FST, and PST stages.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
         <TrainingAttritionCard
           title="Interview → NHO Attrition"
           count={totals.trainingAttrition.interviewToNhoCount}
@@ -983,6 +1106,8 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           rate={totals.trainingAttrition.nhoToPstRate}
           countClassName="text-red-600"
         />
+          </div>
+        </div>
       </div>
     </div>
   );

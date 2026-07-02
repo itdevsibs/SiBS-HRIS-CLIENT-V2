@@ -6,21 +6,7 @@ const EDGE = "rounded-[10px]";
 const FALLBACK_WEEK_LABELS = ["W1", "W2", "W3", "W4", "W5", "W6"];
 
 function toNumber(value) {
-  if (value === undefined || value === null || value === "") return 0;
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  const cleanValue = String(value)
-    .trim()
-    .replace(/,/g, "")
-    .replace(/%/g, "");
-
-  if (!cleanValue) return 0;
-
-  const numberValue = Number(cleanValue);
-
+  const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
@@ -35,22 +21,12 @@ function formatPercent(value, decimals = 2) {
   return `${toNumber(value).toFixed(decimals)}%`;
 }
 
-function getNestedValue(item, key) {
-  if (!item || !key) return undefined;
-
-  if (!String(key).includes(".")) return item?.[key];
-
-  return String(key)
-    .split(".")
-    .reduce((value, pathKey) => value?.[pathKey], item);
-}
-
 function getNumberValue(item, keys = [], fallback = 0) {
   for (const key of keys) {
-    const value = getNestedValue(item, key);
+    const value = item?.[key];
 
     if (value !== undefined && value !== null && value !== "") {
-      const numberValue = toNumber(value);
+      const numberValue = Number(value);
 
       if (Number.isFinite(numberValue)) return numberValue;
     }
@@ -263,86 +239,43 @@ function getRateStatusClass(rate = 0) {
   return toNumber(rate) <= 25 ? "text-emerald-600" : "text-red-600";
 }
 
-function getSignedPercentClass(value = 0) {
-  const cleanValue = toNumber(value);
-
-  if (cleanValue < 0) return "text-red-600";
-  if (cleanValue > 0) return "text-emerald-600";
-
-  return "text-slate-700";
-}
-
-function getSignedCountClass(value = 0, positiveClass = "text-sibs-primary-1") {
-  const cleanValue = toNumber(value);
-
-  if (cleanValue < 0) return "text-red-600";
-  if (cleanValue > 0) return positiveClass;
-
-  return "text-slate-700";
-}
-
-function getExcelBufferPercentage(item = {}) {
-  const requiredHeadcount = getRequiredHeadcount(item);
-  const actualHeadcount = getActualHeadcount(item);
-  const absenteeism = getRowTotal(item, "absenteeism");
-  const attrition = getRowTotal(item, "attrition");
-
+function getRowTotal(item, type) {
   /*
-    Excel equivalent:
-    =IF(AND(D2="",E2="",G2="",I2=""),"",IFERROR(((E2-G2-I2)-D2)/D2,0))
-
-    JavaScript percentage:
-    (((Actual HC - Absenteeism - Attrition) - Required HC) / Required HC) * 100
+    The graph and modal totals must match the visible six-week line chart.
+    Prefer the sum of W1-W6 values when the backend sends weekly buckets.
+    Fallback to direct total fields only if there is no weekly data.
   */
-  if (
-    requiredHeadcount === 0 &&
-    actualHeadcount === 0 &&
-    absenteeism === 0 &&
-    attrition === 0
-  ) {
-    return "";
+  const weekly = getPerWeekSeries(item, type);
+
+  if (weekly.hasRealWeeklyData) {
+    return weekly.values.reduce((sum, value) => sum + toNumber(value), 0);
   }
 
-  if (requiredHeadcount <= 0) return 0;
-
-  return (
-    ((actualHeadcount - absenteeism - attrition) - requiredHeadcount) /
-    requiredHeadcount
-  ) * 100;
-}
-
-function formatSignedPercent(value, decimals = 2) {
-  if (value === "") return "";
-
-  return `${toNumber(value).toFixed(decimals)}%`;
-}
-
-function getRowTotal(item, type) {
   if (type === "absenteeism") {
     return getNumberValue(item, [
-      "absenteeismCount",
-      "absenteeism_count",
-      "absenteeismPastSixWeeks",
-      "absenteeism_past_six_weeks",
       "absenteeismSixWeeks",
       "absenteeism_6_weeks",
+      "absenteeismPastSixWeeks",
+      "absenteeism_past_six_weeks",
       "totalAbsenteeism",
       "total_absenteeism",
+      "absenteeismCount",
+      "absenteeism_count",
     ]);
   }
 
   if (type === "attrition") {
     return getNumberValue(item, [
+      "attritionSixWeeks",
+      "attrition_6_weeks",
+      "attritionPastSixWeeks",
+      "attrition_past_six_weeks",
+      "totalAttrition",
+      "total_attrition",
       "attritionPastCount",
       "attrition_past_count",
       "attritionCount",
       "attrition_count",
-      "attritionPastSixWeeks",
-      "attrition_past_six_weeks",
-      "attritionSixWeeks",
-      "attrition_6_weeks",
-      "totalAttrition",
-      "total_attrition",
     ]);
   }
 
@@ -542,150 +475,63 @@ function buildAggregateTrend(rows = [], type) {
 
 function getNhoCount(item = {}) {
   return getNumberValue(item, [
-    "nho",
-    "NHO",
     "nhoCount",
     "nho_count",
-    "nhoTotal",
-    "nho_total",
     "nhoPopulationCount",
     "nho_population_count",
-    "newHireOrientation",
-    "new_hire_orientation",
     "newHireOrientationCount",
     "new_hire_orientation_count",
-    "trainingNho",
-    "training_nho",
-    "pipelineNho",
-    "pipeline_nho",
-    "pipelineNhoCount",
-    "pipeline_nho_count",
-    "candidateNhoCount",
-    "candidate_nho_count",
-    "training.nho",
-    "training.nhoCount",
-    "training.nho_count",
-    "training.nhoPopulationCount",
   ]);
 }
 
 function getFstCount(item = {}) {
   return getNumberValue(item, [
-    "fst",
-    "FST",
     "fstCount",
     "fst_count",
-    "fstTotal",
-    "fst_total",
     "fstPopulationCount",
     "fst_population_count",
-    "firstStageTraining",
-    "first_stage_training",
-    "firstStageTrainingCount",
-    "first_stage_training_count",
-    "trainingFst",
-    "training_fst",
-    "pipelineFst",
-    "pipeline_fst",
-    "pipelineFstCount",
-    "pipeline_fst_count",
-    "candidateFstCount",
-    "candidate_fst_count",
-    "training.fst",
-    "training.fstCount",
-    "training.fst_count",
-    "training.fstPopulationCount",
   ]);
 }
 
 function getPstCount(item = {}) {
   return getNumberValue(item, [
-    "pst",
-    "PST",
     "pstCount",
     "pst_count",
-    "pstTotal",
-    "pst_total",
     "pstPopulationCount",
     "pst_population_count",
-    "productionStageTraining",
-    "production_stage_training",
-    "productionStageTrainingCount",
-    "production_stage_training_count",
-    "trainingPst",
-    "training_pst",
-    "pipelinePst",
-    "pipeline_pst",
-    "pipelinePstCount",
-    "pipeline_pst_count",
-    "candidatePstCount",
-    "candidate_pst_count",
-    "training.pst",
-    "training.pstCount",
-    "training.pst_count",
-    "training.pstPopulationCount",
   ]);
-}
-
-function getProjectedEndorsedCount(item = {}) {
-  const explicitValue = getNumberValue(
-    item,
-    [
-      "projectedToBeEndorsed",
-      "projected_to_be_endorsed",
-      "projectedToBeEndorsedCount",
-      "projected_to_be_endorsed_count",
-      "projectedEndorsed",
-      "projected_endorsed",
-      "projectEndorsed",
-      "project_endorsed",
-      "projectedEndorsement",
-      "projected_endorsement",
-      "toBeEndorsed",
-      "to_be_endorsed",
-      "endorsedProjected",
-      "endorsed_projected",
-      "endorsedCount",
-      "endorsed_count",
-      "endorsementCount",
-      "endorsement_count",
-      "pstEndorsedCount",
-      "pst_endorsed_count",
-      "training.projectedToBeEndorsed",
-      "training.projected_to_be_endorsed",
-      "training.projectedEndorsed",
-      "training.projected_endorsed",
-      "training.projectEndorsed",
-    ],
-    null,
-  );
-
-  if (explicitValue > 0) return explicitValue;
-
-  const pstCount = getPstCount(item);
-  const fstToPstAttrition = getNumberValue(item, [
-    "attritionFstToPstCount",
-    "attrition_fst_to_pst_count",
-    "fstToPstAttritionCount",
-    "fst_to_pst_attrition_count",
-  ]);
-
-  return Math.max(0, pstCount - fstToPstAttrition);
 }
 
 function getTrainingMetrics(item = {}) {
   const nhoCount = getNhoCount(item);
   const fstCount = getFstCount(item);
   const pstCount = getPstCount(item);
-  const projectedToBeEndorsed = getProjectedEndorsedCount(item);
+
+  const projectedToBeEndorsed = getNumberValue(
+    item,
+    [
+      "projectedToBeEndorsed",
+      "projected_to_be_endorsed",
+      "projectedEndorsed",
+      "projected_endorsed",
+      "pstEndorsedCount",
+      "pst_endorsed_count",
+    ],
+    Math.max(
+      0,
+      pstCount -
+        getNumberValue(item, [
+          "attritionFstToPstCount",
+          "attrition_fst_to_pst_count",
+        ]),
+    ),
+  );
 
   return {
     nhoCount,
     fstCount,
     pstCount,
     projectedToBeEndorsed,
-    totalTrainingPipeline:
-      nhoCount + fstCount + pstCount + projectedToBeEndorsed,
   };
 }
 
@@ -721,7 +567,10 @@ function getHiringMetrics(item = {}) {
     getFstCount(item) + getPstCount(item),
   );
 
-  const hiringRate = interviewCount > 0 ? (hiredCount / interviewCount) * 100 : 0;
+  const hiringRate =
+    interviewCount > 0 && hiredCount > 0
+      ? Math.min((hiredCount / interviewCount) * 100, 100)
+      : 0;
   const remainingLeadsToGenerate = Math.max(0, leadsToInterview - interviewCount);
 
   return {
@@ -733,186 +582,6 @@ function getHiringMetrics(item = {}) {
     remainingLeadsToGenerate,
   };
 }
-
-
-function getRequiredHeadcount(item = {}) {
-  return getNumberValue(item, [
-    "requiredHeadcount",
-    "required_headcount",
-    "requiredHC",
-    "required_hc",
-    "clientPlan",
-    "client_plan",
-  ]);
-}
-
-function getSignedNumber(value) {
-  const numberValue = toNumber(value);
-
-  if (!Number.isFinite(numberValue)) return 0;
-
-  return numberValue;
-}
-
-function getStageAttritionDirectCount(item = {}, keys = []) {
-  return getNumberValue(item, keys, 0);
-}
-
-function getStageAttritionMetrics(item = {}) {
-  const interviewCount = getSignedNumber(
-    getNumberValue(item, [
-      "interviewCount",
-      "interview_count",
-      "interviewPopulationCount",
-      "interview_population_count",
-      "alreadyInterviewed",
-      "already_interviewed",
-    ]),
-  );
-
-  const nhoCount = getSignedNumber(getNhoCount(item));
-  const fstCount = getSignedNumber(getFstCount(item));
-  const pstCount = getSignedNumber(getPstCount(item));
-
-  const interviewToNhoDirect = getStageAttritionDirectCount(item, [
-    "attritionInterviewToNhoCount",
-    "attrition_interview_to_nho_count",
-    "interviewToNhoAttritionCount",
-    "interview_to_nho_attrition_count",
-  ]);
-
-  const nhoToFstDirect = getStageAttritionDirectCount(item, [
-    "attritionNhoToFstCount",
-    "attrition_nho_to_fst_count",
-    "nhoToFstAttritionCount",
-    "nho_to_fst_attrition_count",
-  ]);
-
-  const fstToPstDirect = getStageAttritionDirectCount(item, [
-    "attritionFstToPstCount",
-    "attrition_fst_to_pst_count",
-    "fstToPstAttritionCount",
-    "fst_to_pst_attrition_count",
-  ]);
-
-  const nhoToPstDirect = getStageAttritionDirectCount(item, [
-    "attritionNhoToPstCount",
-    "attrition_nho_to_pst_count",
-    "nhoToPstAttritionCount",
-    "nho_to_pst_attrition_count",
-  ]);
-
-  const signedInterviewToNhoCount = interviewCount - nhoCount;
-  const signedNhoToFstCount = nhoCount - fstCount;
-  const signedFstToPstCount = fstCount - pstCount;
-  const signedNhoToPstCount = nhoCount - pstCount;
-
-  const interviewToNhoCount =
-    interviewToNhoDirect !== 0
-      ? Math.abs(interviewToNhoDirect)
-      : Math.abs(signedInterviewToNhoCount);
-
-  const nhoToFstCount =
-    nhoToFstDirect !== 0 ? Math.abs(nhoToFstDirect) : Math.abs(signedNhoToFstCount);
-
-  const fstToPstCount =
-    fstToPstDirect !== 0 ? Math.abs(fstToPstDirect) : Math.abs(signedFstToPstCount);
-
-  const nhoToPstCount =
-    nhoToPstDirect !== 0 ? Math.abs(nhoToPstDirect) : Math.abs(signedNhoToPstCount);
-
-  return {
-    interviewCount,
-    nhoCount,
-    fstCount,
-    pstCount,
-    interviewToNhoCount,
-    nhoToFstCount,
-    fstToPstCount,
-    nhoToPstCount,
-    signedInterviewToNhoCount,
-    signedNhoToFstCount,
-    signedFstToPstCount,
-    signedNhoToPstCount,
-  };
-}
-
-function getStageRate(count, denominator) {
-  const cleanCount = toNumber(count);
-  const cleanDenominator = toNumber(denominator);
-
-  return cleanDenominator !== 0 ? (cleanCount / cleanDenominator) * 100 : 0;
-}
-
-function getAttritionStatus(rate = 0) {
-  return toNumber(rate) <= 25 ? "Healthy" : "High";
-}
-
-function getAttritionStatusClass(rate = 0) {
-  const cleanRate = toNumber(rate);
-
-  if (cleanRate < 0) {
-    return "bg-red-50 text-red-600 border-red-100";
-  }
-
-  return cleanRate <= 25
-    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-    : "bg-red-50 text-red-600 border-red-100";
-}
-
-function getRowCoverageStatus(item = {}) {
-  const required = getRequiredHeadcount(item);
-  const actual = getActualHeadcount(item);
-  const training = getTrainingMetrics(item);
-  const absenteeismBuffer = Math.ceil(getRowTotal(item, "absenteeism") / 6);
-  const attritionBuffer = Math.ceil(getRowTotal(item, "attrition") / 6);
-  const buffer = absenteeismBuffer + attritionBuffer;
-  const effectiveDemand = required + buffer;
-  const projectedCoverage = actual + training.projectedToBeEndorsed;
-
-  if (effectiveDemand <= 0) {
-    return {
-      status: "fullyCovered",
-      required,
-      actual,
-      buffer,
-      effectiveDemand,
-      projectedCoverage,
-    };
-  }
-
-  if (projectedCoverage >= effectiveDemand) {
-    return {
-      status: "fullyCovered",
-      required,
-      actual,
-      buffer,
-      effectiveDemand,
-      projectedCoverage,
-    };
-  }
-
-  if (projectedCoverage >= required) {
-    return {
-      status: "atRisk",
-      required,
-      actual,
-      buffer,
-      effectiveDemand,
-      projectedCoverage,
-    };
-  }
-
-  return {
-    status: "underCovered",
-    required,
-    actual,
-    buffer,
-    effectiveDemand,
-    projectedCoverage,
-  };
-}
-
 
 function buildLinePoints(values = [], width = 300, height = 132) {
   const paddingX = 24;
@@ -1328,575 +997,6 @@ function SummaryBox({
   );
 }
 
-
-function SimpleMetricRow({ icon, label, value, valueClassName = "text-sibs-primary-1" }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[10px] bg-blue-50 text-sm font-extrabold text-blue-700">
-          {icon}
-        </div>
-
-        <p className="truncate text-sm font-semibold text-slate-700">{label}</p>
-      </div>
-
-      <p className={`text-base font-extrabold ${valueClassName}`}>{value}</p>
-    </div>
-  );
-}
-
-function TrainingAttritionCountsCard({ metrics, delay = 0 }) {
-  return (
-    <AnimatedCard delay={delay}>
-      <div>
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Training Attrition Counts
-        </h3>
-        <p className="mt-1 text-xs font-bold text-slate-500">Past 6 Weeks</p>
-      </div>
-
-      <div className="mt-3">
-        <SimpleMetricRow
-          icon="IN"
-          label="Interview to NHO"
-          value={formatNumber(metrics.interviewToNhoCount)}
-          valueClassName="text-blue-700"
-        />
-        <SimpleMetricRow
-          icon="NF"
-          label="NHO to FST"
-          value={formatNumber(metrics.nhoToFstCount)}
-          valueClassName="text-violet-700"
-        />
-        <SimpleMetricRow
-          icon="FP"
-          label="FST to PST"
-          value={formatNumber(metrics.fstToPstCount)}
-          valueClassName="text-emerald-700"
-        />
-        <SimpleMetricRow
-          icon="NP"
-          label="NHO to PST"
-          value={formatNumber(metrics.nhoToPstCount)}
-          valueClassName="text-red-600"
-        />
-      </div>
-    </AnimatedCard>
-  );
-}
-
-function TrainingAttritionRatesCard({ metrics, delay = 0 }) {
-  const rows = [
-    {
-      icon: "IN",
-      label: "Interview to NHO",
-      rate: metrics.interviewToNhoRate,
-    },
-    {
-      icon: "NF",
-      label: "NHO to FST",
-      rate: metrics.nhoToFstRate,
-    },
-    {
-      icon: "FP",
-      label: "FST to PST",
-      rate: metrics.fstToPstRate,
-    },
-    {
-      icon: "NP",
-      label: "NHO to PST",
-      rate: metrics.nhoToPstRate,
-    },
-  ];
-
-  return (
-    <AnimatedCard delay={delay}>
-      <div>
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Training Attrition Rates
-        </h3>
-        <p className="mt-1 text-xs font-bold text-slate-500">
-          Past 6 Weeks · Max 25%
-        </p>
-      </div>
-
-      <div className="mt-3">
-        {rows.map((row) => (
-          <div
-            key={row.label}
-            className="flex items-center justify-between gap-4 border-b border-[#E6ECF2] py-3 last:border-b-0"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[10px] bg-violet-50 text-sm font-extrabold text-violet-700">
-                {row.icon}
-              </div>
-
-              <p className="truncate text-sm font-semibold text-slate-700">
-                {row.label}
-              </p>
-            </div>
-
-            <span
-              className={`rounded-[8px] border px-3 py-1 text-sm font-extrabold ${getAttritionStatusClass(row.rate)}`}
-            >
-              {formatPercent(row.rate, 0)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </AnimatedCard>
-  );
-}
-
-function CoverageSummaryCard({ coverage, delay = 0 }) {
-  const total = Math.max(coverage.totalAccounts, 1);
-  const fullyPercent = (coverage.fullyCovered / total) * 100;
-  const atRiskPercent = (coverage.atRisk / total) * 100;
-  const underPercent = (coverage.underCovered / total) * 100;
-
-  const background = `conic-gradient(#16A34A 0 ${fullyPercent}%, #F59E0B ${fullyPercent}% ${
-    fullyPercent + atRiskPercent
-  }%, #EF4444 ${fullyPercent + atRiskPercent}% 100%)`;
-
-  return (
-    <AnimatedCard delay={delay}>
-      <div>
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Coverage Summary
-        </h3>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 items-center gap-5 sm:grid-cols-[150px_1fr]">
-        <div className="relative mx-auto h-[132px] w-[132px] rounded-full" style={{ background }}>
-          <div className="absolute inset-[28px] flex flex-col items-center justify-center rounded-full bg-white">
-            <p className="text-2xl font-extrabold text-[#101828]">
-              {formatNumber(coverage.totalAccounts)}
-            </p>
-            <p className="text-xs font-semibold text-slate-600">Accounts</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <CoverageLegendRow
-            color="bg-emerald-600"
-            label="Fully Covered"
-            count={coverage.fullyCovered}
-            total={coverage.totalAccounts}
-          />
-          <CoverageLegendRow
-            color="bg-amber-500"
-            label="At Risk"
-            count={coverage.atRisk}
-            total={coverage.totalAccounts}
-          />
-          <CoverageLegendRow
-            color="bg-red-500"
-            label="Under Covered"
-            count={coverage.underCovered}
-            total={coverage.totalAccounts}
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 border-t border-[#E6ECF2] pt-3 text-center text-xs font-extrabold text-red-600">
-        Under Covered Accounts:{" "}
-        {coverage.underCoveredAccounts.length > 0
-          ? coverage.underCoveredAccounts.join(", ")
-          : "None"}
-      </div>
-    </AnimatedCard>
-  );
-}
-
-function CoverageLegendRow({ color, label, count, total }) {
-  const percent = total > 0 ? (count / total) * 100 : 0;
-
-  return (
-    <div className="flex items-center justify-between gap-3 text-sm">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className={`h-3 w-3 shrink-0 rounded-full ${color}`} />
-        <span className="truncate font-semibold text-slate-700">{label}</span>
-      </div>
-
-      <span className="font-extrabold text-[#101828]">
-        {formatNumber(count)} ({formatPercent(percent, 0)})
-      </span>
-    </div>
-  );
-}
-
-function BufferBreakdownCard({ absenteeism, attrition, totalBuffer, delay = 0 }) {
-  return (
-    <AnimatedCard delay={delay}>
-      <div className="mb-4 flex items-center gap-2">
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Buffer HC Breakdown
-        </h3>
-        <span className="text-xs font-bold text-slate-500">
-          (Based on Past 6 Weeks)
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-[1fr_auto_1fr_auto_0.75fr]">
-        <BufferMiniCard
-          title="Absenteeism Buffer"
-          subtitle="Total Absences (6 Weeks)"
-          total={absenteeism.total}
-          average={absenteeism.average}
-          buffer={absenteeism.buffer}
-          colorClass="text-blue-700"
-          bgClass="bg-blue-50/60"
-          borderClass="border-blue-100"
-        />
-
-        <MathCircle symbol="+" />
-
-        <BufferMiniCard
-          title="Attrition Buffer"
-          subtitle="Total Attritions (6 Weeks)"
-          total={attrition.total}
-          average={attrition.average}
-          buffer={attrition.buffer}
-          colorClass="text-violet-700"
-          bgClass="bg-violet-50/60"
-          borderClass="border-violet-100"
-        />
-
-        <MathCircle symbol="=" />
-
-        <div className={`${EDGE} flex flex-col items-center justify-center border border-blue-100 bg-blue-50/60 px-4 py-5 text-center`}>
-          <p className="text-sm font-extrabold uppercase text-[#101828]">
-            Total Buffer HC
-          </p>
-          <p className="mt-1 text-xs font-bold text-slate-700">
-            (Abs + Attrition)
-          </p>
-          <p className="mt-4 text-4xl font-extrabold text-blue-700">
-            {formatNumber(totalBuffer)}
-          </p>
-        </div>
-      </div>
-    </AnimatedCard>
-  );
-}
-
-function BufferMiniCard({
-  title,
-  subtitle,
-  total,
-  average,
-  buffer,
-  colorClass,
-  bgClass,
-  borderClass,
-}) {
-  return (
-    <div className={`${EDGE} border ${borderClass} ${bgClass} p-4 text-center`}>
-      <p className={`text-xs font-extrabold ${colorClass}`}>{title}</p>
-      <p className="mt-2 text-xs font-semibold text-[#101828]">{subtitle}</p>
-      <p className={`mt-2 text-3xl font-extrabold ${colorClass}`}>
-        {formatNumber(total)}
-      </p>
-
-      <div className="mt-4 grid grid-cols-2 border-t border-slate-200 pt-3">
-        <div className="border-r border-slate-200">
-          <p className="text-xs font-semibold text-[#101828]">Average / Week</p>
-          <p className={`mt-1 text-xl font-extrabold ${colorClass}`}>
-            {formatNumber(average, 2)}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold text-[#101828]">Buffer HC</p>
-          <p className="text-[10px] font-bold text-[#101828]">(EXCL NHO)</p>
-          <p className={`mt-1 text-xl font-extrabold ${colorClass}`}>
-            {formatNumber(buffer)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MathCircle({ symbol }) {
-  return (
-    <div className="hidden items-center justify-center md:flex">
-      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[#D8E2EE] bg-white text-xl font-extrabold text-sibs-primary-1 shadow-sm">
-        {symbol}
-      </span>
-    </div>
-  );
-}
-
-
-function normalizeHiringReason(value) {
-  const cleanValue = String(value || "").trim();
-
-  if (!cleanValue) return "Unspecified";
-
-  const lowerValue = cleanValue.toLowerCase();
-
-  if (lowerValue.includes("new")) return "New Position";
-  if (lowerValue.includes("forecast")) return "Forecasted Growth";
-  if (lowerValue.includes("growth")) return "Forecasted Growth";
-  if (lowerValue.includes("ramp")) return "Ramp-up";
-  if (lowerValue.includes("replacement")) return "Replacement";
-
-  return cleanValue;
-}
-
-function getHiringReasonValue(item = {}) {
-  return (
-    item.reasonForHiring ||
-    item.reason_for_hiring ||
-    item.hiringReason ||
-    item.hiring_reason ||
-    item.requisitionReason ||
-    item.requisition_reason ||
-    item.prfReason ||
-    item.prf_reason ||
-    item.requestReason ||
-    item.request_reason ||
-    item.reason ||
-    ""
-  );
-}
-
-function getHiringReasonCount(item = {}) {
-  return getNumberValue(item, [
-    "reasonCount",
-    "reason_count",
-    "hiringReasonCount",
-    "hiring_reason_count",
-    "requisitionReasonCount",
-    "requisition_reason_count",
-    "prfCount",
-    "prf_count",
-    "totalPrf",
-    "total_prf",
-    "totalPRF",
-  ]);
-}
-
-function getHiringReasonBreakdownFromRow(item = {}) {
-  const possibleBreakdowns = [
-    item.hiringReasonBreakdown,
-    item.hiring_reason_breakdown,
-    item.requisitionReasonBreakdown,
-    item.requisition_reason_breakdown,
-    item.reasonForHiringBreakdown,
-    item.reason_for_hiring_breakdown,
-  ];
-
-  for (const value of possibleBreakdowns) {
-    if (!value) continue;
-
-    if (Array.isArray(value)) {
-      return value
-        .map((entry) => ({
-          label: normalizeHiringReason(
-            entry.label ||
-              entry.reason ||
-              entry.reasonForHiring ||
-              entry.reason_for_hiring ||
-              entry.hiringReason ||
-              entry.hiring_reason,
-          ),
-          count: getNumberValue(entry, [
-            "count",
-            "total",
-            "value",
-            "prfCount",
-            "prf_count",
-          ]),
-        }))
-        .filter((entry) => entry.count > 0);
-    }
-
-    if (typeof value === "object") {
-      return Object.entries(value)
-        .map(([key, count]) => ({
-          label: normalizeHiringReason(key),
-          count: Number(count || 0),
-        }))
-        .filter((entry) => Number.isFinite(entry.count) && entry.count > 0);
-    }
-
-    if (typeof value === "string" && value.trim()) {
-      try {
-        return getHiringReasonBreakdownFromRow({
-          hiringReasonBreakdown: JSON.parse(value),
-        });
-      } catch {
-        return [];
-      }
-    }
-  }
-
-  return [];
-}
-
-function HiringReasonChartCard({ reasons = [], delay = 0 }) {
-  const total = reasons.reduce((sum, item) => sum + toNumber(item.count), 0);
-  const safeTotal = Math.max(total, 1);
-
-  const palette = [
-    { dot: "bg-blue-600", color: "#2563EB" },
-    { dot: "bg-cyan-500", color: "#06B6D4" },
-    { dot: "bg-emerald-500", color: "#22C55E" },
-    { dot: "bg-amber-500", color: "#F59E0B" },
-    { dot: "bg-violet-500", color: "#8B5CF6" },
-    { dot: "bg-red-500", color: "#EF4444" },
-  ];
-
-  let accumulatedPercent = 0;
-
-  const gradientStops =
-    reasons.length > 0
-      ? reasons
-          .map((item, index) => {
-            const percent = (toNumber(item.count) / safeTotal) * 100;
-            const start = accumulatedPercent;
-            const end = accumulatedPercent + percent;
-            accumulatedPercent = end;
-
-            return `${palette[index % palette.length].color} ${start}% ${end}%`;
-          })
-          .join(", ")
-      : "#E5E7EB 0% 100%";
-
-  return (
-    <AnimatedCard delay={delay}>
-      <div>
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Requisition by Reason for Hiring
-        </h3>
-        <p className="mt-1 text-xs font-bold text-slate-500">
-          Based on Filtered Account
-        </p>
-      </div>
-
-      <div className="mt-5 grid grid-cols-1 items-center gap-5 sm:grid-cols-[150px_1fr]">
-        <div
-          className="relative mx-auto h-[132px] w-[132px] rounded-full"
-          style={{ background: `conic-gradient(${gradientStops})` }}
-        >
-          <div className="absolute inset-[28px] flex flex-col items-center justify-center rounded-full bg-white">
-            <p className="text-2xl font-extrabold text-[#101828]">
-              {formatNumber(total)}
-            </p>
-            <p className="text-xs font-semibold text-slate-600">PRF</p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {reasons.length > 0 ? (
-            reasons.map((item, index) => {
-              const percent = total > 0 ? (toNumber(item.count) / total) * 100 : 0;
-
-              return (
-                <div
-                  key={`${item.label}-${index}`}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={`h-3 w-3 shrink-0 rounded-full ${
-                        palette[index % palette.length].dot
-                      }`}
-                    />
-                    <span className="truncate font-semibold text-slate-700">
-                      {item.label}
-                    </span>
-                  </div>
-
-                  <span className="font-extrabold text-[#101828]">
-                    {formatNumber(item.count)}{" "}
-                    <span className="text-xs font-bold text-slate-500">
-                      ({formatPercent(percent, 0)})
-                    </span>
-                  </span>
-                </div>
-              );
-            })
-          ) : (
-            <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-5 text-center text-sm font-bold text-slate-500">
-              No requisition reason data available.
-            </div>
-          )}
-        </div>
-      </div>
-    </AnimatedCard>
-  );
-}
-
-
-function EffectiveCoverageCard({ coverage, delay = 0 }) {
-  const maxValue = Math.max(coverage.effectiveDemand, coverage.projectedCoverage, 1);
-  const effectiveWidth = Math.min(100, (coverage.effectiveDemand / maxValue) * 100);
-  const projectedWidth = Math.min(100, (coverage.projectedCoverage / maxValue) * 100);
-
-  return (
-    <AnimatedCard delay={delay}>
-      <div className="mb-5 flex items-center gap-2">
-        <h3 className="text-sm font-extrabold text-[#101828]">
-          Effective Demand vs Projected Coverage
-        </h3>
-      </div>
-
-      <div className="space-y-5">
-        <BarComparisonRow
-          label="Effective Demand"
-          subtitle="(Required + Buffer)"
-          value={coverage.effectiveDemand}
-          width={effectiveWidth}
-          barClassName="bg-blue-700"
-        />
-
-        <BarComparisonRow
-          label="Projected Coverage"
-          subtitle="(Actual + Projected)"
-          value={coverage.projectedCoverage}
-          width={projectedWidth}
-          barClassName="bg-emerald-600"
-        />
-
-        <div className="rounded-[8px] border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-center">
-          <span className="text-sm font-semibold text-[#101828]">
-            Gap (Hiring Needed)
-          </span>
-          <span className="ml-6 text-lg font-extrabold text-red-600">
-            {formatNumber(coverage.gap)}
-          </span>
-        </div>
-      </div>
-    </AnimatedCard>
-  );
-}
-
-function BarComparisonRow({ label, subtitle, value, width, barClassName }) {
-  return (
-    <div className="grid grid-cols-[145px_1fr_64px] items-center gap-3">
-      <div>
-        <p className="text-xs font-bold text-[#101828]">{label}</p>
-        <p className="text-xs font-semibold text-slate-600">{subtitle}</p>
-      </div>
-
-      <div className="h-7 overflow-hidden rounded-sm bg-slate-100">
-        <div
-          className={`h-full rounded-sm ${barClassName}`}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-
-      <p className="text-lg font-extrabold text-[#101828]">
-        {formatNumber(value)}
-      </p>
-    </div>
-  );
-}
-
-
 function DetailModal({
   open,
   type,
@@ -2002,13 +1102,7 @@ function DetailModal({
           ...item,
           training: getTrainingMetrics(item),
         }))
-        .sort(
-          (a, b) =>
-            b.training.totalTrainingPipeline - a.training.totalTrainingPipeline ||
-            String(a.account || a.accountName || "").localeCompare(
-              String(b.account || b.accountName || ""),
-            ),
-        )
+        .sort((a, b) => b.training.nhoCount - a.training.nhoCount)
     : [];
 
   const forecastRows = isForecast
@@ -2227,10 +1321,6 @@ function TrendDetailsTable({
               {isAbsenteeism ? "Absenteeism %" : "Attrition %"}
             </th>
 
-            <th className="border-b border-[#E1E7EF] px-4 py-3 text-center">
-              Buffer %
-            </th>
-
             {weekLabels.map((label) => (
               <th
                 key={label}
@@ -2284,14 +1374,6 @@ function TrendDetailsTable({
                 {formatPercent(item.detailPercentage, 2)}
               </td>
 
-              <td
-                className={`border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold ${getSignedPercentClass(
-                  getExcelBufferPercentage(item),
-                )}`}
-              >
-                {formatSignedPercent(getExcelBufferPercentage(item), 2)}
-              </td>
-
               {weekLabels.map((label, weekIndex) => (
                 <td
                   key={label}
@@ -2308,7 +1390,7 @@ function TrendDetailsTable({
           {!rows.length && (
             <tr>
               <td
-                colSpan={14}
+                colSpan={13}
                 className="px-4 py-10 text-center text-sm font-bold text-slate-500"
               >
                 No details available.
@@ -2316,6 +1398,41 @@ function TrendDetailsTable({
             </tr>
           )}
         </tbody>
+
+        {rows.length > 0 && (
+          <tfoot>
+            <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
+              <td className="px-4 py-3" colSpan={2}>
+                TOTAL
+              </td>
+              <td className="px-4 py-3 text-center">
+                {formatNumber(summary?.total)}
+              </td>
+              <td className="px-4 py-3 text-center">
+                {formatNumber(summary?.average, 2)}
+              </td>
+              <td className="px-4 py-3 text-center">
+                {formatNumber(summary?.buffer)}
+              </td>
+              <td className="px-4 py-3 text-center">
+                {formatNumber(summary?.actualHeadcountTotal)}
+              </td>
+              <td
+                className={`px-4 py-3 text-center ${getRateStatusClass(summary?.percentage)}`}
+              >
+                {formatPercent(summary?.percentage, 2)}
+              </td>
+
+              {weekLabels.map((label, index) => (
+                <td key={label} className="px-4 py-3 text-center">
+                  {summary?.hasRealWeeklyData
+                    ? formatNumber(summary?.series?.[index])
+                    : "—"}
+                </td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
@@ -2387,6 +1504,53 @@ function TrainingDetailsTable({ rows = [] }) {
             </tr>
           )}
         </tbody>
+
+        {rows.length > 0 && (
+          <tfoot>
+            <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
+              <td className="px-4 py-3" colSpan={2}>
+                TOTAL
+              </td>
+
+              <td className="px-4 py-3 text-center text-blue-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.training?.nhoCount),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-emerald-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.training?.fstCount),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-orange-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.training?.pstCount),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-violet-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) =>
+                      sum + toNumber(item.training?.projectedToBeEndorsed),
+                    0,
+                  ),
+                )}
+              </td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
@@ -2472,6 +1636,83 @@ function ForecastDetailsTable({ rows = [] }) {
             </tr>
           )}
         </tbody>
+
+        {rows.length > 0 && (
+          <tfoot>
+            <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
+              <td className="px-4 py-3" colSpan={2}>
+                TOTAL
+              </td>
+
+              <td className="px-4 py-3 text-center text-red-600">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.forecast?.hiringNeeded),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-slate-900">
+                {formatPercent(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.forecast?.interviewCount),
+                    0,
+                  ) > 0
+                    ? (rows.reduce(
+                        (sum, item) => sum + toNumber(item.forecast?.hiredCount),
+                        0,
+                      ) /
+                        rows.reduce(
+                          (sum, item) =>
+                            sum + toNumber(item.forecast?.interviewCount),
+                          0,
+                        )) *
+                        100
+                    : 0,
+                  0,
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-blue-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.forecast?.leadsToInterview),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-slate-900">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.forecast?.interviewCount),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-emerald-700">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) => sum + toNumber(item.forecast?.hiredCount),
+                    0,
+                  ),
+                )}
+              </td>
+
+              <td className="px-4 py-3 text-center text-red-600">
+                {formatNumber(
+                  rows.reduce(
+                    (sum, item) =>
+                      sum + toNumber(item.forecast?.remainingLeadsToGenerate),
+                    0,
+                  ),
+                )}
+              </td>
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );
@@ -2578,122 +1819,6 @@ export default function PercentageRiskGraphTable({
       ),
     };
 
-    const stageBase = validPlans.reduce(
-      (sum, item) => {
-        const metrics = getStageAttritionMetrics(item);
-
-        sum.interviewCount += metrics.interviewCount;
-        sum.nhoCount += metrics.nhoCount;
-        sum.fstCount += metrics.fstCount;
-        sum.pstCount += metrics.pstCount;
-        sum.interviewToNhoCount += metrics.interviewToNhoCount;
-        sum.nhoToFstCount += metrics.nhoToFstCount;
-        sum.fstToPstCount += metrics.fstToPstCount;
-        sum.nhoToPstCount += metrics.nhoToPstCount;
-        sum.signedInterviewToNhoCount += metrics.signedInterviewToNhoCount;
-        sum.signedNhoToFstCount += metrics.signedNhoToFstCount;
-        sum.signedFstToPstCount += metrics.signedFstToPstCount;
-        sum.signedNhoToPstCount += metrics.signedNhoToPstCount;
-
-        return sum;
-      },
-      {
-        interviewCount: 0,
-        nhoCount: 0,
-        fstCount: 0,
-        pstCount: 0,
-        interviewToNhoCount: 0,
-        nhoToFstCount: 0,
-        fstToPstCount: 0,
-        nhoToPstCount: 0,
-        signedInterviewToNhoCount: 0,
-        signedNhoToFstCount: 0,
-        signedFstToPstCount: 0,
-        signedNhoToPstCount: 0,
-      },
-    );
-
-    const trainingAttrition = {
-      ...stageBase,
-      interviewToNhoRate: getStageRate(
-        stageBase.signedInterviewToNhoCount,
-        stageBase.interviewCount,
-      ),
-      nhoToFstRate: getStageRate(stageBase.signedNhoToFstCount, stageBase.nhoCount),
-      fstToPstRate: getStageRate(stageBase.signedFstToPstCount, stageBase.fstCount),
-      nhoToPstRate: getStageRate(stageBase.signedNhoToPstCount, stageBase.nhoCount),
-    };
-
-    const coverageBase = validPlans.reduce(
-      (sum, item) => {
-        const coverageStatus = getRowCoverageStatus(item);
-        const accountName = item.account || item.accountName || item.account_name || "—";
-
-        sum.effectiveDemand += coverageStatus.effectiveDemand;
-        sum.projectedCoverage += coverageStatus.projectedCoverage;
-
-        if (coverageStatus.status === "fullyCovered") {
-          sum.fullyCovered += 1;
-        } else if (coverageStatus.status === "atRisk") {
-          sum.atRisk += 1;
-        } else {
-          sum.underCovered += 1;
-          if (accountName && accountName !== "—") {
-            sum.underCoveredAccounts.push(accountName);
-          }
-        }
-
-        return sum;
-      },
-      {
-        totalAccounts: validPlans.length,
-        fullyCovered: 0,
-        atRisk: 0,
-        underCovered: 0,
-        underCoveredAccounts: [],
-        effectiveDemand: 0,
-        projectedCoverage: 0,
-      },
-    );
-
-    const coverage = {
-      ...coverageBase,
-      gap: Math.max(0, coverageBase.effectiveDemand - coverageBase.projectedCoverage),
-    };
-
-    const hiringReasonMap = new Map();
-
-    validPlans.forEach((item) => {
-      const rowBreakdown = getHiringReasonBreakdownFromRow(item);
-
-      if (rowBreakdown.length > 0) {
-        rowBreakdown.forEach((entry) => {
-          const label = normalizeHiringReason(entry.label);
-          hiringReasonMap.set(
-            label,
-            toNumber(hiringReasonMap.get(label)) + toNumber(entry.count),
-          );
-        });
-
-        return;
-      }
-
-      const reason = normalizeHiringReason(getHiringReasonValue(item));
-      const directCount = getHiringReasonCount(item);
-      const count = directCount > 0 ? directCount : reason === "Unspecified" ? 0 : 1;
-
-      if (count > 0) {
-        hiringReasonMap.set(reason, toNumber(hiringReasonMap.get(reason)) + count);
-      }
-    });
-
-    const hiringReasons = Array.from(hiringReasonMap.entries())
-      .map(([label, count]) => ({
-        label,
-        count,
-      }))
-      .sort((a, b) => toNumber(b.count) - toNumber(a.count));
-
     return {
       absenteeism: {
         total: absenteeismTotal,
@@ -2715,9 +1840,6 @@ export default function PercentageRiskGraphTable({
       },
       training,
       forecast,
-      trainingAttrition,
-      coverage,
-      hiringReasons,
     };
   }, [validPlans]);
 
@@ -2884,31 +2006,6 @@ export default function PercentageRiskGraphTable({
             onClick={() => setActiveDetailsType("forecast")}
             delay={270}
           />
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr_1.25fr]">
-          <TrainingAttritionCountsCard
-            metrics={data.trainingAttrition}
-            delay={320}
-          />
-
-          <TrainingAttritionRatesCard
-            metrics={data.trainingAttrition}
-            delay={380}
-          />
-
-          <CoverageSummaryCard coverage={data.coverage} delay={440} />
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[1.35fr_1fr]">
-          <BufferBreakdownCard
-            absenteeism={data.absenteeism}
-            attrition={data.attrition}
-            totalBuffer={data.absenteeism.buffer + data.attrition.buffer}
-            delay={500}
-          />
-
-          <HiringReasonChartCard reasons={data.hiringReasons} delay={560} />
         </div>
       </div>
 
