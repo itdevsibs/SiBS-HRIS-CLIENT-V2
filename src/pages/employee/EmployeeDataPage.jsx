@@ -117,8 +117,58 @@ const PROFILE_TABS = [
   },
 ];
 
+
+const EDUCATION_LEVEL_OPTIONS = [
+  { value: "Elementary", label: "Elementary" },
+  { value: "Secondary", label: "Secondary" },
+  { value: "Vocational / Trade Course", label: "Vocational / Trade Course" },
+  { value: "College", label: "College" },
+  { value: "Graduate Studies", label: "Graduate Studies" },
+];
+
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+const PROFILE_FIELD_EDITING_CLASS = "bg-[#F1F5F9]";
+const PROFILE_FIELD_FILLED_CLASS = "bg-[#F1F5F9]";
+const PROFILE_FIELD_EMPTY_CLASS = "bg-[#E2E8F0]";
+
+function hasMeaningfulValue(value) {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasMeaningfulValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).some((item) => hasMeaningfulValue(item));
+  }
+
+  if (value === null || value === undefined) return false;
+
+  const normalized = String(value).trim().toLowerCase();
+
+  return ![
+    "",
+    "—",
+    "-",
+    "n/a",
+    "na",
+    "none",
+    "null",
+    "undefined",
+  ].includes(normalized);
+}
+
+function getProfileFieldClasses(value, editable = false) {
+  if (editable) return PROFILE_FIELD_EDITING_CLASS;
+
+  return hasMeaningfulValue(value)
+    ? PROFILE_FIELD_FILLED_CLASS
+    : PROFILE_FIELD_EMPTY_CLASS;
+}
+
+function getProfileValueClasses(value) {
+  return hasMeaningfulValue(value) ? "text-[#344054]" : "text-[#667085] italic";
 }
 
 function firstValue(...values) {
@@ -805,18 +855,18 @@ export default function EmployeeDataPage() {
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#DDE4EC] font-jakarta"
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-3 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#DDE4EC] px-3 py-4 sm:p-6">
         <button
           type="button"
           onClick={() => navigate("/employee")}
           className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-sibs-primary-1 transition hover:underline"
         >
           <ChevronLeft size={16} />
-          Back to employees
+          Back to Employees
         </button>
 
         {loading ? (
@@ -1021,7 +1071,6 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
 
   useEffect(() => {
     if (!activeParent) return;
-
     setOpenParent(activeParent);
   }, [activeParent]);
 
@@ -1032,7 +1081,27 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
     );
   }
 
-  function handleParentClick(tab) {
+  function getActiveParentTab() {
+    return tabs.find((tab) => isParentActive(tab));
+  }
+
+  function handleMobileParentClick(tab) {
+    const hasChildren = Array.isArray(tab.children) && tab.children.length > 0;
+
+    if (!hasChildren) {
+      setOpenParent("");
+      onTabChange(tab.key);
+      return;
+    }
+
+    setOpenParent(tab.key);
+
+    if (!isParentActive(tab)) {
+      onTabChange(tab.children[0].key);
+    }
+  }
+
+  function handleDesktopParentClick(tab) {
     const hasChildren = Array.isArray(tab.children) && tab.children.length > 0;
 
     if (!hasChildren) {
@@ -1050,37 +1119,42 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
     }
   }
 
-  return (
-    <aside className="sticky top-4 self-start w-full rounded-[18px] border border-[#E6ECF2] bg-white p-2 shadow-sm sm:p-3 xl:max-h-[calc(100vh-120px)] xl:min-h-[600px] xl:overflow-y-auto xl:pb-8">
-      <div className="flex gap-2 overflow-x-auto no-scrollbar xl:flex-col xl:overflow-visible">
-        {tabs.map((tab) => {
-          const Icon = tab.icon || FileText;
-          const hasChildren =
-            Array.isArray(tab.children) && tab.children.length > 0;
-          const parentActive = isParentActive(tab);
-          const isOpen = openParent === tab.key;
+  const activeParentTab = getActiveParentTab();
+  const activeChildren = Array.isArray(activeParentTab?.children)
+    ? activeParentTab.children
+    : [];
 
-          return (
-            <div key={tab.key} className="min-w-max xl:min-w-0">
+  return (
+    <>
+      {/* Mobile / Tablet */}
+      <aside className="block w-full rounded-[18px] border border-[#E6ECF2] bg-white p-2 shadow-sm xl:hidden">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {tabs.map((tab) => {
+            const Icon = tab.icon || FileText;
+            const hasChildren =
+              Array.isArray(tab.children) && tab.children.length > 0;
+            const parentActive = isParentActive(tab);
+
+            return (
               <button
+                key={tab.key}
                 type="button"
-                onClick={() => handleParentClick(tab)}
-                aria-expanded={hasChildren ? isOpen : undefined}
-                className={`group flex h-10 w-full min-w-max items-center gap-2 rounded-xl px-3 text-left text-xs font-extrabold transition-all duration-300 ease-out active:scale-[0.98] sm:h-11 sm:px-4 sm:text-sm xl:min-w-0 ${
+                onClick={() => handleMobileParentClick(tab)}
+                aria-current={parentActive ? "page" : undefined}
+                aria-expanded={hasChildren ? parentActive : undefined}
+                className={`group inline-flex h-10 min-w-max items-center justify-center gap-2 rounded-xl px-3 text-center text-xs font-extrabold transition-all duration-300 ease-out active:scale-[0.98] ${
                   parentActive
-                    ? "bg-sibs-primary-1 text-white shadow-sm hover:bg-sibs-primary-1/95 hover:shadow-md"
-                    : "bg-white text-sibs-primary-1 hover:translate-x-1 hover:bg-[#F8FAFC]"
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
                 }`}
               >
-                {hasChildren ? (
+                {hasChildren && (
                   <ChevronRight
                     size={14}
                     className={`shrink-0 transition-transform duration-300 ${
-                      isOpen ? "rotate-90" : "rotate-0"
+                      parentActive ? "rotate-90" : "rotate-0"
                     }`}
                   />
-                ) : (
-                  <span className="w-[14px] shrink-0" />
                 )}
 
                 <Icon
@@ -1092,59 +1166,142 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
 
                 <span className="truncate">{tab.label}</span>
               </button>
+            );
+          })}
+        </div>
 
-              {hasChildren && (
-                <div
-                  className={`grid transition-all duration-300 ease-out ${
-                    isOpen
-                      ? "grid-rows-[1fr] opacity-100"
-                      : "grid-rows-[0fr] opacity-0"
+        {activeChildren.length > 0 && (
+          <div className="mt-2 rounded-2xl bg-[#F8FAFC] p-2">
+            <div className="flex flex-wrap gap-2">
+              {activeChildren.map((child) => {
+                const childActive = activeTab === child.key;
+
+                return (
+                  <button
+                    key={child.key}
+                    type="button"
+                    onClick={() => onTabChange(child.key)}
+                    aria-current={childActive ? "page" : undefined}
+                    className={`group/sub inline-flex h-9 min-w-0 items-center justify-center gap-2 rounded-full px-3 text-center text-xs font-bold transition-all duration-300 active:scale-[0.98] ${
+                      childActive
+                        ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
+                        : "bg-white text-sibs-primary-1/80 hover:bg-[#EEF5FB]"
+                    }`}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
+                        childActive
+                          ? "scale-125 bg-sibs-primary-1"
+                          : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
+                      }`}
+                    />
+
+                    <span className="truncate">{child.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* Desktop */}
+      <aside className="hidden w-full self-start rounded-[18px] border border-[#E6ECF2] bg-white p-3 shadow-sm xl:sticky xl:top-4 xl:block xl:max-h-[calc(100vh-120px)] xl:min-h-[600px] xl:overflow-y-auto xl:pb-8">
+        <div className="flex flex-col gap-2">
+          {tabs.map((tab) => {
+            const Icon = tab.icon || FileText;
+            const hasChildren =
+              Array.isArray(tab.children) && tab.children.length > 0;
+            const parentActive = isParentActive(tab);
+            const isOpen = openParent === tab.key;
+
+            return (
+              <div key={tab.key} className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => handleDesktopParentClick(tab)}
+                  aria-expanded={hasChildren ? isOpen : undefined}
+                  aria-current={parentActive ? "page" : undefined}
+                  className={`group flex h-11 w-full min-w-0 items-center gap-2 rounded-xl px-4 text-left text-sm font-extrabold transition-all duration-300 ease-out active:scale-[0.98] ${
+                    parentActive
+                      ? "bg-sibs-primary-1 text-white shadow-sm hover:bg-sibs-primary-1/95 hover:shadow-md"
+                      : "bg-white text-sibs-primary-1 hover:translate-x-1 hover:bg-[#F8FAFC]"
                   }`}
                 >
-                  <div className="overflow-hidden">
-                    <div
-                      className={`mt-1 space-y-1 pl-8 pr-1 transition-all duration-300 ease-out ${
-                        isOpen
-                          ? "translate-y-0 opacity-100"
-                          : "-translate-y-2 opacity-0"
+                  {hasChildren ? (
+                    <ChevronRight
+                      size={14}
+                      className={`shrink-0 transition-transform duration-300 ${
+                        isOpen ? "rotate-90" : "rotate-0"
                       }`}
-                    >
-                      {tab.children.map((child) => {
-                        const childActive = activeTab === child.key;
+                    />
+                  ) : (
+                    <span className="w-[14px] shrink-0" />
+                  )}
 
-                        return (
-                          <button
-                            key={child.key}
-                            type="button"
-                            onClick={() => onTabChange(child.key)}
-                            aria-current={childActive ? "page" : undefined}
-                            className={`group/sub flex h-9 w-full min-w-max items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-300 xl:min-w-0 ${
-                              childActive
-                                ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
-                                : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
+                  <Icon
+                    size={16}
+                    className={`shrink-0 transition-transform duration-300 ${
+                      parentActive ? "scale-110" : "group-hover:scale-110"
+                    }`}
+                  />
+
+                  <span className="truncate">{tab.label}</span>
+                </button>
+
+                {hasChildren && (
+                  <div
+                    className={`grid transition-all duration-300 ease-out ${
+                      isOpen
+                        ? "grid-rows-[1fr] opacity-100"
+                        : "grid-rows-[0fr] opacity-0"
+                    }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div
+                        className={`mt-1 space-y-1 pl-8 pr-1 transition-all duration-300 ease-out ${
+                          isOpen
+                            ? "translate-y-0 opacity-100"
+                            : "-translate-y-2 opacity-0"
+                        }`}
+                      >
+                        {tab.children.map((child) => {
+                          const childActive = activeTab === child.key;
+
+                          return (
+                            <button
+                              key={child.key}
+                              type="button"
+                              onClick={() => onTabChange(child.key)}
+                              aria-current={childActive ? "page" : undefined}
+                              className={`group/sub flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-300 ${
                                 childActive
-                                  ? "scale-125 bg-sibs-primary-1"
-                                  : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
+                                  ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
+                                  : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
                               }`}
-                            />
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
+                                  childActive
+                                    ? "scale-125 bg-sibs-primary-1"
+                                    : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
+                                }`}
+                              />
 
-                            <span className="truncate">{child.label}</span>
-                          </button>
-                        );
-                      })}
+                              <span className="truncate">{child.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </aside>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </aside>
+    </>
   );
 }
 
@@ -1194,6 +1351,8 @@ function ProfileDetail({
   editable = false,
   onChange,
   type = "text",
+  options = [],
+  placeholder = "Select option",
 }) {
   const isLongText = [
     "email",
@@ -1202,26 +1361,62 @@ function ProfileDetail({
     "permanent address",
   ].includes(String(label || "").toLowerCase());
 
+  const hasValue = hasMeaningfulValue(value);
+  const fieldClasses = getProfileFieldClasses(value, editable);
+  const valueClasses = getProfileValueClasses(value);
+
   return (
-    <div className="flex min-h-[84px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-3 py-2.5 sm:px-4">
+    <div
+      className={`flex min-h-[76px] min-w-0 flex-col justify-center rounded-[10px] px-3 py-2.5 transition-colors sm:min-h-[84px] sm:px-4 ${fieldClasses}`}
+    >
       <p className="mb-1.5 break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
         {label}
       </p>
 
       {editable ? (
-        <input
-          type={type}
-          value={value || ""}
-          onChange={(e) => onChange?.(e.target.value)}
-          className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        />
+        type === "select" ? (
+          <select
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          >
+            <option value="">{placeholder}</option>
+
+            {value &&
+              !options.some((option) =>
+                typeof option === "string"
+                  ? option === value
+                  : String(option.value) === String(value),
+              ) && <option value={value}>{value}</option>}
+
+            {options.map((option) => {
+              const optionValue =
+                typeof option === "string" ? option : option.value;
+              const optionLabel =
+                typeof option === "string" ? option : option.label;
+
+              return (
+                <option key={optionValue} value={optionValue}>
+                  {optionLabel}
+                </option>
+              );
+            })}
+          </select>
+        ) : (
+          <input
+            type={type}
+            value={value || ""}
+            onChange={(e) => onChange?.(e.target.value)}
+            className="h-9 w-full min-w-0 rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+          />
+        )
       ) : (
         <p
-          className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
+          className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] ${
             isLongText ? "break-all" : "break-words"
-          }`}
+          } ${valueClasses}`}
         >
-          {value || "—"}
+          {hasValue ? value : "—"}
         </p>
       )}
     </div>
@@ -1229,8 +1424,14 @@ function ProfileDetail({
 }
 
 function ProfileTextarea({ label, value, editable = false, onChange }) {
+  const hasValue = hasMeaningfulValue(value);
+  const fieldClasses = getProfileFieldClasses(value, editable);
+  const valueClasses = getProfileValueClasses(value);
+
   return (
-    <div className="min-w-0 rounded-[10px] bg-[#F8FAFC] px-3 py-3 sm:px-4">
+    <div
+      className={`min-w-0 rounded-[10px] px-3 py-3 transition-colors sm:px-4 ${fieldClasses}`}
+    >
       <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
         {label}
       </p>
@@ -1243,8 +1444,10 @@ function ProfileTextarea({ label, value, editable = false, onChange }) {
           className="w-full min-w-0 resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-3 py-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
         />
       ) : (
-        <p className="whitespace-pre-wrap break-words text-sm font-extrabold leading-6 text-[#344054]">
-          {value || "—"}
+        <p
+          className={`whitespace-pre-wrap break-words text-sm font-extrabold leading-6 ${valueClasses}`}
+        >
+          {hasValue ? value : "—"}
         </p>
       )}
     </div>
@@ -1253,7 +1456,7 @@ function ProfileTextarea({ label, value, editable = false, onChange }) {
 
 function EmptyProfileState({ message }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+    <div className="rounded-xl border border-dashed border-[#C8D3DF] bg-[#E2E8F0] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
       {message}
     </div>
   );
@@ -1728,7 +1931,7 @@ function EducationPdsTab({ education = [], isEditing, onChange }) {
         honors: "",
       }}
       fields={[
-        { key: "level", label: "Level" },
+        { key: "level", label: "Level", type: "select", options: EDUCATION_LEVEL_OPTIONS, placeholder: "Select education level" },
         { key: "school", label: "Name of School" },
         { key: "degree", label: "Degree / Course" },
         { key: "from", label: "From" },
@@ -2204,7 +2407,7 @@ function EditableTextList({
           {items.map((item, index) => (
             <div
               key={index}
-              className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+              className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
             >
               {isEditing ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -2224,8 +2427,16 @@ function EditableTextList({
                   </button>
                 </div>
               ) : (
-                <p className="break-words text-sm font-extrabold text-[#344054]">
-                  {typeof item === "string" ? item : item?.name || "—"}
+                <p
+                  className={`break-words text-sm font-extrabold ${getProfileValueClasses(
+                    typeof item === "string" ? item : item?.name,
+                  )}`}
+                >
+                  {hasMeaningfulValue(typeof item === "string" ? item : item?.name)
+                    ? typeof item === "string"
+                      ? item
+                      : item?.name
+                    : "—"}
                 </p>
               )}
             </div>
@@ -2295,7 +2506,7 @@ function EditableRecordList({
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
                 >
                   <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {fields.map((field) => (
@@ -2309,6 +2520,8 @@ function EditableRecordList({
                         }
                         editable
                         type={field.type || "text"}
+                        options={field.options}
+                        placeholder={field.placeholder}
                         onChange={(value) =>
                           updateRecord(index, field.key, value)
                         }
@@ -2331,30 +2544,53 @@ function EditableRecordList({
             return (
               <div
                 key={index}
-                className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4"
+                className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
               >
-                <p className="break-words text-sm font-extrabold text-[#101828]">
-                  {primaryField
-                    ? item?.[primaryField] || "N/A"
-                    : getRecordTitle(item)}
+                <p
+                  className={`break-words text-sm font-extrabold ${getProfileValueClasses(
+                    primaryField ? item?.[primaryField] : getRecordTitle(item),
+                  )}`}
+                >
+                  {hasMeaningfulValue(primaryField ? item?.[primaryField] : getRecordTitle(item))
+                    ? primaryField
+                      ? item?.[primaryField]
+                      : getRecordTitle(item)
+                    : "—"}
                 </p>
 
                 {secondaryField && (
-                  <p className="mt-1 break-words text-sm font-bold text-sibs-primary-1">
-                    {item?.[secondaryField] || "N/A"}
+                  <p
+                    className={`mt-1 break-words text-sm font-bold ${
+                      hasMeaningfulValue(item?.[secondaryField])
+                        ? "text-sibs-primary-1"
+                        : "text-[#667085] italic"
+                    }`}
+                  >
+                    {hasMeaningfulValue(item?.[secondaryField])
+                      ? item?.[secondaryField]
+                      : "—"}
                   </p>
                 )}
 
                 {metaFields.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {metaFields.map((fieldKey) => (
-                      <span
-                        key={fieldKey}
-                        className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1"
-                      >
-                        {item?.[fieldKey] || "—"}
-                      </span>
-                    ))}
+                    {metaFields.map((fieldKey) => {
+                      const metaValue = item?.[fieldKey];
+                      const metaHasValue = hasMeaningfulValue(metaValue);
+
+                      return (
+                        <span
+                          key={fieldKey}
+                          className={`rounded-full border px-3 py-1 text-xs font-bold ${
+                            metaHasValue
+                              ? "border-blue-100 bg-blue-50 text-sibs-primary-1"
+                              : "border-[#C8D3DF] bg-[#E2E8F0] text-[#667085] italic"
+                          }`}
+                        >
+                          {metaHasValue ? metaValue : "—"}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
 

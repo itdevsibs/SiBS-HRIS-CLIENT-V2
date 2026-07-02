@@ -30,14 +30,28 @@ import {
   updateAvailablePosition,
   updateAvailablePositionStatus,
 } from "../../lib/axios/getAvailablePosition";
+import { getApprovedJobDescriptions } from "../../lib/axios/jobDescription";
 
 const POSITIONS_PER_PAGE = 8;
 
-const LOCATION_SITE_OPTIONS = ["Davao", "Tagum", "Mabini", "Both Davao and Tagum"];
+const LOCATION_SITE_OPTIONS = [
+  "Davao",
+  "Tagum",
+  "Mabini",
+  "Both Davao and Tagum",
+];
 
 const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];
 
 const emptyForm = {
+  jdId: "",
+  jd_id: "",
+  jdCode: "",
+  jd_code: "",
+
+  documentTitle: "",
+  document_title: "",
+
   positionTitle: "",
   departmentId: "",
   department: "",
@@ -53,6 +67,10 @@ const emptyForm = {
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function sameText(left = "", right = "") {
+  return cleanText(left).toLowerCase() === cleanText(right).toLowerCase();
 }
 
 function formatDate(date) {
@@ -106,10 +124,16 @@ function getStatusOption(meta, keyword) {
 
   return (
     options.find(
-      (item) => String(item || "").trim().toLowerCase() === lowerKeyword,
+      (item) =>
+        String(item || "")
+          .trim()
+          .toLowerCase() === lowerKeyword,
     ) ||
     options.find((item) =>
-      String(item || "").trim().toLowerCase().includes(lowerKeyword),
+      String(item || "")
+        .trim()
+        .toLowerCase()
+        .includes(lowerKeyword),
     ) ||
     ""
   );
@@ -117,10 +141,6 @@ function getStatusOption(meta, keyword) {
 
 function getInitialStatus(meta) {
   return getStatusOption(meta, "active") || meta?.statusOptions?.[0] || "";
-}
-
-function inputClass(extra = "") {
-  return `h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
 
 function textareaClass(extra = "") {
@@ -180,31 +200,32 @@ function normalizeDropdownOptions(options = []) {
           label: String(option),
           description: "",
           searchText: String(option),
+          raw: null,
         };
       }
 
       const value = option?.value ?? option?.id ?? "";
       const label = option?.label ?? option?.name ?? option?.value ?? "";
-      const description = option?.description ?? "";
-      const searchText = [
-        option?.searchText,
-        option?.label,
-        option?.name,
-        option?.value,
-        option?.id,
-        option?.description,
-      ]
-        .filter(Boolean)
-        .join(" ");
 
       if (!cleanText(value) && !cleanText(label)) return null;
 
       return {
+        ...option,
         id: option?.id ?? value ?? label,
         value: value || label,
         label: label || String(value),
-        description,
-        searchText: searchText || label || String(value),
+        description: option?.description || "",
+        searchText: [
+          option?.searchText,
+          option?.label,
+          option?.name,
+          option?.value,
+          option?.id,
+          option?.description,
+        ]
+          .filter(Boolean)
+          .join(" "),
+        raw: option?.raw || option,
       };
     })
     .filter(Boolean);
@@ -213,8 +234,10 @@ function normalizeDropdownOptions(options = []) {
 function DropdownField({
   label,
   value,
+  displayValue = "",
   options = [],
   onChange,
+  onSelectOption,
   placeholder = "Select",
   disabled = false,
   required = false,
@@ -222,40 +245,48 @@ function DropdownField({
   menuClassName = "",
   searchable = false,
   searchPlaceholder = "Search...",
+  emptyMessage = "No options found.",
 }) {
   const dropdownRef = useRef(null);
-  const searchInputRef = useRef(null);
+  const inputRef = useRef(null);
 
   const [open, setOpen] = useState(false);
   const [dropdownSearch, setDropdownSearch] = useState("");
 
-  const normalizedOptions = normalizeDropdownOptions(options);
+  const normalizedOptions = useMemo(
+    () => normalizeDropdownOptions(options),
+    [options],
+  );
 
   const selectedOption = normalizedOptions.find(
     (option) => String(option.value) === String(value ?? ""),
   );
 
-  const displayLabel = selectedOption?.label || placeholder;
+  const displayLabel =
+    selectedOption?.label || cleanText(displayValue) || cleanText(value) || "";
 
-  const searchKeyword = dropdownSearch.trim().toLowerCase();
+  const filteredOptions = useMemo(() => {
+    const keyword = cleanText(dropdownSearch).toLowerCase();
 
-  const visibleOptions =
-    searchable && searchKeyword
-      ? normalizedOptions.filter((option) => {
-          const searchableText = [
-            option.label,
-            option.value,
-            option.id,
-            option.description,
-            option.searchText,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
+    if (!keyword) return normalizedOptions;
 
-          return searchableText.includes(searchKeyword);
-        })
-      : normalizedOptions;
+    return normalizedOptions.filter((option) =>
+      [
+        option.label,
+        option.value,
+        option.id,
+        option.description,
+        option.searchText,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(keyword),
+    );
+  }, [normalizedOptions, dropdownSearch]);
+
+  const inputDisplayValue = open && searchable ? dropdownSearch : displayLabel;
+  const hasDisplayValue = Boolean(displayLabel);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -263,12 +294,14 @@ function DropdownField({
 
       if (!dropdownRef.current.contains(event.target)) {
         setOpen(false);
+        setDropdownSearch("");
       }
     }
 
     function handleEscape(event) {
       if (event.key === "Escape") {
         setOpen(false);
+        setDropdownSearch("");
       }
     }
 
@@ -281,48 +314,53 @@ function DropdownField({
     };
   }, []);
 
-  useEffect(() => {
-    if (!open) {
-      setDropdownSearch("");
-      return;
-    }
-
-    if (searchable) {
-      window.setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
-    }
-  }, [open, searchable]);
-
-  function handleOpen() {
+  function openDropdown() {
     if (disabled) return;
 
     setOpen(true);
+
+    if (searchable) {
+      setDropdownSearch("");
+
+      window.setTimeout(() => {
+        inputRef.current?.focus?.();
+      }, 0);
+    }
   }
 
-  function handleToggle() {
+  function toggleDropdown() {
     if (disabled) return;
 
-    setOpen((previous) => !previous);
+    setOpen((previous) => {
+      const nextOpen = !previous;
+
+      if (!nextOpen) {
+        setDropdownSearch("");
+      }
+
+      return nextOpen;
+    });
   }
 
-  function handleSelect(nextValue) {
-    onChange?.(nextValue);
-    setDropdownSearch("");
+  function handleSelect(option) {
+    onChange?.(option.value, option);
+    onSelectOption?.(option);
     setOpen(false);
+    setDropdownSearch("");
   }
 
-  function handleSearchKeyDown(event) {
+  function handleInputKeyDown(event) {
     if (event.key === "Escape") {
       setOpen(false);
+      setDropdownSearch("");
       return;
     }
 
     if (event.key === "Enter") {
       event.preventDefault();
 
-      if (visibleOptions.length > 0) {
-        handleSelect(visibleOptions[0].value);
+      if (filteredOptions.length > 0) {
+        handleSelect(filteredOptions[0]);
       }
     }
   }
@@ -334,32 +372,50 @@ function DropdownField({
     >
       {label && <FieldLabel required={required}>{label}</FieldLabel>}
 
-      {searchable && open && !disabled ? (
-        <div className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-sibs-primary-1 bg-white px-4 text-left text-sm font-bold shadow-sm outline-none ring-4 ring-sibs-primary-1/10 transition">
+      {searchable ? (
+        <div
+          className={`flex h-11 w-full min-w-0 items-center rounded-xl border bg-white px-4 shadow-sm transition ${
+            open
+              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D0D5DD] hover:border-sibs-primary-1"
+          } ${
+            disabled
+              ? "cursor-not-allowed bg-gray-50 opacity-70"
+              : "cursor-text"
+          }`}
+          onClick={openDropdown}
+        >
           <input
-            ref={searchInputRef}
-            type="text"
-            value={dropdownSearch}
-            onChange={(event) => setDropdownSearch(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder={searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#344054] outline-none placeholder:text-sibs-tertiary-5"
+            ref={inputRef}
+            value={inputDisplayValue}
+            readOnly={!open}
+            disabled={disabled}
+            onFocus={openDropdown}
+            onChange={(event) => {
+              setDropdownSearch(event.target.value);
+              setOpen(true);
+            }}
+            onKeyDown={handleInputKeyDown}
+            placeholder={searchPlaceholder || placeholder}
+            className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold outline-none placeholder:text-sibs-tertiary-5 ${
+              hasDisplayValue || open
+                ? "text-[#344054]"
+                : "text-sibs-tertiary-5"
+            } disabled:cursor-not-allowed disabled:text-gray-400`}
           />
 
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="shrink-0 text-sibs-primary-1"
-            tabIndex={-1}
-          >
-            <ChevronDown size={18} className="rotate-180 transition-transform" />
-          </button>
+          <ChevronDown
+            size={18}
+            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
         </div>
       ) : (
         <button
           type="button"
           disabled={disabled}
-          onClick={searchable ? handleOpen : handleToggle}
+          onClick={toggleDropdown}
           className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
             open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
@@ -372,10 +428,10 @@ function DropdownField({
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+              hasDisplayValue ? "text-[#344054]" : "text-sibs-tertiary-5"
             }`}
           >
-            {displayLabel}
+            {displayLabel || placeholder}
           </span>
 
           <ChevronDown
@@ -392,15 +448,16 @@ function DropdownField({
           className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
         >
           <div className="max-h-72 overflow-y-auto">
-            {visibleOptions.length > 0 ? (
-              visibleOptions.map((option) => {
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => {
                 const active = String(option.value) === String(value ?? "");
 
                 return (
                   <button
                     key={option.id || option.value}
                     type="button"
-                    onClick={() => handleSelect(option.value)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => handleSelect(option)}
                     className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
                       active
                         ? "bg-[#EAF4FF] text-sibs-primary-1"
@@ -427,9 +484,7 @@ function DropdownField({
               })
             ) : (
               <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                {searchable && dropdownSearch
-                  ? "No matching account found."
-                  : "No options found."}
+                {emptyMessage}
               </div>
             )}
           </div>
@@ -503,6 +558,7 @@ function PositionFormModal({
   onSubmit,
   onReset,
   meta,
+  approvedJdPositions = [],
   isSaving,
 }) {
   if (!open) return null;
@@ -510,36 +566,9 @@ function PositionFormModal({
   const title =
     mode === "edit" ? "Edit Available Position" : "Add Available Position";
 
-  const departments = Array.isArray(meta.departments) ? meta.departments : [];
-  const accounts = Array.isArray(meta.accounts) ? meta.accounts : [];
   const statusOptions = Array.isArray(meta.statusOptions)
     ? meta.statusOptions
     : [];
-
-  const filteredAccounts = accounts.filter(
-    (account) => String(account.departmentId) === String(form.departmentId || ""),
-  );
-
-  const departmentDropdownOptions = departments.map((department) => ({
-    id: department.departmentId,
-    value: department.departmentId,
-    label: department.departmentName,
-  }));
-
-  const accountDropdownOptions = filteredAccounts.map((account) => ({
-    id: account.accountId,
-    value: account.accountId,
-    label: account.accountName,
-    description: account.accountGhlName || account.accountId || "",
-    searchText: [
-      account.accountId,
-      account.accountName,
-      account.accountGhlName,
-      account.departmentId,
-    ]
-      .filter(Boolean)
-      .join(" "),
-  }));
 
   const statusDropdownOptions = statusOptions.map((status) => ({
     id: status,
@@ -553,31 +582,145 @@ function PositionFormModal({
     label: location,
   }));
 
-  function handleDepartmentChange(departmentId) {
-    const selectedDepartment = departments.find(
-      (department) => String(department.departmentId) === String(departmentId),
-    );
+  const approvedJdDropdownOptions = approvedJdPositions
+    .map((jd) => {
+      const roleTitle =
+        jd.roleTitle ||
+        jd.role_title ||
+        jd.title ||
+        jd.documentTitle ||
+        jd.document_title ||
+        "";
+
+      if (!cleanText(roleTitle)) return null;
+
+      const jdCode = jd.jdCode || jd.jd_code || "";
+      const documentTitle = jd.documentTitle || jd.document_title || "";
+      const department =
+        jd.department || jd.departmentName || jd.department_name || "";
+      const account = jd.account || jd.preparedFor || jd.prepared_for || "";
+
+      return {
+        id: jd.id || jd.rawId || jd.raw_id || roleTitle,
+        value: roleTitle,
+        label: `${roleTitle}${jdCode ? ` (${jdCode})` : ""}`,
+        description: [documentTitle, department, account]
+          .filter(Boolean)
+          .join(" • "),
+        searchText: [roleTitle, jdCode, documentTitle, department, account]
+          .filter(Boolean)
+          .join(" "),
+        raw: jd,
+      };
+    })
+    .filter(Boolean);
+
+  function handleApprovedJdPositionChange(positionTitle, selectedOption) {
+    const selectedJd = selectedOption?.raw;
+
+    if (!selectedJd) {
+      setForm({
+        ...form,
+        jdId: "",
+        jd_id: "",
+        jdCode: "",
+        jd_code: "",
+        documentTitle: "",
+        document_title: "",
+        positionTitle,
+        departmentId: "",
+        department: "",
+        accountId: "",
+        accountName: "",
+        accountGhlName: "",
+        description: "",
+        preferredSkills: "",
+      });
+      return;
+    }
+
+    const jdId = selectedJd.id || selectedJd.rawId || selectedJd.raw_id || "";
+    const jdCode = selectedJd.jdCode || selectedJd.jd_code || "";
+
+    const documentTitle =
+      selectedJd.documentTitle ||
+      selectedJd.document_title ||
+      selectedJd.raw?.documentTitle ||
+      selectedJd.raw?.document_title ||
+      selectedJd.title ||
+      selectedJd.roleTitle ||
+      selectedJd.role_title ||
+      positionTitle ||
+      "";
+
+    const departmentId =
+      selectedJd.departmentId ||
+      selectedJd.department_id ||
+      selectedJd.raw?.departmentId ||
+      selectedJd.raw?.department_id ||
+      "";
+
+    const department =
+      selectedJd.department ||
+      selectedJd.departmentName ||
+      selectedJd.department_name ||
+      selectedJd.raw?.department ||
+      selectedJd.raw?.departmentName ||
+      selectedJd.raw?.department_name ||
+      "";
+
+    const accountId =
+      selectedJd.accountId ||
+      selectedJd.account_id ||
+      selectedJd.raw?.accountId ||
+      selectedJd.raw?.account_id ||
+      "";
+
+    const accountName =
+      selectedJd.account ||
+      selectedJd.accountName ||
+      selectedJd.account_name ||
+      selectedJd.preparedFor ||
+      selectedJd.prepared_for ||
+      selectedJd.raw?.account ||
+      selectedJd.raw?.accountName ||
+      selectedJd.raw?.account_name ||
+      selectedJd.raw?.preparedFor ||
+      selectedJd.raw?.prepared_for ||
+      "";
 
     setForm({
       ...form,
+
+      jdId,
+      jd_id: jdId,
+
+      jdCode,
+      jd_code: jdCode,
+
+      documentTitle,
+      document_title: documentTitle,
+
+      positionTitle,
+
       departmentId,
-      department: selectedDepartment?.departmentName || "",
-      accountId: "",
-      accountName: "",
-      accountGhlName: "",
-    });
-  }
+      department,
 
-  function handleAccountChange(accountId) {
-    const selectedAccount = accounts.find(
-      (account) => String(account.accountId) === String(accountId),
-    );
-
-    setForm({
-      ...form,
       accountId,
-      accountName: selectedAccount?.accountName || "",
-      accountGhlName: selectedAccount?.accountGhlName || "",
+      accountName,
+      accountGhlName:
+        selectedJd.accountGhlName ||
+        selectedJd.account_ghl_name ||
+        form.accountGhlName ||
+        "",
+
+      description: selectedJd.description || form.description || "",
+      preferredSkills:
+        selectedJd.qualifications ||
+        selectedJd.preferredSkills ||
+        selectedJd.preferred_skills ||
+        form.preferredSkills ||
+        "",
     });
   }
 
@@ -598,8 +741,8 @@ function PositionFormModal({
             </h2>
 
             <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Select a department first, then choose the matching account under
-              that department.
+              Select an approved job description, then set its public position
+              availability.
             </p>
           </div>
 
@@ -618,52 +761,68 @@ function PositionFormModal({
           <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
-                <FieldLabel required>Position Title</FieldLabel>
-
-                <input
+                <DropdownField
+                  label="Position Title"
                   required
                   value={form.positionTitle}
-                  onChange={(e) =>
-                    setForm({ ...form, positionTitle: e.target.value })
-                  }
-                  placeholder="Enter position title"
-                  className={inputClass()}
+                  displayValue={form.positionTitle}
+                  onChange={handleApprovedJdPositionChange}
+                  options={approvedJdDropdownOptions}
+                  placeholder="Search approved JD position"
+                  searchPlaceholder="Search approved JD position..."
+                  emptyMessage="No approved JD positions found."
+                  disabled={isSaving}
+                  searchable
+                  zIndex="z-[190]"
                 />
-              </div>
 
-              <DropdownField
-                label="Department"
-                required
-                value={form.departmentId}
-                onChange={handleDepartmentChange}
-                options={departmentDropdownOptions}
-                placeholder="Select department"
-                disabled={isSaving}
-                zIndex="z-[180]"
-              />
+                {(form.documentTitle ||
+                  form.department ||
+                  form.accountName ||
+                  form.jdCode) && (
+                  <div className="mt-3 space-y-2">
+                    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                        Document Title
+                      </p>
 
-              <div>
-                <DropdownField
-                label="Account"
-                required
-                searchable
-                searchPlaceholder="Search account..."
-                value={form.accountId}
-                onChange={handleAccountChange}
-                options={accountDropdownOptions}
-                placeholder={
-                  form.departmentId
-                    ? "Select account"
-                    : "Select department first"
-                }
-                disabled={isSaving || !form.departmentId}
-                zIndex="z-[170]"
-              />
+                      <p className="mt-1 text-sm font-bold text-[#344054]">
+                        {form.documentTitle || "—"}
+                      </p>
+                    </div>
 
-                {form.departmentId && filteredAccounts.length === 0 && (
-                  <p className="mt-1 text-xs font-bold text-red-600">
-                    No available accounts found under this department.
-                  </p>
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                          JD Code
+                        </p>
+
+                        <p className="mt-1 text-sm font-bold text-[#344054]">
+                          {form.jdCode || "—"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                          Department
+                        </p>
+
+                        <p className="mt-1 text-sm font-bold text-[#344054]">
+                          {form.department || "—"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                          Account
+                        </p>
+
+                        <p className="mt-1 text-sm font-bold text-[#344054]">
+                          {form.accountName || "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -688,33 +847,6 @@ function PositionFormModal({
                 disabled={isSaving}
                 zIndex="z-[150]"
               />
-
-              <div className="md:col-span-2">
-                <FieldLabel>Preferred Skills</FieldLabel>
-
-                <input
-                  value={form.preferredSkills}
-                  onChange={(e) =>
-                    setForm({ ...form, preferredSkills: e.target.value })
-                  }
-                  placeholder="Enter preferred skills"
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <FieldLabel>Description</FieldLabel>
-
-                <textarea
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                  placeholder="Describe the position purpose or role overview."
-                  className={textareaClass()}
-                />
-              </div>
 
               <div className="md:col-span-2">
                 <FieldLabel>Remarks</FieldLabel>
@@ -876,6 +1008,8 @@ export default function AvailablePositionsPage() {
     accounts: [],
   });
 
+  const [approvedJdPositions, setApprovedJdPositions] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -980,6 +1114,15 @@ export default function AvailablePositionsPage() {
         id: account.accountId,
         value: account.accountId,
         label: account.accountName,
+        description: account.accountGhlName || "",
+        searchText: [
+          account.accountId,
+          account.accountName,
+          account.accountGhlName,
+          account.departmentId,
+        ]
+          .filter(Boolean)
+          .join(" "),
       })),
     ];
   }, [filteredAccountOptions]);
@@ -1024,80 +1167,99 @@ export default function AvailablePositionsPage() {
     });
   }
 
-  const refreshPositions = useCallback(async ({ showPageLoading = true } = {}) => {
-    if (showPageLoading) {
-      setIsLoading(true);
-    }
-
-    setLoadError("");
-
-    try {
-      const [metaResponse, positionsResponse] = await Promise.all([
-        getAvailablePositionMeta(),
-        getAvailablePositions({
-          page: 1,
-          limit: 500,
-          search: "",
-          status: "All",
-          departmentId: "All",
-          accountId: "All",
-        }),
-      ]);
-
-      if (!metaResponse?.success) {
-        throw new Error(
-          metaResponse?.message || "Failed to load position metadata.",
-        );
-      }
-
-      if (!positionsResponse?.success) {
-        throw new Error(
-          positionsResponse?.message || "Failed to load available positions.",
-        );
-      }
-
-      setMeta({
-        statusOptions: Array.isArray(metaResponse.data?.statusOptions)
-          ? metaResponse.data.statusOptions.filter(Boolean)
-          : [],
-        departments: Array.isArray(metaResponse.data?.departments)
-          ? metaResponse.data.departments.filter(Boolean)
-          : [],
-        accounts: Array.isArray(metaResponse.data?.accounts)
-          ? metaResponse.data.accounts.filter(Boolean)
-          : [],
-      });
-
-      setPositionList(
-        Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
-      );
-    } catch (error) {
-      console.error("Load available positions error:", error);
-
+  const refreshPositions = useCallback(
+    async ({ showPageLoading = true } = {}) => {
       if (showPageLoading) {
+        setIsLoading(true);
+      }
+
+      setLoadError("");
+
+      try {
+        const [metaResponse, positionsResponse, approvedJdResponse] =
+          await Promise.all([
+            getAvailablePositionMeta(),
+            getAvailablePositions({
+              page: 1,
+              limit: 500,
+              search: "",
+              status: "All",
+              departmentId: "All",
+              accountId: "All",
+            }),
+            getApprovedJobDescriptions({
+              page: 1,
+              limit: 500,
+              search: "",
+            }),
+          ]);
+
+        if (!metaResponse?.success) {
+          throw new Error(
+            metaResponse?.message || "Failed to load position metadata.",
+          );
+        }
+
+        if (!positionsResponse?.success) {
+          throw new Error(
+            positionsResponse?.message || "Failed to load available positions.",
+          );
+        }
+
+        setMeta({
+          statusOptions: Array.isArray(metaResponse.data?.statusOptions)
+            ? metaResponse.data.statusOptions.filter(Boolean)
+            : [],
+          departments: Array.isArray(metaResponse.data?.departments)
+            ? metaResponse.data.departments.filter(Boolean)
+            : [],
+          accounts: Array.isArray(metaResponse.data?.accounts)
+            ? metaResponse.data.accounts.filter(Boolean)
+            : [],
+        });
+
+        setPositionList(
+          Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
+        );
+
+        setApprovedJdPositions(
+          approvedJdResponse?.success && Array.isArray(approvedJdResponse.data)
+            ? approvedJdResponse.data
+            : [],
+        );
+      } catch (error) {
+        console.error("Load available positions error:", error);
+
         setLoadError(error?.message || "Failed to load available positions.");
         setPositionList([]);
+        setApprovedJdPositions([]);
         setMeta({
           statusOptions: [],
           departments: [],
           accounts: [],
         });
 
-        openStatusModal(
-          "error",
-          "Unable to load positions",
-          error?.message || "Failed to load available positions.",
-        );
+        if (showPageLoading) {
+          openStatusModal(
+            "error",
+            "Unable to load positions",
+            error?.message || "Failed to load available positions.",
+          );
+        }
+      } finally {
+        if (showPageLoading) {
+          setIsLoading(false);
+        }
       }
-    } finally {
-      if (showPageLoading) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
-    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+    if (
+      typeof window !== "undefined" &&
+      "scrollRestoration" in window.history
+    ) {
       window.history.scrollRestoration = "manual";
     }
 
@@ -1135,6 +1297,17 @@ export default function AvailablePositionsPage() {
   function resetForm() {
     if (formMode === "edit" && editTarget) {
       setPositionForm({
+        jdId: editTarget.jdId || editTarget.jd_id || "",
+        jd_id: editTarget.jd_id || editTarget.jdId || "",
+
+        jdCode: editTarget.jdCode || editTarget.jd_code || "",
+        jd_code: editTarget.jd_code || editTarget.jdCode || "",
+
+        documentTitle:
+          editTarget.documentTitle || editTarget.document_title || "",
+        document_title:
+          editTarget.document_title || editTarget.documentTitle || "",
+
         positionTitle: editTarget.positionTitle || "",
         departmentId: editTarget.departmentId || "",
         department: editTarget.department || "",
@@ -1164,6 +1337,15 @@ export default function AvailablePositionsPage() {
     setFormMode("edit");
     setEditTarget(position);
     setPositionForm({
+      jdId: position.jdId || position.jd_id || "",
+      jd_id: position.jd_id || position.jdId || "",
+
+      jdCode: position.jdCode || position.jd_code || "",
+      jd_code: position.jd_code || position.jdCode || "",
+
+      documentTitle: position.documentTitle || position.document_title || "",
+      document_title: position.document_title || position.documentTitle || "",
+
       positionTitle: position.positionTitle || "",
       departmentId: position.departmentId || "",
       department: position.department || "",
@@ -1195,59 +1377,132 @@ export default function AvailablePositionsPage() {
     setPositionForm(emptyForm);
   }
 
+  async function verifySavedPosition(payload = {}) {
+    try {
+      const result = await getAvailablePositions({
+        page: 1,
+        limit: 500,
+        search: "",
+        status: "All",
+        departmentId: "All",
+        accountId: "All",
+      });
+
+      const rows = Array.isArray(result?.data) ? result.data : [];
+
+      if (result?.success) {
+        setPositionList(rows);
+      }
+
+      return rows.some((position) => {
+        const sameJd =
+          payload.jdId || payload.jd_id || payload.jdCode || payload.jd_code
+            ? String(position.jdId || position.jd_id || "") ===
+                String(payload.jdId || payload.jd_id || "") ||
+              sameText(
+                position.jdCode || position.jd_code,
+                payload.jdCode || payload.jd_code,
+              )
+            : false;
+
+        const samePosition = sameText(
+          position.positionTitle,
+          payload.positionTitle,
+        );
+
+        const sameLocation = sameText(
+          position.locationSite,
+          payload.locationSite,
+        );
+
+        return samePosition && sameLocation && (sameJd || !payload.jdId);
+      });
+    } catch (error) {
+      console.error("Verify saved available position error:", error);
+      return false;
+    }
+  }
+
   async function savePosition() {
     if (isSaving) return;
 
     setIsSaving(true);
 
-    try {
-      const payload = {
-        positionTitle: positionForm.positionTitle.trim(),
-        departmentId: positionForm.departmentId,
-        accountId: positionForm.accountId,
-        description: positionForm.description.trim(),
-        preferredSkills: positionForm.preferredSkills.trim(),
-        locationSite: positionForm.locationSite,
-        status: positionForm.status,
-        remarks: positionForm.remarks.trim(),
-        createdBy: currentUserName,
-        updatedBy: currentUserName,
-      };
+    const payload = {
+      jdId: positionForm.jdId || positionForm.jd_id || null,
+      jd_id: positionForm.jd_id || positionForm.jdId || null,
 
+      jdCode: cleanText(positionForm.jdCode || positionForm.jd_code),
+      jd_code: cleanText(positionForm.jd_code || positionForm.jdCode),
+
+      documentTitle: cleanText(
+        positionForm.documentTitle || positionForm.document_title,
+      ),
+      document_title: cleanText(
+        positionForm.document_title || positionForm.documentTitle,
+      ),
+
+      positionTitle: cleanText(positionForm.positionTitle),
+      departmentId: positionForm.departmentId,
+      department: cleanText(positionForm.department),
+      accountId: positionForm.accountId,
+      accountName: cleanText(positionForm.accountName),
+      accountGhlName: cleanText(positionForm.accountGhlName),
+
+      description: cleanText(positionForm.description),
+      preferredSkills: cleanText(positionForm.preferredSkills),
+      locationSite: positionForm.locationSite,
+      status: positionForm.status,
+      remarks: cleanText(positionForm.remarks),
+
+      createdBy: currentUserName,
+      updatedBy: currentUserName,
+    };
+
+    try {
       const response =
         formMode === "edit" && editTarget
           ? await updateAvailablePosition(editTarget.id, payload)
           : await createAvailablePosition(payload);
 
       if (!response?.success) {
+        const wasActuallySaved = await verifySavedPosition(payload);
+
+        if (!wasActuallySaved) {
+          openStatusModal(
+            "error",
+            "Position not saved",
+            response?.message || "Failed to save available position.",
+          );
+          return;
+        }
+
+        closeFormAfterSave();
+        scrollToTop("auto");
+
         openStatusModal(
-          "error",
-          "Position not saved",
-          response?.message || "Failed to save available position.",
+          "success",
+          formMode === "edit" ? "Position updated" : "Position saved",
+          "The available position was saved successfully.",
         );
+
         return;
       }
 
-      const savedPosition = response?.data || null;
+      if (response.data) {
+        setPositionList((prev) => {
+          const savedItem = response.data;
 
-      if (savedPosition?.id) {
-        setPositionList((previousList = []) => {
-          const positionExists = previousList.some(
-            (position) => String(position.id) === String(savedPosition.id),
-          );
-
-          if (positionExists) {
-            return previousList.map((position) =>
-              String(position.id) === String(savedPosition.id)
-                ? {
-                    ...position,
-                    ...savedPosition,
-                  }
-                : position,
+          if (formMode === "edit" && editTarget) {
+            return prev.map((item) =>
+              String(item.id) === String(savedItem.id) ? savedItem : item,
             );
           }
 
-          return [savedPosition, ...previousList];
+          return [
+            savedItem,
+            ...prev.filter((item) => String(item.id) !== String(savedItem.id)),
+          ];
         });
       }
 
@@ -1266,15 +1521,31 @@ export default function AvailablePositionsPage() {
           : "The available position was saved successfully.",
       );
 
-      window.setTimeout(() => {
-        refreshPositions({ showPageLoading: false });
-      }, 150);
+      void refreshPositions({ showPageLoading: false });
     } catch (error) {
       console.error("Save available position error:", error);
+
+      const wasActuallySaved = await verifySavedPosition(payload);
+
+      if (wasActuallySaved) {
+        closeFormAfterSave();
+        scrollToTop("auto");
+
+        openStatusModal(
+          "success",
+          formMode === "edit" ? "Position updated" : "Position saved",
+          "The available position was saved successfully.",
+        );
+
+        return;
+      }
+
       openStatusModal(
         "error",
         "Position not saved",
-        error?.message || "Failed to save available position.",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to save available position.",
       );
     } finally {
       setIsSaving(false);
@@ -1284,11 +1555,20 @@ export default function AvailablePositionsPage() {
   function handleSubmitPosition(e) {
     e.preventDefault();
 
-    if (!positionForm.positionTitle.trim()) {
+    if (!cleanText(positionForm.positionTitle)) {
       openStatusModal(
         "error",
         "Required field missing",
         "Position Title is required.",
+      );
+      return;
+    }
+
+    if (!positionForm.jdId && !positionForm.jd_id && !positionForm.jdCode) {
+      openStatusModal(
+        "error",
+        "Approved JD Required",
+        "Please select a position from the approved JD dropdown.",
       );
       return;
     }
@@ -1312,11 +1592,7 @@ export default function AvailablePositionsPage() {
     }
 
     if (!positionForm.status) {
-      openStatusModal(
-        "error",
-        "Required field missing",
-        "Status is required.",
-      );
+      openStatusModal("error", "Required field missing", "Status is required.");
       return;
     }
 
@@ -1332,7 +1608,7 @@ export default function AvailablePositionsPage() {
     requestConfirm({
       title: formMode === "edit" ? "Update Position" : "Save Position",
       message:
-        positionForm.status === activeStatus
+        cleanText(positionForm.status) === cleanText(activeStatus)
           ? `${positionForm.positionTitle} will be visible in the Public Form and Talent Pool form.`
           : `${positionForm.positionTitle} will not be visible to applicants unless status is ${
               activeStatus || "configured as visible"
@@ -1377,7 +1653,7 @@ export default function AvailablePositionsPage() {
             return;
           }
 
-          await refreshPositions();
+          await refreshPositions({ showPageLoading: false });
 
           scrollToTop("auto");
 
@@ -1431,6 +1707,10 @@ export default function AvailablePositionsPage() {
       const text = [
         position.positionId,
         position.positionTitle,
+        position.jdCode,
+        position.jd_code,
+        position.documentTitle,
+        position.document_title,
         position.department,
         position.accountName,
         position.accountGhlName,
@@ -1445,11 +1725,14 @@ export default function AvailablePositionsPage() {
         .join(" ")
         .toLowerCase();
 
-      const normalizedPositionStatus = String(position.status || "").toLowerCase();
+      const normalizedPositionStatus = String(
+        position.status || "",
+      ).toLowerCase();
 
       const matchesSearch = !keyword || text.includes(keyword);
       const matchesStatus =
-        statusFilter === "All" || normalizedPositionStatus === normalizedStatusFilter;
+        statusFilter === "All" ||
+        normalizedPositionStatus === normalizedStatusFilter;
       const matchesDepartment =
         departmentFilter === "All" ||
         String(position.departmentId) === String(departmentFilter);
@@ -1685,6 +1968,9 @@ export default function AvailablePositionsPage() {
                       !filteredAccountOptions.length)
                   }
                   zIndex="z-[120]"
+                  searchable
+                  searchPlaceholder="Search account..."
+                  emptyMessage="No matching account found."
                 />
 
                 <DropdownField
@@ -1762,7 +2048,7 @@ export default function AvailablePositionsPage() {
                             paginatedPositions.map((position) => (
                               <tr
                                 key={position.id}
-                                className="transition hover:bg-[#FAFBFC]"
+                                className="align-top transition hover:bg-[#FAFBFC]"
                               >
                                 <td className="border-b border-[#E6ECF2] px-5 py-5">
                                   <p className="text-sm font-bold text-[#101828]">
@@ -1772,6 +2058,12 @@ export default function AvailablePositionsPage() {
                                   <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
                                     {position.positionId}
                                   </p>
+
+                                  {position.jdCode && (
+                                    <p className="mt-1 text-xs font-bold text-sibs-primary-1">
+                                      {position.jdCode}
+                                    </p>
+                                  )}
                                 </td>
 
                                 <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
@@ -1790,8 +2082,16 @@ export default function AvailablePositionsPage() {
                                   {position.locationSite || "—"}
                                 </td>
 
-                                <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                                  <p className="max-w-[300px]">
+                                <td className="border-b border-[#E6ECF2] px-5 py-5 align-top text-sm font-semibold text-[#344054]">
+                                  <p
+                                    className="max-w-[300px] overflow-hidden whitespace-pre-line break-words leading-5"
+                                    style={{
+                                      display: "-webkit-box",
+                                      WebkitLineClamp: 4,
+                                      WebkitBoxOrient: "vertical",
+                                    }}
+                                    title={position.preferredSkills || ""}
+                                  >
                                     {position.preferredSkills || "—"}
                                   </p>
                                 </td>
@@ -1817,7 +2117,10 @@ export default function AvailablePositionsPage() {
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          handleSetStatus(position, activeStatus)
+                                          handleSetStatus(
+                                            position,
+                                            activeStatus,
+                                          )
                                         }
                                         disabled={
                                           isSaving ||
@@ -1951,6 +2254,7 @@ export default function AvailablePositionsPage() {
         onSubmit={handleSubmitPosition}
         onReset={resetForm}
         meta={meta}
+        approvedJdPositions={approvedJdPositions}
         isSaving={isSaving}
       />
 
@@ -1964,7 +2268,10 @@ export default function AvailablePositionsPage() {
         onConfirm={() => {
           const action = confirmState?.onConfirm;
           setConfirmState(null);
-          if (typeof action === "function") action();
+
+          if (typeof action === "function") {
+            action();
+          }
         }}
       />
 

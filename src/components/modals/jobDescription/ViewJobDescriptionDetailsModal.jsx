@@ -2,11 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AlertTriangle, Eye, Loader2 } from "lucide-react";
 import Details from "../../layout/tabs/JobDescriptionView/Details";
 import { normalizeJdStatus } from "../../../lib/utils/NormalizeJDStatus";
-import Approvals from "../../layout/tabs/JobDescriptionView/Approvals";
 import RevisionHistory from "../../layout/tabs/JobDescriptionView/RevisionHistory";
-import LinkedERCases from "../../layout/tabs/JobDescriptionView/LinkedERCases";
-import { saveJobDescriptionRevisionComments } from "../../../lib/axios/jobDescription";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
+import { approveJobDescriptionRequest } from "../../../lib/axios/getApprovalRequest";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -14,14 +12,12 @@ export default function ViewJobDescriptionDetailsModal({
   open,
   onClose,
   approvalPage = false,
-
   onOpenRevision,
   onUpdated,
   onRefresh,
   onStatus,
 }) {
   const [activeDetailTab, setActiveDetailTab] = useState("Details");
-  // const [revisionComments, setRevisionComments] = useState([]);
   const [hasEditedChanges, setHasEditedChanges] = useState(false);
   const [editedChangeDetails, setEditedChangeDetails] = useState([]);
   const [showEditedChanges, setShowEditedChanges] = useState(false);
@@ -45,7 +41,6 @@ export default function ViewJobDescriptionDetailsModal({
   } = useJobDescription();
 
   const item = selectedJobDescription;
-
   const hasRevisionComments = revisionComments.length > 0;
 
   const primaryButtonLabel = hasRevisionComments
@@ -91,17 +86,115 @@ export default function ViewJobDescriptionDetailsModal({
     item?.revisionNo,
   ]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    setRevisionComments([]);
+    setHasEditedChanges(false);
+    setEditedChangeDetails([]);
+    setShowEditedChanges(false);
+    setSaving(false);
+  }, [open, item?.id, item?.rawId]);
+
+  useLayoutEffect(() => {
+    if (approvalPage) return;
+
+    const activeButton = tabRefs.current[activeDetailTab];
+
+    if (!activeButton) return;
+
+    setTabIndicator({
+      left: activeButton.offsetLeft,
+      width: activeButton.offsetWidth,
+    });
+  }, [activeDetailTab, open, approvalPage]);
+
   function getJdStatusClass(status) {
     switch (normalizeJdStatus(status)) {
+      case "Approved":
       case "Existing":
+      case "Active":
+      case "Approved":
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
-      case "For Revision":
-        return "border-amber-200 bg-amber-50 text-amber-700";
+
+      case "For Approval":
+        return "border-[#FFBFA8] bg-[#FFF3ED] text-sibs-primary-2";
+
       case "New Job Description":
-        return "border-blue-200 bg-blue-50 text-blue-700";
+      case "New JD":
+      case "Draft":
+        return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
+
+      case "For Revision":
+        return "border-[#F6C84C] bg-[#FFF8E6] text-[#9A6400]";
+
+      case "Returned for Revision":
+      case "Rejected":
+      case "Declined":
+        return "border-red-200 bg-red-50 text-red-700";
+
+      case "Archived":
+      case "Archived JD":
+        return "border-[#D6DEE8] bg-[#F8FAFC] text-[#475467]";
+
       default:
         return "border-gray-200 bg-gray-50 text-gray-600";
     }
+  }
+
+  function getJdStatusLabel(status) {
+    const normalizedStatus = normalizeJdStatus(status);
+
+    switch (normalizedStatus) {
+      case "Existing":
+        return "Existing";
+
+      case "Active":
+        return "Active";
+
+      case "Approved":
+        return "Approved";
+
+      case "For Revision":
+        return "For Revision";
+
+      case "For Approval":
+        return "For Approval";
+
+      case "New Job Description":
+      case "New JD":
+        return "New Job Description";
+
+      case "Draft":
+        return "Draft";
+
+      case "Returned for Revision":
+        return "Returned for Revision";
+
+      case "Rejected":
+        return "Rejected";
+
+      case "Declined":
+        return "Declined";
+
+      case "Archived":
+      case "Archived JD":
+        return "Archived";
+
+      default:
+        return normalizedStatus || "—";
+    }
+  }
+
+  function getDisplayJdStatus() {
+    return normalizeJdStatus(
+      item?.jdStatus ||
+        item?.jd_status ||
+        item?.raw?.jdStatus ||
+        item?.raw?.jd_status ||
+        item?.status ||
+        "",
+    );
   }
 
   function getJobDescriptionId() {
@@ -194,6 +287,87 @@ export default function ViewJobDescriptionDetailsModal({
     }
   }
 
+  async function handleApproveJobDescription() {
+    if (saving) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      onStatus?.({
+        type: "error",
+        title: "Invalid Job Description",
+        message: "Unable to identify the selected job description.",
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const result = await approveJobDescriptionRequest(jdId, {
+        remarks: "",
+        module: "Job Description",
+        type: "Job Description",
+      });
+
+      if (!result?.success) {
+        onStatus?.({
+          type: "error",
+          title: "Approval Failed",
+          message: result?.message || "Failed to approve job description.",
+        });
+        return;
+      }
+
+      const updatedItem = {
+        ...item,
+        jdStatus: "Approved",
+        jd_status: "Approved",
+        status: "Approved",
+        approvalStatus: "Approved",
+        approval_status: "Approved",
+        approvedBy: result?.data?.approvedBy || result?.data?.approved_by || "",
+        approved_by:
+          result?.data?.approved_by || result?.data?.approvedBy || "",
+        approveRemarks:
+          result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+        approve_remarks:
+          result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        raw: {
+          ...(item.raw || {}),
+          jdStatus: "Approved",
+          jd_status: "Approved",
+          status: "Approved",
+          approvalStatus: "Approved",
+          approval_status: "Approved",
+          approvedBy:
+            result?.data?.approvedBy || result?.data?.approved_by || "",
+          approved_by:
+            result?.data?.approved_by || result?.data?.approvedBy || "",
+          approveRemarks:
+            result?.data?.approveRemarks || result?.data?.approve_remarks || "",
+          approve_remarks:
+            result?.data?.approve_remarks || result?.data?.approveRemarks || "",
+        },
+      };
+
+      updateSelectedJobDescription(updatedItem);
+      onUpdated?.(updatedItem);
+      await onRefresh?.();
+
+      onStatus?.({
+        type: "success",
+        title: "Job Description Approved",
+        message:
+          result?.message || "Job description request approved successfully.",
+      });
+
+      onClose?.();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handlePrimaryAction() {
     if (hasRevisionComments) {
       await handleSaveRevisionComments();
@@ -216,33 +390,6 @@ export default function ViewJobDescriptionDetailsModal({
     });
   }
 
-  useEffect(() => {
-    console.log(item);
-  }, [item]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    setRevisionComments([]);
-    setHasEditedChanges(false);
-    setEditedChangeDetails([]);
-    setShowEditedChanges(false);
-    setSaving(false);
-  }, [open, item?.id, item?.rawId]);
-
-  useLayoutEffect(() => {
-    if (approvalPage) return;
-
-    const activeButton = tabRefs.current[activeDetailTab];
-
-    if (!activeButton) return;
-
-    setTabIndicator({
-      left: activeButton.offsetLeft,
-      width: activeButton.offsetWidth,
-    });
-  }, [activeDetailTab, open, approvalPage]);
-
   function handleOpenRevisionFromDetails(targetItem) {
     const revisionTarget = targetItem || item;
 
@@ -262,38 +409,30 @@ export default function ViewJobDescriptionDetailsModal({
     : [];
 
   const shouldShowDetails = approvalPage || activeDetailTab === "Details";
+  const displayJdStatus = getDisplayJdStatus();
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center
-         bg-black/40 px-4 py-4"
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-2 py-2 sm:px-4 sm:py-4"
       onClick={saving ? undefined : onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="view-job-description-modal-title"
-        className="flex max-h-[92dvh] w-full max-w-[1440px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex h-[94dvh] w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className={`border-b border-gray-200 px-5 sm:px-6 ${
-            approvalPage ? "py-6" : "pt-6"
-          }`}
-        >
-          <div
-            className={`flex flex-col justify-between gap-4 md:flex-row md:items-start ${
-              approvalPage ? "" : "mb-5"
-            }`}
-          >
+        <div className="shrink-0 border-b border-[#D9E2EC] bg-white px-4 py-4 sm:px-6">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
             <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wide text-sibs-primary-1/80">
+              <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/80">
                 Job Description Overview
-              </p>
+              </div>
 
               <h2
                 id="view-job-description-modal-title"
-                className="mt-1 min-w-0 text-lg font-extrabold text-sibs-primary-1 sm:text-2xl"
+                className="mt-1 min-w-0 break-words text-lg font-extrabold leading-tight text-sibs-primary-1 sm:text-2xl"
               >
                 {jdTitle}
               </h2>
@@ -304,16 +443,16 @@ export default function ViewJobDescriptionDetailsModal({
             </div>
 
             <span
-              className={`w-fit shrink-0 rounded-lg px-4 py-3 text-xs font-bold ${getJdStatusClass(
-                item.jdStatus,
+              className={`inline-flex w-fit min-w-[92px] shrink-0 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-xs font-extrabold leading-none ${getJdStatusClass(
+                displayJdStatus,
               )}`}
             >
-              {normalizeJdStatus(item.jdStatus)}
+              {getJdStatusLabel(displayJdStatus)}
             </span>
           </div>
 
           {!approvalPage && (
-            <div className="relative flex gap-8 overflow-x-auto text-sm font-bold text-[#344054]">
+            <div className="relative mt-4 flex gap-8 overflow-x-auto text-sm font-bold text-[#344054] no-scrollbar">
               <span
                 className="absolute bottom-0 h-[2px] rounded-full bg-blue-500 transition-all duration-300 ease-in-out"
                 style={{
@@ -347,28 +486,28 @@ export default function ViewJobDescriptionDetailsModal({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          {shouldShowDetails && (
-            <Details
-              onOpenRevision={handleOpenRevisionFromDetails}
-              hasEditedChanges={hasEditedChanges}
-              onEditedChange={setHasEditedChanges}
-              editedChangeDetails={editedChangeDetails}
-              setEditedChangeDetails={setEditedChangeDetails}
-              approvalPage={approvalPage}
-            />
-          )}
+        <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
+          <div className="thin-scroll h-full overflow-y-auto px-3 py-5 sm:px-5 sm:py-7 lg:px-8">
+            {shouldShowDetails && (
+              <Details
+                onOpenRevision={handleOpenRevisionFromDetails}
+                hasEditedChanges={hasEditedChanges}
+                onEditedChange={setHasEditedChanges}
+                editedChangeDetails={editedChangeDetails}
+                setEditedChangeDetails={setEditedChangeDetails}
+                approvalPage={approvalPage}
+              />
+            )}
 
-          {!approvalPage && activeDetailTab === "Revision History" && (
-            <RevisionHistory revisionHistory={revisionHistory} item={item} />
-          )}
-
-          {!approvalPage && activeDetailTab === "Linked ER Cases" && (
-            <LinkedERCases />
-          )}
+            {!approvalPage && activeDetailTab === "Revision History" && (
+              <div className="mx-auto w-full max-w-[900px] rounded-2xl bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:p-6">
+                <RevisionHistory revisionHistory={revisionHistory} item={item} />
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
+        <div className="shrink-0 border-t border-[#D9E2EC] bg-white px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             {!hasRevisionComments && hasEditedChanges && (
               <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-amber-700">
