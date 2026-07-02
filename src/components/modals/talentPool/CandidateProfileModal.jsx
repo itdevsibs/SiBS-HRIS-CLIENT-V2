@@ -295,6 +295,12 @@ function calculateTotalRequirementProgress(files = []) {
 }
 
 function getCandidateStageValue(candidate = {}) {
+  /*
+    Pipeline stage must come from verified Candidate Pipeline fields only.
+    Do not fall back to talent pool status because statuses like
+    "New Applicant", "Interviewed", or "Public Submission" can make an
+    unlinked talent pool candidate look linked.
+  */
   return cleanText(
     candidate.currentPipelineStage ||
       candidate.current_pipeline_stage ||
@@ -303,7 +309,6 @@ function getCandidateStageValue(candidate = {}) {
       candidate.pipelineStage ||
       candidate.pipeline_stage ||
       candidate.stage ||
-      candidate.status ||
       "",
   );
 }
@@ -385,33 +390,29 @@ function getResolvedPipelineId(candidate = {}, fallback = "") {
   );
 }
 
+function isTruthyFlag(value) {
+  if (value === true) return true;
+  if (value === 1) return true;
+
+  const normalized = normalizeLower(value);
+
+  return ["true", "1", "yes", "linked", "moved"].includes(normalized);
+}
+
 function isCandidateLinkedToPipeline(candidate = {}) {
   const safeCandidate = safeObject(candidate);
-  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
-  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+  const verifiedPipelineId = getCandidatePipelineLookupId(safeCandidate);
 
+  /*
+    A candidate is considered linked only when there is a real Candidate
+    Pipeline identifier or an explicit linked flag. Stage/status text alone is
+    not enough because another candidate can share the same email and appear in
+    the pipeline search result.
+  */
   return Boolean(
-    safeCandidate.pipelineStatus ||
-      safeCandidate.pipeline_status ||
-      safeCandidate.currentPipelineStage ||
-      safeCandidate.current_pipeline_stage ||
-      safeCandidate.currentTaOwner ||
-      safeCandidate.current_ta_owner ||
-      safeCandidate.pipelineStage ||
-      safeCandidate.pipeline_stage ||
-      safeCandidate.currentStage ||
-      safeCandidate.current_stage ||
-      safeCandidate.movedToPipeline ||
-      safeCandidate.moved_to_pipeline ||
-      safeCandidate.pipelineId ||
-      safeCandidate.pipeline_id ||
-      safeCandidate.pipelineDbId ||
-      safeCandidate.pipeline_db_id ||
-      pipelineCandidate.id ||
-      pipelineCandidate.dbId ||
-      pipelineDetails.id ||
-      pipelineDetails.dbId ||
-      getCandidatePipelineLookupId(candidate),
+    verifiedPipelineId ||
+      isTruthyFlag(safeCandidate.movedToPipeline) ||
+      isTruthyFlag(safeCandidate.moved_to_pipeline),
   );
 }
 
@@ -713,15 +714,24 @@ function getPipelineRowsFromListResponse(response) {
   );
 }
 
-function candidateMatchesPipeline(candidate = {}, pipelineCandidate = {}) {
-  const sourceTalentPoolId = cleanText(
-    pipelineCandidate.sourceTalentPoolId ||
-      pipelineCandidate.source_talent_pool_id,
-  );
+function normalizeMatchText(value = "") {
+  return normalizeLower(value)
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const talentPoolId = cleanText(candidate.id || candidate.rawId);
+function namesMatchStrict(firstName = "", secondName = "") {
+  const first = normalizeMatchText(firstName);
+  const second = normalizeMatchText(secondName);
 
-  const candidateIds = [
+  if (!first || !second) return false;
+
+  return first === second;
+}
+
+function collectCandidateIdentityIds(candidate = {}) {
+  return [
     candidate.candidateId,
     candidate.candidate_id,
     candidate.candidateApplicationId,
@@ -733,35 +743,59 @@ function candidateMatchesPipeline(candidate = {}, pipelineCandidate = {}) {
   ]
     .map(cleanText)
     .filter(Boolean);
+}
 
-  const pipelineCandidateIds = [
-    pipelineCandidate.candidateId,
-    pipelineCandidate.candidate_id,
-    pipelineCandidate.candidateApplicationId,
-    pipelineCandidate.candidate_application_id,
-    pipelineCandidate.applicationId,
-    pipelineCandidate.application_id,
-    pipelineCandidate.publicId,
-    pipelineCandidate.public_id,
-  ]
-    .map(cleanText)
-    .filter(Boolean);
+function candidateMatchesPipeline(candidate = {}, pipelineCandidate = {}) {
+  const sourceTalentPoolId = cleanText(
+    pipelineCandidate.sourceTalentPoolId ||
+      pipelineCandidate.source_talent_pool_id,
+  );
+
+  const talentPoolId = cleanText(candidate.id || candidate.rawId);
+
+  if (sourceTalentPoolId && talentPoolId && sourceTalentPoolId === talentPoolId) {
+    return true;
+  }
+
+  const candidateIds = collectCandidateIdentityIds(candidate);
+  const pipelineCandidateIds = collectCandidateIdentityIds(pipelineCandidate);
+
+  if (candidateIds.some((id) => pipelineCandidateIds.includes(id))) {
+    return true;
+  }
 
   const email = normalizeLower(candidate.email);
   const pipelineEmail = normalizeLower(pipelineCandidate.email);
 
-  const name = normalizeLower(candidate.name || candidate.fullName);
-  const pipelineName = normalizeLower(
-    pipelineCandidate.name ||
-      pipelineCandidate.fullName ||
-      pipelineCandidate.candidateName,
-  );
+  const name =
+    candidate.name ||
+    candidate.fullName ||
+    [candidate.firstName, candidate.middleName, candidate.lastName]
+      .filter(Boolean)
+      .join(" ");
 
+  const pipelineName =
+    pipelineCandidate.name ||
+    pipelineCandidate.fullName ||
+    pipelineCandidate.candidateName ||
+    [
+      pipelineCandidate.firstName,
+      pipelineCandidate.middleName,
+      pipelineCandidate.lastName,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  /*
+    Email alone is not safe. The same email can be reused in test records or
+    public submissions. Only treat an email match as linked when the candidate
+    name also matches exactly after normalization.
+  */
   return Boolean(
-    (sourceTalentPoolId && talentPoolId && sourceTalentPoolId === talentPoolId) ||
-      candidateIds.some((id) => pipelineCandidateIds.includes(id)) ||
-      (email && pipelineEmail && email === pipelineEmail) ||
-      (name && pipelineName && name === pipelineName),
+    email &&
+      pipelineEmail &&
+      email === pipelineEmail &&
+      namesMatchStrict(name, pipelineName),
   );
 }
 
@@ -818,10 +852,9 @@ async function fetchPipelineCandidateByAnyIdentity(candidate = {}) {
       });
 
       const rows = getPipelineRowsFromListResponse(response);
-      const match =
-        rows.find((row) => candidateMatchesPipeline(candidate, row)) ||
-        rows[0] ||
-        null;
+      const match = rows.find((row) =>
+        candidateMatchesPipeline(candidate, row),
+      );
 
       if (match) {
         return safeObject(match);
@@ -2201,7 +2234,10 @@ export default function CandidateProfileModal() {
   const encodedBy = getEncodedByName(activeCandidate, currentTaOwner);
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
 
-  const currentStage = getCandidateStageValue(activeCandidate);
+  const isAlreadyInPipeline = isCandidateLinkedToPipeline(activeCandidate);
+  const currentStage = isAlreadyInPipeline
+    ? getCandidateStageValue(activeCandidate)
+    : "";
   const normalizedCurrentStage = normalizeLower(currentStage);
 
   const isIncompleteRequirementsStage =
@@ -2209,8 +2245,6 @@ export default function CandidateProfileModal() {
 
   const isAlreadyOnboarding =
     normalizedCurrentStage === normalizeLower(ONBOARDING_STAGE);
-
-  const isAlreadyInPipeline = isCandidateLinkedToPipeline(activeCandidate);
 
   const canUploadFollowUpNhoRequirements = Boolean(
     (resolvedPipelineId || candidatePipelineLookupId) &&

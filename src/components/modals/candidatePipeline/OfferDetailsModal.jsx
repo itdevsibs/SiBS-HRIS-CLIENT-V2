@@ -268,7 +268,6 @@ function HrisDropdown({
 
   function openDropdown() {
     if (disabled) return;
-
     setOpen(true);
   }
 
@@ -336,17 +335,22 @@ function HrisDropdown({
       {searchable ? (
         <div
           onClick={openDropdown}
-          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
               : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
           } ${
             disabled
               ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "cursor-text text-sibs-primary-1"
+              : "cursor-text bg-white text-sibs-primary-1"
           }`}
         >
-          <Search size={17} className="shrink-0 text-sibs-primary-1" />
+          <Search
+            size={17}
+            className={`shrink-0 ${
+              disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+            }`}
+          />
 
           <input
             ref={searchInputRef}
@@ -368,9 +372,10 @@ function HrisDropdown({
             <button
               type="button"
               tabIndex={-1}
+              disabled={disabled}
               onMouseDown={(event) => event.preventDefault()}
               onClick={toggleDropdown}
-              className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
+              className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF] disabled:cursor-not-allowed disabled:text-sibs-tertiary-5 disabled:hover:bg-transparent"
             >
               <ChevronDown
                 size={18}
@@ -384,14 +389,14 @@ function HrisDropdown({
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
+          className={`flex h-12 w-full min-w-0 items-center justify-between gap-3 rounded-xl border px-4 text-left text-sm font-extrabold shadow-sm outline-none transition ${
             open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
               : "border-[#D0D5DD] hover:border-sibs-primary-1/50 hover:bg-[#F8FAFC]"
           } ${
             disabled
               ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-              : "text-sibs-primary-1"
+              : "bg-white text-sibs-primary-1"
           }`}
         >
           <span
@@ -412,9 +417,9 @@ function HrisDropdown({
           ) : (
             <ChevronDown
               size={18}
-              className={`shrink-0 text-sibs-primary-1 transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
+              className={`shrink-0 transition-transform ${
+                disabled ? "text-sibs-tertiary-5" : "text-sibs-primary-1"
+              } ${open ? "rotate-180" : ""}`}
             />
           )}
         </button>
@@ -472,7 +477,7 @@ function HrisDropdown({
 }
 
 function inputClass() {
-  return "h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10";
+  return "h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:opacity-80";
 }
 
 function textareaClass() {
@@ -647,6 +652,12 @@ export default function OfferDetailsModal({
     if (!selected) {
       updateForm({
         hiringRequirementId: "",
+        hiringRequirementLabel: "",
+        roleTitle: "",
+        finalRole: "",
+        account: "",
+        finalAccount: "",
+        hiringNeed: null,
       });
       return;
     }
@@ -654,10 +665,10 @@ export default function OfferDetailsModal({
     updateForm({
       hiringRequirementId: selected.id,
       hiringRequirementLabel: selected.label,
-      roleTitle: selected.roleTitle || form.roleTitle || "",
-      finalRole: selected.roleTitle || form.roleTitle || "",
-      account: selected.account || form.account || "",
-      finalAccount: selected.account || form.account || "",
+      roleTitle: selected.roleTitle || "",
+      finalRole: selected.roleTitle || "",
+      account: selected.account || "",
+      finalAccount: selected.account || "",
       basicPay:
         selected.basicPay !== "" && selected.basicPay !== null
           ? formatMoneyInput(selected.basicPay)
@@ -671,11 +682,8 @@ export default function OfferDetailsModal({
     });
   }
 
-  function handleAccountSelect(option) {
-    updateForm({
-      account: option?.value || "",
-      finalAccount: option?.value || "",
-    });
+  function handleAccountSelect() {
+    return;
   }
 
   async function handleProceedClick(event) {
@@ -868,28 +876,35 @@ export default function OfferDetailsModal({
                   <input
                     type="text"
                     value={form.roleTitle || ""}
-                    onChange={(event) =>
-                      updateForm({
-                        roleTitle: event.target.value,
-                        finalRole: event.target.value,
-                      })
-                    }
+                    disabled
+                    readOnly
                     placeholder="Final role title"
                     className={inputClass()}
+                    title="Final role title is automatically based on the selected Hiring Requirement / PRF."
                   />
                 </div>
 
-                <HrisDropdown
-                  label="Final Account"
-                  required
-                  placeholder="Search account"
-                  value={form.account || ""}
-                  options={accountOptions}
-                  onChange={handleAccountSelect}
-                  searchable
-                  emptyText="No account found."
-                />
+                <div>
+                  <label className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    Final Account <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={form.account || ""}
+                    disabled
+                    readOnly
+                    placeholder="Final account"
+                    className={inputClass()}
+                    title="Final account is automatically based on the selected Hiring Requirement / PRF."
+                  />
+                </div>
               </div>
+
+              <p className="-mt-2 text-xs font-bold text-sibs-tertiary-5">
+                Final Role Title and Final Account are locked because they are
+                automatically based on the selected Hiring Requirement / PRF.
+              </p>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
