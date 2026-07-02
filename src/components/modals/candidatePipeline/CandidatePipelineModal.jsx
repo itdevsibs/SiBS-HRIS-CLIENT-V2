@@ -114,8 +114,451 @@ const ASSESSMENT_RESULT_OPTIONS = [
   "For Reassessment",
 ];
 
+const ASSESSMENT_STATUS_DROPDOWN_OPTIONS = ASSESSMENT_STATUS_OPTIONS.map(
+  (option) => ({
+    value: option,
+    label: option,
+  }),
+);
+
+const ASSESSMENT_RESULT_DROPDOWN_OPTIONS = [
+  {
+    value: "",
+    label: "Select assessment result",
+  },
+  ...ASSESSMENT_RESULT_OPTIONS.map((option) => ({
+    value: option,
+    label: option,
+  })),
+];
+
+function safeJsonParseValue(value, fallback = null) {
+  if (!value) return fallback;
+
+  if (typeof value === "object") return value;
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function getLatestFinalInterviewSubmission(candidate = {}) {
+  const submittedForms =
+    candidate.finalInterviewSubmittedForms ||
+    candidate.final_interview_submitted_forms ||
+    candidate.finalInterviewSubmissions ||
+    candidate.final_interview_submissions ||
+    candidate.submittedFinalInterviewForms ||
+    candidate.final_interview_submissions_json ||
+    [];
+
+  const parsedForms = Array.isArray(submittedForms)
+    ? submittedForms
+    : safeJsonParseValue(submittedForms, []);
+
+  return [...(parsedForms || [])]
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aTime = new Date(
+        a.submittedAtIso ||
+          a.submitted_at_iso ||
+          a.submittedAt ||
+          a.submitted_at ||
+          a.createdAt ||
+          a.created_at ||
+          0,
+      ).getTime();
+
+      const bTime = new Date(
+        b.submittedAtIso ||
+          b.submitted_at_iso ||
+          b.submittedAt ||
+          b.submitted_at ||
+          b.createdAt ||
+          b.created_at ||
+          0,
+      ).getTime();
+
+      return (
+        (Number.isFinite(bTime) ? bTime : 0) -
+        (Number.isFinite(aTime) ? aTime : 0)
+      );
+    })[0];
+}
+
+function getTimelineFinalInterviewScoreSummary(item = {}, candidate = {}) {
+  const latestSubmission = getLatestFinalInterviewSubmission(candidate) || {};
+
+  const directSummary =
+    item.scoreSummary ||
+    item.score_summary ||
+    item.extra?.scoreSummary ||
+    item.extra?.score_summary ||
+    item.finalInterviewScoreSummary ||
+    item.final_interview_score_summary ||
+    latestSubmission.scoreSummary ||
+    latestSubmission.score_summary ||
+    latestSubmission.finalInterviewScoreSummary ||
+    latestSubmission.final_interview_score_summary ||
+    {};
+
+  const parsedSummary = safeJsonParseValue(directSummary, directSummary) || {};
+
+  const finalInterviewSummary =
+    parsedSummary.finalInterview ||
+    parsedSummary.final_interview ||
+    parsedSummary.finalInterviewSummary ||
+    parsedSummary.final_interview_summary ||
+    parsedSummary.finalInterviewScoreSummary ||
+    parsedSummary.final_interview_score_summary ||
+    {};
+
+  const parsedFinalInterviewSummary =
+    safeJsonParseValue(finalInterviewSummary, finalInterviewSummary) || {};
+
+  const directResult =
+    item.finalInterviewResult ||
+    item.final_interview_result ||
+    item.interviewResult ||
+    item.interview_result ||
+    item.extra?.finalInterviewResult ||
+    item.extra?.final_interview_result ||
+    item.extra?.interviewResult ||
+    item.extra?.interview_result ||
+    parsedFinalInterviewSummary.finalInterviewResult ||
+    parsedFinalInterviewSummary.final_interview_result ||
+    parsedFinalInterviewSummary.finalResult ||
+    parsedFinalInterviewSummary.final_result ||
+    parsedFinalInterviewSummary.interviewResult ||
+    parsedFinalInterviewSummary.interview_result ||
+    parsedFinalInterviewSummary.result ||
+    latestSubmission.finalInterviewResult ||
+    latestSubmission.final_interview_result ||
+    latestSubmission.interviewResult ||
+    latestSubmission.interview_result ||
+    "";
+
+  const directScore =
+    item.finalInterviewScore ||
+    item.final_interview_score ||
+    item.interviewScore ||
+    item.interview_score ||
+    item.extra?.finalInterviewScore ||
+    item.extra?.final_interview_score ||
+    item.extra?.interviewScore ||
+    item.extra?.interview_score ||
+    parsedFinalInterviewSummary.finalInterviewScore ||
+    parsedFinalInterviewSummary.final_interview_score ||
+    parsedFinalInterviewSummary.interviewScore ||
+    parsedFinalInterviewSummary.interview_score ||
+    parsedFinalInterviewSummary.totalScore ||
+    parsedFinalInterviewSummary.total_score ||
+    parsedFinalInterviewSummary.score ||
+    latestSubmission.finalInterviewScore ||
+    latestSubmission.final_interview_score ||
+    latestSubmission.interviewScore ||
+    latestSubmission.interview_score ||
+    "";
+
+  const directMaxScore =
+    item.finalInterviewMaxScore ||
+    item.final_interview_max_score ||
+    item.extra?.finalInterviewMaxScore ||
+    item.extra?.final_interview_max_score ||
+    parsedFinalInterviewSummary.finalInterviewMaxScore ||
+    parsedFinalInterviewSummary.final_interview_max_score ||
+    parsedFinalInterviewSummary.maxScore ||
+    parsedFinalInterviewSummary.max_score ||
+    parsedFinalInterviewSummary.totalPossibleScore ||
+    parsedFinalInterviewSummary.total_possible_score ||
+    latestSubmission.finalInterviewMaxScore ||
+    latestSubmission.final_interview_max_score ||
+    "";
+
+  const directPercentage =
+    item.finalInterviewPercentage ||
+    item.final_interview_percentage ||
+    item.extra?.finalInterviewPercentage ||
+    item.extra?.final_interview_percentage ||
+    parsedFinalInterviewSummary.finalInterviewPercentage ||
+    parsedFinalInterviewSummary.final_interview_percentage ||
+    parsedFinalInterviewSummary.percentage ||
+    parsedFinalInterviewSummary.percent ||
+    parsedFinalInterviewSummary.scorePercentage ||
+    parsedFinalInterviewSummary.score_percentage ||
+    latestSubmission.finalInterviewPercentage ||
+    latestSubmission.final_interview_percentage ||
+    "";
+
+  const ratingCount =
+    item.finalInterviewRatingCount ||
+    item.final_interview_rating_count ||
+    item.extra?.finalInterviewRatingCount ||
+    item.extra?.final_interview_rating_count ||
+    parsedFinalInterviewSummary.finalInterviewRatingCount ||
+    parsedFinalInterviewSummary.final_interview_rating_count ||
+    parsedFinalInterviewSummary.answeredRatingFields ||
+    parsedFinalInterviewSummary.answered_rating_fields ||
+    parsedFinalInterviewSummary.ratingCount ||
+    parsedFinalInterviewSummary.rating_count ||
+    parsedSummary.finalInterviewRatingCount ||
+    parsedSummary.final_interview_rating_count ||
+    parsedSummary.finalInterviewAnsweredRatingFields ||
+    parsedSummary.final_interview_answered_rating_fields ||
+    latestSubmission.finalInterviewRatingCount ||
+    latestSubmission.final_interview_rating_count ||
+    "";
+
+  return {
+    ...parsedSummary,
+    ...parsedFinalInterviewSummary,
+    finalInterviewResult: directResult,
+    final_interview_result: directResult,
+    finalResult: directResult,
+    final_result: directResult,
+    result: directResult,
+    finalInterviewScore: directScore,
+    final_interview_score: directScore,
+    totalScore: directScore,
+    total_score: directScore,
+    score: directScore,
+    finalInterviewMaxScore: directMaxScore,
+    final_interview_max_score: directMaxScore,
+    maxScore: directMaxScore,
+    max_score: directMaxScore,
+    finalInterviewPercentage: directPercentage,
+    final_interview_percentage: directPercentage,
+    percentage: directPercentage,
+    percent: directPercentage,
+    finalInterviewRatingCount: ratingCount,
+    final_interview_rating_count: ratingCount,
+  };
+}
+
+function isNoRatingFinalInterviewValue(value = "") {
+  const text = cleanText(value).toLowerCase();
+
+  return (
+    !text ||
+    text === "no rating" ||
+    text === "no rating recorded" ||
+    text === "not rated" ||
+    text === "n/a" ||
+    text === "na" ||
+    text === "none" ||
+    text === "—" ||
+    text === "-"
+  );
+}
+
+function hasFinalInterviewRating(scoreSummary = {}) {
+  const directResult =
+    scoreSummary.finalInterviewResult ||
+    scoreSummary.final_interview_result ||
+    scoreSummary.finalResult ||
+    scoreSummary.final_result ||
+    scoreSummary.interviewResult ||
+    scoreSummary.interview_result ||
+    "";
+
+  if (directResult && !isNoRatingFinalInterviewValue(directResult)) {
+    return true;
+  }
+
+  const ratingCount = Number(
+    scoreSummary.finalInterviewRatingCount ??
+      scoreSummary.final_interview_rating_count ??
+      scoreSummary.answeredRatingFields ??
+      scoreSummary.answered_rating_fields ??
+      scoreSummary.ratingCount ??
+      scoreSummary.rating_count ??
+      "",
+  );
+
+  if (Number.isFinite(ratingCount) && ratingCount > 0) {
+    return true;
+  }
+
+  const finalScore =
+    scoreSummary.finalInterviewScore ??
+    scoreSummary.final_interview_score ??
+    scoreSummary.interviewScore ??
+    scoreSummary.interview_score ??
+    "";
+
+  const finalPercentage =
+    scoreSummary.finalInterviewPercentage ??
+    scoreSummary.final_interview_percentage ??
+    "";
+
+  return cleanText(finalScore) !== "" || cleanText(finalPercentage) !== "";
+}
+
+function getFinalInterviewResult(scoreSummary = {}) {
+  const directResult =
+    scoreSummary.finalInterviewResult ||
+    scoreSummary.final_interview_result ||
+    scoreSummary.finalResult ||
+    scoreSummary.final_result ||
+    scoreSummary.interviewResult ||
+    scoreSummary.interview_result ||
+    "";
+
+  if (directResult && !isNoRatingFinalInterviewValue(directResult)) {
+    return cleanText(directResult);
+  }
+
+  if (!hasFinalInterviewRating(scoreSummary)) {
+    return "";
+  }
+
+  if (typeof scoreSummary.passed === "boolean") {
+    return scoreSummary.passed ? "Passed" : "Failed";
+  }
+
+  const totalScore = Number(
+    scoreSummary.finalInterviewScore ??
+      scoreSummary.final_interview_score ??
+      scoreSummary.interviewScore ??
+      scoreSummary.interview_score,
+  );
+
+  const passingScore = Number(
+    scoreSummary.finalInterviewPassingScore ??
+      scoreSummary.final_interview_passing_score ??
+      scoreSummary.passingScore ??
+      scoreSummary.passing_score ??
+      80,
+  );
+
+  if (Number.isFinite(totalScore) && Number.isFinite(passingScore)) {
+    return totalScore >= passingScore ? "Passed" : "Failed";
+  }
+
+  return "";
+}
+
+function getFinalInterviewScoreDisplay(scoreSummary = {}) {
+  if (!hasFinalInterviewRating(scoreSummary)) {
+    return "";
+  }
+
+  const totalScore =
+    scoreSummary.finalInterviewScore ??
+    scoreSummary.final_interview_score ??
+    scoreSummary.interviewScore ??
+    scoreSummary.interview_score ??
+    "";
+
+  const maxScore =
+    scoreSummary.finalInterviewMaxScore ??
+    scoreSummary.final_interview_max_score ??
+    scoreSummary.maxScore ??
+    scoreSummary.max_score ??
+    "";
+
+  const percentage =
+    scoreSummary.finalInterviewPercentage ??
+    scoreSummary.final_interview_percentage ??
+    scoreSummary.percentage ??
+    scoreSummary.percent ??
+    "";
+
+  if (totalScore !== "" && maxScore !== "") {
+    return `${totalScore} / ${maxScore}`;
+  }
+
+  if (percentage !== "") {
+    return `${percentage}%`;
+  }
+
+  if (totalScore !== "") {
+    return String(totalScore);
+  }
+
+  return "";
+}
+
+function getFinalInterviewResultClass(result = "") {
+  const value = cleanText(result).toLowerCase();
+
+  if (
+    value.includes("pass") ||
+    value.includes("fit") ||
+    value.includes("recommended") ||
+    value.includes("hire")
+  ) {
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  }
+
+  if (
+    value.includes("fail") ||
+    value.includes("not") ||
+    value.includes("reject") ||
+    value.includes("decline")
+  ) {
+    return "border-red-100 bg-red-50 text-red-700";
+  }
+
+  return "border-blue-100 bg-blue-50 text-sibs-primary-1";
+}
+
+function formatAssessmentScoreDisplay(value) {
+  const text = cleanText(value);
+
+  if (!text) return "";
+
+  const numberValue = Number(text);
+
+  if (!Number.isFinite(numberValue)) return text;
+
+  return `${numberValue.toLocaleString("en-PH", {
+    maximumFractionDigits: 2,
+  })} / 100`;
+}
+
+function getTimelineAssessmentScore(item = {}) {
+  return (
+    item.assessmentScore ??
+    item.assessment_score ??
+    item.extra?.assessmentScore ??
+    item.extra?.assessment_score ??
+    ""
+  );
+}
+
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function getHistoryTitle(item = {}) {
+  return cleanText(
+    item.stage ||
+      item.title ||
+      item.pipelineStage ||
+      item.pipeline_stage ||
+      item.currentStage ||
+      item.current_stage ||
+      item.status ||
+      "",
+  );
+}
+
+function isFinalInterviewTimelineItem(item = {}) {
+  const stageText = getHistoryTitle(item).toLowerCase();
+  const reasonText = cleanText(item.reason).toLowerCase();
+  const remarksText = cleanText(item.remarks).toLowerCase();
+
+  return (
+    stageText === "interviewed" ||
+    stageText.includes("final interview") ||
+    reasonText.includes("final interview") ||
+    reasonText.includes("job evaluation") ||
+    remarksText.includes("final interview") ||
+    remarksText.includes("job evaluation")
+  );
 }
 
 function normalizeRequirement(value = "") {
@@ -526,6 +969,118 @@ function normalizePrfStatus(value) {
   }
 
   return text;
+}
+
+function FormDropdown({
+  label,
+  value,
+  options = [],
+  placeholder = "Select option...",
+  disabled = false,
+  onChange,
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(option) {
+    if (disabled) return;
+
+    onChange?.(option.value);
+    setOpen(false);
+  }
+
+  return (
+    <label className="block">
+      {label && (
+        <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          {label}
+        </span>
+      )}
+
+      <div ref={dropdownRef} className="relative mt-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen((previous) => !previous)}
+          className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+            open
+              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+              : "border-[#D6DEE8] hover:border-sibs-primary-1"
+          } ${
+            disabled
+              ? "cursor-not-allowed bg-slate-100 text-slate-400 opacity-70"
+              : "text-[#344054]"
+          }`}
+        >
+          <span
+            className={`min-w-0 flex-1 truncate ${
+              selectedOption ? "text-[#344054]" : "text-[#98A2B3]"
+            }`}
+          >
+            {selectedOption?.label || placeholder}
+          </span>
+
+          <ChevronDown
+            size={18}
+            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {open && !disabled && (
+          <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] max-h-[260px] w-full overflow-hidden rounded-xl border border-[#D6DEE8] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
+            <div className="max-h-[260px] overflow-y-auto py-1">
+              {options.map((option) => {
+                const active = option.value === value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleSelect(option)}
+                    className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF2FB] text-sibs-primary-1"
+                        : "bg-white text-[#475467] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </label>
+  );
 }
 
 function getCandidateRecordId(candidate = {}) {
@@ -1019,6 +1574,7 @@ function UpdateAssessmentModal({
 }) {
   const [assessmentStatus, setAssessmentStatus] = useState("Not Take");
   const [assessmentResult, setAssessmentResult] = useState("");
+  const [assessmentScore, setAssessmentScore] = useState("");
   const [assessmentRemarks, setAssessmentRemarks] = useState("");
   const [assessmentFile, setAssessmentFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -1030,9 +1586,19 @@ function UpdateAssessmentModal({
     const initialStatus =
       candidate?.assessmentStatus || candidate?.assessment_status || "Not Take";
 
+    const initialScore =
+      candidate?.assessmentScore ??
+      candidate?.assessment_score ??
+      candidate?.assessmentScorePercent ??
+      candidate?.assessment_score_percent ??
+      "";
+
     setAssessmentStatus(initialStatus);
-    setAssessmentResult(candidate?.assessmentResult || "");
-    setAssessmentRemarks(candidate?.assessmentRemarks || "");
+    setAssessmentResult(candidate?.assessmentResult || candidate?.assessment_result || "");
+    setAssessmentScore(
+      initialScore === null || initialScore === undefined ? "" : String(initialScore),
+    );
+    setAssessmentRemarks(candidate?.assessmentRemarks || candidate?.assessment_remarks || "");
     setAssessmentFile(null);
     setErrorMessage("");
   }, [
@@ -1040,11 +1606,33 @@ function UpdateAssessmentModal({
     candidate?.id,
     candidate?.candidateId,
     candidate?.assessmentStatus,
+    candidate?.assessment_status,
     candidate?.assessmentResult,
+    candidate?.assessment_result,
+    candidate?.assessmentScore,
+    candidate?.assessment_score,
     candidate?.assessmentRemarks,
+    candidate?.assessment_remarks,
   ]);
 
   if (!open) return null;
+
+  function handleAssessmentScoreChange(value) {
+    const cleanValue = cleanText(value);
+
+    if (cleanValue === "") {
+      setAssessmentScore("");
+      return;
+    }
+
+    const numberValue = Number(cleanValue);
+
+    if (!Number.isFinite(numberValue)) return;
+    if (numberValue < 0) return;
+    if (numberValue > 100) return;
+
+    setAssessmentScore(cleanValue);
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -1062,6 +1650,15 @@ function UpdateAssessmentModal({
       return;
     }
 
+    if (assessmentScore !== "") {
+      const scoreValue = Number(assessmentScore);
+
+      if (!Number.isFinite(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+        setErrorMessage("Assessment score must be from 0 to 100.");
+        return;
+      }
+    }
+
     setIsSaving(true);
     setErrorMessage("");
 
@@ -1070,6 +1667,7 @@ function UpdateAssessmentModal({
 
       formData.append("assessmentStatus", assessmentStatus);
       formData.append("assessment_status", assessmentStatus);
+
       formData.append(
         "assessmentResult",
         assessmentStatus === "Taken" ? assessmentResult : "",
@@ -1078,6 +1676,16 @@ function UpdateAssessmentModal({
         "assessment_result",
         assessmentStatus === "Taken" ? assessmentResult : "",
       );
+
+      formData.append(
+        "assessmentScore",
+        assessmentStatus === "Taken" ? assessmentScore : "",
+      );
+      formData.append(
+        "assessment_score",
+        assessmentStatus === "Taken" ? assessmentScore : "",
+      );
+
       formData.append("assessmentRemarks", assessmentRemarks);
       formData.append("assessment_remarks", assessmentRemarks);
 
@@ -1117,6 +1725,14 @@ function UpdateAssessmentModal({
           apiCandidate.assessmentResult ||
           apiCandidate.assessment_result ||
           (assessmentStatus === "Taken" ? assessmentResult : ""),
+        assessmentScore:
+          apiCandidate.assessmentScore ??
+          apiCandidate.assessment_score ??
+          (assessmentStatus === "Taken" ? assessmentScore : ""),
+        assessment_score:
+          apiCandidate.assessment_score ??
+          apiCandidate.assessmentScore ??
+          (assessmentStatus === "Taken" ? assessmentScore : ""),
         assessmentRemarks:
           apiCandidate.assessmentRemarks ||
           apiCandidate.assessment_remarks ||
@@ -1151,8 +1767,8 @@ function UpdateAssessmentModal({
             </h2>
 
             <p className="mt-1 text-sm font-semibold leading-5 text-sibs-tertiary-5">
-              Save the candidate&apos;s online assessment status, result, and
-              attachment.
+              Save the candidate&apos;s online assessment status, result, score,
+              and attachment.
             </p>
           </div>
 
@@ -1182,50 +1798,53 @@ function UpdateAssessmentModal({
           </div>
 
           <div className="mt-5 space-y-4">
+            <FormDropdown
+              label="Assessment Status"
+              value={assessmentStatus}
+              options={ASSESSMENT_STATUS_DROPDOWN_OPTIONS}
+              disabled={isSaving}
+              placeholder="Select assessment status"
+              onChange={(value) => {
+                setAssessmentStatus(value);
+
+                if (value !== "Taken") {
+                  setAssessmentResult("");
+                  setAssessmentScore("");
+                }
+              }}
+            />
+
+            <FormDropdown
+              label="Assessment Result"
+              value={assessmentResult}
+              options={ASSESSMENT_RESULT_DROPDOWN_OPTIONS}
+              disabled={isSaving || assessmentStatus !== "Taken"}
+              placeholder="Select assessment result"
+              onChange={setAssessmentResult}
+            />
+
             <label className="block">
               <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Assessment Status
+                Assessment Score
               </span>
 
-              <select
-                value={assessmentStatus}
-                disabled={isSaving}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setAssessmentStatus(value);
-
-                  if (value !== "Taken") {
-                    setAssessmentResult("");
-                  }
-                }}
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1"
-              >
-                {ASSESSMENT_STATUS_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="block">
-              <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Assessment Result
-              </span>
-
-              <select
-                value={assessmentResult}
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={assessmentScore}
                 disabled={isSaving || assessmentStatus !== "Taken"}
-                onChange={(event) => setAssessmentResult(event.target.value)}
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-              >
-                <option value="">Select assessment result</option>
-                {ASSESSMENT_RESULT_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+                onChange={(event) =>
+                  handleAssessmentScoreChange(event.target.value)
+                }
+                placeholder="Enter score from 0 to 100"
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              />
+
+              <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                Example: 85, 92.5, or 100.
+              </p>
             </label>
 
             <label className="block">
@@ -3550,6 +4169,27 @@ const CandidatePipelineModal = ({
                             activeCandidate,
                           );
 
+                          const finalInterviewScoreSummary = getTimelineFinalInterviewScoreSummary(
+                            timelineItem,
+                            activeCandidate,
+                          );
+
+                          const finalInterviewResult = getFinalInterviewResult(
+                            finalInterviewScoreSummary,
+                          );
+
+                          const finalInterviewScore = getFinalInterviewScoreDisplay(
+                            finalInterviewScoreSummary,
+                          );
+
+                          const shouldShowFinalInterviewResult =
+                            isFinalInterviewTimelineItem(timelineItem) &&
+                            (finalInterviewResult || finalInterviewScore);
+
+                          const timelineAssessmentScore = formatAssessmentScoreDisplay(
+                            getTimelineAssessmentScore(timelineItem),
+                          );
+
                           return (
                             <div
                               key={`${item.stage}-${index}`}
@@ -3589,10 +4229,48 @@ const CandidatePipelineModal = ({
                                   </p>
                                 )}
 
+                                {timelineAssessmentScore && (
+                                  <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-3">
+                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                      Assessment Score
+                                    </p>
+
+                                    <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                                      {timelineAssessmentScore}
+                                    </p>
+                                  </div>
+                                )}
+
                                 <GetAssessmentTimelineFiles
                                   item={timelineItem}
                                   candidate={activeCandidate}
                                 />
+
+                                {shouldShowFinalInterviewResult && (
+                                <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                    Final Interview Result
+                                  </p>
+
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    {finalInterviewResult && (
+                                      <span
+                                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getFinalInterviewResultClass(
+                                          finalInterviewResult,
+                                        )}`}
+                                      >
+                                        {finalInterviewResult}
+                                      </span>
+                                    )}
+
+                                    {finalInterviewScore && (
+                                      <span className="inline-flex rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                                        Score: {finalInterviewScore}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                                 {finalInterviewFormLink && (
                                   <div className="mt-3">
@@ -3645,6 +4323,15 @@ const CandidatePipelineModal = ({
                           <DetailRow
                             label="Assessment Result"
                             value={getAssessmentResult(activeCandidate) || "—"}
+                          />
+                          <DetailRow
+                            label="Assessment Score"
+                            value={
+                              formatAssessmentScoreDisplay(
+                                activeCandidate.assessmentScore ||
+                                  activeCandidate.assessment_score,
+                              ) || "—"
+                            }
                           />
                           <DetailRow
                             label="Email Sent"

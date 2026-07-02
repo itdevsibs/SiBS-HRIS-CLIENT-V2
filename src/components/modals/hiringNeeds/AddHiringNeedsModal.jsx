@@ -22,6 +22,8 @@ import { useUser } from "../../../services/context/UserContext";
 import { createHiringNeed } from "../../../lib/axios/getHiringNeeds";
 import { getTalentPoolOpenPositions } from "../../../lib/axios/getTalentPool";
 
+const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
+
 function FieldLabel({ children, required = false }) {
   return (
     <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
@@ -46,6 +48,89 @@ function cleanText(value) {
 
 function upperText(value) {
   return cleanText(value).toUpperCase();
+}
+
+function normalizeLocationSite(value) {
+  const raw = cleanText(value);
+  const lower = raw.toLowerCase();
+
+  if (!lower) return "Davao Site";
+
+  if (lower === "davao" || lower === "davao site") return "Davao Site";
+  if (lower === "tagum" || lower === "tagum site") return "Tagum Site";
+  if (lower === "mabini" || lower === "mabini site") return "Mabini Site";
+
+  return raw;
+}
+
+function normalizeDbId(value) {
+  if (value === null || value === undefined || value === "") return "";
+
+  const raw = cleanText(value);
+
+  if (!raw) return "";
+
+  const numericValue = Number(raw);
+
+  if (Number.isNaN(numericValue) || numericValue <= 0) return "";
+
+  return String(numericValue);
+}
+
+function getJobDescriptionDbId(row = {}) {
+  return normalizeDbId(
+    row.jobDescriptionDbId ||
+      row.job_description_db_id ||
+      row.jobDescriptionId ||
+      row.job_description_id ||
+      row.jdId ||
+      row.jd_id ||
+      row.jdDbId ||
+      row.jd_db_id ||
+      row.jdID ||
+      row.job_description?.id ||
+      row.jobDescription?.id ||
+      "",
+  );
+}
+
+function getJobDescriptionCode(row = {}) {
+  return cleanText(
+    row.jobDescriptionCode ||
+      row.job_description_code ||
+      row.jdCode ||
+      row.jd_code ||
+      row.job_description?.jdCode ||
+      row.job_description?.jd_code ||
+      row.jobDescription?.jdCode ||
+      row.jobDescription?.jd_code ||
+      row.code ||
+      row.positionCode ||
+      row.position_code ||
+      row.positionId ||
+      row.position_id ||
+      "",
+  );
+}
+
+function getJobDescriptionTitle(row = {}) {
+  return cleanText(
+    row.jobDescriptionTitle ||
+      row.job_description_title ||
+      row.jdRoleTitle ||
+      row.jd_role_title ||
+      row.jdTitle ||
+      row.jd_title ||
+      row.job_description?.roleTitle ||
+      row.job_description?.document_title ||
+      row.jobDescription?.roleTitle ||
+      row.jobDescription?.document_title ||
+      row.positionTitle ||
+      row.position_title ||
+      row.title ||
+      row.name ||
+      "",
+  );
 }
 
 function getUserSibsId(user = {}) {
@@ -222,18 +307,32 @@ function normalizePosition(row = {}) {
     .filter(Boolean)
     .join(" / ");
 
+  const jobDescriptionDbId = getJobDescriptionDbId(row);
+  const jobDescriptionCode = getJobDescriptionCode(row);
+  const jobDescriptionTitle = getJobDescriptionTitle(row);
+
   return {
     raw: row,
+
     id: row.id || row.openPositionId || row.open_position_id || positionId,
     openPositionDbId: row.id || row.openPositionId || row.open_position_id || "",
+
     positionId,
     positionTitle,
+
     department,
     departmentId: row.departmentId || row.department_id || "",
     accountId: row.accountId || row.account_id || "",
     accountName,
     accountGhlName: row.accountGhlName || row.account_ghl_name || "",
-    locationSite: row.locationSite || row.location_site || "Davao Site",
+
+    locationSite: normalizeLocationSite(row.locationSite || row.location_site),
+
+    jobDescriptionDbId,
+    jobDescriptionId: jobDescriptionDbId,
+    jobDescriptionCode,
+    jobDescriptionTitle,
+
     status: row.status || "Active",
     departmentAccount,
     description: row.description || "",
@@ -418,14 +517,19 @@ function CustomSelect({
               <button
                 key={currentValue || currentLabel}
                 type="button"
+                disabled={option.disabled}
                 onClick={() => {
+                  if (option.disabled) return;
+
                   onChange(currentValue, option);
                   setOpen(false);
                 }}
                 className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  selected
-                    ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                    : "text-[#344054] hover:bg-[#F8FAFC]"
+                  option.disabled
+                    ? "cursor-not-allowed text-sibs-tertiary-5"
+                    : selected
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
                 }`}
               >
                 <span className="block truncate">{currentLabel}</span>
@@ -701,6 +805,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
     setForm((prev) => ({
       ...prev,
+      locationSite: normalizeLocationSite(prev.locationSite),
       preparedBy,
       preparedById: sibsId,
     }));
@@ -757,7 +862,10 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
   if (!open) return null;
 
   function updateField(field, value) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [field]: field === "locationSite" ? normalizeLocationSite(value) : value,
+    }));
   }
 
   function handleReset() {
@@ -766,47 +874,51 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
     setForm({
       ...initialForm,
+      locationSite: "Davao Site",
       preparedBy,
       preparedById: sibsId,
     });
   }
 
   function handlePositionChange(positionKey, selectedPosition) {
-  const position =
-    selectedPosition ||
-    openPositions.find((item) => String(item.id) === String(positionKey));
+    const position =
+      selectedPosition ||
+      openPositions.find((item) => String(item.id) === String(positionKey));
 
-  if (!position) {
-    handleReset();
-    return;
+    if (!position) {
+      handleReset();
+      return;
+    }
+
+    const jobDescriptionDbId = normalizeDbId(
+      position.jobDescriptionDbId || position.jobDescriptionId || "",
+    );
+
+    setForm((prev) => ({
+      ...prev,
+
+      openPositionDbId: position.openPositionDbId || position.id || "",
+      positionId: position.positionId || "",
+      positionTitle: position.positionTitle || "",
+
+      department: position.department || "",
+      departmentId: position.departmentId || "",
+      accountId: position.accountId || "",
+      accountName: position.accountName || "",
+      departmentAccount: position.departmentAccount || "",
+
+      locationSite: normalizeLocationSite(
+        position.locationSite || prev.locationSite || "Davao Site",
+      ),
+
+      jobDescriptionDbId,
+      jobDescriptionId: jobDescriptionDbId,
+
+      jobDescriptionCode: position.jobDescriptionCode || position.positionId || "",
+      jobDescriptionTitle:
+        position.jobDescriptionTitle || position.positionTitle || "",
+    }));
   }
-
-  setForm((prev) => ({
-    ...prev,
-
-    openPositionDbId: position.openPositionDbId || position.id || "",
-    positionId: position.positionId || "",
-    positionTitle: position.positionTitle || "",
-
-    department: position.department || "",
-    departmentId: position.departmentId || "",
-    accountId: position.accountId || "",
-    accountName: position.accountName || "",
-    departmentAccount: position.departmentAccount || "",
-
-    locationSite: position.locationSite || prev.locationSite || "Davao Site",
-
-    // IMPORTANT:
-    // Talent Pool Open Position ID is NOT a job_description.id.
-    // Keep these empty so backend will not query job_description.
-    jobDescriptionDbId: "",
-    jobDescriptionId: "",
-
-    // Display reference only.
-    jobDescriptionCode: position.positionId || "",
-    jobDescriptionTitle: position.positionTitle || "",
-  }));
-}
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -859,14 +971,20 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     setIsSubmitting(true);
 
     try {
+      const jobDescriptionDbId = normalizeDbId(
+        form.jobDescriptionDbId || form.jobDescriptionId || "",
+      );
+
       const payload = {
         ...form,
+
+        locationSite: normalizeLocationSite(form.locationSite),
 
         preparedBy: form.preparedBy || formatPreparedByUser(user),
         preparedById: form.preparedById || getUserSibsId(user),
 
-        jobDescriptionDbId: form.jobDescriptionDbId || "",
-        jobDescriptionId: form.jobDescriptionId || "",
+        jobDescriptionDbId,
+        jobDescriptionId: jobDescriptionDbId,
         jobDescriptionCode: form.jobDescriptionCode || form.positionId,
         jobDescriptionTitle: form.jobDescriptionTitle || form.positionTitle,
 
@@ -908,6 +1026,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       assignmentOther: value === "Other" ? prev.assignmentOther : "",
     }));
   }
+
+  const currentLocationSite = normalizeLocationSite(form.locationSite);
 
   const positionOptions = [
     {
@@ -970,12 +1090,12 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       value: "Mabini Site",
       label: "Mabini Site",
     },
-    ...(form.locationSite &&
-    !["Davao Site", "Tagum Site", "Mabini Site"].includes(form.locationSite)
+    ...(currentLocationSite &&
+    !VALID_LOCATION_SITES.includes(currentLocationSite)
       ? [
           {
-            value: form.locationSite,
-            label: form.locationSite,
+            value: currentLocationSite,
+            label: currentLocationSite,
           },
         ]
       : []),
@@ -1114,6 +1234,16 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               </div>
 
               <div>
+                <FieldLabel>Job Description ID</FieldLabel>
+                <TextInput
+                  value={form.jobDescriptionDbId || ""}
+                  readOnly
+                  disabled
+                  placeholder="Auto-populated if position has linked JD"
+                />
+              </div>
+
+              <div>
                 <FieldLabel required>Headcount</FieldLabel>
                 <TextInput
                   type="number"
@@ -1154,7 +1284,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               <div>
                 <FieldLabel required>Location / Site</FieldLabel>
                 <CustomSelect
-                  value={form.locationSite || "Davao Site"}
+                  value={currentLocationSite}
                   options={locationOptions}
                   onChange={(value) => updateField("locationSite", value)}
                   placeholder="Select Location"

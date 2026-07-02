@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   Eye,
   RefreshCw,
+  Loader2,
 } from "lucide-react";
 
 import DashboardMetric from "../../components/layout/common/DashboardMetric";
@@ -30,6 +31,31 @@ import InterviewCalendar from "../../components/recruitment/candidatePipeline/In
 
 function cleanText(value) {
   return String(value ?? "").trim();
+}
+
+function normalizeText(value) {
+  return cleanText(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+function getRawCandidateName(candidate = {}) {
+  return (
+    candidate.name ||
+    candidate.candidateName ||
+    candidate.fullName ||
+    candidate.full_name ||
+    ""
+  );
+}
+
+function getRawCandidateEmail(candidate = {}) {
+  return (
+    candidate.email ||
+    candidate.candidateEmail ||
+    candidate.candidate_email ||
+    candidate.emailAddress ||
+    candidate.email_address ||
+    ""
+  );
 }
 
 function getCandidateStage(candidate = {}) {
@@ -90,6 +116,78 @@ function getCandidateAccount(candidate = {}) {
     candidate.accountFit ||
     "Not assigned yet"
   );
+}
+
+function isPlaceholderCandidate(candidate = {}) {
+  const name = normalizeText(getRawCandidateName(candidate));
+  const email = normalizeText(getRawCandidateEmail(candidate));
+
+  const role = normalizeText(
+    candidate.currentAppliedRole ||
+      candidate.roleTitle ||
+      candidate.openPosition ||
+      candidate.roleCapability ||
+      candidate.position ||
+      "",
+  );
+
+  const account = normalizeText(
+    candidate.currentAppliedAccount ||
+      candidate.account ||
+      candidate.leadAccount ||
+      candidate.accountFit ||
+      candidate.initialAccount ||
+      "",
+  );
+
+  const nameIsPlaceholder =
+    !name ||
+    name === "unnamed candidate" ||
+    name === "no name" ||
+    name === "—" ||
+    name === "-";
+
+  const emailIsPlaceholder =
+    !email ||
+    email === "no email saved" ||
+    email === "no email provided" ||
+    email === "—" ||
+    email === "-";
+
+  const roleIsPlaceholder =
+    !role || role === "not assigned yet" || role === "—" || role === "-";
+
+  const accountIsPlaceholder =
+    !account || account === "not assigned yet" || account === "—" || account === "-";
+
+  return (
+    nameIsPlaceholder &&
+    emailIsPlaceholder &&
+    roleIsPlaceholder &&
+    accountIsPlaceholder
+  );
+}
+
+function filterRenderableCandidates(candidates = []) {
+  if (!Array.isArray(candidates)) return [];
+
+  return candidates.filter((candidate) => !isPlaceholderCandidate(candidate));
+}
+
+function buildSafeStageCounts(stageCounts = {}, candidates = []) {
+  const nextCounts = { ...(stageCounts || {}) };
+
+  Object.keys(nextCounts).forEach((key) => {
+    nextCounts[key] = 0;
+  });
+
+  candidates.forEach((candidate) => {
+    const stage = getCandidateStage(candidate);
+
+    nextCounts[stage] = Number(nextCounts[stage] || 0) + 1;
+  });
+
+  return nextCounts;
 }
 
 function normalizeDropdownOptions(options = []) {
@@ -234,6 +332,35 @@ function FilterDropdown({
         </div>
       )}
     </div>
+  );
+}
+
+function LoadingPipelineBoard() {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] px-5 py-4">
+        <h2 className="text-base font-extrabold text-[#101828]">Board</h2>
+        <p className="mt-1 text-sm font-medium text-sibs-primary-1">
+          Loading candidate pipeline records.
+        </p>
+      </div>
+
+      <div className="flex min-h-[360px] items-center justify-center p-8">
+        <div className="flex flex-col items-center text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sibs-primary-1">
+            <Loader2 size={22} className="animate-spin" />
+          </div>
+
+          <p className="mt-3 text-sm font-extrabold text-[#101828]">
+            Loading candidate pipeline...
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+            Please wait while the latest candidate data is being prepared.
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -586,13 +713,47 @@ export default function CandidatePipelinePage() {
     handleScheduleNhoAuto,
   } = useCandidatePipeline();
 
+  const safeFilteredCandidates = useMemo(() => {
+    if (isLoading) return [];
+
+    return filterRenderableCandidates(filteredCandidates);
+  }, [filteredCandidates, isLoading]);
+
+  const safeStageVisibleCandidates = useMemo(() => {
+    if (isLoading) return [];
+
+    return filterRenderableCandidates(stageVisibleCandidates);
+  }, [stageVisibleCandidates, isLoading]);
+
+  const safeStageCounts = useMemo(() => {
+    if (isLoading) {
+      return buildSafeStageCounts(stageCounts, []);
+    }
+
+    return buildSafeStageCounts(stageCounts, safeStageVisibleCandidates);
+  }, [isLoading, safeStageVisibleCandidates, stageCounts]);
+
+  const safeMetrics = useMemo(() => {
+    if (!isLoading) return metrics;
+
+    return {
+      ...metrics,
+      initialScreening: 0,
+      onlineAssessment: 0,
+      interviewScheduled: 0,
+      interviewed: 0,
+      offered: 0,
+      accepted: 0,
+    };
+  }, [isLoading, metrics]);
+
   const dropOffCandidates = useMemo(() => {
-    return filteredCandidates.filter((candidate) => {
+    return safeFilteredCandidates.filter((candidate) => {
       const stage = getCandidateStage(candidate);
 
       return stage === "Drop-off" || stage === "Drop-offs";
     });
-  }, [filteredCandidates]);
+  }, [safeFilteredCandidates]);
 
   const hasActiveFilters =
     cleanText(search) ||
@@ -687,37 +848,42 @@ export default function CandidatePipelinePage() {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
               <DashboardMetric
                 label="Initial Screening"
-                value={metrics.initialScreening}
+                value={safeMetrics.initialScreening}
                 icon={UserCheck}
                 description="PRF reviewed"
               />
+
               <DashboardMetric
                 label="Online Assessment"
-                value={metrics.onlineAssessment}
+                value={safeMetrics.onlineAssessment}
                 icon={ClipboardCheck}
                 description="Assessment stage"
               />
+
               <DashboardMetric
                 label="Interview Scheduled"
-                value={metrics.interviewScheduled}
+                value={safeMetrics.interviewScheduled}
                 icon={CalendarDays}
                 description="Calendar booked"
               />
+
               <DashboardMetric
                 label="Interviewed"
-                value={metrics.interviewed}
+                value={safeMetrics.interviewed}
                 icon={ShieldCheck}
                 description="Interview done"
               />
+
               <DashboardMetric
                 label="Offered"
-                value={metrics.offered}
+                value={safeMetrics.offered}
                 icon={BriefcaseBusiness}
                 description="Offer processing"
               />
+
               <DashboardMetric
                 label="Accepted"
-                value={metrics.accepted}
+                value={safeMetrics.accepted}
                 icon={UserCheck}
                 description="Converted"
                 valueClassName="text-emerald-600"
@@ -781,18 +947,22 @@ export default function CandidatePipelinePage() {
                 </div>
               </section>
 
-              <PipelineCardsBoard
-                candidates={stageVisibleCandidates}
-                stageCounts={stageCounts}
-                activeStage={activeStage}
-                setActiveStage={setActiveStage}
-                onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
-                onOpenMoveModal={handleOpenMoveModal}
-                onOpenAssessmentModal={handleOpenAssessmentModal}
-                onOpenScheduleModal={handleOpenScheduleInterview}
-                onCancelInterview={handleCancelInterview}
-                onCompleteInterview={handleCompleteInterview}
-              />
+              {isLoading ? (
+                <LoadingPipelineBoard />
+              ) : (
+                <PipelineCardsBoard
+                  candidates={safeStageVisibleCandidates}
+                  stageCounts={safeStageCounts}
+                  activeStage={activeStage}
+                  setActiveStage={setActiveStage}
+                  onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+                  onOpenMoveModal={handleOpenMoveModal}
+                  onOpenAssessmentModal={handleOpenAssessmentModal}
+                  onOpenScheduleModal={handleOpenScheduleInterview}
+                  onCancelInterview={handleCancelInterview}
+                  onCompleteInterview={handleCompleteInterview}
+                />
+              )}
 
               <DropOffListSection
                 candidates={dropOffCandidates}
@@ -803,7 +973,7 @@ export default function CandidatePipelinePage() {
 
           {pageView === "calendar" && (
             <InterviewCalendar
-              candidates={filteredCandidates}
+              candidates={safeFilteredCandidates}
               onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
             />
           )}
