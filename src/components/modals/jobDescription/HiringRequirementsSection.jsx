@@ -8,6 +8,8 @@ export default function HiringRequirementSection({
   dropdownState,
   searchState,
   handleLinkedRequirementChange,
+  approvedJdOptions = [],
+  approvedJdLoading = false,
 }) {
   const {
     form,
@@ -62,6 +64,20 @@ export default function HiringRequirementSection({
     setRequestedByOpen(false);
   }
 
+  const finalLinkedRequirementOptions =
+    Array.isArray(approvedJdOptions) && approvedJdOptions.length > 0
+      ? approvedJdOptions
+      : linkedRequirementOptions;
+
+  const finalSelectedLinkedRequirement =
+    finalLinkedRequirementOptions.find(
+      (option) =>
+        String(option.value || "") ===
+        String(form.existingJdId || form.linkedHiringRequirement || ""),
+    )?.label ||
+    selectedLinkedRequirement ||
+    "";
+
   return (
     <div className="relative z-50 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
       <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -80,7 +96,23 @@ export default function HiringRequirementSection({
             Status
           </span>
 
-          <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-extrabold text-blue-700">
+          <span
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-extrabold ${
+              String(selectedJdStatus || form.jdStatus || "")
+                .toLowerCase()
+                .includes("approval")
+                ? "border-[#FFB088] bg-[#FFF3ED] text-[#FF5C28]"
+                : String(selectedJdStatus || form.jdStatus || "")
+                      .toLowerCase()
+                      .includes("approved")
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : String(selectedJdStatus || form.jdStatus || "")
+                        .toLowerCase()
+                        .includes("revision")
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-blue-200 bg-blue-50 text-blue-700"
+            }`}
+          >
             {selectedJdStatus || form.jdStatus || "New Job Description"}
           </span>
         </div>
@@ -99,13 +131,17 @@ export default function HiringRequirementSection({
               <SingleSelectDropdown
                 refBox={linkedRequirementRef}
                 label="Existing Job Description"
-                value={selectedLinkedRequirement}
+                value={finalSelectedLinkedRequirement}
                 placeholder="Select existing job description"
                 open={linkedRequirementOpen}
                 setOpen={setLinkedRequirementOpen}
                 disabled={false}
-                options={linkedRequirementOptions}
-                selectedValue={form.linkedHiringRequirement}
+                options={finalLinkedRequirementOptions}
+                selectedValue={
+                  form.existingJdId || form.linkedHiringRequirement
+                }
+                loading={approvedJdLoading}
+                loadingText="Loading approved job descriptions..."
                 zIndex="z-[120]"
                 onBeforeOpen={() => {
                   setAccountOpen(false);
@@ -113,8 +149,8 @@ export default function HiringRequirementSection({
                   setJdStatusOpen(false);
                   setRequestedByOpen(false);
                 }}
-                onSelect={(value) => {
-                  handleLinkedRequirementChange(value);
+                onSelect={(value, option) => {
+                  handleLinkedRequirementChange(value, option);
                   setLinkedRequirementOpen(false);
                 }}
               />
