@@ -38,14 +38,16 @@ function formatNumber(value, maximumFractionDigits = 0) {
   });
 }
 
-function formatPercent(value) {
+function formatPercent(value, decimals = 2) {
   const numberValue = Number(value || 0);
 
-  if (Math.abs(numberValue) > 0 && Math.abs(numberValue) <= 1) {
-    return `${(numberValue * 100).toFixed(2)}%`;
-  }
+  if (!Number.isFinite(numberValue)) return "0.00%";
 
-  return `${numberValue.toFixed(2)}%`;
+  /*
+    All computed rates in this modal are decimal ratios.
+    Example: 0.0525 => 5.25%, 5.25 => 525.00%.
+  */
+  return `${(numberValue * 100).toFixed(decimals)}%`;
 }
 
 function formatDateOnly(value) {
@@ -154,20 +156,28 @@ function calculateActualHiringRate({ fstCount = 0, interviewCount = 0 }) {
     Hiring Rate is actual pipeline conversion only.
     Formula: FST Count / Interview Count.
     Do not use PST, FST + PST, hiring plan percent, or default weekly rate.
+
+    This is intentionally uncapped, so values above 100.00% can display when
+    FST count is higher than Interview count.
   */
   if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
 
-  return Math.min(cleanFstCount / cleanInterviewCount, 1);
+  return cleanFstCount / cleanInterviewCount;
 }
 
-function calculateLeadsToInterview({ hiringNeeded = 0, hiringRate = 0 }) {
-  const cleanHiringNeeded = Math.max(0, getNumberValue(hiringNeeded));
+function calculateLeadsToInterview({ interviewCount = 0, hiringRate = 0 }) {
+  const cleanInterviewCount = Math.max(0, getNumberValue(interviewCount));
   const cleanHiringRate = getNumberValue(hiringRate);
 
-  if (cleanHiringNeeded <= 0) return 0;
-  if (cleanHiringRate <= 0) return cleanHiringNeeded;
+  /*
+    Updated business rule:
+    Leads to Interview = Interview Count / Hiring Rate.
+    Hiring Rate is a decimal ratio here.
+  */
+  if (cleanInterviewCount <= 0) return 0;
+  if (cleanHiringRate <= 0) return cleanInterviewCount;
 
-  return Math.ceil(cleanHiringNeeded / cleanHiringRate);
+  return Math.ceil(cleanInterviewCount / cleanHiringRate);
 }
 
 function normalizeStatusValue(value, fallback = "") {
@@ -959,6 +969,7 @@ export default function ViewPlanModal({
       Hired Count = FST only.
       Hiring Needed = Coverage Needed + PRF / Hiring Intake - Hired Count.
       Hiring Rate = FST / Interview Count.
+      Hiring Rate is uncapped.
     */
     const hiredCount = fstCount;
 
@@ -975,7 +986,7 @@ export default function ViewPlanModal({
     const hiringPlanPercent = hiringRate * 100;
 
     const leadsToInterview = calculateLeadsToInterview({
-      hiringNeeded: actualHeadcountNeeds,
+      interviewCount,
       hiringRate,
     });
 
@@ -1328,7 +1339,7 @@ export default function ViewPlanModal({
             <MetricCard
               title="Leads Needed"
               value={formatNumber(computed.leadsToInterview)}
-              subtitle="Hiring needed / hiring rate"
+              subtitle="Interview count / hiring rate"
               icon={TrendingUp}
               iconClassName="bg-violet-50 text-violet-600"
               valueClassName="text-violet-600"
@@ -1594,13 +1605,20 @@ export default function ViewPlanModal({
                 <InfoBox
                   label="Previous Hiring Rate"
                   value={formatPercent(
-                    getSafeValue(
-                      previousWeekItem.hiringPlanPercent,
-                      previousWeekItem.hiring_plan_percent,
-                      previousWeekItem.hiringRate,
-                      previousWeekItem.hiring_rate,
-                      5,
-                    ),
+                    calculateActualHiringRate({
+                      fstCount: getNumberValue(
+                        previousWeekItem.fstCount,
+                        previousWeekItem.fst_count,
+                        previousWeekItem.fstPopulationCount,
+                        previousWeekItem.fst_population_count,
+                      ),
+                      interviewCount: getNumberValue(
+                        previousWeekItem.interviewCount,
+                        previousWeekItem.interview_count,
+                        previousWeekItem.interviewPopulationCount,
+                        previousWeekItem.interview_population_count,
+                      ),
+                    }),
                   )}
                 />
 

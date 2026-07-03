@@ -545,13 +545,6 @@ function getHiringMetrics(item = {}) {
     "ops_prf",
   ]);
 
-  const leadsToInterview = getNumberValue(item, [
-    "leadsToInterview",
-    "leads_to_interview",
-    "leadsNeeded",
-    "leads_needed",
-  ]);
-
   const interviewCount = getNumberValue(item, [
     "interviewCount",
     "interview_count",
@@ -561,17 +554,34 @@ function getHiringMetrics(item = {}) {
     "already_interviewed",
   ]);
 
-  const hiredCount = getNumberValue(
-    item,
-    ["hiredCount", "hired_count", "hired"],
-    getFstCount(item) + getPstCount(item),
-  );
+  /*
+    Hired Count = FST only.
+    Hiring Rate = FST / Interview Count.
+    This is intentionally uncapped so values above 100.00% can display.
+  */
+  const hiredCount = getFstCount(item);
 
   const hiringRate =
     interviewCount > 0 && hiredCount > 0
-      ? Math.min((hiredCount / interviewCount) * 100, 100)
+      ? hiredCount / interviewCount
       : 0;
-  const remainingLeadsToGenerate = Math.max(0, leadsToInterview - interviewCount);
+
+  /*
+    Updated business rule:
+    Leads to Interview = Interview Count / Hiring Rate.
+    Hiring Rate is a decimal ratio here.
+  */
+  const leadsToInterview =
+    interviewCount <= 0
+      ? 0
+      : hiringRate > 0
+        ? Math.ceil(interviewCount / hiringRate)
+        : interviewCount;
+
+  const remainingLeadsToGenerate = Math.max(
+    0,
+    leadsToInterview - interviewCount,
+  );
 
   return {
     hiringNeeded,
@@ -935,13 +945,13 @@ function HiringForecastCard({
             Hiring Rate (Conversion)
           </p>
           <p className="text-base font-extrabold text-slate-900">
-            {formatPercent(hiringRate, 0)}
+            {formatPercent(hiringRate, 2)}
           </p>
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-[#E6ECF2] pt-3">
           <p className="text-xs font-bold text-slate-600">
-            Leads to Interview Needed
+            Leads to Interview
           </p>
           <p className="text-base font-extrabold text-blue-700">
             {formatNumber(leadsToInterview)}
@@ -1227,9 +1237,9 @@ function DetailModal({
 
               <SummaryBox
                 label="Hiring Rate"
-                value={summary?.hiringRate}
+                value={summary?.hiringRate || 0}
                 suffix="%"
-                decimals={0}
+                decimals={2}
                 colorClass="text-slate-900"
                 borderClass="border-slate-200"
               />
@@ -1604,7 +1614,7 @@ function ForecastDetailsTable({ rows = [] }) {
               </td>
 
               <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-slate-900">
-                {formatPercent(item.forecast.hiringRate, 0)}
+                {formatPercent(item.forecast.hiringRate, 2)}
               </td>
 
               <td className="border-b border-[#EDF1F5] px-4 py-3 text-center text-sm font-extrabold text-blue-700">
@@ -1670,7 +1680,7 @@ function ForecastDetailsTable({ rows = [] }) {
                         )) *
                         100
                     : 0,
-                  0,
+                  2,
                 )}
               </td>
 
