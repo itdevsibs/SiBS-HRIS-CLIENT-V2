@@ -26,7 +26,7 @@ import {
   updateAvailablePosition,
   updateAvailablePositionStatus,
 } from "../../lib/axios/getAvailablePosition";
-import { getApprovedJobDescriptions } from "../../lib/axios/jobDescription";
+import { getApprovedJobDescriptions } from "../../lib/axios/getJobDescription";
 import {
   cleanText,
   formatPersonName,
