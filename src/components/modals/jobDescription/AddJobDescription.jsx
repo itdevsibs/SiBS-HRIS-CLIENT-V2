@@ -1,10 +1,13 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, RotateCcw } from "lucide-react";
 
 import { useUser } from "../../../services/context/UserContext";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
-import { createJobDescription } from "../../../lib/axios/jobDescription";
+import {
+  createJobDescription,
+  getApprovedJobDescriptions,
+} from "../../../lib/axios/jobDescription";
 import useAddJobDescriptionModal from "../../../hooks/jobDescription/useAddJobDescription";
 import AddJobDescriptionHeader from "./AddJobDescriptionHeader";
 import AddJobDescriptionInfoBanner from "./AddJobDescriptionInfoBanner";
@@ -13,6 +16,30 @@ import DesiredCompetenciesTable from "../../tables/jobDescription/DesiredCompete
 import JobDescriptionContentSection from "./JobDescriptionContentSection";
 
 const JD_FOR_APPROVAL_STATUS = "For Approval";
+
+const DEFAULT_EXISTING_JD_OPTION = {
+  value: "",
+  label: "No Existing Job Description — New Job Description",
+  raw: null,
+};
+
+function normalizeDatabaseJdId(value = "") {
+  const cleanValue = String(value ?? "").trim();
+
+  if (!cleanValue) return "";
+
+  const jdCodeMatch = cleanValue.match(/^JD[-_ ]?0*(\d+)$/i);
+
+  if (jdCodeMatch?.[1]) {
+    return jdCodeMatch[1];
+  }
+
+  if (/^\d+$/.test(cleanValue)) {
+    return cleanValue;
+  }
+
+  return "";
+}
 
 function getTodayDate() {
   return new Date().toISOString().split("T")[0];
@@ -36,6 +63,73 @@ function normalizeArrayText(value) {
   }
 
   return normalizeText(value);
+}
+
+function normalizeExistingJdId(item = {}) {
+  const raw = item.raw || {};
+
+  const possibleId =
+    item.rawId ||
+    item.raw_id ||
+    item.jdId ||
+    item.jd_id ||
+    item.databaseId ||
+    item.database_id ||
+    raw.rawId ||
+    raw.raw_id ||
+    raw.jdId ||
+    raw.jd_id ||
+    raw.id ||
+    item.id ||
+    item.value ||
+    "";
+
+  return normalizeDatabaseJdId(possibleId);
+}
+
+function getApprovedJdTitle(item = {}) {
+  return normalizeText(
+    item.documentTitle ||
+      item.document_title ||
+      item.roleTitle ||
+      item.role_title ||
+      item.title ||
+      item.raw?.documentTitle ||
+      item.raw?.document_title ||
+      item.raw?.roleTitle ||
+      item.raw?.role_title ||
+      "",
+  );
+}
+
+function getApprovedJdCode(item = {}) {
+  const raw = item.raw || {};
+
+  return normalizeText(
+    item.jdCode ||
+      item.jd_code ||
+      raw.jdCode ||
+      raw.jd_code ||
+      (normalizeExistingJdId(item)
+        ? `JD-${String(normalizeExistingJdId(item)).padStart(3, "0")}`
+        : ""),
+  );
+}
+
+function normalizeApprovedJdOption(item = {}) {
+  const value = normalizeExistingJdId(item);
+
+  if (!value) return null;
+
+  const title = getApprovedJdTitle(item) || "Approved Job Description";
+  const jdCode = getApprovedJdCode(item);
+
+  return {
+    value,
+    label: jdCode ? `${title} (${jdCode})` : title,
+    description: jdCode,
+    raw: item,
+  };
 }
 
 function normalizeJobDescriptionItem(item) {
@@ -209,34 +303,35 @@ export default function AddJobDescription({
 
   const {
     form,
+    setForm,
     competencies,
     setCompetencies,
     resetJobDescriptionForm,
     handleRequirementChange: resetRequirementFromProvider,
   } = useJobDescription();
 
+  const [approvedJdOptions, setApprovedJdOptions] = useState([
+    DEFAULT_EXISTING_JD_OPTION,
+  ]);
+  const [approvedJdLoading, setApprovedJdLoading] = useState(false);
+
   const loggedInOwner = useMemo(() => formatLoggedInOwner(user), [user]);
 
-  const {
-    refs,
-    dropdownState,
-    searchState,
-    handleLinkedRequirementChange,
-    handleResetForm,
-  } = useAddJobDescriptionModal({
-    open,
-    onClose,
-    resetRequirementFromProvider,
-    resetJobDescriptionForm: () =>
-      resetJobDescriptionForm({
-        ownerSibsId: loggedInOwner.ownerSibsId,
-        owner: loggedInOwner.owner,
-        requestedBySibsId: loggedInOwner.ownerSibsId,
-        requestedBy: loggedInOwner.owner,
-        dateRequested: getTodayDate(),
-        effectiveDate: getTodayDate(),
-      }),
-  });
+  const { refs, dropdownState, searchState, handleResetForm } =
+    useAddJobDescriptionModal({
+      open,
+      onClose,
+      resetRequirementFromProvider,
+      resetJobDescriptionForm: () =>
+        resetJobDescriptionForm({
+          ownerSibsId: loggedInOwner.ownerSibsId,
+          owner: loggedInOwner.owner,
+          requestedBySibsId: loggedInOwner.ownerSibsId,
+          requestedBy: loggedInOwner.owner,
+          dateRequested: getTodayDate(),
+          effectiveDate: getTodayDate(),
+        }),
+    });
 
   useEffect(() => {
     if (!open) return;
@@ -251,6 +346,79 @@ export default function AddJobDescription({
     });
   }, [open, loggedInOwner.ownerSibsId, loggedInOwner.owner]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadApprovedJobDescriptions() {
+      if (!open) return;
+
+      setApprovedJdLoading(true);
+
+      try {
+        const result = await getApprovedJobDescriptions({
+          page: 1,
+          limit: 500,
+          search: "",
+        });
+
+        const options = result?.success
+          ? [
+              DEFAULT_EXISTING_JD_OPTION,
+              ...(Array.isArray(result.data)
+                ? result.data.map(normalizeApprovedJdOption).filter(Boolean)
+                : []),
+            ]
+          : [DEFAULT_EXISTING_JD_OPTION];
+
+        if (!cancelled) {
+          setApprovedJdOptions(options);
+        }
+      } catch (error) {
+        console.error("LOAD APPROVED JD OPTIONS ERROR:", error);
+
+        if (!cancelled) {
+          setApprovedJdOptions([DEFAULT_EXISTING_JD_OPTION]);
+        }
+      } finally {
+        if (!cancelled) {
+          setApprovedJdLoading(false);
+        }
+      }
+    }
+
+    loadApprovedJobDescriptions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  function handleApprovedJdChange(value) {
+    const cleanValue = normalizeDatabaseJdId(value);
+
+    resetRequirementFromProvider(cleanValue);
+
+    setForm((prev) => ({
+      ...prev,
+
+      existingJdId: cleanValue || "",
+      existing_jd_id: cleanValue || "",
+      linkedHiringRequirement: cleanValue || "",
+
+      jdStatus: JD_FOR_APPROVAL_STATUS,
+      jd_status: JD_FOR_APPROVAL_STATUS,
+      status: JD_FOR_APPROVAL_STATUS,
+
+      ownerSibsId: prev.ownerSibsId || loggedInOwner.ownerSibsId,
+      owner: prev.owner || loggedInOwner.owner,
+      requestedBySibsId: prev.requestedBySibsId || loggedInOwner.ownerSibsId,
+      requestedBy: prev.requestedBy || loggedInOwner.owner,
+
+      dateRequested: prev.dateRequested || getTodayDate(),
+      effectiveDate: prev.effectiveDate || getTodayDate(),
+    }));
+  }
+
   function handleClose() {
     resetJobDescriptionForm();
     onClose?.();
@@ -262,8 +430,8 @@ export default function AddJobDescription({
     const documentTitle = normalizeText(form.documentTitle);
     const roleTitle = normalizeText(form.roleTitle || form.documentTitle);
 
-    const existingJdId = normalizeText(
-      form.existingJdId || form.linkedHiringRequirement,
+    const existingJdId = normalizeDatabaseJdId(
+      form.existingJdId || form.existing_jd_id || form.linkedHiringRequirement,
     );
 
     const requestedBySibsId = normalizeText(
@@ -385,8 +553,9 @@ export default function AddJobDescription({
       : [];
 
     const payload = {
-      existingJdId: existingJdId || null,
-      linkedHiringRequirement: existingJdId || null,
+      existingJdId: existingJdId ? Number(existingJdId) : null,
+      existing_jd_id: existingJdId ? Number(existingJdId) : null,
+      linkedHiringRequirement: existingJdId ? Number(existingJdId) : null,
 
       documentTitle,
       roleTitle,
@@ -417,10 +586,6 @@ export default function AddJobDescription({
 
       competencies: cleanCompetencies,
     };
-
-    console.log("RAW COMPETENCIES:", competencies);
-    console.log("CLEAN COMPETENCIES:", cleanCompetencies);
-    console.log("JD PAYLOAD:", payload);
 
     const result = await createJobDescription(payload);
 
@@ -475,7 +640,9 @@ export default function AddJobDescription({
               refs={refs}
               dropdownState={dropdownState}
               searchState={searchState}
-              handleLinkedRequirementChange={handleLinkedRequirementChange}
+              approvedJdOptions={approvedJdOptions}
+              approvedJdLoading={approvedJdLoading}
+              handleLinkedRequirementChange={handleApprovedJdChange}
             />
 
             <JobDescriptionContentSection />

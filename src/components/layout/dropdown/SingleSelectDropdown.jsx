@@ -10,11 +10,14 @@ const SingleSelectDropdown = ({
   open,
   setOpen,
   disabled,
-  options,
+  options = [],
   selectedValue,
   onSelect,
   onBeforeOpen,
   zIndex = "z-20",
+  loading = false,
+  loadingText = "Loading...",
+  emptyText = "No options found.",
 }) => {
   return (
     <div ref={refBox} className={`relative self-start ${zIndex}`}>
@@ -26,7 +29,7 @@ const SingleSelectDropdown = ({
         <button
           type="button"
           onClick={() => {
-            if (disabled) return;
+            if (disabled || loading) return;
 
             if (!open) {
               onBeforeOpen?.();
@@ -34,14 +37,11 @@ const SingleSelectDropdown = ({
 
             setOpen((prev) => !prev);
           }}
-          disabled={disabled}
-          className="flex w-full items-center justify-between rounded-xl border
-           border-sibs-tertiary-8 bg-white px-4 py-3 text-left text-sm outline-none 
-           transition focus:border-sibs-primary-1 disabled:cursor-not-allowed 
-           disabled:opacity-60"
+          disabled={disabled || loading}
+          className="flex w-full items-center justify-between rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-left text-sm outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className={value ? "text-sibs-primary-1" : "text-gray-400"}>
-            {value || placeholder}
+            {loading ? loadingText : value || placeholder}
           </span>
 
           <ChevronDown
@@ -52,26 +52,29 @@ const SingleSelectDropdown = ({
           />
         </button>
 
-        {open && (
-          <div
-            className="absolute left-0 right-0 top-full mt-2 max-h-60 overflow-hidden
-           rounded-xl border border-sibs-tertiary-8 bg-white shadow-2xl"
-          >
+        {open && !disabled && !loading && (
+          <div className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-60 overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white shadow-2xl">
             <div className="max-h-60 overflow-y-auto py-2">
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => onSelect(option.value)}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                    String(selectedValue || "") === String(option.value)
-                      ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
-                      : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
+              {options.length > 0 ? (
+                options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => onSelect(option.value, option)}
+                    className={`block w-full px-4 py-3 text-left text-sm transition ${
+                      String(selectedValue || "") === String(option.value)
+                        ? "bg-[#EAF2FB] font-medium text-sibs-primary-1"
+                        : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-sm font-medium text-gray-400">
+                  {emptyText}
+                </div>
+              )}
             </div>
           </div>
         )}
