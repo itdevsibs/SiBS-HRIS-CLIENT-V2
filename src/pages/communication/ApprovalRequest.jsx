@@ -33,6 +33,8 @@ import StatusModal from "../../components/modals/StatusModal";
 import JobDescriptionRequestTable from "../../components/tables/jobDescription/JobDescriptionRequestTable";
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
+import { useUser } from "../../services/context/UserContext";
+import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 
 import {
   getApprovalRequestsByModule,
@@ -912,6 +914,57 @@ function DropdownPortal({
   );
 }
 
+function normalizeSibsId(value = "") {
+  return String(value ?? "")
+    .trim()
+    .replace(/^SIBS[-_ ]?/i, "");
+}
+
+function getCurrentUserSibsId(user = {}) {
+  return normalizeSibsId(
+    user?.sibsId ||
+      user?.sibs_id ||
+      user?.employeeSibsId ||
+      user?.employee_sibs_id ||
+      user?.gy_emp_code ||
+      user?.gy_user_code ||
+      user?.userCode ||
+      user?.user_code ||
+      user?.employeeCode ||
+      user?.employee_code ||
+      user?.username ||
+      "",
+  );
+}
+
+function getApprovalSettingsRows(responseData) {
+  const rows =
+    responseData?.data?.users ||
+    responseData?.data?.rows ||
+    responseData?.data ||
+    responseData?.users ||
+    responseData?.rows ||
+    responseData ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getApprovalSettingsSibsId(row = {}) {
+  return normalizeSibsId(
+    row?.sibsId ||
+      row?.sibs_id ||
+      row?.employeeSibsId ||
+      row?.employee_sibs_id ||
+      row?.gy_emp_code ||
+      row?.gy_user_code ||
+      row?.userCode ||
+      row?.user_code ||
+      row?.username ||
+      "",
+  );
+}
+
 function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
@@ -978,6 +1031,8 @@ function CustomSelect({ label, value, options = [], onChange, allLabel = "" }) {
 }
 
 export default function ApprovalRequest() {
+  const { user } = useUser();
+
   const [activeModule, setActiveModule] = useState("Attrition");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -1019,6 +1074,10 @@ export default function ApprovalRequest() {
     message: "",
   });
 
+  const [jdApprovalAccessLoading, setJdApprovalAccessLoading] = useState(true);
+  const [canViewJobDescriptionApproval, setCanViewJobDescriptionApproval] =
+    useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { updateSelectedJobDescription, closeJobDescriptionDetails } =
@@ -1026,20 +1085,120 @@ export default function ApprovalRequest() {
 
   const typeOptions = TYPE_OPTIONS_BY_MODULE[activeModule] || ["All"];
 
+  const currentUserSibsId = useMemo(() => {
+    return getCurrentUserSibsId(user);
+  }, [user]);
+
+  const visibleRequestModules = useMemo(() => {
+    return REQUEST_MODULES.filter((moduleName) => {
+      if (moduleName !== "Job Description") return true;
+
+      return canViewJobDescriptionApproval;
+    });
+  }, [canViewJobDescriptionApproval]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkJobDescriptionApprovalAccess() {
+      const cleanUserSibsId = normalizeSibsId(currentUserSibsId);
+
+      if (!cleanUserSibsId) {
+        if (!cancelled) {
+          setCanViewJobDescriptionApproval(false);
+          setJdApprovalAccessLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        setJdApprovalAccessLoading(true);
+
+        const result = await getJobDescriptionApprovalUsers();
+        const rows = getApprovalSettingsRows(result);
+
+        const isAllowed = rows.some((row) => {
+          return (
+            getApprovalSettingsSibsId(row).toLowerCase() ===
+            cleanUserSibsId.toLowerCase()
+          );
+        });
+
+        if (!cancelled) {
+          setCanViewJobDescriptionApproval(isAllowed);
+        }
+      } catch (error) {
+        console.error("CHECK JD APPROVAL ACCESS ERROR:", error);
+
+        if (!cancelled) {
+          setCanViewJobDescriptionApproval(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setJdApprovalAccessLoading(false);
+        }
+      }
+    }
+
+    checkJobDescriptionApprovalAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserSibsId]);
+
   useEffect(() => {
     const requestedModule = location.state?.activeModule;
 
-    if (requestedModule && REQUEST_MODULES.includes(requestedModule)) {
-      setActiveModule(requestedModule);
-      setSearch("");
-      setSearchInput("");
-      setStatusFilter("All");
-      setTypeFilter(requestedModule === "Attrition" ? "Resignation" : "All");
-      setPage(1);
+    if (!requestedModule || !REQUEST_MODULES.includes(requestedModule)) return;
 
-      navigate(location.pathname, { replace: true, state: {} });
+    if (requestedModule === "Job Description") {
+      if (jdApprovalAccessLoading) return;
+
+      if (!canViewJobDescriptionApproval) {
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
     }
-  }, [location.pathname, location.state, navigate]);
+
+    setActiveModule(requestedModule);
+    setSearch("");
+    setSearchInput("");
+    setStatusFilter("All");
+    setTypeFilter(requestedModule === "Attrition" ? "Resignation" : "All");
+    setPage(1);
+
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [
+    location.pathname,
+    location.state,
+    navigate,
+    jdApprovalAccessLoading,
+    canViewJobDescriptionApproval,
+  ]);
+
+  useEffect(() => {
+    if (jdApprovalAccessLoading) return;
+    if (activeModule !== "Job Description") return;
+    if (canViewJobDescriptionApproval) return;
+
+    setActiveModule("Attrition");
+    setSearch("");
+    setSearchInput("");
+    setStatusFilter("All");
+    setTypeFilter("Resignation");
+    setPage(1);
+    setSelectedRequest(null);
+    updateSelectedJobDescription?.(null);
+    closeJobDescriptionDetails?.();
+  }, [
+    activeModule,
+    jdApprovalAccessLoading,
+    canViewJobDescriptionApproval,
+    updateSelectedJobDescription,
+    closeJobDescriptionDetails,
+  ]);
 
   const hasActiveFilters =
     search || searchInput || statusFilter !== "All" || typeFilter !== "All";
@@ -1047,7 +1206,7 @@ export default function ApprovalRequest() {
   const loadApprovalTabNotifications = useCallback(async () => {
     try {
       const entries = await Promise.all(
-        REQUEST_MODULES.map(async (moduleName) => {
+        visibleRequestModules.map(async (moduleName) => {
           const count =
             await getApprovalTabNotificationCountByModule(moduleName);
           return [moduleName, Number(count || 0)];
@@ -1062,10 +1221,25 @@ export default function ApprovalRequest() {
       console.error("Approval Request tab notification error:", error);
       setModuleNotificationCounts(DEFAULT_MODULE_NOTIFICATION_COUNTS);
     }
-  }, []);
+  }, [visibleRequestModules]);
 
   const loadApprovalRequests = useCallback(
     async ({ showError = false } = {}) => {
+      if (
+        activeModule === "Job Description" &&
+        !canViewJobDescriptionApproval
+      ) {
+        setRequests([]);
+        setCounts(DEFAULT_COUNTS);
+        setPagination({
+          total: 0,
+          totalPages: 1,
+          currentPage: 1,
+          limit: 200,
+        });
+        return;
+      }
+
       const buildParams = (requestType = typeFilter) => ({
         page: 1,
         // Load the active module records first, then search locally so the
@@ -1247,7 +1421,7 @@ export default function ApprovalRequest() {
         setLoading(false);
       }
     },
-    [activeModule, statusFilter, typeFilter],
+    [activeModule, statusFilter, typeFilter, canViewJobDescriptionApproval],
   );
 
   useEffect(() => {
@@ -1497,7 +1671,6 @@ export default function ApprovalRequest() {
   //     desiredCompetencies: competencies,
   //   };
   // }
-
 
   function parseRevisionHistoryJson(value) {
     if (Array.isArray(value)) return value;
@@ -2065,6 +2238,7 @@ export default function ApprovalRequest() {
           <div className="relative z-[0] sibs-profile-tab-panel">
             <ApprovalRequestTable
               activeModule={activeModule}
+              requestModules={visibleRequestModules}
               requests={paginatedRequests}
               loadedCount={paginatedRequests.length}
               totalRecords={totalFilteredRecords}
@@ -2093,7 +2267,6 @@ export default function ApprovalRequest() {
           onValidationError={openStatus}
         />
       )}
-
 
       <DecisionModal
         open={decisionModal.open}
@@ -2394,11 +2567,12 @@ function ApprovalModuleTabs({
   activeModule,
   onChangeModule,
   moduleNotificationCounts,
+  requestModules = REQUEST_MODULES,
 }) {
   return (
     <div className="border-t border-[#E6ECF2] bg-white px-5">
       <div className="flex min-w-0 gap-8 overflow-x-auto">
-        {REQUEST_MODULES.map((moduleName) => {
+        {requestModules.map((moduleName) => {
           const isActive = activeModule === moduleName;
           const ModuleIcon = moduleIconMap[moduleName] || FileCheck2;
           const notificationCount = Number(
@@ -2446,6 +2620,7 @@ function ApprovalModuleTabs({
 
 function ApprovalRequestTable({
   activeModule,
+  requestModules = REQUEST_MODULES,
   requests,
   loadedCount,
   totalRecords,
@@ -2490,6 +2665,7 @@ function ApprovalRequestTable({
 
       <ApprovalModuleTabs
         activeModule={activeModule}
+        requestModules={requestModules}
         onChangeModule={onChangeModule}
         moduleNotificationCounts={moduleNotificationCounts}
       />

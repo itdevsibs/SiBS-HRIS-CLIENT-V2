@@ -11,9 +11,22 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 
-import api from "../../../lib/axios/api-template";
 import StatusModal from "../../modals/StatusModal";
 import { useUser } from "../../../services/context/UserContext";
+
+import {
+  addOfferApprovalUser,
+  getOfferApprovalUsers,
+  removeOfferApprovalUser,
+  searchOfferApprovalEmployees,
+} from "../../../lib/axios/getOfferApprovalRules";
+
+import {
+  addJobDescriptionApprovalUser,
+  getJobDescriptionApprovalUsers,
+  removeJobDescriptionApprovalUser,
+  searchJobDescriptionApprovalEmployees,
+} from "../../../lib/axios/getJobDescriptionApprovalSettings";
 
 const APPROVAL_RULE_TABS = [
   {
@@ -24,13 +37,9 @@ const APPROVAL_RULE_TABS = [
       "Add the users who can approve or reject offers. The Offers page will show approval actions only for authorized users.",
     icon: BriefcaseBusiness,
     badgeText: "Offer Rules",
-    endpointBases: [
-      "/api/offer-approval-settings",
-      "/api/offer-approval-rules",
-      "/api/recruitment-approval-rules/offers",
-    ],
     emptyText: "No offer approval users added yet.",
     rowDescription: "Can approve or reject offers from the Offers page.",
+    isConnected: true,
   },
   {
     key: "jobDescription",
@@ -40,14 +49,10 @@ const APPROVAL_RULE_TABS = [
       "Add the users who can approve, reject, or tag Job Descriptions for revision from the Approval Requests page.",
     icon: FileText,
     badgeText: "JD Rules",
-    endpointBases: [
-      "/api/job-description-approval-settings",
-      "/api/job-description-approval-rules",
-      "/api/recruitment-approval-rules/job-description",
-    ],
     emptyText: "No Job Description approval users added yet.",
     rowDescription:
       "Can approve, reject, or tag Job Descriptions for revision.",
+    isConnected: true,
   },
 ];
 
@@ -103,6 +108,12 @@ function getEmployeeName(item = {}) {
 
   if (fullName) return fullName;
 
+  const displayName = cleanText(item.displayName || item.display_name || "");
+
+  if (displayName) {
+    return displayName.replace(/^\d+\s*-\s*/i, "").trim();
+  }
+
   const lastName = cleanText(
     item.lastName || item.last_name || item.gy_emp_lname || "",
   );
@@ -137,6 +148,13 @@ function normalizeApprovalUser(item = {}) {
       sibsId,
     sibsId,
     employeeName,
+    displayName:
+      item.displayName ||
+      item.display_name ||
+      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    firstName: cleanText(item.firstName || item.first_name),
+    middleName: cleanText(item.middleName || item.middle_name),
+    lastName: cleanText(item.lastName || item.last_name),
     label: `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
     raw: item,
   };
@@ -152,6 +170,13 @@ function normalizeCandidate(item = {}) {
     id: item.id || item.employeeId || item.employee_id || sibsId,
     sibsId,
     employeeName,
+    displayName:
+      item.displayName ||
+      item.display_name ||
+      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    firstName: cleanText(item.firstName || item.first_name),
+    middleName: cleanText(item.middleName || item.middle_name),
+    lastName: cleanText(item.lastName || item.last_name),
     label: `${sibsId} - ${employeeName}`,
     raw: item,
   };
@@ -164,97 +189,35 @@ function normalizeRows(responseData) {
     responseData?.data ||
     responseData?.users ||
     responseData?.rows ||
+    responseData?.employees ||
+    responseData ||
     [];
 
   return Array.isArray(rows) ? rows : [];
 }
 
-async function apiGetWithFallback(urls = [], config = {}) {
-  let lastError = null;
+function getRuleLabel(ruleKey) {
+  return ruleKey === "jobDescription"
+    ? "Job Description Approval"
+    : "Offer Approval";
+}
 
-  for (const url of urls) {
-    try {
-      const res = await api.get(url, {
-        ...config,
-        withCredentials: true,
-      });
-
-      return res.data;
-    } catch (error) {
-      lastError = error;
-
-      if (error?.response?.status && error.response.status !== 404) {
-        throw error;
-      }
-    }
+function getRuleApi(ruleKey) {
+  if (ruleKey === "jobDescription") {
+    return {
+      getUsers: getJobDescriptionApprovalUsers,
+      addUser: addJobDescriptionApprovalUser,
+      removeUser: removeJobDescriptionApprovalUser,
+      searchEmployees: searchJobDescriptionApprovalEmployees,
+    };
   }
 
-  throw lastError || new Error("Endpoint is not available.");
-}
-
-async function apiPostWithFallback(urls = [], payload = {}) {
-  let lastError = null;
-
-  for (const url of urls) {
-    try {
-      const res = await api.post(url, payload, {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      return res.data;
-    } catch (error) {
-      lastError = error;
-
-      if (error?.response?.status && error.response.status !== 404) {
-        throw error;
-      }
-    }
-  }
-
-  throw lastError || new Error("Endpoint is not available.");
-}
-
-async function apiDeleteWithFallback(urls = [], payload = {}) {
-  let lastError = null;
-
-  for (const url of urls) {
-    try {
-      const res = await api.delete(url, {
-        data: payload,
-        withCredentials: true,
-      });
-
-      return res.data;
-    } catch (error) {
-      lastError = error;
-
-      if (error?.response?.status && error.response.status !== 404) {
-        throw error;
-      }
-    }
-  }
-
-  throw lastError || new Error("Endpoint is not available.");
-}
-
-function getListUrls(rule) {
-  return rule.endpointBases.map((base) => `${base}/users`);
-}
-
-function getSearchUrls(rule) {
-  return rule.endpointBases.map((base) => `${base}/search-users`);
-}
-
-function getAddUrls(rule) {
-  return rule.endpointBases.map((base) => `${base}/users`);
-}
-
-function getDeleteUrls(rule, user) {
-  const id = encodeURIComponent(user.id || user.sibsId);
-  return rule.endpointBases.map((base) => `${base}/users/${id}`);
+  return {
+    getUsers: getOfferApprovalUsers,
+    addUser: addOfferApprovalUser,
+    removeUser: removeOfferApprovalUser,
+    searchEmployees: searchOfferApprovalEmployees,
+  };
 }
 
 function RuleInnerNav({ activeRuleKey, counts, onChange }) {
@@ -264,6 +227,7 @@ function RuleInnerNav({ activeRuleKey, counts, onChange }) {
         <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
           Approval Modules
         </p>
+
         <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
           Choose which approval rule to configure.
         </p>
@@ -323,6 +287,7 @@ function EmployeeSearchDropdown({
   selectedCandidate,
   candidates,
   loading,
+  disabled = false,
   onSelect,
   placeholder,
 }) {
@@ -354,19 +319,24 @@ function EmployeeSearchDropdown({
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
             : "border-[#D0D5DD] hover:border-sibs-primary-1/30"
-        }`}
+        } ${disabled ? "opacity-60" : ""}`}
       >
         <Search size={18} className="shrink-0 text-sibs-primary-1" />
 
         <input
           value={inputValue}
-          onFocus={() => setOpen(true)}
+          disabled={disabled}
+          onFocus={() => {
+            if (!disabled) {
+              setOpen(true);
+            }
+          }}
           onChange={(event) => {
             setSearch(event.target.value);
             setOpen(true);
           }}
           placeholder={placeholder}
-          className="h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5"
+          className="h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed"
         />
 
         {loading ? (
@@ -384,7 +354,7 @@ function EmployeeSearchDropdown({
         )}
       </div>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {loading ? (
@@ -405,6 +375,7 @@ function EmployeeSearchDropdown({
                   <span className="block text-sm font-extrabold text-[#101828]">
                     {candidate.sibsId} - {candidate.employeeName}
                   </span>
+
                   <span className="mt-0.5 block text-xs font-semibold text-sibs-tertiary-5">
                     Add as approval user
                   </span>
@@ -474,6 +445,7 @@ function ApprovalRulePanel({
   onRemoveUser,
 }) {
   const RuleIcon = rule.icon;
+  const isDisabled = !rule.isConnected;
 
   return (
     <section className="min-w-0 flex-1 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
@@ -518,6 +490,7 @@ function ApprovalRulePanel({
             selectedCandidate={selectedCandidate}
             candidates={candidates}
             loading={searching}
+            disabled={isDisabled}
             onSelect={onSelectCandidate}
             placeholder="Search SIBS ID or employee name..."
           />
@@ -525,7 +498,7 @@ function ApprovalRulePanel({
           <button
             type="button"
             onClick={onAddUser}
-            disabled={adding || !selectedCandidate}
+            disabled={adding || !selectedCandidate || isDisabled}
             className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-6 text-sm font-extrabold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {adding ? (
@@ -674,14 +647,15 @@ export default function ApprovalRulesSettings() {
     }));
   }
 
-  async function loadUsers(rule) {
+  async function loadUsers(ruleKey) {
     setLoadingByRule((previous) => ({
       ...previous,
-      [rule.key]: true,
+      [ruleKey]: true,
     }));
 
     try {
-      const result = await apiGetWithFallback(getListUrls(rule));
+      const apiMethods = getRuleApi(ruleKey);
+      const result = await apiMethods.getUsers();
 
       const rows = normalizeRows(result)
         .map(normalizeApprovalUser)
@@ -689,52 +663,43 @@ export default function ApprovalRulesSettings() {
 
       setUsersByRule((previous) => ({
         ...previous,
-        [rule.key]: rows,
+        [ruleKey]: rows,
       }));
     } catch (error) {
-      console.error(`LOAD ${rule.key} APPROVAL USERS ERROR:`, error);
+      console.error(`LOAD ${ruleKey} APPROVAL USERS ERROR:`, error);
 
       openStatusModal(
         "error",
         "Load Failed",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          `Failed to load ${rule.title}.`,
+        error?.message || `Failed to load ${getRuleLabel(ruleKey)} users.`,
       );
     } finally {
       setLoadingByRule((previous) => ({
         ...previous,
-        [rule.key]: false,
+        [ruleKey]: false,
       }));
     }
   }
 
-  async function searchEmployees(rule, keyword) {
+  async function searchEmployees(ruleKey, keyword) {
     const cleanKeyword = cleanText(keyword);
 
     if (cleanKeyword.length < 2) {
       setCandidatesByRule((previous) => ({
         ...previous,
-        [rule.key]: [],
+        [ruleKey]: [],
       }));
       return;
     }
 
     setSearchingByRule((previous) => ({
       ...previous,
-      [rule.key]: true,
+      [ruleKey]: true,
     }));
 
     try {
-      const result = await apiGetWithFallback(getSearchUrls(rule), {
-        params: {
-          search: cleanKeyword,
-          q: cleanKeyword,
-          keyword: cleanKeyword,
-          limit: 20,
-        },
-      });
+      const apiMethods = getRuleApi(ruleKey);
+      const result = await apiMethods.searchEmployees(cleanKeyword);
 
       const candidates = normalizeRows(result)
         .map(normalizeCandidate)
@@ -742,19 +707,19 @@ export default function ApprovalRulesSettings() {
 
       setCandidatesByRule((previous) => ({
         ...previous,
-        [rule.key]: candidates,
+        [ruleKey]: candidates,
       }));
     } catch (error) {
-      console.error(`SEARCH ${rule.key} APPROVAL USERS ERROR:`, error);
+      console.error(`SEARCH ${ruleKey} APPROVAL USERS ERROR:`, error);
 
       setCandidatesByRule((previous) => ({
         ...previous,
-        [rule.key]: [],
+        [ruleKey]: [],
       }));
     } finally {
       setSearchingByRule((previous) => ({
         ...previous,
-        [rule.key]: false,
+        [ruleKey]: false,
       }));
     }
   }
@@ -790,18 +755,24 @@ export default function ApprovalRulesSettings() {
     }));
 
     try {
-      const result = await apiPostWithFallback(getAddUrls(activeRule), {
+      const apiMethods = getRuleApi(activeRule.key);
+
+      await apiMethods.addUser({
         sibsId: selected.sibsId,
         sibs_id: selected.sibsId,
+        displayName: selected.displayName || selected.label,
+        display_name: selected.displayName || selected.label,
         employeeName: selected.employeeName,
         employee_name: selected.employeeName,
+        firstName: selected.firstName,
+        first_name: selected.firstName,
+        middleName: selected.middleName,
+        middle_name: selected.middleName,
+        lastName: selected.lastName,
+        last_name: selected.lastName,
         createdBy: getUserDisplayName(user),
         created_by: getUserDisplayName(user),
       });
-
-      if (result?.success === false) {
-        throw new Error(result.message || "Failed to add approval user.");
-      }
 
       setSearchByRule((previous) => ({
         ...previous,
@@ -818,7 +789,7 @@ export default function ApprovalRulesSettings() {
         [activeRule.key]: [],
       }));
 
-      await loadUsers(activeRule);
+      await loadUsers(activeRule.key);
 
       openStatusModal(
         "success",
@@ -831,10 +802,7 @@ export default function ApprovalRulesSettings() {
       openStatusModal(
         "error",
         "Add Failed",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Failed to add approval user.",
+        error?.message || "Failed to add approval user.",
       );
     } finally {
       setAddingByRule((previous) => ({
@@ -850,26 +818,14 @@ export default function ApprovalRulesSettings() {
     setRemovingId(targetUser.id);
 
     try {
-      const result = await apiDeleteWithFallback(
-        getDeleteUrls(activeRule, targetUser),
-        {
-          sibsId: targetUser.sibsId,
-          sibs_id: targetUser.sibsId,
-          deletedBy: getUserDisplayName(user),
-          deleted_by: getUserDisplayName(user),
-        },
-      );
+      const apiMethods = getRuleApi(activeRule.key);
 
-      if (result?.success === false) {
-        throw new Error(result.message || "Failed to remove approval user.");
-      }
+      await apiMethods.removeUser(targetUser.sibsId);
 
       setUsersByRule((previous) => ({
         ...previous,
         [activeRule.key]: previous[activeRule.key].filter(
-          (item) =>
-            String(item.id) !== String(targetUser.id) &&
-            String(item.sibsId) !== String(targetUser.sibsId),
+          (item) => String(item.sibsId) !== String(targetUser.sibsId),
         ),
       }));
 
@@ -884,10 +840,7 @@ export default function ApprovalRulesSettings() {
       openStatusModal(
         "error",
         "Remove Failed",
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Failed to remove approval user.",
+        error?.message || "Failed to remove approval user.",
       );
     } finally {
       setRemovingId("");
@@ -895,22 +848,21 @@ export default function ApprovalRulesSettings() {
   }
 
   useEffect(() => {
-    APPROVAL_RULE_TABS.forEach((rule) => {
-      loadUsers(rule);
-    });
+    loadUsers("offers");
+    loadUsers("jobDescription");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      searchEmployees(activeRule, activeSearch);
+      searchEmployees(activeRule.key, activeSearch);
     }, 250);
 
     return () => {
       window.clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRuleKey, activeSearch]);
+  }, [activeRule.key, activeSearch]);
 
   return (
     <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm">
@@ -938,9 +890,7 @@ export default function ApprovalRulesSettings() {
         <RuleInnerNav
           activeRuleKey={activeRuleKey}
           counts={counts}
-          onChange={(nextKey) => {
-            setActiveRuleKey(nextKey);
-          }}
+          onChange={setActiveRuleKey}
         />
 
         <ApprovalRulePanel
