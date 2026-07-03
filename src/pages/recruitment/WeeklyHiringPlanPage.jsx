@@ -278,7 +278,8 @@ function getBackendNumber(record, keys, fallback = 0) {
     const rawValue = record?.[key];
 
     if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
-      const numberValue = Number(rawValue);
+      const cleanValue = String(rawValue).replace(/,/g, "").replace(/%/g, "").trim();
+      const numberValue = Number(cleanValue);
 
       if (Number.isFinite(numberValue)) {
         return numberValue;
@@ -289,6 +290,122 @@ function getBackendNumber(record, keys, fallback = 0) {
   const fallbackNumber = Number(fallback || 0);
 
   return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
+}
+
+function getBackendArrayValue(value) {
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === "string" && value.trim().startsWith("[")) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
+}
+
+function getBackendSixWeekSeries(record = {}, type = "absenteeism") {
+  const arrayKeys =
+    type === "absenteeism"
+      ? [
+          "absenteeismTrend",
+          "absenteeism_trend",
+          "absenteeismWeeklyCounts",
+          "absenteeism_weekly_counts",
+          "absenteeismPastSixWeeksTrend",
+          "absenteeism_past_six_weeks_trend",
+          "absenteeismSixWeeksBreakdown",
+          "absenteeism_six_weeks_breakdown",
+          "absenteeismPastSixWeeksBreakdown",
+          "absenteeism_past_six_weeks_breakdown",
+          "weeklyAbsenteeism",
+          "weekly_absenteeism",
+        ]
+      : [
+          "attritionTrend",
+          "attrition_trend",
+          "attritionWeeklyCounts",
+          "attrition_weekly_counts",
+          "attritionPastSixWeeksTrend",
+          "attrition_past_six_weeks_trend",
+          "attritionSixWeeksBreakdown",
+          "attrition_six_weeks_breakdown",
+          "attritionPastSixWeeksBreakdown",
+          "attrition_past_six_weeks_breakdown",
+          "weeklyAttrition",
+          "weekly_attrition",
+        ];
+
+  for (const key of arrayKeys) {
+    const series = getBackendArrayValue(record?.[key])
+      .map((value) => Number(value || 0))
+      .filter((value) => Number.isFinite(value));
+
+    if (series.length > 0) {
+      return series.length >= 6
+        ? series.slice(-6)
+        : [...Array.from({ length: 6 - series.length }, () => 0), ...series];
+    }
+  }
+
+  const prefix = type === "absenteeism" ? "absenteeism" : "attrition";
+
+  return [1, 2, 3, 4, 5, 6].map((weekNumber) =>
+    getBackendNumber(record, [
+      `${prefix}Week${weekNumber}`,
+      `${prefix}_week_${weekNumber}`,
+      `week${weekNumber}${type === "absenteeism" ? "Absenteeism" : "Attrition"}`,
+      `week_${weekNumber}_${type}`,
+      `w${weekNumber}${type === "absenteeism" ? "Absenteeism" : "Attrition"}`,
+      `${prefix}W${weekNumber}`,
+    ]),
+  );
+}
+
+function getBackendSixWeekTotal(record = {}, type = "absenteeism") {
+  return getBackendSixWeekSeries(record, type).reduce(
+    (sum, value) => sum + Number(value || 0),
+    0,
+  );
+}
+
+function calculateActualHiringRatePercent({ fstCount = 0, interviewCount = 0 }) {
+  const cleanFstCount = Number(fstCount || 0);
+  const cleanInterviewCount = Number(interviewCount || 0);
+
+  if (!Number.isFinite(cleanFstCount) || !Number.isFinite(cleanInterviewCount)) {
+    return 0;
+  }
+
+  if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
+
+  /*
+    Returns a decimal ratio, not a percent number.
+    Display helpers multiply this by 100.
+    Example: FST 21 / Interview 4 = 5.25, displayed as 525.00%.
+  */
+  return cleanFstCount / cleanInterviewCount;
+}
+
+function calculateLeadsFromInterview({ interviewCount = 0, hiringRate = 0 }) {
+  const cleanInterviewCount = Math.max(0, Number(interviewCount || 0));
+  const cleanHiringRate = Number(hiringRate || 0);
+
+  /*
+    Updated business rule:
+    Leads to Interview = Interview Count / Hiring Rate.
+    Hiring Rate is a decimal ratio here.
+    Example: Interview 4 / Hiring Rate 5.25 = 0.76, rounded up to 1.
+  */
+  if (!Number.isFinite(cleanInterviewCount) || cleanInterviewCount <= 0) return 0;
+  if (!Number.isFinite(cleanHiringRate) || cleanHiringRate <= 0) {
+    return cleanInterviewCount;
+  }
+
+  return Math.ceil(cleanInterviewCount / cleanHiringRate);
 }
 
 function normalizeStatusValue(value, fallback = "") {
@@ -460,27 +577,20 @@ function getLoggedInOwnerDisplay(user) {
 
 function calculatePipelineStatus(item) {
   const requiredHeadcount = Number(item.requiredHeadcount || 0);
-  const actualHeadcount = Number(item.actualHeadcount || 0);
+  const hiringNeeded = Number(
+    item.hiringNeeded ||
+      item.hiring_needed ||
+      item.actualHeadcountNeeds ||
+      item.actual_headcount_needs ||
+      0,
+  );
   const leadsToInterview = Number(item.leadsToInterview || 0);
-  const opsPrf = Number(item.opsPrf || 0);
 
   if (requiredHeadcount <= 0) return "Pending";
+  if (hiringNeeded <= 0) return "Completed";
+  if (leadsToInterview > 0) return "At Risk";
 
-  if (opsPrf > 0 || leadsToInterview > 0) {
-    return "At Risk";
-  }
-
-  if (actualHeadcount >= requiredHeadcount) {
-    return "Completed";
-  }
-
-  const gap = requiredHeadcount - actualHeadcount;
-
-  if (leadsToInterview === 0 && gap > 0) {
-    return "Delayed";
-  }
-
-  return "On Track";
+  return "Delayed";
 }
 
 function buildWeekKey(week) {
@@ -1926,99 +2036,72 @@ export default function WeeklyHiringPlanPage() {
         "buffer_percent",
       ]);
 
-      const rawAbsenteeismCount = Number(account.absenteeismCount || 0);
-      const absenteeismCount = rawAbsenteeismCount;
-
-      const absenteeismPastSixWeeksAverage = getBackendNumber(
+      const absenteeismSeries = getBackendSixWeekSeries(
         account,
-        [
-          "absenteeismPastSixWeeksAverage",
-          "absenteeism_past_six_weeks_average",
-          "absenteeismOpsCount",
-          "absenteeism_ops_count",
-        ],
-        Math.round(rawAbsenteeismCount / 6),
+        "absenteeism",
+      );
+      const attritionSeries = getBackendSixWeekSeries(account, "attrition");
+
+      const absenteeismTrendTotal = absenteeismSeries.reduce(
+        (sum, value) => sum + Number(value || 0),
+        0,
+      );
+      const attritionTrendTotal = attritionSeries.reduce(
+        (sum, value) => sum + Number(value || 0),
+        0,
       );
 
-      const attritionPastCount = Number(account.attritionPastCount || 0);
+      const absenteeismCount =
+        absenteeismTrendTotal > 0
+          ? absenteeismTrendTotal
+          : getBackendNumber(account, [
+              "absenteeismSixWeeks",
+              "absenteeism_6_weeks",
+              "absenteeismPastSixWeeks",
+              "absenteeism_past_six_weeks",
+              "totalAbsenteeism",
+              "total_absenteeism",
+              "absenteeismCount",
+              "absenteeism_count",
+            ]);
 
-      const attritionPastSixWeeksAverage = getBackendNumber(
-        account,
-        [
-          "attritionPastSixWeeksAverage",
-          "attrition_past_six_weeks_average",
-        ],
-        Math.round(attritionPastCount / 6),
-      );
+      const absenteeismPastSixWeeksAverage =
+        absenteeismCount > 0 ? absenteeismCount / 6 : 0;
 
-      const actualHeadcountNeeds = getBackendNumber(account, [
-        "actualHeadcountNeeds",
-        "actual_headcount_needs",
+      const attritionPastCount =
+        attritionTrendTotal > 0
+          ? attritionTrendTotal
+          : getBackendNumber(account, [
+              "attritionSixWeeks",
+              "attrition_6_weeks",
+              "attritionPastSixWeeks",
+              "attrition_past_six_weeks",
+              "totalAttrition",
+              "total_attrition",
+              "attritionPastCount",
+              "attrition_past_count",
+              "attritionCount",
+              "attrition_count",
+            ]);
+
+      const attritionPastSixWeeksAverage =
+        attritionPastCount > 0 ? attritionPastCount / 6 : 0;
+
+      const opsPrf = getBackendNumber(account, [
+        "opsPrf",
+        "ops_prf",
+        "prfCount",
+        "prf_count",
+        "hiringIntakeHeadcount",
+        "hiring_intake_headcount",
+        "hiringIntake",
+        "hiring_intake",
       ]);
 
-      const opsPrf = getBackendNumber(account, ["opsPrf", "ops_prf"]);
+      const netActualHeadcount =
+        actualHeadcount - absenteeismCount - attritionPastCount;
 
-      const projectedEmployeeNeeds = getBackendNumber(
-        account,
-        [
-          "projectedEmployeeNeeds",
-          "projected_employee_needs",
-          "projectedNeeds",
-          "projected_needs",
-        ],
-        actualHeadcountNeeds || opsPrf,
-      );
-
-      const actionItem = account.actionItem || account.action_item || "";
-      const actionItemOwner =
-        account.actionItemOwner || account.action_item_owner || "";
-      const actionItemOwnerSibsId =
-        account.actionItemOwnerSibsId ||
-        account.action_item_owner_sibs_id ||
-        "";
-      const actionItemDeadline =
-        account.actionItemDeadline || account.action_item_deadline || "";
-      const actionItemStatus =
-        account.actionItemStatus || account.action_item_status || "Pending";
-      const actionItemRemarks =
-        account.actionItemRemarks || account.action_item_remarks || "";
-
-      const actionItems =
-        Array.isArray(account.actionItems) && account.actionItems.length
-          ? account.actionItems
-          : actionItem
-            ? [
-                {
-                  actionItem,
-                  action_item: actionItem,
-                  owner: actionItemOwner,
-                  actionItemOwner,
-                  action_item_owner: actionItemOwner,
-                  ownerSibsId: actionItemOwnerSibsId,
-                  actionItemOwnerSibsId,
-                  action_item_owner_sibs_id: actionItemOwnerSibsId,
-                  deadline: actionItemDeadline,
-                  actionItemDeadline,
-                  action_item_deadline: actionItemDeadline,
-                  status: actionItemStatus,
-                  actionItemStatus,
-                  action_item_status: actionItemStatus,
-                  actionItemRemarks,
-                  action_item_remarks: actionItemRemarks,
-                },
-              ]
-            : [];
-
-      const rowHiringPlanPercent = getBackendNumber(
-        account,
-        [
-          "hiringPlanPercent",
-          "hiring_plan_percent",
-          "hiringRate",
-          "hiring_rate",
-        ],
-        getWeekHiringPlanPercent(activeWeek),
-      );
+      const coverageNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
 
       const interviewPopulationCount = getBackendNumber(account, [
         "interviewPopulationCount",
@@ -2068,6 +2151,65 @@ export default function WeeklyHiringPlanPage() {
         "pipeline_pst",
       ]);
 
+      const hiredCount = fstCount;
+
+      const actualHeadcountNeeds = Math.max(
+        0,
+        coverageNeeded + opsPrf - hiredCount,
+      );
+
+      const projectedEmployeeNeeds = actualHeadcountNeeds;
+
+      const rowHiringPlanPercent = calculateActualHiringRatePercent({
+        fstCount: hiredCount,
+        interviewCount: interviewPopulationCount,
+      });
+
+      const leadsToInterview = calculateLeadsFromInterview({
+        interviewCount: interviewPopulationCount,
+        hiringRate: rowHiringPlanPercent,
+      });
+
+      const actionItem = account.actionItem || account.action_item || "";
+      const actionItemOwner =
+        account.actionItemOwner || account.action_item_owner || "";
+      const actionItemOwnerSibsId =
+        account.actionItemOwnerSibsId ||
+        account.action_item_owner_sibs_id ||
+        "";
+      const actionItemDeadline =
+        account.actionItemDeadline || account.action_item_deadline || "";
+      const actionItemStatus =
+        account.actionItemStatus || account.action_item_status || "Pending";
+      const actionItemRemarks =
+        account.actionItemRemarks || account.action_item_remarks || "";
+
+      const actionItems =
+        Array.isArray(account.actionItems) && account.actionItems.length
+          ? account.actionItems
+          : actionItem
+            ? [
+                {
+                  actionItem,
+                  action_item: actionItem,
+                  owner: actionItemOwner,
+                  actionItemOwner,
+                  action_item_owner: actionItemOwner,
+                  ownerSibsId: actionItemOwnerSibsId,
+                  actionItemOwnerSibsId,
+                  action_item_owner_sibs_id: actionItemOwnerSibsId,
+                  deadline: actionItemDeadline,
+                  actionItemDeadline,
+                  action_item_deadline: actionItemDeadline,
+                  status: actionItemStatus,
+                  actionItemStatus,
+                  action_item_status: actionItemStatus,
+                  actionItemRemarks,
+                  action_item_remarks: actionItemRemarks,
+                },
+              ]
+            : [];
+
       const projectedToBeEndorsed = getBackendNumber(
         account,
         [
@@ -2083,12 +2225,6 @@ export default function WeeklyHiringPlanPage() {
           "pst_endorsed_count",
         ],
         pstCount,
-      );
-
-      const hiredCount = getBackendNumber(
-        account,
-        ["hiredCount", "hired_count", "hired"],
-        fstCount + pstCount,
       );
 
       const row = {
@@ -2137,6 +2273,10 @@ export default function WeeklyHiringPlanPage() {
         bufferHeadcount,
         bufferPercent,
         missingHeadcount: requiredHeadcount + bufferHeadcount - actualHeadcount,
+        netActualHeadcount,
+        net_actual_headcount: netActualHeadcount,
+        coverageNeeded,
+        coverage_needed: coverageNeeded,
 
         scheduledCount: Number(account.scheduledCount || 0),
         presentCount: Number(account.presentCount || 0),
@@ -2151,133 +2291,41 @@ export default function WeeklyHiringPlanPage() {
         attritionPastSixWeeksAverage,
         attrition_past_six_weeks_average: attritionPastSixWeeksAverage,
 
-        absenteeismTrend:
-          account.absenteeismTrend ||
-          account.absenteeism_trend ||
-          account.absenteeismPastSixWeeksTrend ||
-          account.absenteeism_past_six_weeks_trend ||
-          account.absenteeismWeeklyCounts ||
-          account.absenteeism_weekly_counts ||
-          account.absenteeismSixWeeksBreakdown ||
-          account.absenteeism_six_weeks_breakdown ||
-          account.absenteeismPastSixWeeksBreakdown ||
-          account.absenteeism_past_six_weeks_breakdown ||
-          account.weeklyAbsenteeism ||
-          account.weekly_absenteeism ||
-          [],
+        absenteeismTrend: absenteeismSeries,
+        absenteeism_trend: absenteeismSeries,
+        absenteeismWeeklyCounts: absenteeismSeries,
+        absenteeism_weekly_counts: absenteeismSeries,
 
-        attritionTrend:
-          account.attritionTrend ||
-          account.attrition_trend ||
-          account.attritionPastSixWeeksTrend ||
-          account.attrition_past_six_weeks_trend ||
-          account.attritionWeeklyCounts ||
-          account.attrition_weekly_counts ||
-          account.attritionSixWeeksBreakdown ||
-          account.attrition_six_weeks_breakdown ||
-          account.attritionPastSixWeeksBreakdown ||
-          account.attrition_past_six_weeks_breakdown ||
-          account.weeklyAttrition ||
-          account.weekly_attrition ||
-          [],
+        attritionTrend: attritionSeries,
+        attrition_trend: attritionSeries,
+        attritionWeeklyCounts: attritionSeries,
+        attrition_weekly_counts: attritionSeries,
 
-        absenteeismWeek1:
-          account.absenteeismWeek1 ||
-          account.absenteeism_week_1 ||
-          account.week1Absenteeism ||
-          account.week_1_absenteeism ||
-          account.w1Absenteeism ||
-          account.absenteeismW1 ||
-          0,
-        absenteeismWeek2:
-          account.absenteeismWeek2 ||
-          account.absenteeism_week_2 ||
-          account.week2Absenteeism ||
-          account.week_2_absenteeism ||
-          account.w2Absenteeism ||
-          account.absenteeismW2 ||
-          0,
-        absenteeismWeek3:
-          account.absenteeismWeek3 ||
-          account.absenteeism_week_3 ||
-          account.week3Absenteeism ||
-          account.week_3_absenteeism ||
-          account.w3Absenteeism ||
-          account.absenteeismW3 ||
-          0,
-        absenteeismWeek4:
-          account.absenteeismWeek4 ||
-          account.absenteeism_week_4 ||
-          account.week4Absenteeism ||
-          account.week_4_absenteeism ||
-          account.w4Absenteeism ||
-          account.absenteeismW4 ||
-          0,
-        absenteeismWeek5:
-          account.absenteeismWeek5 ||
-          account.absenteeism_week_5 ||
-          account.week5Absenteeism ||
-          account.week_5_absenteeism ||
-          account.w5Absenteeism ||
-          account.absenteeismW5 ||
-          0,
-        absenteeismWeek6:
-          account.absenteeismWeek6 ||
-          account.absenteeism_week_6 ||
-          account.week6Absenteeism ||
-          account.week_6_absenteeism ||
-          account.w6Absenteeism ||
-          account.absenteeismW6 ||
-          0,
+        absenteeismWeek1: absenteeismSeries[0] || 0,
+        absenteeism_week_1: absenteeismSeries[0] || 0,
+        absenteeismWeek2: absenteeismSeries[1] || 0,
+        absenteeism_week_2: absenteeismSeries[1] || 0,
+        absenteeismWeek3: absenteeismSeries[2] || 0,
+        absenteeism_week_3: absenteeismSeries[2] || 0,
+        absenteeismWeek4: absenteeismSeries[3] || 0,
+        absenteeism_week_4: absenteeismSeries[3] || 0,
+        absenteeismWeek5: absenteeismSeries[4] || 0,
+        absenteeism_week_5: absenteeismSeries[4] || 0,
+        absenteeismWeek6: absenteeismSeries[5] || 0,
+        absenteeism_week_6: absenteeismSeries[5] || 0,
 
-        attritionWeek1:
-          account.attritionWeek1 ||
-          account.attrition_week_1 ||
-          account.week1Attrition ||
-          account.week_1_attrition ||
-          account.w1Attrition ||
-          account.attritionW1 ||
-          0,
-        attritionWeek2:
-          account.attritionWeek2 ||
-          account.attrition_week_2 ||
-          account.week2Attrition ||
-          account.week_2_attrition ||
-          account.w2Attrition ||
-          account.attritionW2 ||
-          0,
-        attritionWeek3:
-          account.attritionWeek3 ||
-          account.attrition_week_3 ||
-          account.week3Attrition ||
-          account.week_3_attrition ||
-          account.w3Attrition ||
-          account.attritionW3 ||
-          0,
-        attritionWeek4:
-          account.attritionWeek4 ||
-          account.attrition_week_4 ||
-          account.week4Attrition ||
-          account.week_4_attrition ||
-          account.w4Attrition ||
-          account.attritionW4 ||
-          0,
-        attritionWeek5:
-          account.attritionWeek5 ||
-          account.attrition_week_5 ||
-          account.week5Attrition ||
-          account.week_5_attrition ||
-          account.w5Attrition ||
-          account.attritionW5 ||
-          0,
-        attritionWeek6:
-          account.attritionWeek6 ||
-          account.attrition_week_6 ||
-          account.week6Attrition ||
-          account.week_6_attrition ||
-          account.w6Attrition ||
-          account.attritionW6 ||
-          0,
+        attritionWeek1: attritionSeries[0] || 0,
+        attrition_week_1: attritionSeries[0] || 0,
+        attritionWeek2: attritionSeries[1] || 0,
+        attrition_week_2: attritionSeries[1] || 0,
+        attritionWeek3: attritionSeries[2] || 0,
+        attrition_week_3: attritionSeries[2] || 0,
+        attritionWeek4: attritionSeries[3] || 0,
+        attrition_week_4: attritionSeries[3] || 0,
+        attritionWeek5: attritionSeries[4] || 0,
+        attrition_week_5: attritionSeries[4] || 0,
+        attritionWeek6: attritionSeries[5] || 0,
+        attrition_week_6: attritionSeries[5] || 0,
 
         opsPrf,
         projectedEmployeeNeeds,
@@ -2355,14 +2403,8 @@ export default function WeeklyHiringPlanPage() {
         hiredCount,
         hired_count: hiredCount,
 
-        leadsToInterview: getBackendNumber(account, [
-          "leadsToInterview",
-          "leads_to_interview",
-        ]),
-        leads_to_interview: getBackendNumber(account, [
-          "leadsToInterview",
-          "leads_to_interview",
-        ]),
+        leadsToInterview,
+        leads_to_interview: leadsToInterview,
 
         hiringRate: rowHiringPlanPercent,
         hiring_rate: rowHiringPlanPercent,
@@ -2419,46 +2461,46 @@ export default function WeeklyHiringPlanPage() {
   ]);
 
   const hiringPlanAdjustedData = useMemo(() => {
-    const percent = isHiringPlanSnapshotLocked
-      ? getWeekHiringPlanPercent(activeWeek)
-      : Number(selectedHiringPlanPercent || 5);
-
+    /*
+      Do not overwrite row hiring rate with selected/default Hiring Plan %.
+      Hiring Rate is actual conversion only:
+      FST Count / Interview Count.
+    */
     return displayData.map((item) => {
-      const itemPercent = isHiringPlanSnapshotLocked
-        ? getBackendNumber(
-            item,
-            [
-              "hiringPlanPercent",
-              "hiring_plan_percent",
-              "hiringRate",
-              "hiring_rate",
-            ],
-            percent,
-          )
-        : percent;
+      const interviewCount = getBackendNumber(item, [
+        "interviewCount",
+        "interview_count",
+        "interviewPopulationCount",
+        "interview_population_count",
+      ]);
 
-      const itemDecimalPercent = itemPercent > 0 ? itemPercent / 100 : 0.05;
+      const fstCount = getBackendNumber(item, [
+        "fstCount",
+        "fst_count",
+        "fstPopulationCount",
+        "fst_population_count",
+      ]);
+
+      const hiringRate = calculateActualHiringRatePercent({
+        fstCount,
+        interviewCount,
+      });
 
       const actualHeadcountNeeds = Number(
         item.actualHeadcountNeeds ??
           item.actual_headcount_needs ??
-          item.projectedEmployeeNeeds ??
-          item.projected_employee_needs ??
-          item.opsPrf ??
-          item.ops_prf ??
+          item.hiringNeeded ??
+          item.hiring_needed ??
           0,
       );
 
-      const leadsToInterview =
-        itemDecimalPercent > 0
-          ? Math.round(actualHeadcountNeeds / itemDecimalPercent)
-          : 0;
+      const leadsToInterview = calculateLeadsFromInterview({
+        interviewCount,
+        hiringRate,
+      });
 
       return {
         ...item,
-
-        hiringPlanPercent: itemPercent,
-        hiring_plan_percent: itemPercent,
 
         actualHeadcountNeeds,
         actual_headcount_needs: actualHeadcountNeeds,
@@ -2469,24 +2511,25 @@ export default function WeeklyHiringPlanPage() {
         leadsToInterview,
         leads_to_interview: leadsToInterview,
 
-        hiringRate: itemPercent,
-        hiring_rate: itemPercent,
+        hiredCount: fstCount,
+        hired_count: fstCount,
+
+        hiringRate,
+        hiring_rate: hiringRate,
+        hiringPlanPercent: hiringRate,
+        hiring_plan_percent: hiringRate,
 
         pipelineStatus: calculatePipelineStatus({
           ...item,
           actualHeadcountNeeds,
+          hiringNeeded: actualHeadcountNeeds,
           projectedEmployeeNeeds: actualHeadcountNeeds,
           leadsToInterview,
-          hiringRate: itemPercent,
+          hiringRate,
         }),
       };
     });
-  }, [
-    displayData,
-    selectedHiringPlanPercent,
-    activeWeek,
-    isHiringPlanSnapshotLocked,
-  ]);
+  }, [displayData]);
 
   const managerDisplayData = useMemo(() => {
     if (weeklyAccess.hasFullAccess) {
@@ -2631,10 +2674,10 @@ export default function WeeklyHiringPlanPage() {
           leadsToInterview: 0,
           leads_to_interview: 0,
 
-          hiringRate: activeHiringPlanPercent,
-          hiring_rate: activeHiringPlanPercent,
-          hiringPlanPercent: activeHiringPlanPercent,
-          hiring_plan_percent: activeHiringPlanPercent,
+          hiringRate: 0,
+          hiring_rate: 0,
+          hiringPlanPercent: 0,
+          hiring_plan_percent: 0,
 
           pipelineStatus: "Pending",
           statusNote: ghlName || "-",
@@ -2845,24 +2888,30 @@ export default function WeeklyHiringPlanPage() {
               item.requiredHeadcount || item.required_headcount || 0,
             actualHeadcount: item.actualHeadcount || item.actual_headcount || 0,
             absenteeism:
-              item.absenteeismCount ||
-              item.absenteeismPastCount ||
               item.absenteeismSixWeeks ||
               item.absenteeism_6_weeks ||
+              item.absenteeismCount ||
+              item.absenteeism_count ||
               0,
             attrition:
-              item.attritionPastCount ||
-              item.attritionCount ||
               item.attritionSixWeeks ||
               item.attrition_6_weeks ||
+              item.attritionPastCount ||
+              item.attrition_past_count ||
+              item.attritionCount ||
+              item.attrition_count ||
               0,
             hiringIntake:
+              item.opsPrf ||
+              item.ops_prf ||
               item.hiringIntakeCount ||
               item.prfCount ||
               item.totalPrf ||
               item.requisitionCount ||
               0,
             hiringIntakeHeadcount:
+              item.opsPrf ||
+              item.ops_prf ||
               item.hiringIntakeHeadcount ||
               item.intakeHeadcount ||
               item.prfHeadcount ||
@@ -3028,8 +3077,8 @@ export default function WeeklyHiringPlanPage() {
           actualHeadcountNeeds: cleanActualHeadcountNeeds,
           leadsToInterview: cleanLeadsToInterview,
 
-          hiringPlanPercent: Number(selectedHiringPlanPercent || 5),
-          hiring_plan_percent: Number(selectedHiringPlanPercent || 5),
+          hiringPlanPercent: Number(item.hiringRate || item.hiring_rate || 0),
+          hiring_plan_percent: Number(item.hiringRate || item.hiring_rate || 0),
 
           priorityLevel: item.priorityLevel || item.priority_level || "",
 
@@ -3762,7 +3811,7 @@ export default function WeeklyHiringPlanPage() {
             className={`relative z-[10] ${APPROVAL_EDGE}`}
             style={{ animationDelay: "120ms" }}
           >
-            <PercentageRiskGraphTable filteredPlans={filteredPlans} />
+            <PercentageRiskGraphTable filteredPlans={filteredPlans} activeWeek={activeWeek} />
           </section>
 
           <section

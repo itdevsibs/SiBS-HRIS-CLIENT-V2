@@ -384,25 +384,31 @@ function calculateHiringRateFromFst({ fstCount = 0, interviewCount = 0 }) {
     Hiring Rate is based on real pipeline conversion only.
     Formula:
     Hired = FST count only
-    Hiring Rate = MIN(FST / Interview Count, 100%)
+    Hiring Rate = FST / Interview Count.
 
-    No Interview Count or no FST count means 0.00%.
+    This is intentionally uncapped, so values above 100.00% can display when
+    FST count is higher than Interview count.
     Do not use Hiring Plan %, displayHiringPlanPercent, or default week rate.
   */
-  return Math.min((cleanFstCount / cleanInterviewCount) * 100, 100);
+  return cleanFstCount / cleanInterviewCount;
 }
 
-function calculateLeadsToInterviewFromCoverage({
-  coverageNeeded = 0,
+function calculateLeadsToInterviewFromInterview({
+  interviewCount = 0,
   hiringRate = 0,
 }) {
-  const cleanCoverageNeeded = Math.max(0, getPositiveNumber(coverageNeeded));
+  const cleanInterviewCount = Math.max(0, getPositiveNumber(interviewCount));
   const cleanHiringRate = getPositiveNumber(hiringRate);
 
-  if (cleanCoverageNeeded <= 0) return 0;
-  if (cleanHiringRate <= 0) return cleanCoverageNeeded;
+  /*
+    Updated business rule:
+    Leads to Interview = Interview Count / Hiring Rate.
+    Hiring Rate is a decimal ratio here.
+  */
+  if (cleanInterviewCount <= 0) return 0;
+  if (cleanHiringRate <= 0) return cleanInterviewCount;
 
-  return Math.ceil(cleanCoverageNeeded / (cleanHiringRate / 100));
+  return Math.ceil(cleanInterviewCount / cleanHiringRate);
 }
 
 
@@ -717,24 +723,6 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       0,
     );
 
-    const directHiringRateAverage =
-      rows.length > 0
-        ? rows.reduce(
-            (sum, item) =>
-              sum +
-              getNumberValue(
-                item,
-                [
-                  "hiringRate",
-                  "hiring_rate",
-                  "hiringPlanPercent",
-                  "hiring_plan_percent",
-                ],
-                0,
-              ),
-            0,
-          ) / rows.length
-        : 0;
 
     /*
       Hiring Rate must come from actual pipeline conversion only.
@@ -784,7 +772,7 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       Hiring Needed must include PRF / Hiring Intake.
       Formula:
       Hiring Needed = Base Coverage + Hiring Intake Headcount - Hired Count
-      Leads to Interview = Hiring Needed / Hiring Rate
+      Leads to Interview = Interview Count / Hiring Rate
     */
     const coverage = baseCoverage;
     const hiringNeeded = Math.max(
@@ -792,20 +780,20 @@ export default function HeadcountTable({ filteredPlans = [] }) {
       baseCoverage + hiringIntakeHeadcount - totalHired,
     );
 
-    const leadsToInterviewByCoverage = calculateLeadsToInterviewFromCoverage({
-      coverageNeeded: hiringNeeded,
+    const leadsToInterviewByInterview = calculateLeadsToInterviewFromInterview({
+      interviewCount: totalInterviewed,
       hiringRate,
     });
 
     /*
       Correct card logic:
-      Leads to Interview = Hiring Needed / Hiring Rate
+      Leads to Interview = Interview Count / Hiring Rate
 
       Do NOT use direct backend leads here because some saved/backend rows still
       carry older leads_to_interview values based on Hiring Needed. The card
       should always follow the current dashboard formula.
     */
-    const finalLeadsToInterview = leadsToInterviewByCoverage;
+    const finalLeadsToInterview = leadsToInterviewByInterview;
 
     const trainingAttrition = rows.reduce(
       (sum, item) => {
@@ -1049,7 +1037,7 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           title="Hiring Rate"
           subtitle="Conversion to FST"
           value={
-            <AnimatedNumber value={totals.hiringRate} decimals={2} suffix="%" />
+            <AnimatedNumber value={totals.hiringRate * 100} decimals={2} suffix="%" />
           }
           footer="FST / Interview"
           icon={TrendingUp}
@@ -1061,7 +1049,7 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           title="Leads to Interview"
           subtitle="Needed"
           value={<AnimatedNumber value={totals.leadsToInterview} />}
-          footer="Hiring Needed / Hiring Rate"
+          footer="Interview Count / Hiring Rate"
           icon={BarChart3}
           valueClassName="text-violet-700"
           iconClassName="bg-violet-50 text-violet-700"

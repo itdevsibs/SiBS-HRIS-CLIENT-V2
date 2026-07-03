@@ -98,10 +98,13 @@ function calculateActualHiringRate({ fstCount = 0, interviewCount = 0 }) {
     Hiring Rate is actual pipeline conversion only.
     Formula: FST Count / Interview Count.
     Do not use PST, FST + PST, hiring plan percent, or default weekly rate.
+
+    Returns a decimal ratio. Display helpers multiply by 100, so
+    FST 21 / Interview 4 = 5.25 displays as 525.00%.
   */
   if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
 
-  return Math.min(cleanFstCount / cleanInterviewCount, 1);
+  return cleanFstCount / cleanInterviewCount;
 }
 
 function formatPercent(value, decimals = 2) {
@@ -109,11 +112,11 @@ function formatPercent(value, decimals = 2) {
 
   if (!Number.isFinite(numberValue)) return "0.00%";
 
-  if (Math.abs(numberValue) > 0 && Math.abs(numberValue) <= 1) {
-    return `${(numberValue * 100).toFixed(decimals)}%`;
-  }
-
-  return `${numberValue.toFixed(decimals)}%`;
+  /*
+    All computed rates in this table are decimal ratios.
+    Example: 0.0525 => 5.25%, 5.25 => 525.00%.
+  */
+  return `${(numberValue * 100).toFixed(decimals)}%`;
 }
 
 function formatNumber(value, maximumFractionDigits = 0) {
@@ -381,12 +384,17 @@ function getRowMetrics(item) {
     interviewCount,
   });
 
+    /*
+    Updated business rule:
+    Leads to Interview = Interview Count / Hiring Rate.
+    Hiring Rate is a decimal ratio here.
+  */
   const leadsToInterview =
-    hiringNeeded <= 0
+    interviewCount <= 0
       ? 0
       : hiringRate > 0
-        ? Math.ceil(hiringNeeded / hiringRate)
-        : hiringNeeded;
+        ? Math.ceil(interviewCount / hiringRate)
+        : interviewCount;
 
   const pipelineStatus = calculatePipelineStatus({
     requiredHeadcount,
@@ -563,10 +571,10 @@ function DesktopTableHeader() {
             Attrition % NHO to PST
           </HeaderCell>
           <HeaderCell note="FST Count only">Hired Count</HeaderCell>
-          <HeaderCell note="FST Count ÷ Interview Count">
+          <HeaderCell note="FST Count ÷ Interview Count, uncapped">
             Hiring Rate
           </HeaderCell>
-          <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
+          <HeaderCell note="If Hiring Rate is 0, use Interview Count. Otherwise ROUNDUP(Interview Count ÷ Hiring Rate)">
             Leads to Interview
           </HeaderCell>
           <HeaderCell>Status</HeaderCell>
@@ -1166,7 +1174,7 @@ export default function WeeklyHiringAccountsTable({
         <div className="mt-4">
           <PaginationTable
             title="Weekly Hiring Accounts"
-            subtitle="Excel-based computation: Net Actual HC, Coverage Needed, PRF, Hired Count, Hiring Needed, Stage Attrition, Hiring Rate, and Leads to Interview."
+            subtitle="Excel-based computation: Net Actual HC, Coverage Needed, PRF, Hired Count, Hiring Needed, Stage Attrition, Hiring Rate, and Leads to Interview from Interview Count."
             loading={accountsLoading}
             searchValue={searchInput}
             searchPlaceholder="Search account then press Enter"
@@ -1254,10 +1262,10 @@ export default function WeeklyHiringAccountsTable({
                     Attrition % NHO to PST
                   </HeaderCell>
                   <HeaderCell note="FST Count only">Hired Count</HeaderCell>
-                  <HeaderCell note="FST Count ÷ Interview Count">
+                  <HeaderCell note="FST Count ÷ Interview Count, uncapped">
                     Hiring Rate
                   </HeaderCell>
-                  <HeaderCell note="If Hiring Rate is 0, use Hiring Needed. Otherwise ROUNDUP(Hiring Needed ÷ Hiring Rate)">
+                  <HeaderCell note="If Hiring Rate is 0, use Interview Count. Otherwise ROUNDUP(Interview Count ÷ Hiring Rate)">
                     Leads to Interview
                   </HeaderCell>
                   <HeaderCell>Status</HeaderCell>
