@@ -130,9 +130,9 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-const PROFILE_FIELD_EDITING_CLASS = "bg-[#F1F5F9]";
-const PROFILE_FIELD_FILLED_CLASS = "bg-[#F1F5F9]";
-const PROFILE_FIELD_EMPTY_CLASS = "bg-[#d3d6db]";
+const PROFILE_FIELD_EDITING_CLASS = "bg-white ring-1 ring-[#D9E2EC]";
+const PROFILE_FIELD_FILLED_CLASS = "bg-[#F3F6FA]";
+const PROFILE_FIELD_EMPTY_CLASS = "bg-[#d7dbe0]";
 
 function hasMeaningfulValue(value) {
   if (Array.isArray(value)) {
@@ -265,6 +265,42 @@ function getProfileSibsId(employee) {
   if (!cleaned || cleaned.includes("@")) return "";
 
   return cleaned;
+}
+
+function getEmployeeInitials(employee) {
+  const fullName = getFullName(employee);
+
+  const initials = fullName
+    .split(/\s+/)
+    .map((part) => part?.[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return initials || "S";
+}
+
+function getEmployeeHeaderSubtitle(employee) {
+  return firstValue(
+    employee?.position,
+    employee?.jobTitle,
+    employee?.roleTitle,
+    employee?.appliedPosition,
+    employee?.applied_position,
+  );
+}
+
+
+function getEmployeeHeaderSecondary(employee) {
+  const department = cleanText(employee?.department);
+  const account = cleanText(employee?.account);
+
+  if (department && account) return `${department} / ${account}`;
+  if (department) return department;
+  if (account) return account;
+
+  return "";
 }
 
 function toInputDate(value) {
@@ -855,11 +891,11 @@ export default function EmployeeDataPage() {
   return (
     <div
       onClick={() => setOpenProfileDropdown(false)}
-      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#DDE4EC] font-jakarta"
+      className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#E6EAF0] font-jakarta"
     >
       <Header />
 
-      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#DDE4EC] px-3 py-4 sm:p-6">
+      <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-[#E6EAF0] px-3 py-4 sm:p-6">
         <button
           type="button"
           onClick={() => navigate("/employee")}
@@ -879,9 +915,9 @@ export default function EmployeeDataPage() {
           </div>
         ) : (
           <div className="sibs-page-header-in w-full space-y-4 sm:space-y-5">
-            <section className="overflow-visible rounded-[18px] bg-sibs-primary-1 shadow-sm ring-1 ring-[#D9E2EC] sm:rounded-[22px]">
-              <div className="relative z-10 overflow-visible rounded-[18px] bg-sibs-primary-1 px-4 py-5 text-white sm:rounded-[22px] sm:px-5">
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <section className="overflow-visible rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
+              <div className="relative z-10 overflow-visible rounded-2xl bg-white px-5 py-6 sm:px-7">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
                     <EmployeeProfileAvatar
                       employee={displayEmployee}
@@ -891,25 +927,37 @@ export default function EmployeeDataPage() {
                       }}
                     />
 
-                    <div className="min-w-0 pt-1">
-                      <h1 className="break-words text-xl font-extrabold uppercase leading-tight text-white sm:text-3xl lg:text-4xl">
-                        {fullName || "Candidate Name"}
+                    <div className="min-w-0 max-w-full pt-1">
+                      <h1 className="line-clamp-3 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-2 sm:text-2xl lg:text-3xl">
+                        {fullName || "Employee Name"}
                       </h1>
 
-                      <p className="mt-1 break-words text-sm font-bold text-white/85">
-                        {displayEmployee?.appliedPosition ||
-                          displayEmployee?.account ||
-                          "Talent Pool Profile"}
-                      </p>
+                      {getEmployeeHeaderSubtitle(displayEmployee) && (
+                        <p className="mt-2 break-words text-sm font-extrabold text-sibs-primary-1">
+                          {getEmployeeHeaderSubtitle(displayEmployee)}
+                        </p>
+                      )}
 
-                      <p className="mt-2 break-words text-xs font-extrabold uppercase tracking-wide text-white/70">
-                        SIBS ID: {getProfileSibsId(displayEmployee) || "N/A"}
-                      </p>
+                      {getEmployeeHeaderSecondary(displayEmployee) && (
+                        <p className="mt-1 break-words text-xs font-bold leading-5 text-sibs-tertiary-5 sm:text-sm">
+                          {getEmployeeHeaderSecondary(displayEmployee)}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
+                        <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                          SIBS ID: {getProfileSibsId(displayEmployee) || "N/A"}
+                        </span>
+
+                        <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                          {displayEmployee?.status || "Active"}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div
-                    className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end"
+                    className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center xl:justify-end"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {canEditDetails ? (
@@ -918,7 +966,7 @@ export default function EmployeeDataPage() {
                           <button
                             type="button"
                             onClick={cancelEditing}
-                            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 text-sm font-bold text-white transition hover:bg-white/20 sm:w-auto"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
                           >
                             <RotateCcw size={16} />
                             Cancel
@@ -927,7 +975,7 @@ export default function EmployeeDataPage() {
                           <button
                             type="button"
                             onClick={saveLocalChanges}
-                            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90 sm:w-auto"
+                            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 sm:w-auto"
                           >
                             <Save size={16} />
                             Save Changes
@@ -937,7 +985,7 @@ export default function EmployeeDataPage() {
                         <button
                           type="button"
                           onClick={startEditing}
-                          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90 sm:w-auto"
+                          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
                         >
                           <Edit3 size={16} />
                           Edit Profile
@@ -950,7 +998,7 @@ export default function EmployeeDataPage() {
                           e.stopPropagation();
                           setOpenProfileDropdown((prev) => !prev);
                         }}
-                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:opacity-90 sm:w-auto"
+                        className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-auto"
                       >
                         <UserRoundPen size={16} />
                         Request a Change
@@ -964,7 +1012,7 @@ export default function EmployeeDataPage() {
                           e.stopPropagation();
                           setOpenProfileDropdown((prev) => !prev);
                         }}
-                        className="flex h-10 w-full items-center justify-center rounded-full bg-white text-sibs-primary-1 transition hover:opacity-90 sm:w-10"
+                        className="flex h-11 w-full items-center justify-center rounded-xl border border-[#D6DEE8] bg-white text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm sm:w-11"
                         aria-label="More profile actions"
                       >
                         <MoreHorizontal size={18} />
@@ -1456,7 +1504,7 @@ function ProfileTextarea({ label, value, editable = false, onChange }) {
 
 function EmptyProfileState({ message }) {
   return (
-    <div className="rounded-xl border border-dashed border-[#C8D3DF] bg-[#E2E8F0] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
+    <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#E8EDF3] px-4 py-8 text-center text-sm font-bold text-sibs-tertiary-5 sm:px-5">
       {message}
     </div>
   );
@@ -2407,7 +2455,7 @@ function EditableTextList({
           {items.map((item, index) => (
             <div
               key={index}
-              className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
+              className="rounded-xl border border-[#D9E2EC] bg-[#F3F6FA] p-3 sm:p-4"
             >
               {isEditing ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -2506,7 +2554,7 @@ function EditableRecordList({
               return (
                 <div
                   key={index}
-                  className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F3F6FA] p-3 sm:p-4"
                 >
                   <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {fields.map((field) => (
@@ -2544,7 +2592,7 @@ function EditableRecordList({
             return (
               <div
                 key={index}
-                className="rounded-xl border border-[#D9E2EC] bg-[#F1F5F9] p-3 sm:p-4"
+                className="rounded-xl border border-[#D9E2EC] bg-[#F3F6FA] p-3 sm:p-4"
               >
                 <p
                   className={`break-words text-sm font-extrabold ${getProfileValueClasses(
@@ -2584,7 +2632,7 @@ function EditableRecordList({
                           className={`rounded-full border px-3 py-1 text-xs font-bold ${
                             metaHasValue
                               ? "border-blue-100 bg-blue-50 text-sibs-primary-1"
-                              : "border-[#C8D3DF] bg-[#E2E8F0] text-[#667085] italic"
+                              : "border-[#D9E2EC] bg-[#E8EDF3] text-[#667085] italic"
                           }`}
                         >
                           {metaHasValue ? metaValue : "—"}
@@ -2664,8 +2712,8 @@ function getRecordTitle(record) {
 function EmployeeProfileAvatar({ employee, onClick }) {
   const [imageFailed, setImageFailed] = useState(false);
   const imageUrl = getProfileImageUrl(employee);
-
   const shouldShowImage = imageUrl && !imageFailed;
+  const initials = getEmployeeInitials(employee);
 
   useEffect(() => {
     setImageFailed(false);
@@ -2675,7 +2723,7 @@ function EmployeeProfileAvatar({ employee, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="group relative flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/15 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20 hover:shadow-lg active:scale-[0.98] sm:h-[110px] sm:w-[110px]"
+      className="group relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm ring-1 ring-[#D9E2EC] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] sm:h-24 sm:w-24 sm:text-3xl"
       title="View profile picture"
     >
       {shouldShowImage ? (
@@ -2686,10 +2734,9 @@ function EmployeeProfileAvatar({ employee, onClick }) {
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <User
-          size={34}
-          className="text-white transition-transform duration-300 group-hover:scale-110 sm:size-9"
-        />
+        <span className="transition-transform duration-300 group-hover:scale-110">
+          {initials}
+        </span>
       )}
 
       <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-200 group-hover:bg-black/35 group-hover:opacity-100">
