@@ -7,7 +7,7 @@ import { useJobDescription } from "../../../services/context/JobDescriptionConte
 import {
   createJobDescription,
   getApprovedJobDescriptions,
-} from "../../../lib/axios/jobDescription";
+} from "../../../lib/axios/getJobDescription";
 import useAddJobDescriptionModal from "../../../hooks/jobDescription/useAddJobDescription";
 import AddJobDescriptionHeader from "./AddJobDescriptionHeader";
 import AddJobDescriptionInfoBanner from "./AddJobDescriptionInfoBanner";
