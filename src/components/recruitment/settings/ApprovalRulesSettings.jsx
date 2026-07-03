@@ -1,279 +1,393 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Check,
+  BriefcaseBusiness,
+  CheckCircle2,
   ChevronDown,
+  FileText,
   Loader2,
   Plus,
   Search,
   Trash2,
-  UserCheck,
+  UserRoundCheck,
 } from "lucide-react";
 
 import StatusModal from "../../modals/StatusModal";
+import { useUser } from "../../../services/context/UserContext";
 
 import {
+  addOfferApprovalUser,
   getOfferApprovalUsers,
-  saveOfferApprovalUsers,
+  removeOfferApprovalUser,
   searchOfferApprovalEmployees,
 } from "../../../lib/axios/getOfferApprovalRules";
+
+import {
+  addJobDescriptionApprovalUser,
+  getJobDescriptionApprovalUsers,
+  removeJobDescriptionApprovalUser,
+  searchJobDescriptionApprovalEmployees,
+} from "../../../lib/axios/getJobDescriptionApprovalSettings";
+
+const APPROVAL_RULE_TABS = [
+  {
+    key: "offers",
+    title: "Offer Approval",
+    shortTitle: "Offers",
+    description:
+      "Add the users who can approve or reject offers. The Offers page will show approval actions only for authorized users.",
+    icon: BriefcaseBusiness,
+    badgeText: "Offer Rules",
+    emptyText: "No offer approval users added yet.",
+    rowDescription: "Can approve or reject offers from the Offers page.",
+    isConnected: true,
+  },
+  {
+    key: "jobDescription",
+    title: "Job Description Approval",
+    shortTitle: "Job Description",
+    description:
+      "Add the users who can approve, reject, or tag Job Descriptions for revision from the Approval Requests page.",
+    icon: FileText,
+    badgeText: "JD Rules",
+    emptyText: "No Job Description approval users added yet.",
+    rowDescription:
+      "Can approve, reject, or tag Job Descriptions for revision.",
+    isConnected: true,
+  },
+];
 
 function cleanText(value) {
   return String(value ?? "").trim();
 }
 
-function normalizeKey(value) {
-  return cleanText(value).toLowerCase().replace(/\s+/g, " ");
+function getUserDisplayName(user = {}) {
+  return cleanText(
+    user.fullName ||
+      user.fullname ||
+      user.name ||
+      user.employeeName ||
+      user.employee_name ||
+      user.gy_emp_fullname ||
+      user.username ||
+      user.email ||
+      "Current User",
+  );
 }
 
-function normalizeApprovalUser(user = {}) {
-  const sibsId = cleanText(user.sibsId || user.sibs_id);
-  const firstName = cleanText(user.firstName || user.first_name);
-  const middleName = cleanText(user.middleName || user.middle_name);
-  const lastName = cleanText(user.lastName || user.last_name);
-  const displayName = cleanText(user.displayName || user.display_name);
+function normalizeSibsId(value = "") {
+  return cleanText(value).replace(/^SIBS[-_ ]?/i, "");
+}
+
+function getEmployeeSibsId(item = {}) {
+  return normalizeSibsId(
+    item.sibsId ||
+      item.sibs_id ||
+      item.employeeSibsId ||
+      item.employee_sibs_id ||
+      item.gy_emp_code ||
+      item.gy_user_code ||
+      item.userCode ||
+      item.user_code ||
+      item.username ||
+      "",
+  );
+}
+
+function getEmployeeName(item = {}) {
+  const fullName = cleanText(
+    item.employeeName ||
+      item.employee_name ||
+      item.fullName ||
+      item.full_name ||
+      item.name ||
+      item.displayName ||
+      item.display_name ||
+      item.gy_emp_fullname ||
+      "",
+  );
+
+  if (fullName) return fullName;
+
+  const displayName = cleanText(item.displayName || item.display_name || "");
+
+  if (displayName) {
+    return displayName.replace(/^\d+\s*-\s*/i, "").trim();
+  }
+
+  const lastName = cleanText(
+    item.lastName || item.last_name || item.gy_emp_lname || "",
+  );
+  const firstName = cleanText(
+    item.firstName || item.first_name || item.gy_emp_fname || "",
+  );
+  const middleName = cleanText(
+    item.middleName || item.middle_name || item.gy_emp_mname || "",
+  );
+
+  const formatted =
+    `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
+      middleName ? ` ${middleName}` : ""
+    }`
+      .replace(/\s+/g, " ")
+      .trim();
+
+  return formatted || "Unnamed Employee";
+}
+
+function normalizeApprovalUser(item = {}) {
+  const sibsId = getEmployeeSibsId(item);
+  const employeeName = getEmployeeName(item);
 
   return {
-    id: user.id,
+    id:
+      item.id ||
+      item.ruleId ||
+      item.rule_id ||
+      item.approvalUserId ||
+      item.approval_user_id ||
+      sibsId,
     sibsId,
-    displayName: displayName.toUpperCase(),
-    firstName,
-    middleName,
-    lastName,
-    isActive: user.isActive ?? user.is_active ?? true,
-    sortOrder: Number(user.sortOrder ?? user.sort_order ?? 0),
+    employeeName,
+    displayName:
+      item.displayName ||
+      item.display_name ||
+      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    firstName: cleanText(item.firstName || item.first_name),
+    middleName: cleanText(item.middleName || item.middle_name),
+    lastName: cleanText(item.lastName || item.last_name),
+    label: `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    raw: item,
   };
 }
 
+function normalizeCandidate(item = {}) {
+  const sibsId = getEmployeeSibsId(item);
+  const employeeName = getEmployeeName(item);
+
+  if (!sibsId) return null;
+
+  return {
+    id: item.id || item.employeeId || item.employee_id || sibsId,
+    sibsId,
+    employeeName,
+    displayName:
+      item.displayName ||
+      item.display_name ||
+      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    firstName: cleanText(item.firstName || item.first_name),
+    middleName: cleanText(item.middleName || item.middle_name),
+    lastName: cleanText(item.lastName || item.last_name),
+    label: `${sibsId} - ${employeeName}`,
+    raw: item,
+  };
+}
+
+function normalizeRows(responseData) {
+  const rows =
+    responseData?.data?.users ||
+    responseData?.data?.rows ||
+    responseData?.data ||
+    responseData?.users ||
+    responseData?.rows ||
+    responseData?.employees ||
+    responseData ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getRuleLabel(ruleKey) {
+  return ruleKey === "jobDescription"
+    ? "Job Description Approval"
+    : "Offer Approval";
+}
+
+function getRuleApi(ruleKey) {
+  if (ruleKey === "jobDescription") {
+    return {
+      getUsers: getJobDescriptionApprovalUsers,
+      addUser: addJobDescriptionApprovalUser,
+      removeUser: removeJobDescriptionApprovalUser,
+      searchEmployees: searchJobDescriptionApprovalEmployees,
+    };
+  }
+
+  return {
+    getUsers: getOfferApprovalUsers,
+    addUser: addOfferApprovalUser,
+    removeUser: removeOfferApprovalUser,
+    searchEmployees: searchOfferApprovalEmployees,
+  };
+}
+
+function RuleInnerNav({ activeRuleKey, counts, onChange }) {
+  return (
+    <aside className="shrink-0 rounded-2xl border border-[#E6ECF2] bg-white p-3 lg:w-[270px]">
+      <div className="mb-3 rounded-xl bg-[#F8FAFC] px-3 py-3">
+        <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+          Approval Modules
+        </p>
+
+        <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+          Choose which approval rule to configure.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {APPROVAL_RULE_TABS.map((rule) => {
+          const isActive = activeRuleKey === rule.key;
+          const RuleIcon = rule.icon;
+
+          return (
+            <button
+              key={rule.key}
+              type="button"
+              onClick={() => onChange(rule.key)}
+              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
+                isActive
+                  ? "bg-sibs-primary-1 text-white shadow-[0_10px_22px_rgba(13,70,118,0.20)]"
+                  : "bg-white text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
+              }`}
+            >
+              <span
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  isActive
+                    ? "bg-white/15 text-white"
+                    : "bg-blue-50 text-sibs-primary-1 group-hover:bg-white"
+                }`}
+              >
+                <RuleIcon size={18} strokeWidth={2.4} />
+              </span>
+
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-extrabold">
+                  {rule.shortTitle}
+                </span>
+
+                <span
+                  className={`mt-0.5 block text-xs font-semibold ${
+                    isActive ? "text-white/75" : "text-sibs-tertiary-5"
+                  }`}
+                >
+                  {counts[rule.key] || 0} approval user
+                  {Number(counts[rule.key] || 0) === 1 ? "" : "s"}
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 function EmployeeSearchDropdown({
-  value,
-  options = [],
-  loading = false,
+  search,
+  setSearch,
+  selectedCandidate,
+  candidates,
+  loading,
   disabled = false,
-  onSearch,
   onSelect,
+  placeholder,
 }) {
-  const wrapperRef = useRef(null);
-  const inputRef = useRef(null);
-
   const [open, setOpen] = useState(false);
-  const [keyword, setKeyword] = useState("");
-
-  const selectedLabel = value?.displayName || "";
-
-  const filteredOptions = useMemo(() => {
-    const keywordKey = normalizeKey(keyword);
-
-    if (!keywordKey) return options;
-
-    return options.filter((option) => {
-      const haystack = normalizeKey(
-        [
-          option.sibsId,
-          option.displayName,
-          option.firstName,
-          option.middleName,
-          option.lastName,
-        ]
-          .filter(Boolean)
-          .join(" "),
-      );
-
-      return haystack.includes(keywordKey);
-    });
-  }, [keyword, options]);
-
-  const inputValue = open ? keyword : selectedLabel;
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (!wrapperRef.current) return;
+      if (!dropdownRef.current) return;
 
-      if (!wrapperRef.current.contains(event.target)) {
+      if (!dropdownRef.current.contains(event.target)) {
         setOpen(false);
-        setKeyword("");
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setKeyword("");
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
-  function handleFocus() {
-    if (disabled) return;
-
-    setOpen(true);
-    setKeyword("");
-    onSearch?.("");
-  }
-
-  function handleChange(event) {
-    const nextKeyword = event.target.value;
-
-    setKeyword(nextKeyword);
-    setOpen(true);
-    onSearch?.(nextKeyword);
-  }
-
-  function handleToggle(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    if (disabled) return;
-
-    setOpen((previous) => {
-      const nextOpen = !previous;
-
-      if (nextOpen) {
-        setKeyword("");
-        onSearch?.("");
-
-        window.setTimeout(() => {
-          inputRef.current?.focus?.();
-        }, 50);
-      }
-
-      return nextOpen;
-    });
-  }
-
-  function handleSelect(option) {
-    onSelect?.({
-      ...option,
-      displayName: String(option.displayName || "").toUpperCase(),
-    });
-
-    setKeyword("");
-    setOpen(false);
-  }
-
-  function handleKeyDown(event) {
-    if (event.key === "Escape") {
-      setOpen(false);
-      setKeyword("");
-      event.currentTarget.blur();
-      return;
-    }
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-
-      if (filteredOptions.length > 0) {
-        handleSelect(filteredOptions[0]);
-      }
-    }
-  }
+  const inputValue = open ? search : selectedCandidate?.label || search;
 
   return (
-    <div ref={wrapperRef} className="relative min-w-0">
+    <div ref={dropdownRef} className="relative min-w-0 flex-1">
       <div
-        onClick={() => {
-          if (disabled) return;
-
-          setOpen(true);
-          inputRef.current?.focus?.();
-        }}
-        className={`flex h-11 w-full min-w-0 items-center gap-3 rounded-xl border bg-white px-4 text-left text-sm font-semibold shadow-sm outline-none transition ${
+        className={`flex h-12 items-center gap-3 rounded-xl border bg-white px-4 shadow-sm transition ${
           open
             ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1/50"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-sibs-tertiary-5"
-            : "cursor-text text-sibs-primary-1"
-        }`}
+            : "border-[#D0D5DD] hover:border-sibs-primary-1/30"
+        } ${disabled ? "opacity-60" : ""}`}
       >
-        <Search size={17} className="shrink-0 text-sibs-primary-1" />
+        <Search size={18} className="shrink-0 text-sibs-primary-1" />
 
         <input
-          ref={inputRef}
           value={inputValue}
           disabled={disabled}
-          onFocus={handleFocus}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Search SIBS ID or employee name..."
-          className="h-full min-w-0 flex-1 bg-transparent text-sm font-bold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed"
+          onFocus={() => {
+            if (!disabled) {
+              setOpen(true);
+            }
+          }}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setOpen(true);
+          }}
+          placeholder={placeholder}
+          className="h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold text-sibs-primary-1 outline-none placeholder:text-sibs-tertiary-5 disabled:cursor-not-allowed"
         />
 
         {loading ? (
           <Loader2
-            size={17}
+            size={18}
             className="shrink-0 animate-spin text-sibs-primary-1"
           />
         ) : (
-          <button
-            type="button"
-            tabIndex={-1}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={handleToggle}
-            className="shrink-0 rounded-lg p-1 text-sibs-primary-1 transition hover:bg-[#EAF4FF]"
-          >
-            <ChevronDown
-              size={18}
-              className={`transition-transform ${open ? "rotate-180" : ""}`}
-            />
-          </button>
+          <ChevronDown
+            size={18}
+            className={`shrink-0 text-sibs-primary-1 transition ${
+              open ? "rotate-180" : ""
+            }`}
+          />
         )}
       </div>
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-72 overflow-y-auto py-2">
             {loading ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm font-bold text-sibs-tertiary-5">
-                <Loader2 size={17} className="animate-spin" />
+              <div className="px-4 py-3 text-sm font-bold text-sibs-primary-1">
                 Searching employees...
               </div>
-            ) : filteredOptions.length > 0 ? (
-              filteredOptions.map((option) => {
-                const active =
-                  String(option.sibsId) === String(value?.sibsId || "");
+            ) : candidates.length > 0 ? (
+              candidates.map((candidate) => (
+                <button
+                  key={`${candidate.sibsId}-${candidate.employeeName}`}
+                  type="button"
+                  onClick={() => {
+                    onSelect(candidate);
+                    setOpen(false);
+                  }}
+                  className="block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC]"
+                >
+                  <span className="block text-sm font-extrabold text-[#101828]">
+                    {candidate.sibsId} - {candidate.employeeName}
+                  </span>
 
-                return (
-                  <button
-                    key={`${option.sibsId}-${option.displayName}`}
-                    type="button"
-                    onClick={() => handleSelect(option)}
-                    className={`flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition ${
-                      active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                    }`}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-extrabold">
-                        {String(option.displayName || "").toUpperCase()}
-                      </span>
-
-                      <span className="mt-0.5 block truncate text-xs font-semibold text-sibs-tertiary-5">
-                        SIBS ID: {option.sibsId}
-                      </span>
-                    </span>
-
-                    {active && (
-                      <Check
-                        size={17}
-                        className="mt-0.5 shrink-0 text-sibs-primary-1"
-                      />
-                    )}
-                  </button>
-                );
-              })
+                  <span className="mt-0.5 block text-xs font-semibold text-sibs-tertiary-5">
+                    Add as approval user
+                  </span>
+                </button>
+              ))
+            ) : cleanText(search).length >= 2 ? (
+              <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+                No matching employee found.
+              </div>
             ) : (
-              <div className="px-4 py-6 text-center text-sm font-bold text-sibs-tertiary-5">
-                No employees found.
+              <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+                Type at least 2 characters to search.
               </div>
             )}
           </div>
@@ -283,16 +397,216 @@ function EmployeeSearchDropdown({
   );
 }
 
+function ApprovalUserRow({ user, description, removing, onRemove }) {
+  return (
+    <tr className="transition hover:bg-[#FAFBFC]">
+      <td className="border-b border-[#E6ECF2] px-5 py-4">
+        <p className="text-sm font-extrabold text-[#101828]">
+          {user.sibsId} - {user.employeeName}
+        </p>
+
+        <p className="mt-1 text-xs font-bold text-sibs-primary-1">
+          {description}
+        </p>
+      </td>
+
+      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
+        <button
+          type="button"
+          onClick={() => onRemove(user)}
+          disabled={removing}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:border-red-200 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+          title="Remove approval user"
+        >
+          {removing ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Trash2 size={16} />
+          )}
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+function ApprovalRulePanel({
+  rule,
+  users,
+  candidates,
+  search,
+  selectedCandidate,
+  loading,
+  searching,
+  adding,
+  removingId,
+  onSearchChange,
+  onSelectCandidate,
+  onAddUser,
+  onRemoveUser,
+}) {
+  const RuleIcon = rule.icon;
+  const isDisabled = !rule.isConnected;
+
+  return (
+    <section className="min-w-0 flex-1 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-sibs-primary-1">
+              <RuleIcon size={22} strokeWidth={2.4} />
+            </span>
+
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                {rule.badgeText}
+              </p>
+
+              <h2 className="mt-1 text-xl font-extrabold text-[#101828]">
+                {rule.title}
+              </h2>
+            </div>
+          </div>
+
+          <p className="mt-4 max-w-4xl text-sm font-semibold leading-6 text-sibs-primary-1">
+            {rule.description}
+          </p>
+        </div>
+
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+          <CheckCircle2 size={14} />
+          {users.length} User{users.length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+        <label className="mb-2 block text-sm font-extrabold text-[#101828]">
+          Add Approval User
+        </label>
+
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <EmployeeSearchDropdown
+            search={search}
+            setSearch={onSearchChange}
+            selectedCandidate={selectedCandidate}
+            candidates={candidates}
+            loading={searching}
+            disabled={isDisabled}
+            onSelect={onSelectCandidate}
+            placeholder="Search SIBS ID or employee name..."
+          />
+
+          <button
+            type="button"
+            onClick={onAddUser}
+            disabled={adding || !selectedCandidate || isDisabled}
+            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-6 text-sm font-extrabold text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {adding ? (
+              <Loader2 size={17} className="animate-spin" />
+            ) : (
+              <Plus size={17} />
+            )}
+            Add User
+          </button>
+        </div>
+
+        <p className="mt-2 text-xs font-bold text-sibs-primary-1">
+          Adding or removing a user automatically saves this approval rule to
+          the database.
+        </p>
+      </div>
+
+      <div className="mt-6 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white">
+        <table className="w-full border-separate border-spacing-0 text-left">
+          <thead>
+            <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+              <th className="px-5 py-4">Approval User</th>
+              <th className="w-[120px] px-5 py-4 text-right">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td
+                  colSpan={2}
+                  className="border-b border-[#E6ECF2] px-5 py-10 text-center text-sm font-bold text-sibs-primary-1"
+                >
+                  <Loader2
+                    size={20}
+                    className="mx-auto mb-2 animate-spin text-sibs-primary-1"
+                  />
+                  Loading approval users...
+                </td>
+              </tr>
+            ) : users.length > 0 ? (
+              users.map((user) => (
+                <ApprovalUserRow
+                  key={`${rule.key}-${user.id}-${user.sibsId}`}
+                  user={user}
+                  description={rule.rowDescription}
+                  removing={String(removingId) === String(user.id)}
+                  onRemove={onRemoveUser}
+                />
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={2}
+                  className="px-5 py-12 text-center text-sm font-bold text-sibs-tertiary-5"
+                >
+                  {rule.emptyText}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export default function ApprovalRulesSettings() {
-  const [approvalUsers, setApprovalUsers] = useState([]);
-  const [employeeOptions, setEmployeeOptions] = useState([]);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const { user } = useUser();
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [searchingEmployees, setSearchingEmployees] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [activeRuleKey, setActiveRuleKey] = useState("offers");
 
-  const searchRequestRef = useRef(0);
+  const [usersByRule, setUsersByRule] = useState({
+    offers: [],
+    jobDescription: [],
+  });
+
+  const [loadingByRule, setLoadingByRule] = useState({
+    offers: false,
+    jobDescription: false,
+  });
+
+  const [searchByRule, setSearchByRule] = useState({
+    offers: "",
+    jobDescription: "",
+  });
+
+  const [candidatesByRule, setCandidatesByRule] = useState({
+    offers: [],
+    jobDescription: [],
+  });
+
+  const [selectedByRule, setSelectedByRule] = useState({
+    offers: null,
+    jobDescription: null,
+  });
+
+  const [searchingByRule, setSearchingByRule] = useState({
+    offers: false,
+    jobDescription: false,
+  });
+
+  const [addingByRule, setAddingByRule] = useState({
+    offers: false,
+    jobDescription: false,
+  });
+
+  const [removingId, setRemovingId] = useState("");
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -301,7 +615,23 @@ export default function ApprovalRulesSettings() {
     message: "",
   });
 
-  function showStatusModal({ type = "success", title = "", message = "" }) {
+  const activeRule = useMemo(() => {
+    return (
+      APPROVAL_RULE_TABS.find((rule) => rule.key === activeRuleKey) ||
+      APPROVAL_RULE_TABS[0]
+    );
+  }, [activeRuleKey]);
+
+  const activeSearch = searchByRule[activeRule.key] || "";
+
+  const counts = useMemo(() => {
+    return {
+      offers: usersByRule.offers.length,
+      jobDescription: usersByRule.jobDescription.length,
+    };
+  }, [usersByRule]);
+
+  function openStatusModal(type, title, message) {
     setStatusModal({
       open: true,
       type,
@@ -317,311 +647,288 @@ export default function ApprovalRulesSettings() {
     }));
   }
 
-  function buildSavePayload(users = []) {
-    return users.map((user, index) => ({
-      sibsId: user.sibsId,
-      displayName: String(user.displayName || "").toUpperCase(),
-      firstName: user.firstName,
-      middleName: user.middleName,
-      lastName: user.lastName,
-      sortOrder: index,
+  async function loadUsers(ruleKey) {
+    setLoadingByRule((previous) => ({
+      ...previous,
+      [ruleKey]: true,
     }));
-  }
-
-  function getSavedRows(response, fallbackUsers = []) {
-    if (Array.isArray(response?.data)) return response.data;
-    if (Array.isArray(response?.users)) return response.users;
-
-    return fallbackUsers;
-  }
-
-  async function persistApprovalUsers(nextUsers = [], successMessage = "") {
-    setSaving(true);
 
     try {
-      const payload = buildSavePayload(nextUsers);
-      const response = await saveOfferApprovalUsers(payload);
-      const rows = getSavedRows(response, payload);
+      const apiMethods = getRuleApi(ruleKey);
+      const result = await apiMethods.getUsers();
 
-      setApprovalUsers(rows.map(normalizeApprovalUser));
+      const rows = normalizeRows(result)
+        .map(normalizeApprovalUser)
+        .filter((item) => item.sibsId);
 
-      showStatusModal({
-        type: "success",
-        title: "Approval Rules Updated",
-        message:
-          successMessage ||
-          "Offer approval users were automatically saved to the database.",
-      });
-
-      return true;
+      setUsersByRule((previous) => ({
+        ...previous,
+        [ruleKey]: rows,
+      }));
     } catch (error) {
-      console.error("Auto-save approval rules error:", error);
+      console.error(`LOAD ${ruleKey} APPROVAL USERS ERROR:`, error);
 
-      showStatusModal({
-        type: "error",
-        title: "Auto-save Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to save approval rules to the database.",
-      });
-
-      return false;
+      openStatusModal(
+        "error",
+        "Load Failed",
+        error?.message || `Failed to load ${getRuleLabel(ruleKey)} users.`,
+      );
     } finally {
-      setSaving(false);
+      setLoadingByRule((previous) => ({
+        ...previous,
+        [ruleKey]: false,
+      }));
     }
   }
 
-  async function loadApprovalUsers() {
+  async function searchEmployees(ruleKey, keyword) {
+    const cleanKeyword = cleanText(keyword);
+
+    if (cleanKeyword.length < 2) {
+      setCandidatesByRule((previous) => ({
+        ...previous,
+        [ruleKey]: [],
+      }));
+      return;
+    }
+
+    setSearchingByRule((previous) => ({
+      ...previous,
+      [ruleKey]: true,
+    }));
+
     try {
-      setLoadingUsers(true);
+      const apiMethods = getRuleApi(ruleKey);
+      const result = await apiMethods.searchEmployees(cleanKeyword);
 
-      const response = await getOfferApprovalUsers();
+      const candidates = normalizeRows(result)
+        .map(normalizeCandidate)
+        .filter(Boolean);
 
-      const rows = Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response?.users)
-          ? response.users
-          : [];
-
-      setApprovalUsers(rows.map(normalizeApprovalUser));
+      setCandidatesByRule((previous) => ({
+        ...previous,
+        [ruleKey]: candidates,
+      }));
     } catch (error) {
-      console.error("Load offer approval users error:", error);
+      console.error(`SEARCH ${ruleKey} APPROVAL USERS ERROR:`, error);
 
-      setApprovalUsers([]);
-
-      showStatusModal({
-        type: "error",
-        title: "Load Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to load approval users.",
-      });
+      setCandidatesByRule((previous) => ({
+        ...previous,
+        [ruleKey]: [],
+      }));
     } finally {
-      setLoadingUsers(false);
+      setSearchingByRule((previous) => ({
+        ...previous,
+        [ruleKey]: false,
+      }));
     }
   }
 
-  async function loadEmployeeOptions(search = "") {
-    const requestId = searchRequestRef.current + 1;
-    searchRequestRef.current = requestId;
+  async function handleAddUser() {
+    const selected = selectedByRule[activeRule.key];
+
+    if (!selected) {
+      openStatusModal(
+        "error",
+        "No User Selected",
+        "Please select an employee first.",
+      );
+      return;
+    }
+
+    const alreadyAdded = usersByRule[activeRule.key].some(
+      (item) => String(item.sibsId) === String(selected.sibsId),
+    );
+
+    if (alreadyAdded) {
+      openStatusModal(
+        "error",
+        "Already Added",
+        "This user is already included in this approval rule.",
+      );
+      return;
+    }
+
+    setAddingByRule((previous) => ({
+      ...previous,
+      [activeRule.key]: true,
+    }));
 
     try {
-      setSearchingEmployees(true);
+      const apiMethods = getRuleApi(activeRule.key);
 
-      const response = await searchOfferApprovalEmployees(search);
-
-      if (requestId !== searchRequestRef.current) return;
-
-      const rows = Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response?.employees)
-          ? response.employees
-          : [];
-
-      setEmployeeOptions(rows.map(normalizeApprovalUser));
-    } catch (error) {
-      if (requestId !== searchRequestRef.current) return;
-
-      console.error("Search offer approval employees error:", error);
-
-      setEmployeeOptions([]);
-
-      showStatusModal({
-        type: "error",
-        title: "Employee Search Failed",
-        message:
-          error?.response?.data?.message ||
-          error?.message ||
-          "Failed to search employees.",
+      await apiMethods.addUser({
+        sibsId: selected.sibsId,
+        sibs_id: selected.sibsId,
+        displayName: selected.displayName || selected.label,
+        display_name: selected.displayName || selected.label,
+        employeeName: selected.employeeName,
+        employee_name: selected.employeeName,
+        firstName: selected.firstName,
+        first_name: selected.firstName,
+        middleName: selected.middleName,
+        middle_name: selected.middleName,
+        lastName: selected.lastName,
+        last_name: selected.lastName,
+        createdBy: getUserDisplayName(user),
+        created_by: getUserDisplayName(user),
       });
+
+      setSearchByRule((previous) => ({
+        ...previous,
+        [activeRule.key]: "",
+      }));
+
+      setSelectedByRule((previous) => ({
+        ...previous,
+        [activeRule.key]: null,
+      }));
+
+      setCandidatesByRule((previous) => ({
+        ...previous,
+        [activeRule.key]: [],
+      }));
+
+      await loadUsers(activeRule.key);
+
+      openStatusModal(
+        "success",
+        "Approval User Added",
+        `${selected.employeeName} was added to ${activeRule.title}.`,
+      );
+    } catch (error) {
+      console.error(`ADD ${activeRule.key} APPROVAL USER ERROR:`, error);
+
+      openStatusModal(
+        "error",
+        "Add Failed",
+        error?.message || "Failed to add approval user.",
+      );
     } finally {
-      if (requestId === searchRequestRef.current) {
-        setSearchingEmployees(false);
-      }
+      setAddingByRule((previous) => ({
+        ...previous,
+        [activeRule.key]: false,
+      }));
+    }
+  }
+
+  async function handleRemoveUser(targetUser) {
+    if (!targetUser) return;
+
+    setRemovingId(targetUser.id);
+
+    try {
+      const apiMethods = getRuleApi(activeRule.key);
+
+      await apiMethods.removeUser(targetUser.sibsId);
+
+      setUsersByRule((previous) => ({
+        ...previous,
+        [activeRule.key]: previous[activeRule.key].filter(
+          (item) => String(item.sibsId) !== String(targetUser.sibsId),
+        ),
+      }));
+
+      openStatusModal(
+        "success",
+        "Approval User Removed",
+        `${targetUser.employeeName} was removed from ${activeRule.title}.`,
+      );
+    } catch (error) {
+      console.error(`REMOVE ${activeRule.key} APPROVAL USER ERROR:`, error);
+
+      openStatusModal(
+        "error",
+        "Remove Failed",
+        error?.message || "Failed to remove approval user.",
+      );
+    } finally {
+      setRemovingId("");
     }
   }
 
   useEffect(() => {
-    loadApprovalUsers();
-    loadEmployeeOptions("");
+    loadUsers("offers");
+    loadUsers("jobDescription");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleAddUser() {
-    if (saving || loadingUsers) return;
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      searchEmployees(activeRule.key, activeSearch);
+    }, 250);
 
-    if (!selectedEmployee?.sibsId) {
-      showStatusModal({
-        type: "error",
-        title: "No Employee Selected",
-        message: "Please select an employee from the searchable dropdown.",
-      });
-
-      return;
-    }
-
-    const normalizedSelectedEmployee = normalizeApprovalUser(selectedEmployee);
-
-    const exists = approvalUsers.some(
-      (user) =>
-        String(user.sibsId).toLowerCase() ===
-        String(normalizedSelectedEmployee.sibsId).toLowerCase(),
-    );
-
-    if (exists) {
-      showStatusModal({
-        type: "error",
-        title: "Already Added",
-        message: `${normalizedSelectedEmployee.displayName} is already in the approval rules.`,
-      });
-
-      setSelectedEmployee(null);
-      return;
-    }
-
-    const nextUsers = [
-      ...approvalUsers,
-      {
-        ...normalizedSelectedEmployee,
-        sortOrder: approvalUsers.length,
-      },
-    ];
-
-    const saved = await persistApprovalUsers(
-      nextUsers,
-      "The selected employee was added and saved to the database.",
-    );
-
-    if (saved) {
-      setSelectedEmployee(null);
-    }
-  }
-
-  async function handleRemoveUser(sibsId) {
-    if (saving || loadingUsers) return;
-
-    const nextUsers = approvalUsers
-      .filter((user) => String(user.sibsId) !== String(sibsId))
-      .map((user, index) => ({
-        ...user,
-        sortOrder: index,
-      }));
-
-    await persistApprovalUsers(
-      nextUsers,
-      "The approval user was removed and saved to the database.",
-    );
-  }
+    return () => {
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRule.key, activeSearch]);
 
   return (
-    <>
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-              <UserCheck size={22} />
+    <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm">
+      <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              <UserRoundCheck size={14} />
+              Approval Configuration
             </div>
 
-            <h3 className="mt-4 text-xl font-extrabold text-[#101828]">
-              Offer Approval Rules
-            </h3>
+            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
+              Recruitment Approval Rules
+            </h2>
 
-            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-sibs-tertiary-5">
-              Add the users who are allowed to approve or reject offers. The
-              Offers page will show only one Approve and one Reject button, and
-              the action will be recorded under the logged-in user.
+            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
+              Configure approval users for Offers and Job Descriptions from one
+              settings panel.
             </p>
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-          <label className="text-sm font-extrabold text-[#101828]">
-            Add Approval User
-          </label>
+      <div className="flex flex-col gap-5 lg:flex-row">
+        <RuleInnerNav
+          activeRuleKey={activeRuleKey}
+          counts={counts}
+          onChange={setActiveRuleKey}
+        />
 
-          <div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto]">
-            <EmployeeSearchDropdown
-              value={selectedEmployee}
-              options={employeeOptions}
-              loading={searchingEmployees}
-              disabled={loadingUsers || saving}
-              onSearch={loadEmployeeOptions}
-              onSelect={setSelectedEmployee}
-            />
+        <ApprovalRulePanel
+          rule={activeRule}
+          users={usersByRule[activeRule.key]}
+          candidates={candidatesByRule[activeRule.key]}
+          search={searchByRule[activeRule.key]}
+          selectedCandidate={selectedByRule[activeRule.key]}
+          loading={loadingByRule[activeRule.key]}
+          searching={searchingByRule[activeRule.key]}
+          adding={addingByRule[activeRule.key]}
+          removingId={removingId}
+          onSearchChange={(nextSearch) => {
+            setSearchByRule((previous) => ({
+              ...previous,
+              [activeRule.key]: nextSearch,
+            }));
 
-            <button
-              type="button"
-              onClick={handleAddUser}
-              disabled={loadingUsers || saving}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-5 text-sm font-extrabold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? (
-                <Loader2 size={17} className="animate-spin" />
-              ) : (
-                <Plus size={17} />
-              )}
-              {saving ? "Saving..." : "Add User"}
-            </button>
-          </div>
+            setSelectedByRule((previous) => ({
+              ...previous,
+              [activeRule.key]: null,
+            }));
+          }}
+          onSelectCandidate={(candidate) => {
+            setSelectedByRule((previous) => ({
+              ...previous,
+              [activeRule.key]: candidate,
+            }));
 
-          <p className="mt-2 text-xs font-bold text-sibs-primary-1">
-            Adding or removing a user automatically saves the approval rules to
-            the database.
-          </p>
-        </div>
-
-        <div className="mt-6 overflow-hidden rounded-2xl border border-[#E6ECF2]">
-          <div className="grid grid-cols-[1fr_auto] bg-[#F5F7FA] px-5 py-3 text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-            <span>Approval User</span>
-            <span>Action</span>
-          </div>
-
-          {loadingUsers ? (
-            <div className="bg-white px-5 py-10 text-center">
-              <Loader2
-                size={28}
-                className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-              />
-
-              <p className="text-sm font-extrabold text-[#344054]">
-                Loading approval users...
-              </p>
-            </div>
-          ) : approvalUsers.length > 0 ? (
-            approvalUsers.map((user) => (
-              <div
-                key={user.sibsId}
-                className="grid grid-cols-[1fr_auto] items-center border-t border-[#E6ECF2] bg-white px-5 py-4"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-extrabold text-[#101828]">
-                    {String(user.displayName || "").toUpperCase()}
-                  </p>
-
-                  <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                    Can approve or reject offers from the Offers page.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveUser(user.sibsId)}
-                  disabled={saving}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Remove"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="bg-white px-5 py-10 text-center text-sm font-bold text-sibs-tertiary-5">
-              No approval users added yet.
-            </div>
-          )}
-        </div>
-      </section>
+            setSearchByRule((previous) => ({
+              ...previous,
+              [activeRule.key]: candidate.label,
+            }));
+          }}
+          onAddUser={handleAddUser}
+          onRemoveUser={handleRemoveUser}
+        />
+      </div>
 
       <StatusModal
         open={statusModal.open}
@@ -632,6 +939,6 @@ export default function ApprovalRulesSettings() {
         onClose={closeStatusModal}
         lockScroll
       />
-    </>
+    </div>
   );
 }

@@ -30,7 +30,7 @@ import FormLaunchRulesCard from "../../components/recruitment/settings/FormLaunc
 import PlaceholderSettingsPanel from "../../components/recruitment/settings/PlaceholderSettingsPanel";
 import RelatedRecruitmentSettingsCard from "../../components/recruitment/settings/RelatedRecruitmentSettingsCard";
 import SettingsInfoCards from "../../components/recruitment/settings/SettingsInfoCards";
-import ApprovalRulesSettings from "@/components/recruitment/settings/ApprovalRulesSettings";
+import ApprovalRulesSettings from "../../components/recruitment/settings/ApprovalRulesSettings";
 import StatusModal from "../../components/modals/StatusModal";
 
 import api from "../../lib/axios/api-template";
@@ -568,12 +568,12 @@ function getRecruitmentWeekPercent(week = {}) {
 function getRecruitmentStatusForHeadcountTable(item = {}) {
   const hasExplicitStatus = Boolean(
     item?.recruitmentSettingsStatus ||
-      item?.recruitment_settings_status ||
-      item?.recruitmentStatus ||
-      item?.recruitment_status ||
-      item?.baseHeadcountStatus ||
-      item?.base_headcount_status ||
-      item?.status,
+    item?.recruitment_settings_status ||
+    item?.recruitmentStatus ||
+    item?.recruitment_status ||
+    item?.baseHeadcountStatus ||
+    item?.base_headcount_status ||
+    item?.status,
   );
 
   if (!hasExplicitStatus) return "Kronos";
@@ -909,8 +909,7 @@ function UpdateHeadcountsPanel() {
         required_actual_headcount_with_buffer:
           metrics.requiredActualHeadcountWithBuffer,
 
-        absenteeismPastSixWeeksAverage:
-          metrics.absenteeismPastSixWeeksAverage,
+        absenteeismPastSixWeeksAverage: metrics.absenteeismPastSixWeeksAverage,
         absenteeism_past_six_weeks_average:
           metrics.absenteeismPastSixWeeksAverage,
 
@@ -986,7 +985,9 @@ function UpdateHeadcountsPanel() {
   }, [normalizedAccounts]);
 
   const filteredAccounts = useMemo(() => {
-    const keyword = String(search || "").trim().toLowerCase();
+    const keyword = String(search || "")
+      .trim()
+      .toLowerCase();
 
     return normalizedAccounts.filter((item) => {
       const recruitmentSettingsStatus = String(
@@ -1630,9 +1631,7 @@ function UpdateHeadcountsPanel() {
               <table className="w-full min-w-[1400px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
                 <thead>
                   <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                    <th className="px-5 py-4 first:rounded-tl-2xl">
-                      Account
-                    </th>
+                    <th className="px-5 py-4 first:rounded-tl-2xl">Account</th>
                     <th className="px-5 py-4">Required / Actual HC</th>
                     <th className="px-5 py-4">Buffer</th>
                     <th className="px-5 py-4">Averages</th>
@@ -1745,9 +1744,7 @@ function UpdateHeadcountsPanel() {
                               )}`}
                             >
                               Actual Buffer:{" "}
-                              {formatHeadcountNumber(
-                                metrics.actualBufferCount,
-                              )}{" "}
+                              {formatHeadcountNumber(metrics.actualBufferCount)}{" "}
                               /{" "}
                               {formatHeadcountPercent(
                                 metrics.actualBufferPercent,
@@ -1786,9 +1783,7 @@ function UpdateHeadcountsPanel() {
 
                             <p className="mt-1 text-xs font-semibold text-[#344054]">
                               Leads:{" "}
-                              {formatHeadcountNumber(
-                                metrics.leadsToInterview,
-                              )}
+                              {formatHeadcountNumber(metrics.leadsToInterview)}
                             </p>
                           </td>
 
@@ -1824,10 +1819,7 @@ function UpdateHeadcountsPanel() {
                                 className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-4 text-xs font-bold text-emerald-700 transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-100 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                               >
                                 {isSaving ? (
-                                  <Loader2
-                                    size={15}
-                                    className="animate-spin"
-                                  />
+                                  <Loader2 size={15} className="animate-spin" />
                                 ) : (
                                   <Save size={15} />
                                 )}
@@ -1951,11 +1943,7 @@ export default function RecruitmentSettingsPage() {
     ];
   }, [recruitmentTabs]);
 
-  function openPageStatusModal({
-    type = "success",
-    title = "",
-    message = "",
-  }) {
+  function openPageStatusModal({ type = "success", title = "", message = "" }) {
     setPageStatusModal({
       open: true,
       type,
@@ -2057,7 +2045,10 @@ export default function RecruitmentSettingsPage() {
   }
 
   useLayoutEffect(() => {
-    if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+    if (
+      typeof window !== "undefined" &&
+      "scrollRestoration" in window.history
+    ) {
       window.history.scrollRestoration = "manual";
     }
 
