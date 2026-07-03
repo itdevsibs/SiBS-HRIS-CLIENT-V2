@@ -15,6 +15,7 @@ import ReviseJobDescriptionModal from "../../components/modals/jobDescription/Re
 import { normalizeJdStatus } from "../../lib/utils/NormalizeJDStatus";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import { approveJobDescriptionRequest } from "../../lib/axios/getApprovalRequest";
+import { getJobDescriptionById, saveJobDescriptionRevision } from "../../lib/axios/getJobDescription";
 
 const detailTabs = ["Details", "Revision History"];
 
@@ -372,6 +373,205 @@ function normalizePageJobDescription(item, approvalPage = false) {
   return item;
 }
 
+function getFirstValue(...values) {
+  return values.find((value) => String(value ?? "").trim()) || "";
+}
+
+function normalizeRevisionDate(value = "") {
+  const text = String(value || "").trim();
+
+  if (!text || text === "—") return "";
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    return text.slice(0, 10);
+  }
+
+  const parsed = new Date(text);
+
+  if (Number.isNaN(parsed.getTime())) return text;
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeRevisionCompetenciesForPayload(competencies = []) {
+  if (!Array.isArray(competencies)) return [];
+
+  return competencies
+    .map((competency) => {
+      const title = String(
+        competency?.title ||
+          competency?.competency ||
+          competency?.competencyName ||
+          competency?.label ||
+          "",
+      ).trim();
+
+      const description = String(
+        competency?.description ||
+          competency?.details ||
+          competency?.competencyDescription ||
+          competency?.definition ||
+          "",
+      ).trim();
+
+      const rawLevel = String(
+        competency?.level ||
+          competency?.proficiencyLevel ||
+          competency?.selectedLevel ||
+          "",
+      )
+        .trim()
+        .toLowerCase();
+
+      const level =
+        rawLevel === "average"
+          ? "Average"
+          : rawLevel === "proficient"
+            ? "Proficient"
+            : rawLevel === "excellent"
+              ? "Excellent"
+              : Number(competency?.average) === 1 || competency?.average === true
+                ? "Average"
+                : Number(competency?.proficient) === 1 ||
+                    competency?.proficient === true
+                  ? "Proficient"
+                  : Number(competency?.excellent) === 1 ||
+                      competency?.excellent === true
+                    ? "Excellent"
+                    : "";
+
+      return {
+        id: competency?.id || null,
+        title,
+        description,
+        level,
+        average: level === "Average" ? 1 : 0,
+        proficient: level === "Proficient" ? 1 : 0,
+        excellent: level === "Excellent" ? 1 : 0,
+      };
+    })
+    .filter((competency) => competency.title || competency.description);
+}
+
+function buildFallbackRevisionDraftPayload(item = {}, editedChangeDetails = []) {
+  const raw = item?.raw || {};
+
+  const documentTitle = getFirstValue(
+    item.documentTitle,
+    item.document_title,
+    raw.documentTitle,
+    raw.document_title,
+    item.roleTitle,
+    item.role_title,
+    raw.roleTitle,
+    raw.role_title,
+  );
+
+  const roleTitle = getFirstValue(
+    item.roleTitle,
+    item.role_title,
+    raw.roleTitle,
+    raw.role_title,
+    documentTitle,
+  );
+
+  const accountId = getFirstValue(
+    item.accountId,
+    item.account_id,
+    raw.accountId,
+    raw.account_id,
+  );
+
+  const departmentId = getFirstValue(
+    item.departmentId,
+    item.department_id,
+    raw.departmentId,
+    raw.department_id,
+  );
+
+  return {
+    existingJdId: getFirstValue(
+      item.existingJdId,
+      item.existing_jd_id,
+      raw.existingJdId,
+      raw.existing_jd_id,
+      item.linkedHiringRequirement,
+      item.linked_hiring_requirement,
+      raw.linkedHiringRequirement,
+      raw.linked_hiring_requirement,
+    ),
+    documentTitle,
+    document_title: documentTitle,
+    roleTitle,
+    role_title: roleTitle,
+    accountId,
+    account_id: accountId,
+    account: getFirstValue(item.account, item.preparedFor, raw.account, raw.preparedFor),
+    preparedFor: getFirstValue(item.preparedFor, item.account, raw.preparedFor, raw.account),
+    prepared_for: getFirstValue(item.prepared_for, item.account, raw.prepared_for, raw.account),
+    departmentId,
+    department_id: departmentId,
+    department: getFirstValue(item.department, raw.department),
+    effectiveDate: normalizeRevisionDate(
+      getFirstValue(item.effectiveDate, item.effective_date, raw.effectiveDate, raw.effective_date),
+    ),
+    effective_date: normalizeRevisionDate(
+      getFirstValue(item.effectiveDate, item.effective_date, raw.effectiveDate, raw.effective_date),
+    ),
+    reportsTo: getFirstValue(item.reportsTo, item.reports_to, raw.reportsTo, raw.reports_to),
+    reports_to: getFirstValue(item.reports_to, item.reportsTo, raw.reports_to, raw.reportsTo),
+    supervisory: getFirstValue(item.supervisory, raw.supervisory, "No"),
+    description: getFirstValue(item.description, raw.description),
+    responsibilities: getFirstValue(item.responsibilities, raw.responsibilities),
+    qualifications: getFirstValue(item.qualifications, raw.qualifications),
+    personalityType: getFirstValue(
+      item.personalityType,
+      item.personality_type,
+      item.preferredPersonalityType,
+      item.preferred_personality_type,
+      raw.personalityType,
+      raw.personality_type,
+    ),
+    personality_type: getFirstValue(
+      item.personality_type,
+      item.personalityType,
+      raw.personality_type,
+      raw.personalityType,
+    ),
+    remarks: getFirstValue(item.remarks, raw.remarks),
+    competencies: normalizeRevisionCompetenciesForPayload(
+      item.competencies || item.desiredCompetencies || raw.competencies || raw.desiredCompetencies || [],
+    ),
+    changeDetails: editedChangeDetails,
+  };
+}
+
+
+const HIDDEN_EDIT_CHANGE_KEYS = new Set([
+  "departmentId",
+  "accountId",
+  "preparedForId",
+  "existingJdId",
+  "jdCode",
+  "currentVersion",
+  "dateRequested",
+  "createdBy",
+  "lastUpdated",
+]);
+
+function getVisibleEditedChanges(changes = []) {
+  return Array.isArray(changes)
+    ? changes.filter((change) => {
+        const key = String(change?.key || "").trim();
+        return key && !HIDDEN_EDIT_CHANGE_KEYS.has(key);
+      })
+    : [];
+}
+
 export default function JobDescriptionViewPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -389,6 +589,12 @@ export default function JobDescriptionViewPage() {
   const [pageReady, setPageReady] = useState(false);
   const [revisionEditorOpen, setRevisionEditorOpen] = useState(false);
   const [revisionForm, setRevisionForm] = useState({
+    revisionRemarks: "",
+  });
+
+  const [revisionDraftPayload, setRevisionDraftPayload] = useState(null);
+  const [saveAsNewVersionModal, setSaveAsNewVersionModal] = useState({
+    open: false,
     revisionRemarks: "",
   });
 
@@ -451,6 +657,35 @@ export default function JobDescriptionViewPage() {
   }, []);
 
   const item = selectedJobDescription;
+
+  useEffect(() => {
+    if (!pageReady || !item) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) return;
+
+    let cancelled = false;
+
+    async function loadFullJobDescription() {
+      const result = await getJobDescriptionById(jdId);
+
+      if (cancelled || !result?.success || !result?.data) return;
+
+      updateSelectedJobDescription?.(
+        normalizePageJobDescription(result.data, approvalPage),
+      );
+    }
+
+    loadFullJobDescription();
+
+    return () => {
+      cancelled = true;
+    };
+    // Load once per JD so Revision History has the complete backend data.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageReady, item?.id, item?.rawId]);
+
   const hasRevisionComments = revisionComments.length > 0;
 
   const primaryButtonLabel = hasRevisionComments
@@ -506,6 +741,11 @@ export default function JobDescriptionViewPage() {
     setSaving(false);
     setRevisionEditorOpen(false);
     setRevisionForm({
+      revisionRemarks: "",
+    });
+    setRevisionDraftPayload(null);
+    setSaveAsNewVersionModal({
+      open: false,
       revisionRemarks: "",
     });
   }, [pageReady, item?.id, item?.rawId]);
@@ -670,8 +910,29 @@ export default function JobDescriptionViewPage() {
     );
   }
 
+  function normalizeViewJdId(value = "") {
+    const text = String(value || "").trim();
+
+    if (!text) return 0;
+
+    const withoutPrefix = text.replace(/^JD[-_ ]?/i, "");
+
+    if (/^\d+$/.test(withoutPrefix)) {
+      return Number(withoutPrefix);
+    }
+
+    return Number(text) || 0;
+  }
+
   function getJobDescriptionId() {
-    return Number(item?.rawId || item?.raw?.id || item?.id || id || 0);
+    return (
+      normalizeViewJdId(item?.rawId) ||
+      normalizeViewJdId(item?.raw_id) ||
+      normalizeViewJdId(item?.raw?.id) ||
+      normalizeViewJdId(item?.id) ||
+      normalizeViewJdId(id) ||
+      0
+    );
   }
 
   function getSelectedRevisionNo() {
@@ -842,6 +1103,120 @@ export default function JobDescriptionViewPage() {
     }
   }
 
+  function handleRevisionDraftChange(nextPayload) {
+    setRevisionDraftPayload(nextPayload || null);
+  }
+
+  function openSaveAsNewVersionModal() {
+    if (!hasEditedChanges) {
+      openStatus({
+        type: "error",
+        title: "No Changes Found",
+        message: "Please edit and save at least one section before saving a new version.",
+      });
+      return;
+    }
+
+    setSaveAsNewVersionModal({
+      open: true,
+      revisionRemarks: "",
+    });
+  }
+
+  function closeSaveAsNewVersionModal() {
+    if (saving) return;
+
+    setSaveAsNewVersionModal({
+      open: false,
+      revisionRemarks: "",
+    });
+  }
+
+  async function handleSaveAsNewVersion() {
+    if (saving) return;
+
+    const jdId = getJobDescriptionId();
+
+    if (!jdId) {
+      openStatus({
+        type: "error",
+        title: "Invalid Job Description",
+        message: "Unable to identify the selected job description.",
+      });
+      return;
+    }
+
+    const revisionRemarks =
+      String(saveAsNewVersionModal.revisionRemarks || "").trim() ||
+      "Saved as new revision version.";
+
+    const finalPayload = {
+      ...buildFallbackRevisionDraftPayload(item, editedChangeDetails),
+      ...(revisionDraftPayload || {}),
+      revisionRemarks,
+      revision_remarks: revisionRemarks,
+      changeDetails: editedChangeDetails,
+      editedChangeDetails,
+      revisionComments,
+    };
+
+    setSaving(true);
+
+    try {
+      const result = await saveJobDescriptionRevision(jdId, finalPayload);
+
+      if (!result?.success) {
+        openStatus({
+          type: "error",
+          title: "Save Failed",
+          message: result?.message || "Failed to save the job description revision.",
+        });
+        return;
+      }
+
+      const freshResult = await getJobDescriptionById(jdId);
+      const updatedItem = normalizePageJobDescription(
+        freshResult?.success && freshResult?.data ? freshResult.data : result.data,
+        approvalPage,
+      );
+
+      if (updatedItem) {
+        updateSelectedJobDescription?.(updatedItem);
+      }
+
+      setHasEditedChanges(false);
+      setEditedChangeDetails([]);
+      setShowEditedChanges(false);
+      setRevisionDraftPayload(null);
+      setRevisionComments?.([]);
+      setSaveAsNewVersionModal({
+        open: false,
+        revisionRemarks: "",
+      });
+      setActiveDetailTab("Revision History");
+
+      openStatus({
+        type: "success",
+        title: "New Version Saved",
+        message:
+          result?.message ||
+          `Job description revision ${result?.revisionNo || ""} has been saved successfully.`,
+      });
+    } catch (error) {
+      openStatus({
+        type: "error",
+        title: "Save Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Something went wrong while saving the job description revision.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handlePrimaryAction() {
     if (hasRevisionComments) {
       await handleSaveRevisionComments();
@@ -849,11 +1224,7 @@ export default function JobDescriptionViewPage() {
     }
 
     if (hasEditedChanges) {
-      openStatus({
-        type: "info",
-        title: "Not Yet Connected",
-        message: "Save as New Version action is not connected yet.",
-      });
+      openSaveAsNewVersionModal();
       return;
     }
 
@@ -926,6 +1297,8 @@ export default function JobDescriptionViewPage() {
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
     : [];
+
+  const visibleEditedChangeDetails = getVisibleEditedChanges(editedChangeDetails);
 
   const shouldShowDetails = activeDetailTab === "Details";
   const displayJdStatus = getDisplayJdStatus();
@@ -1022,6 +1395,7 @@ export default function JobDescriptionViewPage() {
                 onEditedChange={setHasEditedChanges}
                 editedChangeDetails={editedChangeDetails}
                 setEditedChangeDetails={setEditedChangeDetails}
+                onRevisionDraftChange={handleRevisionDraftChange}
                 approvalPage={approvalPage}
               />
             )}
@@ -1119,9 +1493,9 @@ export default function JobDescriptionViewPage() {
             </div>
 
             <div className="thin-scroll max-h-[65dvh] overflow-y-auto p-4 sm:p-5">
-              {editedChangeDetails.length > 0 ? (
+              {visibleEditedChangeDetails.length > 0 ? (
                 <div className="space-y-3">
-                  {editedChangeDetails.map((change) => (
+                  {visibleEditedChangeDetails.map((change) => (
                     <div
                       key={change.key}
                       className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
@@ -1176,6 +1550,99 @@ export default function JobDescriptionViewPage() {
                 className="jd-view-action-button inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 sm:w-auto"
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {saveAsNewVersionModal.open && (
+        <div className="jd-view-overlay fixed inset-0 z-[10000] flex items-end justify-center bg-black/40 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
+          <div
+            className="jd-view-dialog max-h-[94dvh] w-full max-w-xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-[#E6ECF2] px-5 py-4">
+              <div>
+                <h3 className="text-base font-extrabold text-[#101828]">
+                  Save as New Version
+                </h3>
+
+                <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
+                  Add a short note explaining what changed in this revision. This is optional.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeSaveAsNewVersionModal}
+                disabled={saving}
+                className="rounded-lg px-3 py-1 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4 px-4 py-4 sm:px-5">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="text-sm font-bold leading-6 text-sibs-primary-1">
+                  This will create a new revision history entry, update the JD
+                  record with your saved edits, and resolve open revision
+                  comments for this JD.
+                </p>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-extrabold text-sibs-primary-1">
+                  Revision Remarks <span className="text-sibs-tertiary-5">(optional)</span>
+                </label>
+
+                <textarea
+                  value={saveAsNewVersionModal.revisionRemarks}
+                  onChange={(event) =>
+                    setSaveAsNewVersionModal((prev) => ({
+                      ...prev,
+                      revisionRemarks: event.target.value,
+                    }))
+                  }
+                  rows={5}
+                  placeholder="Example: Updated record information and revised responsibilities based on reviewer comments."
+                  className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1 outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                />
+              </div>
+
+              {visibleEditedChangeDetails.length > 0 && (
+                <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                    Changes to save
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-sibs-primary-1">
+                    {visibleEditedChangeDetails.length} edited field
+                    {visibleEditedChangeDetails.length > 1 ? "s" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:justify-end sm:px-5">
+              <button
+                type="button"
+                onClick={closeSaveAsNewVersionModal}
+                disabled={saving}
+                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveAsNewVersion}
+                disabled={saving}
+                className="jd-view-action-button inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {saving && <Loader2 size={16} className="animate-spin" />}
+                {saving ? "Saving..." : "Save as New Version"}
               </button>
             </div>
           </div>

@@ -452,11 +452,11 @@ export default function AvailablePositionsPage() {
         const sameJd =
           payload.jdId || payload.jd_id || payload.jdCode || payload.jd_code
             ? String(position.jdId || position.jd_id || "") ===
-                String(payload.jdId || payload.jd_id || "") ||
-              sameText(
-                position.jdCode || position.jd_code,
-                payload.jdCode || payload.jd_code,
-              )
+            String(payload.jdId || payload.jd_id || "") ||
+            sameText(
+              position.jdCode || position.jd_code,
+              payload.jdCode || payload.jd_code,
+            )
             : false;
 
         const samePosition = sameText(
@@ -598,8 +598,8 @@ export default function AvailablePositionsPage() {
         "error",
         "Position not saved",
         error?.response?.data?.message ||
-          error?.message ||
-          "Failed to save available position.",
+        error?.message ||
+        "Failed to save available position.",
       );
     } finally {
       setIsSaving(false);
@@ -664,9 +664,8 @@ export default function AvailablePositionsPage() {
       message:
         cleanText(positionForm.status) === cleanText(activeStatus)
           ? `${positionForm.positionTitle} will be visible in the Public Form and Talent Pool form.`
-          : `${positionForm.positionTitle} will not be visible to applicants unless status is ${
-              activeStatus || "configured as visible"
-            }.`,
+          : `${positionForm.positionTitle} will not be visible to applicants unless status is ${activeStatus || "configured as visible"
+          }.`,
       confirmLabel: formMode === "edit" ? "Update" : "Save",
       onConfirm: savePosition,
     });

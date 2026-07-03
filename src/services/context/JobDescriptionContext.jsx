@@ -10,7 +10,7 @@ import {
   getJobDescriptionRevisionComments,
   saveJobDescriptionRevision,
   saveJobDescriptionRevisionComments,
-} from "../../lib/axios/jobDescription";
+} from "../../lib/axios/getJobDescription";
 
 const JobDescriptionContext = createContext(null);
 
@@ -97,20 +97,20 @@ function getPersonalityTypeValue(source = {}) {
 
   return cleanText(
     source?.personalityType ||
-      source?.personality_type ||
-      source?.preferredPersonalityType ||
-      source?.preferred_personality_type ||
-      source?.personality ||
-      source?.preferredPersonality ||
-      source?.preferred_personality ||
-      raw?.personalityType ||
-      raw?.personality_type ||
-      raw?.preferredPersonalityType ||
-      raw?.preferred_personality_type ||
-      raw?.personality ||
-      raw?.preferredPersonality ||
-      raw?.preferred_personality ||
-      "",
+    source?.personality_type ||
+    source?.preferredPersonalityType ||
+    source?.preferred_personality_type ||
+    source?.personality ||
+    source?.preferredPersonality ||
+    source?.preferred_personality ||
+    raw?.personalityType ||
+    raw?.personality_type ||
+    raw?.preferredPersonalityType ||
+    raw?.preferred_personality_type ||
+    raw?.personality ||
+    raw?.preferredPersonality ||
+    raw?.preferred_personality ||
+    "",
   );
 }
 
@@ -178,9 +178,9 @@ export function normalizeJobDescriptionViewItem(source = {}) {
     raw?.revision_history ||
     parseRevisionHistoryJson(
       source?.revisionHistoryJson ||
-        source?.revision_history_json ||
-        raw?.revisionHistoryJson ||
-        raw?.revision_history_json,
+      source?.revision_history_json ||
+      raw?.revisionHistoryJson ||
+      raw?.revision_history_json,
     );
 
   const normalized = {
@@ -770,18 +770,18 @@ function normalizeRevisionCompetenciesPayload(competencies = []) {
 function normalizeRevisionSubmitPayload(form = {}, comments = []) {
   const existingJdId = cleanText(
     form.existingJdId ||
-      form.existing_jd_id ||
-      form.linkedHiringRequirement ||
-      form.linked_hiring_requirement ||
-      "",
+    form.existing_jd_id ||
+    form.linkedHiringRequirement ||
+    form.linked_hiring_requirement ||
+    "",
   );
 
   const personalityType = cleanText(
     form.personalityType ||
-      form.personality_type ||
-      (Array.isArray(form.personalityTypes)
-        ? form.personalityTypes.join(", ")
-        : ""),
+    form.personality_type ||
+    (Array.isArray(form.personalityTypes)
+      ? form.personalityTypes.join(", ")
+      : ""),
   );
 
   const payloadComments = normalizeRevisionCommentsPayload(comments);

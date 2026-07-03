@@ -212,11 +212,11 @@ function normalizeJobDescriptionItem(item) {
 function formatLoggedInOwner(user) {
   const sibsId = String(
     user?.username ||
-      user?.sibs_id ||
-      user?.gy_user_code ||
-      user?.gy_emp_code ||
-      user?.sibsId ||
-      "",
+    user?.sibs_id ||
+    user?.gy_user_code ||
+    user?.gy_emp_code ||
+    user?.sibsId ||
+    "",
   ).trim();
 
   const lastName = String(
@@ -233,10 +233,10 @@ function formatLoggedInOwner(user) {
 
   const fallbackName = String(
     user?.full_name ||
-      user?.fullName ||
-      user?.employee_name ||
-      user?.name ||
-      "",
+    user?.fullName ||
+    user?.employee_name ||
+    user?.name ||
+    "",
   ).trim();
 
   const formattedName =
@@ -255,32 +255,32 @@ function formatLoggedInOwner(user) {
 function normalizeCompetencyItem(item = {}) {
   const title = String(
     item.title ||
-      item.competency ||
-      item.competencyTitle ||
-      item.competencyName ||
-      item.name ||
-      item.label ||
-      item.competencyForThisPosition ||
-      item.description ||
-      "",
+    item.competency ||
+    item.competencyTitle ||
+    item.competencyName ||
+    item.name ||
+    item.label ||
+    item.competencyForThisPosition ||
+    item.description ||
+    "",
   ).trim();
 
   const description = String(
     item.details ||
-      item.competencyDescription ||
-      item.definition ||
-      item.competencyDetails ||
-      item.longDescription ||
-      item.description ||
-      "",
+    item.competencyDescription ||
+    item.definition ||
+    item.competencyDetails ||
+    item.longDescription ||
+    item.description ||
+    "",
   ).trim();
 
   const level = String(
     item.level ||
-      item.proficiencyLevel ||
-      item.selectedLevel ||
-      item.rating ||
-      "",
+    item.proficiencyLevel ||
+    item.selectedLevel ||
+    item.rating ||
+    "",
   ).trim();
 
   return {
@@ -442,25 +442,25 @@ export default function AddJobDescription({
 
     const responsibilities = normalizeText(
       form.responsibilities ||
-        form.dutiesResponsibilities ||
-        form.duties ||
-        form.qualifications ||
-        "",
+      form.dutiesResponsibilities ||
+      form.duties ||
+      form.qualifications ||
+      "",
     );
 
     const qualifications = normalizeText(
       form.qualificationDetails ||
-        form.characteristics ||
-        form.qualificationCharacteristics ||
-        form.remarks ||
-        form.qualifications ||
-        "",
+      form.characteristics ||
+      form.qualificationCharacteristics ||
+      form.remarks ||
+      form.qualifications ||
+      "",
     );
 
     const personalityType = normalizeText(
       form.personalityType ||
-        form.personality_type ||
-        normalizeArrayText(form.personalityTypes),
+      form.personality_type ||
+      normalizeArrayText(form.personalityTypes),
     );
 
     const remarks = normalizeText(form.remarks);
@@ -548,8 +548,8 @@ export default function AddJobDescription({
 
     const cleanCompetencies = Array.isArray(competencies)
       ? competencies
-          .map(normalizeCompetencyItem)
-          .filter((item) => item.title || item.description)
+        .map(normalizeCompetencyItem)
+        .filter((item) => item.title || item.description)
       : [];
 
     const payload = {
