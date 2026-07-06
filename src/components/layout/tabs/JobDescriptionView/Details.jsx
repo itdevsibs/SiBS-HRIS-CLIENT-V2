@@ -6,6 +6,7 @@ import { formatDate } from "../../FormatDateTime";
 import DesiredCompetenciesViewTable from "../../../tables/jobDescription/DesiredCompetenciesViewTable";
 import { useUser } from "../../../../services/context/UserContext";
 import { useJobDescription } from "../../../../services/context/JobDescriptionContext";
+import { getJobDescriptionDropdowns } from "../../../../lib/axios/getJobDescription";
 
 const detailsResponsiveAuditStyles = `
   .jd-details-document,
@@ -138,6 +139,13 @@ const detailsResponsiveAuditStyles = `
   }
 `;
 
+const REPORTS_TO_OPTIONS = [
+  { value: "Team Supervisor", label: "Team Supervisor" },
+  { value: "Operations Manager", label: "Operations Manager" },
+  { value: "Senior Operations Manager", label: "Senior Operations Manager" },
+  { value: "Department Head", label: "Department Head" },
+  { value: "HR Manager", label: "HR Manager" },
+];
 
 const Details = ({
   onOpenRevision,
@@ -145,6 +153,7 @@ const Details = ({
   onEditedChange,
   editedChangeDetails = [],
   setEditedChangeDetails,
+  onRevisionDraftChange,
   approvalPage = false,
 }) => {
   const { user } = useUser();
@@ -188,6 +197,212 @@ const Details = ({
     ).trim();
   }
 
+  function getSourceField(source = {}, camelKey = "", snakeKey = "") {
+    return (
+      source?.[camelKey] ||
+      source?.[snakeKey] ||
+      source?.raw?.[camelKey] ||
+      source?.raw?.[snakeKey] ||
+      ""
+    );
+  }
+
+
+  function getOptionLabel(options = [], value = "") {
+    const cleanValue = String(value || "").trim();
+
+    if (!cleanValue) return "";
+
+    const option = options.find(
+      (item) => String(item.value || "") === cleanValue,
+    );
+
+    return option?.label || "";
+  }
+
+  function normalizeRevisionDate(value = "") {
+    const text = String(value || "").trim();
+
+    if (!text || text === "—") return "";
+
+    if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+      return text.slice(0, 10);
+    }
+
+    const parsed = new Date(text);
+
+    if (Number.isNaN(parsed.getTime())) return text;
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
+  function getRevisionAccountId(source = item) {
+    return (
+      getSourceField(source, "accountId", "account_id") ||
+      getSourceField(source, "preparedForId", "prepared_for_id") ||
+      ""
+    );
+  }
+
+  function getRevisionDepartmentId(source = item) {
+    return getSourceField(source, "departmentId", "department_id") || "";
+  }
+
+  function getRevisionExistingJdId(source = item, recordInfo = {}) {
+    return (
+      recordInfo?.existingJdId ||
+      getSourceField(source, "existingJdId", "existing_jd_id") ||
+      getSourceField(source, "linkedHiringRequirement", "linked_hiring_requirement") ||
+      ""
+    );
+  }
+
+  function normalizeCompetenciesForRevision(competencies = []) {
+    if (!Array.isArray(competencies)) return [];
+
+    return competencies
+      .map((competency) => {
+        const title = String(
+          competency?.title ||
+            competency?.competency ||
+            competency?.competencyName ||
+            competency?.label ||
+            "",
+        ).trim();
+
+        const description = String(
+          competency?.description ||
+            competency?.details ||
+            competency?.competencyDescription ||
+            competency?.definition ||
+            "",
+        ).trim();
+
+        const rawLevel = String(
+          competency?.level ||
+            competency?.proficiencyLevel ||
+            competency?.selectedLevel ||
+            "",
+        )
+          .trim()
+          .toLowerCase();
+
+        const level =
+          rawLevel === "average"
+            ? "Average"
+            : rawLevel === "proficient"
+              ? "Proficient"
+              : rawLevel === "excellent"
+                ? "Excellent"
+                : Number(competency?.average) === 1 || competency?.average === true
+                  ? "Average"
+                  : Number(competency?.proficient) === 1 ||
+                      competency?.proficient === true
+                    ? "Proficient"
+                    : Number(competency?.excellent) === 1 ||
+                        competency?.excellent === true
+                      ? "Excellent"
+                      : "";
+
+        return {
+          id: competency?.id || null,
+          title,
+          description,
+          level,
+          average: level === "Average" ? 1 : 0,
+          proficient: level === "Proficient" ? 1 : 0,
+          excellent: level === "Excellent" ? 1 : 0,
+        };
+      })
+      .filter((competency) => competency.title || competency.description);
+  }
+
+  function stringifyCompetenciesForChange(competencies = []) {
+    const normalized = normalizeCompetenciesForRevision(competencies);
+
+    if (!normalized.length) return "";
+
+    return normalized
+      .map((competency) => {
+        const title = competency.title ? `${competency.title}: ` : "";
+        const level = competency.level ? ` (${competency.level})` : "";
+
+        return `${title}${competency.description}${level}`.trim();
+      })
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  function buildRevisionDraftPayload({
+    nextRecordInfoDraft = recordInfoDraft,
+    nextEditableContent = editableContent,
+    nextCompetencies = competencyDrafts,
+    nextChangeDetails = editedChangeDetails,
+  } = {}) {
+    const documentTitle =
+      nextRecordInfoDraft.roleTitle ||
+      item.documentTitle ||
+      item.document_title ||
+      item.raw?.documentTitle ||
+      item.raw?.document_title ||
+      "";
+
+    const roleTitle = nextRecordInfoDraft.roleTitle || documentTitle;
+    const accountId =
+      nextRecordInfoDraft.accountId ||
+      nextRecordInfoDraft.preparedForId ||
+      getRevisionAccountId(item);
+
+    const departmentId =
+      nextRecordInfoDraft.departmentId || getRevisionDepartmentId(item);
+    const effectiveDate = normalizeRevisionDate(nextRecordInfoDraft.effectiveDate);
+
+    return {
+      existingJdId: getRevisionExistingJdId(item, nextRecordInfoDraft),
+      existing_jd_id: getRevisionExistingJdId(item, nextRecordInfoDraft),
+      linkedHiringRequirement: getRevisionExistingJdId(item, nextRecordInfoDraft) || "",
+      linked_hiring_requirement: getRevisionExistingJdId(item, nextRecordInfoDraft) || "",
+
+      documentTitle,
+      document_title: documentTitle,
+      roleTitle,
+      role_title: roleTitle,
+
+      accountId,
+      account_id: accountId,
+      account: nextRecordInfoDraft.preparedFor || item.account || "",
+      preparedFor: nextRecordInfoDraft.preparedFor || item.preparedFor || item.account || "",
+      prepared_for: nextRecordInfoDraft.preparedFor || item.prepared_for || item.account || "",
+
+      departmentId,
+      department_id: departmentId,
+      department: nextRecordInfoDraft.department || item.department || "",
+
+      effectiveDate,
+      effective_date: effectiveDate,
+      reportsTo: nextRecordInfoDraft.reportsTo || "",
+      reports_to: nextRecordInfoDraft.reportsTo || "",
+      supervisory: nextRecordInfoDraft.supervisory || "No",
+
+      description: nextEditableContent.description || "",
+      responsibilities: nextEditableContent.responsibilities || "",
+      qualifications: nextEditableContent.qualifications || "",
+      personalityType: nextEditableContent.personalityType || "",
+      personality_type: nextEditableContent.personalityType || "",
+      remarks: nextEditableContent.remarks || item.remarks || "",
+
+      competencies: normalizeCompetenciesForRevision(nextCompetencies),
+      desiredCompetencies: normalizeCompetenciesForRevision(nextCompetencies),
+      desired_competencies: normalizeCompetenciesForRevision(nextCompetencies),
+      changeDetails: nextChangeDetails,
+      editedChangeDetails: nextChangeDetails,
+    };
+  }
+
   const canManageJdDetails = useMemo(() => {
     // Approval reviewers should be able to use the full-page approval tools
     // even when their adminAccess is not 6 or 7.
@@ -225,6 +440,7 @@ const Details = ({
       item.document_title ||
       "",
     department: item.department || "",
+    departmentId: getRevisionDepartmentId(item),
     dateRequested: item.dateRequested || item.date_requested || "",
     linkedHiringRequirement:
       item.linkedHiringRequirement ||
@@ -232,7 +448,10 @@ const Details = ({
       item.existingJdId ||
       item.existing_jd_id ||
       "",
+    existingJdId: getRevisionExistingJdId(item),
     preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+    accountId: getRevisionAccountId(item),
+    preparedForId: getRevisionAccountId(item),
     createdBy:
       item.createdBy ||
       item.created_by ||
@@ -248,12 +467,59 @@ const Details = ({
     supervisory: item.supervisory || "No",
   });
 
+  const [competencyDrafts, setCompetencyDrafts] = useState(
+    item.competencies || item.desiredCompetencies || [],
+  );
+
+  const [recordDropdownOptions, setRecordDropdownOptions] = useState({
+    accounts: [],
+    departments: [],
+    existingJobDescriptions: [],
+  });
+
   const hasRevisionComments = revisionComments.length > 0;
 
   const disableEditBecauseCommented =
     !canManageJdDetails || hasRevisionComments;
 
   const disableCommentBecauseEdited = !canManageJdDetails || hasEditedChanges;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRecordDropdowns() {
+      const result = await getJobDescriptionDropdowns();
+
+      if (cancelled || !result?.success) return;
+
+      const accounts = (result.accounts || []).map((account) => ({
+        value: String(account.gy_acc_id || account.id || account.value || ""),
+        label: String(account.gy_acc_name || account.name || account.label || "").trim(),
+      })).filter((option) => option.value && option.label);
+
+      const departments = (result.departments || []).map((department) => ({
+        value: String(department.id_department || department.id || department.value || ""),
+        label: String(department.name_department || department.name || department.label || "").trim(),
+      })).filter((option) => option.value && option.label);
+
+      const existingJobDescriptions = (result.existingJobDescriptions || []).map((jd) => ({
+        value: String(jd.id || jd.value || ""),
+        label: String(jd.label || jd.documentTitle || jd.document_title || jd.roleTitle || jd.role_title || "").trim(),
+      })).filter((option) => option.value && option.label);
+
+      setRecordDropdownOptions({
+        accounts,
+        departments,
+        existingJobDescriptions,
+      });
+    }
+
+    loadRecordDropdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setEditableContent({
@@ -275,6 +541,7 @@ const Details = ({
         item.document_title ||
         "",
       department: item.department || "",
+      departmentId: getRevisionDepartmentId(item),
       dateRequested: item.dateRequested || item.date_requested || "",
       linkedHiringRequirement:
         item.linkedHiringRequirement ||
@@ -282,7 +549,10 @@ const Details = ({
         item.existingJdId ||
         item.existing_jd_id ||
         "",
+      existingJdId: getRevisionExistingJdId(item),
       preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      accountId: getRevisionAccountId(item),
+      preparedForId: getRevisionAccountId(item),
       createdBy:
         item.createdBy ||
         item.created_by ||
@@ -303,8 +573,15 @@ const Details = ({
       supervisory: item.supervisory || "No",
     });
 
+    setCompetencyDrafts(item.competencies || item.desiredCompetencies || []);
     setEditingRecordInfo(false);
     onEditedChange?.(false);
+    onRevisionDraftChange?.(
+      buildRevisionDraftPayload({
+        nextChangeDetails: [],
+        nextCompetencies: item.competencies || item.desiredCompetencies || [],
+      }),
+    );
   }, [item, onEditedChange]);
 
   function getSelectedText() {
@@ -530,6 +807,7 @@ const Details = ({
     qualifications: "Qualifications & Characteristics",
     personalityType: "Preferred Personality Type",
     remarks: "Remarks",
+    competencies: "Desired Competencies",
   };
 
   function saveEditSection(sectionKey) {
@@ -540,11 +818,12 @@ const Details = ({
     );
 
     const newValue = String(editingDraft || "");
-
-    setEditableContent((prev) => ({
-      ...prev,
+    const nextEditableContent = {
+      ...editableContent,
       [sectionKey]: editingDraft,
-    }));
+    };
+
+    setEditableContent(nextEditableContent);
 
     setEditedChangeDetails?.((prev) => {
       const withoutCurrent = prev.filter((change) => change.key !== sectionKey);
@@ -563,6 +842,12 @@ const Details = ({
             ];
 
       onEditedChange?.(nextChanges.length > 0);
+      onRevisionDraftChange?.(
+        buildRevisionDraftPayload({
+          nextEditableContent,
+          nextChangeDetails: nextChanges,
+        }),
+      );
 
       return nextChanges;
     });
@@ -572,10 +857,46 @@ const Details = ({
   }
 
   function handleRecordInfoChange(field, value) {
-    setRecordInfoDraft((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setRecordInfoDraft((prev) => {
+      if (field === "departmentId") {
+        const department = getOptionLabel(recordDropdownOptions.departments, value);
+
+        return {
+          ...prev,
+          departmentId: value,
+          department: department || prev.department || "",
+        };
+      }
+
+      if (field === "accountId" || field === "preparedForId") {
+        const preparedFor = getOptionLabel(recordDropdownOptions.accounts, value);
+
+        return {
+          ...prev,
+          accountId: value,
+          preparedForId: value,
+          preparedFor: preparedFor || prev.preparedFor || "",
+        };
+      }
+
+      if (field === "existingJdId") {
+        const linkedHiringRequirement = getOptionLabel(
+          recordDropdownOptions.existingJobDescriptions,
+          value,
+        );
+
+        return {
+          ...prev,
+          existingJdId: value,
+          linkedHiringRequirement: linkedHiringRequirement || "",
+        };
+      }
+
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
   }
 
   function cancelRecordInfoEdit() {
@@ -587,6 +908,7 @@ const Details = ({
         item.document_title ||
         "",
       department: item.department || "",
+      departmentId: getRevisionDepartmentId(item),
       dateRequested: item.dateRequested || item.date_requested || "",
       linkedHiringRequirement:
         item.linkedHiringRequirement ||
@@ -594,7 +916,10 @@ const Details = ({
         item.existingJdId ||
         item.existing_jd_id ||
         "",
+      existingJdId: getRevisionExistingJdId(item),
       preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      accountId: getRevisionAccountId(item),
+      preparedForId: getRevisionAccountId(item),
       createdBy:
         item.createdBy ||
         item.created_by ||
@@ -627,6 +952,7 @@ const Details = ({
         item.document_title ||
         "",
       department: item.department || "",
+      departmentId: getRevisionDepartmentId(item),
       dateRequested: item.dateRequested || item.date_requested || "",
       linkedHiringRequirement:
         item.linkedHiringRequirement ||
@@ -634,7 +960,10 @@ const Details = ({
         item.existingJdId ||
         item.existing_jd_id ||
         "",
+      existingJdId: getRevisionExistingJdId(item),
       preparedFor: item.preparedFor || item.prepared_for || item.account || "",
+      accountId: getRevisionAccountId(item),
+      preparedForId: getRevisionAccountId(item),
       createdBy:
         item.createdBy ||
         item.created_by ||
@@ -678,11 +1007,58 @@ const Details = ({
       const nextChanges = [...withoutRecordInfo, ...recordChanges];
 
       onEditedChange?.(nextChanges.length > 0);
+      onRevisionDraftChange?.(
+        buildRevisionDraftPayload({
+          nextRecordInfoDraft: recordInfoDraft,
+          nextChangeDetails: nextChanges,
+        }),
+      );
 
       return nextChanges;
     });
 
     setEditingRecordInfo(false);
+  }
+
+  function handleCompetenciesChange(nextCompetencies = []) {
+    const previousCompetencies = item.competencies || item.desiredCompetencies || [];
+    const normalizedNextCompetencies = Array.isArray(nextCompetencies)
+      ? nextCompetencies
+      : [];
+
+    setCompetencyDrafts(normalizedNextCompetencies);
+
+    setEditedChangeDetails?.((prev) => {
+      const withoutCompetencies = prev.filter(
+        (change) => change.key !== "competencies",
+      );
+
+      const oldValue = stringifyCompetenciesForChange(previousCompetencies);
+      const newValue = stringifyCompetenciesForChange(normalizedNextCompetencies);
+
+      const nextChanges =
+        oldValue === newValue
+          ? withoutCompetencies
+          : [
+              ...withoutCompetencies,
+              {
+                key: "competencies",
+                label: fieldLabels.competencies || "Desired Competencies",
+                oldValue,
+                newValue,
+              },
+            ];
+
+      onEditedChange?.(nextChanges.length > 0);
+      onRevisionDraftChange?.(
+        buildRevisionDraftPayload({
+          nextCompetencies: normalizedNextCompetencies,
+          nextChangeDetails: nextChanges,
+        }),
+      );
+
+      return nextChanges;
+    });
   }
 
   function getEditDisabledTitle(defaultTitle) {
@@ -859,6 +1235,9 @@ const Details = ({
           editingRecordInfo={editingRecordInfo}
           getRecordFieldComments={getRecordFieldComments}
           onChange={handleRecordInfoChange}
+          departmentOptions={recordDropdownOptions.departments}
+          accountOptions={recordDropdownOptions.accounts}
+          existingJobDescriptionOptions={recordDropdownOptions.existingJobDescriptions}
         />
       </section>
 
@@ -944,13 +1323,14 @@ const Details = ({
 
         <div className="jd-competencies-mobile-fix">
           <DesiredCompetenciesViewTable
-            competencies={item.competencies || item.desiredCompetencies || []}
+            competencies={competencyDrafts}
             comments={getSectionComments("competencies")}
             onAddComment={openSectionComment}
             disableEdit={disableEditBecauseCommented}
             disableComment={disableCommentBecauseEdited}
             canManageActions={approvalPage && canManageJdDetails}
             onEditedChange={onEditedChange}
+            onCompetenciesChange={handleCompetenciesChange}
           />
         </div>
       </section>
@@ -1070,6 +1450,9 @@ function DocumentRecordInfoTable({
   editingRecordInfo = false,
   getRecordFieldComments,
   onChange,
+  departmentOptions = [],
+  accountOptions = [],
+  existingJobDescriptionOptions = [],
 }) {
   const divider = "border-[#D6E3F0]";
 
@@ -1099,10 +1482,13 @@ function DocumentRecordInfoTable({
 
         <RecordInfoDocumentCell
           label="Department"
-          value={recordInfoDraft.department}
+          value={recordInfoDraft.departmentId || ""}
+          displayValue={recordInfoDraft.department}
+          inputType="select"
+          options={departmentOptions}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.department)}
-          onChange={(value) => onChange?.("department", value)}
+          onChange={(value) => onChange?.("departmentId", value)}
           variant="primary"
         />
       </div>
@@ -1111,7 +1497,7 @@ function DocumentRecordInfoTable({
         <RecordInfoDocumentCell
           label="Document Code"
           value={recordInfoDraft.jdCode}
-          editable={editingRecordInfo}
+          editable={false}
           comments={getRecordFieldComments?.(recordInfoDraft.jdCode)}
           onChange={(value) => onChange?.("jdCode", value)}
           className={`border-b ${divider} sm:border-r lg:border-b-0`}
@@ -1120,7 +1506,7 @@ function DocumentRecordInfoTable({
         <RecordInfoDocumentCell
           label="Revision No."
           value={recordInfoDraft.currentVersion}
-          editable={editingRecordInfo}
+          editable={false}
           comments={getRecordFieldComments?.(recordInfoDraft.currentVersion)}
           onChange={(value) => onChange?.("currentVersion", value)}
           className={`border-b ${divider} lg:border-b-0 lg:border-r`}
@@ -1144,7 +1530,7 @@ function DocumentRecordInfoTable({
           value={recordInfoDraft.lastUpdated}
           displayValue={formatDate(recordInfoDraft.lastUpdated)}
           inputType="date"
-          editable={editingRecordInfo}
+          editable={false}
           comments={getRecordFieldComments?.(
             formatDate(recordInfoDraft.lastUpdated),
           )}
@@ -1158,7 +1544,7 @@ function DocumentRecordInfoTable({
           value={recordInfoDraft.dateRequested}
           displayValue={formatDate(recordInfoDraft.dateRequested)}
           inputType="date"
-          editable={editingRecordInfo}
+          editable={false}
           comments={getRecordFieldComments?.(
             formatDate(recordInfoDraft.dateRequested),
           )}
@@ -1168,28 +1554,34 @@ function DocumentRecordInfoTable({
 
         <RecordInfoDocumentCell
           label="Linked Hiring Requirement"
-          value={recordInfoDraft.linkedHiringRequirement || "—"}
+          value={recordInfoDraft.existingJdId || ""}
+          displayValue={recordInfoDraft.linkedHiringRequirement || "—"}
+          inputType="select"
+          options={existingJobDescriptionOptions}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(
             recordInfoDraft.linkedHiringRequirement,
           )}
-          onChange={(value) => onChange?.("linkedHiringRequirement", value)}
+          onChange={(value) => onChange?.("existingJdId", value)}
           className={`border-b ${divider} lg:border-b-0 lg:border-r`}
         />
 
         <RecordInfoDocumentCell
           label="Prepared For"
-          value={recordInfoDraft.preparedFor}
+          value={recordInfoDraft.accountId || recordInfoDraft.preparedForId || ""}
+          displayValue={recordInfoDraft.preparedFor}
+          inputType="select"
+          options={accountOptions}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.preparedFor)}
-          onChange={(value) => onChange?.("preparedFor", value)}
+          onChange={(value) => onChange?.("accountId", value)}
           className={`border-b ${divider} sm:border-b-0 sm:border-r`}
         />
 
         <RecordInfoDocumentCell
           label="Created By"
           value={recordInfoDraft.createdBy}
-          editable={editingRecordInfo}
+          editable={false}
           comments={getRecordFieldComments?.(recordInfoDraft.createdBy)}
           onChange={(value) => onChange?.("createdBy", value)}
         />
@@ -1198,7 +1590,10 @@ function DocumentRecordInfoTable({
       <div className="grid grid-cols-1 md:grid-cols-2">
         <RecordInfoDocumentCell
           label="Reports To"
-          value={recordInfoDraft.reportsTo}
+          value={recordInfoDraft.reportsTo || ""}
+          displayValue={recordInfoDraft.reportsTo || "—"}
+          inputType="select"
+          options={REPORTS_TO_OPTIONS}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(recordInfoDraft.reportsTo)}
           onChange={(value) => onChange?.("reportsTo", value)}
@@ -1208,6 +1603,12 @@ function DocumentRecordInfoTable({
         <RecordInfoDocumentCell
           label="Supervisory"
           value={recordInfoDraft.supervisory || "No"}
+          displayValue={recordInfoDraft.supervisory || "No"}
+          inputType="segmented"
+          options={[
+            { value: "Yes", label: "Yes" },
+            { value: "No", label: "No" },
+          ]}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(
             recordInfoDraft.supervisory || "No",
@@ -1225,6 +1626,7 @@ function RecordInfoDocumentCell({
   displayValue,
   editable = false,
   inputType = "text",
+  options = [],
   comments = [],
   onChange,
   className = "",
@@ -1272,14 +1674,37 @@ function RecordInfoDocumentCell({
       </div>
 
       {editable ? (
-        <input
-          type={inputType}
-          value={value || ""}
-          onChange={(event) => onChange?.(event.target.value)}
-          className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-            variant === "title" ? "sm:h-12 sm:text-base" : ""
-          }`}
-        />
+        inputType === "segmented" ? (
+          <SegmentedOptionToggle
+            value={value || "No"}
+            options={options}
+            onChange={onChange}
+          />
+        ) : inputType === "select" ? (
+          <select
+            value={value || ""}
+            onChange={(event) => onChange?.(event.target.value)}
+            className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+              variant === "title" ? "sm:h-12 sm:text-base" : ""
+            }`}
+          >
+            <option value="">Select {label}</option>
+            {options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={inputType}
+            value={value || ""}
+            onChange={(event) => onChange?.(event.target.value)}
+            className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+              variant === "title" ? "sm:h-12 sm:text-base" : ""
+            }`}
+          />
+        )
       ) : variant === "title" ? (
         <div className="relative mt-4 pl-4">
           <span className="absolute bottom-1 left-0 top-1 w-[3px] rounded-full bg-[#0D4676]" />
@@ -1320,6 +1745,67 @@ function RecordInfoDocumentCell({
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+
+function SegmentedOptionToggle({ value = "", options = [], onChange }) {
+  const safeOptions = Array.isArray(options) && options.length > 0
+    ? options
+    : [
+        { value: "Yes", label: "Yes" },
+        { value: "No", label: "No" },
+      ];
+
+  const selectedIndex = Math.max(
+    safeOptions.findIndex(
+      (option) =>
+        String(option.value || "").toLowerCase() ===
+        String(value || "").toLowerCase(),
+    ),
+    0,
+  );
+
+  return (
+    <div className="sibs-profile-tab-panel mt-3 h-11 w-full min-w-0 overflow-hidden rounded-xl border border-sibs-tertiary-9 bg-white p-1 shadow-sm">
+      <div
+        className="relative grid h-full"
+        style={{
+          gridTemplateColumns: `repeat(${safeOptions.length}, minmax(0, 1fr))`,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 z-0 rounded-[10px] bg-sibs-primary-1 shadow-sm transition-transform duration-200 ease-out will-change-transform"
+          style={{
+            width: `${100 / safeOptions.length}%`,
+            transform: `translateX(${selectedIndex * 100}%)`,
+          }}
+        />
+
+        {safeOptions.map((option) => {
+          const isSelected =
+            String(value || "").toLowerCase() ===
+            String(option.value || "").toLowerCase();
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange?.(option.value)}
+              aria-pressed={isSelected}
+              className={`relative z-10 inline-flex h-full items-center justify-center rounded-[10px] px-3 text-sm font-extrabold transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sibs-primary-1/10 active:scale-[0.98] ${
+                isSelected
+                  ? "text-white"
+                  : "text-sibs-primary-1 hover:bg-sibs-tertiary-10/70 hover:text-sibs-primary-1"
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
