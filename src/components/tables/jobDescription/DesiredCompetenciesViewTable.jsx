@@ -602,7 +602,7 @@ const DesiredCompetenciesViewTable = ({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white selection:bg-[#FFF3B8] selection:text-[#101828]">
-        <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px] border-b border-[#D7DEE8] bg-[#F8FAFC] md:grid">
+        <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px] border-b border-[#D7DEE8] bg-[#F8FAFC] sm:grid">
           <div className="px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
             Competency for this Position
           </div>
@@ -633,10 +633,10 @@ const DesiredCompetenciesViewTable = ({
               return (
                 <div
                   key={item.id || `${title}-${index}`}
-                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_110px_110px_110px]"
+                  className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_110px_110px_110px]"
                 >
                   <div
-                    className={`px-4 py-5 selection:bg-[#FFF3B8] selection:text-[#101828] md:border-r md:border-[#E6ECF2]
+                    className={`px-4 py-5 selection:bg-[#FFF3B8] selection:text-[#101828] sm:border-r sm:border-[#E6ECF2]
                        bg-inherit`}
                   >
                     <CompetencyTextWithComments
@@ -652,9 +652,9 @@ const DesiredCompetenciesViewTable = ({
                   {proficiencyOptions.map((option) => (
                     <div
                       key={option}
-                      className={`flex items-center justify-between gap-3 border-t border-[#E6ECF2] px-4 py-4 md:justify-center md:border-l md:border-t-0 bg-inherit`}
+                      className={`flex items-center justify-between gap-3 border-t border-[#E6ECF2] px-4 py-4 sm:justify-center sm:border-l sm:border-t-0 bg-inherit`}
                     >
-                      <span className="text-sm font-bold text-sibs-primary-1 md:hidden">
+                      <span className="text-sm font-bold text-sibs-primary-1 sm:hidden">
                         {option}
                       </span>
 

@@ -1115,7 +1115,7 @@ const Details = ({
     <article className="jd-details-document mx-auto w-full max-w-[900px] space-y-6 overflow-hidden bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
       <style>{detailsResponsiveAuditStyles}</style>
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
-        <section className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <section data-print-hide className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-sm font-extrabold text-amber-700">
