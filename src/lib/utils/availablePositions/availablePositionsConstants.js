@@ -2,10 +2,10 @@
 export const POSITIONS_PER_PAGE = 8;
 
 export const LOCATION_SITE_OPTIONS = [
-  "Davao",
-  "Tagum",
-  "Mabini",
-  "Both Davao and Tagum",
+  "Davao Site",
+  "Tagum Site",
+  "Mabini Site",
+  "Both Davao and Tagum Site",
 ];
 
 export const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];

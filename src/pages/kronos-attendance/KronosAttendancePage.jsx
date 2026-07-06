@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleCheckBig,
@@ -9,6 +10,7 @@ import {
   RefreshCw,
   Search,
   Timer,
+  X,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
@@ -46,6 +48,86 @@ function formatDate(value) {
     year: "numeric",
     month: "short",
     day: "2-digit",
+  });
+}
+
+function parseLocalDate(value) {
+  if (!value) return null;
+
+  const raw = String(value).trim();
+
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  return parsed;
+}
+
+function toDateInputValue(date) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateDisplay(value, fallback = "Select date") {
+  const parsed = parseLocalDate(value);
+
+  if (!parsed) return fallback;
+
+  return parsed.toLocaleDateString("en-PH", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  });
+}
+
+function getMonthLabel(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function addMonths(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+function isSameDay(dateA, dateB) {
+  if (!dateA || !dateB) return false;
+
+  return (
+    dateA.getFullYear() === dateB.getFullYear() &&
+    dateA.getMonth() === dateB.getMonth() &&
+    dateA.getDate() === dateB.getDate()
+  );
+}
+
+function buildCalendarDays(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+
+  const firstDay = new Date(year, month, 1);
+  const startDate = new Date(year, month, 1 - firstDay.getDay());
+
+  return Array.from({ length: 42 }).map((_, index) => {
+    const date = new Date(startDate);
+
+    date.setDate(startDate.getDate() + index);
+
+    return {
+      date,
+      isCurrentMonth: date.getMonth() === month,
+    };
   });
 }
 
@@ -305,6 +387,367 @@ function normalizeAccountOption(option) {
   };
 }
 
+function CustomCalendarPicker({
+  id,
+  label = "From",
+  value,
+  onChange,
+  disabled = false,
+  openCalendar,
+  setOpenCalendar,
+}) {
+  const pickerRef = useRef(null);
+  const selectedDate = parseLocalDate(value);
+  const today = new Date();
+
+  const [viewDate, setViewDate] = useState(
+    selectedDate || new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+
+  const isOpen = openCalendar === id;
+  const calendarDays = useMemo(() => buildCalendarDays(viewDate), [viewDate]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+
+    setViewDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (!pickerRef.current) return;
+
+      if (!pickerRef.current.contains(event.target)) {
+        if (isOpen) {
+          setOpenCalendar("");
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isOpen, setOpenCalendar]);
+
+  function toggleOpen() {
+    if (disabled) return;
+    setOpenCalendar(isOpen ? "" : id);
+  }
+
+  function handleSelectDate(date) {
+    onChange(toDateInputValue(date));
+    setOpenCalendar("");
+  }
+
+  function handleClear(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onChange("");
+    setOpenCalendar("");
+  }
+
+  function handleToday(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onChange(toDateInputValue(today));
+    setViewDate(new Date(today.getFullYear(), today.getMonth(), 1));
+    setOpenCalendar("");
+  }
+
+  return (
+    <div ref={pickerRef} className="relative min-w-0">
+      <button
+        type="button"
+        onClick={toggleOpen}
+        disabled={disabled}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-3 text-sm font-extrabold outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          isOpen
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D9E2EC] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+        }`}
+      >
+        <span className="flex min-w-0 items-center gap-2 text-sibs-primary-1">
+          <CalendarDays size={16} className="shrink-0" />
+          <span className="shrink-0">{label}</span>
+          <span className="min-w-0 truncate text-sibs-primary-1">
+            {formatDateDisplay(value, "Select date")}
+          </span>
+        </span>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-sibs-primary-1 transition ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen ? (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-[80] w-[310px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+          <div className="flex items-center justify-between px-4 py-4">
+            <button
+              type="button"
+              onClick={() => setViewDate((current) => addMonths(current, -1))}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <p className="m-0 text-sm font-extrabold text-sibs-primary-1">
+              {getMonthLabel(viewDate)}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setViewDate((current) => addMonths(current, 1))}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB]"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 px-4 pb-2 text-center">
+            {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
+              <div
+                key={day}
+                className="py-2 text-xs font-extrabold text-sibs-primary-1"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-y-1 px-4 pb-4 text-center">
+            {calendarDays.map(({ date, isCurrentMonth }) => {
+              const active = selectedDate && isSameDay(date, selectedDate);
+              const currentToday = isSameDay(date, today);
+
+              return (
+                <button
+                  key={toDateInputValue(date)}
+                  type="button"
+                  onClick={() => handleSelectDate(date)}
+                  className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                    active
+                      ? "bg-[#E7F0FA] text-sibs-primary-1"
+                      : currentToday
+                        ? "bg-[#F2F6FA] text-sibs-primary-1"
+                        : isCurrentMonth
+                          ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                          : "text-[#98A7BA] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  {date.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mx-4 border-t border-[#E6ECF2]" />
+
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              type="button"
+              onClick={handleClear}
+              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Clear
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToday}
+              className="rounded-lg px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SearchableDropdown({
+  id,
+  value,
+  onChange,
+  options = [],
+  allLabel = "All",
+  placeholder = "Search...",
+  disabled = false,
+  openDropdown,
+  setOpenDropdown,
+}) {
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+  const [dropdownSearch, setDropdownSearch] = useState("");
+
+  const isOpen = openDropdown === id;
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value),
+  );
+
+  const displayLabel =
+    String(value || "All") === "All"
+      ? allLabel
+      : selectedOption?.label || value || allLabel;
+
+  const filteredOptions = useMemo(() => {
+    const keyword = cleanString(dropdownSearch).toLowerCase();
+
+    if (!keyword) return options;
+
+    return options.filter((option) =>
+      `${option.label} ${option.value}`.toLowerCase().includes(keyword),
+    );
+  }, [dropdownSearch, options]);
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        if (isOpen) {
+          setOpenDropdown("");
+          setDropdownSearch("");
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isOpen, setOpenDropdown]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = window.setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isOpen]);
+
+  function handleOpen() {
+    if (disabled) return;
+    setOpenDropdown(id);
+    setDropdownSearch("");
+  }
+
+  function handleToggle() {
+    if (disabled) return;
+
+    if (isOpen) {
+      setOpenDropdown("");
+      setDropdownSearch("");
+      return;
+    }
+
+    handleOpen();
+  }
+
+  function handleSelect(nextValue) {
+    onChange(nextValue);
+    setOpenDropdown("");
+    setDropdownSearch("");
+  }
+
+  return (
+    <div ref={dropdownRef} className="relative min-w-0">
+      <div
+        className={`flex h-11 w-full min-w-0 items-center gap-2 rounded-xl border bg-white px-3 transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          isOpen
+            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
+            : "border-[#D9E2EC] hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC]"
+        }`}
+      >
+        {isOpen ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={dropdownSearch}
+            onChange={(event) => setDropdownSearch(event.target.value)}
+            onClick={handleOpen}
+            placeholder={placeholder}
+            disabled={disabled}
+            className="h-full min-w-0 flex-1 bg-transparent text-sm font-extrabold text-sibs-primary-1 outline-none placeholder:text-sibs-primary-1"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={handleToggle}
+            disabled={disabled}
+            className="min-w-0 flex-1 truncate text-left text-sm font-extrabold text-sibs-primary-1 outline-none disabled:cursor-not-allowed"
+          >
+            {displayLabel}
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={disabled}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed"
+        >
+          <ChevronDown
+            size={16}
+            className={`transition ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </div>
+
+      {isOpen ? (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[90] w-full min-w-[280px] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.14)]">
+          <div className="max-h-[255px] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => handleSelect("All")}
+              className={`flex min-h-11 w-full items-center px-4 text-left text-sm font-extrabold transition ${
+                String(value || "All") === "All"
+                  ? "bg-[#E7F0FA] text-sibs-primary-1"
+                  : "text-[#475467] hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
+              }`}
+            >
+              {allLabel}
+            </button>
+
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option) => (
+                <button
+                  key={`${id}-${option.value}-${option.label}`}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`flex min-h-11 w-full items-center px-4 text-left text-sm font-medium transition ${
+                    String(value) === String(option.value)
+                      ? "bg-[#E7F0FA] font-extrabold text-sibs-primary-1"
+                      : "text-[#475467] hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{option.label}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-5 text-center text-xs font-bold text-slate-400">
+                No options found.
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function KronosAttendancePage() {
   const { user } = useUser();
 
@@ -339,6 +782,8 @@ export default function KronosAttendancePage() {
   const [liveSyncing, setLiveSyncing] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState("");
+  const [openCalendar, setOpenCalendar] = useState("");
 
   const [access, setAccess] = useState({
     isAdmin: false,
@@ -367,7 +812,6 @@ export default function KronosAttendancePage() {
     !access?.isTalentAcquisition;
 
   const pageTitle = isEmployee ? "My Kronos Attendance" : "Kronos Attendance";
-
   const canFilterAttendance = access?.canFilterAttendance === true;
 
   const departmentDropdownOptions = useMemo(() => {
@@ -753,6 +1197,8 @@ export default function KronosAttendancePage() {
     setDepartmentFilter("All");
     setAccountFilter("All");
     setPage(1);
+    setOpenDropdown("");
+    setOpenCalendar("");
 
     loadAttendance({
       nextPage: 1,
@@ -767,6 +1213,7 @@ export default function KronosAttendancePage() {
   function handleDateFromChange(value) {
     setDateFrom(value);
     setPage(1);
+    setOpenCalendar("");
 
     loadAttendance({
       nextPage: 1,
@@ -781,6 +1228,7 @@ export default function KronosAttendancePage() {
   function handleDateToChange(value) {
     setDateTo(value);
     setPage(1);
+    setOpenCalendar("");
 
     loadAttendance({
       nextPage: 1,
@@ -796,6 +1244,7 @@ export default function KronosAttendancePage() {
     setDepartmentFilter(value || "All");
     setAccountFilter("All");
     setPage(1);
+    setOpenDropdown("");
 
     loadAttendance({
       nextPage: 1,
@@ -810,6 +1259,7 @@ export default function KronosAttendancePage() {
   function handleAccountChange(value) {
     setAccountFilter(value || "All");
     setPage(1);
+    setOpenDropdown("");
 
     loadAttendance({
       nextPage: 1,
@@ -989,9 +1439,7 @@ export default function KronosAttendancePage() {
 
                 <StatCard
                   title="Page WH"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.totalWorkHours)
-                  }
+                  value={loading ? "..." : formatNumber(pageStats.totalWorkHours)}
                   icon={Timer}
                   delay={180}
                 />
@@ -1000,11 +1448,11 @@ export default function KronosAttendancePage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+            className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
             style={{ animationDelay: "120ms" }}
           >
-            <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="relative z-40 border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
                   <h2 className="text-base font-bold text-[#101828]">
                     Kronos Attendance Records
@@ -1020,8 +1468,8 @@ export default function KronosAttendancePage() {
                   onSubmit={handleSearchSubmit}
                   className="flex w-full flex-col gap-2 xl:w-auto"
                 >
-                  <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-[280px_160px_160px] xl:w-auto">
-                    <div className="relative">
+                  <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-[280px_220px_220px] xl:w-auto">
+                    <div className="relative md:col-span-2 lg:col-span-1">
                       <Search
                         size={16}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -1036,60 +1484,52 @@ export default function KronosAttendancePage() {
                       />
                     </div>
 
-                    <input
-                      type="date"
+                    <CustomCalendarPicker
+                      id="dateFrom"
+                      label="From"
                       value={dateFrom}
-                      onChange={(event) =>
-                        handleDateFromChange(event.target.value)
-                      }
+                      onChange={handleDateFromChange}
                       disabled={loading}
-                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      openCalendar={openCalendar}
+                      setOpenCalendar={setOpenCalendar}
                     />
 
-                    <input
-                      type="date"
+                    <CustomCalendarPicker
+                      id="dateTo"
+                      label="To"
                       value={dateTo}
-                      onChange={(event) =>
-                        handleDateToChange(event.target.value)
-                      }
+                      onChange={handleDateToChange}
                       disabled={loading}
-                      className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                      openCalendar={openCalendar}
+                      setOpenCalendar={setOpenCalendar}
                     />
                   </div>
 
                   {canFilterAttendance ? (
-                    <div className="grid w-full grid-cols-1 gap-2 lg:grid-cols-[260px_280px_auto_auto] xl:w-auto">
-                      <select
+                    <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-[260px_280px_auto_auto] xl:w-auto">
+                      <SearchableDropdown
+                        id="department"
                         value={departmentFilter}
-                        onChange={(event) =>
-                          handleDepartmentChange(event.target.value)
-                        }
+                        onChange={handleDepartmentChange}
+                        options={departmentDropdownOptions}
+                        allLabel="All Departments"
+                        placeholder="Search departments..."
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      >
-                        <option value="All">All Departments</option>
-                        {departmentDropdownOptions.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
+                        openDropdown={openDropdown}
+                        setOpenDropdown={setOpenDropdown}
+                      />
 
-                      <select
+                      <SearchableDropdown
+                        id="account"
                         value={accountFilter}
-                        onChange={(event) =>
-                          handleAccountChange(event.target.value)
-                        }
+                        onChange={handleAccountChange}
+                        options={accountDropdownOptions}
+                        allLabel="All Accounts"
+                        placeholder="Search accounts..."
                         disabled={loading}
-                        className="h-11 rounded-xl border border-[#D9E2EC] bg-white px-3 text-sm font-bold text-slate-700 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                      >
-                        <option value="All">All Accounts</option>
-                        {accountDropdownOptions.map((item) => (
-                          <option key={item.value} value={item.value}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
+                        openDropdown={openDropdown}
+                        setOpenDropdown={setOpenDropdown}
+                      />
 
                       <button
                         type="submit"
@@ -1346,9 +1786,7 @@ export default function KronosAttendancePage() {
                   <div className="flex flex-col gap-3">
                     {attendance.map((item, index) => {
                       const loginTime = formatTime(item.gy_tracker_login);
-                      const breakoutTime = formatTime(
-                        item.gy_tracker_breakout,
-                      );
+                      const breakoutTime = formatTime(item.gy_tracker_breakout);
                       const breakinTime = formatTime(item.gy_tracker_breakin);
                       const logoutTime = formatTime(item.gy_tracker_logout);
 
@@ -1421,10 +1859,7 @@ export default function KronosAttendancePage() {
                               )}
                             />
 
-                            <MobileMetric
-                              label="WH"
-                              value={getWorkHours(item)}
-                            />
+                            <MobileMetric label="WH" value={getWorkHours(item)} />
 
                             <MobileMetric
                               label="BH"

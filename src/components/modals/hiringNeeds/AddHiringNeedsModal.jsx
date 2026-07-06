@@ -50,6 +50,10 @@ function upperText(value) {
   return cleanText(value).toUpperCase();
 }
 
+function stripLeadingSibsId(value) {
+  return cleanText(value).replace(/^\d+\s*-\s*/i, "").trim();
+}
+
 function normalizeLocationSite(value) {
   const raw = cleanText(value);
   const lower = raw.toLowerCase();
@@ -186,7 +190,7 @@ function getUserDisplayName(user = {}) {
     );
   }
 
-  const fullName = cleanText(
+  const fullName = stripLeadingSibsId(
     user.fullName ||
       user.full_name ||
       user.employeeName ||
@@ -785,6 +789,8 @@ const initialForm = {
   dateNeeded: "",
   preparedBy: "",
   preparedById: "",
+  sibsIdManager: "",
+  hiringManager: "",
   approvalStatus: "For Approval",
 };
 
@@ -801,6 +807,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     if (!open || !user) return;
 
     const sibsId = getUserSibsId(user);
+    const hiringManager = getUserDisplayName(user);
     const preparedBy = formatPreparedByUser(user);
 
     setForm((prev) => ({
@@ -808,6 +815,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       locationSite: normalizeLocationSite(prev.locationSite),
       preparedBy,
       preparedById: sibsId,
+      sibsIdManager: sibsId,
+      hiringManager,
     }));
   }, [open, user]);
 
@@ -870,6 +879,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
   function handleReset() {
     const sibsId = getUserSibsId(user);
+    const hiringManager = getUserDisplayName(user);
     const preparedBy = formatPreparedByUser(user);
 
     setForm({
@@ -877,6 +887,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       locationSite: "Davao Site",
       preparedBy,
       preparedById: sibsId,
+      sibsIdManager: sibsId,
+      hiringManager,
     });
   }
 
@@ -982,6 +994,10 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
         preparedBy: form.preparedBy || formatPreparedByUser(user),
         preparedById: form.preparedById || getUserSibsId(user),
+        sibsIdManager: form.sibsIdManager || form.preparedById || getUserSibsId(user),
+        sibs_id_manager: form.sibsIdManager || form.preparedById || getUserSibsId(user),
+        hiringManager: form.hiringManager || getUserDisplayName(user),
+        hiring_manager: form.hiringManager || getUserDisplayName(user),
 
         jobDescriptionDbId,
         jobDescriptionId: jobDescriptionDbId,
@@ -1309,7 +1325,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
               )}
 
               <div className="lg:col-span-2">
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                   <div>
                     <FieldLabel required>Date Needed</FieldLabel>
                     <DateDropdown
@@ -1321,12 +1337,22 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                   </div>
 
                   <div>
-                    <FieldLabel required>Prepared By</FieldLabel>
+                    <FieldLabel required>SIBS ID Manager</FieldLabel>
                     <TextInput
-                      value={form.preparedBy || ""}
+                      value={form.sibsIdManager || form.preparedById || ""}
                       readOnly
                       disabled
-                      placeholder="Logged-in user"
+                      placeholder="Logged-in SIBS ID"
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel required>Hiring Manager</FieldLabel>
+                    <TextInput
+                      value={form.hiringManager || ""}
+                      readOnly
+                      disabled
+                      placeholder="Logged-in manager name"
                     />
                   </div>
                 </div>

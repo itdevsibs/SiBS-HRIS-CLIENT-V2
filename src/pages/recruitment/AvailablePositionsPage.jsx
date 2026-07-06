@@ -1066,8 +1066,8 @@ export default function AvailablePositionsPage() {
             <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
               This page does not use localStorage. Departments and accounts are
               loaded from the database, and accounts are filtered based on the
-              selected department. Location / Site is limited to Davao, Tagum,
-              Mabini, or Both Davao and Tagum.
+              selected department. Location / Site is limited to Davao Site, Tagum Site,
+              Mabini Site, or Both Davao and Tagum Site.
             </p>
           </section>
         </div>

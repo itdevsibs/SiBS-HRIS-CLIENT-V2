@@ -35,6 +35,7 @@ import PaginationTable from "@/services/pagination/PaginationTable";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import { useUser } from "../../services/context/UserContext";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
+import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 
 import {
   getApprovalRequestsByModule,
@@ -165,6 +166,16 @@ function buildRequestSearchText(request = {}) {
     request?.jdCode,
     request?.roleTitle,
     request?.linkedHiringRequirement,
+    request?.hiringManager,
+    request?.hiring_manager,
+    request?.approvedRequirement,
+    request?.approved_requirement,
+    request?.requestedStartDate,
+    request?.requested_start_date,
+    request?.dueDate,
+    request?.due_date,
+    request?.locationSite,
+    request?.location_site,
     request?.owner,
     request?.requestedBy,
     request?.createdBy,
@@ -179,6 +190,16 @@ function buildRequestSearchText(request = {}) {
     raw?.jdCode,
     raw?.roleTitle,
     raw?.linkedHiringRequirement,
+    raw?.hiringManager,
+    raw?.hiring_manager,
+    raw?.approvedRequirement,
+    raw?.approved_requirement,
+    raw?.requestedStartDate,
+    raw?.requested_start_date,
+    raw?.dueDate,
+    raw?.due_date,
+    raw?.locationSite,
+    raw?.location_site,
     raw?.description,
     raw?.responsibilities,
     raw?.qualifications,
@@ -360,6 +381,7 @@ function normalizeStatus(status, fallback = "Pending") {
   if (cleanStatus === "Declined") return "Rejected";
   if (cleanStatus === "Retained") return "Rejected";
   if (cleanStatus === "Rejected") return "Rejected";
+  if (cleanStatus === "Not Approved") return "Rejected";
   if (cleanStatus === "Approved") return "Approved";
   if (cleanStatus === "For Review") return "For Review";
   if (cleanStatus === "Pending") return "Pending";
@@ -368,6 +390,9 @@ function normalizeStatus(status, fallback = "Pending") {
 
   if (lower === "declined") return "Rejected";
   if (lower === "rejected") return "Rejected";
+  if (lower === "not approved") return "Rejected";
+  if (lower === "not_approved") return "Rejected";
+  if (lower === "disapproved") return "Rejected";
   if (lower === "approved") return "Approved";
   if (lower === "for review") return "For Review";
   if (lower === "pending") return "Pending";
@@ -384,6 +409,9 @@ function normalizeRequestType(value) {
   if (lower.includes("headcount update")) return "Update Headcount";
   if (lower.includes("recruitment settings")) return "Recruitment Settings";
   if (lower.includes("weekly hiring")) return "Weekly Hiring Plan";
+  if (lower.includes("hiring needs")) return "Hiring Needs";
+  if (lower.includes("personnel requisition")) return "Hiring Needs";
+  if (lower === "prf" || lower.includes("prf")) return "Hiring Needs";
   if (lower.includes("resignation")) return "Resignation";
   if (lower.includes("attrition")) return "Attrition";
 
@@ -464,7 +492,7 @@ function getRawRequestId(request) {
     request?.raw?.id ||
     request?.rawId ||
     request?.raw_id ||
-    String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-|^WHP-/, "")
+    String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-|^WHP-|^HN-|^PRF-/i, "")
   );
 }
 
@@ -491,6 +519,150 @@ function isWeeklyHiringPlanRequest(request) {
     getRequestType(request).toLowerCase().includes("headcount") ||
     getRequestType(request).toLowerCase().includes("recruitment settings")
   );
+}
+
+function isHiringNeedsRequest(request) {
+  const moduleName = String(request?.module || "").trim().toLowerCase();
+  const type = String(getRequestType(request) || request?.type || "")
+    .trim()
+    .toLowerCase();
+  const source = String(request?.source || "").trim().toLowerCase();
+  const id = String(request?.id || "").trim().toUpperCase();
+
+  return (
+    moduleName === "hiring needs" ||
+    type === "hiring needs" ||
+    type === "personnel requisition" ||
+    source.includes("hiring") ||
+    source.includes("requisition") ||
+    id.startsWith("HN-") ||
+    id.startsWith("PRF-")
+  );
+}
+
+function getRequestValue(request, keys = [], fallback = "--") {
+  const raw = request?.raw || {};
+
+  for (const key of keys) {
+    const value = request?.[key] ?? raw?.[key];
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
+function getHiringNeedsHeadcountDisplay(request) {
+  const value = getRequestValue(
+    request,
+    [
+      "headcount",
+      "head_count",
+      "approvedRequirement",
+      "approved_requirement",
+      "requestedHeadcount",
+      "requested_headcount",
+      "requiredHeadcount",
+      "required_headcount",
+    ],
+    "",
+  );
+
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return "--";
+  }
+
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue) ? formatNumber(numberValue) : safeText(value);
+}
+
+function getHiringNeedsPreparedBy(request) {
+  return (
+    request?.requester ||
+    request?.employeeName ||
+    getRequestValue(
+      request,
+      [
+        "hiringManager",
+        "hiring_manager",
+        "preparedBy",
+        "prepared_by",
+        "preparedByName",
+        "requestedBy",
+        "requested_by",
+      ],
+      "--",
+    )
+  );
+}
+
+function splitRequesterIdentity(value = "") {
+  const text = safeText(value, "");
+
+  if (!text) {
+    return {
+      sibsId: "",
+      name: "",
+    };
+  }
+
+  const match = text.match(/^([A-Za-z]*[-_ ]*)?(\d{2,})\s*[-–—]\s*(.+)$/);
+
+  if (match) {
+    return {
+      sibsId: normalizeSibsId(match[2]),
+      name: safeText(match[3], ""),
+    };
+  }
+
+  return {
+    sibsId: "",
+    name: text,
+  };
+}
+
+function getRequesterDisplayInfo(request = {}) {
+  const raw = request?.raw || {};
+  const combinedRequester = isHiringNeedsRequest(request)
+    ? getHiringNeedsPreparedBy(request)
+    : request?.requester || request?.employeeName || "--";
+
+  const parsedRequester = splitRequesterIdentity(combinedRequester);
+
+  const explicitSibsId = normalizeSibsId(
+    request?.employeeSibsId ||
+      request?.employee_sibs_id ||
+      request?.sibsIdManager ||
+      request?.sibs_id_manager ||
+      request?.requestedBySibsId ||
+      request?.requested_by_sibs_id ||
+      raw?.employeeSibsId ||
+      raw?.employee_sibs_id ||
+      raw?.preparedBySibsId ||
+      raw?.prepared_by_sibs_id ||
+      raw?.sibsIdManager ||
+      raw?.sibs_id_manager ||
+      raw?.requestedBySibsId ||
+      raw?.requested_by_sibs_id ||
+      parsedRequester.sibsId ||
+      "",
+  );
+
+  const requesterName = safeText(parsedRequester.name || combinedRequester, "--");
+
+  const displayNameWithSibs =
+    explicitSibsId && explicitSibsId !== "--"
+      ? `${explicitSibsId} - ${requesterName}`
+      : requesterName;
+
+  return {
+    sibsId: explicitSibsId || "--",
+    name: requesterName,
+    displayNameWithSibs,
+  };
 }
 
 function isWeeklyRecruitmentSettingsRequest(request) {
@@ -920,6 +1092,20 @@ function normalizeSibsId(value = "") {
     .replace(/^SIBS[-_ ]?/i, "");
 }
 
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
+
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
 function getCurrentUserSibsId(user = {}) {
   return normalizeSibsId(
     user?.sibsId ||
@@ -933,6 +1119,19 @@ function getCurrentUserSibsId(user = {}) {
       user?.employeeCode ||
       user?.employee_code ||
       user?.username ||
+      getLocalStorageValue([
+        "sibsId",
+        "sibs_id",
+        "employeeSibsId",
+        "employee_sibs_id",
+        "gy_emp_code",
+        "gy_user_code",
+        "userCode",
+        "user_code",
+        "employeeCode",
+        "employee_code",
+        "username",
+      ]) ||
       "",
   );
 }
@@ -1077,6 +1276,10 @@ export default function ApprovalRequest() {
   const [jdApprovalAccessLoading, setJdApprovalAccessLoading] = useState(true);
   const [canViewJobDescriptionApproval, setCanViewJobDescriptionApproval] =
     useState(false);
+  const [hiringNeedsApprovalAccessLoading, setHiringNeedsApprovalAccessLoading] =
+    useState(true);
+  const [canViewHiringNeedsApproval, setCanViewHiringNeedsApproval] =
+    useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -1142,6 +1345,57 @@ export default function ApprovalRequest() {
     }
 
     checkJobDescriptionApprovalAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserSibsId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkHiringNeedsApprovalAccess() {
+      const cleanUserSibsId = normalizeSibsId(currentUserSibsId);
+
+      if (!cleanUserSibsId) {
+        if (!cancelled) {
+          setCanViewHiringNeedsApproval(false);
+          setHiringNeedsApprovalAccessLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        setHiringNeedsApprovalAccessLoading(true);
+
+        const result = await getHiringNeedsApprovalUsers();
+        const rows = getApprovalSettingsRows(result);
+
+        const isAllowed = rows.some((row) => {
+          return (
+            getApprovalSettingsSibsId(row).toLowerCase() ===
+            cleanUserSibsId.toLowerCase()
+          );
+        });
+
+        if (!cancelled) {
+          setCanViewHiringNeedsApproval(isAllowed);
+        }
+      } catch (error) {
+        console.error("CHECK HIRING NEEDS APPROVAL ACCESS ERROR:", error);
+
+        if (!cancelled) {
+          setCanViewHiringNeedsApproval(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setHiringNeedsApprovalAccessLoading(false);
+        }
+      }
+    }
+
+    checkHiringNeedsApprovalAccess();
 
     return () => {
       cancelled = true;
@@ -2005,6 +2259,17 @@ export default function ApprovalRequest() {
       return;
     }
 
+    if (isHiringNeedsRequest(request) && !canViewHiringNeedsApproval) {
+      openStatus({
+        type: "error",
+        title: "Not Allowed",
+        message:
+          "Only users added in Recruitment Settings > Approval Rules > Hiring Needs can approve or reject Hiring Needs requests.",
+      });
+
+      return;
+    }
+
     if (
       canEditRequiredHeadcountOnWeeklyApproval(request) &&
       action === "approve"
@@ -2265,6 +2530,7 @@ export default function ApprovalRequest() {
           }
           onReject={() => openDecisionModal(selectedRequest, "reject")}
           onValidationError={openStatus}
+          canViewHiringNeedsApproval={canViewHiringNeedsApproval}
         />
       )}
 
@@ -2634,7 +2900,7 @@ function ApprovalRequestTable({
   onNext,
 }) {
   const isWeeklyModule = activeModule === "Weekly Hiring Plan";
-  const colSpan = isWeeklyModule ? 10 : 8;
+  const colSpan = isWeeklyModule ? 11 : 9;
 
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
@@ -2687,13 +2953,16 @@ function ApprovalRequestTable({
               >
                 <table
                   className={`w-full ${
-                    isWeeklyModule ? "min-w-[1720px]" : "min-w-[1300px]"
+                    isWeeklyModule ? "min-w-[1840px]" : "min-w-[1420px]"
                   } border-collapse bg-white text-left`}
                 >
                   <thead className="sticky top-0 z-10">
                     <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
                       <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                         Request
+                      </th>
+                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                        SIBS ID
                       </th>
                       <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
                         Requester
@@ -2828,6 +3097,8 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
   const updateHeadcountStatus = getUpdateHeadcountStatus(request);
   const accountName = getAccountName(request);
+  const isHiringNeeds = isHiringNeedsRequest(request);
+  const requesterInfo = getRequesterDisplayInfo(request);
 
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
@@ -2842,12 +3113,22 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
       </td>
 
       <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
+        <p className="max-w-[120px] truncate text-sm font-extrabold text-sibs-primary-1">
+          {requesterInfo.sibsId || "--"}
+        </p>
+      </td>
+
+      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
         <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
-          {request.requester || request.employeeName || "--"}
+          {requesterInfo.name || "--"}
         </p>
 
         <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-          {request.employeeSibsId || "--"} · {request.department || "--"}
+          {isHiringNeeds
+            ? `HC: ${getHiringNeedsHeadcountDisplay(request)} · ${
+                request.department || "--"
+              }`
+            : request.department || "--"}
         </p>
       </td>
 
@@ -2939,6 +3220,8 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
   const updateHeadcountStatus = getUpdateHeadcountStatus(request);
   const accountName = getAccountName(request);
+  const isHiringNeeds = isHiringNeedsRequest(request);
+  const requesterInfo = getRequesterDisplayInfo(request);
 
   return (
     <button
@@ -2980,12 +3263,15 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
       )}
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <MobileMetric
-          label="Requester"
-          value={request.requester || request.employeeName}
-        />
+        <MobileMetric label="Requester" value={requesterInfo.name} />
+        <MobileMetric label="SIBS ID" value={requesterInfo.sibsId} />
         {isWeeklyModule && <MobileMetric label="Account" value={accountName} />}
-        <MobileMetric label="SIBS ID" value={request.employeeSibsId} />
+        {isHiringNeeds && (
+          <MobileMetric
+            label="Headcount"
+            value={getHiringNeedsHeadcountDisplay(request)}
+          />
+        )}
         <MobileMetric label="Department" value={request.department} />
         <MobileMetric label="Module" value={request.module} />
         <MobileMetric label="Type" value={requestType || request.type} />
@@ -3026,13 +3312,20 @@ function ViewApprovalRequestModal({
   onApprove,
   onReject,
   onValidationError,
+  canViewHiringNeedsApproval = false,
 }) {
   if (!open || !request) return null;
 
   const status = getNormalizedRequestStatus(request);
-  const canReview = request.canReview === true || request.raw?.canEdit === true;
   const isResignation = isResignationRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
+  const isHiringNeeds = isHiringNeedsRequest(request);
+  const baseCanReview = request.canReview === true || request.raw?.canEdit === true;
+  const isFinalDecision = status === "Approved" || status === "Rejected";
+  const canReview = isHiringNeeds
+    ? (baseCanReview || canViewHiringNeedsApproval) && !isFinalDecision
+    : baseCanReview;
+  const showHiringNeedsFooterActions = isHiringNeeds && canReview && !isFinalDecision;
   const isWeeklyRecruitmentSettings =
     isWeeklyRecruitmentSettingsRequest(request);
   const canEditRequiredHeadcount =
@@ -3096,17 +3389,23 @@ function ViewApprovalRequestModal({
 
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  {isResignation
-                    ? "View Resignation Approval"
-                    : request.title || "Approval Request"}
+                  {isHiringNeeds
+                    ? "Personnel Requisition"
+                    : isResignation
+                      ? "View Resignation Approval"
+                      : request.title || "Approval Request"}
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  {isWeekly
-                    ? "Weekly hiring plan approval request details"
-                    : isResignation
-                      ? "Resignation approval request details"
-                      : `${request.title || "Approval Request"} details`}
+                  {isHiringNeeds
+                    ? showHiringNeedsFooterActions
+                      ? "Review the request details, then approve or decline from the footer."
+                      : "Review submitted request information and current approval status."
+                    : isWeekly
+                      ? "Weekly hiring plan approval request details"
+                      : isResignation
+                        ? "Resignation approval request details"
+                        : `${request.title || "Approval Request"} details`}
                 </p>
               </div>
             </div>
@@ -3126,6 +3425,8 @@ function ViewApprovalRequestModal({
           <div className="space-y-5">
             {isWeekly ? (
               <WeeklyHiringPlanRequestDetails request={request} />
+            ) : isHiringNeeds ? (
+              <HiringNeedsRequestDetails request={request} />
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -3191,11 +3492,13 @@ function ViewApprovalRequestModal({
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <FormLikeBox label="Status" value={status} />
-              <FormLikeBox label="Source" value={request.source || "--"} />
-              <FormLikeBox label="Raw ID" value={request.rawId || "--"} />
-            </div>
+            {!isHiringNeeds && (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <FormLikeBox label="Status" value={status} />
+                <FormLikeBox label="Source" value={request.source || "--"} />
+                <FormLikeBox label="Raw ID" value={request.rawId || "--"} />
+              </div>
+            )}
 
             {request.remarks && (
               <FormLikeBox
@@ -3208,19 +3511,295 @@ function ViewApprovalRequestModal({
         </div>
 
         <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-4">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
-            >
-              Close
-            </button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-bold text-sibs-tertiary-5">
+              {isHiringNeeds
+                ? showHiringNeedsFooterActions
+                  ? "You can approve or decline this Hiring Needs request."
+                  : isFinalDecision
+                    ? `Request status: ${status}`
+                    : "Only users added in Recruitment Settings > Approval Rules > Hiring Needs can approve or decline this request."
+                : "Review the request details before closing."}
+            </p>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-11 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+              >
+                Close
+              </button>
+
+              {showHiringNeedsFooterActions && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onReject}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-700 transition hover:bg-red-100 active:scale-[0.98]"
+                  >
+                    <XCircle size={17} />
+                    Decline
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onApprove}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-emerald-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                  >
+                    <CheckCircle2 size={17} />
+                    Approve
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </div>,
     document.body,
+  );
+}
+
+
+function HiringNeedsRequestDetails({ request }) {
+  const headcount = getRequestValue(
+    request,
+    [
+      "headcount",
+      "head_count",
+      "approvedRequirement",
+      "approved_requirement",
+      "requestedHeadcount",
+      "requested_headcount",
+      "requiredHeadcount",
+      "required_headcount",
+      "hc",
+    ],
+    "--",
+  );
+
+  const headcountNumber = Number(headcount);
+  const displayHeadcount = Number.isFinite(headcountNumber)
+    ? formatNumber(headcountNumber)
+    : safeText(headcount);
+
+  const status = getNormalizedRequestStatus(request);
+  const displayStatus = status === "Rejected" ? "Not Approved" : status;
+
+  const dateNeeded = getRequestValue(
+    request,
+    [
+      "dateNeeded",
+      "date_needed",
+      "requestedStartDate",
+      "requested_start_date",
+      "dueDate",
+      "due_date",
+      "neededDate",
+      "needed_date",
+      "targetDate",
+      "target_date",
+    ],
+    "",
+  );
+
+  const approvalDate = getRequestValue(
+    request,
+    ["approvalDate", "approval_date", "approvedAt", "approved_at"],
+    "",
+  );
+
+  const approvedBy = getRequestValue(
+    request,
+    ["approvedBy", "approved_by", "approvedByName", "approved_by_name"],
+    "--",
+  );
+
+  const approvalRemarks =
+    request.approvalRemarks ||
+    request.approval_remarks ||
+    request.remarks ||
+    getRequestValue(request, ["approveRemarks", "approve_remarks"], "--");
+
+  const requesterInfo = getRequesterDisplayInfo(request);
+
+  return (
+    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+      <div className="mb-5">
+        <h3 className="text-base font-extrabold text-[#101828]">
+          Request Details
+        </h3>
+
+        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+          Submitted request information and staffing requirement.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormLikeBox label="Headcount" value={displayHeadcount} />
+
+        <FormLikeBox label="Date Needed" value={formatDate(dateNeeded)} />
+
+        <FormLikeBox label="Requester Name" value={requesterInfo.displayNameWithSibs} />
+
+        <FormLikeBox label="Requester SIBS ID" value={requesterInfo.sibsId} />
+
+        <FormLikeBox
+          label="Submitted Date"
+          value={formatDate(request.dateRequested || request.requestDate)}
+        />
+
+        <FormLikeBox
+          label="Account"
+          value={getRequestValue(
+            request,
+            ["account", "accountName", "account_name"],
+            "--",
+          )}
+        />
+
+        <FormLikeBox label="Department" value={request.department || "--"} />
+
+        <FormLikeBox
+          label="Location Site"
+          value={getRequestValue(request, ["locationSite", "location_site"], "--")}
+        />
+
+        <FormLikeBox
+          label="Hiring Manager"
+          value={getRequestValue(
+            request,
+            ["hiringManager", "hiring_manager"],
+            requesterInfo.name,
+          )}
+        />
+      </div>
+
+      <div className="mt-6">
+        <h3 className="text-base font-extrabold text-[#101828]">
+          Approval Details
+        </h3>
+
+        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+          Current approval information and recorded decision details.
+        </p>
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormLikeBox label="Approval Status" value={displayStatus} />
+
+        <FormLikeBox label="Approval Date" value={formatDate(approvalDate)} />
+
+        <FormLikeBox label="Approved By" value={approvedBy} />
+
+        <FormLikeBox
+          label="Approval Remarks"
+          value={approvalRemarks}
+          large
+        />
+      </div>
+    </section>
+  );
+}
+
+function HiringNeedsApprovalPanel({
+  request,
+  canReview,
+  canViewHiringNeedsApproval = false,
+  onApprove,
+  onReject,
+}) {
+  const status = getNormalizedRequestStatus(request);
+  const isFinal = status === "Approved" || status === "Rejected";
+  const notAuthorized = !canViewHiringNeedsApproval && !isFinal;
+  const disabled = !canReview || !canViewHiringNeedsApproval || isFinal;
+
+  return (
+    <section
+      className={`rounded-[10px] border p-5 ${
+        notAuthorized
+          ? "border-slate-200 bg-slate-50"
+          : "border-emerald-100 bg-emerald-50"
+      }`}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div
+            className={`inline-flex items-center gap-2 rounded-full border bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide ${
+              notAuthorized
+                ? "border-slate-200 text-slate-700"
+                : "border-emerald-200 text-emerald-700"
+            }`}
+          >
+            <CheckCircle2 size={14} />
+            {notAuthorized ? "Approval Rule Required" : "Ready for Decision"}
+          </div>
+
+          <h3
+            className={`mt-3 text-base font-extrabold ${
+              notAuthorized ? "text-slate-800" : "text-emerald-800"
+            }`}
+          >
+            HR Admin Approval
+          </h3>
+
+          <p
+            className={`mt-1 text-sm font-semibold leading-6 ${
+              notAuthorized ? "text-slate-600" : "text-emerald-700"
+            }`}
+          >
+            {notAuthorized
+              ? "You can view this PRF, but decision buttons are hidden because your SIBS ID is not added in Recruitment Settings > Approval Rules > Hiring Needs."
+              : "Review the PRF details, add remarks if needed, then choose an approval decision."}
+          </p>
+        </div>
+
+        <StatusBadge status={status === "Rejected" ? "Rejected" : status} />
+      </div>
+
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-bold text-[#344054]">
+          {isFinal
+            ? "This Personnel Requisition already has a final HR Admin decision."
+            : notAuthorized
+              ? "No approval action is available for this account. Add the user first in Hiring Needs approval rules."
+              : "Decision buttons are available in this HR Admin Review panel."}
+        </p>
+
+        {!notAuthorized && !isFinal && (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onReject}
+              disabled={disabled}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border px-5 text-sm font-extrabold transition active:scale-[0.98] ${
+                disabled
+                  ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                  : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+              }`}
+            >
+              <XCircle size={16} />
+              Not Approved
+            </button>
+
+            <button
+              type="button"
+              onClick={onApprove}
+              disabled={disabled}
+              className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border px-5 text-sm font-extrabold transition active:scale-[0.98] ${
+                disabled
+                  ? "cursor-not-allowed border-[#D6DEE8] bg-white text-[#667085] opacity-70"
+                  : "border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700"
+              }`}
+            >
+              <CheckCircle2 size={16} />
+              Approve
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -3736,6 +4315,7 @@ function DecisionModal({
   const isApprove = action === "approve";
   const requestStatus = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
+  const isHiringNeeds = isHiringNeedsRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
   const isWeeklyRecruitmentSettings =
     isWeeklyRecruitmentSettingsRequest(request);
@@ -3757,7 +4337,13 @@ function DecisionModal({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h2 className="truncate text-2xl font-extrabold uppercase tracking-tight text-sibs-primary-1">
-                {isApprove ? "Approve Request" : "Reject Request"}
+                {isHiringNeeds
+                  ? isApprove
+                    ? "Approve Hiring Needs"
+                    : "Decline Hiring Needs"
+                  : isApprove
+                    ? "Approve Request"
+                    : "Reject Request"}
               </h2>
 
               <p className="mt-1 truncate text-sm font-semibold text-[#2F6CA5]">
@@ -3792,7 +4378,11 @@ function DecisionModal({
                     </h3>
 
                     <p className="mt-2 text-sm font-bold text-[#2F6CA5]">
-                      {request.requester || request.employeeName || "--"}
+                      {getRequesterDisplayInfo(request).displayNameWithSibs}
+                    </p>
+
+                    <p className="mt-1 text-xs font-bold text-sibs-tertiary-5">
+                      SIBS ID: {getRequesterDisplayInfo(request).sibsId}
                     </p>
 
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -3831,11 +4421,11 @@ function DecisionModal({
                 />
                 <DecisionInfoBox
                   label="Requester"
-                  value={request.requester || request.employeeName || "--"}
+                  value={getRequesterDisplayInfo(request).displayNameWithSibs}
                 />
                 <DecisionInfoBox
                   label="SIBS ID"
-                  value={request.employeeSibsId || "--"}
+                  value={getRequesterDisplayInfo(request).sibsId}
                 />
                 <DecisionInfoBox
                   label="Date Requested"
@@ -4044,7 +4634,9 @@ function DecisionModal({
                   placeholder={
                     isApprove
                       ? "Add approval remarks..."
-                      : "Enter reason for rejecting..."
+                      : isHiringNeeds
+                        ? "Enter reason for declining..."
+                        : "Enter reason for rejecting..."
                   }
                   className="w-full resize-none rounded-[10px] border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
                 />
@@ -4111,7 +4703,7 @@ function DecisionModal({
                     subtitle={
                       isApprove
                         ? remarks || "Optional"
-                        : remarks || "Required for rejection"
+                        : remarks || (isHiringNeeds ? "Required for decline" : "Required for rejection")
                     }
                   />
                 </div>
@@ -4141,7 +4733,9 @@ function DecisionModal({
                     ? "Approving this request applies the final Required Headcount entered by HR / HR Admin. OM can update weekly headcount only after that approval."
                     : isWeeklyUpdateHeadcount
                       ? "Approving this request accepts the OM headcount update from the Weekly Hiring Plan page. Declining keeps the update from becoming final."
-                      : "This approval decision will be recorded under your assigned approval level. The request will move to the next approver after approval, or stop the workflow if rejected."}
+                      : isHiringNeeds
+                        ? "This Hiring Needs approval decision is only available to users listed under Recruitment Settings > Approval Rules > Hiring Needs. Declining will mark the request as not approved."
+                        : "This approval decision will be recorded under your assigned approval level. The request will move to the next approver after approval, or stop the workflow if rejected."}
                 </p>
               </div>
 
@@ -4186,7 +4780,7 @@ function DecisionModal({
                 <XCircle size={17} />
               )}
 
-              {isApprove ? "Approve" : "Reject"}
+              {isApprove ? "Approve" : isHiringNeeds ? "Decline" : "Reject"}
             </button>
           </div>
         </div>

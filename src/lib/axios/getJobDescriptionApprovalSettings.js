@@ -34,12 +34,8 @@ export async function saveJobDescriptionApprovalUsers(users = []) {
   try {
     const response = await api.put(
       "/api/job-description-approval-rules",
-      {
-        users,
-      },
-      {
-        withCredentials: true,
-      },
+      { users },
+      { withCredentials: true },
     );
 
     return unwrapResponse(response);
@@ -58,9 +54,7 @@ export async function addJobDescriptionApprovalUser(user) {
     const response = await api.post(
       "/api/job-description-approval-rules",
       user,
-      {
-        withCredentials: true,
-      },
+      { withCredentials: true },
     );
 
     return unwrapResponse(response);
@@ -75,9 +69,7 @@ export async function removeJobDescriptionApprovalUser(sibsId) {
   try {
     const response = await api.delete(
       `/api/job-description-approval-rules/${encodeURIComponent(sibsId)}`,
-      {
-        withCredentials: true,
-      },
+      { withCredentials: true },
     );
 
     return unwrapResponse(response);

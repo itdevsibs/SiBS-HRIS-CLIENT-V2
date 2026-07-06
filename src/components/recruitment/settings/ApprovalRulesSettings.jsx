@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChevronDown,
   FileText,
+  ListChecks,
   Loader2,
   Plus,
   Search,
@@ -27,6 +28,13 @@ import {
   removeJobDescriptionApprovalUser,
   searchJobDescriptionApprovalEmployees,
 } from "../../../lib/axios/getJobDescriptionApprovalSettings";
+
+import {
+  addHiringNeedsApprovalUser,
+  getHiringNeedsApprovalUsers,
+  removeHiringNeedsApprovalUser,
+  searchHiringNeedsApprovalEmployees,
+} from "../../../lib/axios/getHiringNeedsApprovalSettings";
 
 const APPROVAL_RULE_TABS = [
   {
@@ -52,6 +60,19 @@ const APPROVAL_RULE_TABS = [
     emptyText: "No Job Description approval users added yet.",
     rowDescription:
       "Can approve, reject, or tag Job Descriptions for revision.",
+    isConnected: true,
+  },
+  {
+    key: "hiringNeeds",
+    title: "Hiring Needs Approval",
+    shortTitle: "Hiring Needs",
+    description:
+      "Add the users who can approve or reject Hiring Needs from the Approval Requests page. This follows the same add/remove process as Offer Approval rules.",
+    icon: ListChecks,
+    badgeText: "Hiring Needs Rules",
+    emptyText: "No Hiring Needs approval users added yet.",
+    rowDescription:
+      "Can approve or reject Hiring Needs from the Approval Requests page.",
     isConnected: true,
   },
 ];
@@ -197,9 +218,10 @@ function normalizeRows(responseData) {
 }
 
 function getRuleLabel(ruleKey) {
-  return ruleKey === "jobDescription"
-    ? "Job Description Approval"
-    : "Offer Approval";
+  if (ruleKey === "jobDescription") return "Job Description Approval";
+  if (ruleKey === "hiringNeeds") return "Hiring Needs Approval";
+
+  return "Offer Approval";
 }
 
 function getRuleApi(ruleKey) {
@@ -209,6 +231,15 @@ function getRuleApi(ruleKey) {
       addUser: addJobDescriptionApprovalUser,
       removeUser: removeJobDescriptionApprovalUser,
       searchEmployees: searchJobDescriptionApprovalEmployees,
+    };
+  }
+
+  if (ruleKey === "hiringNeeds") {
+    return {
+      getUsers: getHiringNeedsApprovalUsers,
+      addUser: addHiringNeedsApprovalUser,
+      removeUser: removeHiringNeedsApprovalUser,
+      searchEmployees: searchHiringNeedsApprovalEmployees,
     };
   }
 
@@ -574,36 +605,43 @@ export default function ApprovalRulesSettings() {
   const [usersByRule, setUsersByRule] = useState({
     offers: [],
     jobDescription: [],
+    hiringNeeds: [],
   });
 
   const [loadingByRule, setLoadingByRule] = useState({
     offers: false,
     jobDescription: false,
+    hiringNeeds: false,
   });
 
   const [searchByRule, setSearchByRule] = useState({
     offers: "",
     jobDescription: "",
+    hiringNeeds: "",
   });
 
   const [candidatesByRule, setCandidatesByRule] = useState({
     offers: [],
     jobDescription: [],
+    hiringNeeds: [],
   });
 
   const [selectedByRule, setSelectedByRule] = useState({
     offers: null,
     jobDescription: null,
+    hiringNeeds: null,
   });
 
   const [searchingByRule, setSearchingByRule] = useState({
     offers: false,
     jobDescription: false,
+    hiringNeeds: false,
   });
 
   const [addingByRule, setAddingByRule] = useState({
     offers: false,
     jobDescription: false,
+    hiringNeeds: false,
   });
 
   const [removingId, setRemovingId] = useState("");
@@ -628,6 +666,7 @@ export default function ApprovalRulesSettings() {
     return {
       offers: usersByRule.offers.length,
       jobDescription: usersByRule.jobDescription.length,
+      hiringNeeds: usersByRule.hiringNeeds.length,
     };
   }, [usersByRule]);
 
@@ -850,6 +889,7 @@ export default function ApprovalRulesSettings() {
   useEffect(() => {
     loadUsers("offers");
     loadUsers("jobDescription");
+    loadUsers("hiringNeeds");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -879,8 +919,8 @@ export default function ApprovalRulesSettings() {
             </h2>
 
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
-              Configure approval users for Offers and Job Descriptions from one
-              settings panel.
+              Configure approval users for Offers, Job Descriptions, and Hiring
+              Needs from one settings panel.
             </p>
           </div>
         </div>
