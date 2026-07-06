@@ -803,6 +803,129 @@ export default function JobDescriptionViewPage() {
   }
 
   function handlePrintJobDescription() {
+    const docNode = document.querySelector(".jd-details-document");
+
+    if (!docNode) {
+      window.print();
+      return;
+    }
+
+    const printJdTitle = item?.roleTitle || item?.documentTitle || "Job Description";
+    const printJdCode =
+      item?.jdCode || item?.jd_code || item?.raw?.jdCode || item?.raw?.jd_code || "JD";
+    const printJdStatus = getJdStatusLabel(getDisplayJdStatus());
+    const printJdRevision = item?.revisionNo || item?.currentVersion || "1";
+    const printDate = new Date().toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Build isolated print container
+    const printRoot = document.createElement("div");
+    printRoot.id = "jd-print-root";
+    printRoot.style.cssText = "display:none;";
+
+    // Branding header
+    const brandHeader = document.createElement("div");
+    brandHeader.innerHTML = [
+      '<div style="display:flex;align-items:center;justify-content:space-between;',
+      'border-bottom:2px solid #042c51;padding-bottom:10px;margin-bottom:18px;">',
+      '<div>',
+      '<div style="font-size:9px;font-weight:800;text-transform:uppercase;',
+      'letter-spacing:.08em;color:#042c51;opacity:.7;">SiBS HRIS</div>',
+      `<div style="font-size:18px;font-weight:800;color:#042c51;margin-top:2px;">`,
+      `${printJdTitle}</div>`,
+      '</div>',
+      '<div style="text-align:right;font-size:10px;color:#475467;">',
+      `<div>${printJdCode}</div>`,
+      `<div>Rev. ${printJdRevision} &nbsp;|&nbsp; ${printJdStatus}</div>`,
+      `<div style="margin-top:4px;opacity:.7;">Printed: ${printDate}</div>`,
+      '</div>',
+      '</div>',
+    ].join("");
+    printRoot.appendChild(brandHeader);
+
+    // Clone the document content and strip interactive elements
+    const clone = docNode.cloneNode(true);
+    clone.querySelectorAll(
+      "button, [data-print-hide], .jd-mobile-actions-row, textarea, input, select",
+    ).forEach((el) => el.remove());
+    // Remove any inline <style> tags from the clone (they're for screen)
+    clone.querySelectorAll("style").forEach((el) => el.remove());
+
+    // Unwrap InlineCommentedText inline-flex wrapper spans.
+    // These have class="inline-flex items-center gap-1 align-middle" and cause
+    // each text fragment to appear on a separate line in print.
+    clone.querySelectorAll("span.inline-flex").forEach((wrapperSpan) => {
+      const parent = wrapperSpan.parentNode;
+      if (!parent) return;
+      const innerSpan = wrapperSpan.querySelector("span");
+      const textContent = innerSpan ? innerSpan.textContent : wrapperSpan.textContent;
+      const textNode = document.createTextNode(textContent);
+      parent.replaceChild(textNode, wrapperSpan);
+    });
+
+    printRoot.appendChild(clone);
+    document.body.appendChild(printRoot);
+
+    // Isolation stylesheet — hides everything except #jd-print-root during print
+    const isolationStyle = document.createElement("style");
+    isolationStyle.id = "jd-print-isolation-style";
+    isolationStyle.textContent = [
+      "@media print {",
+      "  body > *:not(#jd-print-root) { display: none !important; }",
+      "  #jd-print-root {",
+      "    display: block !important;",
+      "    position: static !important;",
+      "    background: white !important;",
+      "    padding: 0 !important;",
+      "    margin: 0 !important;",
+      "  }",
+      "  #jd-print-root .jd-details-document {",
+      "    box-shadow: none !important;",
+      "    border-radius: 0 !important;",
+      "    max-width: 100% !important;",
+      "    width: 100% !important;",
+      "    padding: 0 !important;",
+      "    overflow: visible !important;",
+      "    background: white !important;",
+      "    min-height: 0 !important;",
+      "    height: auto !important;",
+      "  }",
+      "  #jd-print-root table, #jd-print-root tr {",
+      "    break-inside: avoid !important;",
+      "    page-break-inside: avoid !important;",
+      "  }",
+      "  #jd-print-root .grid > div {",
+      "    break-inside: avoid !important;",
+      "    page-break-inside: avoid !important;",
+      "  }",
+      "  #jd-print-root h1, #jd-print-root h2, #jd-print-root h3 {",
+      "    break-after: avoid !important;",
+      "    page-break-after: avoid !important;",
+      "  }",
+      '  #jd-print-root [class*="border-amber"][class*="bg-amber"] {',
+      "    display: none !important;",
+      "  }",
+      "  #jd-print-root span[title] {",
+      "    background: transparent !important;",
+      "    box-shadow: none !important;",
+      "    border-radius: 0 !important;",
+      "    padding: 0 !important;",
+      "  }",
+      "  @page { size: A4 portrait; margin: 18mm 16mm; }",
+      "}",
+    ].join("\n");
+    document.head.appendChild(isolationStyle);
+
+    function cleanupPrint() {
+      printRoot.remove();
+      isolationStyle.remove();
+      window.removeEventListener("afterprint", cleanupPrint);
+    }
+
+    window.addEventListener("afterprint", cleanupPrint);
     window.print();
   }
 
@@ -1307,6 +1430,7 @@ export default function JobDescriptionViewPage() {
     <div className="jd-view-page-shell fixed inset-0 z-[9999] flex min-h-0 flex-col overflow-hidden bg-[#EEF2F6] font-jakarta text-sibs-primary-1">
       <style>{jdViewAnimationStyles}</style>
       <div
+        data-jd-header
         className={`shrink-0 overflow-hidden border-b bg-white transition-all duration-300 ease-in-out ${
           headerHidden
             ? "max-h-0 border-transparent px-3 py-0 opacity-0 -translate-y-full sm:px-6"
@@ -1373,8 +1497,8 @@ export default function JobDescriptionViewPage() {
       </div>
 
       <div className="relative min-h-0 flex-1 overflow-hidden bg-[#EEF2F6]">
-        {approvalPage && (
-          <div className="pointer-events-none absolute right-3 top-3 z-[30] sm:right-6 sm:top-5">
+        {shouldShowDetails && (
+          <div data-jd-print-fab className="pointer-events-none absolute right-3 top-3 z-[30] sm:right-6 sm:top-5">
             <PrintApprovalAction
               onClick={handlePrintJobDescription}
               disabled={saving}
@@ -1384,6 +1508,7 @@ export default function JobDescriptionViewPage() {
 
         <div
           ref={contentScrollRef}
+          data-jd-scroll-panel
           onScroll={handleContentScroll}
           className="thin-scroll h-full overflow-y-auto px-2.5 py-4 pb-24 sm:px-5 sm:py-7 sm:pb-28 lg:px-8"
         >

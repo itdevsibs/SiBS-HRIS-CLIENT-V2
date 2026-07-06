@@ -834,3 +834,76 @@
   background: var(--sibs-tertiary-3);
 }
 
+/* =========================
+   JOB DESCRIPTION PRINT
+========================= */
+@media print {
+  /* 1. Un-fix the page shell so full content can flow across pages */
+  .jd-view-page-shell {
+    position: static !important;
+    overflow: visible !important;
+    background: white !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  /* 2. Un-constrain the scroll container so all content is exposed */
+  [data-jd-scroll-panel] {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* 3. Hide UI chrome: header bar, footer bar, overlays, FAB */
+  [data-jd-header],
+  .jd-view-footer,
+  .jd-view-overlay,
+  .jd-view-dialog,
+  [data-jd-print-fab],
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* 4. A4 page setup */
+  @page {
+    size: A4 portrait;
+    margin: 18mm 16mm;
+  }
+
+  /* 5. Document card: strip shadows/radius for clean paper output */
+  .jd-details-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  /* 6. Clamp 4-col record info grids to 2-col for print width */
+  .jd-details-document [class*="lg:grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  /* 7. Section and list-item page-break control */
+
+  .jd-details-document li {
+    break-inside: avoid;
+  }
+
+  /* 8. Normalize text to black for paper legibility */
+  .jd-details-document,
+  .jd-details-document * {
+    color: #1d2939 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 9. Suppress revision comment amber UI blocks from print */
+  .jd-details-document [class*="border-amber"][class*="bg-amber"] {
+    display: none !important;
+  }
+}
+
