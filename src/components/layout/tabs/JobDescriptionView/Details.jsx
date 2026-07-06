@@ -1651,7 +1651,7 @@ function RecordInfoDocumentCell({
         ? "mt-3 text-sm font-extrabold leading-6 text-[#344054] sm:text-[15px]"
         : "mt-2 text-sm font-extrabold leading-6 text-[#344054]";
 
-  const cellBgClass = hasComments ? "bg-amber-50" : "bg-white";
+  const cellBgClass = hasComments ? "bg-amber-50" : "bg-transparent";
 
   return (
     <div
