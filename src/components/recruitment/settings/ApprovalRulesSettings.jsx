@@ -274,9 +274,9 @@ function RuleInnerNav({ activeRuleKey, counts, onChange }) {
               key={rule.key}
               type="button"
               onClick={() => onChange(rule.key)}
-              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-all duration-200 ${
+              className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left border border-blue-100 transition-all duration-200 ${
                 isActive
-                  ? "bg-sibs-primary-1 text-white shadow-[0_10px_22px_rgba(13,70,118,0.20)]"
+                  ? "bg-sibs-primary-1 text-white shadow-md"
                   : "bg-white text-[#344054] hover:bg-[#F8FAFC] hover:text-sibs-primary-1"
               }`}
             >
@@ -905,11 +905,11 @@ export default function ApprovalRulesSettings() {
   }, [activeRule.key, activeSearch]);
 
   return (
-    <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4 shadow-sm">
-      <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4">
+    <div>
+      <div className="mb-4 rounded-2xl border border-blue-100 bg-white px-5 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <UserRoundCheck size={14} />
               Approval Configuration
             </div>

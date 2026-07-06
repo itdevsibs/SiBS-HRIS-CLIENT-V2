@@ -2073,7 +2073,7 @@ export default function RecruitmentSettingsPage() {
         <div className="mx-auto max-w-[1600px] space-y-5">
           <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
                 <Settings size={14} />
                 Recruitment Setup
               </div>
@@ -2088,41 +2088,9 @@ export default function RecruitmentSettingsPage() {
                 candidate workflow rules.
               </p>
             </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={handlePageResetFields}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
-              >
-                <RotateCcw size={18} />
-                Reset
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePreviewForm}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
-              >
-                <Eye size={18} />
-                Preview Form
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePageSaveSettings}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 active:scale-[0.98]"
-              >
-                <Save size={18} />
-                {saveStatus === "Saved" ? "Saved" : "Save Settings"}
-              </button>
-            </div>
           </div>
 
-          <section
-            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-            style={{ animationDelay: "60ms" }}
-          >
+          <section style={{ animationDelay: "60ms" }}>
             <SettingsInfoCards />
           </section>
 
