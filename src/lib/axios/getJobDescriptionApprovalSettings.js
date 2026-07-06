@@ -15,11 +15,11 @@ function getApiErrorMessage(error, fallback = "Request failed.") {
 
 export async function getJobDescriptionApprovalUsers() {
   try {
-    const response = await api.get("/api/job-description-approval-rules", {
+    const { data } = await api.get("/api/job-description-approval-rules", {
       withCredentials: true,
     });
 
-    return unwrapResponse(response);
+    return data;
   } catch (error) {
     throw new Error(
       getApiErrorMessage(
@@ -32,13 +32,15 @@ export async function getJobDescriptionApprovalUsers() {
 
 export async function saveJobDescriptionApprovalUsers(users = []) {
   try {
-    const response = await api.put(
+    const { data } = await api.put(
       "/api/job-description-approval-rules",
       { users },
-      { withCredentials: true },
+      {
+        withCredentials: true,
+      },
     );
 
-    return unwrapResponse(response);
+    return data;
   } catch (error) {
     throw new Error(
       getApiErrorMessage(
@@ -51,28 +53,35 @@ export async function saveJobDescriptionApprovalUsers(users = []) {
 
 export async function addJobDescriptionApprovalUser(user) {
   try {
-    const response = await api.post(
+    const { data } = await api.post(
       "/api/job-description-approval-rules",
       user,
-      { withCredentials: true },
+      {
+        withCredentials: true,
+      },
     );
 
-    return unwrapResponse(response);
+    return data;
   } catch (error) {
     throw new Error(
-      getApiErrorMessage(error, "Failed to add Job Description approval user."),
+      getApiErrorMessage(
+        error,
+        "Failed to add Job Description approval user.",
+      ),
     );
   }
 }
 
 export async function removeJobDescriptionApprovalUser(sibsId) {
   try {
-    const response = await api.delete(
+    const { data } = await api.delete(
       `/api/job-description-approval-rules/${encodeURIComponent(sibsId)}`,
-      { withCredentials: true },
+      {
+        withCredentials: true,
+      },
     );
 
-    return unwrapResponse(response);
+    return data;
   } catch (error) {
     throw new Error(
       getApiErrorMessage(
@@ -85,7 +94,7 @@ export async function removeJobDescriptionApprovalUser(sibsId) {
 
 export async function searchJobDescriptionApprovalEmployees(search = "") {
   try {
-    const response = await api.get(
+    const { data } = await api.get(
       "/api/job-description-approval-rules/employees",
       {
         params: {
@@ -96,16 +105,20 @@ export async function searchJobDescriptionApprovalEmployees(search = "") {
       },
     );
 
-    return unwrapResponse(response);
+    return data;
   } catch (error) {
-    throw new Error(getApiErrorMessage(error, "Failed to search employees."));
+    throw new Error(
+      getApiErrorMessage(error, "Failed to search employees."),
+    );
   }
 }
 
-export default {
+const jobDescriptionApprovalRulesApi = {
   getJobDescriptionApprovalUsers,
   saveJobDescriptionApprovalUsers,
   addJobDescriptionApprovalUser,
   removeJobDescriptionApprovalUser,
   searchJobDescriptionApprovalEmployees,
 };
+
+export default jobDescriptionApprovalRulesApi;
