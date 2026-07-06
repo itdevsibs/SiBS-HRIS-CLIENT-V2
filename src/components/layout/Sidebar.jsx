@@ -550,7 +550,7 @@ export default function Sidebar() {
       name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
-      allowedUsers: [3, 4, 5, 6, 7],
+      allowedUsers: [3, 4, 5, 6, 7 ],
       notificationCount: approvalRequestNotificationCount,
     },
     {
