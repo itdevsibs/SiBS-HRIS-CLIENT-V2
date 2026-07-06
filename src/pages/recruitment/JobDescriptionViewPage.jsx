@@ -826,26 +826,6 @@ export default function JobDescriptionViewPage() {
     printRoot.id = "jd-print-root";
     printRoot.style.cssText = "display:none;";
 
-    // Branding header
-    const brandHeader = document.createElement("div");
-    brandHeader.innerHTML = [
-      '<div style="display:flex;align-items:center;justify-content:space-between;',
-      'border-bottom:2px solid #042c51;padding-bottom:10px;margin-bottom:18px;">',
-      '<div>',
-      '<div style="font-size:9px;font-weight:800;text-transform:uppercase;',
-      'letter-spacing:.08em;color:#042c51;opacity:.7;">SiBS HRIS</div>',
-      `<div style="font-size:18px;font-weight:800;color:#042c51;margin-top:2px;">`,
-      `${printJdTitle}</div>`,
-      '</div>',
-      '<div style="text-align:right;font-size:10px;color:#475467;">',
-      `<div>${printJdCode}</div>`,
-      `<div>Rev. ${printJdRevision} &nbsp;|&nbsp; ${printJdStatus}</div>`,
-      `<div style="margin-top:4px;opacity:.7;">Printed: ${printDate}</div>`,
-      '</div>',
-      '</div>',
-    ].join("");
-    printRoot.appendChild(brandHeader);
-
     // Clone the document content and strip interactive elements
     const clone = docNode.cloneNode(true);
     clone.querySelectorAll(
