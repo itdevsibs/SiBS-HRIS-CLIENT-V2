@@ -10,7 +10,7 @@ import StatusModal from "../../components/modals/StatusModal";
 import {
   getJobDescriptionDropdowns,
   getJobDescriptions,
-} from "../../lib/axios/jobDescription";
+} from "../../lib/axios/getJobDescription";
 import { useUser } from "../../services/context/UserContext";
 import { useJobDescription } from "../../services/context/JobDescriptionContext";
 import {
@@ -164,11 +164,11 @@ function getJobDescriptionCompetencies(item = {}) {
 function formatLoggedInOwner(user) {
   const sibsId = String(
     user?.username ||
-      user?.sibs_id ||
-      user?.gy_user_code ||
-      user?.gy_emp_code ||
-      user?.sibsId ||
-      "",
+    user?.sibs_id ||
+    user?.gy_user_code ||
+    user?.gy_emp_code ||
+    user?.sibsId ||
+    "",
   ).trim();
 
   const lastName = String(
@@ -185,10 +185,10 @@ function formatLoggedInOwner(user) {
 
   const fallbackName = String(
     user?.full_name ||
-      user?.fullName ||
-      user?.employee_name ||
-      user?.name ||
-      "",
+    user?.fullName ||
+    user?.employee_name ||
+    user?.name ||
+    "",
   ).trim();
 
   const formattedName =
@@ -225,9 +225,8 @@ function StatCard({
           </p>
 
           <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${
-              valueClassName || "text-sibs-primary-1"
-            }`}
+            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName || "text-sibs-primary-1"
+              }`}
           >
             {value}
           </p>
@@ -240,9 +239,8 @@ function StatCard({
         </div>
 
         <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-            iconClassName || "bg-[#F2F6FA] text-sibs-primary-1"
-          }`}
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName || "bg-[#F2F6FA] text-sibs-primary-1"
+            }`}
         >
           <Icon size={22} />
         </div>
