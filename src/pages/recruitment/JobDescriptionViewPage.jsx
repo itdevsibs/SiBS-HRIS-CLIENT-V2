@@ -603,6 +603,7 @@ export default function JobDescriptionViewPage() {
     type: "success",
     title: "",
     message: "",
+    onCloseAction: null,
   });
 
   const tabRefs = useRef({});
@@ -767,22 +768,29 @@ export default function JobDescriptionViewPage() {
     contentScrollRef.current?.scrollTo?.({ top: 0, left: 0 });
   }, [activeDetailTab, item?.id, item?.rawId]);
 
-  function openStatus({ type = "success", title = "", message = "" }) {
+  function openStatus({ type = "success", title = "", message = "", onCloseAction = null }) {
     setStatusModal({
       open: true,
       type,
       title,
       message,
+      onCloseAction,
     });
   }
 
   function closeStatusModal() {
+    const action = statusModal.onCloseAction;
     setStatusModal({
       open: false,
       type: "success",
       title: "",
       message: "",
+      onCloseAction: null,
     });
+
+    if (action) {
+      action();
+    }
   }
 
   function handleBack() {
@@ -810,16 +818,7 @@ export default function JobDescriptionViewPage() {
       return;
     }
 
-    const printJdTitle = item?.roleTitle || item?.documentTitle || "Job Description";
-    const printJdCode =
-      item?.jdCode || item?.jd_code || item?.raw?.jdCode || item?.raw?.jd_code || "JD";
-    const printJdStatus = getJdStatusLabel(getDisplayJdStatus());
-    const printJdRevision = item?.revisionNo || item?.currentVersion || "1";
-    const printDate = new Date().toLocaleDateString("en-PH", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+
 
     // Build isolated print container
     const printRoot = document.createElement("div");
@@ -834,16 +833,10 @@ export default function JobDescriptionViewPage() {
     // Remove any inline <style> tags from the clone (they're for screen)
     clone.querySelectorAll("style").forEach((el) => el.remove());
 
-    // Unwrap InlineCommentedText inline-flex wrapper spans.
-    // These have class="inline-flex items-center gap-1 align-middle" and cause
-    // each text fragment to appear on a separate line in print.
+    // Change inline-flex to inline to prevent each text fragment from appearing on a separate line in print.
     clone.querySelectorAll("span.inline-flex").forEach((wrapperSpan) => {
-      const parent = wrapperSpan.parentNode;
-      if (!parent) return;
-      const innerSpan = wrapperSpan.querySelector("span");
-      const textContent = innerSpan ? innerSpan.textContent : wrapperSpan.textContent;
-      const textNode = document.createTextNode(textContent);
-      parent.replaceChild(textNode, wrapperSpan);
+      wrapperSpan.classList.remove("inline-flex", "items-center", "gap-1", "align-middle");
+      wrapperSpan.classList.add("inline");
     });
 
     printRoot.appendChild(clone);
@@ -1190,7 +1183,19 @@ export default function JobDescriptionViewPage() {
         title: "Job Description Approved",
         message:
           result?.message || "Job description request approved successfully.",
+        onCloseAction: handleBack,
       });
+
+      setTimeout(() => {
+        setStatusModal({
+          open: false,
+          type: "success",
+          title: "",
+          message: "",
+          onCloseAction: null,
+        });
+        handleBack();
+      }, 1500);
     } catch (error) {
       openStatus({
         type: "error",
@@ -1390,9 +1395,6 @@ export default function JobDescriptionViewPage() {
     );
   }
 
-  const jdTitle = `${item.roleTitle || "Job Description"} - Version ${
-    item.revisionNo || item.currentVersion || "1"
-  }.0`;
 
   const jdCode = item.jdCode || item.jd_code || item.raw?.jdCode || item.raw?.jd_code || "JD";
   const jdScreenTitle = `${jdCode} • ${item.roleTitle || "Job Description"}`;

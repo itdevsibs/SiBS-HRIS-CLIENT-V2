@@ -89,16 +89,6 @@ function getStatusIcon(status) {
   }
 }
 
-function getJdStatusIcon(status) {
-  const value = String(status || "").trim();
-
-  if (value === "Existing") return CheckCircle2;
-  if (value === "For Revision") return RotateCcw;
-  if (value === "New Job Description") return PencilLine;
-
-  return FileText;
-}
-
 function getJdStatusClass(status) {
   const value = String(status || "").trim();
 
@@ -223,7 +213,14 @@ const JobDescriptionRequestTable = ({ onView }) => {
         setLoading(true);
 
         const response = await getJobDescriptionApprovalRequests();
-        const requestList = Array.isArray(response?.data) ? response.data : [];
+        const requestList = Array.isArray(response?.data) 
+          ? response.data.filter((req) => {
+              const status = String(
+                req?.jdStatus || req?.jd_status || req?.status || ""
+              ).toLowerCase();
+              return status !== "approved" && status !== "rejected";
+            })
+          : [];
 
         setRequests(requestList);
 
