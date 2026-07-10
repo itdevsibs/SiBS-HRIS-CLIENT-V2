@@ -235,8 +235,8 @@ function requestBelongsToActiveModule(request = {}, activeModule = "") {
     return cleanType === "resignation" || cleanType === "attrition";
   }
 
-  if (cleanActiveModule === "weekly hiring plan") {
-    return isWeeklyHiringPlanRequest(request);
+  if (cleanActiveModule === "workforce hiring plan") {
+    return isWorkforceHiringPlanRequest(request);
   }
 
   if (cleanActiveModule === "job description") {
@@ -408,7 +408,7 @@ function normalizeRequestType(value) {
   if (lower.includes("update headcount")) return "Update Headcount";
   if (lower.includes("headcount update")) return "Update Headcount";
   if (lower.includes("recruitment settings")) return "Recruitment Settings";
-  if (lower.includes("weekly hiring")) return "Weekly Hiring Plan";
+  if (lower.includes("weekly hiring")) return "Workforce Hiring Plan";
   if (lower.includes("hiring needs")) return "Hiring Needs";
   if (lower.includes("personnel requisition")) return "Hiring Needs";
   if (lower === "prf" || lower.includes("prf")) return "Hiring Needs";
@@ -506,9 +506,9 @@ function isResignationRequest(request) {
   );
 }
 
-function isWeeklyHiringPlanRequest(request) {
+function isWorkforceHiringPlanRequest(request) {
   return (
-    String(request?.module || "").toLowerCase() === "weekly hiring plan" ||
+    String(request?.module || "").toLowerCase() === "workforce hiring plan" ||
     String(request?.source || "")
       .toLowerCase()
       .includes("weekly") ||
@@ -667,21 +667,21 @@ function getRequesterDisplayInfo(request = {}) {
 
 function isWeeklyRecruitmentSettingsRequest(request) {
   return (
-    isWeeklyHiringPlanRequest(request) &&
+    isWorkforceHiringPlanRequest(request) &&
     getRequestType(request) === "Recruitment Settings"
   );
 }
 
 function isWeeklyUpdateHeadcountRequest(request) {
   return (
-    isWeeklyHiringPlanRequest(request) &&
+    isWorkforceHiringPlanRequest(request) &&
     getRequestType(request) === "Update Headcount"
   );
 }
 
 function canEditRequiredHeadcountOnWeeklyApproval(request) {
   return (
-    isWeeklyHiringPlanRequest(request) &&
+    isWorkforceHiringPlanRequest(request) &&
     !isWeeklyUpdateHeadcountRequest(request)
   );
 }
@@ -750,7 +750,7 @@ function getUpdateHeadcountStatus(request) {
 }
 
 function getNormalizedRequestStatus(request) {
-  if (isWeeklyHiringPlanRequest(request)) {
+  if (isWorkforceHiringPlanRequest(request)) {
     const requestType = getRequestType(request);
 
     if (requestType === "Update Headcount") {
@@ -861,7 +861,7 @@ function getCurrentUserRoleValues() {
     .filter(Boolean);
 }
 
-function canCurrentUserApproveWeeklyHiringPlan() {
+function canCurrentUserApproveWorkforceHiringPlan() {
   const roles = getCurrentUserRoleValues();
 
   if (!roles.length) {
@@ -1503,7 +1503,7 @@ export default function ApprovalRequest() {
         type:
           requestType === "All"
             ? ""
-            : activeModule === "Weekly Hiring Plan"
+            : activeModule === "Workforce Hiring Plan"
               ? normalizeRequestType(requestType)
               : requestType,
         limit: 500,
@@ -1571,19 +1571,19 @@ export default function ApprovalRequest() {
         };
 
         /*
-        Weekly Hiring Plan has multiple request types.
+        Workforce Hiring Plan has multiple request types.
         Some backend filters return empty when type is blank/All,
         so fetch each type and merge them.
       */
         if (
-          activeModule === "Weekly Hiring Plan" &&
+          activeModule === "Workforce Hiring Plan" &&
           typeFilter === "All" &&
           data.length === 0
         ) {
           const weeklyTypes = [
             "Recruitment Settings",
             "Update Headcount",
-            "Weekly Hiring Plan",
+            "Workforce Hiring Plan",
           ];
 
           const weeklyResults = await Promise.allSettled(
@@ -2246,14 +2246,14 @@ export default function ApprovalRequest() {
     }
 
     if (
-      isWeeklyHiringPlanRequest(request) &&
-      !canCurrentUserApproveWeeklyHiringPlan()
+      isWorkforceHiringPlanRequest(request) &&
+      !canCurrentUserApproveWorkforceHiringPlan()
     ) {
       openStatus({
         type: "error",
         title: "Not Allowed",
         message:
-          "Only HR and HR Admin can approve or decline Weekly Hiring Plan requests.",
+          "Only HR and HR Admin can approve or decline Workforce Hiring Plan requests.",
       });
 
       return;
@@ -2899,7 +2899,7 @@ function ApprovalRequestTable({
   onPrevious,
   onNext,
 }) {
-  const isWeeklyModule = activeModule === "Weekly Hiring Plan";
+  const isWeeklyModule = activeModule === "Workforce Hiring Plan";
   const colSpan = isWeeklyModule ? 11 : 9;
 
   return (
@@ -3318,7 +3318,7 @@ function ViewApprovalRequestModal({
 
   const status = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
-  const isWeekly = isWeeklyHiringPlanRequest(request);
+  const isWeekly = isWorkforceHiringPlanRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
   const baseCanReview = request.canReview === true || request.raw?.canEdit === true;
   const isFinalDecision = status === "Approved" || status === "Rejected";
@@ -3342,7 +3342,7 @@ function ViewApprovalRequestModal({
 
     /*
       HR / HR Admin edits Required Headcount directly in this
-      Approval Request Weekly Hiring Plan modal.
+      Approval Request Workforce Hiring Plan modal.
       Keep it blank on every open so the final value is intentionally entered.
     */
     setWeeklyEditableRequiredHeadcount(
@@ -3350,7 +3350,7 @@ function ViewApprovalRequestModal({
     );
   }, [open, request]);
 
-  function handleApproveWeeklyHiringPlan() {
+  function handleApproveWorkforceHiringPlan() {
     if (canEditRequiredHeadcount) {
       const approvedRequiredHeadcount = normalizeHeadcountInput(
         weeklyEditableRequiredHeadcount,
@@ -3361,7 +3361,7 @@ function ViewApprovalRequestModal({
           type: "error",
           title: "Required Headcount Required",
           message:
-            "Please enter the final Required Headcount in the Weekly Hiring Plan modal before approving.",
+            "Please enter the final Required Headcount in the Workforce Hiring Plan modal before approving.",
         });
         return;
       }
@@ -3402,7 +3402,7 @@ function ViewApprovalRequestModal({
                       ? "Review the request details, then approve or decline from the footer."
                       : "Review submitted request information and current approval status."
                     : isWeekly
-                      ? "Weekly hiring plan approval request details"
+                      ? "Workforce hiring plan approval request details"
                       : isResignation
                         ? "Resignation approval request details"
                         : `${request.title || "Approval Request"} details`}
@@ -3424,7 +3424,7 @@ function ViewApprovalRequestModal({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sibs-scrollbar">
           <div className="space-y-5">
             {isWeekly ? (
-              <WeeklyHiringPlanRequestDetails request={request} />
+              <WorkforceHiringPlanRequestDetails request={request} />
             ) : isHiringNeeds ? (
               <HiringNeedsRequestDetails request={request} />
             ) : (
@@ -3459,14 +3459,14 @@ function ViewApprovalRequestModal({
             )}
 
             {isWeekly && (
-              <WeeklyHiringPlanApprovalPanel
+              <WorkforceHiringPlanApprovalPanel
                 request={request}
                 canReview={canReview}
                 editableRequiredHeadcount={weeklyEditableRequiredHeadcount}
                 onChangeEditableRequiredHeadcount={
                   setWeeklyEditableRequiredHeadcount
                 }
-                onApprove={handleApproveWeeklyHiringPlan}
+                onApprove={handleApproveWorkforceHiringPlan}
                 onReject={onReject}
               />
             )}
@@ -3803,7 +3803,7 @@ function HiringNeedsApprovalPanel({
   );
 }
 
-function WeeklyHiringPlanRequestDetails({ request }) {
+function WorkforceHiringPlanRequestDetails({ request }) {
   const raw = request?.raw || {};
   const requestType = getRequestType(request);
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
@@ -3863,7 +3863,7 @@ function WeeklyHiringPlanRequestDetails({ request }) {
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h3 className="text-base font-extrabold text-sibs-primary-1">
-            Weekly Hiring Plan Request
+            Workforce Hiring Plan Request
           </h3>
 
           <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
@@ -3941,7 +3941,7 @@ function WeeklyHiringPlanRequestDetails({ request }) {
   );
 }
 
-function WeeklyHiringPlanApprovalPanel({
+function WorkforceHiringPlanApprovalPanel({
   request,
   canReview,
   editableRequiredHeadcount = "",
@@ -3952,7 +3952,7 @@ function WeeklyHiringPlanApprovalPanel({
   const status = getNormalizedRequestStatus(request);
   const requestType = getRequestType(request);
   const isFinal = status === "Approved" || status === "Rejected";
-  const allowedByRole = canCurrentUserApproveWeeklyHiringPlan();
+  const allowedByRole = canCurrentUserApproveWorkforceHiringPlan();
   const disabled = !canReview || !allowedByRole || isFinal;
 
   const requiredHeadcount = getRequiredHeadcount(request);
@@ -3982,13 +3982,13 @@ function WeeklyHiringPlanApprovalPanel({
           </div>
 
           <h3 className="mt-3 text-base font-extrabold text-sibs-primary-1">
-            Weekly Hiring Plan Approval
+            Workforce Hiring Plan Approval
           </h3>
 
           <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
             {canEditRequiredHeadcount
-              ? "Edit the final Required Headcount here before approval. This is the value HR / HR Admin will apply to the selected weekly hiring plan account."
-              : "OM headcount updates from the Weekly Hiring Plan page are reviewed here. Only HR / HR Admin can approve or decline the update."}
+              ? "Edit the final Required Headcount here before approval. This is the value HR / HR Admin will apply to the selected workforce hiring plan account."
+              : "OM headcount updates from the Workforce Hiring Plan page are reviewed here. Only HR / HR Admin can approve or decline the update."}
           </p>
         </div>
 
@@ -4019,7 +4019,7 @@ function WeeklyHiringPlanApprovalPanel({
               <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
                 HR / HR Admin must enter the final Required Headcount before
                 clicking Approve. This field is inside the Approval Request
-                Weekly Hiring Plan modal.
+                Workforce Hiring Plan modal.
               </p>
             </div>
 
@@ -4060,7 +4060,7 @@ function WeeklyHiringPlanApprovalPanel({
 
       {isUpdateHeadcount && (
         <div className="mt-4 rounded-[10px] border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold leading-6 text-sibs-primary-1">
-          This request came from OM updating headcount in the Weekly Hiring Plan
+          This request came from OM updating headcount in the Workforce Hiring Plan
           page. HR / HR Admin approval is required before it becomes final.
         </div>
       )}
@@ -4068,7 +4068,7 @@ function WeeklyHiringPlanApprovalPanel({
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-semibold text-[#344054]">
           {isFinal
-            ? "This Weekly Hiring Plan request already has a final HR / HR Admin decision."
+            ? "This Workforce Hiring Plan request already has a final HR / HR Admin decision."
             : !allowedByRole
               ? "Only HR and HR Admin can approve or decline this request."
               : canEditRequiredHeadcount
@@ -4316,7 +4316,7 @@ function DecisionModal({
   const requestStatus = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
-  const isWeekly = isWeeklyHiringPlanRequest(request);
+  const isWeekly = isWorkforceHiringPlanRequest(request);
   const isWeeklyRecruitmentSettings =
     isWeeklyRecruitmentSettingsRequest(request);
   const isWeeklyUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
@@ -4483,7 +4483,7 @@ function DecisionModal({
                   <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
                     Enter the final Required Headcount here. This field is
                     required before HR / HR Admin can approve. After approval,
-                    OM can update the weekly headcount in the Weekly Hiring Plan
+                    OM can update the weekly headcount in the Workforce Hiring Plan
                     page.
                   </p>
 
@@ -4543,7 +4543,7 @@ function DecisionModal({
                   </h3>
 
                   <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
-                    This request was created from the Weekly Hiring Plan page.
+                    This request was created from the Workforce Hiring Plan page.
                     HR / HR Admin can approve or decline it here. The Required
                     Headcount field is not edited in this update request.
                   </p>
@@ -4732,7 +4732,7 @@ function DecisionModal({
                   {canEditRequiredHeadcount
                     ? "Approving this request applies the final Required Headcount entered by HR / HR Admin. OM can update weekly headcount only after that approval."
                     : isWeeklyUpdateHeadcount
-                      ? "Approving this request accepts the OM headcount update from the Weekly Hiring Plan page. Declining keeps the update from becoming final."
+                      ? "Approving this request accepts the OM headcount update from the Workforce Hiring Plan page. Declining keeps the update from becoming final."
                       : isHiringNeeds
                         ? "This Hiring Needs approval decision is only available to users listed under Recruitment Settings > Approval Rules > Hiring Needs. Declining will mark the request as not approved."
                         : "This approval decision will be recorded under your assigned approval level. The request will move to the next approver after approval, or stop the workflow if rejected."}

@@ -31,11 +31,7 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
 
-const APPROVAL_MODULES = [
-  "Attrition",
-  "Job Description",
-  "Hiring Needs",
-];
+const APPROVAL_MODULES = ["Attrition", "Job Description", "Hiring Needs"];
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
@@ -44,7 +40,9 @@ const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
 };
 
 function normalizeApprovalNotificationStatus(value) {
-  const cleanValue = String(value || "").trim().toLowerCase();
+  const cleanValue = String(value || "")
+    .trim()
+    .toLowerCase();
 
   if (cleanValue === "approved") return "Approved";
   if (cleanValue === "for review") return "For Review";
@@ -132,11 +130,7 @@ async function getApprovalNotificationCountByModule(moduleName) {
   return fulfilledResults.reduce((sum, result) => {
     const counts = result?.counts || {};
 
-    return (
-      sum +
-      Number(counts.pending || 0) +
-      Number(counts.forReview || 0)
-    );
+    return sum + Number(counts.pending || 0) + Number(counts.forReview || 0);
   }, 0);
 }
 
@@ -273,8 +267,10 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const [approvalRequestNotificationCount, setApprovalRequestNotificationCount] =
-    useState(0);
+  const [
+    approvalRequestNotificationCount,
+    setApprovalRequestNotificationCount,
+  ] = useState(0);
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -463,9 +459,15 @@ export default function Sidebar() {
 
   const recruitmentMenu = [
     {
-      name: "Weekly Hiring Plan",
+      name: "Workforce & Hiring Overview",
       icon: CalendarDays,
-      path: "/recruitment/weekly-hiring-plan",
+      path: "/recruitment/workforce-hiring-overview",
+      allowedUsers: [1, 2, 3, 5, 6, 7],
+    },
+    {
+      name: "Workforce & Hiring Plan",
+      icon: CalendarDays,
+      path: "/recruitment/workforce-hiring-plan",
       allowedUsers: [1, 2, 3, 5, 6, 7],
     },
     {
@@ -550,7 +552,7 @@ export default function Sidebar() {
       name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
-      allowedUsers: [3, 4, 5, 6, 7 ],
+      allowedUsers: [3, 4, 5, 6, 7],
       notificationCount: approvalRequestNotificationCount,
     },
     {

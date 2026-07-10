@@ -18,7 +18,7 @@ export const RECRUITMENT_KEYS = {
   ONBOARDING_RECORDS: "ta_onboarding_records",
   CANDIDATE_EXPERIENCE: "ta_candidate_experience_records",
   HIRING_NEEDS: "ta_hiring_needs",
-  WEEKLY_HIRING_PLANS: "ta_weekly_hiring_plans",
+  WORKFORCE_HIRING_PLANS: "ta_workforce_hiring_plans",
   ACTION_ITEMS: "ta_action_items",
 };
 

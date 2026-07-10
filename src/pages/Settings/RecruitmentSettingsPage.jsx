@@ -1087,7 +1087,7 @@ function UpdateHeadcountsPanel() {
     try {
       setWeeksLoading(true);
 
-      const res = await api.get("/api/weekly-hiring-plan/weeks", {
+      const res = await api.get("/api/workforce-hiring-plan/weeks", {
         withCredentials: true,
       });
 
@@ -1138,7 +1138,7 @@ function UpdateHeadcountsPanel() {
     try {
       setAccountsLoading(true);
 
-      const res = await api.get("/api/weekly-hiring-plan/accounts", {
+      const res = await api.get("/api/workforce-hiring-plan/accounts", {
         params: {
           cluster: selectedCluster,
           startDate: activeWeekStartDate,

@@ -25,7 +25,7 @@ import TADashboardPage from "./pages/recruitment/TADashboardPage";
 import HiringNeedsPage from "./pages/recruitment/HiringNeedsPage";
 import JobDescriptionPage from "./pages/recruitment/JobDescriptionPage";
 import JobDescriptionViewPage from "./pages/recruitment/JobDescriptionViewPage";
-import WeeklyHiringPlanPage from "./pages/recruitment/WeeklyHiringPlanPage";
+import WorkforceHiringPlanPage from "./pages/recruitment/WorkforceHiringPlanPage";
 import TalentPoolPage from "./pages/recruitment/talent-pool/TalentPoolPage";
 import TalentPoolApplyPage from "./pages/recruitment/talent-pool/PublicTalentPoolApplicationPage";
 import CandidatePipelinePage from "./pages/recruitment/CandidatePipelinePage";
@@ -42,6 +42,7 @@ import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
 
 import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
+import WorkforceHiringOverviewPage from "./pages/recruitment/WorkforceHiringOverviewPage";
 
 function PrivateRoute({ children }) {
   return <ProtectedRoute>{children}</ProtectedRoute>;
@@ -258,10 +259,19 @@ export default function Router() {
       />
 
       <Route
-        path="/recruitment/weekly-hiring-plan"
+        path="/recruitment/workforce-hiring-overview"
         element={
           <PrivateRoute>
-            <WeeklyHiringPlanPage />
+            <WorkforceHiringOverviewPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/recruitment/workforce-hiring-plan"
+        element={
+          <PrivateRoute>
+            <WorkforceHiringPlanPage />
           </PrivateRoute>
         }
       />
