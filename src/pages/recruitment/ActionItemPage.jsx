@@ -46,7 +46,7 @@ const PIPELINE_CANDIDATES_KEY = "ta_pipeline_candidates";
 const OFFER_RECORDS_KEY = "ta_offer_records";
 const ONBOARDING_RECORDS_KEY = "ta_onboarding_records";
 const HIRING_NEEDS_KEY = "ta_hiring_needs";
-const WEEKLY_HIRING_PLAN_KEY = "ta_weekly_hiring_plan";
+const WORKFORCE_HIRING_PLAN_KEY = "ta_workforce_hiring_plan";
 const WEEKLY_HIRING_ACTION_ITEMS_KEY = "ta_weekly_hiring_action_items";
 
 const ACTION_ITEMS_PER_PAGE = 8;
@@ -64,7 +64,7 @@ const initialActionItems = [
     status: "Ongoing",
     riskLevel: "High",
     linkedGap: "Pipeline",
-    module: "Weekly Hiring Plan",
+    module: "Workforce Hiring Plan",
     sourceType: "Manual",
     remarks:
       "Current sourced candidates are not enough to support approved hiring requirement.",
@@ -88,7 +88,7 @@ const initialActionItems = [
     module: "Candidate Pipeline",
     sourceType: "Manual",
     remarks:
-      "Interview delay is causing QA role to fall behind the weekly hiring plan.",
+      "Interview delay is causing QA role to fall behind the workforce hiring plan.",
     requirement: 5,
     filled: 2,
     createdDate: "2026-05-04",
@@ -171,7 +171,7 @@ const moduleOptions = [
   "Candidate Pipeline",
   "Offers",
   "Onboarding",
-  "Weekly Hiring Plan",
+  "Workforce Hiring Plan",
   "Reports",
 ];
 
@@ -458,7 +458,7 @@ function getModuleClass(module) {
       return "border-amber-200 bg-amber-50 text-amber-700";
     case "Onboarding":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "Weekly Hiring Plan":
+    case "Workforce Hiring Plan":
       return "border-red-200 bg-red-50 text-red-700";
     case "Reports":
       return "border-slate-200 bg-slate-50 text-slate-700";
@@ -513,7 +513,7 @@ function buildModuleContext() {
   const offers = safeReadArray(OFFER_RECORDS_KEY);
   const onboarding = safeReadArray(ONBOARDING_RECORDS_KEY);
   const hiringNeeds = safeReadArray(HIRING_NEEDS_KEY);
-  const weeklyPlan = safeReadArray(WEEKLY_HIRING_PLAN_KEY);
+  const weeklyPlan = safeReadArray(WORKFORCE_HIRING_PLAN_KEY);
   const weeklyActionItems = safeReadArray(WEEKLY_HIRING_ACTION_ITEMS_KEY);
 
   const allCandidates = [...publicSubmissions, ...internalCandidates];
@@ -855,16 +855,16 @@ function buildSystemGeneratedActions(context) {
     actions.push({
       id: "SYS-WEEKLY-008",
       actionId: "SYS-008",
-      actionItem: `Create or update action items for ${context.weeklyAtRisk.length} weekly hiring plan account/s with headcount gap or risk status.`,
+      actionItem: `Create or update action items for ${context.weeklyAtRisk.length} workforce hiring plan account/s with headcount gap or risk status.`,
       roleAccount: "Weekly Hiring Delivery",
-      roleTitle: "Weekly Hiring Plan",
+      roleTitle: "Workforce Hiring Plan",
       account: "Operations / TA",
       owner: "System Suggested",
       deadline: getDateAfterDays(1),
       status: "Planned",
       riskLevel: "High",
       linkedGap: "Capacity / Manpower",
-      module: "Weekly Hiring Plan",
+      module: "Workforce Hiring Plan",
       sourceType: "System Suggested",
       remarks:
         "Every role or account not fully hired must have at least one linked action item before reporting.",
@@ -929,7 +929,7 @@ function getModuleInsightCards(context) {
       description: `${context.onboardingRisks.length} onboarding risk/s`,
     },
     {
-      module: "Weekly Hiring Plan",
+      module: "Workforce Hiring Plan",
       icon: BarChart3,
       value: context.weeklyPlan.length,
       riskValue: context.weeklyAtRisk.length,
@@ -1663,7 +1663,7 @@ export default function ActionItemsPage() {
             : actionForm.linkedGap === "Onboarding"
               ? "Onboarding"
               : actionForm.weeklyPlanItemId
-                ? "Weekly Hiring Plan"
+                ? "Workforce Hiring Plan"
                 : "Candidate Pipeline";
 
     const newActionItem = {
@@ -1952,7 +1952,7 @@ export default function ActionItemsPage() {
               <p className="mt-1 max-w-5xl text-sm font-medium text-sibs-tertiary-5">
                 Track manual and system-suggested actions connected to Public
                 Talent Pool, Talent Pool, Hiring Needs, Job Description,
-                Candidate Pipeline, Offers, Onboarding, Weekly Hiring Plan, and
+                Candidate Pipeline, Offers, Onboarding, Workforce Hiring Plan, and
                 Recruitment Reports.
               </p>
             </div>

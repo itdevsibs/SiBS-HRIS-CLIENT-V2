@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import ActionItemModal from "./ActionItemModal";
+import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 
 function useLockBodyScroll(open) {
   useEffect(() => {
@@ -416,7 +417,7 @@ function MetricCard({
         <div
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
         >
-          <Icon size={20} />
+          {Icon ? React.createElement(Icon, { size: 20 }) : null}
         </div>
       </div>
     </div>
@@ -803,35 +804,40 @@ function UpdateHeadcountModal({
   );
 }
 
-export default function ViewPlanModal({
-  open,
-  item,
-  locked,
-  canEditRequiredHeadcount,
-  previousWeekItem,
-  requiredInputValue,
-  savingRequiredId,
-  savingFileId,
-  weeklyPlanFile,
-  existingUploadedFile,
-  uploadedBySibsId,
-  openingFile,
-  onRequiredInputChange,
-  onWeeklyPlanFileChange,
-  onSaveRequiredHeadcount,
-  onUpdateWeeklyPlanFile,
-  onOpenUploadedFile,
-  onClose,
-  onOpenActionItem,
+export default function ViewPlanModal(props = {}) {
+  const weeklyPlan = useWorkforceHiring(true) || {};
+  const {
+    open,
+    item,
+    locked,
+    canEditRequiredHeadcount,
+    previousWeekItem,
+    requiredInputValue,
+    savingRequiredId,
+    savingFileId,
+    weeklyPlanFile,
+    existingUploadedFile,
+    uploadedBySibsId,
+    openingFile,
+    onRequiredInputChange,
+    onWeeklyPlanFileChange,
+    onSaveRequiredHeadcount,
+    onUpdateWeeklyPlanFile,
+    onOpenUploadedFile,
+    onClose,
+    onOpenActionItem,
 
-  actionItemOpen = false,
-  actionItemTarget = null,
-  actionItemForm,
-  setActionItemForm,
-  onCloseActionItem,
-  onSubmitActionItem,
-  actionItemSubmitting = false,
-}) {
+    actionItemOpen = false,
+    actionItemTarget = null,
+    actionItemForm,
+    setActionItemForm,
+    onCloseActionItem,
+    onSubmitActionItem,
+    actionItemSubmitting = false,
+  } = {
+    ...(weeklyPlan.viewPlanModal || {}),
+    ...props,
+  };
   useLockBodyScroll(open);
 
   const [showHeadcountModal, setShowHeadcountModal] = useState(false);
@@ -1202,7 +1208,7 @@ export default function ViewPlanModal({
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
               <BarChart3 size={14} />
-              Weekly Hiring Plan
+              Workforce Hiring Plan
             </div>
 
             <h2 className="mt-3 truncate text-xl font-extrabold text-[#101828]">

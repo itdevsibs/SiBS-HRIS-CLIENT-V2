@@ -96,7 +96,7 @@ export default function HiringNeedsPage() {
             <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
               This module tracks Personnel Requisition Forms. Once a PRF is
               approved by HR Admin, it becomes an active hiring need that can be
-              linked to Job Descriptions, Weekly Hiring Planning, and Candidates.
+              linked to Job Descriptions, Workforce Hiring Planning, and Candidates.
             </p>
           </section>
         </div>

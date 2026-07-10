@@ -95,7 +95,7 @@ export default function KPISnapshotModal({ open, week, records = [], onClose }) 
             <p className="mt-1 text-xs font-semibold text-sibs-primary-1/70">
               {week.weekRange ||
                 [week.startDate, week.endDate].filter(Boolean).join(" - ") ||
-                "Weekly hiring plan snapshot"}
+                "Workforce hiring plan snapshot"}
             </p>
           </div>
 

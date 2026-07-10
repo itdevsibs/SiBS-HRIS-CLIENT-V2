@@ -1,12 +1,12 @@
 import React, {
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
+import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 
 const CLUSTER_OPTIONS = [
   "Coast Dental",
@@ -417,45 +417,49 @@ function DropdownPortal({
   );
 }
 
-export default function WeeklyVersionTable({
-  weekDropdownRef,
-  clusterDropdownRef,
-  accountDropdownRef,
+export default function WeeklyVersionTable(props = {}) {
+  const weeklyPlan = useWorkforceHiring(true) || {};
+  const {
+    weekDropdownRef,
+    clusterDropdownRef,
+    accountDropdownRef,
 
-  activeWeek,
-  activeWeekId,
-  setActiveWeekId,
+    activeWeek,
+    activeWeekId,
+    setActiveWeekId,
 
-  weeksLoading = false,
-  weekSearch,
-  setWeekSearch,
-  showWeekDropdown,
-  setShowWeekDropdown,
-  filteredWeeklyVersions = [],
+    weeksLoading = false,
+    setWeekSearch,
+    showWeekDropdown,
+    setShowWeekDropdown,
+    filteredWeeklyVersions = [],
 
-  selectedClusters = ["All"],
-  setSelectedClusters,
-  showClusterDropdown,
-  setShowClusterDropdown,
+    selectedClusters = ["All"],
+    setSelectedClusters,
+    showClusterDropdown,
+    setShowClusterDropdown,
 
-  selectedAccounts = ["All"],
-  setSelectedAccounts,
-  showAccountDropdown,
-  setShowAccountDropdown,
+    selectedAccounts = ["All"],
+    setSelectedAccounts,
+    showAccountDropdown,
+    setShowAccountDropdown,
 
-  accountSearch,
-  setAccountSearch,
-  accountsLoading = false,
-  filteredAccountOptions = [],
+    accountSearch,
+    setAccountSearch,
+    accountsLoading = false,
+    filteredAccountOptions = [],
 
-  isAllClustersSelected,
-  isAllAccountsSelected,
-  handleToggleCluster,
-  handleToggleAccount,
+    isAllClustersSelected,
+    isAllAccountsSelected,
+    handleToggleCluster,
+    handleToggleAccount,
 
-  user = null,
-  assignedAccounts = [],
-}) {
+    user = null,
+    assignedAccounts = [],
+  } = {
+    ...(weeklyPlan.weeklyVersion || {}),
+    ...props,
+  };
   const weekButtonRef = useRef(null);
   const clusterButtonRef = useRef(null);
   const accountInputRef = useRef(null);
@@ -463,43 +467,33 @@ export default function WeeklyVersionTable({
   const canViewAllAccounts = canViewAllWeeklyAccounts(user);
   const isRestrictedManager = !canViewAllAccounts;
 
-  const normalizedAssignedAccounts = useMemo(
-    () => normalizeAssignedAccounts(user, assignedAccounts),
-    [user, assignedAccounts],
+  const normalizedAssignedAccounts = normalizeAssignedAccounts(
+    user,
+    assignedAccounts,
   );
 
-  const assignedAccountNames = useMemo(() => {
-    return new Set(
-      normalizedAssignedAccounts
-        .map((account) => getAccountName(account))
-        .filter(Boolean),
-    );
-  }, [normalizedAssignedAccounts]);
+  const assignedAccountNames = new Set(
+    normalizedAssignedAccounts
+      .map((account) => getAccountName(account))
+      .filter(Boolean),
+  );
 
-  const assignedClusterNames = useMemo(() => {
-    return new Set(
-      normalizedAssignedAccounts
-        .map((account) => getClusterNameFromAccount(account))
-        .filter(Boolean),
-    );
-  }, [normalizedAssignedAccounts]);
+  const assignedClusterNames = new Set(
+    normalizedAssignedAccounts
+      .map((account) => getClusterNameFromAccount(account))
+      .filter(Boolean),
+  );
 
-  const visibleClusterOptions = useMemo(() => {
-    if (canViewAllAccounts) return CLUSTER_OPTIONS;
+  const visibleClusterOptions = canViewAllAccounts
+    ? CLUSTER_OPTIONS
+    : CLUSTER_OPTIONS.filter((cluster) => assignedClusterNames.has(cluster));
 
-    return CLUSTER_OPTIONS.filter((cluster) =>
-      assignedClusterNames.has(cluster),
-    );
-  }, [assignedClusterNames, canViewAllAccounts]);
-
-  const visibleAccountOptions = useMemo(() => {
-    if (canViewAllAccounts) return filteredAccountOptions;
-
-    return filteredAccountOptions.filter((account) => {
-      const accountName = getAccountName(account);
-      return assignedAccountNames.has(accountName);
-    });
-  }, [assignedAccountNames, canViewAllAccounts, filteredAccountOptions]);
+  const visibleAccountOptions = canViewAllAccounts
+    ? filteredAccountOptions
+    : filteredAccountOptions.filter((account) => {
+        const accountName = getAccountName(account);
+        return assignedAccountNames.has(accountName);
+      });
 
   const safeIsAllClustersSelected = () => {
     if (typeof isAllClustersSelected === "function") {
@@ -543,9 +537,9 @@ export default function WeeklyVersionTable({
     if (hasInvalidAccount) {
       setSelectedAccounts?.(["All"]);
     }
+    // The assigned sets are derived directly from the current props above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    assignedAccountNames,
-    assignedClusterNames,
     canViewAllAccounts,
     selectedAccounts,
     selectedClusters,

@@ -81,7 +81,7 @@ export const ACCESS_RULES = [
   },
   {
     paths: [
-      "/recruitment/weekly-hiring-plan",
+      "/recruitment/workforce-hiring-plan",
       "/recruitment/hiring-needs",
       "/recruitment/weekly-reports",
     ],

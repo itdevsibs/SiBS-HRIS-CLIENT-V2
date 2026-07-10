@@ -45,7 +45,7 @@ const PIPELINE_CANDIDATES_KEY = "ta_pipeline_candidates";
 const OFFER_RECORDS_KEY = "ta_offer_records";
 const ONBOARDING_RECORDS_KEY = "ta_onboarding_records";
 const HIRING_NEEDS_KEY = "ta_hiring_needs";
-const WEEKLY_HIRING_PLAN_KEY = "ta_weekly_hiring_plan";
+const WORKFORCE_HIRING_PLAN_KEY = "ta_workforce_hiring_plan";
 
 const REPORTS_PER_PAGE = 8;
 
@@ -504,7 +504,7 @@ function buildModuleContext() {
   const offers = safeReadArray(OFFER_RECORDS_KEY);
   const onboarding = safeReadArray(ONBOARDING_RECORDS_KEY);
   const hiringNeeds = safeReadArray(HIRING_NEEDS_KEY);
-  const weeklyPlan = safeReadArray(WEEKLY_HIRING_PLAN_KEY);
+  const weeklyPlan = safeReadArray(WORKFORCE_HIRING_PLAN_KEY);
   const actionItems = safeReadArray(ACTION_ITEMS_STORAGE_KEY);
 
   const allCandidates = [...publicSubmissions, ...internalCandidates];
