@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  BadgeCheck,
   BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
@@ -36,19 +37,14 @@ import {
   searchHiringNeedsApprovalEmployees,
 } from "../../../lib/axios/getHiringNeedsApprovalSettings";
 
+import {
+  addAvailablePositionApprovalUser,
+  getAvailablePositionApprovalUsers,
+  removeAvailablePositionApprovalUser,
+  searchAvailablePositionApprovalEmployees,
+} from "../../../lib/axios/getAvailablePositionApprovalSettings.js";
+
 const APPROVAL_RULE_TABS = [
-  {
-    key: "offers",
-    title: "Offer Approval",
-    shortTitle: "Offers",
-    description:
-      "Add the users who can approve or reject offers. The Offers page will show approval actions only for authorized users.",
-    icon: BriefcaseBusiness,
-    badgeText: "Offer Rules",
-    emptyText: "No offer approval users added yet.",
-    rowDescription: "Can approve or reject offers from the Offers page.",
-    isConnected: true,
-  },
   {
     key: "jobDescription",
     title: "Job Description Approval",
@@ -73,6 +69,31 @@ const APPROVAL_RULE_TABS = [
     emptyText: "No Hiring Needs approval users added yet.",
     rowDescription:
       "Can approve or reject Hiring Needs from the Approval Requests page.",
+    isConnected: true,
+  },
+  {
+    key: "availablePositions",
+    title: "Available Position Approval",
+    shortTitle: "Available Positions",
+    description:
+      "Add the users who can approve or reject Available Position requests. Only configured approvers should see approval actions for this module.",
+    icon: BadgeCheck,
+    badgeText: "Available Position Rules",
+    emptyText: "No Available Position approval users added yet.",
+    rowDescription:
+      "Can approve or reject Available Position requests.",
+    isConnected: true,
+  },
+  {
+    key: "offers",
+    title: "Offer Approval",
+    shortTitle: "Offers",
+    description:
+      "Add the users who can approve or reject offers. The Offers page will show approval actions only for authorized users.",
+    icon: BriefcaseBusiness,
+    badgeText: "Offer Rules",
+    emptyText: "No offer approval users added yet.",
+    rowDescription: "Can approve or reject offers from the Offers page.",
     isConnected: true,
   },
 ];
@@ -220,6 +241,9 @@ function normalizeRows(responseData) {
 function getRuleLabel(ruleKey) {
   if (ruleKey === "jobDescription") return "Job Description Approval";
   if (ruleKey === "hiringNeeds") return "Hiring Needs Approval";
+  if (ruleKey === "availablePositions") {
+    return "Available Position Approval";
+  }
 
   return "Offer Approval";
 }
@@ -240,6 +264,15 @@ function getRuleApi(ruleKey) {
       addUser: addHiringNeedsApprovalUser,
       removeUser: removeHiringNeedsApprovalUser,
       searchEmployees: searchHiringNeedsApprovalEmployees,
+    };
+  }
+
+  if (ruleKey === "availablePositions") {
+    return {
+      getUsers: getAvailablePositionApprovalUsers,
+      addUser: addAvailablePositionApprovalUser,
+      removeUser: removeAvailablePositionApprovalUser,
+      searchEmployees: searchAvailablePositionApprovalEmployees,
     };
   }
 
@@ -600,48 +633,55 @@ function ApprovalRulePanel({
 export default function ApprovalRulesSettings() {
   const { user } = useUser();
 
-  const [activeRuleKey, setActiveRuleKey] = useState("offers");
+  const [activeRuleKey, setActiveRuleKey] = useState("jobDescription");
 
   const [usersByRule, setUsersByRule] = useState({
     offers: [],
     jobDescription: [],
     hiringNeeds: [],
+    availablePositions: [],
   });
 
   const [loadingByRule, setLoadingByRule] = useState({
     offers: false,
     jobDescription: false,
     hiringNeeds: false,
+    availablePositions: false,
   });
 
   const [searchByRule, setSearchByRule] = useState({
     offers: "",
     jobDescription: "",
     hiringNeeds: "",
+    availablePositions: "",
   });
 
   const [candidatesByRule, setCandidatesByRule] = useState({
     offers: [],
     jobDescription: [],
     hiringNeeds: [],
+    availablePositions: [],
   });
 
   const [selectedByRule, setSelectedByRule] = useState({
     offers: null,
     jobDescription: null,
     hiringNeeds: null,
+    availablePositions: null,
   });
 
   const [searchingByRule, setSearchingByRule] = useState({
     offers: false,
     jobDescription: false,
     hiringNeeds: false,
+    availablePositions: false,
   });
 
   const [addingByRule, setAddingByRule] = useState({
     offers: false,
     jobDescription: false,
     hiringNeeds: false,
+    availablePositions: false,
   });
 
   const [removingId, setRemovingId] = useState("");
@@ -667,6 +707,7 @@ export default function ApprovalRulesSettings() {
       offers: usersByRule.offers.length,
       jobDescription: usersByRule.jobDescription.length,
       hiringNeeds: usersByRule.hiringNeeds.length,
+      availablePositions: usersByRule.availablePositions.length,
     };
   }, [usersByRule]);
 
@@ -887,9 +928,10 @@ export default function ApprovalRulesSettings() {
   }
 
   useEffect(() => {
-    loadUsers("offers");
     loadUsers("jobDescription");
     loadUsers("hiringNeeds");
+    loadUsers("availablePositions");
+    loadUsers("offers");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -919,8 +961,8 @@ export default function ApprovalRulesSettings() {
             </h2>
 
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
-              Configure approval users for Offers, Job Descriptions, and Hiring
-              Needs from one settings panel.
+              Configure approval users for Job Descriptions, Hiring Needs,
+              Available Positions, and Offers from one settings panel.
             </p>
           </div>
         </div>

@@ -30,18 +30,135 @@ import {
 
 import { useUser } from "../../services/context/UserContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
+import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
+import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 
-const APPROVAL_MODULES = [
-  "Attrition",
-  "Job Description",
-  "Hiring Needs",
-];
+const APPROVAL_MODULES = ["Attrition", "Job Description", "Hiring Needs"];
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
 };
+
+const APPROVAL_MODULE_ACCESS = {
+  Attrition: [1, 2, 3, 4, 5, 6, 7],
+};
+
+const APPROVAL_SETTINGS_API_BY_MODULE = {
+  "Job Description": getJobDescriptionApprovalUsers,
+  "Hiring Needs": getHiringNeedsApprovalUsers,
+};
+
+function normalizeSibsId(value = "") {
+  return String(value ?? "")
+    .trim()
+    .replace(/^SIBS[-_ ]?/i, "");
+}
+
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
+
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getCurrentUserSibsId(user = {}) {
+  return normalizeSibsId(
+    user?.sibsId ||
+      user?.sibs_id ||
+      user?.employeeSibsId ||
+      user?.employee_sibs_id ||
+      user?.gy_emp_code ||
+      user?.gy_user_code ||
+      user?.userCode ||
+      user?.user_code ||
+      user?.employeeCode ||
+      user?.employee_code ||
+      user?.username ||
+      getLocalStorageValue([
+        "sibsId",
+        "sibs_id",
+        "employeeSibsId",
+        "employee_sibs_id",
+        "gy_emp_code",
+        "gy_user_code",
+        "userCode",
+        "user_code",
+        "employeeCode",
+        "employee_code",
+        "username",
+      ]) ||
+      "",
+  );
+}
+
+function getApprovalSettingsRows(responseData) {
+  const rows =
+    responseData?.data?.users ||
+    responseData?.data?.rows ||
+    responseData?.data ||
+    responseData?.users ||
+    responseData?.rows ||
+    responseData ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getApprovalSettingsSibsId(row = {}) {
+  return normalizeSibsId(
+    row?.sibsId ||
+      row?.sibs_id ||
+      row?.employeeSibsId ||
+      row?.employee_sibs_id ||
+      row?.gy_emp_code ||
+      row?.gy_user_code ||
+      row?.userCode ||
+      row?.user_code ||
+      row?.username ||
+      "",
+  );
+}
+
+async function canCountApprovalModuleForUser(moduleName, user) {
+  if (!user) return false;
+
+  if (moduleName === "Attrition") {
+    const allowedUsers = APPROVAL_MODULE_ACCESS.Attrition || [];
+    return allowedUsers.includes(Number(user.adminAccess));
+  }
+
+  const getApprovalUsers = APPROVAL_SETTINGS_API_BY_MODULE[moduleName];
+
+  if (!getApprovalUsers) return false;
+
+  const currentUserSibsId = getCurrentUserSibsId(user);
+
+  if (!currentUserSibsId) return false;
+
+  try {
+    const result = await getApprovalUsers();
+    const rows = getApprovalSettingsRows(result);
+
+    return rows.some((row) => {
+      return (
+        getApprovalSettingsSibsId(row).toLowerCase() ===
+        currentUserSibsId.toLowerCase()
+      );
+    });
+  } catch (error) {
+    console.error(`Sidebar ${moduleName} approval access error:`, error);
+    return false;
+  }
+}
 
 function normalizeApprovalNotificationStatus(value) {
   const cleanValue = String(value || "").trim().toLowerCase();
@@ -132,11 +249,7 @@ async function getApprovalNotificationCountByModule(moduleName) {
   return fulfilledResults.reduce((sum, result) => {
     const counts = result?.counts || {};
 
-    return (
-      sum +
-      Number(counts.pending || 0) +
-      Number(counts.forReview || 0)
-    );
+    return sum + Number(counts.pending || 0) + Number(counts.forReview || 0);
   }, 0);
 }
 
@@ -278,8 +391,28 @@ export default function Sidebar() {
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
+      const moduleAccessResults = await Promise.all(
+        APPROVAL_MODULES.map(async (moduleName) => {
+          const canCount = await canCountApprovalModuleForUser(moduleName, user);
+
+          return {
+            moduleName,
+            canCount,
+          };
+        }),
+      );
+
+      const accessibleApprovalModules = moduleAccessResults
+        .filter((item) => item.canCount)
+        .map((item) => item.moduleName);
+
+      if (accessibleApprovalModules.length === 0) {
+        setApprovalRequestNotificationCount(0);
+        return;
+      }
+
       const moduleCounts = await Promise.all(
-        APPROVAL_MODULES.map((moduleName) =>
+        accessibleApprovalModules.map((moduleName) =>
           getApprovalNotificationCountByModule(moduleName),
         ),
       );
@@ -294,7 +427,7 @@ export default function Sidebar() {
       console.error("Sidebar approval request notification error:", error);
       setApprovalRequestNotificationCount(0);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setMounted(true);
@@ -368,7 +501,11 @@ export default function Sidebar() {
 
   useEffect(() => {
     if (!mounted || loading || !user) return;
-    if (!ADMIN_ROLES.includes(user.role)) return;
+
+    if (!ADMIN_ROLES.includes(user.role)) {
+      setApprovalRequestNotificationCount(0);
+      return;
+    }
 
     loadApprovalRequestNotifications();
 
@@ -550,7 +687,7 @@ export default function Sidebar() {
       name: "Approval Requests",
       icon: ClipboardCheck,
       path: "/approval-request",
-      allowedUsers: [3, 4, 5, 6, 7 ],
+      allowedUsers: [3, 4, 5, 6, 7],
       notificationCount: approvalRequestNotificationCount,
     },
     {

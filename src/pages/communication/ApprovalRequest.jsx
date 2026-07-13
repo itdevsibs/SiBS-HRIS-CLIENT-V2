@@ -36,6 +36,7 @@ import { useJobDescription } from "../../services/context/JobDescriptionContext"
 import { useUser } from "../../services/context/UserContext";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
+import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 
 import {
   getApprovalRequestsByModule,
@@ -43,27 +44,41 @@ import {
   rejectRequestByModule,
 } from "../../lib/axios/getApprovalRequest";
 
-const REQUEST_MODULES = ["Attrition", "Job Description", "Hiring Needs"];
+const REQUEST_MODULES = [
+  "Attrition",
+  "Job Description",
+  "Hiring Needs",
+  "Available Positions",
+];
 
 const STATUS_OPTIONS = ["All", "Pending", "For Review", "Approved", "Rejected"];
 
 const TYPE_OPTIONS_BY_MODULE = {
   Attrition: ["All", "Resignation", "Attrition"],
   "Job Description": ["All", "Job Description"],
-  "Hiring Needs": ["All", "Hiring Needs"],
+  "Hiring Needs": ["All", "Requisition", "Downsize"],
+  "Available Positions": ["All", "Available Position"],
 };
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
+  "Available Positions": ["Available Position"],
 };
 
 const moduleIconMap = {
   Attrition: UserRoundCheck,
   "Job Description": FileText,
   "Hiring Needs": BriefcaseBusiness,
+  "Available Positions": ClipboardList,
 };
+
+function getApprovalApiModuleName(moduleName = "") {
+  return moduleName === "Available Positions"
+    ? "Available Position"
+    : moduleName;
+}
 
 const DEFAULT_COUNTS = {
   total: 0,
@@ -88,10 +103,13 @@ const PANEL_BORDER = "border border-[#E1E7EF]";
 const SOFT_PANEL_BORDER = "border border-[#E8EEF5]";
 const FLAT_BG = "bg-inherit";
 
-const API_URL =
+const API_URL = String(
   import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000";
+    import.meta.env.VITE_API_BASE_URL ||
+    "http://localhost:5000",
+)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
 
 function safeText(value, fallback = "--") {
   const text = String(value ?? "").trim();
@@ -147,6 +165,7 @@ function buildRequestSearchText(request = {}) {
     request?.department,
     request?.type,
     getRequestType(request),
+    isHiringNeedsRequest(request) ? getHiringNeedsRequestDisplayType(request) : "",
     getNormalizedRequestStatus(request),
     getRecruitmentSettingsStatus(request),
     getUpdateHeadcountStatus(request),
@@ -164,7 +183,12 @@ function buildRequestSearchText(request = {}) {
     request?.weekNumber,
     request?.week_number,
     request?.jdCode,
+    request?.jd_code,
     request?.roleTitle,
+    request?.positionTitle,
+    request?.position_title,
+    request?.documentTitle,
+    request?.document_title,
     request?.linkedHiringRequirement,
     request?.hiringManager,
     request?.hiring_manager,
@@ -188,7 +212,12 @@ function buildRequestSearchText(request = {}) {
     raw?.weekLabel,
     raw?.week_label,
     raw?.jdCode,
+    raw?.jd_code,
     raw?.roleTitle,
+    raw?.positionTitle,
+    raw?.position_title,
+    raw?.documentTitle,
+    raw?.document_title,
     raw?.linkedHiringRequirement,
     raw?.hiringManager,
     raw?.hiring_manager,
@@ -245,6 +274,10 @@ function requestBelongsToActiveModule(request = {}, activeModule = "") {
 
   if (cleanActiveModule === "hiring needs") {
     return cleanType === "hiring needs";
+  }
+
+  if (cleanActiveModule === "available positions") {
+    return isAvailablePositionRequest(request);
   }
 
   return false;
@@ -306,7 +339,7 @@ async function getApprovalTabNotificationCountByModule(moduleName) {
 
   const results = await Promise.allSettled(
     types.map((type) =>
-      getApprovalRequestsByModule(moduleName, {
+      getApprovalRequestsByModule(getApprovalApiModuleName(moduleName), {
         page: 1,
         limit: 500,
         search: "",
@@ -409,6 +442,8 @@ function normalizeRequestType(value) {
   if (lower.includes("headcount update")) return "Update Headcount";
   if (lower.includes("recruitment settings")) return "Recruitment Settings";
   if (lower.includes("weekly hiring")) return "Weekly Hiring Plan";
+  if (lower.includes("available position")) return "Available Position";
+  if (lower.includes("job opening")) return "Available Position";
   if (lower.includes("hiring needs")) return "Hiring Needs";
   if (lower.includes("personnel requisition")) return "Hiring Needs";
   if (lower === "prf" || lower.includes("prf")) return "Hiring Needs";
@@ -427,6 +462,94 @@ function getRequestType(request) {
       request?.raw?.request_type ||
       "",
   );
+}
+
+function getHiringNeedsRequestDisplayType(request = {}) {
+  const raw = request?.raw || {};
+
+  const value = String(
+    request?.hiringNeedRequestType ||
+      request?.hiring_need_request_type ||
+      request?.hiringRequestType ||
+      request?.hiring_request_type ||
+      request?.requestSubType ||
+      request?.request_sub_type ||
+      request?.requestTypeLabel ||
+      request?.request_type_label ||
+      request?.requestType ||
+      request?.request_type ||
+      raw?.hiringNeedRequestType ||
+      raw?.hiring_need_request_type ||
+      raw?.hiringRequestType ||
+      raw?.hiring_request_type ||
+      raw?.requestSubType ||
+      raw?.request_sub_type ||
+      raw?.requestTypeLabel ||
+      raw?.request_type_label ||
+      raw?.requestType ||
+      raw?.request_type ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (value === "downsize") return "Downsize";
+  if (value === "requisition") return "Requisition";
+
+  const titleText = String(request?.title || raw?.title || "").toLowerCase();
+  const reasonText = String(
+    request?.downsizeReason ||
+      request?.downsize_reason ||
+      request?.reason ||
+      raw?.downsizeReason ||
+      raw?.downsize_reason ||
+      raw?.reason ||
+      "",
+  ).toLowerCase();
+
+  if (titleText.includes("downsize") || reasonText.includes("downsize")) {
+    return "Downsize";
+  }
+
+  return "Requisition";
+}
+
+function getApprovalRequestDisplayType(request = {}) {
+  if (isHiringNeedsRequest(request)) {
+    return getHiringNeedsRequestDisplayType(request);
+  }
+
+  const requestType = getRequestType(request);
+
+  if (requestType) return requestType;
+
+  return request?.type || request?.raw?.type || "--";
+}
+
+function getApprovalRequestDisplayTypeClass(type = "") {
+  const value = String(type || "").trim().toLowerCase();
+
+  if (value === "downsize") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  if (value === "requisition") {
+    return "border-blue-100 bg-blue-50 text-sibs-primary-1";
+  }
+
+  if (value === "job description") {
+    return "border-indigo-200 bg-indigo-50 text-indigo-700";
+  }
+
+  if (value === "available position") {
+    return "border-violet-200 bg-violet-50 text-violet-700";
+  }
+
+  if (value === "resignation" || value === "attrition") {
+    return "border-orange-200 bg-orange-50 text-orange-700";
+  }
+
+  return "border-[#E6ECF2] bg-[#F8FAFC] text-[#344054]";
 }
 
 function getStatusClass(status) {
@@ -492,7 +615,10 @@ function getRawRequestId(request) {
     request?.raw?.id ||
     request?.rawId ||
     request?.raw_id ||
-    String(request?.id || "").replace(/^RES-ATT-|^RES-|^ATT-|^WHP-|^HN-|^PRF-/i, "")
+    String(request?.id || "").replace(
+      /^RES-ATT-|^RES-|^ATT-|^WHP-|^HN-|^PRF-|^AVP-|^AP-/i,
+      "",
+    )
   );
 }
 
@@ -503,6 +629,23 @@ function isResignationRequest(request) {
       .toLowerCase()
       .includes("resignation") ||
     String(request?.id || "").startsWith("RES")
+  );
+}
+
+function isAttritionRequest(request) {
+  const moduleName = String(request?.module || "").trim().toLowerCase();
+  const type = String(getRequestType(request) || request?.type || "")
+    .trim()
+    .toLowerCase();
+  const source = String(request?.source || "").trim().toLowerCase();
+  const id = String(request?.id || "").trim().toUpperCase();
+
+  return (
+    moduleName === "attrition" ||
+    type === "attrition" ||
+    source.includes("attrition") ||
+    id.startsWith("ATT-") ||
+    id.startsWith("ATR-")
   );
 }
 
@@ -537,6 +680,26 @@ function isHiringNeedsRequest(request) {
     source.includes("requisition") ||
     id.startsWith("HN-") ||
     id.startsWith("PRF-")
+  );
+}
+
+function isAvailablePositionRequest(request = {}) {
+  const moduleName = String(request?.module || "").trim().toLowerCase();
+  const type = String(getRequestType(request) || request?.type || "")
+    .trim()
+    .toLowerCase();
+  const source = String(request?.source || "").trim().toLowerCase();
+  const id = String(request?.id || "").trim().toUpperCase();
+
+  return (
+    moduleName === "available positions" ||
+    moduleName === "available position" ||
+    type === "available position" ||
+    source.includes("available-position") ||
+    source.includes("available position") ||
+    source.includes("job opening") ||
+    id.startsWith("AP-") ||
+    id.startsWith("AVP-")
   );
 }
 
@@ -1280,6 +1443,12 @@ export default function ApprovalRequest() {
     useState(true);
   const [canViewHiringNeedsApproval, setCanViewHiringNeedsApproval] =
     useState(false);
+  const [
+    availablePositionApprovalAccessLoading,
+    setAvailablePositionApprovalAccessLoading,
+  ] = useState(true);
+  const [canViewAvailablePositionApproval, setCanViewAvailablePositionApproval] =
+    useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -1292,13 +1461,35 @@ export default function ApprovalRequest() {
     return getCurrentUserSibsId(user);
   }, [user]);
 
-  const visibleRequestModules = useMemo(() => {
-    return REQUEST_MODULES.filter((moduleName) => {
-      if (moduleName !== "Job Description") return true;
+  const approvalAccessLoading =
+    jdApprovalAccessLoading ||
+    hiringNeedsApprovalAccessLoading ||
+    availablePositionApprovalAccessLoading;
 
-      return canViewJobDescriptionApproval;
+  const visibleRequestModules = useMemo(() => {
+    if (approvalAccessLoading) return [];
+
+    return REQUEST_MODULES.filter((moduleName) => {
+      if (moduleName === "Job Description") {
+        return canViewJobDescriptionApproval;
+      }
+
+      if (moduleName === "Hiring Needs") {
+        return canViewHiringNeedsApproval;
+      }
+
+      if (moduleName === "Available Positions") {
+        return canViewAvailablePositionApproval;
+      }
+
+      return true;
     });
-  }, [canViewJobDescriptionApproval]);
+  }, [
+    approvalAccessLoading,
+    canViewJobDescriptionApproval,
+    canViewHiringNeedsApproval,
+    canViewAvailablePositionApproval,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1403,7 +1594,60 @@ export default function ApprovalRequest() {
   }, [currentUserSibsId]);
 
   useEffect(() => {
-    const requestedModule = location.state?.activeModule;
+    let cancelled = false;
+
+    async function checkAvailablePositionApprovalAccess() {
+      const cleanUserSibsId = normalizeSibsId(currentUserSibsId);
+
+      if (!cleanUserSibsId) {
+        if (!cancelled) {
+          setCanViewAvailablePositionApproval(false);
+          setAvailablePositionApprovalAccessLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        setAvailablePositionApprovalAccessLoading(true);
+
+        const result = await getAvailablePositionApprovalUsers();
+        const rows = getApprovalSettingsRows(result);
+
+        const isAllowed = rows.some((row) => {
+          return (
+            getApprovalSettingsSibsId(row).toLowerCase() ===
+            cleanUserSibsId.toLowerCase()
+          );
+        });
+
+        if (!cancelled) {
+          setCanViewAvailablePositionApproval(isAllowed);
+        }
+      } catch (error) {
+        console.error("CHECK AVAILABLE POSITION APPROVAL ACCESS ERROR:", error);
+
+        if (!cancelled) {
+          setCanViewAvailablePositionApproval(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setAvailablePositionApprovalAccessLoading(false);
+        }
+      }
+    }
+
+    checkAvailablePositionApprovalAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserSibsId]);
+
+  useEffect(() => {
+    const stateModule = location.state?.activeModule;
+    const requestedModule =
+      stateModule === "Available Position" ? "Available Positions" : stateModule;
 
     if (!requestedModule || !REQUEST_MODULES.includes(requestedModule)) return;
 
@@ -1411,6 +1655,24 @@ export default function ApprovalRequest() {
       if (jdApprovalAccessLoading) return;
 
       if (!canViewJobDescriptionApproval) {
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
+    }
+
+    if (requestedModule === "Hiring Needs") {
+      if (hiringNeedsApprovalAccessLoading) return;
+
+      if (!canViewHiringNeedsApproval) {
+        navigate(location.pathname, { replace: true, state: {} });
+        return;
+      }
+    }
+
+    if (requestedModule === "Available Positions") {
+      if (availablePositionApprovalAccessLoading) return;
+
+      if (!canViewAvailablePositionApproval) {
         navigate(location.pathname, { replace: true, state: {} });
         return;
       }
@@ -1430,26 +1692,31 @@ export default function ApprovalRequest() {
     navigate,
     jdApprovalAccessLoading,
     canViewJobDescriptionApproval,
+    hiringNeedsApprovalAccessLoading,
+    canViewHiringNeedsApproval,
+    availablePositionApprovalAccessLoading,
+    canViewAvailablePositionApproval,
   ]);
 
   useEffect(() => {
-    if (jdApprovalAccessLoading) return;
-    if (activeModule !== "Job Description") return;
-    if (canViewJobDescriptionApproval) return;
+    if (approvalAccessLoading) return;
+    if (visibleRequestModules.includes(activeModule)) return;
 
-    setActiveModule("Attrition");
+    const fallbackModule = visibleRequestModules[0] || "Attrition";
+
+    setActiveModule(fallbackModule);
     setSearch("");
     setSearchInput("");
     setStatusFilter("All");
-    setTypeFilter("Resignation");
+    setTypeFilter(fallbackModule === "Attrition" ? "Resignation" : "All");
     setPage(1);
     setSelectedRequest(null);
     updateSelectedJobDescription?.(null);
     closeJobDescriptionDetails?.();
   }, [
+    approvalAccessLoading,
+    visibleRequestModules,
     activeModule,
-    jdApprovalAccessLoading,
-    canViewJobDescriptionApproval,
     updateSelectedJobDescription,
     closeJobDescriptionDetails,
   ]);
@@ -1480,8 +1747,10 @@ export default function ApprovalRequest() {
   const loadApprovalRequests = useCallback(
     async ({ showError = false } = {}) => {
       if (
-        activeModule === "Job Description" &&
-        !canViewJobDescriptionApproval
+        (activeModule === "Job Description" && !canViewJobDescriptionApproval) ||
+        (activeModule === "Hiring Needs" && !canViewHiringNeedsApproval) ||
+        (activeModule === "Available Positions" &&
+          !canViewAvailablePositionApproval)
       ) {
         setRequests([]);
         setCounts(DEFAULT_COUNTS);
@@ -1501,7 +1770,7 @@ export default function ApprovalRequest() {
         search: "",
         status: statusFilter === "All" ? "" : statusFilter,
         type:
-          requestType === "All"
+          requestType === "All" || activeModule === "Hiring Needs"
             ? ""
             : activeModule === "Weekly Hiring Plan"
               ? normalizeRequestType(requestType)
@@ -1557,7 +1826,7 @@ export default function ApprovalRequest() {
         setLoading(true);
 
         let result = await getApprovalRequestsByModule(
-          activeModule,
+          getApprovalApiModuleName(activeModule),
           buildParams(),
         );
 
@@ -1589,7 +1858,7 @@ export default function ApprovalRequest() {
           const weeklyResults = await Promise.allSettled(
             weeklyTypes.map((requestType) =>
               getApprovalRequestsByModule(
-                activeModule,
+                getApprovalApiModuleName(activeModule),
                 buildParams(requestType),
               ),
             ),
@@ -1675,7 +1944,14 @@ export default function ApprovalRequest() {
         setLoading(false);
       }
     },
-    [activeModule, statusFilter, typeFilter, canViewJobDescriptionApproval],
+    [
+      activeModule,
+      statusFilter,
+      typeFilter,
+      canViewJobDescriptionApproval,
+      canViewHiringNeedsApproval,
+      canViewAvailablePositionApproval,
+    ],
   );
 
   useEffect(() => {
@@ -1703,6 +1979,8 @@ export default function ApprovalRequest() {
   }
 
   function handleChangeModule(moduleName) {
+    if (!visibleRequestModules.includes(moduleName)) return;
+
     setActiveModule(moduleName);
     setSearch("");
     setSearchInput("");
@@ -2271,6 +2549,20 @@ export default function ApprovalRequest() {
     }
 
     if (
+      isAvailablePositionRequest(request) &&
+      !canViewAvailablePositionApproval
+    ) {
+      openStatus({
+        type: "error",
+        title: "Not Allowed",
+        message:
+          "Only users added in Recruitment Settings > Approval Rules > Available Positions can approve or reject Available Position requests.",
+      });
+
+      return;
+    }
+
+    if (
       canEditRequiredHeadcountOnWeeklyApproval(request) &&
       action === "approve"
     ) {
@@ -2326,8 +2618,16 @@ export default function ApprovalRequest() {
 
       const result =
         action === "approve"
-          ? await approveRequestByModule(activeModule, requestId, payload)
-          : await rejectRequestByModule(activeModule, requestId, payload);
+          ? await approveRequestByModule(
+              getApprovalApiModuleName(activeModule),
+              requestId,
+              payload,
+            )
+          : await rejectRequestByModule(
+              getApprovalApiModuleName(activeModule),
+              requestId,
+              payload,
+            );
 
       if (!result?.success) {
         throw new Error(
@@ -2387,7 +2687,10 @@ export default function ApprovalRequest() {
 
     return requests.filter((request) => {
       const status = getNormalizedRequestStatus(request);
-      const requestType = getRequestType(request);
+      const requestType =
+        activeModule === "Hiring Needs"
+          ? getHiringNeedsRequestDisplayType(request)
+          : getRequestType(request);
 
       const matchesCurrentModule = requestBelongsToActiveModule(
         request,
@@ -2398,7 +2701,10 @@ export default function ApprovalRequest() {
       const matchesSearch = !keyword || searchableText.includes(keyword);
       const matchesStatus = statusFilter === "All" || status === statusFilter;
 
-      const normalizedTypeFilter = normalizeRequestType(typeFilter);
+      const normalizedTypeFilter =
+        activeModule === "Hiring Needs"
+          ? typeFilter
+          : normalizeRequestType(typeFilter);
       const matchesType =
         typeFilter === "All" || requestType === normalizedTypeFilter;
 
@@ -2454,8 +2760,8 @@ export default function ApprovalRequest() {
             </h1>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Review resignation approvals, job descriptions, and hiring needs
-              approvals.
+              Review resignation approvals, job descriptions, hiring needs,
+              and available position approvals.
             </p>
           </div>
 
@@ -2531,6 +2837,9 @@ export default function ApprovalRequest() {
           onReject={() => openDecisionModal(selectedRequest, "reject")}
           onValidationError={openStatus}
           canViewHiringNeedsApproval={canViewHiringNeedsApproval}
+          canViewAvailablePositionApproval={
+            canViewAvailablePositionApproval
+          }
         />
       )}
 
@@ -2835,6 +3144,8 @@ function ApprovalModuleTabs({
   moduleNotificationCounts,
   requestModules = REQUEST_MODULES,
 }) {
+  if (!requestModules.length) return null;
+
   return (
     <div className="border-t border-[#E6ECF2] bg-white px-5">
       <div className="flex min-w-0 gap-8 overflow-x-auto">
@@ -2944,63 +3255,61 @@ function ApprovalRequestTable({
             totalRecords={totalRecords}
             onView={onView}
           />
+        ) : activeModule === "Available Positions" ? (
+          <AvailablePositionApprovalTable
+            requests={requests}
+            loading={loading}
+            onView={onView}
+          />
         ) : (
           <>
+            {/* Desktop */}
             <div className="hidden lg:block">
-              <div
-                data-approval-table-scroll
-                className="max-h-[670px] overflow-auto rounded-[10px] border border-[#E6ECF2] sibs-scrollbar"
-              >
+              <div data-approval-table-scroll className="overflow-x-auto">
                 <table
                   className={`w-full ${
                     isWeeklyModule ? "min-w-[1840px]" : "min-w-[1420px]"
-                  } border-collapse bg-white text-left`}
+                  } border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left`}
                 >
-                  <thead className="sticky top-0 z-10">
-                    <tr className="bg-[#F8FAFC] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
+                  <thead>
+                    <tr className="whitespace-nowrap bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4 first:rounded-tl-[14px]">
                         Request
                       </th>
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                        SIBS ID
-                      </th>
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                        Requester
-                      </th>
+
+                      <th className="px-5 py-4">SIBS ID</th>
+
+                      <th className="px-5 py-4">Requester</th>
+
                       {isWeeklyModule && (
-                        <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                          Account
-                        </th>
+                        <th className="px-5 py-4">Account</th>
                       )}
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                        Type
-                      </th>
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+
+                      <th className="px-5 py-4 text-center">Type</th>
+
+                      <th className="px-5 py-4 text-center">
                         Date Requested
                       </th>
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                        Priority
-                      </th>
+
+                      <th className="px-5 py-4 text-center">Priority</th>
 
                       {isWeeklyModule ? (
                         <>
-                          <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+                          <th className="px-5 py-4 text-center">
                             Recruitment Settings Status
                           </th>
-                          <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
+
+                          <th className="px-5 py-4 text-center">
                             Update Headcount Status
                           </th>
                         </>
                       ) : (
-                        <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center align-top">
-                          Status
-                        </th>
+                        <th className="px-5 py-4 text-center">Status</th>
                       )}
 
-                      <th className="border-b border-r border-[#E6ECF2] px-5 py-4 text-left align-top">
-                        Approver
-                      </th>
-                      <th className="border-b border-[#E6ECF2] px-5 py-4 text-right align-top">
+                      <th className="px-5 py-4">Approver</th>
+
+                      <th className="px-5 py-4 text-right last:rounded-tr-[14px]">
                         Actions
                       </th>
                     </tr>
@@ -3010,21 +3319,24 @@ function ApprovalRequestTable({
                     {loading ? (
                       <tr>
                         <td
-                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                           colSpan={colSpan}
+                          className="px-5 py-12 text-center"
                         >
                           <Loader2
-                            size={28}
+                            size={30}
                             className="mx-auto mb-3 animate-spin text-sibs-primary-1"
                           />
-                          Loading approval requests...
+
+                          <p className="text-sm font-bold text-gray-500">
+                            Loading approval requests...
+                          </p>
                         </td>
                       </tr>
                     ) : requests.length === 0 ? (
                       <tr>
                         <td
-                          className="px-5 py-16 text-center text-sm font-bold text-gray-500"
                           colSpan={colSpan}
+                          className="px-5 py-12 text-center text-sm font-bold text-gray-500"
                         >
                           No approval requests found for {activeModule}.
                         </td>
@@ -3044,18 +3356,24 @@ function ApprovalRequestTable({
               </div>
             </div>
 
+            {/* Mobile */}
             <div className="block lg:hidden" data-approval-mobile-scroll>
               {loading ? (
-                <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+                <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
                   <Loader2
-                    size={28}
+                    size={30}
                     className="mx-auto mb-3 animate-spin text-sibs-primary-1"
                   />
-                  Loading approval requests...
+
+                  <p className="text-sm font-bold text-gray-500">
+                    Loading approval requests...
+                  </p>
                 </div>
               ) : requests.length === 0 ? (
-                <div className="rounded-[10px] border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-                  No approval requests found for {activeModule}.
+                <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
+                  <p className="text-sm font-bold text-gray-500">
+                    No approval requests found for {activeModule}.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -3090,55 +3408,458 @@ function ApprovalRequestTable({
   );
 }
 
+function AvailablePositionApprovalTable({
+  requests = [],
+  loading = false,
+  onView,
+}) {
+  const desktopColumns = 10;
+  const tableScrollRef = useRef(null);
+  const dragStateRef = useRef({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    scrollLeft: 0,
+  });
+  const [isTableDragging, setIsTableDragging] = useState(false);
+
+  function handleTablePointerDown(event) {
+    /*
+      Keep buttons, links, and form controls clickable.
+      Mouse users can drag anywhere else inside the table to scroll horizontally.
+      Touch devices continue using their normal swipe behavior.
+    */
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+    const interactiveElement = event.target.closest(
+      "button, a, input, select, textarea, [role='button']",
+    );
+
+    if (interactiveElement) return;
+
+    const container = tableScrollRef.current;
+
+    if (!container || container.scrollWidth <= container.clientWidth) return;
+
+    dragStateRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: container.scrollLeft,
+    };
+
+    container.setPointerCapture?.(event.pointerId);
+    setIsTableDragging(true);
+    event.preventDefault();
+  }
+
+  function handleTablePointerMove(event) {
+    const container = tableScrollRef.current;
+    const dragState = dragStateRef.current;
+
+    if (
+      !container ||
+      !dragState.active ||
+      dragState.pointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    const distance = event.clientX - dragState.startX;
+
+    container.scrollLeft = dragState.scrollLeft - distance;
+    event.preventDefault();
+  }
+
+  function stopTableDragging(event) {
+    const container = tableScrollRef.current;
+    const pointerId = dragStateRef.current.pointerId;
+
+    if (
+      container &&
+      pointerId !== null &&
+      container.hasPointerCapture?.(pointerId)
+    ) {
+      try {
+        container.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already be released by the browser.
+      }
+    }
+
+    dragStateRef.current = {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      scrollLeft: container?.scrollLeft || 0,
+    };
+
+    setIsTableDragging(false);
+  }
+
+  return (
+    <>
+      <div className="hidden lg:block">
+        <div
+          ref={tableScrollRef}
+          data-approval-table-scroll
+          onPointerDown={handleTablePointerDown}
+          onPointerMove={handleTablePointerMove}
+          onPointerUp={stopTableDragging}
+          onPointerCancel={stopTableDragging}
+          onLostPointerCapture={stopTableDragging}
+          className={`overflow-x-auto overscroll-x-contain pb-2 sibs-scrollbar ${
+            isTableDragging
+              ? "cursor-grabbing select-none"
+              : "cursor-grab"
+          }`}
+          aria-label="Available Positions table. Drag left or right to view more columns."
+        >
+          <table className="min-w-[1640px] w-full border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left">
+            <thead>
+              <tr className="whitespace-nowrap bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+                <th className="px-5 py-4 first:rounded-tl-[14px]">Position</th>
+                <th className="px-5 py-4">JD / Document</th>
+                <th className="px-5 py-4">Department / Account</th>
+                <th className="px-5 py-4">Location / Site</th>
+                <th className="px-5 py-4 text-center">Availability</th>
+                <th className="px-5 py-4 text-center">Approval Status</th>
+                <th className="px-5 py-4">Requested By</th>
+                <th className="px-5 py-4 text-center">Date Requested</th>
+                <th className="px-5 py-4">Approver</th>
+                <th className="px-5 py-4 text-right last:rounded-tr-[14px]">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={desktopColumns} className="px-5 py-12 text-center">
+                    <Loader2
+                      size={30}
+                      className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+                    />
+                    <p className="text-sm font-bold text-gray-500">
+                      Loading Available Position requests...
+                    </p>
+                  </td>
+                </tr>
+              ) : requests.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={desktopColumns}
+                    className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                  >
+                    No approval requests found for Available Positions.
+                  </td>
+                </tr>
+              ) : (
+                requests.map((request) => {
+                  const requesterInfo = getRequesterDisplayInfo(request);
+                  const approvalStatus = getNormalizedRequestStatus(request);
+                  const positionStatus = getRequestValue(
+                    request,
+                    ["positionStatus", "position_status"],
+                    "Inactive",
+                  );
+
+                  return (
+                    <tr
+                      key={`${request.source || "available-position"}-${request.id}`}
+                      className="transition hover:bg-[#FAFBFC]"
+                    >
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
+                          {getRequestValue(
+                            request,
+                            ["positionTitle", "position_title", "title"],
+                            "--",
+                          )}
+                        </p>
+                        <p className="mt-1 max-w-[280px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                          {getRequestValue(
+                            request,
+                            ["positionId", "position_id"],
+                            request.id || "--",
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-extrabold text-sibs-primary-1">
+                          {getRequestValue(request, ["jdCode", "jd_code"], "--")}
+                        </p>
+                        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                          {getRequestValue(
+                            request,
+                            ["documentTitle", "document_title"],
+                            "--",
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+                          {getRequestValue(request, ["department"], "--")}
+                        </p>
+                        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                          {getRequestValue(
+                            request,
+                            ["accountName", "account_name", "account"],
+                            "--",
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#344054]">
+                        {getRequestValue(
+                          request,
+                          ["locationSite", "location_site"],
+                          "--",
+                        )}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                        <PositionAvailabilityBadge status={positionStatus} />
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+                        <StatusBadge status={approvalStatus} />
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+                          {requesterInfo.name || "--"}
+                        </p>
+                        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                          {requesterInfo.sibsId || "--"}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
+                        {formatDate(request.dateRequested || request.requestDate)}
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5">
+                        <p className="max-w-[260px] truncate text-sm font-bold text-[#344054]">
+                          {request.approver || "--"}
+                        </p>
+                      </td>
+
+                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onView(request)}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+                        >
+                          <Eye size={15} />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="block lg:hidden" data-approval-mobile-scroll>
+        {loading ? (
+          <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
+            <Loader2
+              size={30}
+              className="mx-auto mb-3 animate-spin text-sibs-primary-1"
+            />
+            <p className="text-sm font-bold text-gray-500">
+              Loading Available Position requests...
+            </p>
+          </div>
+        ) : requests.length === 0 ? (
+          <div className="rounded-[14px] border border-[#D9E2EC] bg-white px-5 py-10 text-center shadow-sm">
+            <p className="text-sm font-bold text-gray-500">
+              No approval requests found for Available Positions.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {requests.map((request) => {
+              const requesterInfo = getRequesterDisplayInfo(request);
+              const approvalStatus = getNormalizedRequestStatus(request);
+              const positionStatus = getRequestValue(
+                request,
+                ["positionStatus", "position_status"],
+                "Inactive",
+              );
+
+              return (
+                <button
+                  key={`${request.source || "available-position"}-${request.id}`}
+                  type="button"
+                  onClick={() => onView(request)}
+                  className="w-full rounded-[14px] border border-[#D9E2EC] bg-white p-4 text-left shadow-sm transition hover:bg-[#F8FAFC]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
+                        {getRequestValue(
+                          request,
+                          ["positionTitle", "position_title", "title"],
+                          "--",
+                        )}
+                      </h3>
+                      <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                        {getRequestValue(
+                          request,
+                          ["positionId", "position_id"],
+                          request.id || "--",
+                        )}
+                      </p>
+                    </div>
+                    <StatusBadge status={approvalStatus} />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <MobileMetric
+                      label="JD Code"
+                      value={getRequestValue(
+                        request,
+                        ["jdCode", "jd_code"],
+                        "--",
+                      )}
+                    />
+                    <MobileMetric
+                      label="Availability"
+                      value={positionStatus}
+                    />
+                    <MobileMetric
+                      label="Department"
+                      value={getRequestValue(request, ["department"], "--")}
+                    />
+                    <MobileMetric
+                      label="Account"
+                      value={getRequestValue(
+                        request,
+                        ["accountName", "account_name", "account"],
+                        "--",
+                      )}
+                    />
+                    <MobileMetric
+                      label="Location"
+                      value={getRequestValue(
+                        request,
+                        ["locationSite", "location_site"],
+                        "--",
+                      )}
+                    />
+                    <MobileMetric
+                      label="Requester"
+                      value={requesterInfo.displayNameWithSibs}
+                    />
+                    <MobileMetric
+                      label="Date Requested"
+                      value={formatDate(
+                        request.dateRequested || request.requestDate,
+                      )}
+                    />
+                    <MobileMetric label="Approver" value={request.approver} />
+                  </div>
+
+                  <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+                    <Eye size={16} />
+                    View Details
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function PositionAvailabilityBadge({ status }) {
+  const normalized = String(status || "").trim().toLowerCase();
+
+  const className = normalized === "active"
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : normalized === "archived"
+      ? "border-slate-200 bg-slate-100 text-slate-700"
+      : "border-red-200 bg-red-50 text-red-700";
+
+  return (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${className}`}
+    >
+      {status || "Inactive"}
+    </span>
+  );
+}
+
 function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
   const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
+  const displayRequestType = getApprovalRequestDisplayType(request);
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
   const updateHeadcountStatus = getUpdateHeadcountStatus(request);
   const accountName = getAccountName(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
+  const isAvailablePosition = isAvailablePositionRequest(request);
+  const isAttrition = isAttritionRequest(request);
   const requesterInfo = getRequesterDisplayInfo(request);
+
+  const requesterSubtitle = isHiringNeeds
+    ? `HC: ${getHiringNeedsHeadcountDisplay(request)} - ${
+        getHiringNeedsDepartmentDisplay(request) || "--"
+      }`
+    : isAvailablePosition
+      ? getRequestValue(
+          request,
+          ["locationSite", "location_site", "department"],
+          "--",
+        )
+      : request.department || "--";
 
   return (
     <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-        <p className="max-w-[260px] truncate text-sm font-extrabold text-[#101828]">
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
           {request.title || "--"}
         </p>
 
-        <p className="mt-1 max-w-[260px] truncate text-xs font-semibold text-sibs-tertiary-5">
+        <p className="mt-1 max-w-[280px] truncate text-xs font-semibold text-sibs-tertiary-5">
           {request.id || "--"}
         </p>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
         <p className="max-w-[120px] truncate text-sm font-extrabold text-sibs-primary-1">
           {requesterInfo.sibsId || "--"}
         </p>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <p className="max-w-[240px] truncate text-sm font-bold text-[#344054]">
           {requesterInfo.name || "--"}
         </p>
 
-        <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
-          {isHiringNeeds
-            ? `HC: ${getHiringNeedsHeadcountDisplay(request)} · ${
-                request.department || "--"
-              }`
-            : request.department || "--"}
+        <p className="mt-1 max-w-[240px] truncate text-xs font-semibold text-sibs-tertiary-5">
+          {requesterSubtitle}
         </p>
       </td>
 
       {isWeeklyModule && (
-        <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-          <p className="max-w-[220px] truncate text-sm font-extrabold text-sibs-primary-1">
+        <td className="border-b border-[#E6ECF2] px-5 py-5">
+          <p className="max-w-[240px] truncate text-sm font-extrabold text-sibs-primary-1">
             {accountName}
           </p>
 
-          <p className="mt-1 max-w-[220px] truncate text-xs font-semibold text-sibs-tertiary-5">
+          <p className="mt-1 max-w-[240px] truncate text-xs font-semibold text-sibs-tertiary-5">
             {request.clusterName ||
               request.cluster_name ||
               request.department ||
@@ -3147,17 +3868,21 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
         </td>
       )}
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
-        <span className="inline-flex rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]">
-          {requestType || request.type || "--"}
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
+        <span
+          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getApprovalRequestDisplayTypeClass(
+            displayRequestType || requestType || request.type,
+          )}`}
+        >
+          {displayRequestType || requestType || request.type || "--"}
         </span>
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center text-sm font-bold text-[#344054]">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
         {formatDate(request.dateRequested || request.requestDate)}
       </td>
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
         <span
           className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPriorityClass(
             request.priority,
@@ -3169,11 +3894,11 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
 
       {isWeeklyModule ? (
         <>
-          <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
             <StatusBadge status={recruitmentSettingsStatus} />
           </td>
 
-          <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+          <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
             <StatusBadge
               status={updateHeadcountStatus || "No Request"}
               emptyText="No Request"
@@ -3181,7 +3906,7 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
           </td>
         </>
       ) : (
-        <td className="border-b border-r border-[#E6ECF2] px-5 py-4 text-center">
+        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
           <span
             className={`inline-flex items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
               status,
@@ -3193,19 +3918,19 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
         </td>
       )}
 
-      <td className="border-b border-r border-[#E6ECF2] px-5 py-4">
-        <p className="max-w-[220px] truncate text-sm font-bold text-[#344054]">
+      <td className="border-b border-[#E6ECF2] px-5 py-5">
+        <p className="max-w-[240px] truncate text-sm font-bold text-[#344054]">
           {request.approver || "--"}
         </p>
       </td>
 
-      <td className="border-b border-[#E6ECF2] px-5 py-4 text-right">
+      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
         <button
           type="button"
           onClick={onView}
-          className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-2 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
         >
-          <Eye size={16} />
+          <Eye size={15} />
           View
         </button>
       </td>
@@ -3217,6 +3942,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
   const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
+  const displayRequestType = getApprovalRequestDisplayType(request);
   const recruitmentSettingsStatus = getRecruitmentSettingsStatus(request);
   const updateHeadcountStatus = getUpdateHeadcountStatus(request);
   const accountName = getAccountName(request);
@@ -3227,7 +3953,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
     <button
       type="button"
       onClick={onView}
-      className="w-full rounded-[10px] border border-[#E6ECF2] bg-white p-4 text-left transition hover:bg-[#F8FAFC]"
+      className="w-full rounded-[14px] border border-[#D9E2EC] bg-white p-4 text-left shadow-sm transition hover:bg-[#F8FAFC]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -3272,9 +3998,19 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
             value={getHiringNeedsHeadcountDisplay(request)}
           />
         )}
-        <MobileMetric label="Department" value={request.department} />
+        <MobileMetric
+          label="Department"
+          value={
+            isHiringNeeds
+              ? getHiringNeedsDepartmentDisplay(request)
+              : request.department
+          }
+        />
         <MobileMetric label="Module" value={request.module} />
-        <MobileMetric label="Type" value={requestType || request.type} />
+        <MobileTypeMetric
+          label="Type"
+          value={displayRequestType || requestType || request.type}
+        />
         <MobileMetric label="Priority" value={request.priority || "Normal"} />
         <MobileMetric
           label="Date Requested"
@@ -3283,7 +4019,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
         <MobileMetric label="Approver" value={request.approver} />
       </div>
 
-      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
+      <div className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1">
         <Eye size={16} />
         View Details
       </div>
@@ -3305,6 +4041,24 @@ function MobileMetric({ label, value }) {
   );
 }
 
+function MobileTypeMetric({ label, value }) {
+  return (
+    <div className="rounded-[10px] bg-[#F8FAFC] p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+        {label}
+      </p>
+
+      <span
+        className={`mt-2 inline-flex max-w-full rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getApprovalRequestDisplayTypeClass(
+          value,
+        )}`}
+      >
+        <span className="truncate">{value || "--"}</span>
+      </span>
+    </div>
+  );
+}
+
 function ViewApprovalRequestModal({
   open,
   request,
@@ -3313,6 +4067,7 @@ function ViewApprovalRequestModal({
   onReject,
   onValidationError,
   canViewHiringNeedsApproval = false,
+  canViewAvailablePositionApproval = false,
 }) {
   if (!open || !request) return null;
 
@@ -3320,12 +4075,23 @@ function ViewApprovalRequestModal({
   const isResignation = isResignationRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
+  const isAvailablePosition = isAvailablePositionRequest(request);
+  const isAttrition = isAttritionRequest(request);
+  const hiringNeedsRequestKind = isHiringNeeds
+    ? getHiringNeedsRequestKind(request)
+    : "";
+  const isHiringNeedsDownsize = hiringNeedsRequestKind === "Downsize";
   const baseCanReview = request.canReview === true || request.raw?.canEdit === true;
   const isFinalDecision = status === "Approved" || status === "Rejected";
   const canReview = isHiringNeeds
     ? (baseCanReview || canViewHiringNeedsApproval) && !isFinalDecision
-    : baseCanReview;
-  const showHiringNeedsFooterActions = isHiringNeeds && canReview && !isFinalDecision;
+    : isAvailablePosition
+      ? (baseCanReview || canViewAvailablePositionApproval) && !isFinalDecision
+      : baseCanReview;
+  const showHiringNeedsFooterActions =
+    isHiringNeeds && canReview && !isFinalDecision;
+  const showAvailablePositionFooterActions =
+    isAvailablePosition && canReview && !isFinalDecision;
   const isWeeklyRecruitmentSettings =
     isWeeklyRecruitmentSettingsRequest(request);
   const canEditRequiredHeadcount =
@@ -3389,18 +4155,30 @@ function ViewApprovalRequestModal({
 
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  {isHiringNeeds
-                    ? "Personnel Requisition"
+                  {isAvailablePosition
+                    ? "Available Position Request"
+                    : isHiringNeeds
+                      ? isHiringNeedsDownsize
+                      ? "Downsize Request"
+                      : "Personnel Requisition"
                     : isResignation
                       ? "View Resignation Approval"
                       : request.title || "Approval Request"}
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  {isHiringNeeds
-                    ? showHiringNeedsFooterActions
-                      ? "Review the request details, then approve or decline from the footer."
-                      : "Review submitted request information and current approval status."
+                  {isAvailablePosition
+                    ? showAvailablePositionFooterActions
+                      ? "Review the available position details, then approve or decline from the footer."
+                      : "Review the submitted available position information and current approval status."
+                    : isHiringNeeds
+                      ? showHiringNeedsFooterActions
+                      ? isHiringNeedsDownsize
+                        ? "Review the downsize request details, then approve or decline from the footer."
+                        : "Review the requisition details, then approve or decline from the footer."
+                      : isHiringNeedsDownsize
+                        ? "Review submitted downsize request information and current approval status."
+                        : "Review submitted requisition information and current approval status."
                     : isWeekly
                       ? "Weekly hiring plan approval request details"
                       : isResignation
@@ -3425,8 +4203,12 @@ function ViewApprovalRequestModal({
           <div className="space-y-5">
             {isWeekly ? (
               <WeeklyHiringPlanRequestDetails request={request} />
+            ) : isAvailablePosition ? (
+              <AvailablePositionRequestDetails request={request} />
             ) : isHiringNeeds ? (
               <HiringNeedsRequestDetails request={request} />
+            ) : isAttrition ? (
+              <AttritionRequestDetails request={request} />
             ) : (
               <>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -3492,7 +4274,7 @@ function ViewApprovalRequestModal({
               </div>
             )}
 
-            {!isHiringNeeds && (
+            {!isHiringNeeds && !isAvailablePosition && (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <FormLikeBox label="Status" value={status} />
                 <FormLikeBox label="Source" value={request.source || "--"} />
@@ -3513,13 +4295,19 @@ function ViewApprovalRequestModal({
         <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-6 py-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs font-bold text-sibs-tertiary-5">
-              {isHiringNeeds
-                ? showHiringNeedsFooterActions
-                  ? "You can approve or decline this Hiring Needs request."
+              {isAvailablePosition
+                ? showAvailablePositionFooterActions
+                  ? "You can approve or decline this Available Position request."
                   : isFinalDecision
                     ? `Request status: ${status}`
-                    : "Only users added in Recruitment Settings > Approval Rules > Hiring Needs can approve or decline this request."
-                : "Review the request details before closing."}
+                    : "Only users added in Recruitment Settings > Approval Rules > Available Positions can approve or decline this request."
+                : isHiringNeeds
+                  ? showHiringNeedsFooterActions
+                    ? "You can approve or decline this Hiring Needs request."
+                    : isFinalDecision
+                      ? `Request status: ${status}`
+                      : "Only users added in Recruitment Settings > Approval Rules > Hiring Needs can approve or decline this request."
+                  : "Review the request details before closing."}
             </p>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -3552,6 +4340,28 @@ function ViewApprovalRequestModal({
                   </button>
                 </>
               )}
+
+              {showAvailablePositionFooterActions && (
+                <>
+                  <button
+                    type="button"
+                    onClick={onReject}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-700 transition hover:bg-red-100 active:scale-[0.98]"
+                  >
+                    <XCircle size={17} />
+                    Decline
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onApprove}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-emerald-600 px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                  >
+                    <CheckCircle2 size={17} />
+                    Approve
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -3562,7 +4372,367 @@ function ViewApprovalRequestModal({
 }
 
 
+function AvailablePositionRequestDetails({ request }) {
+  const status = getNormalizedRequestStatus(request);
+  const raw = request?.raw || {};
+
+  const positionTitle =
+    request?.positionTitle ||
+    request?.position_title ||
+    request?.title ||
+    raw?.positionTitle ||
+    raw?.position_title ||
+    raw?.title ||
+    "--";
+
+  const requesterInfo = getRequesterDisplayInfo(request);
+
+  const description = getRequestValue(
+    request,
+    ["description"],
+    "--",
+  );
+
+  const preferredSkills = getRequestValue(
+    request,
+    ["preferredSkills", "preferred_skills", "qualifications"],
+    "--",
+  );
+
+  const approvalDate = getRequestValue(
+    request,
+    ["approvalDate", "approval_date", "approvedAt", "approved_at"],
+    "",
+  );
+
+  const approvedBy = getRequestValue(
+    request,
+    [
+      "approvedByName",
+      "approved_by_name",
+      "approvedBy",
+      "approved_by",
+      "approvedBySibsId",
+      "approved_by_sibs_id",
+    ],
+    "--",
+  );
+
+  return (
+    <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-base font-extrabold text-[#101828]">
+            Available Position Request Details
+          </h3>
+
+          <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+            Review the submitted position information before making an approval
+            decision.
+          </p>
+        </div>
+
+        <StatusBadge status={status} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <FormLikeBox label="Position Title" value={positionTitle} />
+        <FormLikeBox
+          label="Position ID"
+          value={getRequestValue(
+            request,
+            ["positionId", "position_id"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="Document Title"
+          value={getRequestValue(
+            request,
+            ["documentTitle", "document_title"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="JD Code"
+          value={getRequestValue(request, ["jdCode", "jd_code"], "--")}
+        />
+        <FormLikeBox
+          label="Department"
+          value={getRequestValue(
+            request,
+            ["department", "departmentName", "department_name"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="Account"
+          value={getRequestValue(
+            request,
+            ["accountName", "account_name", "account"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="Account GHL Name"
+          value={getRequestValue(
+            request,
+            ["accountGhlName", "account_ghl_name"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="Location / Site"
+          value={getRequestValue(
+            request,
+            ["locationSite", "location_site", "location"],
+            "--",
+          )}
+        />
+        <FormLikeBox
+          label="Position Availability"
+          value={getRequestValue(
+            request,
+            ["positionStatus", "position_status"],
+            "Inactive",
+          )}
+        />
+        <FormLikeBox
+          label="Requester"
+          value={requesterInfo.displayNameWithSibs}
+        />
+        <FormLikeBox
+          label="Date Requested"
+          value={formatDate(request.dateRequested || request.requestDate)}
+        />
+        <FormLikeBox label="Assigned Approver" value={request.approver || "--"} />
+      </div>
+
+      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormLikeBox label="Description" value={description} large />
+        <FormLikeBox
+          label="Preferred Skills"
+          value={preferredSkills}
+          large
+        />
+      </div>
+
+      <div className="mt-6 border-t border-[#E6ECF2] pt-5">
+        <h3 className="text-base font-extrabold text-[#101828]">
+          Approval Details
+        </h3>
+
+        <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
+          Current approval decision and recorded remarks.
+        </p>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <FormLikeBox label="Approval Status" value={status} />
+          <FormLikeBox label="Approval Date" value={formatDate(approvalDate)} />
+          <FormLikeBox label="Approved / Rejected By" value={approvedBy} />
+          <FormLikeBox
+            label="Approval Remarks"
+            value={getRequestValue(
+              request,
+              ["approvalRemarks", "approval_remarks", "remarks"],
+              "--",
+            )}
+            large
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+function getHiringNeedsRequestKind(request = {}) {
+  const raw = request?.raw || {};
+
+  const type = String(
+    request?.hiringRequestType ||
+      request?.hiring_request_type ||
+      request?.requestType ||
+      request?.request_type ||
+      raw?.hiringRequestType ||
+      raw?.hiring_request_type ||
+      raw?.requestType ||
+      raw?.request_type ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
+
+  if (type === "downsize") return "Downsize";
+
+  const titleText = String(request?.title || raw?.title || "").toLowerCase();
+  const reasonText = String(request?.reason || raw?.reason || "").toLowerCase();
+
+  if (titleText.includes("downsize") || reasonText.includes("downsize")) {
+    return "Downsize";
+  }
+
+  return "Requisition";
+}
+
+function getHiringNeedsWeekRange(request = {}) {
+  const raw = request?.raw || {};
+
+  const dateRange =
+    request?.weeklyWeekDateRange ||
+    request?.weekly_week_date_range ||
+    raw?.weeklyWeekDateRange ||
+    raw?.weekly_week_date_range ||
+    "";
+
+  if (dateRange) return dateRange;
+
+  const start =
+    request?.weeklyWeekStart ||
+    request?.weekly_week_start ||
+    request?.weekStart ||
+    request?.week_start ||
+    raw?.weeklyWeekStart ||
+    raw?.weekly_week_start ||
+    raw?.weekStart ||
+    raw?.week_start ||
+    "";
+
+  const end =
+    request?.weeklyWeekEnd ||
+    request?.weekly_week_end ||
+    request?.weekEnd ||
+    request?.week_end ||
+    raw?.weeklyWeekEnd ||
+    raw?.weekly_week_end ||
+    raw?.weekEnd ||
+    raw?.week_end ||
+    "";
+
+  const formattedStart = formatDate(start);
+  const formattedEnd = formatDate(end);
+
+  if (formattedStart !== "--" && formattedEnd !== "--") {
+    return `${formattedStart} - ${formattedEnd}`;
+  }
+
+  if (formattedStart !== "--") return formattedStart;
+  if (formattedEnd !== "--") return formattedEnd;
+
+  return "--";
+}
+
+function getHiringNeedsDepartmentDisplay(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.departmentAccount ||
+    request?.department_account ||
+    raw?.departmentAccount ||
+    raw?.department_account ||
+    request?.departmentName ||
+    request?.department_name ||
+    raw?.departmentName ||
+    raw?.department_name ||
+    request?.department ||
+    raw?.department ||
+    "--"
+  );
+}
+
+function getHiringNeedsAccountDisplay(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.accountName ||
+    request?.account_name ||
+    raw?.accountName ||
+    raw?.account_name ||
+    request?.account ||
+    raw?.account ||
+    "--"
+  );
+}
+
+function getHiringNeedsDownsizeReason(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.downsizeReason ||
+    request?.downsize_reason ||
+    raw?.downsizeReason ||
+    raw?.downsize_reason ||
+    request?.reasonForHiring ||
+    request?.reason_for_hiring ||
+    raw?.reasonForHiring ||
+    raw?.reason_for_hiring ||
+    request?.reason ||
+    raw?.reason ||
+    "--"
+  );
+}
+
+function getHiringNeedsReasonDisplay(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.reasonForHiring ||
+    request?.reason_for_hiring ||
+    raw?.reasonForHiring ||
+    raw?.reason_for_hiring ||
+    request?.reason ||
+    raw?.reason ||
+    "--"
+  );
+}
+
+function getHiringNeedsSupportingFileUrl(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.supportingFilePath ||
+    request?.supporting_file_path ||
+    request?.supportingFileUrl ||
+    request?.supporting_file_url ||
+    raw?.supportingFilePath ||
+    raw?.supporting_file_path ||
+    raw?.supportingFileUrl ||
+    raw?.supporting_file_url ||
+    ""
+  );
+}
+
+function getHiringNeedsSupportingFileName(request = {}) {
+  const raw = request?.raw || {};
+
+  return (
+    request?.supportingFileName ||
+    request?.supporting_file_name ||
+    raw?.supportingFileName ||
+    raw?.supporting_file_name ||
+    "Supporting file"
+  );
+}
+
+function getHiringNeedsPreviousRequiredHeadcount(request = {}) {
+  return getRequestValue(
+    request,
+    [
+      "previousRequiredHeadcount",
+      "previous_required_headcount",
+      "previousHeadcount",
+      "previous_headcount",
+      "previousRequiredHC",
+      "previous_required_hc",
+    ],
+    "0",
+  );
+}
+
 function HiringNeedsRequestDetails({ request }) {
+  const requestKind = getHiringNeedsRequestKind(request);
+  const isDownsize = requestKind === "Downsize";
+
   const headcount = getRequestValue(
     request,
     [
@@ -3579,10 +4749,17 @@ function HiringNeedsRequestDetails({ request }) {
     "--",
   );
 
+  const previousRequiredHeadcount = getHiringNeedsPreviousRequiredHeadcount(request);
+
   const headcountNumber = Number(headcount);
   const displayHeadcount = Number.isFinite(headcountNumber)
     ? formatNumber(headcountNumber)
     : safeText(headcount);
+
+  const previousHeadcountNumber = Number(previousRequiredHeadcount);
+  const displayPreviousHeadcount = Number.isFinite(previousHeadcountNumber)
+    ? formatNumber(previousHeadcountNumber)
+    : safeText(previousRequiredHeadcount);
 
   const status = getNormalizedRequestStatus(request);
   const displayStatus = status === "Rejected" ? "Not Approved" : status;
@@ -3624,24 +4801,51 @@ function HiringNeedsRequestDetails({ request }) {
 
   const requesterInfo = getRequesterDisplayInfo(request);
 
+  const supportingFileUrl = getHiringNeedsSupportingFileUrl(request);
+  const supportingFileName = getHiringNeedsSupportingFileName(request);
+
   return (
     <section className="rounded-[10px] border border-[#E1E7EF] bg-white p-5">
       <div className="mb-5">
         <h3 className="text-base font-extrabold text-[#101828]">
-          Request Details
+          {isDownsize ? "Downsize Request Details" : "Request Details"}
         </h3>
 
         <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
-          Submitted request information and staffing requirement.
+          {isDownsize
+            ? "Submitted downsize request information from the selected weekly hiring plan account."
+            : "Submitted request information and staffing requirement."}
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <FormLikeBox label="Headcount" value={displayHeadcount} />
+        <RequestTypeFormLikeBox value={requestKind} />
 
-        <FormLikeBox label="Date Needed" value={formatDate(dateNeeded)} />
+        <FormLikeBox
+          label={isDownsize ? "Headcount to Downsize" : "Headcount"}
+          value={displayHeadcount}
+        />
 
-        <FormLikeBox label="Requester Name" value={requesterInfo.displayNameWithSibs} />
+        {isDownsize ? (
+          <>
+            <FormLikeBox
+              label="Week Range"
+              value={getHiringNeedsWeekRange(request)}
+            />
+
+            <FormLikeBox
+              label="Previous Required Headcount"
+              value={displayPreviousHeadcount}
+            />
+          </>
+        ) : (
+          <FormLikeBox label="Date Needed" value={formatDate(dateNeeded)} />
+        )}
+
+        <FormLikeBox
+          label="Requester Name"
+          value={requesterInfo.displayNameWithSibs}
+        />
 
         <FormLikeBox label="Requester SIBS ID" value={requesterInfo.sibsId} />
 
@@ -3650,16 +4854,12 @@ function HiringNeedsRequestDetails({ request }) {
           value={formatDate(request.dateRequested || request.requestDate)}
         />
 
-        <FormLikeBox
-          label="Account"
-          value={getRequestValue(
-            request,
-            ["account", "accountName", "account_name"],
-            "--",
-          )}
-        />
+        <FormLikeBox label="Account" value={getHiringNeedsAccountDisplay(request)} />
 
-        <FormLikeBox label="Department" value={request.department || "--"} />
+        <FormLikeBox
+          label="Department / Account"
+          value={getHiringNeedsDepartmentDisplay(request)}
+        />
 
         <FormLikeBox
           label="Location Site"
@@ -3674,7 +4874,38 @@ function HiringNeedsRequestDetails({ request }) {
             requesterInfo.name,
           )}
         />
+
+        <FormLikeBox
+          label={isDownsize ? "Downsize Reason" : "Reason for Hiring"}
+          value={
+            isDownsize
+              ? getHiringNeedsDownsizeReason(request)
+              : getHiringNeedsReasonDisplay(request)
+          }
+          large
+        />
       </div>
+
+      {isDownsize && supportingFileUrl && (
+        <div className="mt-6">
+          <p className="mb-2 text-sm font-bold text-sibs-primary-1">
+            Supporting File
+          </p>
+
+          <a
+            href={getFileUrl(supportingFileUrl)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-h-[74px] items-center gap-3 rounded-[10px] border border-[#D6DEE8] bg-white px-4 py-3 text-sm font-semibold text-[#2F6CA5] transition hover:bg-[#F8FAFC]"
+          >
+            <FileTypeMini filename={supportingFileName} />
+
+            <span className="min-w-0 truncate">
+              {supportingFileName || "Open supporting file"}
+            </span>
+          </a>
+        </div>
+      )}
 
       <div className="mt-6">
         <h3 className="text-base font-extrabold text-[#101828]">
@@ -3702,6 +4933,7 @@ function HiringNeedsRequestDetails({ request }) {
     </section>
   );
 }
+
 
 function HiringNeedsApprovalPanel({
   request,
@@ -4245,6 +5477,12 @@ function FormLikeBox({ label, value, large = false }) {
   );
 }
 
+function RequestTypeFormLikeBox({ label = "Request Type", value }) {
+  return (
+    <FormLikeBox label={label} value={safeText(value)} />
+  );
+}
+
 function FileTypeMini({ filename }) {
   const ext = String(filename || "")
     .split(".")
@@ -4316,10 +5554,12 @@ function DecisionModal({
   const requestStatus = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
+  const isAvailablePosition = isAvailablePositionRequest(request);
   const isWeekly = isWeeklyHiringPlanRequest(request);
   const isWeeklyRecruitmentSettings =
     isWeeklyRecruitmentSettingsRequest(request);
   const isWeeklyUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
+  const displayRequestType = getApprovalRequestDisplayType(request);
   const canEditRequiredHeadcount =
     canEditRequiredHeadcountOnWeeklyApproval(request);
   const approvedRequiredHeadcountValue = normalizeHeadcountInput(
@@ -4337,11 +5577,15 @@ function DecisionModal({
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <h2 className="truncate text-2xl font-extrabold uppercase tracking-tight text-sibs-primary-1">
-                {isHiringNeeds
+                {isAvailablePosition
                   ? isApprove
-                    ? "Approve Hiring Needs"
-                    : "Decline Hiring Needs"
-                  : isApprove
+                    ? "Approve Available Position"
+                    : "Decline Available Position"
+                  : isHiringNeeds
+                    ? isApprove
+                      ? "Approve Hiring Needs"
+                      : "Decline Hiring Needs"
+                    : isApprove
                     ? "Approve Request"
                     : "Reject Request"}
               </h2>
@@ -4388,8 +5632,12 @@ function DecisionModal({
                     <div className="mt-3 flex flex-wrap gap-2">
                       <StatusBadge status={requestStatus} />
 
-                      <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-[#174A7C]">
-                        {getRequestType(request) || request.type || "--"}
+                      <span
+                        className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${getApprovalRequestDisplayTypeClass(
+                          displayRequestType || getRequestType(request) || request.type,
+                        )}`}
+                      >
+                        {displayRequestType || getRequestType(request) || request.type || "--"}
                       </span>
                     </div>
                   </div>
@@ -4417,7 +5665,7 @@ function DecisionModal({
                 />
                 <DecisionInfoBox
                   label="Request Type"
-                  value={getRequestType(request) || request.type || "--"}
+                  value={displayRequestType || getRequestType(request) || request.type || "--"}
                 />
                 <DecisionInfoBox
                   label="Requester"
@@ -4735,7 +5983,9 @@ function DecisionModal({
                       ? "Approving this request accepts the OM headcount update from the Weekly Hiring Plan page. Declining keeps the update from becoming final."
                       : isHiringNeeds
                         ? "This Hiring Needs approval decision is only available to users listed under Recruitment Settings > Approval Rules > Hiring Needs. Declining will mark the request as not approved."
-                        : "This approval decision will be recorded under your assigned approval level. The request will move to the next approver after approval, or stop the workflow if rejected."}
+                        : isAvailablePosition
+                          ? "This Available Position approval decision is only available to users listed under Recruitment Settings > Approval Rules > Available Positions. Declining will mark the request as rejected."
+                          : "This approval decision will be recorded under your assigned approval level. The request will move to the next approver after approval, or stop the workflow if rejected."}
                 </p>
               </div>
 
@@ -4780,7 +6030,11 @@ function DecisionModal({
                 <XCircle size={17} />
               )}
 
-              {isApprove ? "Approve" : isHiringNeeds ? "Decline" : "Reject"}
+              {isApprove
+                ? "Approve"
+                : isHiringNeeds || isAvailablePosition
+                  ? "Decline"
+                  : "Reject"}
             </button>
           </div>
         </div>

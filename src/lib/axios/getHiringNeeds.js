@@ -41,8 +41,16 @@ export async function getHiringNeedJobDescriptions() {
 
 export async function createHiringNeed(payload) {
   try {
+    const isFormData =
+      typeof FormData !== "undefined" && payload instanceof FormData;
+
     const response = await api.post("/api/hiring-needs", payload, {
       withCredentials: true,
+      headers: isFormData
+        ? {
+            "Content-Type": "multipart/form-data",
+          }
+        : undefined,
     });
 
     return unwrapResponse(response);

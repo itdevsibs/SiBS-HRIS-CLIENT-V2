@@ -1,3 +1,5 @@
+import { STATUS_OPTIONS } from "./availablePositionsConstants";
+
 // helper functions
 export function cleanText(value) {
   return String(value ?? "").trim();
@@ -52,29 +54,24 @@ export function getUserDisplayName(user) {
   );
 }
 
-export function getStatusOption(meta, keyword) {
-  const options = Array.isArray(meta?.statusOptions) ? meta.statusOptions : [];
-  const lowerKeyword = String(keyword || "").toLowerCase();
+// Kept for compatibility with components that still call this helper.
+// The allowed statuses are now fixed instead of coming from API metadata.
+export function getStatusOption(_meta, keyword) {
+  const lowerKeyword = cleanText(keyword).toLowerCase();
 
   return (
-    options.find(
-      (item) =>
-        String(item || "")
-          .trim()
-          .toLowerCase() === lowerKeyword,
+    STATUS_OPTIONS.find(
+      (item) => cleanText(item).toLowerCase() === lowerKeyword,
     ) ||
-    options.find((item) =>
-      String(item || "")
-        .trim()
-        .toLowerCase()
-        .includes(lowerKeyword),
+    STATUS_OPTIONS.find((item) =>
+      cleanText(item).toLowerCase().includes(lowerKeyword),
     ) ||
     ""
   );
 }
 
-export function getInitialStatus(meta) {
-  return getStatusOption(meta, "active") || meta?.statusOptions?.[0] || "";
+export function getInitialStatus() {
+  return "Active";
 }
 
 export function textareaClass(extra = "") {
@@ -82,25 +79,17 @@ export function textareaClass(extra = "") {
 }
 
 export function getStatusTone(status) {
-  const normalizedStatus = String(status || "").toLowerCase();
+  const normalizedStatus = cleanText(status).toLowerCase();
 
-  if (normalizedStatus.includes("active") && !normalizedStatus.includes("in")) {
+  if (normalizedStatus === "active") {
     return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
-  if (normalizedStatus.includes("inactive")) {
+  if (normalizedStatus === "inactive") {
     return "border-red-200 bg-red-50 text-red-700";
   }
 
-  if (normalizedStatus.includes("draft")) {
-    return "border-amber-200 bg-amber-50 text-amber-700";
-  }
-
-  if (normalizedStatus.includes("new applicant")) {
-    return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
-  }
-
-  if (normalizedStatus.includes("archive")) {
+  if (normalizedStatus === "archived") {
     return "border-gray-200 bg-gray-50 text-gray-600";
   }
 
