@@ -30,8 +30,6 @@ import { getApprovedJobDescriptions } from "../../lib/axios/getJobDescription";
 import {
   cleanText,
   formatPersonName,
-  getInitialStatus,
-  getStatusOption,
   getUserDisplayName,
   sameText,
 } from "../../lib/utils/availablePositions/availablePositionsHelpers";
@@ -40,6 +38,7 @@ import {
   LOCATION_SITE_OPTIONS,
   POSITIONS_PER_PAGE,
   STATUS_FILTER_OPTIONS,
+  STATUS_OPTIONS,
 } from "../../lib/utils/availablePositions/availablePositionsConstants";
 import { formatDate } from "../../components/layout/FormatDateTime";
 import PositionFormModal from "../../components/modals/availablePositions/PositionFormModal";
@@ -104,19 +103,9 @@ export default function AvailablePositionsPage() {
     }));
   }
 
-  const databaseStatusOptions = useMemo(() => {
-    return Array.isArray(meta.statusOptions)
-      ? meta.statusOptions.filter(Boolean)
-      : [];
-  }, [meta.statusOptions]);
-
-  const activeStatus = useMemo(() => {
-    return getStatusOption(meta, "active") || "Active";
-  }, [meta]);
-
-  const inactiveStatus = useMemo(() => {
-    return getStatusOption(meta, "inactive") || "Inactive";
-  }, [meta]);
+  const databaseStatusOptions = STATUS_OPTIONS;
+  const activeStatus = "Active";
+  const inactiveStatus = "Inactive";
 
   const statusFilterOptions = useMemo(() => {
     return STATUS_FILTER_OPTIONS.map((status) => ({
@@ -261,9 +250,9 @@ export default function AvailablePositionsPage() {
         }
 
         setMeta({
-          statusOptions: Array.isArray(metaResponse.data?.statusOptions)
-            ? metaResponse.data.statusOptions.filter(Boolean)
-            : [],
+          // Keep the frontend status list fixed and independent from
+          // legacy status values returned by the API.
+          statusOptions: [...STATUS_OPTIONS],
           departments: Array.isArray(metaResponse.data?.departments)
             ? metaResponse.data.departments.filter(Boolean)
             : [],
@@ -288,7 +277,7 @@ export default function AvailablePositionsPage() {
         setPositionList([]);
         setApprovedJdPositions([]);
         setMeta({
-          statusOptions: [],
+          statusOptions: [...STATUS_OPTIONS],
           departments: [],
           accounts: [],
         });
@@ -344,7 +333,7 @@ export default function AvailablePositionsPage() {
   function buildAddForm() {
     return {
       ...emptyForm,
-      status: getInitialStatus(meta),
+      status: "Active",
     };
   }
 

@@ -8,7 +8,16 @@ export const LOCATION_SITE_OPTIONS = [
   "Both Davao and Tagum Site",
 ];
 
-export const STATUS_FILTER_OPTIONS = ["All", "Active", "Inactive"];
+// Used in the page filter dropdown.
+export const STATUS_FILTER_OPTIONS = [
+  "All",
+  "Active",
+  "Inactive",
+  "Archived",
+];
+
+// Used in the Add/Edit Position modal.
+export const STATUS_OPTIONS = ["Active", "Inactive", "Archived"];
 
 export const emptyForm = {
   jdId: "",

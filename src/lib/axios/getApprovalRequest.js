@@ -7,6 +7,7 @@ import api from "./api-template";
    - Workforce Hiring Plan
    - Job Description
    - Hiring Needs
+   - Available Position
 
    Attrition tab displays merged:
    - Resignation approvals
@@ -18,6 +19,7 @@ const APPROVAL_MODULES = [
   "Workforce Hiring Plan",
   "Job Description",
   "Hiring Needs",
+  "Available Position",
 ];
 
 const DEFAULT_COUNTS = {
@@ -343,6 +345,36 @@ export async function getHiringNeedsApprovalRequests({
   }
 }
 
+export async function getAvailablePositionApprovalRequests({
+  page = 1,
+  search = "",
+  status = "",
+  type = "",
+  limit = 200,
+} = {}) {
+  try {
+    const res = await api.get("/api/approval-requests/available-position", {
+      params: cleanParams({
+        page,
+        search,
+        status,
+        type,
+        limit,
+      }),
+      withCredentials: true,
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error("GET AVAILABLE POSITION APPROVAL REQUESTS ERROR:", error);
+
+    return normalizeError(
+      error,
+      "Failed to load Available Position approval requests.",
+    );
+  }
+}
+
 /* ---------------------------------------------------------
    Module Resolver
 --------------------------------------------------------- */
@@ -360,6 +392,10 @@ export async function getApprovalRequestsByModule(moduleName, params = {}) {
 
     case "Hiring Needs":
       return getHiringNeedsApprovalRequests(params);
+
+    case "Available Position":
+    case "Available Positions":
+      return getAvailablePositionApprovalRequests(params);
 
     default:
       return getApprovalRequests({
@@ -887,6 +923,84 @@ export async function rejectHiringNeedsRequest(id, payload = {}) {
   }
 }
 
+export async function approveAvailablePositionRequest(id, payload = {}) {
+  try {
+    if (!id) {
+      return {
+        success: false,
+        message: "Available Position request ID is required.",
+        status: 400,
+      };
+    }
+
+    const res = await api.patch(
+      `/api/approval-requests/available-position/${id}/approve`,
+      {
+        remarks: payload.remarks || "",
+      },
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error("APPROVE AVAILABLE POSITION REQUEST ERROR:", error);
+
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to approve Available Position request.",
+      status: error?.response?.status || 500,
+    };
+  }
+}
+
+export async function rejectAvailablePositionRequest(id, payload = {}) {
+  try {
+    if (!id) {
+      return {
+        success: false,
+        message: "Available Position request ID is required.",
+        status: 400,
+      };
+    }
+
+    const res = await api.patch(
+      `/api/approval-requests/available-position/${id}/reject`,
+      {
+        remarks: payload.remarks || "",
+      },
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error("REJECT AVAILABLE POSITION REQUEST ERROR:", error);
+
+    return {
+      success: false,
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to reject Available Position request.",
+      status: error?.response?.status || 500,
+    };
+  }
+}
+
 /* ---------------------------------------------------------
    Module Action Resolvers
 --------------------------------------------------------- */
@@ -904,6 +1018,10 @@ export async function approveRequestByModule(moduleName, id, payload = {}) {
 
     case "Hiring Needs":
       return approveHiringNeedsRequest(id, payload);
+
+    case "Available Position":
+    case "Available Positions":
+      return approveAvailablePositionRequest(id, payload);
 
     default:
       return approveApprovalRequest(id, {
@@ -927,12 +1045,78 @@ export async function rejectRequestByModule(moduleName, id, payload = {}) {
     case "Hiring Needs":
       return rejectHiringNeedsRequest(id, payload);
 
+    case "Available Position":
+    case "Available Positions":
+      return rejectAvailablePositionRequest(id, payload);
+
     default:
       return rejectApprovalRequest(id, {
         ...payload,
         module: moduleName,
       });
   }
+}
+
+/* ---------------------------------------------------------
+   Approval Notification Count
+--------------------------------------------------------- */
+
+export async function getApprovalNotificationCount(moduleName, params = {}) {
+  const result = await getApprovalRequestsByModule(moduleName, {
+    page: 1,
+    limit: 500,
+    search: "",
+    status: "",
+    ...params,
+  });
+
+  if (!result?.success) {
+    return 0;
+  }
+
+  const rows = Array.isArray(result.data) ? result.data : [];
+
+  const pendingStatuses = [
+    "pending",
+    "for review",
+  ];
+
+  const unique = new Map();
+
+  rows.forEach((item) => {
+    const key = [
+      moduleName,
+      item.source || item.module || "",
+      item.rawId || item.raw_id || item.id || "",
+      item.type || "",
+    ].join("::");
+
+    if (!unique.has(key)) {
+      unique.set(key, item);
+    }
+  });
+
+  let count = 0;
+
+  unique.forEach((item) => {
+    const status = String(
+      item.status ??
+      item.recruitmentSettingsStatus ??
+      item.recruitment_settings_status ??
+      item.updateHeadcountStatus ??
+      item.update_headcount_status ??
+      item.raw?.status ??
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+    if (pendingStatuses.includes(status)) {
+      count++;
+    }
+  });
+
+  return count;
 }
 
 /* ---------------------------------------------------------
@@ -1015,6 +1199,7 @@ export default {
   getWorkforceHiringPlanApprovalRequests,
   getJobDescriptionApprovalRequests,
   getHiringNeedsApprovalRequests,
+  getAvailablePositionApprovalRequests,
   getApprovalRequestsByModule,
 
   approveApprovalRequest,
@@ -1033,9 +1218,14 @@ export default {
   approveHiringNeedsRequest,
   rejectHiringNeedsRequest,
 
+  approveAvailablePositionRequest,
+  rejectAvailablePositionRequest,
+
   approveRequestByModule,
   rejectRequestByModule,
 
   bulkApproveApprovalRequests,
   bulkRejectApprovalRequests,
+
+  getApprovalNotificationCount,
 };

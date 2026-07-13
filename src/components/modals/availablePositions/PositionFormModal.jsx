@@ -1,5 +1,8 @@
 import React from "react";
-import { LOCATION_SITE_OPTIONS } from "../../../lib/utils/availablePositions/availablePositionsConstants";
+import {
+  LOCATION_SITE_OPTIONS,
+  STATUS_OPTIONS,
+} from "../../../lib/utils/availablePositions/availablePositionsConstants";
 import {
   cleanText,
   textareaClass,
@@ -16,7 +19,6 @@ const PositionFormModal = ({
   onClose,
   onSubmit,
   onReset,
-  meta,
   approvedJdPositions = [],
   isSaving,
 }) => {
@@ -25,11 +27,7 @@ const PositionFormModal = ({
   const title =
     mode === "edit" ? "Edit Available Position" : "Add Available Position";
 
-  const statusOptions = Array.isArray(meta.statusOptions)
-    ? meta.statusOptions
-    : [];
-
-  const statusDropdownOptions = statusOptions.map((status) => ({
+  const statusDropdownOptions = STATUS_OPTIONS.map((status) => ({
     id: status,
     value: status,
     label: status,
