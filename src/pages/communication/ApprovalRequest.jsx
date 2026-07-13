@@ -4203,6 +4203,8 @@ function ViewApprovalRequestModal({
           <div className="space-y-5">
             {isWorkforce ? (
               <WorkforceHiringPlanRequestDetails request={request} />
+            ) : isAvailablePosition ? (
+              <AvailablePositionRequestDetails request={request} />
             ) : isHiringNeeds ? (
               <HiringNeedsRequestDetails request={request} />
             ) : isAttrition ? (
