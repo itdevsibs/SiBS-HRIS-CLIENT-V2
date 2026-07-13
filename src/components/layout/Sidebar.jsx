@@ -32,13 +32,20 @@ import { useUser } from "../../services/context/UserContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
+import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 
-const APPROVAL_MODULES = ["Attrition", "Job Description", "Hiring Needs"];
+const APPROVAL_MODULES = [
+  "Attrition",
+  "Job Description",
+  "Hiring Needs",
+  "Available Positions",
+];
 
 const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   Attrition: ["Resignation", "Attrition"],
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
+  "Available Positions": ["Available Position"],
 };
 
 const APPROVAL_MODULE_ACCESS = {
@@ -48,6 +55,7 @@ const APPROVAL_MODULE_ACCESS = {
 const APPROVAL_SETTINGS_API_BY_MODULE = {
   "Job Description": getJobDescriptionApprovalUsers,
   "Hiring Needs": getHiringNeedsApprovalUsers,
+  "Available Positions": getAvailablePositionApprovalUsers,
 };
 
 function normalizeSibsId(value = "") {
@@ -160,6 +168,12 @@ async function canCountApprovalModuleForUser(moduleName, user) {
   }
 }
 
+function getApprovalApiModuleName(moduleName = "") {
+  return moduleName === "Available Positions"
+    ? "Available Position"
+    : moduleName;
+}
+
 function normalizeApprovalNotificationStatus(value) {
   const cleanValue = String(value || "")
     .trim()
@@ -225,7 +239,7 @@ async function getApprovalNotificationCountByModule(moduleName) {
 
   const results = await Promise.allSettled(
     types.map((type) =>
-      getApprovalRequestsByModule(moduleName, {
+      getApprovalRequestsByModule(getApprovalApiModuleName(moduleName), {
         page: 1,
         limit: 500,
         search: "",
