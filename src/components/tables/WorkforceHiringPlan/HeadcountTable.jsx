@@ -286,11 +286,46 @@ function getTotals(filteredPlans = []) {
     0,
   );
 
-  const absenteeismTotal = rows.reduce(
-    (sum, item) => sum + getSixWeekTotal(item, "absenteeism"),
+  /*
+    Selected-week average absenteeism for the KPI card.
+    Do NOT use getSixWeekTotal(item, "absenteeism") here.
+  */
+  const averageAbsentHeadcountTotal = rows.reduce(
+    (sum, item) =>
+      sum +
+      getNumberValue(item, [
+        "averageAbsentHeadcount",
+        "average_absent_headcount",
+      ]),
     0,
   );
 
+  const currentWeekAbsenteeismTotal = rows.reduce(
+    (sum, item) =>
+      sum +
+      getNumberValue(item, [
+        "currentWeekAbsenteeismCount",
+        "current_week_absenteeism_count",
+        "absenteeismCurrentWeekCount",
+        "absenteeism_current_week_count",
+      ]),
+    0,
+  );
+
+  const scheduledCountTotal = rows.reduce(
+    (sum, item) =>
+      sum + getNumberValue(item, ["scheduledCount", "scheduled_count"]),
+    0,
+  );
+
+  const absenteeismPercentage =
+    scheduledCountTotal > 0
+      ? (currentWeekAbsenteeismTotal / scheduledCountTotal) * 100
+      : 0;
+
+  /*
+    Keep attrition as 6-week total.
+  */
   const attritionTotal = rows.reduce(
     (sum, item) => sum + getSixWeekTotal(item, "attrition"),
     0,
@@ -327,13 +362,18 @@ function getTotals(filteredPlans = []) {
       ? ((actualHeadcount - requiredHeadcount) / requiredHeadcount) * 100
       : 0;
 
-  const absenteeismPercentage =
-    actualHeadcount > 0 ? (absenteeismTotal / actualHeadcount) * 100 : 0;
-
   const attritionPercentage =
     actualHeadcount > 0 ? (attritionTotal / actualHeadcount) * 100 : 0;
 
-  const netActualHeadcount = Math.max(0, actualHeadcount - attritionTotal);
+  /*
+    Use selected-week average absenteeism in net HC calculation.
+    This prevents the 6-week total from destroying Net Actual HC.
+  */
+  const netActualHeadcount = Math.max(
+    0,
+    actualHeadcount - averageAbsentHeadcountTotal - attritionTotal,
+  );
+
   const hiringNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
 
   const leadsToInterviewToGenerate =
@@ -348,8 +388,13 @@ function getTotals(filteredPlans = []) {
     requiredHeadcount,
     actualHeadcount,
     bufferPercentage,
-    absenteeismTotal,
+
+    absenteeismTotal: averageAbsentHeadcountTotal,
     absenteeismPercentage,
+
+    currentWeekAbsenteeismTotal,
+    scheduledCountTotal,
+
     attritionTotal,
     attritionPercentage,
     netActualHeadcount,
@@ -480,8 +525,10 @@ export default function HeadcountTable({ filteredPlans = [] }) {
           />
 
           <KpiCard
-            title="Absenteeism (6 weeks)"
-            value={<AnimatedNumber value={totals.absenteeismTotal} />}
+            title="Absenteeism"
+            value={
+              <AnimatedNumber value={totals.absenteeismTotal} decimals={2} />
+            }
             subtitle={`${formatNumber(totals.absenteeismPercentage, 2)}% Absenteeism %`}
             icon={CalendarDays}
             valueClassName="text-orange-500"

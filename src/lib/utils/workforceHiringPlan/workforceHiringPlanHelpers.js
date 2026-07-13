@@ -339,7 +339,10 @@ export function calculateActualHiringRatePercent({
   const cleanFstCount = Number(fstCount || 0);
   const cleanInterviewCount = Number(interviewCount || 0);
 
-  if (!Number.isFinite(cleanFstCount) || !Number.isFinite(cleanInterviewCount)) {
+  if (
+    !Number.isFinite(cleanFstCount) ||
+    !Number.isFinite(cleanInterviewCount)
+  ) {
     return 0;
   }
 
@@ -563,7 +566,9 @@ export function buildWeeklyAccess(user) {
     : [];
 
   const assignedAccountIds = new Set(
-    assignedAccounts.map((account) => getAccountIdFromAny(account)).filter(Boolean),
+    assignedAccounts
+      .map((account) => getAccountIdFromAny(account))
+      .filter(Boolean),
   );
 
   const assignedAccountNames = new Set(
@@ -573,7 +578,9 @@ export function buildWeeklyAccess(user) {
   );
 
   const assignedClusterNames = new Set(
-    assignedAccounts.map((account) => getClusterFromAny(account)).filter(Boolean),
+    assignedAccounts
+      .map((account) => getClusterFromAny(account))
+      .filter(Boolean),
   );
 
   return {
@@ -584,4 +591,32 @@ export function buildWeeklyAccess(user) {
     assignedAccountNames,
     assignedClusterNames,
   };
+}
+
+export function getSingleSelectedValue(values = [], fallback = "All") {
+  if (!Array.isArray(values) || values.length === 0) return fallback;
+
+  const firstValue = String(values[0] || "").trim();
+
+  return firstValue || fallback;
+}
+
+export function getSelectedWeekStart(activeWeek = {}) {
+  return (
+    activeWeek.weekStart ||
+    activeWeek.week_start ||
+    activeWeek.startDate ||
+    activeWeek.start_date ||
+    ""
+  );
+}
+
+export function getSelectedWeekEnd(activeWeek = {}) {
+  return (
+    activeWeek.weekEnd ||
+    activeWeek.week_end ||
+    activeWeek.endDate ||
+    activeWeek.end_date ||
+    ""
+  );
 }

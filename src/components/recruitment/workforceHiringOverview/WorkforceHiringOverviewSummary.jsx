@@ -45,11 +45,11 @@ export default function WorkforceHiringOverviewSummary() {
           value={`${summary.bufferPercentage.toFixed(2)}%`}
           icon={Gauge}
           subtitle="vs Required HC"
-          tone="green"
+          tone={summary.bufferPercentage < 0 ? "red" : "green"}
         />
         <KpiCard
           title="Absenteeism"
-          value={summary.absenteeism}
+          value={Math.round(summary.absenteeism)}
           sideValue={`${summary.absenteeismPercentage.toFixed(2)}%`}
           icon={CalendarDays}
           subtitle="Absenteeism %"
@@ -65,13 +65,13 @@ export default function WorkforceHiringOverviewSummary() {
         />
         <KpiCard
           title="Net Actual HC"
-          value={summary.netActualHc}
+          value={Math.round(summary.netActualHc)}
           icon={Users}
           tone="blue"
         />
         <KpiCard
           title="Hiring Needed"
-          value={summary.hiringNeeded}
+          value={Math.round(summary.hiringNeeded)}
           icon={UserPlus}
           tone="purple"
         />
