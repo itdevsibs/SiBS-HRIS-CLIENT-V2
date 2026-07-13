@@ -24,9 +24,9 @@ import { useUser } from "../../../services/context/UserContext";
 import { createHiringNeed } from "../../../lib/axios/getHiringNeeds";
 import { getTalentPoolOpenPositions } from "../../../lib/axios/getTalentPool";
 import {
-  getWeeklyHiringPlanAccounts,
-  getWeeklyHiringPlanWeeks,
-} from "../../../lib/axios/getWeeklyHiringPlan";
+  getWorkforceHiringPlanAccounts,
+  getWorkforceHiringPlanWeeks,
+} from "../../../lib/axios/getWorkforceHiringPlan";
 
 const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
 

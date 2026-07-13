@@ -828,24 +828,24 @@ function getRequesterDisplayInfo(request = {}) {
   };
 }
 
-function isWeeklyRecruitmentSettingsRequest(request) {
+function isWorkforceRecruitmentSettingsRequest(request) {
   return (
     isWorkforceHiringPlanRequest(request) &&
     getRequestType(request) === "Recruitment Settings"
   );
 }
 
-function isWeeklyUpdateHeadcountRequest(request) {
+function isWorkforceUpdateHeadcountRequest(request) {
   return (
     isWorkforceHiringPlanRequest(request) &&
     getRequestType(request) === "Update Headcount"
   );
 }
 
-function canEditRequiredHeadcountOnWeeklyApproval(request) {
+function canEditRequiredHeadcountOnWorkforceApproval(request) {
   return (
     isWorkforceHiringPlanRequest(request) &&
-    !isWeeklyUpdateHeadcountRequest(request)
+    !isWorkforceUpdateHeadcountRequest(request)
   );
 }
 
@@ -1849,14 +1849,14 @@ export default function ApprovalRequest() {
           typeFilter === "All" &&
           data.length === 0
         ) {
-          const weeklyTypes = [
+          const workforceTypes = [
             "Recruitment Settings",
             "Update Headcount",
             "Workforce Hiring Plan",
           ];
 
-          const weeklyResults = await Promise.allSettled(
-            weeklyTypes.map((requestType) =>
+          const workforceResults = await Promise.allSettled(
+            workforceTypes.map((requestType) =>
               getApprovalRequestsByModule(
                 getApprovalApiModuleName(activeModule),
                 buildParams(requestType),
@@ -1864,7 +1864,7 @@ export default function ApprovalRequest() {
             ),
           );
 
-          const successfulResults = weeklyResults
+          const successfulResults = workforceResults
             .filter((item) => item.status === "fulfilled")
             .map((item) => item.value)
             .filter((item) => item?.success);
@@ -2434,7 +2434,7 @@ export default function ApprovalRequest() {
       extra?.finalRequiredHeadcount ??
       "";
 
-    const editableRequiredHeadcount = canEditRequiredHeadcountOnWeeklyApproval(
+    const editableRequiredHeadcount = canEditRequiredHeadcountOnWorkforceApproval(
       request,
     )
       ? String(passedRequiredHeadcount ?? "")
@@ -2563,7 +2563,7 @@ export default function ApprovalRequest() {
     }
 
     if (
-      canEditRequiredHeadcountOnWeeklyApproval(request) &&
+      canEditRequiredHeadcountOnWorkforceApproval(request) &&
       action === "approve"
     ) {
       const approvedRequiredHeadcount = normalizeHeadcountInput(
@@ -2608,7 +2608,7 @@ export default function ApprovalRequest() {
           personallySpoken: decisionModal.personallySpoken,
           employeeRetained: decisionModal.employeeRetained,
           actionTaken: decisionModal.actionTaken,
-          approvedRequiredHeadcount: canEditRequiredHeadcountOnWeeklyApproval(
+          approvedRequiredHeadcount: canEditRequiredHeadcountOnWorkforceApproval(
             request,
           )
             ? normalizeHeadcountInput(decisionModal.editableRequiredHeadcount)
@@ -3210,8 +3210,8 @@ function ApprovalRequestTable({
   onPrevious,
   onNext,
 }) {
-  const isWeeklyModule = activeModule === "Workforce Hiring Plan";
-  const colSpan = isWeeklyModule ? 11 : 9;
+  const isWorkforceModule = activeModule === "Workforce Hiring Plan";
+  const colSpan = isWorkforceModule ? 11 : 9;
 
   return (
     <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
@@ -3268,7 +3268,7 @@ function ApprovalRequestTable({
               <div data-approval-table-scroll className="overflow-x-auto">
                 <table
                   className={`w-full ${
-                    isWeeklyModule ? "min-w-[1840px]" : "min-w-[1420px]"
+                    isWorkforceModule ? "min-w-[1840px]" : "min-w-[1420px]"
                   } border-separate border-spacing-0 overflow-hidden rounded-[14px] border border-[#D9E2EC] bg-white text-left`}
                 >
                   <thead>
@@ -3281,7 +3281,7 @@ function ApprovalRequestTable({
 
                       <th className="px-5 py-4">Requester</th>
 
-                      {isWeeklyModule && (
+                      {isWorkforceModule && (
                         <th className="px-5 py-4">Account</th>
                       )}
 
@@ -3293,7 +3293,7 @@ function ApprovalRequestTable({
 
                       <th className="px-5 py-4 text-center">Priority</th>
 
-                      {isWeeklyModule ? (
+                      {isWorkforceModule ? (
                         <>
                           <th className="px-5 py-4 text-center">
                             Recruitment Settings Status
@@ -3346,7 +3346,7 @@ function ApprovalRequestTable({
                         <ApprovalRequestRow
                           key={`${request.source || "request"}-${request.id}`}
                           request={request}
-                          isWeeklyModule={isWeeklyModule}
+                          isWorkforceModule={isWorkforceModule}
                           onView={() => onView(request)}
                         />
                       ))
@@ -3381,7 +3381,7 @@ function ApprovalRequestTable({
                     <ApprovalRequestMobileCard
                       key={`${request.source || "request"}-${request.id}`}
                       request={request}
-                      isWeeklyModule={isWeeklyModule}
+                      isWorkforceModule={isWorkforceModule}
                       onView={() => onView(request)}
                     />
                   ))}
@@ -3800,7 +3800,7 @@ function PositionAvailabilityBadge({ status }) {
   );
 }
 
-function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
+function ApprovalRequestRow({ request, isWorkforceModule, onView }) {
   const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
@@ -3853,7 +3853,7 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
         </p>
       </td>
 
-      {isWeeklyModule && (
+      {isWorkforceModule && (
         <td className="border-b border-[#E6ECF2] px-5 py-5">
           <p className="max-w-[240px] truncate text-sm font-extrabold text-sibs-primary-1">
             {accountName}
@@ -3892,7 +3892,7 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
         </span>
       </td>
 
-      {isWeeklyModule ? (
+      {isWorkforceModule ? (
         <>
           <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
             <StatusBadge status={recruitmentSettingsStatus} />
@@ -3938,7 +3938,7 @@ function ApprovalRequestRow({ request, isWeeklyModule, onView }) {
   );
 }
 
-function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
+function ApprovalRequestMobileCard({ request, isWorkforceModule, onView }) {
   const status = getNormalizedRequestStatus(request);
   const StatusIcon = getStatusIcon(status);
   const requestType = getRequestType(request);
@@ -3966,7 +3966,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
           </p>
         </div>
 
-        {!isWeeklyModule && (
+        {!isWorkforceModule && (
           <span
             className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
               status,
@@ -3978,7 +3978,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
         )}
       </div>
 
-      {isWeeklyModule && (
+      {isWorkforceModule && (
         <div className="mt-3 flex flex-wrap gap-2">
           <StatusBadge status={recruitmentSettingsStatus} />
           <StatusBadge
@@ -3991,7 +3991,7 @@ function ApprovalRequestMobileCard({ request, isWeeklyModule, onView }) {
       <div className="mt-4 grid grid-cols-2 gap-2">
         <MobileMetric label="Requester" value={requesterInfo.name} />
         <MobileMetric label="SIBS ID" value={requesterInfo.sibsId} />
-        {isWeeklyModule && <MobileMetric label="Account" value={accountName} />}
+        {isWorkforceModule && <MobileMetric label="Account" value={accountName} />}
         {isHiringNeeds && (
           <MobileMetric
             label="Headcount"
@@ -4073,7 +4073,7 @@ function ViewApprovalRequestModal({
 
   const status = getNormalizedRequestStatus(request);
   const isResignation = isResignationRequest(request);
-  const isWeekly = isWorkforceHiringPlanRequest(request);
+  const isWorkforce = isWorkforceHiringPlanRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
   const isAvailablePosition = isAvailablePositionRequest(request);
   const isAttrition = isAttritionRequest(request);
@@ -4092,17 +4092,17 @@ function ViewApprovalRequestModal({
     isHiringNeeds && canReview && !isFinalDecision;
   const showAvailablePositionFooterActions =
     isAvailablePosition && canReview && !isFinalDecision;
-  const isWeeklyRecruitmentSettings =
-    isWeeklyRecruitmentSettingsRequest(request);
+  const isWorkforceRecruitmentSettings =
+    isWorkforceRecruitmentSettingsRequest(request);
   const canEditRequiredHeadcount =
-    canEditRequiredHeadcountOnWeeklyApproval(request);
+    canEditRequiredHeadcountOnWorkforceApproval(request);
 
-  const [weeklyEditableRequiredHeadcount, setWeeklyEditableRequiredHeadcount] =
+  const [workforceEditableRequiredHeadcount, setWorkforceEditableRequiredHeadcount] =
     useState("");
 
   useEffect(() => {
     if (!open || !request) {
-      setWeeklyEditableRequiredHeadcount("");
+      setWorkforceEditableRequiredHeadcount("");
       return;
     }
 
@@ -4111,15 +4111,15 @@ function ViewApprovalRequestModal({
       Approval Request Workforce Hiring Plan modal.
       Keep it blank on every open so the final value is intentionally entered.
     */
-    setWeeklyEditableRequiredHeadcount(
-      canEditRequiredHeadcountOnWeeklyApproval(request) ? "" : "",
+    setWorkforceEditableRequiredHeadcount(
+      canEditRequiredHeadcountOnWorkforceApproval(request) ? "" : "",
     );
   }, [open, request]);
 
   function handleApproveWorkforceHiringPlan() {
     if (canEditRequiredHeadcount) {
       const approvedRequiredHeadcount = normalizeHeadcountInput(
-        weeklyEditableRequiredHeadcount,
+        workforceEditableRequiredHeadcount,
       );
 
       if (approvedRequiredHeadcount === "") {
@@ -4179,7 +4179,7 @@ function ViewApprovalRequestModal({
                       : isHiringNeedsDownsize
                         ? "Review submitted downsize request information and current approval status."
                         : "Review submitted requisition information and current approval status."
-                    : isWeekly
+                    : isWorkforce
                       ? "Workforce hiring plan approval request details"
                       : isResignation
                         ? "Resignation approval request details"
@@ -4201,7 +4201,7 @@ function ViewApprovalRequestModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sibs-scrollbar">
           <div className="space-y-5">
-            {isWeekly ? (
+            {isWorkforce ? (
               <WorkforceHiringPlanRequestDetails request={request} />
             ) : isHiringNeeds ? (
               <HiringNeedsRequestDetails request={request} />
@@ -4238,13 +4238,13 @@ function ViewApprovalRequestModal({
               </>
             )}
 
-            {isWeekly && (
+            {isWorkforce && (
               <WorkforceHiringPlanApprovalPanel
                 request={request}
                 canReview={canReview}
-                editableRequiredHeadcount={weeklyEditableRequiredHeadcount}
+                editableRequiredHeadcount={workforceEditableRequiredHeadcount}
                 onChangeEditableRequiredHeadcount={
-                  setWeeklyEditableRequiredHeadcount
+                  setWorkforceEditableRequiredHeadcount
                 }
                 onApprove={handleApproveWorkforceHiringPlan}
                 onReject={onReject}
@@ -4811,7 +4811,7 @@ function HiringNeedsRequestDetails({ request }) {
 
         <p className="mt-1 text-sm font-semibold text-[#2F6CA5]">
           {isDownsize
-            ? "Submitted downsize request information from the selected weekly hiring plan account."
+            ? "Submitted downsize request information from the selected Workforce Hiring Plan account."
             : "Submitted request information and staffing requirement."}
         </p>
       </div>
@@ -5098,7 +5098,7 @@ function WorkforceHiringPlanRequestDetails({ request }) {
 
           <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
             HR / HR Admin edits Required Headcount from this approval request.
-            After approval, OM can update weekly headcount from the Weekly
+            After approval, OM can update weekly headcount from the Workforce
             Hiring Plan page and HR / HR Admin reviews that update here.
           </p>
         </div>
@@ -5187,10 +5187,10 @@ function WorkforceHiringPlanApprovalPanel({
 
   const requiredHeadcount = getRequiredHeadcount(request);
   const requestedRequiredHeadcount = getRequestedRequiredHeadcount(request);
-  const isRecruitmentSettings = isWeeklyRecruitmentSettingsRequest(request);
-  const isUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
+  const isRecruitmentSettings = isWorkforceRecruitmentSettingsRequest(request);
+  const isUpdateHeadcount = isWorkforceUpdateHeadcountRequest(request);
   const canEditRequiredHeadcount =
-    canEditRequiredHeadcountOnWeeklyApproval(request);
+    canEditRequiredHeadcountOnWorkforceApproval(request);
   const approvedRequiredHeadcountValue = normalizeHeadcountInput(
     editableRequiredHeadcount,
   );
@@ -5553,13 +5553,13 @@ function DecisionModal({
   const isResignation = isResignationRequest(request);
   const isHiringNeeds = isHiringNeedsRequest(request);
   const isAvailablePosition = isAvailablePositionRequest(request);
-  const isWeekly = isWorkforceHiringPlanRequest(request);
-  const isWeeklyRecruitmentSettings =
-    isWeeklyRecruitmentSettingsRequest(request);
-  const isWeeklyUpdateHeadcount = isWeeklyUpdateHeadcountRequest(request);
+  const isWorkforce = isWorkforceHiringPlanRequest(request);
+  const isWorkforceRecruitmentSettings =
+    isWorkforceRecruitmentSettingsRequest(request);
+  const isWorkforceUpdateHeadcount = isWorkforceUpdateHeadcountRequest(request);
   const displayRequestType = getApprovalRequestDisplayType(request);
   const canEditRequiredHeadcount =
-    canEditRequiredHeadcountOnWeeklyApproval(request);
+    canEditRequiredHeadcountOnWorkforceApproval(request);
   const approvedRequiredHeadcountValue = normalizeHeadcountInput(
     editableRequiredHeadcount,
   );
@@ -5696,7 +5696,7 @@ function DecisionModal({
                   value={request.source || "--"}
                 />
 
-                {isWeekly && (
+                {isWorkforce && (
                   <>
                     <DecisionInfoBox
                       label="Recruitment Settings Status"
@@ -5782,7 +5782,7 @@ function DecisionModal({
                 </div>
               )}
 
-              {isWeeklyUpdateHeadcount && (
+              {isWorkforceUpdateHeadcount && (
                 <div className="rounded-[10px] border border-blue-100 bg-blue-50 p-5">
                   <h3 className="text-base font-extrabold text-sibs-primary-1">
                     OM Headcount Update Review
@@ -5977,7 +5977,7 @@ function DecisionModal({
                 >
                   {canEditRequiredHeadcount
                     ? "Approving this request applies the final Required Headcount entered by HR / HR Admin. OM can update weekly headcount only after that approval."
-                    : isWeeklyUpdateHeadcount
+                    : isWorkforceUpdateHeadcount
                       ? "Approving this request accepts the OM headcount update from the Workforce Hiring Plan page. Declining keeps the update from becoming final."
                       : isHiringNeeds
                         ? "This Hiring Needs approval decision is only available to users listed under Recruitment Settings > Approval Rules > Hiring Needs. Declining will mark the request as not approved."
