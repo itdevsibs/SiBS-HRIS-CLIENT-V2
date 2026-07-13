@@ -30,6 +30,7 @@ export async function getWorkforceHiringPlanFilterOptions() {
     });
 
     console.log("getWorkforceHiringPlanFilterOptions res:", res.data);
+
     return {
       clusters: res.data?.clusters || [],
       accounts: res.data?.accounts || [],
@@ -76,6 +77,54 @@ export async function getWorkforceHiringPlanAccounts(
     return [];
   }
 }
+
+/* =========================================
+   GET 6-WEEK TRENDS
+========================================= */
+
+export async function getWorkforceHiringPlanTrends({
+  cluster = "All",
+  account = "All",
+  weekStart = "",
+  weekEnd = "",
+  startDate = "",
+  endDate = "",
+} = {}) {
+  try {
+    const res = await api.get("/api/weekly-hiring-plan/accounts/trends", {
+      params: {
+        cluster,
+        account,
+        weekStart,
+        weekEnd,
+        startDate,
+        endDate,
+      },
+      withCredentials: true,
+    });
+
+    console.log("getWorkforceHiringPlanTrends res:", res.data);
+
+    return res.data || null;
+  } catch (err) {
+    console.error(
+      "Axios getWorkforceHiringPlanTrends API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return null;
+  }
+}
+
+/*
+  Alias name.
+
+  Keep this so both names work:
+  - getWorkforceHiringPlanTrends
+  - getWorkforceHiringPlanAccountTrends
+*/
+export const getWorkforceHiringPlanAccountTrends = getWorkforceHiringPlanTrends;
 
 /* =========================================
    SAVE ACTION ITEM
@@ -187,6 +236,10 @@ export default {
   getWorkforceHiringPlanWeeks,
   getWorkforceHiringPlanFilterOptions,
   getWorkforceHiringPlanAccounts,
+
+  getWorkforceHiringPlanTrends,
+  getWorkforceHiringPlanAccountTrends,
+
   saveWorkforceHiringPlanActionItem,
   saveRequiredHeadcount,
   lockWorkforceHiringPlanSnapshot,

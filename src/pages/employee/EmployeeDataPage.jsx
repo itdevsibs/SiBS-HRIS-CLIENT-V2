@@ -131,8 +131,8 @@ function cleanText(value) {
 }
 
 const PROFILE_FIELD_EDITING_CLASS = "bg-white ring-1 ring-[#D9E2EC]";
-const PROFILE_FIELD_FILLED_CLASS = "bg-[#F3F6FA]";
-const PROFILE_FIELD_EMPTY_CLASS = "bg-[#d7dbe0]";
+const PROFILE_FIELD_FILLED_CLASS = "bg-[#F1F5F9]";
+const PROFILE_FIELD_EMPTY_CLASS = "bg-[#F1F5F9]";
 
 function hasMeaningfulValue(value) {
   if (Array.isArray(value)) {
@@ -1609,7 +1609,7 @@ function PersonalPdsTab({
               />
             </ProfileGrid>
 
-            <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+            <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-5">
               <ProfileDetail
                 label="Civil Status"
                 value={employee?.civilStatus}
@@ -1629,6 +1629,20 @@ function PersonalPdsTab({
                 value={employee?.bloodType}
                 editable={isEditing}
                 onChange={(value) => onChange("bloodType", value)}
+              />
+
+              <ProfileDetail
+                label="Height"
+                value={employee?.height}
+                editable={isEditing}
+                onChange={(value) => onChange("height", value)}
+              />
+
+              <ProfileDetail
+                label="Weight"
+                value={employee?.weight}
+                editable={isEditing}
+                onChange={(value) => onChange("weight", value)}
               />
             </ProfileGrid>
           </div>
@@ -1730,20 +1744,6 @@ function PersonalPdsTab({
               value={employee?.tin}
               editable={isEditing}
               onChange={(value) => onChange("tin", value)}
-            />
-
-            <ProfileDetail
-              label="Height"
-              value={employee?.height}
-              editable={isEditing}
-              onChange={(value) => onChange("height", value)}
-            />
-
-            <ProfileDetail
-              label="Weight"
-              value={employee?.weight}
-              editable={isEditing}
-              onChange={(value) => onChange("weight", value)}
             />
 
             <ProfileDetail
