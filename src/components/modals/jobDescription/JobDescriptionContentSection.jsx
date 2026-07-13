@@ -2,11 +2,15 @@ import { useRef, useState } from "react";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
 import SingleSelectDropdown from "../../layout/dropdown/SingleSelectDropdown";
 import MultiSelectDropdown from "../../layout/dropdown/MultiSelectDropdown";
+import RichTextEditor from "./RichTextEditor";
 
 const reportToOptions = [
   { value: "Team Supervisor", label: "Team Supervisor" },
   { value: "Operations Manager", label: "Operations Manager" },
-  { value: "Senior Operations Manager", label: "Senior Operations Manager" },
+  {
+    value: "Senior Operations Manager",
+    label: "Senior Operations Manager",
+  },
   { value: "Department Head", label: "Department Head" },
   { value: "HR Manager", label: "HR Manager" },
 ];
@@ -41,12 +45,16 @@ export default function JobDescriptionContentSection() {
   const reportsToRef = useRef(null);
   const personalityTypeRef = useRef(null);
 
-  const [personalityTypeOpen, setPersonalityTypeOpen] = useState(false);
-  const [reportsToOpen, setReportsToOpen] = useState(false);
+  const [personalityTypeOpen, setPersonalityTypeOpen] =
+    useState(false);
+
+  const [reportsToOpen, setReportsToOpen] =
+    useState(false);
 
   const selectedReportsTo =
     reportToOptions.find(
-      (option) => option.value === String(form.reportsTo || ""),
+      (option) =>
+        option.value === String(form.reportsTo || ""),
     )?.label || "";
 
   function closeDropdowns() {
@@ -54,8 +62,112 @@ export default function JobDescriptionContentSection() {
     setPersonalityTypeOpen(false);
   }
 
+  function updateRichTextField(
+    field,
+    html,
+    plainText,
+  ) {
+    setForm((previous) => {
+      const nextForm = {
+        ...previous,
+        [field]: html,
+        [`${field}PlainText`]: plainText,
+      };
+
+      /*
+       * Keep the older aliases populated while the rest of the project is
+       * migrated to the correct responsibilities and qualifications fields.
+       */
+      if (field === "responsibilities") {
+        nextForm.dutiesResponsibilities = html;
+        nextForm.duties = html;
+      }
+
+      if (field === "qualifications") {
+        nextForm.qualificationDetails = html;
+        nextForm.qualificationCharacteristics = html;
+        nextForm.characteristics = html;
+      }
+
+      return nextForm;
+    });
+  }
+
   return (
     <div className="relative z-[1] mt-5 overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <style>{`
+        .jd-rich-text-editor .ProseMirror {
+          min-height: inherit;
+          color: var(--sibs-primary-1);
+          font-size: 0.875rem;
+          line-height: 1.5;
+          outline: none;
+          overflow-wrap: anywhere;
+        }
+
+        .jd-rich-text-editor .ProseMirror > * + * {
+          margin-top: 0.55rem;
+        }
+
+        .jd-rich-text-editor .ProseMirror p {
+          margin: 0;
+          line-height: 1.5;
+        }
+
+        .jd-rich-text-editor .ProseMirror ol,
+        .jd-rich-text-editor .ProseMirror ul {
+          margin: 0.55rem 0;
+          padding-left: 2.25rem;
+        }
+
+        .jd-rich-text-editor .ProseMirror ol {
+          list-style-type: decimal;
+        }
+
+        .jd-rich-text-editor .ProseMirror ol ol {
+          list-style-type: lower-alpha;
+          padding-left: 2.5rem;
+        }
+
+        .jd-rich-text-editor .ProseMirror ol ol ol {
+          list-style-type: lower-roman;
+        }
+
+        .jd-rich-text-editor .ProseMirror ul {
+          list-style-type: disc;
+        }
+
+        .jd-rich-text-editor .ProseMirror ul ul {
+          list-style-type: circle;
+        }
+
+        .jd-rich-text-editor .ProseMirror li {
+          padding-left: 0.4rem;
+          line-height: 1.5;
+        }
+
+        .jd-rich-text-editor .ProseMirror li + li {
+          margin-top: 0.45rem;
+        }
+
+        .jd-rich-text-editor .ProseMirror li > p {
+          margin: 0;
+        }
+
+        .jd-rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
+          float: left;
+          height: 0;
+          color: #91A4B7;
+          content: attr(data-placeholder);
+          pointer-events: none;
+        }
+
+        .jd-rich-text-editor .ProseMirror [style*="text-align: justify"] {
+          text-align: justify;
+          text-justify: inter-word;
+        }
+      `}</style>
+
       <h3 className="mb-4 text-sm font-bold text-[#101828]">
         Job Description Content
       </h3>
@@ -79,8 +191,8 @@ export default function JobDescriptionContentSection() {
                 setPersonalityTypeOpen(false);
               }}
               onSelect={(value) => {
-                setForm((prev) => ({
-                  ...prev,
+                setForm((previous) => ({
+                  ...previous,
                   reportsTo: value,
                 }));
 
@@ -91,7 +203,8 @@ export default function JobDescriptionContentSection() {
 
           <div className="relative z-[10] min-w-0">
             <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-              Supervisory <span className="text-red-500">*</span>
+              Supervisory{" "}
+              <span className="text-red-500">*</span>
             </label>
 
             <div className="relative grid h-12 w-full grid-cols-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] shadow-sm">
@@ -104,15 +217,16 @@ export default function JobDescriptionContentSection() {
               />
 
               {supervisoryOptions.map((option) => {
-                const isActive = form.supervisory === option;
+                const isActive =
+                  form.supervisory === option;
 
                 return (
                   <button
                     key={option}
                     type="button"
                     onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
+                      setForm((previous) => ({
+                        ...previous,
                         supervisory: option,
                       }))
                     }
@@ -138,43 +252,50 @@ export default function JobDescriptionContentSection() {
 
         <div className="relative z-[1]">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Position Overview <span className="text-red-500">*</span>
+            Position Overview{" "}
+            <span className="text-red-500">*</span>
           </label>
 
-          <textarea
-            required
-            rows={4}
-            value={form.description}
+          <RichTextEditor
+            id="job-description-position-overview"
+            value={form.description || ""}
             onFocus={closeDropdowns}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                description: e.target.value,
-              }))
+            onChange={(html, plainText) =>
+              updateRichTextField(
+                "description",
+                html,
+                plainText,
+              )
             }
             placeholder="Describe the main purpose of the role."
-            className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+            minHeight={120}
           />
         </div>
 
         <div className="relative z-[1]">
           <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Duties & Responsibilities <span className="text-red-500">*</span>
+            Duties & Responsibilities{" "}
+            <span className="text-red-500">*</span>
           </label>
 
-          <textarea
-            required
-            rows={4}
-            value={form.qualifications}
+          <RichTextEditor
+            id="job-description-responsibilities"
+            value={
+              form.responsibilities ||
+              form.dutiesResponsibilities ||
+              form.duties ||
+              ""
+            }
             onFocus={closeDropdowns}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                qualifications: e.target.value,
-              }))
+            onChange={(html, plainText) =>
+              updateRichTextField(
+                "responsibilities",
+                html,
+                plainText,
+              )
             }
             placeholder="List duties and responsibilities for this role."
-            className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+            minHeight={150}
           />
         </div>
 
@@ -184,18 +305,25 @@ export default function JobDescriptionContentSection() {
             <span className="text-red-500">*</span>
           </label>
 
-          <textarea
-            rows={3}
-            value={form.remarks}
-            onFocus={closeDropdowns}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                remarks: e.target.value,
-              }))
+          <RichTextEditor
+            id="job-description-qualifications"
+            value={
+              form.qualifications ||
+              form.qualificationDetails ||
+              form.qualificationCharacteristics ||
+              form.characteristics ||
+              ""
             }
-            placeholder="Optional qualifications, characteristics, or notes."
-            className="w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+            onFocus={closeDropdowns}
+            onChange={(html, plainText) =>
+              updateRichTextField(
+                "qualifications",
+                html,
+                plainText,
+              )
+            }
+            placeholder="Enter qualifications, characteristics, or notes."
+            minHeight={130}
           />
         </div>
 
@@ -203,8 +331,8 @@ export default function JobDescriptionContentSection() {
           <MultiSelectDropdown
             refBox={personalityTypeRef}
             label="Preferred Personality Type"
-            value={form.personalityTypes}
-            values={form.personalityTypes}
+            value={form.personalityTypes || []}
+            values={form.personalityTypes || []}
             placeholder="Select personality types"
             open={personalityTypeOpen}
             setOpen={setPersonalityTypeOpen}
@@ -216,9 +344,11 @@ export default function JobDescriptionContentSection() {
               setReportsToOpen(false);
             }}
             onChange={(values) => {
-              setForm((prev) => ({
-                ...prev,
+              setForm((previous) => ({
+                ...previous,
                 personalityTypes: values,
+                personalityType: values.join(", "),
+                personality_type: values.join(", "),
               }));
             }}
           />

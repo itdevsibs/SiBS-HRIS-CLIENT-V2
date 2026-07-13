@@ -136,7 +136,7 @@ function cleanText(value) {
 
 const PROFILE_FIELD_EDITING_CLASS = "bg-[#F1F5F9]";
 const PROFILE_FIELD_FILLED_CLASS = "bg-[#F1F5F9]";
-const PROFILE_FIELD_EMPTY_CLASS = "bg-[#d3d6db]";
+const PROFILE_FIELD_EMPTY_CLASS = "bg-[#F1F5F9]";
 
 function hasMeaningfulValue(value) {
   if (Array.isArray(value)) {
