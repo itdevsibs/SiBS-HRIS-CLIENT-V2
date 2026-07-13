@@ -60,6 +60,7 @@ function normalizeArrayText(value) {
       .map((item) => String(item || "").trim())
       .filter(Boolean)
       .join(", ");
+      
   }
 
   return normalizeText(value);
@@ -252,6 +253,79 @@ function formatLoggedInOwner(user) {
   };
 }
 
+
+
+function isHtmlContent(value = "") {
+  return /<\/?[a-z][\s\S]*>/i.test(String(value || ""));
+}
+
+function plainTextToHtml(value = "") {
+  const text = String(value || "")
+    .replace(/\r\n?/g, "\n")
+    .trim();
+
+  if (!text) return "";
+
+  return text
+    .split(/\n{2,}/)
+    .map((paragraph) => {
+      const escaped = paragraph
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
+
+      return `<p>${escaped}</p>`;
+    })
+    .join("");
+}
+
+function normalizeRichTextHtml(value = "") {
+  const content = String(value || "").trim();
+
+  if (!content) return "";
+
+  return isHtmlContent(content)
+    ? content
+    : plainTextToHtml(content);
+}
+
+function richTextToPlainText(value = "") {
+  const content = String(value || "").trim();
+
+  if (!content) return "";
+
+  if (!isHtmlContent(content)) {
+    return content.replace(/\s+/g, " ").trim();
+  }
+
+  if (typeof DOMParser === "undefined") {
+    return content
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  const parsed = new DOMParser().parseFromString(
+    content,
+    "text/html",
+  );
+
+  return String(parsed.body?.textContent || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasRichTextContent(value = "") {
+  return richTextToPlainText(value).length > 0;
+}
+
 function normalizeCompetencyItem(item = {}) {
   const title = String(
     item.title ||
@@ -438,23 +512,23 @@ export default function AddJobDescription({
       form.requestedBySibsId || form.ownerSibsId || loggedInOwner.ownerSibsId,
     );
 
-    const description = normalizeText(form.description);
-
-    const responsibilities = normalizeText(
-      form.responsibilities ||
-      form.dutiesResponsibilities ||
-      form.duties ||
-      form.qualifications ||
-      "",
+    const description = normalizeRichTextHtml(
+      form.description,
     );
 
-    const qualifications = normalizeText(
-      form.qualificationDetails ||
-      form.characteristics ||
-      form.qualificationCharacteristics ||
-      form.remarks ||
+    const responsibilities = normalizeRichTextHtml(
+      form.responsibilities ||
+        form.dutiesResponsibilities ||
+        form.duties ||
+        "",
+    );
+
+    const qualifications = normalizeRichTextHtml(
       form.qualifications ||
-      "",
+        form.qualificationDetails ||
+        form.characteristics ||
+        form.qualificationCharacteristics ||
+        "",
     );
 
     const personalityType = normalizeText(
@@ -519,7 +593,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!description) {
+    if (!hasRichTextContent(description)) {
       onStatus?.({
         type: "error",
         title: "Missing Job Description",
@@ -528,7 +602,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!responsibilities) {
+    if (!hasRichTextContent(responsibilities)) {
       onStatus?.({
         type: "error",
         title: "Missing Responsibilities",
@@ -537,7 +611,7 @@ export default function AddJobDescription({
       return;
     }
 
-    if (!qualifications) {
+    if (!hasRichTextContent(qualifications)) {
       onStatus?.({
         type: "error",
         title: "Missing Qualifications",
@@ -573,9 +647,17 @@ export default function AddJobDescription({
       dateRequested: form.dateRequested || getTodayDate(),
       effectiveDate: form.effectiveDate || getTodayDate(),
 
+      /*
+       * The existing database fields now contain sanitized Tiptap-compatible
+       * HTML so list structure, indentation, and inline formatting persist.
+       */
       description,
       responsibilities,
       qualifications,
+
+      descriptionPlainText: richTextToPlainText(description),
+      responsibilitiesPlainText: richTextToPlainText(responsibilities),
+      qualificationsPlainText: richTextToPlainText(qualifications),
 
       personalityType,
 
@@ -633,7 +715,7 @@ export default function AddJobDescription({
           onSubmit={handleCreateJobDescription}
           className="flex min-h-0 flex-1 flex-col"
         >
-          <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-8">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-8 sm:p-6 sm:pb-8">
             <AddJobDescriptionInfoBanner />
 
             <HiringRequirementSection
