@@ -589,7 +589,7 @@ export function AddActionItemModal({
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
               Create an action item linked to a hiring gap, role, owner, and
-              weekly hiring plan item.
+              workforce hiring plan item.
             </p>
           </div>
 
@@ -815,7 +815,7 @@ export function AddActionItemModal({
 
                     <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
                       Action Items are created when a role is not fully hired.
-                      They connect the weekly hiring plan to execution and make
+                      They connect the workforce hiring plan to execution and make
                       sure every gap has an owner, deadline, and follow-up
                       action.
                     </p>

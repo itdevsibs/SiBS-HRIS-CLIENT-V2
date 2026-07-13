@@ -161,7 +161,9 @@ async function canCountApprovalModuleForUser(moduleName, user) {
 }
 
 function normalizeApprovalNotificationStatus(value) {
-  const cleanValue = String(value || "").trim().toLowerCase();
+  const cleanValue = String(value || "")
+    .trim()
+    .toLowerCase();
 
   if (cleanValue === "approved") return "Approved";
   if (cleanValue === "for review") return "For Review";
@@ -386,8 +388,10 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const [approvalRequestNotificationCount, setApprovalRequestNotificationCount] =
-    useState(0);
+  const [
+    approvalRequestNotificationCount,
+    setApprovalRequestNotificationCount,
+  ] = useState(0);
 
   const loadApprovalRequestNotifications = useCallback(async () => {
     try {
@@ -600,9 +604,15 @@ export default function Sidebar() {
 
   const recruitmentMenu = [
     {
-      name: "Weekly Hiring Plan",
+      name: "Workforce & Hiring Overview",
       icon: CalendarDays,
-      path: "/recruitment/weekly-hiring-plan",
+      path: "/recruitment/workforce-hiring-overview",
+      allowedUsers: [1, 2, 3, 5, 6, 7],
+    },
+    {
+      name: "Workforce & Hiring Plan",
+      icon: CalendarDays,
+      path: "/recruitment/workforce-hiring-plan",
       allowedUsers: [1, 2, 3, 5, 6, 7],
     },
     {

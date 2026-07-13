@@ -4,7 +4,7 @@ import api from "./api-template";
    APPROVAL REQUEST API
    Modules:
    - Attrition
-   - Weekly Hiring Plan
+   - Workforce Hiring Plan
    - Job Description
    - Hiring Needs
    - Available Position
@@ -16,7 +16,7 @@ import api from "./api-template";
 
 const APPROVAL_MODULES = [
   "Attrition",
-  "Weekly Hiring Plan",
+  "Workforce Hiring Plan",
   "Job Description",
   "Hiring Needs",
   "Available Position",
@@ -221,7 +221,7 @@ export async function getAttritionApprovalRequests({
   }
 }
 
-export async function getWeeklyHiringPlanApprovalRequests({
+export async function getWorkforceHiringPlanApprovalRequests({
   page = 1,
   search = "",
   status = "",
@@ -237,7 +237,7 @@ export async function getWeeklyHiringPlanApprovalRequests({
   });
 
   try {
-    const res = await api.get("/api/approval-requests/weekly-hiring-plan", {
+    const res = await api.get("/api/approval-requests/workforce-hiring-plan", {
       params,
       withCredentials: true,
     });
@@ -247,11 +247,11 @@ export async function getWeeklyHiringPlanApprovalRequests({
     }
 
     throw new Error(
-      res.data?.message || "Weekly Hiring Plan module endpoint returned no data.",
+      res.data?.message || "Workforce Hiring Plan module endpoint returned no data.",
     );
   } catch (moduleError) {
     console.error(
-      "GET WEEKLY HIRING PLAN MODULE ENDPOINT ERROR:",
+      "GET WORKFORCE HIRING PLAN MODULE ENDPOINT ERROR:",
       moduleError,
     );
 
@@ -260,7 +260,7 @@ export async function getWeeklyHiringPlanApprovalRequests({
         params: cleanParams({
           page,
           search,
-          module: "Weekly Hiring Plan",
+          module: "Workforce Hiring Plan",
           status,
           type,
           limit,
@@ -271,13 +271,13 @@ export async function getWeeklyHiringPlanApprovalRequests({
       return fallbackRes.data;
     } catch (fallbackError) {
       console.error(
-        "GET WEEKLY HIRING PLAN FALLBACK APPROVAL REQUESTS ERROR:",
+        "GET WORKFORCE HIRING PLAN FALLBACK APPROVAL REQUESTS ERROR:",
         fallbackError,
       );
 
       return normalizeError(
         fallbackError,
-        "Failed to load Weekly Hiring Plan approval requests.",
+        "Failed to load Workforce Hiring Plan approval requests.",
       );
     }
   }
@@ -384,8 +384,8 @@ export async function getApprovalRequestsByModule(moduleName, params = {}) {
     case "Attrition":
       return getAttritionApprovalRequests(params);
 
-    case "Weekly Hiring Plan":
-      return getWeeklyHiringPlanApprovalRequests(params);
+    case "Workforce Hiring Plan":
+      return getWorkforceHiringPlanApprovalRequests(params);
 
     case "Job Description":
       return getJobDescriptionApprovalRequests(params);
@@ -701,7 +701,7 @@ export async function rejectAttritionModuleRequest(id, payload = {}) {
   }
 }
 
-export async function approveWeeklyHiringPlanRequest(id, payload = {}) {
+export async function approveWorkforceHiringPlanRequest(id, payload = {}) {
   try {
     if (!id) {
       return {
@@ -721,11 +721,11 @@ export async function approveWeeklyHiringPlanRequest(id, payload = {}) {
       "";
 
     const res = await api.patch(
-      `/api/approval-requests/weekly-hiring-plan/${id}/approve`,
+      `/api/approval-requests/workforce-hiring-plan/${id}/approve`,
       {
         remarks: payload.remarks || "",
 
-        module: payload.module || "Weekly Hiring Plan",
+        module: payload.module || "Workforce Hiring Plan",
         type: payload.type || "",
         requestType: payload.requestType || payload.type || "",
         source: payload.source || "",
@@ -754,7 +754,7 @@ export async function approveWeeklyHiringPlanRequest(id, payload = {}) {
 
     return res.data;
   } catch (error) {
-    console.error("APPROVE WEEKLY HIRING PLAN REQUEST ERROR:", error);
+    console.error("APPROVE WORKFORCE HIRING PLAN REQUEST ERROR:", error);
 
     return {
       success: false,
@@ -762,16 +762,16 @@ export async function approveWeeklyHiringPlanRequest(id, payload = {}) {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to approve Weekly Hiring Plan request.",
+        "Failed to approve Workforce Hiring Plan request.",
       status: error?.response?.status || 500,
     };
   }
 }
 
-export async function rejectWeeklyHiringPlanRequest(id, payload = {}) {
+export async function rejectWorkforceHiringPlanRequest(id, payload = {}) {
   try {
     const res = await api.patch(
-      `/api/approval-requests/weekly-hiring-plan/${id}/reject`,
+      `/api/approval-requests/workforce-hiring-plan/${id}/reject`,
       {
         remarks: payload.remarks || "",
       },
@@ -785,7 +785,7 @@ export async function rejectWeeklyHiringPlanRequest(id, payload = {}) {
 
     return res.data;
   } catch (error) {
-    console.error("REJECT WEEKLY HIRING PLAN REQUEST ERROR:", error);
+    console.error("REJECT WORKFORCE HIRING PLAN REQUEST ERROR:", error);
 
     return {
       success: false,
@@ -793,7 +793,7 @@ export async function rejectWeeklyHiringPlanRequest(id, payload = {}) {
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to reject Weekly Hiring Plan request.",
+        "Failed to reject Workforce Hiring Plan request.",
       status: error?.response?.status || 500,
     };
   }
@@ -1010,8 +1010,8 @@ export async function approveRequestByModule(moduleName, id, payload = {}) {
     case "Attrition":
       return approveAttritionModuleRequest(id, payload);
 
-    case "Weekly Hiring Plan":
-      return approveWeeklyHiringPlanRequest(id, payload);
+    case "Workforce Hiring Plan":
+      return approveWorkforceHiringPlanRequest(id, payload);
 
     case "Job Description":
       return approveJobDescriptionRequest(id, payload);
@@ -1036,8 +1036,8 @@ export async function rejectRequestByModule(moduleName, id, payload = {}) {
     case "Attrition":
       return rejectAttritionModuleRequest(id, payload);
 
-    case "Weekly Hiring Plan":
-      return rejectWeeklyHiringPlanRequest(id, payload);
+    case "Workforce Hiring Plan":
+      return rejectWorkforceHiringPlanRequest(id, payload);
 
     case "Job Description":
       return rejectJobDescriptionRequest(id, payload);
@@ -1196,7 +1196,7 @@ export default {
   getApprovalRequestModules,
 
   getAttritionApprovalRequests,
-  getWeeklyHiringPlanApprovalRequests,
+  getWorkforceHiringPlanApprovalRequests,
   getJobDescriptionApprovalRequests,
   getHiringNeedsApprovalRequests,
   getAvailablePositionApprovalRequests,
@@ -1209,8 +1209,8 @@ export default {
   approveAttritionModuleRequest,
   rejectAttritionModuleRequest,
 
-  approveWeeklyHiringPlanRequest,
-  rejectWeeklyHiringPlanRequest,
+  approveWorkforceHiringPlanRequest,
+  rejectWorkforceHiringPlanRequest,
 
   approveJobDescriptionRequest,
   rejectJobDescriptionRequest,

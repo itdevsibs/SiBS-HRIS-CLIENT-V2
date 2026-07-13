@@ -1,1341 +1,50 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import Header from "../../components/layout/Header";
-import { ClipboardList, Send, Sparkles, X } from "lucide-react";
-import api from "../../lib/axios/api-template";
-import StatusModal from "../../components/modals/StatusModal";
-import PercentageRiskGraphTable from "../../components/tables/WeeklyHiringPlan/PercentageRiskGraphTable";
-import WeeklyHiringAccountsTable from "../../components/tables/WeeklyHiringPlan/WeeklyHiringAccountsTable";
-import WeeklyVersionTable from "../../components/tables/WeeklyHiringPlan/WeeklyVersionTable";
-import HeadcountTable from "../../components/tables/WeeklyHiringPlan/HeadcountTable";
-import ViewPlanModal from "../../components/modals/weeklyHiringPlan/ViewPlanModal";
-import KPISnapshotModal from "../../components/modals/weeklyHiringPlan/KPISnapshotModal";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  getWeeklyHiringPlanAccounts,
-  getWeeklyHiringPlanWeeks,
-  saveWeeklyHiringPlanActionItem,
-} from "../../lib/axios/getWeeklyHiringPlan";
-
+  getWorkforceHiringPlanAccounts,
+  getWorkforceHiringPlanWeeks,
+  lockWorkforceHiringPlanSnapshot,
+  openWorkforceHiringPlanFile,
+  saveRequiredHeadcount,
+  saveWorkforceHiringPlanActionItem,
+  updateWorkforceHiringPlanFile,
+} from "../../lib/axios/getWorkforceHiringPlan";
 import { useUser } from "../../services/context/UserContext";
-
-const FULL_WEEKLY_ACCESS_ROLES = [
-  "ta",
-  "talent_acquisition",
-  "recruitment",
-  "recruiter",
-  "hr",
-  "hr_admin",
-  "hradmin",
-  "hr_manager",
-  "hr_staff",
-  "human_resources",
-  "human_resource",
-  "human_resources_admin",
-  "human_resource_admin",
-  "super_admin",
-  "superadmin",
-];
-
-const FLAT_PAGE_BG = "bg-[#F6F8FB]";
-const APPROVAL_EDGE =
-  "overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-sm";
-
-const initialActionItemForm = {
-  actionItem: "",
-  owner: "",
-  deadline: "",
-  status: "Pending",
-  actionItemRemarks: "",
-};
-
-function getText(value) {
-  return String(value || "").trim();
-}
-
-function normalizeRoleKey(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function getLocalStorageValue(keys = []) {
-  if (typeof window === "undefined") return "";
-
-  for (const key of keys) {
-    const value = window.localStorage.getItem(key);
-
-    if (value !== null && value !== undefined && String(value).trim() !== "") {
-      return value;
-    }
-  }
-
-  return "";
-}
-
-function getFirstFilledValue(values = []) {
-  for (const value of values) {
-    const cleanValue = String(value ?? "").trim();
-
-    if (cleanValue) return cleanValue;
-  }
-
-  return "";
-}
-
-function getUserRoleCandidates(user) {
-  return [
-    user?.role,
-    user?.userRole,
-    user?.user_role,
-    user?.adminRole,
-    user?.admin_role,
-    user?.roleName,
-    user?.role_name,
-    user?.userRoleName,
-    user?.user_role_name,
-    user?.position,
-    user?.positionName,
-    user?.position_name,
-    user?.jobTitle,
-    user?.job_title,
-    user?.designation,
-    user?.employeeRole,
-    user?.employee_role,
-    user?.department,
-    user?.departmentName,
-    user?.department_name,
-    user?.deptName,
-    user?.dept_name,
-    getLocalStorageValue([
-      "role",
-      "userRole",
-      "user_role",
-      "adminRole",
-      "admin_role",
-      "roleName",
-      "role_name",
-      "userRoleName",
-      "user_role_name",
-      "position",
-      "positionName",
-      "position_name",
-      "jobTitle",
-      "job_title",
-      "designation",
-      "employeeRole",
-      "employee_role",
-      "department",
-      "departmentName",
-      "department_name",
-      "deptName",
-      "dept_name",
-    ]),
-  ].filter((value) => String(value ?? "").trim() !== "");
-}
-
-function getCurrentRoleKey(user) {
-  return normalizeRoleKey(getFirstFilledValue(getUserRoleCandidates(user)));
-}
-
-function getCurrentAdminAccess(user) {
-  const value =
-    user?.adminAccess ??
-    user?.admin_access ??
-    user?.gy_user_access ??
-    user?.access ??
-    user?.adminLevel ??
-    user?.admin_level ??
-    user?.adminAccessLevel ??
-    user?.admin_access_level ??
-    user?.isAdmin ??
-    user?.is_admin ??
-    getLocalStorageValue([
-      "adminAccess",
-      "admin_access",
-      "gy_user_access",
-      "access",
-      "adminLevel",
-      "admin_level",
-      "adminAccessLevel",
-      "admin_access_level",
-      "isAdmin",
-      "is_admin",
-    ]) ??
-    0;
-
-  const numberValue = Number(value);
-
-  return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function isHrRoleValue(value) {
-  const role = normalizeRoleKey(value);
-
-  if (!role) return false;
-
-  if (
-    [
-      "hr",
-      "hr_admin",
-      "hradmin",
-      "hr_manager",
-      "hr_staff",
-      "human_resources",
-      "human_resource",
-      "human_resources_admin",
-      "human_resource_admin",
-      "super_admin",
-      "superadmin",
-    ].includes(role)
-  ) {
-    return true;
-  }
-
-  if (role.includes("human_resource")) return true;
-  if (role.includes("human_resources")) return true;
-
-  return role.startsWith("hr_") || role.endsWith("_hr");
-}
-
-function isHrEditorByUser(user) {
-  const roleCandidates = getUserRoleCandidates(user);
-  const adminAccess = getCurrentAdminAccess(user);
-
-  return roleCandidates.some(isHrRoleValue) || adminAccess === 7;
-}
-
-function canManageHiringPlanByRole(user) {
-  return isHrEditorByUser(user);
-}
-
-function getAccountIdFromAny(item) {
-  return getText(
-    item?.backendAccountId ||
-      item?.accountId ||
-      item?.account_id ||
-      item?.gy_acc_id ||
-      item?.id ||
-      "",
-  );
-}
-
-function getAccountNameFromAny(item) {
-  return getText(
-    item?.accountName ||
-      item?.account ||
-      item?.gy_acc_name ||
-      item?.account_name ||
-      "",
-  );
-}
-
-function getGhlNameFromAny(item) {
-  return getText(
-    item?.ghlName || item?.gy_acc_ghl_name || item?.ghl_name || "",
-  );
-}
-
-function getClusterFromAny(item) {
-  const accountName = getAccountNameFromAny(item);
-  const ghlName = getGhlNameFromAny(item);
-  const text = `${accountName} ${ghlName}`.toLowerCase();
-
-  if (
-    text.includes("cd -") ||
-    text.includes("cd-") ||
-    text.includes("coast dental")
-  ) {
-    return "Coast Dental";
-  }
-
-  if (text.includes("us visa")) {
-    return "US Visa";
-  }
-
-  if (
-    text.includes("sme-") ||
-    text.includes("sme -") ||
-    text.includes("frontsteps") ||
-    text.includes("front steps")
-  ) {
-    return "SME";
-  }
-
-  if (text.includes("yomdel")) {
-    return "Yomdel";
-  }
-
-  const explicitCluster = getText(item?.clusterName || item?.cluster);
-
-  if (explicitCluster) return explicitCluster;
-
-  return "Corporate";
-}
-
-function getBackendNumber(record, keys, fallback = 0) {
-  for (const key of keys) {
-    const rawValue = record?.[key];
-
-    if (rawValue !== undefined && rawValue !== null && rawValue !== "") {
-      const cleanValue = String(rawValue).replace(/,/g, "").replace(/%/g, "").trim();
-      const numberValue = Number(cleanValue);
-
-      if (Number.isFinite(numberValue)) {
-        return numberValue;
-      }
-    }
-  }
-
-  const fallbackNumber = Number(fallback || 0);
-
-  return Number.isFinite(fallbackNumber) ? fallbackNumber : 0;
-}
-
-function getBackendArrayValue(value) {
-  if (Array.isArray(value)) return value;
-
-  if (typeof value === "string" && value.trim().startsWith("[")) {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
-  return [];
-}
-
-function getBackendSixWeekSeries(record = {}, type = "absenteeism") {
-  const arrayKeys =
-    type === "absenteeism"
-      ? [
-          "absenteeismTrend",
-          "absenteeism_trend",
-          "absenteeismWeeklyCounts",
-          "absenteeism_weekly_counts",
-          "absenteeismPastSixWeeksTrend",
-          "absenteeism_past_six_weeks_trend",
-          "absenteeismSixWeeksBreakdown",
-          "absenteeism_six_weeks_breakdown",
-          "absenteeismPastSixWeeksBreakdown",
-          "absenteeism_past_six_weeks_breakdown",
-          "weeklyAbsenteeism",
-          "weekly_absenteeism",
-        ]
-      : [
-          "attritionTrend",
-          "attrition_trend",
-          "attritionWeeklyCounts",
-          "attrition_weekly_counts",
-          "attritionPastSixWeeksTrend",
-          "attrition_past_six_weeks_trend",
-          "attritionSixWeeksBreakdown",
-          "attrition_six_weeks_breakdown",
-          "attritionPastSixWeeksBreakdown",
-          "attrition_past_six_weeks_breakdown",
-          "weeklyAttrition",
-          "weekly_attrition",
-        ];
-
-  for (const key of arrayKeys) {
-    const series = getBackendArrayValue(record?.[key])
-      .map((value) => Number(value || 0))
-      .filter((value) => Number.isFinite(value));
-
-    if (series.length > 0) {
-      return series.length >= 6
-        ? series.slice(-6)
-        : [...Array.from({ length: 6 - series.length }, () => 0), ...series];
-    }
-  }
-
-  const prefix = type === "absenteeism" ? "absenteeism" : "attrition";
-
-  return [1, 2, 3, 4, 5, 6].map((weekNumber) =>
-    getBackendNumber(record, [
-      `${prefix}Week${weekNumber}`,
-      `${prefix}_week_${weekNumber}`,
-      `week${weekNumber}${type === "absenteeism" ? "Absenteeism" : "Attrition"}`,
-      `week_${weekNumber}_${type}`,
-      `w${weekNumber}${type === "absenteeism" ? "Absenteeism" : "Attrition"}`,
-      `${prefix}W${weekNumber}`,
-    ]),
-  );
-}
-
-function getBackendSixWeekTotal(record = {}, type = "absenteeism") {
-  return getBackendSixWeekSeries(record, type).reduce(
-    (sum, value) => sum + Number(value || 0),
-    0,
-  );
-}
-
-function calculateActualHiringRatePercent({ fstCount = 0, interviewCount = 0 }) {
-  const cleanFstCount = Number(fstCount || 0);
-  const cleanInterviewCount = Number(interviewCount || 0);
-
-  if (!Number.isFinite(cleanFstCount) || !Number.isFinite(cleanInterviewCount)) {
-    return 0;
-  }
-
-  if (cleanFstCount <= 0 || cleanInterviewCount <= 0) return 0;
-
-  /*
-    Returns a decimal ratio, not a percent number.
-    Display helpers multiply this by 100.
-    Example: FST 21 / Interview 4 = 5.25, displayed as 525.00%.
-  */
-  return cleanFstCount / cleanInterviewCount;
-}
-
-function calculateLeadsFromInterview({ interviewCount = 0, hiringRate = 0 }) {
-  const cleanInterviewCount = Math.max(0, Number(interviewCount || 0));
-  const cleanHiringRate = Number(hiringRate || 0);
-
-  /*
-    Updated business rule:
-    Leads to Interview = Interview Count / Hiring Rate.
-    Hiring Rate is a decimal ratio here.
-    Example: Interview 4 / Hiring Rate 5.25 = 0.76, rounded up to 1.
-  */
-  if (!Number.isFinite(cleanInterviewCount) || cleanInterviewCount <= 0) return 0;
-  if (!Number.isFinite(cleanHiringRate) || cleanHiringRate <= 0) {
-    return cleanInterviewCount;
-  }
-
-  return Math.ceil(cleanInterviewCount / cleanHiringRate);
-}
-
-function normalizeStatusValue(value, fallback = "") {
-  const rawValue = String(value ?? "").trim();
-
-  if (!rawValue) return fallback;
-
-  const normalized = rawValue.toLowerCase();
-
-  if (normalized === "approved") return "Approved";
-  if (normalized === "rejected" || normalized === "declined") return "Rejected";
-  if (normalized === "pending") return "Pending";
-
-  return rawValue;
-}
-
-function getRecruitmentSettingsStatus(record = {}) {
-  return normalizeStatusValue(
-    record?.recruitmentSettingsStatus ||
-      record?.recruitment_settings_status ||
-      record?.recruitmentStatus ||
-      record?.recruitment_status ||
-      record?.baseHeadcountStatus ||
-      record?.base_headcount_status ||
-      record?.status ||
-      "Kronos",
-    "Kronos",
-  );
-}
-
-function getUpdateHeadcountStatus(record = {}) {
-  const rawStatus =
-    record?.updateHeadcountStatus ||
-    record?.update_headcount_status ||
-    record?.managerUpdateStatus ||
-    record?.manager_update_status ||
-    "";
-
-  if (!rawStatus) return "";
-
-  return normalizeStatusValue(rawStatus, "");
-}
-
-function hasPendingUpdateHeadcountRequest(record = {}) {
-  return String(getUpdateHeadcountStatus(record)).toLowerCase() === "pending";
-}
-
-function getHeadcountApprovalStatus(record = {}) {
-  return (
-    getUpdateHeadcountStatus(record) ||
-    getRecruitmentSettingsStatus(record) ||
-    "Kronos"
-  );
-}
-
-function isApprovedRecruitmentSettingsRequest(item = {}) {
-  return (
-    String(getRecruitmentSettingsStatus(item)).trim().toLowerCase() ===
-    "approved"
-  );
-}
-
-function hasActiveRecruitmentSettingsRequest(items = []) {
-  return (items || []).some((item) => {
-    const recruitmentStatus = String(getRecruitmentSettingsStatus(item))
-      .trim()
-      .toLowerCase();
-
-    const updateStatus = String(getUpdateHeadcountStatus(item))
-      .trim()
-      .toLowerCase();
-
-    return recruitmentStatus === "pending" || updateStatus === "pending";
-  });
-}
-
-function canManagerUpdateApprovedHeadcount({
-  item,
-  canEditRequiredHeadcount,
-  weeklyAccess,
-}) {
-  if (!canEditRequiredHeadcount) return false;
-
-  /*
-    Important:
-    HR / HR Admin have full weekly access, but they should NOT see the
-    Update Headcount button in the Weekly Hiring Plan modal.
-    The parent selectedPlanCanEditRequiredHeadcount check already blocks HR.
-    This function only validates that the selected account has an approved
-    Recruitment Settings base request.
-  */
-  if (!item || weeklyAccess?.hasFullAccess) {
-    return false;
-  }
-
-  return isApprovedRecruitmentSettingsRequest(item);
-}
-
-function getDisplayRequiredHeadcount(record = {}) {
-  const recruitmentStatus = getRecruitmentSettingsStatus(record);
-
-  const kronosRequiredHeadcount = getBackendNumber(
-    record,
-    [
-      "kronosRequiredHeadcount",
-      "kronos_required_headcount",
-      "kronosBasedRequiredHeadcount",
-      "kronos_based_required_headcount",
-      "kronosHeadcount",
-      "kronos_headcount",
-    ],
-    getBackendNumber(record, ["requiredHeadcount", "required_headcount"]),
-  );
-
-  const approvedRequiredHeadcount = getBackendNumber(record, [
-    "approvedRequiredHeadcount",
-    "approved_required_headcount",
-    "requiredHeadcount",
-    "required_headcount",
-  ]);
-
-  /*
-    required_headcount is the live/approved value.
-    requested_required_headcount is only the pending manager request value.
-    So while update_headcount_status is Pending, the table still shows the
-    approved required_headcount.
-  */
-  if (String(recruitmentStatus).trim().toLowerCase() === "approved") {
-    return approvedRequiredHeadcount;
-  }
-
-  return kronosRequiredHeadcount;
-}
-
-function getLoggedInOwnerDisplay(user) {
-  const sibsId = String(
-    user?.username ||
-      user?.sibsId ||
-      user?.sibs_id ||
-      user?.gy_user_code ||
-      getLocalStorageValue(["username", "sibsId", "sibs_id", "userCode"]) ||
-      "",
-  ).trim();
-
-  const lastName = String(
-    user?.gy_emp_lname || user?.lastName || user?.last_name || "",
-  ).trim();
-
-  const firstName = String(
-    user?.gy_emp_fname || user?.firstName || user?.first_name || "",
-  ).trim();
-
-  const middleName = String(
-    user?.gy_emp_mname || user?.middleName || user?.middle_name || "",
-  ).trim();
-
-  const fallbackFullName = getLocalStorageValue(["fullName", "full_name"]);
-
-  const fullName =
-    `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ""}`
-      .replace(/\s+/g, " ")
-      .trim() || fallbackFullName;
-
-  if (!sibsId && !fullName) return "-";
-  if (!fullName) return sibsId.toUpperCase();
-
-  return `${sibsId} - ${fullName}`.toUpperCase();
-}
-
-function calculatePipelineStatus(item) {
-  const requiredHeadcount = Number(item.requiredHeadcount || 0);
-  const hiringNeeded = Number(
-    item.hiringNeeded ||
-      item.hiring_needed ||
-      item.actualHeadcountNeeds ||
-      item.actual_headcount_needs ||
-      0,
-  );
-  const leadsToInterview = Number(item.leadsToInterview || 0);
-
-  if (requiredHeadcount <= 0) return "Pending";
-  if (hiringNeeded <= 0) return "Completed";
-  if (leadsToInterview > 0) return "At Risk";
-
-  return "Delayed";
-}
-
-function buildWeekKey(week) {
-  const startDate = String(week?.startDate || week?.weekStart || "").trim();
-  const endDate = String(week?.endDate || week?.weekEnd || "").trim();
-
-  return `${startDate}__${endDate}`;
-}
-
-function getWeekHiringPlanPercent(week) {
-  const value =
-    week?.hiringPlanPercent ??
-    week?.hiring_plan_percent ??
-    week?.hiringRate ??
-    week?.hiring_rate ??
-    5;
-
-  const numberValue = Number(value);
-
-  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 5;
-}
-
-async function saveRequiredHeadcount(payload) {
-  const res = await api.post("/api/weekly-hiring-plan/headcount", payload, {
-    withCredentials: true,
-  });
-
-  return res.data;
-}
-
-async function lockWeeklyHiringPlanSnapshot(payload) {
-  const res = await api.post(
-    "/api/weekly-hiring-plan/headcount/lock-week",
-    payload,
-    {
-      withCredentials: true,
-    },
-  );
-
-  return res.data;
-}
-
-async function updateWeeklyHiringPlanFile(payload) {
-  const formData = new FormData();
-
-  Object.entries(payload || {}).forEach(([key, value]) => {
-    if (key === "uploadedFile") return;
-
-    if (value !== undefined && value !== null) {
-      formData.append(key, value);
-    }
-  });
-
-  if (payload?.uploadedFile) {
-    formData.append("uploadedFile", payload.uploadedFile);
-  }
-
-  const res = await api.post("/api/weekly-hiring-plan/headcount/file", formData, {
-    withCredentials: true,
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-
-  return res.data;
-}
-
-async function openWeeklyHiringPlanFile({ sibsId, filename }) {
-  if (!sibsId || !filename) {
-    throw new Error("Missing file information.");
-  }
-
-  const res = await api.get(
-    `/api/weekly-hiring-plan/file/${encodeURIComponent(
-      sibsId,
-    )}/${encodeURIComponent(filename)}`,
-    {
-      responseType: "blob",
-      withCredentials: true,
-    },
-  );
-
-  const blobUrl = window.URL.createObjectURL(res.data);
-  window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-  setTimeout(() => {
-    window.URL.revokeObjectURL(blobUrl);
-  }, 60_000);
-}
-
-function buildWeeklyAccess(user) {
-  const role = getCurrentRoleKey(user);
-  const hasFullAccess = FULL_WEEKLY_ACCESS_ROLES.includes(role);
-
-  const assignedAccounts = Array.isArray(user?.assignedAccounts)
-    ? user.assignedAccounts
-    : [];
-
-  const assignedAccountIds = new Set(
-    assignedAccounts
-      .map((account) => getAccountIdFromAny(account))
-      .filter(Boolean),
-  );
-
-  const assignedAccountNames = new Set(
-    assignedAccounts
-      .map((account) => getAccountNameFromAny(account))
-      .filter(Boolean),
-  );
-
-  const assignedClusterNames = new Set(
-    assignedAccounts
-      .map((account) => getClusterFromAny(account))
-      .filter(Boolean),
-  );
-
-  return {
-    role,
-    hasFullAccess,
-    assignedAccounts,
-    assignedAccountIds,
-    assignedAccountNames,
-    assignedClusterNames,
-  };
-}
-
-
-function normalizeAiList(value) {
-  if (!value) return [];
-
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item || "").trim()).filter(Boolean);
-  }
-
-  if (typeof value === "string") {
-    return value
-      .split(/\n|•|-/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-
-  return [];
-}
-
-
-function cleanAiJsonText(value) {
-  let text = String(value || "").trim();
-
-  text = text
-    .replace(/^```json/i, "")
-    .replace(/^```/i, "")
-    .replace(/```$/i, "")
-    .trim();
-
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    text = text.slice(firstBrace, lastBrace + 1);
-  }
-
-  return text.trim();
-}
-
-
-function isWeakAiText(value) {
-  const text = String(value || "").trim().toLowerCase();
-
-  const weakValues = [
-    "",
-    "{",
-    "}",
-    "{}",
-    "[]",
-    "here",
-    "ok",
-    "okay",
-    "done",
-    "sure",
-    "ready",
-    "ai insight generated successfully.",
-  ];
-
-  return weakValues.includes(text) || text.length < 20;
-}
-
-function parseAiResponsePayload(payload) {
-  /*
-    IMPORTANT:
-    payload.message is only the backend status message.
-    Example: "AI insight generated successfully."
-    Do NOT use payload.message as the AI answer.
-  */
-  const rawInsight =
-    payload?.insight ||
-    payload?.answer ||
-    payload?.response ||
-    payload?.data?.insight ||
-    payload?.data?.answer ||
-    payload?.data?.response ||
-    payload?.raw?.insight ||
-    payload?.raw?.answer ||
-    payload?.raw?.response ||
-    "";
-
-  let parsed = null;
-
-  if (typeof rawInsight === "string") {
-    const cleaned = cleanAiJsonText(rawInsight);
-
-    if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch {
-        parsed = null;
-      }
-    }
-  } else if (rawInsight && typeof rawInsight === "object") {
-    parsed = rawInsight;
-  }
-
-  const source = parsed || payload || {};
-
-  const insight =
-    source?.insight ||
-    source?.summary ||
-    source?.answer ||
-    source?.response ||
-    payload?.data?.insight ||
-    payload?.data?.answer ||
-    payload?.data?.response ||
-    payload?.raw?.insight ||
-    payload?.raw?.answer ||
-    payload?.raw?.response ||
-    "";
-
-  return {
-    insight: isWeakAiText(insight)
-      ? "The AI returned an incomplete response. Please regenerate the insight."
-      : insight,
-
-    highlights: normalizeAiList(
-      source?.highlights ||
-        source?.keyHighlights ||
-        payload?.highlights ||
-        payload?.data?.highlights ||
-        payload?.raw?.highlights ||
-        [],
-    ),
-
-    recommendations: normalizeAiList(
-      source?.recommendations ||
-        source?.recommendedActions ||
-        source?.actions ||
-        payload?.recommendations ||
-        payload?.data?.recommendations ||
-        payload?.raw?.recommendations ||
-        [],
-    ),
-
-    risks: normalizeAiList(
-      source?.risks ||
-        source?.keyRisks ||
-        payload?.risks ||
-        payload?.data?.risks ||
-        payload?.raw?.risks ||
-        [],
-    ),
-  };
-}
-
-function formatAiTextForDisplay(value) {
-  const text = String(value || "").trim();
-
-  if (!text) return "";
-
-  return text
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/\s+-\s+(\d+[.,]\s+)/g, " $1")
-    .trim();
-}
-
-
-function parseAiDisplayBlocks(value) {
-  const rawText = String(value || "").trim();
-
-  if (!rawText) return [];
-
-  /*
-    Smart formatter:
-    - Keeps sentence numbers like "Week 27" and "by 326." as normal text.
-    - Only formats numbered lists when they start at 1 and continue in sequence.
-    - Prevents large values like 326, 434, or 500 from becoming list badges.
-  */
-  const normalized = rawText
-    .replace(/\r\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  const sections = normalized
-    .split(/\n{2,}/)
-    .map((section) => section.trim())
-    .filter(Boolean);
-
-  const blocks = [];
-
-  sections.forEach((section) => {
-    const lines = section
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    let paragraph = [];
-    let expectedNumber = 1;
-
-    function flushParagraph() {
-      if (!paragraph.length) return;
-
-      blocks.push({
-        type: "paragraph",
-        text: paragraph.join(" "),
-      });
-
-      paragraph = [];
-    }
-
-    lines.forEach((line) => {
-      const numberedMatch = line.match(/^(\d+)[.)]\s+(.+)$/);
-      const bulletMatch = line.match(/^[-•]\s+(.+)$/);
-
-      if (numberedMatch) {
-        const itemNumber = Number(numberedMatch[1]);
-        const itemText = numberedMatch[2];
-
-        /*
-          Treat as a real numbered list only when the list starts at 1
-          and follows sequence. This prevents "326. This..." from becoming
-          a numbered/bulleted block.
-        */
-        const isRealNumberedList =
-          itemNumber === expectedNumber &&
-          itemNumber >= 1 &&
-          itemNumber <= 20;
-
-        if (isRealNumberedList) {
-          flushParagraph();
-
-          blocks.push({
-            type: "numbered",
-            number: numberedMatch[1],
-            text: itemText,
-          });
-
-          expectedNumber += 1;
-          return;
-        }
-
-        paragraph.push(line);
-        return;
-      }
-
-      if (bulletMatch) {
-        const bulletText = bulletMatch[1];
-
-        /*
-          If a bullet starts with a large number, it is usually a sentence
-          fragment from the AI like "- 326. This leaves..." not an actual list.
-        */
-        const startsWithNumericFragment = /^\d+([.,]|$)/.test(bulletText);
-
-        if (startsWithNumericFragment) {
-          paragraph.push(bulletText);
-          return;
-        }
-
-        flushParagraph();
-
-        blocks.push({
-          type: "bullet",
-          text: bulletText,
-        });
-
-        return;
-      }
-
-      paragraph.push(line);
-    });
-
-    flushParagraph();
-  });
-
-  return blocks.length
-    ? blocks
-    : [
-        {
-          type: "paragraph",
-          text: normalized,
-        },
-      ];
-}
-
-function ChatFormattedText({ value, compact = false }) {
-  const blocks = parseAiDisplayBlocks(value);
-
-  if (!blocks.length) return null;
-
-  return (
-    <div className={compact ? "space-y-2" : "space-y-3"}>
-      {blocks.map((block, index) => {
-        if (block.type === "numbered") {
-          return (
-            <div
-              key={`ai-numbered-${index}`}
-              className="flex gap-3 rounded-[12px] border border-[#E6ECF2] bg-white px-3 py-2"
-            >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-[11px] font-extrabold text-white">
-                {block.number}
-              </span>
-              <p className="text-sm font-medium leading-7 text-[#344054]">
-                {block.text}
-              </p>
-            </div>
-          );
-        }
-
-        if (block.type === "bullet") {
-          return (
-            <div
-              key={`ai-bullet-${index}`}
-              className="flex gap-3 rounded-[12px] bg-white px-3 py-2"
-            >
-              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-primary-1" />
-              <p className="text-sm font-medium leading-7 text-[#344054]">
-                {block.text}
-              </p>
-            </div>
-          );
-        }
-
-        return (
-          <p
-            key={`ai-paragraph-${index}`}
-            className="text-sm font-medium leading-7 text-[#344054]"
-          >
-            {block.text}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
-function AISectionCard({ title, items = [], tone = "blue" }) {
-  const cleanItems = normalizeAiList(items);
-
-  if (!cleanItems.length) return null;
-
-  const toneMap = {
-    red: {
-      wrap: "border-red-100 bg-red-50",
-      title: "text-red-700",
-      dot: "bg-red-500",
-    },
-    blue: {
-      wrap: "border-blue-100 bg-blue-50",
-      title: "text-sibs-primary-1",
-      dot: "bg-blue-500",
-    },
-    green: {
-      wrap: "border-emerald-100 bg-emerald-50",
-      title: "text-emerald-700",
-      dot: "bg-emerald-500",
-    },
-  };
-
-  const toneStyle = toneMap[tone] || toneMap.blue;
-
-  return (
-    <section className={`rounded-[16px] border p-4 ${toneStyle.wrap}`}>
-      <h3 className={`text-sm font-extrabold uppercase tracking-wide ${toneStyle.title}`}>
-        {title}
-      </h3>
-
-      <div className="mt-3 space-y-2">
-        {cleanItems.map((item, index) => (
-          <div
-            key={`${title}-${index}`}
-            className="flex gap-3 rounded-[12px] bg-white px-3 py-2.5 shadow-[0_1px_0_rgba(15,23,42,0.03)]"
-          >
-            <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${toneStyle.dot}`} />
-            <p className={`text-sm font-semibold leading-6 ${toneStyle.title}`}>
-              {item}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ChatMessageBubble({ role = "assistant", children }) {
-  const isUser = role === "user";
-
-  return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={
-          isUser
-            ? "max-w-[86%] rounded-[18px] rounded-br-[6px] bg-sibs-primary-1 px-4 py-3 text-sm font-bold leading-6 text-white shadow-sm"
-            : "max-w-[92%] rounded-[18px] rounded-bl-[6px] border border-[#DDE7F2] bg-white px-4 py-3 text-sm font-medium leading-7 text-[#344054] shadow-sm"
-        }
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function AIInsightModal({
-  open,
-  loading,
-  insight,
-  highlights = [],
-  recommendations = [],
-  risks = [],
-  error = "",
-  question,
-  setQuestion,
-  conversation = [],
-  onClose,
-  onRegenerate,
-  onAskFollowUp,
-}) {
-  if (!open) return null;
-
-  const cleanHighlights = normalizeAiList(highlights);
-  const cleanRecommendations = normalizeAiList(recommendations);
-  const cleanRisks = normalizeAiList(risks);
-
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-3 py-4">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[18px] bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <Sparkles size={14} />
-              AI Insight
-            </div>
-
-            <h2 className="mt-3 text-xl font-extrabold text-sibs-primary-1">
-              Weekly Hiring Plan AI Insight
-            </h2>
-
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Analysis generated from the selected week, cluster, and account filters.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
-            aria-label="Minimize AI insight"
-            title="Minimize"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {loading ? (
-            <div className="rounded-[14px] border border-blue-100 bg-blue-50 px-5 py-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-sibs-primary-1 shadow-sm">
-                <Sparkles className="animate-pulse" size={24} />
-              </div>
-
-              <p className="text-base font-extrabold text-sibs-primary-1">
-                Analyzing weekly hiring plan...
-              </p>
-
-              <p className="mt-2 text-sm font-semibold text-sibs-tertiary-5">
-                Please wait while n8n reads the database and generates the AI insight.
-              </p>
-            </div>
-          ) : error ? (
-            <div className="rounded-[14px] border border-red-100 bg-red-50 px-5 py-5">
-              <p className="text-sm font-extrabold text-red-700">
-                Failed to generate AI insight
-              </p>
-
-              <p className="mt-2 text-sm font-semibold text-red-600">
-                {error}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <section className="rounded-[14px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Summary
-                </h3>
-
-                <div className="mt-3 rounded-[14px] bg-white px-4 py-3 shadow-[0_1px_0_rgba(15,23,42,0.03)]">
-                  {insight ? (
-                    <ChatFormattedText value={insight} />
-                  ) : (
-                    <p className="text-sm font-medium leading-7 text-[#344054]">
-                      No AI summary returned.
-                    </p>
-                  )}
-                </div>
-              </section>
-
-              {cleanRisks.length > 0 && (
-                <section className="rounded-[14px] border border-red-100 bg-red-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-red-700">
-                    Key Risks
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {cleanRisks.map((item, index) => (
-                      <li key={`risk-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-red-700">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {cleanHighlights.length > 0 && (
-                <section className="rounded-[14px] border border-blue-100 bg-blue-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    Highlights
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {cleanHighlights.map((item, index) => (
-                      <li key={`highlight-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-[#344054]">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-
-              {cleanRecommendations.length > 0 && (
-                <section className="rounded-[14px] border border-emerald-100 bg-emerald-50 p-4">
-                  <h3 className="text-sm font-extrabold uppercase tracking-wide text-emerald-700">
-                    Recommended Actions
-                  </h3>
-                  <ul className="mt-3 space-y-2">
-                    {cleanRecommendations.map((item, index) => (
-                      <li key={`recommendation-${index}`} className="rounded-[10px] bg-white px-3 py-2 text-sm font-semibold leading-6 text-emerald-700">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              )}
-              {conversation.length > 0 && (
-                <section className="rounded-[18px] border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      Conversation
-                    </h3>
-
-                    <span className="rounded-full border border-[#DDE7F2] bg-white px-3 py-1 text-[11px] font-extrabold text-slate-500">
-                      {conversation.length} message{conversation.length > 1 ? "s" : ""}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-4">
-                    {conversation.map((item, index) => (
-                      <div key={`ai-chat-${index}`} className="space-y-3">
-                        {item.question && (
-                          <ChatMessageBubble role="user">
-                            {item.question}
-                          </ChatMessageBubble>
-                        )}
-
-                        {item.answer && (
-                          <ChatMessageBubble role="assistant">
-                            <ChatFormattedText value={item.answer} compact />
-                          </ChatMessageBubble>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] px-5 py-4">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              onAskFollowUp();
-            }}
-            className="flex flex-col gap-3"
-          >
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <input
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                disabled={loading}
-                placeholder="Message AI about this hiring plan..."
-                className="min-h-[44px] flex-1 rounded-[12px] border border-[#D9E2EC] bg-white px-4 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-
-              <button
-                type="submit"
-                disabled={loading || !String(question || "").trim()}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-[12px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Send size={15} />
-                Ask
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-[10px] border border-[#D9E2EC] bg-white px-4 py-2.5 text-sm font-extrabold text-[#344054] transition hover:bg-slate-50"
-              >
-                Minimize
-              </button>
-
-              <button
-                type="button"
-                onClick={onRegenerate}
-                disabled={loading}
-                className="inline-flex items-center justify-center gap-2 rounded-[10px] bg-sibs-primary-1 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#0A3A63] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Sparkles size={16} />
-                {loading ? "Analyzing..." : "Regenerate Insight"}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function WeeklyHiringPlanPage() {
+import { useRegisterWorkforceHiringPage } from "../../services/context/WorkforceHiringContext";
+import useWorkforceHiringAi from "./useWorkforceHiringAi";
+import {
+  allWeeklyAccountOption,
+  FULL_WEEKLY_ACCESS_ROLES,
+  initialWeeklyActionItemForm,
+} from "../../lib/utils/workforceHiringPlan/workforceHiringPlanConstants";
+import {
+  buildWeekKey,
+  buildWeeklyAccess,
+  calculateActualHiringRatePercent,
+  calculateLeadsFromInterview,
+  calculatePipelineStatus,
+  canManageHiringPlanByRole,
+  canManagerUpdateApprovedHeadcount,
+  getAccountIdFromAny,
+  getAccountNameFromAny,
+  getBackendNumber,
+  getBackendSixWeekSeries,
+  getClusterFromAny,
+  getCurrentAdminAccess,
+  getCurrentRoleKey,
+  getDisplayRequiredHeadcount,
+  getGhlNameFromAny,
+  getHeadcountApprovalStatus,
+  getLocalStorageValue,
+  getLoggedInOwnerDisplay,
+  getRecruitmentSettingsStatus,
+  getUpdateHeadcountStatus,
+  getWeekHiringPlanPercent,
+  hasActiveRecruitmentSettingsRequest,
+  isApprovedRecruitmentSettingsRequest,
+  isHrEditorByUser,
+} from "../../lib/utils/workforceHiringPlan/workforceHiringPlanHelpers";
+
+export default function useWorkforceHiringPage() {
   const { user } = useUser();
 
   const canManageHiringPlanPercent = canManageHiringPlanByRole(user);
@@ -1376,12 +85,12 @@ export default function WeeklyHiringPlanPage() {
   const [weeklyVersions, setWeeklyVersions] = useState([]);
   const [activeWeekId, setActiveWeekId] = useState("");
   const [weeksLoading, setWeeksLoading] = useState(false);
-  const [lockingWeeklyPlan, setLockingWeeklyPlan] = useState(false);
+  const [, setLockingWeeklyPlan] = useState(false);
   const [databaseLockedWeekKeys, setDatabaseLockedWeekKeys] = useState(
     new Set(),
   );
 
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
   const [weekSearch, setWeekSearch] = useState("");
   const [showWeekDropdown, setShowWeekDropdown] = useState(false);
 
@@ -1396,11 +105,7 @@ export default function WeeklyHiringPlanPage() {
     useState(5);
 
   const [accountOptions, setAccountOptions] = useState([
-    {
-      id: "All",
-      accountName: "All Accounts",
-      ghlName: "",
-    },
+    allWeeklyAccountOption,
   ]);
 
   const [remoteAccounts, setRemoteAccounts] = useState([]);
@@ -1408,7 +113,7 @@ export default function WeeklyHiringPlanPage() {
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [actionItemTarget, setActionItemTarget] = useState(null);
-  const [actionItemForm, setActionItemForm] = useState(initialActionItemForm);
+  const [actionItemForm, setActionItemForm] = useState(initialWeeklyActionItemForm);
   const [actionItemSubmitting, setActionItemSubmitting] = useState(false);
   const [showKpiSnapshot, setShowKpiSnapshot] = useState(false);
 
@@ -1425,29 +130,11 @@ export default function WeeklyHiringPlanPage() {
     message: "",
   });
 
-  const [aiInsightOpen, setAiInsightOpen] = useState(false);
-  const [aiInsightLoading, setAiInsightLoading] = useState(false);
-  const [aiInsightError, setAiInsightError] = useState("");
-  const [aiInsightResult, setAiInsightResult] = useState({
-    insight: "",
-    highlights: [],
-    recommendations: [],
-    risks: [],
-  });
-  const [aiInsightQuestion, setAiInsightQuestion] = useState("");
-  const [aiInsightConversation, setAiInsightConversation] = useState([]);
-
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
     weeklyVersions[0];
 
   const activeWeekKey = buildWeekKey(activeWeek);
-
-  const isWeekLockedForDisplay = Boolean(
-    activeWeek?.locked ||
-      activeWeek?.lockedByPreviousWeek ||
-      activeWeek?.lockedByInheritedLatestRate,
-  );
 
   const isHiringPlanSnapshotLocked = Boolean(
     activeWeek?.lockedByDatabase || databaseLockedWeekKeys.has(activeWeekKey),
@@ -1531,7 +218,7 @@ export default function WeeklyHiringPlanPage() {
       try {
         setWeeksLoading(true);
 
-        const weeks = await getWeeklyHiringPlanWeeks();
+        const weeks = await getWorkforceHiringPlanWeeks();
 
         const formattedWeeks = (weeks || []).map((week, index) => {
           const startDate = week?.startDate || week?.weekStart || "";
@@ -1644,6 +331,7 @@ export default function WeeklyHiringPlanPage() {
 
     setSelectedHiringPlanPercent(weekPercent);
   }, [
+    activeWeek,
     activeWeekId,
     activeWeek?.hiringPlanPercent,
     activeWeek?.hiring_plan_percent,
@@ -1749,7 +437,7 @@ export default function WeeklyHiringPlanPage() {
       let accounts = [];
 
       if (isAllClustersSelected()) {
-        accounts = await getWeeklyHiringPlanAccounts(
+        accounts = await getWorkforceHiringPlanAccounts(
           "All",
           activeWeekStartDate,
           activeWeekEndDate,
@@ -1757,7 +445,7 @@ export default function WeeklyHiringPlanPage() {
       } else {
         const results = await Promise.all(
           selectedClusters.map((cluster) =>
-            getWeeklyHiringPlanAccounts(
+            getWorkforceHiringPlanAccounts(
               cluster,
               activeWeekStartDate,
               activeWeekEndDate,
@@ -1926,11 +614,7 @@ export default function WeeklyHiringPlanPage() {
       setRemoteAccounts(accounts || []);
 
       setAccountOptions([
-        {
-          id: "All",
-          accountName: "All Accounts",
-          ghlName: "",
-        },
+        allWeeklyAccountOption,
         ...Array.from(uniqueAccountOptionsMap.values()),
       ]);
 
@@ -1944,11 +628,7 @@ export default function WeeklyHiringPlanPage() {
 
       setRemoteAccounts([]);
       setAccountOptions([
-        {
-          id: "All",
-          accountName: "All Accounts",
-          ghlName: "",
-        },
+        allWeeklyAccountOption,
       ]);
 
       if (resetAccountFilter) {
@@ -2559,10 +1239,6 @@ export default function WeeklyHiringPlanPage() {
         const ghlName = getGhlNameFromAny(account);
         const cluster = getClusterFromAny(account);
 
-        const activeHiringPlanPercent = isHiringPlanSnapshotLocked
-          ? getWeekHiringPlanPercent(activeWeek)
-          : Number(selectedHiringPlanPercent || 5);
-
         const accountKey = String(accountId || accountName)
           .trim()
           .toLowerCase();
@@ -2714,8 +1390,6 @@ export default function WeeklyHiringPlanPage() {
     activeWeek,
     activeWeekId,
     hiringPlanAdjustedData,
-    isHiringPlanSnapshotLocked,
-    selectedHiringPlanPercent,
     weeklyAccess,
   ]);
 
@@ -2735,11 +1409,13 @@ export default function WeeklyHiringPlanPage() {
     });
   }, [managerDisplayData]);
 
+  const allAccountsSelected = isAllAccountsSelected();
+
   const filteredPlans = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
     const plans = managerDisplayData.filter((item) => {
-      if (!isAllAccountsSelected()) {
+      if (!allAccountsSelected) {
         const accountName = item.account || item.accountName || "";
 
         if (!selectedAccounts.includes(accountName)) {
@@ -2772,7 +1448,7 @@ export default function WeeklyHiringPlanPage() {
     });
 
     return plans;
-  }, [managerDisplayData, search, selectedAccounts]);
+  }, [allAccountsSelected, managerDisplayData, search, selectedAccounts]);
 
   const previousWeekData = useMemo(() => {
     if (!weeklyVersions.length || !activeWeek) return [];
@@ -2840,177 +1516,7 @@ export default function WeeklyHiringPlanPage() {
     }
   }
 
-  async function handleAskAiInsight(options = {}) {
-    if (aiInsightLoading) return;
-
-    const question = String(options.question || "").trim();
-    const isFollowUp = Boolean(question);
-    const shouldResetConversation = Boolean(options.resetConversation);
-
-    setAiInsightOpen(true);
-    setAiInsightLoading(true);
-    setAiInsightError("");
-
-    if (!isFollowUp) {
-      setAiInsightResult({
-        insight: "",
-        highlights: [],
-        recommendations: [],
-        risks: [],
-      });
-
-      if (shouldResetConversation) {
-        setAiInsightConversation([]);
-      }
-    }
-
-    try {
-      const response = await api.post(
-        "/api/ai-insight/weekly-hiring-plan",
-        {
-          weekId: activeWeekId,
-          week: activeWeek?.label || activeWeek?.weekRange || "",
-          weekNumber: activeWeek?.weekNumber || activeWeek?.week_number || null,
-          weekStart: activeWeekStartDate,
-          weekEnd: activeWeekEndDate,
-          clusters: selectedClusters,
-          accounts: selectedAccounts,
-          search,
-          accountSearch,
-          status: "All",
-          question,
-          previousInsight: aiInsightResult.insight,
-          conversation: aiInsightConversation,
-          filteredAccounts: (filteredPlans || []).map((item) => ({
-            account: item.account || item.accountName || "",
-            cluster: item.cluster || item.clusterName || "",
-            requiredHeadcount:
-              item.requiredHeadcount || item.required_headcount || 0,
-            actualHeadcount: item.actualHeadcount || item.actual_headcount || 0,
-            absenteeism:
-              item.absenteeismSixWeeks ||
-              item.absenteeism_6_weeks ||
-              item.absenteeismCount ||
-              item.absenteeism_count ||
-              0,
-            attrition:
-              item.attritionSixWeeks ||
-              item.attrition_6_weeks ||
-              item.attritionPastCount ||
-              item.attrition_past_count ||
-              item.attritionCount ||
-              item.attrition_count ||
-              0,
-            hiringIntake:
-              item.opsPrf ||
-              item.ops_prf ||
-              item.hiringIntakeCount ||
-              item.prfCount ||
-              item.totalPrf ||
-              item.requisitionCount ||
-              0,
-            hiringIntakeHeadcount:
-              item.opsPrf ||
-              item.ops_prf ||
-              item.hiringIntakeHeadcount ||
-              item.intakeHeadcount ||
-              item.prfHeadcount ||
-              item.requestedHeadcount ||
-              0,
-            interviewCount:
-              item.interviewCount ||
-              item.interview_count ||
-              item.interviewPopulationCount ||
-              item.interview_population_count ||
-              0,
-            nhoCount: item.nhoCount || item.nho_count || 0,
-            fstCount: item.fstCount || item.fst_count || 0,
-            pstCount: item.pstCount || item.pst_count || 0,
-            hiringRate: item.hiringRate || item.hiring_rate || 0,
-            leadsToInterview: item.leadsToInterview || item.leads_to_interview || 0,
-            pipelineStatus: item.pipelineStatus || item.pipeline_status || "",
-          })),
-        },
-        {
-          withCredentials: true,
-        },
-      );
-
-      const result = response?.data || {};
-
-      if (!result?.success) {
-        throw new Error(result?.message || "Failed to generate AI insight.");
-      }
-
-      const formattedAiResponse = parseAiResponsePayload(result);
-      const nextInsight = formattedAiResponse.insight;
-
-      console.log("[AI INSIGHT FRONTEND PARSED]", {
-        insightPreview: String(nextInsight || "").slice(0, 250),
-        rawKeys: Object.keys(result || {}),
-        rawInsight: result?.insight,
-        rawMessage: result?.message,
-      });
-
-      if (isFollowUp) {
-        setAiInsightConversation((prev) => [
-          ...prev,
-          {
-            question,
-            answer: nextInsight || "No answer returned.",
-          },
-        ]);
-
-        setAiInsightQuestion("");
-      } else {
-        setAiInsightResult({
-          insight: nextInsight,
-          highlights: formattedAiResponse.highlights,
-          recommendations: formattedAiResponse.recommendations,
-          risks: formattedAiResponse.risks,
-        });
-      }
-    } catch (error) {
-      console.error("ASK AI WEEKLY HIRING ERROR:", error);
-
-      setAiInsightError(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Failed to generate AI insight.",
-      );
-    } finally {
-      setAiInsightLoading(false);
-    }
-  }
-
-  function handleAskAiFollowUp() {
-    const question = String(aiInsightQuestion || "").trim();
-
-    if (!question) return;
-
-    handleAskAiInsight({
-      question,
-    });
-  }
-
-  function handleOpenAiInsight() {
-    const hasExistingAiSession =
-      Boolean(aiInsightResult.insight) ||
-      aiInsightConversation.length > 0 ||
-      Boolean(aiInsightError);
-
-    if (hasExistingAiSession) {
-      setAiInsightOpen(true);
-      return;
-    }
-
-    handleAskAiInsight({
-      resetConversation: true,
-    });
-  }
-
-  async function handleLockWeeklyHiringPlan() {
+  async function handleLockWorkforceHiringPlan() {
     if (!canManageHiringPlanPercent) {
       openStatusModal({
         type: "error",
@@ -3035,7 +1541,7 @@ export default function WeeklyHiringPlanPage() {
         type: "error",
         title: "Already Locked",
         message:
-          "This weekly hiring plan percentage is already locked for the selected week.",
+          "This workforce hiring plan percentage is already locked for the selected week.",
       });
       return;
     }
@@ -3111,7 +1617,7 @@ export default function WeeklyHiringPlanPage() {
     try {
       setLockingWeeklyPlan(true);
 
-      const result = await lockWeeklyHiringPlanSnapshot({
+      const result = await lockWorkforceHiringPlanSnapshot({
         weekNumber: activeWeek?.weekNumber || null,
         weekLabel: activeWeek?.label || null,
         weekStart: activeWeekStartDate,
@@ -3130,7 +1636,7 @@ export default function WeeklyHiringPlanPage() {
         openStatusModal({
           type: "error",
           title: result?.locked ? "Already Locked" : "Lock Failed",
-          message: result?.message || "Failed to lock weekly hiring plan.",
+          message: result?.message || "Failed to lock workforce hiring plan.",
         });
 
         return;
@@ -3146,13 +1652,13 @@ export default function WeeklyHiringPlanPage() {
 
       openStatusModal({
         type: "success",
-        title: "Weekly Hiring Plan Locked",
+        title: "Workforce Hiring Plan Locked",
         message:
           result?.message ||
           `Saved ${recordsToSave.length} affected account records for the selected week.`,
       });
     } catch (error) {
-      console.error("LOCK WEEKLY HIRING PLAN ERROR:", error);
+      console.error("LOCK WORKFORCE HIRING PLAN ERROR:", error);
 
       const responseData = error?.response?.data;
 
@@ -3169,7 +1675,7 @@ export default function WeeklyHiringPlanPage() {
           responseData?.message ||
           responseData?.error ||
           error?.message ||
-          "Failed to lock weekly hiring plan.",
+          "Failed to lock workforce hiring plan.",
       });
     } finally {
       setLockingWeeklyPlan(false);
@@ -3380,7 +1886,7 @@ export default function WeeklyHiringPlanPage() {
     try {
       setSavingFileId(item.id);
 
-      await updateWeeklyHiringPlanFile({
+      await updateWorkforceHiringPlanFile({
         weekNumber: activeWeek?.weekNumber || null,
         weekLabel: activeWeek?.label || null,
         weekStart: activeWeekStartDate,
@@ -3420,7 +1926,7 @@ export default function WeeklyHiringPlanPage() {
       openStatusModal({
         type: "success",
         title: "Update Submitted",
-        message: `Weekly hiring plan update for ${item.account} was submitted for approval. The table will continue showing the approved headcount until the new update is approved.`,
+        message: `Workforce hiring plan update for ${item.account} was submitted for approval. The table will continue showing the approved headcount until the new update is approved.`,
         closeViewModalOnSuccess: true,
       });
     } catch (error) {
@@ -3432,7 +1938,7 @@ export default function WeeklyHiringPlanPage() {
         message:
           error?.response?.data?.error ||
           error?.response?.data?.message ||
-          "Failed to upload weekly hiring plan file.",
+          "Failed to upload workforce hiring plan file.",
       });
 
       throw error;
@@ -3445,7 +1951,7 @@ export default function WeeklyHiringPlanPage() {
     try {
       setOpeningFile(true);
 
-      await openWeeklyHiringPlanFile({
+      await openWorkforceHiringPlanFile({
         sibsId,
         filename,
       });
@@ -3470,7 +1976,7 @@ export default function WeeklyHiringPlanPage() {
     setActionItemTarget(item);
 
     setActionItemForm({
-      ...initialActionItemForm,
+      ...initialWeeklyActionItemForm,
       owner:
         item.actionItemOwner ||
         item.action_item_owner ||
@@ -3480,7 +1986,7 @@ export default function WeeklyHiringPlanPage() {
 
   function handleCloseActionItemModal() {
     setActionItemTarget(null);
-    setActionItemForm(initialActionItemForm);
+    setActionItemForm(initialWeeklyActionItemForm);
     setActionItemSubmitting(false);
   }
 
@@ -3519,7 +2025,7 @@ export default function WeeklyHiringPlanPage() {
     try {
       setActionItemSubmitting(true);
 
-      const result = await saveWeeklyHiringPlanActionItem({
+      const result = await saveWorkforceHiringPlanActionItem({
         weekStart: activeWeekStartDate,
         weekEnd: activeWeekEndDate,
         clusterName: actionItemTarget.cluster || actionItemTarget.clusterName,
@@ -3715,185 +2221,127 @@ export default function WeeklyHiringPlanPage() {
       })
     : false;
 
-  const hasPendingRecruitmentSettingsRequest =
-    hasActiveRecruitmentSettingsRequest(filteredPlans);
+  const {
+    aiInsightOpen,
+    aiInsightLoading,
+    aiInsightError,
+    aiInsightResult,
+    aiInsightQuestion,
+    setAiInsightQuestion,
+    aiInsightConversation,
+    setAiInsightOpen,
+    handleAskAiInsight,
+    handleAskAiFollowUp,
+    handleOpenAiInsight,
+  } = useWorkforceHiringAi({
+    activeWeekId,
+    activeWeek,
+    activeWeekStartDate,
+    activeWeekEndDate,
+    selectedClusters,
+    selectedAccounts,
+    search,
+    accountSearch,
+    filteredPlans,
+  });
+  useRegisterWorkforceHiringPage({
+    pageHeader: {
+      aiInsightLoading,
+      accountsLoading,
+      hasAiSession:
+        Boolean(aiInsightResult.insight) || aiInsightConversation.length > 0,
+      handleOpenAiInsight,
+      handleLockWorkforceHiringPlan,
+    },
+    weeklyVersion: {
+      weekDropdownRef,
+      clusterDropdownRef,
+      accountDropdownRef,
+      activeWeek,
+      activeWeekId,
+      setActiveWeekId,
+      weeksLoading,
+      weekSearch,
+      setWeekSearch,
+      showWeekDropdown,
+      setShowWeekDropdown,
+      filteredWeeklyVersions,
+      selectedClusters,
+      setSelectedClusters,
+      showClusterDropdown,
+      setShowClusterDropdown,
+      selectedAccounts,
+      setSelectedAccounts,
+      showAccountDropdown,
+      setShowAccountDropdown,
+      accountSearch,
+      setAccountSearch,
+      accountsLoading,
+      filteredAccountOptions,
+      isAllClustersSelected,
+      isAllAccountsSelected,
+      handleToggleCluster,
+      handleToggleAccount,
+      user,
+      assignedAccounts: user?.assignedAccounts || [],
+    },
+    viewPlanModal: {
+      open: !!selectedPlan,
+      item: selectedPlan,
+      locked: isHiringPlanSnapshotLocked,
+      canEditRequiredHeadcount: selectedPlanCanEditRequiredHeadcount,
+      previousWeekItem: previousSelectedPlan,
+      requiredInputValue: selectedPlan ? requiredInputs[selectedPlan.id] : "",
+      savingRequiredId,
+      savingFileId,
+      weeklyPlanFile: selectedPlan ? weeklyPlanFiles[selectedPlan.id] : null,
+      existingUploadedFile: selectedPlan?.uploadedFile || "",
+      uploadedBySibsId:
+        selectedPlan?.uploadedBySibsId || user?.username || user?.sibsId || "",
+      openingFile,
+      onRequiredInputChange: handleRequiredInputChange,
+      onWeeklyPlanFileChange: handleWeeklyPlanFileChange,
+      onSaveRequiredHeadcount: handleSaveRequiredHeadcount,
+      onUpdateWeeklyPlanFile: handleUpdateWeeklyPlanFile,
+      onOpenUploadedFile: handleOpenUploadedFile,
+      onClose: () => setSelectedPlan(null),
+      onOpenActionItem: handleOpenActionItemModal,
+      actionItemOpen: !!actionItemTarget,
+      actionItemTarget,
+      actionItemForm,
+      setActionItemForm,
+      onCloseActionItem: handleCloseActionItemModal,
+      onSubmitActionItem: handleSubmitActionItem,
+      actionItemSubmitting,
+    },
+    tables: {
+      filteredPlans,
+      activeWeek,
+      accountsLoading,
+      onViewPlan: setSelectedPlan,
+      tableKey: `${activeWeekId}-${selectedClusters.join(
+        "-",
+      )}-${selectedAccounts.join("-")}-${search}-${selectedHiringPlanPercent}`,
+    },
+  });
 
-  const canEditHiringPlanPercentNow =
-    canManageHiringPlanPercent && !hasPendingRecruitmentSettingsRequest;
-
-  return (
-    <div
-      className={`flex h-screen flex-1 flex-col ${FLAT_PAGE_BG} font-jakarta`}
-    >
-      <Header />
-
-      <main
-        ref={mainScrollRef}
-        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-3 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-6"
-      >
-        <div className="sibs-page-header-in mb-5 flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0 xl:max-w-[520px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <ClipboardList size={14} />
-              Recruitment
-            </div>
-
-            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-              Weekly Hiring Plan
-            </h1>
-
-            <p className="mt-1 text-sm font-medium leading-6 text-sibs-tertiary-5">
-              Manage weekly manpower requirement, OPS PRF, hiring plan
-              percentage, leads needed, and action items.
-            </p>
-
-          </div>
-
-          <div className="w-full xl:flex xl:flex-1 xl:flex-col xl:items-end">
-            <button
-              type="button"
-              onClick={handleOpenAiInsight}
-              disabled={aiInsightLoading || accountsLoading}
-              className="mb-3 inline-flex h-9 items-center justify-center gap-2 rounded-full border border-[#D9E2EC] bg-white px-3.5 text-xs font-extrabold text-sibs-primary-1 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Sparkles size={14} />
-              {aiInsightLoading
-                ? "Thinking..."
-                : aiInsightResult.insight || aiInsightConversation.length > 0
-                  ? "Open AI"
-                  : "Ask AI"}
-            </button>
-
-            <WeeklyVersionTable
-              weekDropdownRef={weekDropdownRef}
-              clusterDropdownRef={clusterDropdownRef}
-              accountDropdownRef={accountDropdownRef}
-              activeWeek={activeWeek}
-              activeWeekId={activeWeekId}
-              setActiveWeekId={setActiveWeekId}
-              weeksLoading={weeksLoading}
-              weekSearch={weekSearch}
-              setWeekSearch={setWeekSearch}
-              showWeekDropdown={showWeekDropdown}
-              setShowWeekDropdown={setShowWeekDropdown}
-              filteredWeeklyVersions={filteredWeeklyVersions}
-              selectedClusters={selectedClusters}
-              setSelectedClusters={setSelectedClusters}
-              showClusterDropdown={showClusterDropdown}
-              setShowClusterDropdown={setShowClusterDropdown}
-              selectedAccounts={selectedAccounts}
-              setSelectedAccounts={setSelectedAccounts}
-              showAccountDropdown={showAccountDropdown}
-              setShowAccountDropdown={setShowAccountDropdown}
-              accountSearch={accountSearch}
-              setAccountSearch={setAccountSearch}
-              accountsLoading={accountsLoading}
-              filteredAccountOptions={filteredAccountOptions}
-              isAllClustersSelected={isAllClustersSelected}
-              isAllAccountsSelected={isAllAccountsSelected}
-              handleToggleCluster={handleToggleCluster}
-              handleToggleAccount={handleToggleAccount}
-              user={user}
-              assignedAccounts={user?.assignedAccounts || []}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-3 sm:space-y-4">
-          <section
-            className={`relative z-[20] ${APPROVAL_EDGE}`}
-            style={{ animationDelay: "60ms" }}
-          >
-            <HeadcountTable filteredPlans={filteredPlans} />
-          </section>
-
-          <section
-            className={`relative z-[10] ${APPROVAL_EDGE}`}
-            style={{ animationDelay: "120ms" }}
-          >
-            <PercentageRiskGraphTable filteredPlans={filteredPlans} activeWeek={activeWeek} />
-          </section>
-
-          <section
-            key={`${activeWeekId}-${selectedClusters.join(
-              "-",
-            )}-${selectedAccounts.join(
-              "-",
-            )}-${search}-${selectedHiringPlanPercent}`}
-            className={`relative z-[0] ${APPROVAL_EDGE}`}
-            style={{ animationDelay: "180ms" }}
-          >
-            <WeeklyHiringAccountsTable
-              accountsLoading={accountsLoading}
-              filteredPlans={filteredPlans}
-              onViewPlan={setSelectedPlan}
-            />
-          </section>
-        </div>
-      </main>
-
-      <StatusModal
-        open={statusModal.open}
-        type={statusModal.type}
-        title={statusModal.title}
-        message={statusModal.message}
-        variant="center"
-        onClose={closeStatusModal}
-      />
-
-      <ViewPlanModal
-        open={!!selectedPlan}
-        item={selectedPlan}
-        locked={isHiringPlanSnapshotLocked}
-        canEditRequiredHeadcount={selectedPlanCanEditRequiredHeadcount}
-        previousWeekItem={previousSelectedPlan}
-        requiredInputValue={selectedPlan ? requiredInputs[selectedPlan.id] : ""}
-        savingRequiredId={savingRequiredId}
-        savingFileId={savingFileId}
-        weeklyPlanFile={selectedPlan ? weeklyPlanFiles[selectedPlan.id] : null}
-        existingUploadedFile={selectedPlan?.uploadedFile || ""}
-        uploadedBySibsId={
-          selectedPlan?.uploadedBySibsId || user?.username || user?.sibsId || ""
-        }
-        openingFile={openingFile}
-        onRequiredInputChange={handleRequiredInputChange}
-        onWeeklyPlanFileChange={handleWeeklyPlanFileChange}
-        onSaveRequiredHeadcount={handleSaveRequiredHeadcount}
-        onUpdateWeeklyPlanFile={handleUpdateWeeklyPlanFile}
-        onOpenUploadedFile={handleOpenUploadedFile}
-        onClose={() => setSelectedPlan(null)}
-        onOpenActionItem={handleOpenActionItemModal}
-        actionItemOpen={!!actionItemTarget}
-        actionItemTarget={actionItemTarget}
-        actionItemForm={actionItemForm}
-        setActionItemForm={setActionItemForm}
-        onCloseActionItem={handleCloseActionItemModal}
-        onSubmitActionItem={handleSubmitActionItem}
-        actionItemSubmitting={actionItemSubmitting}
-      />
-
-      <KPISnapshotModal
-        open={showKpiSnapshot}
-        week={activeWeek}
-        records={filteredPlans}
-        onClose={() => setShowKpiSnapshot(false)}
-      />
-
-      <AIInsightModal
-        open={aiInsightOpen}
-        loading={aiInsightLoading}
-        insight={aiInsightResult.insight}
-        highlights={aiInsightResult.highlights}
-        recommendations={aiInsightResult.recommendations}
-        risks={aiInsightResult.risks}
-        error={aiInsightError}
-        question={aiInsightQuestion}
-        setQuestion={setAiInsightQuestion}
-        conversation={aiInsightConversation}
-        onClose={() => setAiInsightOpen(false)}
-        onRegenerate={() => handleAskAiInsight({ resetConversation: true })}
-        onAskFollowUp={handleAskAiFollowUp}
-      />
-    </div>
-  );
+  return {
+    mainScrollRef,
+    statusModal,
+    closeStatusModal,
+    showKpiSnapshot,
+    activeWeek,
+    filteredPlans,
+    setShowKpiSnapshot,
+    aiInsightOpen,
+    aiInsightLoading,
+    aiInsightResult,
+    aiInsightError,
+    aiInsightQuestion,
+    setAiInsightQuestion,
+    aiInsightConversation,
+    setAiInsightOpen,
+    handleAskAiInsight,
+    handleAskAiFollowUp,
+  };
 }

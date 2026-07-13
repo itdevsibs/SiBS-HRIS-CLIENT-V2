@@ -7,6 +7,7 @@ import DesiredCompetenciesViewTable from "../../../tables/jobDescription/Desired
 import { useUser } from "../../../../services/context/UserContext";
 import { useJobDescription } from "../../../../services/context/JobDescriptionContext";
 import { getJobDescriptionDropdowns } from "../../../../lib/axios/getJobDescription";
+import SibsLogo from "../../../../assets/SiBS_Logo.svg";
 
 const detailsResponsiveAuditStyles = `
   .jd-details-document,
@@ -1112,7 +1113,7 @@ const Details = ({
   }
 
   return (
-    <article className="jd-details-document mx-auto w-full max-w-[900px] space-y-6 overflow-hidden bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
+    <article className="jd-details-document mx-auto w-full max-w-[1100px] space-y-6 overflow-hidden bg-white px-4 py-5 text-[#1D2939] shadow-[0_18px_55px_rgba(15,23,42,0.14)] sm:space-y-8 sm:px-8 sm:py-7 sm:shadow-[0_24px_70px_rgba(15,23,42,0.18)] lg:min-h-[1056px] lg:px-10 lg:py-8 print:shadow-none">
       <style>{detailsResponsiveAuditStyles}</style>
       {normalizeJdStatus(item.jdStatus) === "For Revision" && (
         <section data-print-hide className="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
@@ -1333,6 +1334,8 @@ const Details = ({
             onCompetenciesChange={handleCompetenciesChange}
           />
         </div>
+
+        <JobDescriptionSignatoriesTable recordInfoDraft={recordInfoDraft} />
       </section>
 
 
@@ -1454,167 +1457,205 @@ function DocumentRecordInfoTable({
   accountOptions = [],
   existingJobDescriptionOptions = [],
 }) {
-  const divider = "border-[#D6E3F0]";
-
   return (
-    <div className={`overflow-hidden rounded-xl border ${divider} bg-white shadow-[0_12px_34px_rgba(13,70,118,0.055)]`}>
-      <div className={`border-b ${divider}`}>
-        <RecordInfoDocumentCell
-          label="Document Title"
-          value={recordInfoDraft.roleTitle}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
-          onChange={(value) => onChange?.("roleTitle", value)}
-          variant="title"
-        />
+    <div className="flex flex-col gap-6">
+      {/* MASTER OPERATING MANUAL HEADER */}
+      <div className="flex flex-col md:flex-row print:flex-row w-full border-2 border-black overflow-hidden bg-white">
+        {/* Left Column: Logo */}
+        <div className="md:w-[22%] print:w-[22%] shrink-0 flex flex-col justify-center items-center border-b-2 md:border-b-0 print:border-b-0 md:border-r-2 print:border-r-2 border-black p-4 lg:p-6">
+          <div className="bg-[#042C51] p-5 w-full flex justify-center items-center mb-3 border border-[#042C51]">
+            <img src={SibsLogo} alt="SiBS Logo" className="h-14 lg:h-16 w-auto brightness-0 invert" />
+          </div>
+          <span className="text-sm font-bold text-black text-center">Manual Issuance #1</span>
+        </div>
+
+        {/* Right Column: Content Grid */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Row 1 */}
+          <div className="flex border-b-2 border-black">
+            <RecordInfoDocumentCell
+              label="DOCUMENT TITLE"
+              value={recordInfoDraft.roleTitle}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
+              onChange={(value) => onChange?.("roleTitle", value)}
+              variant="manualTitle"
+              className="flex-1"
+            />
+          </div>
+
+          {/* Row 2 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-2 border-b-2 border-black">
+            <RecordInfoDocumentCell
+              label="POSITION"
+              value={recordInfoDraft.roleTitle}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
+              onChange={(value) => onChange?.("roleTitle", value)}
+              variant="manual"
+              className="sm:col-span-1 lg:col-span-2 print:col-span-1 border-b-2 sm:border-b-0 print:border-b-0 sm:border-r-2 print:border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="DEPARTMENT"
+              value={recordInfoDraft.departmentId || ""}
+              displayValue={recordInfoDraft.department}
+              inputType="select"
+              options={departmentOptions}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.department)}
+              onChange={(value) => onChange?.("departmentId", value)}
+              variant="manual"
+              className="sm:col-span-1 lg:col-span-2 print:col-span-1"
+            />
+          </div>
+
+          {/* Row 3 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 print:grid-cols-2 border-b-2 border-black">
+            <RecordInfoDocumentCell
+              label="DOCUMENT CODE"
+              value={recordInfoDraft.jdCode}
+              editable={false}
+              comments={getRecordFieldComments?.(recordInfoDraft.jdCode)}
+              onChange={(value) => onChange?.("jdCode", value)}
+              variant="manual"
+              className="border-b-2 lg:border-b-0 print:border-b-2 border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="REVISION NO."
+              value={recordInfoDraft.currentVersion}
+              editable={false}
+              comments={getRecordFieldComments?.(recordInfoDraft.currentVersion)}
+              onChange={(value) => onChange?.("currentVersion", value)}
+              variant="manual"
+              className="border-b-2 lg:border-b-0 print:border-b-2 lg:border-r-2 print:border-r-0 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="EFFECTIVE DATE"
+              value={recordInfoDraft.effectiveDate}
+              displayValue={formatDate(recordInfoDraft.effectiveDate)}
+              inputType="date"
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(formatDate(recordInfoDraft.effectiveDate))}
+              onChange={(value) => onChange?.("effectiveDate", value)}
+              variant="manual"
+              className="border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="LAST REVIEWED"
+              value={recordInfoDraft.lastUpdated}
+              displayValue={formatDate(recordInfoDraft.lastUpdated)}
+              inputType="date"
+              editable={false}
+              comments={getRecordFieldComments?.(formatDate(recordInfoDraft.lastUpdated))}
+              onChange={(value) => onChange?.("lastUpdated", value)}
+              variant="manual"
+            />
+          </div>
+
+          {/* Row 4 */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 print:grid-cols-2 border-b-2 border-black">
+            <RecordInfoDocumentCell
+              label="DATE REQUESTED"
+              value={recordInfoDraft.dateRequested}
+              displayValue={formatDate(recordInfoDraft.dateRequested)}
+              inputType="date"
+              editable={false}
+              comments={getRecordFieldComments?.(formatDate(recordInfoDraft.dateRequested))}
+              onChange={(value) => onChange?.("dateRequested", value)}
+              variant="manual"
+              className="border-b-2 lg:border-b-0 print:border-b-2 border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="LINKED HIRING REQUIREMENT"
+              value={recordInfoDraft.existingJdId || ""}
+              displayValue={recordInfoDraft.linkedHiringRequirement || "—"}
+              inputType="select"
+              options={existingJobDescriptionOptions}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.linkedHiringRequirement)}
+              onChange={(value) => onChange?.("existingJdId", value)}
+              variant="manual"
+              className="border-b-2 lg:border-b-0 print:border-b-2 lg:border-r-2 print:border-r-0 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="PREPARED FOR"
+              value={recordInfoDraft.accountId || recordInfoDraft.preparedForId || ""}
+              displayValue={recordInfoDraft.preparedFor}
+              inputType="select"
+              options={accountOptions}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.preparedFor)}
+              onChange={(value) => onChange?.("accountId", value)}
+              variant="manual"
+              className="border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="CREATED BY"
+              value={recordInfoDraft.createdBy}
+              editable={false}
+              comments={getRecordFieldComments?.(recordInfoDraft.createdBy)}
+              onChange={(value) => onChange?.("createdBy", value)}
+              variant="manual"
+            />
+          </div>
+
+          {/* Row 5 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 print:grid-cols-2">
+            <RecordInfoDocumentCell
+              label="REPORTS TO"
+              value={recordInfoDraft.reportsTo || ""}
+              displayValue={recordInfoDraft.reportsTo || "—"}
+              inputType="select"
+              options={REPORTS_TO_OPTIONS}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.reportsTo)}
+              onChange={(value) => onChange?.("reportsTo", value)}
+              variant="manual"
+              className="sm:col-span-1 lg:col-span-2 print:col-span-1 border-b-2 sm:border-b-0 print:border-b-0 sm:border-r-2 print:border-r-2 border-black"
+            />
+            <RecordInfoDocumentCell
+              label="SUPERVISORY"
+              value={recordInfoDraft.supervisory || "No"}
+              displayValue={recordInfoDraft.supervisory || "No"}
+              inputType="segmented"
+              options={[
+                { value: "Yes", label: "Yes" },
+                { value: "No", label: "No" },
+              ]}
+              editable={editingRecordInfo}
+              comments={getRecordFieldComments?.(recordInfoDraft.supervisory || "No")}
+              onChange={(value) => onChange?.("supervisory", value)}
+              variant="manual"
+              className="sm:col-span-1 lg:col-span-2 print:col-span-1"
+            />
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
 
-      <div className={`grid grid-cols-1 border-b ${divider} md:grid-cols-2`}>
-        <RecordInfoDocumentCell
-          label="Position"
-          value={recordInfoDraft.roleTitle}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(recordInfoDraft.roleTitle)}
-          onChange={(value) => onChange?.("roleTitle", value)}
-          className={`border-b ${divider} md:border-b-0 md:border-r`}
-          variant="primary"
-        />
-
-        <RecordInfoDocumentCell
-          label="Department"
-          value={recordInfoDraft.departmentId || ""}
-          displayValue={recordInfoDraft.department}
-          inputType="select"
-          options={departmentOptions}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(recordInfoDraft.department)}
-          onChange={(value) => onChange?.("departmentId", value)}
-          variant="primary"
-        />
-      </div>
-
-      <div className={`grid grid-cols-1 border-b ${divider} sm:grid-cols-2 lg:grid-cols-4`}>
-        <RecordInfoDocumentCell
-          label="Document Code"
-          value={recordInfoDraft.jdCode}
-          editable={false}
-          comments={getRecordFieldComments?.(recordInfoDraft.jdCode)}
-          onChange={(value) => onChange?.("jdCode", value)}
-          className={`border-b ${divider} sm:border-r lg:border-b-0`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Revision No."
-          value={recordInfoDraft.currentVersion}
-          editable={false}
-          comments={getRecordFieldComments?.(recordInfoDraft.currentVersion)}
-          onChange={(value) => onChange?.("currentVersion", value)}
-          className={`border-b ${divider} lg:border-b-0 lg:border-r`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Effective Date"
-          value={recordInfoDraft.effectiveDate}
-          displayValue={formatDate(recordInfoDraft.effectiveDate)}
-          inputType="date"
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(
-            formatDate(recordInfoDraft.effectiveDate),
-          )}
-          onChange={(value) => onChange?.("effectiveDate", value)}
-          className={`border-b ${divider} sm:border-b-0 sm:border-r`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Last Reviewed"
-          value={recordInfoDraft.lastUpdated}
-          displayValue={formatDate(recordInfoDraft.lastUpdated)}
-          inputType="date"
-          editable={false}
-          comments={getRecordFieldComments?.(
-            formatDate(recordInfoDraft.lastUpdated),
-          )}
-          onChange={(value) => onChange?.("lastUpdated", value)}
-        />
-      </div>
-
-      <div className={`grid grid-cols-1 border-b ${divider} sm:grid-cols-2 lg:grid-cols-4`}>
-        <RecordInfoDocumentCell
-          label="Date Requested"
-          value={recordInfoDraft.dateRequested}
-          displayValue={formatDate(recordInfoDraft.dateRequested)}
-          inputType="date"
-          editable={false}
-          comments={getRecordFieldComments?.(
-            formatDate(recordInfoDraft.dateRequested),
-          )}
-          onChange={(value) => onChange?.("dateRequested", value)}
-          className={`border-b ${divider} sm:border-r lg:border-b-0`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Linked Hiring Requirement"
-          value={recordInfoDraft.existingJdId || ""}
-          displayValue={recordInfoDraft.linkedHiringRequirement || "—"}
-          inputType="select"
-          options={existingJobDescriptionOptions}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(
-            recordInfoDraft.linkedHiringRequirement,
-          )}
-          onChange={(value) => onChange?.("existingJdId", value)}
-          className={`border-b ${divider} lg:border-b-0 lg:border-r`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Prepared For"
-          value={recordInfoDraft.accountId || recordInfoDraft.preparedForId || ""}
-          displayValue={recordInfoDraft.preparedFor}
-          inputType="select"
-          options={accountOptions}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(recordInfoDraft.preparedFor)}
-          onChange={(value) => onChange?.("accountId", value)}
-          className={`border-b ${divider} sm:border-b-0 sm:border-r`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Created By"
-          value={recordInfoDraft.createdBy}
-          editable={false}
-          comments={getRecordFieldComments?.(recordInfoDraft.createdBy)}
-          onChange={(value) => onChange?.("createdBy", value)}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2">
-        <RecordInfoDocumentCell
-          label="Reports To"
-          value={recordInfoDraft.reportsTo || ""}
-          displayValue={recordInfoDraft.reportsTo || "—"}
-          inputType="select"
-          options={REPORTS_TO_OPTIONS}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(recordInfoDraft.reportsTo)}
-          onChange={(value) => onChange?.("reportsTo", value)}
-          className={`border-b ${divider} md:border-b-0 md:border-r`}
-        />
-
-        <RecordInfoDocumentCell
-          label="Supervisory"
-          value={recordInfoDraft.supervisory || "No"}
-          displayValue={recordInfoDraft.supervisory || "No"}
-          inputType="segmented"
-          options={[
-            { value: "Yes", label: "Yes" },
-            { value: "No", label: "No" },
-          ]}
-          editable={editingRecordInfo}
-          comments={getRecordFieldComments?.(
-            recordInfoDraft.supervisory || "No",
-          )}
-          onChange={(value) => onChange?.("supervisory", value)}
-        />
+function JobDescriptionSignatoriesTable({ recordInfoDraft = {} }) {
+  return (
+    <div className="flex flex-col gap-6 mt-2">
+      <div className="flex flex-col w-full border-2 border-black overflow-hidden bg-white">
+        <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3">
+          <RecordInfoDocumentCell
+            label="PREPARED BY"
+            value={recordInfoDraft.createdBy || "—"}
+            className="border-b-2 md:border-b-0 print:border-b-0 md:border-r-2 print:border-r-2 border-black"
+          />
+          <RecordInfoDocumentCell
+            label="REVIEWED BY"
+            value={recordInfoDraft.owner || "—"}
+            className="border-b-2 md:border-b-0 print:border-b-0 md:border-r-2 print:border-r-2 border-black"
+          />
+          <RecordInfoDocumentCell
+            label="APPROVED BY"
+            value={recordInfoDraft.approvedBy || recordInfoDraft.approved_by || "—"}
+            className="border-black"
+          />
+        </div>
       </div>
     </div>
   );
@@ -1642,26 +1683,41 @@ function RecordInfoDocumentCell({
       ? "min-h-[124px] px-5 py-5 sm:px-6 sm:py-6"
       : variant === "primary"
         ? "min-h-[104px] px-4 py-4 sm:px-5 sm:py-5"
-        : "min-h-[82px] px-4 py-3.5 sm:px-5 sm:py-4";
+        : variant === "manualTitle"
+          ? "p-3 sm:p-4 min-h-[90px] flex flex-col justify-center"
+          : variant === "manual"
+            ? "p-2 min-h-0 flex flex-col justify-center"
+            : "min-h-[82px] px-4 py-3.5 sm:px-5 sm:py-4";
 
   const valueTextClass =
     variant === "title"
       ? "text-lg font-extrabold leading-7 tracking-[-0.01em] text-[#101828] sm:text-[22px] sm:leading-8"
       : variant === "primary"
         ? "mt-3 text-sm font-extrabold leading-6 text-[#344054] sm:text-[15px]"
-        : "mt-2 text-sm font-extrabold leading-6 text-[#344054]";
+        : variant === "manualTitle"
+          ? "mt-1 text-lg font-bold leading-6 tracking-tight text-black uppercase truncate whitespace-normal"
+          : variant === "manual"
+            ? "mt-1 text-xs font-bold text-black uppercase"
+            : "mt-2 text-sm font-extrabold leading-6 text-[#344054]";
 
-  const cellBgClass = hasComments ? "bg-amber-50" : "bg-white";
+  const labelColorClass =
+    variant.startsWith("manual")
+      ? hasComments
+        ? "text-amber-700"
+        : "text-black"
+      : hasComments
+        ? "text-amber-700"
+        : "text-[#315F8C]";
+
+  const cellBgClass = hasComments ? "bg-amber-50" : "bg-transparent";
 
   return (
     <div
-      className={`group relative min-w-0 transition selection:bg-[#FFF3B8] selection:text-[#101828] ${cellBgClass} ${cellSizeClass} ${className}`}
+      className={`group relative transition selection:bg-[#FFF3B8] selection:text-[#101828] ${cellBgClass} ${cellSizeClass} ${className}`}
     >
       <div className="flex items-start justify-between gap-2">
         <p
-          className={`break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide ${
-            hasComments ? "text-amber-700" : "text-[#315F8C]"
-          }`}
+          className={`break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide ${labelColorClass}`}
         >
           {label}
         </p>
@@ -1685,7 +1741,7 @@ function RecordInfoDocumentCell({
             value={value || ""}
             onChange={(event) => onChange?.(event.target.value)}
             className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-              variant === "title" ? "sm:h-12 sm:text-base" : ""
+              variant === "title" ? "sm:h-12 sm:text-base" : variant.startsWith("manual") ? "!mt-1 !h-8 !text-xs !rounded-md" : ""
             }`}
           >
             <option value="">Select {label}</option>
@@ -1700,8 +1756,9 @@ function RecordInfoDocumentCell({
             type={inputType}
             value={value || ""}
             onChange={(event) => onChange?.(event.target.value)}
-            className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
-              variant === "title" ? "sm:h-12 sm:text-base" : ""
+            placeholder={`Enter ${label.toLowerCase()}`}
+            className={`mt-3 h-11 w-full min-w-0 rounded-lg border border-[#C9D8E8] bg-white px-3.5 text-sm font-bold text-[#1D2939] outline-none transition placeholder:font-medium placeholder:text-[#90A4B7] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${
+              variant === "title" ? "sm:h-12 sm:text-base" : variant.startsWith("manual") ? "!mt-1 !h-8 !text-xs !rounded-md" : ""
             }`}
           />
         )
@@ -2291,8 +2348,8 @@ function DetailArticleSection({
   }[sectionKey];
 
   return (
-    <section className="break-inside-avoid">
-      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <section>
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between print:break-after-avoid">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h4 className="text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-[15px]">
             {sectionNumber ? `${sectionNumber}. ${title}` : title}

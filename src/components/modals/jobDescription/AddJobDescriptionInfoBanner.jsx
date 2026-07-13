@@ -7,7 +7,7 @@ export default function AddJobDescriptionInfoBanner() {
 
       <p className="mt-1 text-sm leading-6 text-sibs-primary-1/80">
         Hiring Needs Intake links to this Job Description page. This page stores
-        the actual JD record used by Weekly Hiring Plan and Candidate Pipeline.
+        the actual JD record used by Workforce Hiring Plan and Candidate Pipeline.
       </p>
     </div>
   );
