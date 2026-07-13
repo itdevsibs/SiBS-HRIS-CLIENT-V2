@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getWorkforceHiringPlanAccounts,
+  getWorkforceHiringPlanAccountTrends,
+  getWorkforceHiringPlanTrends,
   getWorkforceHiringPlanWeeks,
   lockWorkforceHiringPlanSnapshot,
   openWorkforceHiringPlanFile,
@@ -37,6 +39,9 @@ import {
   getLocalStorageValue,
   getLoggedInOwnerDisplay,
   getRecruitmentSettingsStatus,
+  getSelectedWeekEnd,
+  getSelectedWeekStart,
+  getSingleSelectedValue,
   getUpdateHeadcountStatus,
   getWeekHiringPlanPercent,
   hasActiveRecruitmentSettingsRequest,
@@ -101,8 +106,7 @@ export default function useWorkforceHiringPage() {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [accountSearch, setAccountSearch] = useState("");
 
-  const [selectedHiringPlanPercent, setSelectedHiringPlanPercent] =
-    useState(5);
+  const [selectedHiringPlanPercent, setSelectedHiringPlanPercent] = useState(5);
 
   const [accountOptions, setAccountOptions] = useState([
     allWeeklyAccountOption,
@@ -113,7 +117,9 @@ export default function useWorkforceHiringPage() {
 
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [actionItemTarget, setActionItemTarget] = useState(null);
-  const [actionItemForm, setActionItemForm] = useState(initialWeeklyActionItemForm);
+  const [actionItemForm, setActionItemForm] = useState(
+    initialWeeklyActionItemForm,
+  );
   const [actionItemSubmitting, setActionItemSubmitting] = useState(false);
   const [showKpiSnapshot, setShowKpiSnapshot] = useState(false);
 
@@ -129,6 +135,9 @@ export default function useWorkforceHiringPage() {
     title: "",
     message: "",
   });
+  const [trendData, setTrendData] = useState(null);
+  const [trendsLoading, setTrendsLoading] = useState(false);
+  const [trendsError, setTrendsError] = useState("");
 
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
@@ -179,6 +188,45 @@ export default function useWorkforceHiringPage() {
       return searchableText.includes(keyword);
     });
   }, [weeklyVersions, weekSearch]);
+
+  const fetchSixWeekTrends = useCallback(async () => {
+    const weekStart = getSelectedWeekStart(activeWeek);
+    const weekEnd = getSelectedWeekEnd(activeWeek);
+
+    if (!weekStart || !weekEnd) {
+      setTrendData(null);
+      return;
+    }
+
+    const selectedCluster = getSingleSelectedValue(selectedClusters, "All");
+    const selectedAccount = getSingleSelectedValue(selectedAccounts, "All");
+
+    try {
+      setTrendsLoading(true);
+      setTrendsError("");
+
+      const result = await getWorkforceHiringPlanAccountTrends({
+        cluster: selectedCluster,
+        account: selectedAccount,
+        weekStart,
+        weekEnd,
+        startDate: weekStart,
+        endDate: weekEnd,
+      });
+
+      setTrendData(result);
+    } catch (error) {
+      console.error("FETCH 6-WEEK TRENDS ERROR:", error);
+      setTrendData(null);
+      setTrendsError(error?.message || "Failed to fetch 6-week trends.");
+    } finally {
+      setTrendsLoading(false);
+    }
+  }, [activeWeek, selectedClusters, selectedAccounts]);
+
+  useEffect(() => {
+    fetchSixWeekTrends();
+  }, [fetchSixWeekTrends]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -259,8 +307,8 @@ export default function useWorkforceHiringPage() {
 
             lockedByDatabase: Boolean(
               hasHiringPlanPercent ||
-                week?.locked_by_database ||
-                week?.is_hiring_plan_locked,
+              week?.locked_by_database ||
+              week?.is_hiring_plan_locked,
             ),
 
             isHiringPlanLocked: Boolean(
@@ -276,17 +324,19 @@ export default function useWorkforceHiringPage() {
 
             hasSavedSnapshot: Boolean(
               week?.hasSavedSnapshot ||
-                week?.has_saved_snapshot ||
-                Number(
-                  week?.savedSnapshotCount || week?.saved_snapshot_count || 0,
-                ) > 0,
+              week?.has_saved_snapshot ||
+              Number(
+                week?.savedSnapshotCount || week?.saved_snapshot_count || 0,
+              ) > 0,
             ),
 
             hiringPlanPercent,
             hiringRate: hiringPlanPercent,
             hiring_rate: hiringPlanPercent,
 
-            hiring_plan_percent: hasHiringPlanPercent ? hiringPlanPercent : null,
+            hiring_plan_percent: hasHiringPlanPercent
+              ? hiringPlanPercent
+              : null,
           };
         });
 
@@ -627,9 +677,7 @@ export default function useWorkforceHiringPage() {
       console.error("FETCH ACCOUNTS BY CLUSTER ERROR:", error);
 
       setRemoteAccounts([]);
-      setAccountOptions([
-        allWeeklyAccountOption,
-      ]);
+      setAccountOptions([allWeeklyAccountOption]);
 
       if (resetAccountFilter) {
         setSelectedAccounts(["All"]);
@@ -716,37 +764,65 @@ export default function useWorkforceHiringPage() {
         "buffer_percent",
       ]);
 
-      const absenteeismSeries = getBackendSixWeekSeries(
-        account,
-        "absenteeism",
-      );
+      const absenteeismSeries = getBackendSixWeekSeries(account, "absenteeism");
       const attritionSeries = getBackendSixWeekSeries(account, "attrition");
 
       const absenteeismTrendTotal = absenteeismSeries.reduce(
         (sum, value) => sum + Number(value || 0),
         0,
       );
+
       const attritionTrendTotal = attritionSeries.reduce(
         (sum, value) => sum + Number(value || 0),
         0,
       );
 
-      const absenteeismCount =
-        absenteeismTrendTotal > 0
-          ? absenteeismTrendTotal
-          : getBackendNumber(account, [
-              "absenteeismSixWeeks",
-              "absenteeism_6_weeks",
-              "absenteeismPastSixWeeks",
-              "absenteeism_past_six_weeks",
-              "totalAbsenteeism",
-              "total_absenteeism",
-              "absenteeismCount",
-              "absenteeism_count",
-            ]);
+      /*
+  Current selected-week absenteeism.
+  Backend now returns absenteeismCount as selected-week total.
+*/
+      const absenteeismCount = getBackendNumber(account, [
+        "absenteeismCount",
+        "absenteeism_count",
+        "currentWeekAbsenteeismCount",
+        "current_week_absenteeism_count",
+        "absenteeismCurrentWeekCount",
+        "absenteeism_current_week_count",
+      ]);
+
+      /*
+  Six-week absenteeism is only for trend/history.
+*/
+      const absenteeismSixWeeks =
+        getBackendNumber(account, [
+          "absenteeismSixWeeks",
+          "absenteeism_6_weeks",
+        ]) || absenteeismTrendTotal;
 
       const absenteeismPastSixWeeksAverage =
-        absenteeismCount > 0 ? absenteeismCount / 6 : 0;
+        absenteeismSixWeeks > 0 ? absenteeismSixWeeks / 6 : 0;
+
+      const averageAbsentHeadcount = getBackendNumber(account, [
+        "averageAbsentHeadcount",
+        "average_absent_headcount",
+      ]);
+
+      const currentWeekAbsenteeismCount = getBackendNumber(account, [
+        "currentWeekAbsenteeismCount",
+        "current_week_absenteeism_count",
+        "absenteeismCurrentWeekCount",
+        "absenteeism_current_week_count",
+      ]);
+
+      const scheduledCount = getBackendNumber(account, [
+        "scheduledCount",
+        "scheduled_count",
+      ]);
+
+      const averageAbsenteeismPercent =
+        scheduledCount > 0
+          ? (currentWeekAbsenteeismCount / scheduledCount) * 100
+          : 0;
 
       const attritionPastCount =
         attritionTrendTotal > 0
@@ -778,10 +854,17 @@ export default function useWorkforceHiringPage() {
         "hiring_intake",
       ]);
 
+      /*
+  Use selected-week average absent headcount here.
+  Do not use absenteeismCount because absenteeismCount is 6-week total.
+*/
       const netActualHeadcount =
-        actualHeadcount - absenteeismCount - attritionPastCount;
+        actualHeadcount - averageAbsentHeadcount - attritionPastCount;
 
-      const coverageNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+      const coverageNeeded = Math.max(
+        0,
+        requiredHeadcount - netActualHeadcount,
+      );
 
       const interviewPopulationCount = getBackendNumber(account, [
         "interviewPopulationCount",
@@ -958,11 +1041,65 @@ export default function useWorkforceHiringPage() {
         coverageNeeded,
         coverage_needed: coverageNeeded,
 
-        scheduledCount: Number(account.scheduledCount || 0),
-        presentCount: Number(account.presentCount || 0),
+        scheduledDays: getBackendNumber(account, [
+          "scheduledDays",
+          "scheduled_days",
+        ]),
 
+        scheduledCount,
+        scheduled_count: scheduledCount,
+
+        presentCount: getBackendNumber(account, [
+          "presentCount",
+          "present_count",
+        ]),
+
+        currentWeekAbsenteeismCount,
+        current_week_absenteeism_count: currentWeekAbsenteeismCount,
+
+        averageScheduledHeadcount: getBackendNumber(account, [
+          "averageScheduledHeadcount",
+          "average_scheduled_headcount",
+        ]),
+
+        average_scheduled_headcount: getBackendNumber(account, [
+          "averageScheduledHeadcount",
+          "average_scheduled_headcount",
+        ]),
+
+        averagePresentHeadcount: getBackendNumber(account, [
+          "averagePresentHeadcount",
+          "average_present_headcount",
+        ]),
+
+        average_present_headcount: getBackendNumber(account, [
+          "averagePresentHeadcount",
+          "average_present_headcount",
+        ]),
+
+        averageAbsentHeadcount,
+        average_absent_headcount: averageAbsentHeadcount,
+
+        averageAbsenteeismPercent,
+        average_absenteeism_percent: averageAbsenteeismPercent,
+
+        /*
+  Keep these for 6-week trend/table usage.
+  Do not use absenteeismCount for the KPI card.
+*/
         absenteeismCount,
-        absenteeismPercent: Number(account.absenteeismPercent || 0),
+        absenteeism_count: absenteeismCount,
+
+        absenteeismSixWeeks,
+        absenteeism_6_weeks: absenteeismSixWeeks,
+
+        absenteeismPercent: getBackendNumber(account, [
+          "averageAbsenteeismPercent",
+          "average_absenteeism_percent",
+          "absenteeismPercent",
+          "absenteeism_percent",
+        ]),
+
         absenteeismPastSixWeeksAverage,
         absenteeism_past_six_weeks_average: absenteeismPastSixWeeksAverage,
 
@@ -1122,7 +1259,8 @@ export default function useWorkforceHiringPage() {
         uploadedFile: account.uploadedFile || account.uploaded_file || "",
         uploadedBySibsId:
           account.uploadedBySibsId || account.uploaded_by_sibs_id || "",
-        lastEditSibsId: account.lastEditSibsId || account.last_edit_sibs_id || "",
+        lastEditSibsId:
+          account.lastEditSibsId || account.last_edit_sibs_id || "",
         lastEditName: account.lastEditName || account.last_edit_name || "",
       };
 
@@ -1386,12 +1524,7 @@ export default function useWorkforceHiringPage() {
       .filter(Boolean);
 
     return [...hiringPlanAdjustedData, ...emptyAssignedRows];
-  }, [
-    activeWeek,
-    activeWeekId,
-    hiringPlanAdjustedData,
-    weeklyAccess,
-  ]);
+  }, [activeWeek, activeWeekId, hiringPlanAdjustedData, weeklyAccess]);
 
   useEffect(() => {
     setRequiredInputs((prev) => {
@@ -1784,7 +1917,9 @@ export default function useWorkforceHiringPage() {
 
       setRequiredInputs((prev) => ({
         ...prev,
-        [item.id]: String(item.requiredHeadcount ?? item.required_headcount ?? 0),
+        [item.id]: String(
+          item.requiredHeadcount ?? item.required_headcount ?? 0,
+        ),
       }));
 
       editedRequiredInputsRef.current.delete(item.id);
@@ -1870,7 +2005,7 @@ export default function useWorkforceHiringPage() {
             requiredInputs[item.id] !== null &&
             requiredInputs[item.id] !== ""
           ? requiredInputs[item.id]
-          : item.requiredHeadcount ?? item.required_headcount ?? 0;
+          : (item.requiredHeadcount ?? item.required_headcount ?? 0);
 
     const requiredHeadcount = Number(rawRequiredValue);
 
@@ -1910,7 +2045,9 @@ export default function useWorkforceHiringPage() {
 
       setRequiredInputs((prev) => ({
         ...prev,
-        [item.id]: String(item.requiredHeadcount ?? item.required_headcount ?? 0),
+        [item.id]: String(
+          item.requiredHeadcount ?? item.required_headcount ?? 0,
+        ),
       }));
 
       editedRequiredInputsRef.current.delete(item.id);
@@ -2136,8 +2273,12 @@ export default function useWorkforceHiringPage() {
         if (!prev) return prev;
 
         const sameAccount =
-          String(prev.account || "").trim().toLowerCase() ===
-          String(actionItemTarget.account || "").trim().toLowerCase();
+          String(prev.account || "")
+            .trim()
+            .toLowerCase() ===
+          String(actionItemTarget.account || "")
+            .trim()
+            .toLowerCase();
 
         if (!sameAccount) return prev;
 
@@ -2153,7 +2294,9 @@ export default function useWorkforceHiringPage() {
             String(account.accountName || account.account || "")
               .trim()
               .toLowerCase() ===
-            String(actionItemTarget.account || "").trim().toLowerCase();
+            String(actionItemTarget.account || "")
+              .trim()
+              .toLowerCase();
 
           if (!sameAccount) return account;
 
@@ -2316,8 +2459,13 @@ export default function useWorkforceHiringPage() {
     },
     tables: {
       filteredPlans,
-      activeWeek,
-      accountsLoading,
+      displayData,
+      hiringPlanAdjustedData,
+
+      trendData,
+      trendsLoading,
+      trendsError,
+
       onViewPlan: setSelectedPlan,
       tableKey: `${activeWeekId}-${selectedClusters.join(
         "-",

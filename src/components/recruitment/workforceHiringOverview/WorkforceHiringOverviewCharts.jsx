@@ -14,15 +14,23 @@ function Legend({ color, label }) {
 
 function TrendSummaryBox({ label, value, percent, className }) {
   return (
-    <div className="min-h-[58px] rounded-lg border border-slate-200 p-2 text-center">
+    <div className="flex min-h-[58px] flex-col items-center justify-start rounded-lg border border-slate-200 p-2 text-center">
       <span className="block text-xs font-semibold text-slate-700">
         {label}
       </span>
-      <strong className={`block text-xl font-bold ${className}`}>
-        {value}
-      </strong>
+
+      <div className="flex items-center justify-center h-full">
+        <strong
+          className={`block text-xl font-bold leading-tight ${className}`}
+        >
+          {value}
+        </strong>
+      </div>
+
       {percent ? (
-        <b className={`block text-[13px] font-semibold ${className}`}>
+        <b
+          className={`block text-[13px] font-semibold leading-tight ${className}`}
+        >
           {percent}
         </b>
       ) : null}
@@ -85,11 +93,23 @@ function AttritionBetweenStagesCard() {
 
 function SixWeekTrendsCard() {
   const {
-    overview: { summary, trends, trendWeeks },
+    overview: {
+      summary,
+      trendSummary,
+      trends,
+      trendWeeks,
+      trendsLoading,
+      trendsError,
+    },
   } = useWorkforceHiringView();
 
+  const footerSummary = trendSummary || summary;
+
+  const bufferTone =
+    footerSummary.bufferPercentage < 0 ? "text-red-600" : "text-green-600";
+
   return (
-    <div className="min-h-[330px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="h-full min-h-[330px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="mb-3 text-base font-bold uppercase text-sibs-primary-90">
         6-Week Trends
       </h3>
@@ -100,27 +120,37 @@ function SixWeekTrendsCard() {
         <Legend color="bg-green-600" label="Buffer %" />
       </div>
 
-      <TrendSvg weeks={trendWeeks} trends={trends} />
+      {trendsLoading ? (
+        <div className="flex min-h-[210px] items-center justify-center text-sm font-semibold text-slate-500">
+          Loading 6-week trends...
+        </div>
+      ) : trendsError ? (
+        <div className="flex min-h-[210px] items-center justify-center rounded-xl border border-red-100 bg-red-50 px-4 text-center text-sm font-semibold text-red-600">
+          {trendsError}
+        </div>
+      ) : (
+        <TrendSvg weeks={trendWeeks} trends={trends} />
+      )}
 
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
         <TrendSummaryBox
           label="Absenteeism"
-          value={summary.absenteeism}
-          percent={`${summary.absenteeismPercentage.toFixed(2)}%`}
-          className="text-sibs-primary-80"
+          value={footerSummary.absenteeism}
+          percent={`${footerSummary.absenteeismPercentage.toFixed(2)}%`}
+          className="text-orange-500"
         />
 
         <TrendSummaryBox
           label="Attrition"
-          value={summary.attrition}
-          percent={`${summary.attritionPercentage.toFixed(2)}%`}
+          value={footerSummary.attrition}
+          percent={`${footerSummary.attritionPercentage.toFixed(2)}%`}
           className="text-red-600"
         />
 
         <TrendSummaryBox
           label="Buffer % (vs Required HC)"
-          value={`${summary.bufferPercentage.toFixed(2)}%`}
-          className="text-green-600"
+          value={`${footerSummary.bufferPercentage.toFixed(2)}%`}
+          className={bufferTone}
         />
       </div>
     </div>
