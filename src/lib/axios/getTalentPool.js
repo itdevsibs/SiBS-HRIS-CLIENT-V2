@@ -586,6 +586,40 @@ export async function importTalentPoolCsvLeads(file) {
 }
 
 /* =========================================
+   MARK AS DROP OFF
+========================================= */
+
+export async function markTalentPoolCandidateAsDropOff(id, payload) {
+  try {
+    const res = await api.patch(
+      `/api/talent-pool/applications/${id}/drop-off`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios markTalentPoolCandidateAsDropOff API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to mark candidate as Drop Off.",
+    };
+  }
+}
+
+/* =========================================
    MOVE TO PIPELINE
 ========================================= */
 
@@ -639,6 +673,7 @@ export default {
   updateTalentPoolCandidate,
   updateTalentPoolApplicationStatus,
   importTalentPoolCsvLeads,
+  markTalentPoolCandidateAsDropOff,
   moveTalentPoolCandidateToPipeline,
   getTalentPoolFileUrl,
 };

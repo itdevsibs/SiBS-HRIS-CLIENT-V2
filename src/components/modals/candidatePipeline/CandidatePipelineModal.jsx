@@ -65,6 +65,8 @@ const ONBOARDING_STAGE = "Onboarding";
 const ACCEPTED_FILE_TYPES =
   ".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.heif";
 
+const SIBS_ASSESSMENT_LOGO_PREVIEW_URL = "/SiBSLogoNavy.png";
+
 const MAJOR_REQUIREMENTS = [
   "Transcript of Records and/or Diploma",
   "Medical Records",
@@ -2730,18 +2732,18 @@ function AssessmentEmailFormatModal({
             <div className="mx-auto max-w-[560px] overflow-hidden rounded-sm bg-[#FFF8EF] shadow-sm">
               <div className="bg-white px-8 py-5 text-center">
                 <img
-                  src="/sibs-logo-navy.svg"
-                  alt="SiBS"
-                  className="mx-auto h-auto w-[360px] max-w-full"
-                  onError={(event) => {
-                    event.currentTarget.outerHTML =
-                      '<div style="font-size:32px;font-weight:800;color:#003B6F;">SiBS</div>';
-                  }}
+                  src={SIBS_ASSESSMENT_LOGO_PREVIEW_URL}
+                  alt="SiBS - Practice. Purpose. Philosophy."
+                  width={360}
+                  className="mx-auto block h-auto w-[360px] max-w-full object-contain"
+                  draggable={false}
                 />
               </div>
 
               <div className="px-8 py-6 text-sm leading-6 text-black">
-                <p>Hi {candidateName},</p>
+                <p>
+                  Hi <span className="font-bold">{candidateName}</span>,
+                </p>
 
                 <p className="mt-4">
                   Thank you for your interest in the {roleName} role at SiBS
@@ -2809,7 +2811,9 @@ function AssessmentEmailFormatModal({
                 <p className="mt-8">
                   Best regards,
                   <br />
-                  Talent Acquisition Team
+                  <span className="font-bold">
+                    Talent Acquisition Team
+                  </span>
                   <br />
                   SiBS Contact Center
                 </p>

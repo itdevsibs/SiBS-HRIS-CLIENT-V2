@@ -1493,7 +1493,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       setWeeklyWeeksLoading(true);
 
       try {
-        const rows = await getWeeklyHiringPlanWeeks();
+        const rows = await getWorkforceHiringPlanWeeks();
 
         if (!isActive) return;
 
@@ -1572,7 +1572,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       };
 
       try {
-        const rows = await getWeeklyHiringPlanAccounts(
+        const rows = await getWorkforceHiringPlanAccounts(
           "All",
           selectedWeek.weekStart || form.weeklyWeekStart,
           selectedWeek.weekEnd || form.weeklyWeekEnd,

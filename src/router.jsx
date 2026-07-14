@@ -18,7 +18,6 @@ import LeavesPage from "./pages/leaves/LeavesPage";
 import ResignationManagementPage from "./pages/resignation-management/ResignationManagementPage";
 import RequisitionsPage from "./pages/requisitions/RequisitionPage";
 import SchedulePage from "./pages/schedule/SchedulePage";
-import UsersPage from "./pages/users/UserManagementPage";
 import ProfileUserPage from "./pages/profile/UserProfilePage";
 
 import TADashboardPage from "./pages/recruitment/TADashboardPage";
@@ -39,6 +38,7 @@ import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 
 import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewForms";
 import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
+import AccountSettingsPage from "./pages/Settings/AccountSettingsPage";
 
 import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
@@ -204,15 +204,6 @@ export default function Router() {
       />
 
       <Route
-        path="/users"
-        element={
-          <PrivateRoute>
-            <UsersPage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
         path="/profile/user"
         element={
           <PrivateRoute>
@@ -372,6 +363,15 @@ export default function Router() {
         element={
           <PrivateRoute>
             <RecruitmentSettingsPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/settings/account-settings"
+        element={
+          <PrivateRoute>
+            <AccountSettingsPage />
           </PrivateRoute>
         }
       />
