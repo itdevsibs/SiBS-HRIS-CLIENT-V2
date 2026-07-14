@@ -1,28 +1,146 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import Header from "../../components/layout/Header";
-import { useHiringNeeds } from "../../services/context/HiringNeedsContext";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ClipboardList, Plus } from "lucide-react";
 
+import Header from "../../components/layout/Header";
 import HiringNeedsStats from "../../components/recruitment/HiringNeeds/HiringNeedsStats";
 import HiringNeedsFilters from "../../components/recruitment/HiringNeeds/HiringNeedsFilters";
 import HiringNeedsTable from "../../components/recruitment/HiringNeeds/HiringNeedsTable";
-
 import ViewHiringNeedsModal from "../../components/modals/hiringNeeds/ViewHiringNeedsModal";
 import AddHiringNeedsModal from "../../components/modals/hiringNeeds/AddHiringNeedsModal";
 import StatusModal from "../../components/modals/StatusModal";
-import { ClipboardList, Plus } from "lucide-react";
+
+import { useHiringNeeds } from "../../services/context/HiringNeedsContext";
+import { useUser } from "../../services/context/UserContext";
+import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
+import {
+  approveRequestByModule,
+  rejectRequestByModule,
+} from "../../lib/axios/getApprovalRequest";
+
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeSibsId(value) {
+  return cleanText(value).replace(/^SIBS[-_ ]?/i, "");
+}
+
+function getLocalStorageValue(keys = []) {
+  if (typeof window === "undefined") return "";
+
+  for (const key of keys) {
+    const value = window.localStorage.getItem(key);
+
+    if (cleanText(value)) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getCurrentUserSibsId(user = {}) {
+  return normalizeSibsId(
+    user?.sibsId ||
+      user?.sibs_id ||
+      user?.employeeSibsId ||
+      user?.employee_sibs_id ||
+      user?.gy_emp_code ||
+      user?.gy_user_code ||
+      user?.userCode ||
+      user?.user_code ||
+      user?.employeeCode ||
+      user?.employee_code ||
+      user?.username ||
+      getLocalStorageValue([
+        "sibsId",
+        "sibs_id",
+        "employeeSibsId",
+        "employee_sibs_id",
+        "gy_emp_code",
+        "gy_user_code",
+        "userCode",
+        "user_code",
+        "employeeCode",
+        "employee_code",
+        "username",
+      ]),
+  );
+}
+
+function getApprovalSettingsRows(responseData) {
+  const rows =
+    responseData?.data?.users ||
+    responseData?.data?.rows ||
+    responseData?.data ||
+    responseData?.users ||
+    responseData?.rows ||
+    responseData ||
+    [];
+
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getApprovalSettingsSibsId(row = {}) {
+  return normalizeSibsId(
+    row?.sibsId ||
+      row?.sibs_id ||
+      row?.employeeSibsId ||
+      row?.employee_sibs_id ||
+      row?.gy_emp_code ||
+      row?.gy_user_code ||
+      row?.userCode ||
+      row?.user_code ||
+      row?.username,
+  );
+}
+
+function getHiringNeedsRequestId(item = {}) {
+  const value =
+    item?.rawId ||
+    item?.raw_id ||
+    item?.hiringNeedsId ||
+    item?.hiring_needs_id ||
+    item?.hiringNeedId ||
+    item?.hiring_need_id ||
+    item?.id ||
+    "";
+
+  return cleanText(value).replace(
+    /^HN-|^PRF-|^HIRING-NEEDS-/i,
+    "",
+  );
+}
 
 export default function HiringNeedsPage() {
   const mainRef = useRef(null);
+  const { user } = useUser();
   const { fetchList, fetchJobDescriptions } = useHiringNeeds();
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [approvalAccessLoading, setApprovalAccessLoading] =
+    useState(true);
+  const [canApproveHiringNeeds, setCanApproveHiringNeeds] =
+    useState(false);
+
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "success",
     title: "",
     message: "",
   });
+
+  const currentUserSibsId = useMemo(
+    () => getCurrentUserSibsId(user),
+    [user],
+  );
 
   const showStatusModal = useCallback((payload) => {
     setStatusModal({
@@ -37,6 +155,163 @@ export default function HiringNeedsPage() {
     fetchList();
     fetchJobDescriptions();
   }, [fetchList, fetchJobDescriptions]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkApprovalAccess() {
+      const cleanUserSibsId = normalizeSibsId(currentUserSibsId);
+
+      if (!cleanUserSibsId) {
+        if (!cancelled) {
+          setCanApproveHiringNeeds(false);
+          setApprovalAccessLoading(false);
+        }
+
+        return;
+      }
+
+      try {
+        setApprovalAccessLoading(true);
+
+        const result = await getHiringNeedsApprovalUsers();
+        const rows = getApprovalSettingsRows(result);
+
+        const allowed = rows.some((row) => {
+          return (
+            getApprovalSettingsSibsId(row).toLowerCase() ===
+            cleanUserSibsId.toLowerCase()
+          );
+        });
+
+        if (!cancelled) {
+          setCanApproveHiringNeeds(allowed);
+        }
+      } catch (error) {
+        console.error(
+          "CHECK HIRING NEEDS MODAL APPROVAL ACCESS ERROR:",
+          error,
+        );
+
+        if (!cancelled) {
+          setCanApproveHiringNeeds(false);
+
+          showStatusModal({
+            type: "error",
+            title: "Approval Access Check Failed",
+            message:
+              error?.response?.data?.message ||
+              error?.response?.data?.error ||
+              error?.message ||
+              "Unable to verify your Hiring Needs approval access.",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setApprovalAccessLoading(false);
+        }
+      }
+    }
+
+    checkApprovalAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserSibsId, showStatusModal]);
+
+  const handleApprovalDecision = useCallback(
+    async ({ action, item, remarks }) => {
+      if (!canApproveHiringNeeds) {
+        showStatusModal({
+          type: "error",
+          title: "Not Allowed",
+          message:
+            "Only users added in Recruitment Settings > Approval Rules > Hiring Needs can approve or reject this request.",
+        });
+
+        return false;
+      }
+
+      const requestId = getHiringNeedsRequestId(item);
+
+      if (!requestId) {
+        showStatusModal({
+          type: "error",
+          title: "Invalid Request",
+          message: "The Hiring Needs request ID is missing.",
+        });
+
+        return false;
+      }
+
+      try {
+        const payload = {
+          remarks: cleanText(remarks),
+        };
+
+        const result =
+          action === "approve"
+            ? await approveRequestByModule(
+                "Hiring Needs",
+                requestId,
+                payload,
+              )
+            : await rejectRequestByModule(
+                "Hiring Needs",
+                requestId,
+                payload,
+              );
+
+        if (!result?.success) {
+          throw new Error(
+            result?.message ||
+              `Failed to ${
+                action === "approve" ? "approve" : "reject"
+              } the request.`,
+          );
+        }
+
+        await fetchList();
+
+        setSelectedItem(null);
+
+        showStatusModal({
+          type: "success",
+          title:
+            action === "approve"
+              ? "Request Approved"
+              : "Request Rejected",
+          message:
+            result?.message ||
+            `The Hiring Needs request was ${
+              action === "approve" ? "approved" : "rejected"
+            } successfully.`,
+        });
+
+        return true;
+      } catch (error) {
+        console.error("HIRING NEEDS MODAL APPROVAL ERROR:", error);
+
+        showStatusModal({
+          type: "error",
+          title: "Approval Update Failed",
+          message:
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Something went wrong while updating the request.",
+        });
+
+        return false;
+      }
+    },
+    [
+      canApproveHiringNeeds,
+      fetchList,
+      showStatusModal,
+    ],
+  );
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
@@ -61,7 +336,8 @@ export default function HiringNeedsPage() {
               </h1>
 
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Create, review, approve, and manage Personnel Requisition Forms.
+                Create, review, approve, and manage Personnel
+                Requisition Forms.
               </p>
             </div>
 
@@ -94,9 +370,10 @@ export default function HiringNeedsPage() {
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              This module tracks Personnel Requisition Forms. Once a PRF is
-              approved by HR Admin, it becomes an active hiring need that can be
-              linked to Job Descriptions, Workforce Hiring Planning, and Candidates.
+              This module tracks Personnel Requisition Forms. Once a PRF
+              is approved by HR Admin, it becomes an active hiring need
+              that can be linked to Job Descriptions, Workforce Hiring
+              Planning, and Candidates.
             </p>
           </section>
         </div>
@@ -109,16 +386,24 @@ export default function HiringNeedsPage() {
       />
 
       <ViewHiringNeedsModal
-        open={!!selectedItem}
+        open={Boolean(selectedItem)}
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
         onStatus={showStatusModal}
+        canApprove={canApproveHiringNeeds}
+        approvalAccessLoading={approvalAccessLoading}
+        onDecision={handleApprovalDecision}
       />
 
       <StatusModal
         open={statusModal.open}
         type={statusModal.type}
-        onClose={() => setStatusModal((prev) => ({ ...prev, open: false }))}
+        onClose={() =>
+          setStatusModal((previous) => ({
+            ...previous,
+            open: false,
+          }))
+        }
         title={statusModal.title}
         message={statusModal.message}
       />

@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import {
@@ -5,6 +6,41 @@ import {
   getStatusClass,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import TalentPoolMobileCard from "./TalentPoolMobileCard";
+
+
+const PAGE_SIZE = 15;
+
+function getPaginationItems(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, "end-ellipsis", totalPages];
+  }
+
+  if (currentPage >= totalPages - 3) {
+    return [
+      1,
+      "start-ellipsis",
+      totalPages - 4,
+      totalPages - 3,
+      totalPages - 2,
+      totalPages - 1,
+      totalPages,
+    ];
+  }
+
+  return [
+    1,
+    "start-ellipsis",
+    currentPage - 1,
+    currentPage,
+    currentPage + 1,
+    "end-ellipsis",
+    totalPages,
+  ];
+}
 
 function getTalentPoolStatusLabel(status = "") {
   const value = String(status || "").trim();
@@ -22,11 +58,75 @@ function getTalentPoolStatusLabel(status = "") {
 export default function TalentPoolTable() {
   const {
     filteredCandidates,
-    candidateList,
     setSelectedCandidate,
     isLoading,
     loadError,
   } = useTalentPool();
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalCandidates = filteredCandidates.length;
+  const totalPages = Math.max(1, Math.ceil(totalCandidates / PAGE_SIZE));
+
+  const filteredCandidateKey = useMemo(
+    () =>
+      filteredCandidates
+        .map(
+          (candidate) =>
+            candidate.id ||
+            candidate.candidateId ||
+            candidate.email ||
+            candidate.name ||
+            "",
+        )
+        .join("|"),
+    [filteredCandidates],
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredCandidateKey]);
+
+  useEffect(() => {
+    setCurrentPage((previousPage) =>
+      Math.min(Math.max(previousPage, 1), totalPages),
+    );
+  }, [totalPages]);
+
+  const pageStartIndex = (currentPage - 1) * PAGE_SIZE;
+
+  const paginatedCandidates = useMemo(
+    () =>
+      filteredCandidates.slice(
+        pageStartIndex,
+        pageStartIndex + PAGE_SIZE,
+      ),
+    [filteredCandidates, pageStartIndex],
+  );
+
+  const paginationItems = useMemo(
+    () => getPaginationItems(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
+
+  const showingFrom = totalCandidates > 0 ? pageStartIndex + 1 : 0;
+  const showingTo =
+    totalCandidates > 0
+      ? Math.min(pageStartIndex + paginatedCandidates.length, totalCandidates)
+      : 0;
+
+  function goToPage(pageNumber) {
+    const nextPage = Math.min(Math.max(pageNumber, 1), totalPages);
+    setCurrentPage(nextPage);
+  }
+
+  function goToPreviousPage() {
+    goToPage(currentPage - 1);
+  }
+
+  function goToNextPage() {
+    goToPage(currentPage + 1);
+  }
 
   return (
     <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
@@ -45,8 +145,8 @@ export default function TalentPoolTable() {
       {!isLoading && !loadError && (
         <>
           <div className="space-y-3 lg:hidden">
-            {filteredCandidates.length > 0 ? (
-              filteredCandidates.map((candidate) => (
+            {paginatedCandidates.length > 0 ? (
+              paginatedCandidates.map((candidate) => (
                 <TalentPoolMobileCard key={candidate.id} candidate={candidate} />
               ))
             ) : (
@@ -88,8 +188,8 @@ export default function TalentPoolTable() {
                 </thead>
 
                 <tbody>
-                  {filteredCandidates.length > 0 ? (
-                    filteredCandidates.map((candidate) => {
+                  {paginatedCandidates.length > 0 ? (
+                    paginatedCandidates.map((candidate) => {
                       const appliedPosition =
                         candidate.openPosition ||
                         candidate.roleCapability ||
@@ -236,36 +336,72 @@ export default function TalentPoolTable() {
           </div>
 
           <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-            <p className="text-sm font-semibold text-sibs-tertiary-5">
-              Showing {filteredCandidates.length > 0 ? 1 : 0} to{" "}
-              {filteredCandidates.length} of {candidateList.length} candidate
-              profiles
-            </p>
+            <div>
+              <p className="text-sm font-semibold text-sibs-tertiary-5">
+                Showing {showingFrom} to {showingTo} of {totalCandidates}{" "}
+                candidate profiles
+              </p>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              <button
-                type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
-              >
-                1
-              </button>
-
-              <button
-                type="button"
-                disabled
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                15 candidates per page
+              </p>
             </div>
+
+            {totalCandidates > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                  aria-label="Go to previous page"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {paginationItems.map((item) => {
+                  if (typeof item !== "number") {
+                    return (
+                      <span
+                        key={item}
+                        className="flex h-10 min-w-8 items-center justify-center px-1 text-sm font-bold text-sibs-tertiary-5"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+
+                  const isActive = item === currentPage;
+
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => goToPage(item)}
+                      aria-label={`Go to page ${item}`}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-sm font-bold transition ${
+                        isActive
+                          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                          : "border-[#E6ECF2] bg-white text-sibs-primary-1 hover:border-sibs-primary-1 hover:bg-[#F8FAFC]"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  );
+                })}
+
+                <button
+                  type="button"
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                  aria-label="Go to next page"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

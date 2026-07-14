@@ -18,7 +18,6 @@ import LeavesPage from "./pages/leaves/LeavesPage";
 import ResignationManagementPage from "./pages/resignation-management/ResignationManagementPage";
 import RequisitionsPage from "./pages/requisitions/RequisitionPage";
 import SchedulePage from "./pages/schedule/SchedulePage";
-import UsersPage from "./pages/users/UserManagementPage";
 import ProfileUserPage from "./pages/profile/UserProfilePage";
 
 import TADashboardPage from "./pages/recruitment/TADashboardPage";
@@ -200,15 +199,6 @@ export default function Router() {
         element={
           <PrivateRoute>
             <SchedulePage />
-          </PrivateRoute>
-        }
-      />
-
-      <Route
-        path="/users"
-        element={
-          <PrivateRoute>
-            <UsersPage />
           </PrivateRoute>
         }
       />

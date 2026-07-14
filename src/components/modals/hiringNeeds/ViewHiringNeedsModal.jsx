@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
   Clock,
   FileText,
+  Loader2,
   MapPin,
   Users,
   X,
@@ -38,7 +39,10 @@ function formatDateRange(startDate, endDate) {
   const start = formatDate(startDate);
   const end = formatDate(endDate);
 
-  if (start !== "—" && end !== "—") return `${start} - ${end}`;
+  if (start !== "—" && end !== "—") {
+    return `${start} - ${end}`;
+  }
+
   if (start !== "—") return start;
   if (end !== "—") return end;
 
@@ -48,13 +52,14 @@ function formatDateRange(startDate, endDate) {
 function normalizeStatus(status) {
   if (!status) return "For Approval";
 
-  const value = String(status).trim();
+  const value = cleanText(status);
   const lowerValue = value.toLowerCase();
 
   if (
     lowerValue === "pending" ||
     lowerValue === "for validation" ||
     lowerValue === "under review" ||
+    lowerValue === "for review" ||
     lowerValue === "for approval"
   ) {
     return "For Approval";
@@ -71,6 +76,15 @@ function normalizeStatus(status) {
   }
 
   return value;
+}
+
+function isFinalStatus(status) {
+  const normalized = normalizeStatus(status);
+
+  return (
+    normalized === "Approved" ||
+    normalized === "Not Approved"
+  );
 }
 
 function getStatusClass(status) {
@@ -90,7 +104,12 @@ function getApprovalIcon(status) {
   const normalized = normalizeStatus(status);
 
   if (normalized === "Approved") {
-    return <CheckCircle2 size={17} className="text-emerald-600" />;
+    return (
+      <CheckCircle2
+        size={17}
+        className="text-emerald-600"
+      />
+    );
   }
 
   if (normalized === "Not Approved") {
@@ -101,7 +120,9 @@ function getApprovalIcon(status) {
 }
 
 function getRequestType(item = {}) {
-  const type = cleanText(item.requestType || item.request_type).toLowerCase();
+  const type = cleanText(
+    item?.requestType || item?.request_type,
+  ).toLowerCase();
 
   if (type === "downsize") return "Downsize";
   if (type === "requisition") return "Requisition";
@@ -118,21 +139,32 @@ function getRequestTypeClass(type) {
 }
 
 function getWeekRange(item = {}) {
+  const safeItem = item || {};
+
   return (
-    cleanText(item.weeklyWeekDateRange || item.weekly_week_date_range) ||
+    cleanText(
+      safeItem.weeklyWeekDateRange ||
+        safeItem.weekly_week_date_range,
+    ) ||
     formatDateRange(
-      item.weeklyWeekStart || item.weekly_week_start,
-      item.weeklyWeekEnd || item.weekly_week_end,
+      safeItem.weeklyWeekStart || safeItem.weekly_week_start,
+      safeItem.weeklyWeekEnd || safeItem.weekly_week_end,
     )
   );
 }
 
 function getDepartmentAccount(item = {}) {
+  const safeItem = item || {};
+
   return (
-    cleanText(item.departmentAccount || item.department_account) ||
+    cleanText(
+      safeItem.departmentAccount || safeItem.department_account,
+    ) ||
     [
-      item.departmentName || item.department_name || item.department,
-      item.accountName || item.account_name || item.account,
+      safeItem.departmentName ||
+        safeItem.department_name ||
+        safeItem.department,
+      safeItem.accountName || safeItem.account_name || safeItem.account,
     ]
       .map(cleanText)
       .filter(Boolean)
@@ -142,50 +174,61 @@ function getDepartmentAccount(item = {}) {
 }
 
 function getAccountName(item = {}) {
+  const safeItem = item || {};
+
   return (
-    cleanText(item.accountName || item.account_name) ||
-    cleanText(item.account) ||
+    cleanText(safeItem.accountName || safeItem.account_name) ||
+    cleanText(safeItem.account) ||
     "—"
   );
 }
 
 function getHeadcount(item = {}) {
+  const safeItem = item || {};
+
   return (
-    item.headcount ??
-    item.requiredHeadcount ??
-    item.required_headcount ??
-    item.approvedRequirement ??
-    item.approved_requirement ??
+    safeItem.headcount ??
+    safeItem.requiredHeadcount ??
+    safeItem.required_headcount ??
+    safeItem.approvedRequirement ??
+    safeItem.approved_requirement ??
     "—"
   );
 }
 
 function getPreviousRequiredHeadcount(item = {}) {
+  const safeItem = item || {};
+
   return (
-    item.previousRequiredHeadcount ??
-    item.previous_required_headcount ??
-    item.approvedRequirement ??
-    item.approved_requirement ??
+    safeItem.previousRequiredHeadcount ??
+    safeItem.previous_required_headcount ??
+    safeItem.approvedRequirement ??
+    safeItem.approved_requirement ??
     "0"
   );
 }
 
 function getDownsizeReason(item = {}) {
+  const safeItem = item || {};
+
   return (
-    cleanText(item.downsizeReason || item.downsize_reason) ||
-    cleanText(item.reasonForHiring || item.reason_for_hiring) ||
-    cleanText(item.reason) ||
+    cleanText(safeItem.downsizeReason || safeItem.downsize_reason) ||
+    cleanText(
+      safeItem.reasonForHiring || safeItem.reason_for_hiring,
+    ) ||
+    cleanText(safeItem.reason) ||
     "—"
   );
 }
 
 function getSupportingFileUrl(item = {}) {
+  const safeItem = item || {};
+
   const rawPath = cleanText(
-    item.supportingFilePath ||
-      item.supporting_file_path ||
-      item.supportingFileUrl ||
-      item.supporting_file_url ||
-      "",
+    safeItem.supportingFilePath ||
+      safeItem.supporting_file_path ||
+      safeItem.supportingFileUrl ||
+      safeItem.supporting_file_url,
   );
 
   if (!rawPath) return "";
@@ -204,19 +247,29 @@ function getSupportingFileUrl(item = {}) {
     return `${API_BASE_URL}/${normalizedPath}`;
   }
 
-  return `${API_BASE_URL}/${normalizedPath.replace(/^\/+/, "")}`;
+  return `${API_BASE_URL}/${normalizedPath.replace(
+    /^\/+/,
+    "",
+  )}`;
 }
 
 function getSupportingFileName(item = {}) {
+  const safeItem = item || {};
+
   return (
-    cleanText(item.supportingFileName || item.supporting_file_name) ||
-    "Supporting file"
+    cleanText(
+      safeItem.supportingFileName ||
+        safeItem.supporting_file_name,
+    ) || "Supporting file"
   );
 }
 
 function isImageFile(item = {}) {
+  const safeItem = item || {};
+
   const mimeType = cleanText(
-    item.supportingFileMimeType || item.supporting_file_mime_type,
+    safeItem.supportingFileMimeType ||
+      safeItem.supporting_file_mime_type,
   ).toLowerCase();
 
   const fileName = getSupportingFileName(item).toLowerCase();
@@ -227,7 +280,12 @@ function isImageFile(item = {}) {
   );
 }
 
-function InfoItem({ label, value, icon: Icon, className = "" }) {
+function InfoItem({
+  label,
+  value,
+  icon: Icon,
+  className = "",
+}) {
   return (
     <div
       className={`group min-w-0 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 transition hover:border-[#C9D7E8] hover:bg-white ${className}`}
@@ -266,14 +324,19 @@ function DetailSection({ title, subtitle, children }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {children}
       </div>
     </section>
   );
 }
 
-function SummaryMetric({ label, value, icon: Icon, tone = "blue" }) {
+function SummaryMetric({
+  label,
+  value,
+  icon: Icon,
+  tone = "blue",
+}) {
   const toneClass =
     tone === "amber"
       ? "border-amber-200 bg-amber-50 text-amber-700"
@@ -342,43 +405,136 @@ function SupportingFilePreview({ url, fileName, image }) {
   );
 }
 
-export default function ViewHiringNeedsModal({ open, item, onClose }) {
-  if (!open || !item) return null;
+export default function ViewHiringNeedsModal({
+  open,
+  item,
+  onClose,
+  onStatus,
+  canApprove = false,
+  approvalAccessLoading = false,
+  onDecision,
+}) {
+  const [remarks, setRemarks] = useState("");
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [decisionAction, setDecisionAction] = useState("");
 
-  const status = normalizeStatus(item?.approvalStatus || item?.approval_status);
-  const requestType = getRequestType(item);
+  /*
+   * Keep hooks unconditional while protecting every calculation from
+   * the brief render where the modal is closed and item is null.
+   */
+  const safeItem = item || {};
+
+  useEffect(() => {
+    if (!open) return;
+
+    setRemarks("");
+    setDecisionLoading(false);
+    setDecisionAction("");
+  }, [item?.id, open]);
+
+  const status = normalizeStatus(
+    safeItem.approvalStatus || safeItem.approval_status,
+  );
+
+  const requestType = getRequestType(safeItem);
   const isDownsize = requestType === "Downsize";
-  const weekRange = getWeekRange(item);
-  const supportingFileUrl = getSupportingFileUrl(item);
-  const supportingFileName = getSupportingFileName(item);
+  const weekRange = getWeekRange(safeItem);
+  const supportingFileUrl = getSupportingFileUrl(safeItem);
+  const supportingFileName = getSupportingFileName(safeItem);
+  const finalStatus = isFinalStatus(status);
+
+  const canShowDecisionControls =
+    canApprove &&
+    !approvalAccessLoading &&
+    !finalStatus;
 
   const jobDescriptionDisplay =
-    item.jobDescriptionText ||
-    item.jobDescriptionTitle ||
-    item.jobDescriptionName ||
-    item.documentTitle ||
-    item.jdTitle ||
-    item.jobDescriptionId ||
-    item.job_description_title ||
-    item.job_description_id ||
+    safeItem.jobDescriptionText ||
+    safeItem.jobDescriptionTitle ||
+    safeItem.jobDescriptionName ||
+    safeItem.documentTitle ||
+    safeItem.jdTitle ||
+    safeItem.jobDescriptionId ||
+    safeItem.job_description_title ||
+    safeItem.job_description_id ||
     "";
 
   const titleDisplay = isDownsize
-    ? getAccountName(item)
-    : item.positionTitle ||
-      item.position_title ||
-      item.roleTitle ||
-      item.role_title ||
+    ? getAccountName(safeItem)
+    : safeItem.positionTitle ||
+      safeItem.position_title ||
+      safeItem.roleTitle ||
+      safeItem.role_title ||
       "—";
 
   const subtitleDisplay = isDownsize
-    ? getDepartmentAccount(item)
-    : item.departmentAccount || item.department_account || "—";
+    ? getDepartmentAccount(safeItem)
+    : safeItem.departmentAccount ||
+      safeItem.department_account ||
+      "—";
+
+  const recordedApprovalRemarks =
+    safeItem.approvalRemarks ||
+    safeItem.approval_remarks ||
+    "—";
+
+  const decisionDescription = useMemo(() => {
+    if (approvalAccessLoading) {
+      return "Checking your Hiring Needs approval access...";
+    }
+
+    if (finalStatus) {
+      return "This request already has a final decision.";
+    }
+
+    if (!canApprove) {
+      return "You can review this request, but only configured Hiring Needs approvers can approve or reject it.";
+    }
+
+    return "You are configured as a Hiring Needs approver. Add optional remarks, then approve or reject this request.";
+  }, [
+    approvalAccessLoading,
+    canApprove,
+    finalStatus,
+  ]);
+
+  if (!open || !item) return null;
+
+  async function handleDecision(action) {
+    if (!canShowDecisionControls || decisionLoading) return;
+
+    if (typeof onDecision !== "function") {
+      onStatus?.({
+        type: "error",
+        title: "Approval Action Unavailable",
+        message:
+          "The approval action is not connected to the page.",
+      });
+
+      return;
+    }
+
+    try {
+      setDecisionLoading(true);
+      setDecisionAction(action);
+
+      await onDecision({
+        action,
+        item,
+        remarks,
+      });
+    } finally {
+      setDecisionLoading(false);
+      setDecisionAction("");
+    }
+  }
 
   return (
     <div
       className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-3 py-3 sm:px-4 sm:py-4"
-      onClick={onClose}
+      onClick={() => {
+        if (!decisionLoading) onClose();
+      }}
     >
       <div
         className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
@@ -387,18 +543,22 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
         <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0">
             <h2 className="mt-3 break-words text-xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-2xl">
-              {isDownsize ? "Downsize Request" : "Personnel Requisition"}
+              {isDownsize
+                ? "Downsize Request"
+                : "Personnel Requisition"}
             </h2>
 
             <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Review all request information and recorded approval details.
+              Review all request information and recorded approval
+              details.
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            disabled={decisionLoading}
+            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
           >
             <X size={20} />
@@ -412,7 +572,9 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
                   <div className="min-w-0">
                     <p className="text-xs font-extrabold uppercase tracking-wide text-[#215789]">
-                      {isDownsize ? "Account" : "Position Title"}
+                      {isDownsize
+                        ? "Account"
+                        : "Position Title"}
                     </p>
 
                     <h3 className="mt-2 break-words text-2xl font-extrabold leading-tight text-[#101828] sm:text-3xl">
@@ -443,24 +605,37 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
 
                       <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-sibs-primary-1">
                         <MapPin size={14} />
-                        {item.locationSite || item.location_site || "—"}
+                        {item.locationSite ||
+                          item.location_site ||
+                          "—"}
                       </span>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
                     <SummaryMetric
-                      label={isDownsize ? "Headcount to Downsize" : "Headcount"}
+                      label={
+                        isDownsize
+                          ? "Headcount to Downsize"
+                          : "Headcount"
+                      }
                       value={getHeadcount(item)}
                       icon={Users}
                     />
 
                     <SummaryMetric
-                      label={isDownsize ? "Week Range" : "Date Needed"}
+                      label={
+                        isDownsize
+                          ? "Week Range"
+                          : "Date Needed"
+                      }
                       value={
                         isDownsize
                           ? weekRange
-                          : formatDate(item.dateNeeded || item.date_needed)
+                          : formatDate(
+                              item.dateNeeded ||
+                                item.date_needed,
+                            )
                       }
                       icon={CalendarDays}
                       tone="amber"
@@ -475,7 +650,10 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
                 title="Downsize Details"
                 subtitle="Selected weekly hiring plan account, previous required headcount, and downsize reason."
               >
-                <InfoItem label="Account" value={getAccountName(item)} />
+                <InfoItem
+                  label="Account"
+                  value={getAccountName(item)}
+                />
 
                 <InfoItem
                   label="Department / Account"
@@ -514,17 +692,25 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
               >
                 <InfoItem
                   label="Position Title"
-                  value={item.positionTitle || item.position_title}
+                  value={
+                    item.positionTitle ||
+                    item.position_title
+                  }
                 />
 
                 <InfoItem
                   label="Department / Account"
-                  value={item.departmentAccount || item.department_account}
+                  value={
+                    item.departmentAccount ||
+                    item.department_account
+                  }
                 />
 
                 <InfoItem
                   label="Job Description"
-                  value={jobDescriptionDisplay || "Not selected"}
+                  value={
+                    jobDescriptionDisplay || "Not selected"
+                  }
                   icon={FileText}
                   className="md:col-span-2"
                 />
@@ -532,7 +718,9 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
                 <InfoItem
                   label="Reason for Hiring"
                   value={
-                    item.reasonForHiring || item.reason_for_hiring || item.reason
+                    item.reasonForHiring ||
+                    item.reason_for_hiring ||
+                    item.reason
                   }
                 />
 
@@ -540,14 +728,19 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
                   label="Assignment"
                   value={
                     item.assignment === "Other"
-                      ? item.assignmentOther || item.assignment_other || "Other"
+                      ? item.assignmentOther ||
+                        item.assignment_other ||
+                        "Other"
                       : item.assignment
                   }
                 />
 
                 <InfoItem
                   label="Location / Site"
-                  value={item.locationSite || item.location_site}
+                  value={
+                    item.locationSite ||
+                    item.location_site
+                  }
                 />
               </DetailSection>
             )}
@@ -572,17 +765,27 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
               subtitle="Submitted request information and staffing requirement."
             >
               <InfoItem
-                label={isDownsize ? "Headcount to Downsize" : "Headcount"}
+                label={
+                  isDownsize
+                    ? "Headcount to Downsize"
+                    : "Headcount"
+                }
                 value={getHeadcount(item)}
                 icon={Users}
               />
 
               <InfoItem
-                label={isDownsize ? "Week Range" : "Date Needed"}
+                label={
+                  isDownsize
+                    ? "Week Range"
+                    : "Date Needed"
+                }
                 value={
                   isDownsize
                     ? weekRange
-                    : formatDate(item.dateNeeded || item.date_needed)
+                    : formatDate(
+                        item.dateNeeded || item.date_needed,
+                      )
                 }
                 icon={CalendarDays}
               />
@@ -599,13 +802,17 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
               <InfoItem
                 label="Hiring Manager"
                 value={
-                  item.hiringManager || item.hiring_manager || item.preparedBy
+                  item.hiringManager ||
+                  item.hiring_manager ||
+                  item.preparedBy
                 }
               />
 
               <InfoItem
                 label="Submitted Date"
-                value={formatDate(item.createdAt || item.created_at)}
+                value={formatDate(
+                  item.createdAt || item.created_at,
+                )}
               />
             </DetailSection>
 
@@ -613,24 +820,71 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
               title="Approval Details"
               subtitle="Current approval information and recorded decision details."
             >
-              <InfoItem label="Approval Status" value={status} />
+              <InfoItem
+                label="Approval Status"
+                value={status}
+              />
 
               <InfoItem
                 label="Approval Date"
-                value={formatDate(item.approvalDate || item.approval_date)}
+                value={formatDate(
+                  item.approvalDate ||
+                    item.approval_date,
+                )}
               />
 
               <InfoItem
                 label="Approved By"
-                value={item.approvedBy || item.approved_by}
+                value={
+                  item.approvedBy ||
+                  item.approved_by
+                }
               />
 
               <InfoItem
                 label="Approval Remarks"
-                value={item.approvalRemarks || item.approval_remarks}
+                value={recordedApprovalRemarks}
                 className="md:col-span-2"
               />
             </DetailSection>
+
+            <section className="rounded-3xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
+              <div className="flex flex-col gap-1">
+                <h3 className="text-base font-extrabold text-[#101828]">
+                  Approval Action
+                </h3>
+
+                <p className="text-sm font-semibold leading-6 text-sibs-tertiary-5">
+                  {decisionDescription}
+                </p>
+              </div>
+
+              {canShowDecisionControls && (
+                <div className="mt-4">
+                  <label
+                    htmlFor="hiring-needs-approval-remarks"
+                    className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-[#215789]"
+                  >
+                    Decision Remarks
+                    <span className="ml-1 font-semibold normal-case text-sibs-tertiary-5">
+                      (Optional)
+                    </span>
+                  </label>
+
+                  <textarea
+                    id="hiring-needs-approval-remarks"
+                    value={remarks}
+                    onChange={(event) =>
+                      setRemarks(event.target.value)
+                    }
+                    disabled={decisionLoading}
+                    rows={4}
+                    placeholder="Add remarks for this approval decision..."
+                    className="w-full resize-none rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                  />
+                </div>
+              )}
+            </section>
           </div>
         </div>
 
@@ -640,13 +894,60 @@ export default function ViewHiringNeedsModal({ open, item, onClose }) {
               Request status: {status}
             </p>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[#D0D5DD] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
-            >
-              Close
-            </button>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={decisionLoading}
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[#D0D5DD] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                Close
+              </button>
+
+              {canShowDecisionControls && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDecision("reject")
+                    }
+                    disabled={decisionLoading}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 text-sm font-extrabold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    {decisionLoading &&
+                    decisionAction === "reject" ? (
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <XCircle size={17} />
+                    )}
+                    Reject Request
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleDecision("approve")
+                    }
+                    disabled={decisionLoading}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                  >
+                    {decisionLoading &&
+                    decisionAction === "approve" ? (
+                      <Loader2
+                        size={17}
+                        className="animate-spin"
+                      />
+                    ) : (
+                      <CheckCircle2 size={17} />
+                    )}
+                    Approve Request
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

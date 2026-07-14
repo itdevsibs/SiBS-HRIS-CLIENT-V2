@@ -1,15 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, UserX, X } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import {
-  inputClass,
   textareaClass,
   toDisplayPersonName,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
-import { moveTalentPoolCandidateToPipeline } from "../../../lib/axios/getTalentPool";
+import {
+  markTalentPoolCandidateAsDropOff,
+  moveTalentPoolCandidateToPipeline,
+} from "../../../lib/axios/getTalentPool";
 import StatusModal from "../StatusModal";
 
 function cleanText(value) {
@@ -18,167 +20,6 @@ function cleanText(value) {
 
 function normalizeKey(value) {
   return cleanText(value).toLowerCase().replace(/\s+/g, " ");
-}
-
-function uniqueByKey(items = [], keyGetter) {
-  const map = new Map();
-
-  items.forEach((item) => {
-    const key = keyGetter(item);
-    if (!key) return;
-
-    if (!map.has(key)) {
-      map.set(key, item);
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function normalizeDepartmentOption(item) {
-  if (!item) return null;
-
-  if (typeof item === "string" || typeof item === "number") {
-    const name = cleanText(item);
-
-    if (!name) return null;
-
-    return {
-      departmentId: name,
-      departmentName: name,
-      departmentKey: normalizeKey(name),
-      departmentIds: [name],
-      departmentNames: [name],
-    };
-  }
-
-  const departmentId =
-    item.departmentId ??
-    item.department_id ??
-    item.gy_dept_id ??
-    item.id_department ??
-    item.id ??
-    item.positionDepartmentId ??
-    item.position_department_id ??
-    "";
-
-  const departmentName =
-    item.departmentName ||
-    item.department_name ||
-    item.name_department ||
-    item.department ||
-    item.positionDepartment ||
-    item.position_department ||
-    item.label ||
-    item.value ||
-    item.name ||
-    "";
-
-  const finalName = cleanText(departmentName || departmentId);
-  const finalId = cleanText(departmentId || finalName);
-
-  if (!finalName && !finalId) return null;
-
-  return {
-    departmentId: finalId,
-    departmentName: finalName,
-    departmentKey: normalizeKey(finalName || finalId),
-    departmentIds: [finalId].filter(Boolean),
-    departmentNames: [finalName].filter(Boolean),
-  };
-}
-
-function normalizeAccountOption(item) {
-  if (!item) return null;
-
-  if (typeof item === "string" || typeof item === "number") {
-    const name = cleanText(item);
-
-    if (!name) return null;
-
-    return {
-      accountId: name,
-      accountName: name,
-      accountGhlName: "",
-      departmentId: "",
-      departmentName: "",
-      departmentKey: "",
-      accountKey: normalizeKey(name),
-    };
-  }
-
-  const accountId =
-    item.accountId ??
-    item.account_id ??
-    item.gy_acc_id ??
-    item.id ??
-    item.positionAccountId ??
-    item.position_account_id ??
-    "";
-
-  const accountName =
-    item.accountName ||
-    item.account_name ||
-    item.gy_acc_name ||
-    item.account ||
-    item.name ||
-    item.label ||
-    item.value ||
-    item.leadAccount ||
-    item.currentAppliedAccount ||
-    item.appliedAccount ||
-    item.positionAccountName ||
-    item.position_account_name ||
-    "";
-
-  const accountGhlName =
-    item.accountGhlName ||
-    item.account_ghl_name ||
-    item.gy_acc_ghl_name ||
-    item.ghlName ||
-    item.ghl_name ||
-    item.positionAccountGhlName ||
-    item.position_account_ghl_name ||
-    "";
-
-  const departmentId =
-    item.departmentId ??
-    item.department_id ??
-    item.gy_dept_id ??
-    item.id_department ??
-    item.positionDepartmentId ??
-    item.position_department_id ??
-    "";
-
-  const departmentName =
-    item.departmentName ||
-    item.department_name ||
-    item.name_department ||
-    item.department ||
-    item.positionDepartment ||
-    item.position_department ||
-    "";
-
-  const finalAccountName = cleanText(accountName || accountId);
-  const finalAccountId = cleanText(accountId || finalAccountName);
-  const finalDepartmentId = cleanText(departmentId);
-  const finalDepartmentName = cleanText(departmentName);
-
-  if (!finalAccountName && !finalAccountId) return null;
-
-  return {
-    accountId: finalAccountId,
-    accountName: finalAccountName,
-    accountGhlName: cleanText(accountGhlName),
-    departmentId: finalDepartmentId,
-    departmentName: finalDepartmentName,
-    departmentKey: normalizeKey(finalDepartmentName || finalDepartmentId),
-    accountKey: normalizeKey(
-      `${finalDepartmentId || finalDepartmentName || "no-department"}-${
-        finalAccountId || finalAccountName
-      }`,
-    ),
-  };
 }
 
 function normalizePositionOption(item) {
@@ -208,6 +49,7 @@ function normalizePositionOption(item) {
     item.gy_dept_id ||
     item.id_department ||
     item.positionDepartmentId ||
+    item.position_department_id ||
     "";
 
   const departmentName =
@@ -216,6 +58,7 @@ function normalizePositionOption(item) {
     item.name_department ||
     item.department ||
     item.positionDepartment ||
+    item.position_department ||
     "";
 
   const accountId =
@@ -223,6 +66,7 @@ function normalizePositionOption(item) {
     item.account_id ||
     item.gy_acc_id ||
     item.positionAccountId ||
+    item.position_account_id ||
     "";
 
   const accountName =
@@ -235,6 +79,7 @@ function normalizePositionOption(item) {
     item.appliedAccount ||
     item.currentAppliedAccount ||
     item.positionAccountName ||
+    item.position_account_name ||
     "";
 
   const accountGhlName =
@@ -242,161 +87,22 @@ function normalizePositionOption(item) {
     item.account_ghl_name ||
     item.gy_acc_ghl_name ||
     item.positionAccountGhlName ||
+    item.position_account_ghl_name ||
     "";
 
-  const finalPositionTitle = cleanText(positionTitle || positionId);
+  const finalTitle = cleanText(positionTitle || positionId);
 
-  if (!finalPositionTitle) return null;
+  if (!finalTitle) return null;
 
   return {
     positionId: cleanText(positionId),
-    positionTitle: finalPositionTitle,
+    positionTitle: finalTitle,
     departmentId: cleanText(departmentId),
     departmentName: cleanText(departmentName),
     accountId: cleanText(accountId),
     accountName: cleanText(accountName),
     accountGhlName: cleanText(accountGhlName),
   };
-}
-
-function mergeDepartmentItems(items = []) {
-  const map = new Map();
-
-  items.forEach((item) => {
-    const department = normalizeDepartmentOption(item);
-    if (!department) return;
-
-    const key = department.departmentKey;
-    if (!key) return;
-
-    const existing = map.get(key);
-
-    if (!existing) {
-      map.set(key, department);
-      return;
-    }
-
-    map.set(key, {
-      ...existing,
-      departmentId: existing.departmentId || department.departmentId,
-      departmentName: existing.departmentName || department.departmentName,
-      departmentIds: uniqueByKey(
-        [...existing.departmentIds, ...department.departmentIds].map((id) => ({
-          id,
-        })),
-        (itemValue) => cleanText(itemValue.id),
-      ).map((itemValue) => itemValue.id),
-      departmentNames: uniqueByKey(
-        [
-          ...existing.departmentNames,
-          ...department.departmentNames,
-        ].map((name) => ({
-          name,
-        })),
-        (itemValue) => normalizeKey(itemValue.name),
-      ).map((itemValue) => itemValue.name),
-    });
-  });
-
-  return Array.from(map.values()).sort((a, b) =>
-    a.departmentName.localeCompare(b.departmentName),
-  );
-}
-
-function mergeAccountItems(items = []) {
-  const map = new Map();
-
-  items.forEach((item) => {
-    const account = normalizeAccountOption(item);
-    if (!account) return;
-
-    const key =
-      account.accountKey ||
-      normalizeKey(`${account.departmentId}-${account.accountName}`);
-
-    if (!key) return;
-
-    const existing = map.get(key);
-
-    if (!existing) {
-      map.set(key, account);
-      return;
-    }
-
-    map.set(key, {
-      ...existing,
-      accountId: existing.accountId || account.accountId,
-      accountName: existing.accountName || account.accountName,
-      accountGhlName: existing.accountGhlName || account.accountGhlName,
-      departmentId: existing.departmentId || account.departmentId,
-      departmentName: existing.departmentName || account.departmentName,
-      departmentKey: existing.departmentKey || account.departmentKey,
-      accountKey: key,
-    });
-  });
-
-  return Array.from(map.values()).sort((a, b) =>
-    a.accountName.localeCompare(b.accountName),
-  );
-}
-
-function getDepartmentItemsFromAccounts(accounts = []) {
-  return accounts
-    .map((account) => {
-      if (!account?.departmentId && !account?.departmentName) return null;
-
-      return {
-        departmentId: account.departmentId || account.departmentName,
-        departmentName: account.departmentName || account.departmentId,
-      };
-    })
-    .filter(Boolean);
-}
-
-function getDepartmentItemsFromPositions(positions = []) {
-  return positions
-    .map((position) => {
-      const normalizedPosition = normalizePositionOption(position);
-
-      if (!normalizedPosition) return null;
-
-      if (
-        !normalizedPosition.departmentId &&
-        !normalizedPosition.departmentName
-      ) {
-        return null;
-      }
-
-      return {
-        departmentId:
-          normalizedPosition.departmentId || normalizedPosition.departmentName,
-        departmentName:
-          normalizedPosition.departmentName || normalizedPosition.departmentId,
-      };
-    })
-    .filter(Boolean);
-}
-
-function getAccountItemsFromPositions(positions = []) {
-  return positions
-    .map((position) => {
-      const normalizedPosition = normalizePositionOption(position);
-
-      if (!normalizedPosition) return null;
-
-      if (!normalizedPosition.accountId && !normalizedPosition.accountName) {
-        return null;
-      }
-
-      return {
-        accountId: normalizedPosition.accountId,
-        accountName: normalizedPosition.accountName,
-        accountGhlName: normalizedPosition.accountGhlName,
-        departmentId: normalizedPosition.departmentId,
-        departmentName: normalizedPosition.departmentName,
-      };
-    })
-    .filter(Boolean);
 }
 
 function findMatchingPosition(positions = [], candidate = {}) {
@@ -435,64 +141,7 @@ function findMatchingPosition(positions = [], candidate = {}) {
   );
 }
 
-function departmentMatchesAccount(department, account) {
-  if (!department || !account) return false;
-
-  const departmentIds = new Set(
-    [
-      department.departmentId,
-      ...(Array.isArray(department.departmentIds)
-        ? department.departmentIds
-        : []),
-    ]
-      .map(cleanText)
-      .filter(Boolean),
-  );
-
-  const departmentNames = new Set(
-    [
-      department.departmentName,
-      ...(Array.isArray(department.departmentNames)
-        ? department.departmentNames
-        : []),
-    ]
-      .map(normalizeKey)
-      .filter(Boolean),
-  );
-
-  const accountDepartmentId = cleanText(account.departmentId);
-  const accountDepartmentName = normalizeKey(account.departmentName);
-  const accountDepartmentKey = normalizeKey(
-    account.departmentName || account.departmentId,
-  );
-
-  if (accountDepartmentId && departmentIds.has(accountDepartmentId)) {
-    return true;
-  }
-
-  if (accountDepartmentName && departmentNames.has(accountDepartmentName)) {
-    return true;
-  }
-
-  if (
-    accountDepartmentKey &&
-    accountDepartmentKey === department.departmentKey
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function toDropdownOptions(items = [], valueKey, labelKey) {
-  return items.map((item) => ({
-    id: item[valueKey] || item[labelKey],
-    value: item[valueKey] || item[labelKey],
-    label: item[labelKey] || item[valueKey],
-  }));
-}
-
-function getPipelineApplicationId(candidate = {}) {
+function getApplicationId(candidate = {}) {
   return (
     candidate.rawId ||
     candidate.applicationRawId ||
@@ -506,124 +155,22 @@ function getPipelineApplicationId(candidate = {}) {
   );
 }
 
-function CustomDropdown({
-  label,
-  value,
-  options = [],
-  onChange,
-  placeholder = "Select",
-  disabled = false,
-  zIndex = "z-[100]",
-}) {
-  const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
+function getSibsId(value) {
+  if (!value || typeof value !== "object") return "";
 
-  const selectedOption = options.find(
-    (option) => String(option.value) === String(value || ""),
+  return cleanText(
+    value.sibsId ||
+      value.sibs_id ||
+      value.employeeId ||
+      value.employee_id ||
+      value.userId ||
+      value.user_id ||
+      "",
   );
+}
 
-  const displayLabel = selectedOption?.label || placeholder;
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (!dropdownRef.current) return;
-
-      if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
-  function handleSelect(nextValue) {
-    onChange(nextValue);
-    setOpen(false);
-  }
-
-  return (
-    <div
-      ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
-    >
-      <FieldLabel>{label}</FieldLabel>
-
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-          open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD] hover:border-sibs-primary-1"
-        } ${
-          disabled
-            ? "cursor-not-allowed bg-[#F8FAFC] text-gray-400 opacity-70"
-            : "text-[#344054]"
-        }`}
-      >
-        <span
-          className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
-          }`}
-        >
-          {displayLabel}
-        </span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
-            open ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto">
-            {options.length > 0 ? (
-              options.map((option) => {
-                const active = String(option.value) === String(value || "");
-
-                return (
-                  <button
-                    key={option.id || option.value}
-                    type="button"
-                    onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
-                      active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                    }`}
-                  >
-                    <span className="block min-w-0 truncate">
-                      {option.label}
-                    </span>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                No options found.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function getCandidateName(candidate = {}) {
+  return cleanText(candidate.name || candidate.candidateName) || "Candidate";
 }
 
 export default function MoveToPipeLineModal() {
@@ -635,20 +182,23 @@ export default function MoveToPipeLineModal() {
     setMoveToPipelineForm,
     currentTaOwner,
     closeMoveToPipeline,
-    departmentOptions = [],
-    accountOptions = [],
     activePositionOptions = [],
     availablePositionOptions = [],
     openPositionOptions = [],
     refreshTalentPool,
   } = useTalentPool();
 
-  const [localSaving, setLocalSaving] = useState(false);
+  const [moveSaving, setMoveSaving] = useState(false);
+  const [dropOffOpen, setDropOffOpen] = useState(false);
+  const [dropOffReason, setDropOffReason] = useState("");
+  const [dropOffSaving, setDropOffSaving] = useState(false);
+  const [dropOffValidation, setDropOffValidation] = useState("");
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "error",
     title: "",
     message: "",
+    closeParent: false,
   });
 
   const positionSources = useMemo(
@@ -666,263 +216,201 @@ export default function MoveToPipeLineModal() {
     return findMatchingPosition(positionSources, pipelineTarget);
   }, [positionSources, pipelineTarget]);
 
-  const normalizedAccounts = useMemo(() => {
-    return mergeAccountItems(
-      [
-        ...(Array.isArray(accountOptions) ? accountOptions : []),
-        ...getAccountItemsFromPositions(positionSources),
-        matchedPosition
-          ? {
-              accountId: matchedPosition.accountId,
-              accountName: matchedPosition.accountName,
-              accountGhlName: matchedPosition.accountGhlName,
-              departmentId: matchedPosition.departmentId,
-              departmentName: matchedPosition.departmentName,
-            }
-          : null,
-      ].filter(Boolean),
-    );
-  }, [accountOptions, positionSources, matchedPosition]);
-
-  const normalizedDepartments = useMemo(() => {
-    return mergeDepartmentItems(
-      [
-        ...(Array.isArray(departmentOptions) ? departmentOptions : []),
-        ...getDepartmentItemsFromAccounts(normalizedAccounts),
-        ...getDepartmentItemsFromPositions(positionSources),
-        matchedPosition
-          ? {
-              departmentId: matchedPosition.departmentId,
-              departmentName: matchedPosition.departmentName,
-            }
-          : null,
-      ].filter(Boolean),
-    );
-  }, [departmentOptions, normalizedAccounts, positionSources, matchedPosition]);
-
   if (!pipelineTarget) return null;
 
-  const isSaving = localSaving;
+  const form = moveToPipelineForm || {};
+  const ownerSource = form.taOwner || currentTaOwner;
+  const ownerName = toDisplayPersonName(ownerSource, "Current User");
+  const ownerSibsId = getSibsId(ownerSource);
+  const isBusy = moveSaving || dropOffSaving;
+  const candidateName = getCandidateName(pipelineTarget);
 
-  const ownerName = toDisplayPersonName(
-    moveToPipelineForm.taOwner || currentTaOwner,
-    "Current User",
-  );
-
-  const targetDepartmentId =
-    moveToPipelineForm.leadDepartmentId ||
-    moveToPipelineForm.departmentId ||
-    pipelineTarget.leadDepartmentId ||
-    pipelineTarget.departmentId ||
-    pipelineTarget.department_id ||
-    pipelineTarget.gy_dept_id ||
-    matchedPosition?.departmentId ||
-    "";
-
-  const targetDepartmentName =
-    moveToPipelineForm.leadDepartment ||
-    moveToPipelineForm.department ||
-    pipelineTarget.leadDepartment ||
-    pipelineTarget.department ||
-    pipelineTarget.departmentName ||
-    matchedPosition?.departmentName ||
-    "";
-
-  const selectedDepartment =
-    normalizedDepartments.find(
-      (department) =>
-        cleanText(targetDepartmentId) &&
-        [
-          department.departmentId,
-          ...(department.departmentIds || []),
-        ].some((id) => String(id) === String(targetDepartmentId)),
-    ) ||
-    normalizedDepartments.find(
-      (department) =>
-        normalizeKey(targetDepartmentName) &&
-        department.departmentKey === normalizeKey(targetDepartmentName),
-    ) ||
-    null;
-
-  const selectedDepartmentValue = selectedDepartment?.departmentKey || "";
-
-  const strictFilteredAccounts = selectedDepartment
-    ? normalizedAccounts.filter((account) =>
-        departmentMatchesAccount(selectedDepartment, account),
-      )
-    : [];
-
-  const filteredAccounts = strictFilteredAccounts;
-
-  const targetAccountId =
-    moveToPipelineForm.leadAccountId ||
-    moveToPipelineForm.accountId ||
-    pipelineTarget.leadAccountId ||
-    pipelineTarget.accountId ||
-    pipelineTarget.account_id ||
-    pipelineTarget.gy_acc_id ||
-    matchedPosition?.accountId ||
-    "";
-
-  const targetAccountName =
-    moveToPipelineForm.leadAccount ||
-    moveToPipelineForm.account ||
-    pipelineTarget.leadAccount ||
-    pipelineTarget.accountFit ||
-    pipelineTarget.appliedAccount ||
-    pipelineTarget.currentAppliedAccount ||
-    pipelineTarget.accountName ||
-    pipelineTarget.account ||
-    matchedPosition?.accountName ||
-    "";
-
-  const selectedAccount =
-    filteredAccounts.find(
-      (account) =>
-        cleanText(targetAccountId) &&
-        String(account.accountId) === String(targetAccountId),
-    ) ||
-    filteredAccounts.find(
-      (account) =>
-        normalizeKey(account.accountName) === normalizeKey(targetAccountName),
-    ) ||
-    null;
-
-  const selectedAccountValue = selectedAccount?.accountKey || "";
-
-  const departmentDropdownOptions = toDropdownOptions(
-    normalizedDepartments,
-    "departmentKey",
-    "departmentName",
-  );
-
-  const accountDropdownOptions = toDropdownOptions(
-    filteredAccounts,
-    "accountKey",
-    "accountName",
-  );
-
-  function openErrorModal(message) {
+  function showError(title, message) {
     setStatusModal({
       open: true,
       type: "error",
-      title: "Candidate not moved",
+      title,
       message,
+      closeParent: false,
     });
   }
 
   function closeStatusModal() {
-    setStatusModal((prev) => ({
-      ...prev,
+    const shouldCloseParent = statusModal.closeParent;
+
+    setStatusModal((previous) => ({
+      ...previous,
       open: false,
+      closeParent: false,
     }));
+
+    if (shouldCloseParent) {
+      closeMoveToPipeline?.();
+    }
   }
 
-  function handleDepartmentChange(departmentKey) {
-    const selected = normalizedDepartments.find(
-      (department) => department.departmentKey === departmentKey,
-    );
+  function handleOpenDropOff() {
+    if (isBusy) return;
 
-    setMoveToPipelineForm({
-      ...moveToPipelineForm,
-      leadDepartmentId: selected?.departmentId || "",
-      leadDepartment: selected?.departmentName || "",
-      departmentId: selected?.departmentId || "",
-      department: selected?.departmentName || "",
-      leadAccountId: "",
-      leadAccount: "",
-      accountId: "",
-      accountName: "",
-      accountGhlName: "",
-    });
+    setDropOffReason("");
+    setDropOffValidation("");
+    setDropOffOpen(true);
   }
 
-  function handleAccountChange(accountKey) {
-    const selected = filteredAccounts.find(
-      (account) => account.accountKey === accountKey,
+  function handleCloseDropOff() {
+    if (dropOffSaving) return;
+
+    setDropOffOpen(false);
+    setDropOffReason("");
+    setDropOffValidation("");
+  }
+
+  async function refreshAfterChange(responseData) {
+    window.dispatchEvent(
+      new CustomEvent("ta-talent-pool-updated", {
+        detail: responseData || pipelineTarget,
+      }),
     );
 
-    const matchedDepartment =
-      normalizedDepartments.find((department) =>
-        departmentMatchesAccount(department, selected),
-      ) || selectedDepartment;
+    if (typeof refreshTalentPool === "function") {
+      await refreshTalentPool();
+    }
+  }
 
-    setMoveToPipelineForm({
-      ...moveToPipelineForm,
-      leadDepartmentId:
-        matchedDepartment?.departmentId || selected?.departmentId || "",
-      leadDepartment:
-        matchedDepartment?.departmentName || selected?.departmentName || "",
-      departmentId:
-        matchedDepartment?.departmentId || selected?.departmentId || "",
-      department:
-        matchedDepartment?.departmentName || selected?.departmentName || "",
-      leadAccountId: selected?.accountId || "",
-      leadAccount: selected?.accountName || "",
-      accountId: selected?.accountId || "",
-      accountName: selected?.accountName || "",
-      accountGhlName: selected?.accountGhlName || "",
-    });
+  async function handleConfirmDropOff(event) {
+    event?.preventDefault?.();
+
+    if (dropOffSaving) return;
+
+    const reason = cleanText(dropOffReason);
+
+    if (!reason) {
+      setDropOffValidation("Drop Off Reason is required.");
+      return;
+    }
+
+    const applicationId = getApplicationId(pipelineTarget);
+
+    if (!applicationId) {
+      setDropOffValidation("Missing candidate application ID.");
+      return;
+    }
+
+    setDropOffSaving(true);
+    setDropOffValidation("");
+
+    try {
+      const response = await markTalentPoolCandidateAsDropOff(applicationId, {
+        reason,
+        droppedOffBySibsId: ownerSibsId,
+        droppedOffByName: ownerName,
+      });
+
+      if (!response?.success) {
+        setDropOffValidation(
+          response?.message || "Failed to mark candidate as Drop Off.",
+        );
+        return;
+      }
+
+      await refreshAfterChange(response.data);
+
+      setDropOffOpen(false);
+      setDropOffReason("");
+      setStatusModal({
+        open: true,
+        type: "success",
+        title: "Candidate marked as Drop Off",
+        message: `${candidateName} remains in Talent Pool with the Drop Off status.`,
+        closeParent: true,
+      });
+    } catch (error) {
+      console.error("Mark candidate as Drop Off error:", error);
+
+      setDropOffValidation(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to mark candidate as Drop Off.",
+      );
+    } finally {
+      setDropOffSaving(false);
+    }
   }
 
   async function handleMoveCandidate(event) {
     event?.preventDefault?.();
 
-    if (isSaving) return;
+    if (isBusy) return;
 
-    const applicationId = getPipelineApplicationId(pipelineTarget);
+    const applicationId = getApplicationId(pipelineTarget);
 
     if (!applicationId) {
-      openErrorModal("Missing candidate application ID.");
+      showError("Candidate not moved", "Missing candidate application ID.");
       return;
     }
 
-    if (!selectedDepartment) {
-      openErrorModal("Please select a department.");
-      return;
-    }
-
-    if (!selectedAccount) {
-      openErrorModal("Please select a lead account.");
-      return;
-    }
-
-    setLocalSaving(true);
+    setMoveSaving(true);
 
     try {
+      const finalPositionTitle =
+        cleanText(
+          pipelineTarget.openPosition ||
+            pipelineTarget.appliedPosition ||
+            pipelineTarget.roleCapability ||
+            pipelineTarget.currentAppliedRole ||
+            matchedPosition?.positionTitle,
+        ) || "Not assigned yet";
+
       const payload = {
         candidateId: pipelineTarget.candidateId || "",
         applicationId,
-        candidateName: pipelineTarget.name || pipelineTarget.candidateName || "",
+        candidateName,
         email: pipelineTarget.email || "",
-        openPosition:
-          pipelineTarget.openPosition ||
-          pipelineTarget.appliedPosition ||
-          pipelineTarget.roleCapability ||
-          matchedPosition?.positionTitle ||
-          "",
+        openPosition: finalPositionTitle,
         positionId:
           pipelineTarget.positionId ||
           pipelineTarget.openPositionId ||
           matchedPosition?.positionId ||
           "",
-        leadDepartmentId: selectedDepartment.departmentId || "",
-        leadDepartment: selectedDepartment.departmentName || "",
-        departmentId: selectedDepartment.departmentId || "",
-        department: selectedDepartment.departmentName || "",
-        leadAccountId: selectedAccount.accountId || "",
-        leadAccount: selectedAccount.accountName || "",
-        accountId: selectedAccount.accountId || "",
-        accountName: selectedAccount.accountName || "",
-        accountGhlName: selectedAccount.accountGhlName || "",
-        taOwner: moveToPipelineForm.taOwner || currentTaOwner || "Current User",
-        currentTaOwner:
-          moveToPipelineForm.taOwner || currentTaOwner || "Current User",
+        leadDepartmentId:
+          pipelineTarget.leadDepartmentId ||
+          pipelineTarget.departmentId ||
+          pipelineTarget.department_id ||
+          matchedPosition?.departmentId ||
+          "",
+        leadDepartment:
+          pipelineTarget.leadDepartment ||
+          pipelineTarget.department ||
+          pipelineTarget.departmentName ||
+          matchedPosition?.departmentName ||
+          "",
+        leadAccountId:
+          pipelineTarget.leadAccountId ||
+          pipelineTarget.accountId ||
+          pipelineTarget.account_id ||
+          matchedPosition?.accountId ||
+          "",
+        leadAccount:
+          pipelineTarget.leadAccount ||
+          pipelineTarget.accountFit ||
+          pipelineTarget.appliedAccount ||
+          pipelineTarget.currentAppliedAccount ||
+          pipelineTarget.accountName ||
+          pipelineTarget.account ||
+          matchedPosition?.accountName ||
+          "",
+        accountGhlName:
+          pipelineTarget.accountGhlName ||
+          pipelineTarget.account_ghl_name ||
+          matchedPosition?.accountGhlName ||
+          "",
+        taOwner: ownerName,
+        currentTaOwner: ownerName,
         currentStage: "Initial Screening",
         pipelineStage: "Initial Screening",
         currentPipelineStage: "Initial Screening",
         status: "Initial Screening",
-        remarks: moveToPipelineForm.remarks || "",
+        remarks: form.remarks || "",
       };
 
       const response = await moveTalentPoolCandidateToPipeline(
@@ -931,7 +419,8 @@ export default function MoveToPipeLineModal() {
       );
 
       if (!response?.success) {
-        openErrorModal(
+        showError(
+          "Candidate not moved",
           response?.message || "Failed to move candidate to pipeline.",
         );
         return;
@@ -943,15 +432,7 @@ export default function MoveToPipeLineModal() {
         }),
       );
 
-      window.dispatchEvent(
-        new CustomEvent("ta-talent-pool-updated", {
-          detail: response.data || payload,
-        }),
-      );
-
-      if (typeof refreshTalentPool === "function") {
-        await refreshTalentPool();
-      }
+      await refreshAfterChange(response.data || payload);
 
       closeMoveToPipeline?.();
 
@@ -968,23 +449,24 @@ export default function MoveToPipeLineModal() {
     } catch (error) {
       console.error("Move candidate to pipeline error:", error);
 
-      openErrorModal(
+      showError(
+        "Candidate not moved",
         error?.response?.data?.message ||
           error?.message ||
           "Failed to move candidate to pipeline.",
       );
     } finally {
-      setLocalSaving(false);
+      setMoveSaving(false);
     }
   }
 
   return (
     <div
       className="fixed inset-0 z-[10002] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
-      onClick={isSaving ? undefined : closeMoveToPipeline}
+      onClick={isBusy ? undefined : closeMoveToPipeline}
     >
       <div
-        className="w-full max-w-2xl overflow-visible rounded-2xl bg-white shadow-2xl"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
@@ -994,15 +476,16 @@ export default function MoveToPipeLineModal() {
             </h2>
 
             <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              {pipelineTarget.name}
+              {candidateName}
             </p>
           </div>
 
           <button
             type="button"
             onClick={closeMoveToPipeline}
-            disabled={isSaving}
+            disabled={isBusy}
             className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close move candidate modal"
           >
             <X size={20} />
           </button>
@@ -1011,113 +494,22 @@ export default function MoveToPipeLineModal() {
         <form onSubmit={handleMoveCandidate} className="space-y-4 p-5">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
             This will create a pipeline application directly under Initial
-            Screening. Select the lead department first, then choose the matching
-            lead account for tracking.
+            Screening. Department and account details are captured automatically
+            from the candidate&apos;s available position record when present.
           </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <FieldLabel>TA Owner</FieldLabel>
-              <input
-                value={ownerName}
-                readOnly
-                className={inputClass("bg-[#F8FAFC]")}
-              />
-              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                Automatically captured from the logged-in user.
-              </p>
-            </div>
-
-            <div>
-              <FieldLabel>Initial Stage</FieldLabel>
-              <input
-                value="Initial Screening"
-                readOnly
-                className={inputClass("bg-[#F8FAFC]")}
-              />
-              <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                Match tagging starts in Candidate Pipeline.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <CustomDropdown
-              label="Department"
-              value={selectedDepartmentValue}
-              options={departmentDropdownOptions}
-              onChange={handleDepartmentChange}
-              placeholder="Select department"
-              disabled={isSaving}
-              zIndex="z-[180]"
-            />
-
-            <CustomDropdown
-              label="Lead Account"
-              value={selectedAccountValue}
-              options={accountDropdownOptions}
-              onChange={handleAccountChange}
-              placeholder={
-                selectedDepartmentValue
-                  ? "Select lead account"
-                  : "Select department first"
-              }
-              disabled={isSaving || !selectedDepartmentValue}
-              zIndex="z-[170]"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <p className="text-xs font-semibold leading-5 text-sibs-tertiary-5">
-              Department options are loaded from database records.
-            </p>
-
-            <div>
-              <p className="text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                Accounts are filtered based on the selected department.
-              </p>
-
-              {selectedDepartmentValue && filteredAccounts.length === 0 && (
-                <p className="mt-1 text-xs font-bold text-red-600">
-                  No accounts found under this department.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {(selectedDepartment || selectedAccount) && (
-            <div className="grid grid-cols-1 gap-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 md:grid-cols-2">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Selected Department
-                </p>
-                <p className="mt-1 text-sm font-bold text-[#344054]">
-                  {selectedDepartment?.departmentName || "—"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                  Selected Account
-                </p>
-                <p className="mt-1 text-sm font-bold text-[#344054]">
-                  {selectedAccount?.accountName || "—"}
-                </p>
-              </div>
-            </div>
-          )}
 
           <div>
             <FieldLabel>Remarks</FieldLabel>
             <textarea
-              rows={4}
-              value={moveToPipelineForm.remarks || ""}
+              rows={5}
+              value={form.remarks || ""}
               onChange={(event) =>
                 setMoveToPipelineForm({
-                  ...moveToPipelineForm,
+                  ...form,
                   remarks: event.target.value,
                 })
               }
+              disabled={isBusy}
               className={textareaClass()}
               placeholder="Optional notes before moving this candidate to Initial Screening."
             />
@@ -1125,11 +517,11 @@ export default function MoveToPipeLineModal() {
         </form>
 
         <div className="border-t border-gray-100 px-5 py-4">
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
             <button
               type="button"
               onClick={closeMoveToPipeline}
-              disabled={isSaving}
+              disabled={isBusy}
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
@@ -1137,18 +529,121 @@ export default function MoveToPipeLineModal() {
 
             <button
               type="button"
-              disabled={
-                isSaving || !selectedDepartmentValue || !selectedAccountValue
-              }
+              onClick={handleOpenDropOff}
+              disabled={isBusy}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <UserX size={17} />
+              Mark as Drop Off
+            </button>
+
+            <button
+              type="button"
+              disabled={isBusy}
               onClick={handleMoveCandidate}
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowRight size={16} />
-              {isSaving ? "Moving..." : "Move Candidate"}
+              {moveSaving ? "Moving..." : "Move Candidate"}
             </button>
           </div>
         </div>
       </div>
+
+      {dropOffOpen && (
+        <div
+          className="fixed inset-0 z-[10020] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleCloseDropOff();
+          }}
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-[#B42318]">
+                  Mark as Drop Off
+                </h3>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  {candidateName}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseDropOff}
+                disabled={dropOffSaving}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close Drop Off reason modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDropOff} className="space-y-4 p-5">
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-[#B42318]">
+                The candidate will remain visible in Talent Pool with the Drop
+                Off status. Enter the reason before confirming.
+              </div>
+
+              <div>
+                <FieldLabel>Drop Off Reason</FieldLabel>
+                <textarea
+                  autoFocus
+                  rows={5}
+                  value={dropOffReason}
+                  onChange={(event) => {
+                    setDropOffReason(event.target.value);
+
+                    if (dropOffValidation) {
+                      setDropOffValidation("");
+                    }
+                  }}
+                  disabled={dropOffSaving}
+                  className={`${textareaClass()} ${
+                    dropOffValidation
+                      ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                      : ""
+                  }`}
+                  placeholder="Enter the reason for dropping off this candidate."
+                />
+
+                {dropOffValidation && (
+                  <p className="mt-1.5 text-xs font-bold text-red-600">
+                    {dropOffValidation}
+                  </p>
+                )}
+              </div>
+            </form>
+
+            <div className="border-t border-gray-100 px-5 py-4">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCloseDropOff}
+                  disabled={dropOffSaving}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmDropOff}
+                  disabled={dropOffSaving || !cleanText(dropOffReason)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <UserX size={17} />
+                  {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <StatusModal
         open={statusModal.open}

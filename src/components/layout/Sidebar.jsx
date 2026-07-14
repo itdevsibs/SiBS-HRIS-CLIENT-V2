@@ -22,7 +22,6 @@ import {
   MapPin,
   Menu,
   PieChart,
-  Shield,
   Table2,
   UserCog,
   Users,
@@ -768,12 +767,6 @@ export default function Sidebar() {
       icon: MapPin,
       path: "/locations",
       allowedUsers: [5, 6, 7],
-    },
-    {
-      name: "User Management",
-      icon: Shield,
-      path: "/users",
-      allowedUsers: [7],
     },
   ];
 

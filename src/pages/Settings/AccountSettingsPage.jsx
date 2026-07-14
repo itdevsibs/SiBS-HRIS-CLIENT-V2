@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   Trash2,
   UserCog,
+  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
@@ -44,6 +45,9 @@ import {
 } from "../../lib/axios/accountSettings";
 
 const PAGE_LIMIT = 8;
+const API_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:5001"
+).replace(/\/+$/, "");
 
 const ROLE_OPTIONS = [
   { value: "All", label: "All Access Levels" },
@@ -143,6 +147,86 @@ function formatEmployeeName(employee = {}) {
   return name || "Unknown Employee";
 }
 
+function getProfileImageUrl(employee = {}) {
+  const directUrl = safeText(
+    employee.profilePictureUrl ||
+      employee.profile_picture_url ||
+      employee.profileUrl ||
+      employee.profile_url,
+  );
+
+  if (directUrl) {
+    if (
+      directUrl.startsWith("http://") ||
+      directUrl.startsWith("https://")
+    ) {
+      return directUrl;
+    }
+
+    return `${API_URL}${directUrl.startsWith("/") ? "" : "/"}${directUrl}`;
+  }
+
+  const filename = safeText(
+    employee.profileFilename ||
+      employee.profile_filename ||
+      employee.profilePicture ||
+      employee.profile_picture,
+  );
+
+  if (!filename) return "";
+
+  if (
+    filename.startsWith("http://") ||
+    filename.startsWith("https://")
+  ) {
+    return filename;
+  }
+
+  return `${API_URL}/api/employee-profile/file/${encodeURIComponent(
+    filename,
+  )}`;
+}
+
+function ProfileAvatar({ employee, size = "md" }) {
+  const imageUrl = getProfileImageUrl(employee);
+
+  const sizeClass =
+    size === "lg"
+      ? "h-12 w-12"
+      : size === "sm"
+        ? "h-9 w-9"
+        : "h-10 w-10";
+
+  return (
+    <div
+      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+    >
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={`${formatEmployeeName(employee)} profile`}
+          className="h-full w-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+            const fallback = event.currentTarget.nextElementSibling;
+
+            if (fallback) {
+              fallback.style.display = "flex";
+            }
+          }}
+        />
+      ) : null}
+
+      <div
+        className="flex h-full w-full items-center justify-center text-sibs-primary-1"
+        style={{ display: imageUrl ? "none" : "flex" }}
+      >
+        <UserRound size={size === "lg" ? 24 : 20} />
+      </div>
+    </div>
+  );
+}
+
 function getRoleOptionByAccess(adminAccess) {
   return (
     ROLE_OPTIONS.find(
@@ -220,12 +304,55 @@ function getDepartmentName(account = {}) {
 }
 
 function getAuditDisplayValue(user = {}, type = "creator") {
-  const directValue =
+  const directDisplay =
+    type === "creator"
+      ? safeText(
+          user.creatorDisplay ||
+            user.creator_display ||
+            user.sibsIdCreatorDisplay ||
+            user.sibs_id_creator_display,
+        )
+      : safeText(
+          user.updaterDisplay ||
+            user.updater_display ||
+            user.sibsIdUpdaterDisplay ||
+            user.sibs_id_updater_display,
+        );
+
+  const assignedDisplayValues = [
+    ...new Set(
+      (user.assignedAccounts || [])
+        .map((account) =>
+          type === "creator"
+            ? safeText(
+                account.creatorDisplay ||
+                  account.creator_display ||
+                  account.sibsIdCreatorDisplay ||
+                  account.sibs_id_creator_display,
+              )
+            : safeText(
+                account.updaterDisplay ||
+                  account.updater_display ||
+                  account.sibsIdUpdaterDisplay ||
+                  account.sibs_id_updater_display,
+              ),
+        )
+        .filter(Boolean),
+    ),
+  ];
+
+  if (directDisplay) return directDisplay;
+
+  if (assignedDisplayValues.length) {
+    return assignedDisplayValues.join(", ");
+  }
+
+  const directSibsId =
     type === "creator"
       ? safeText(user.sibsIdCreator || user.sibs_id_creator)
       : safeText(user.sibsIdUpdater || user.sibs_id_updater);
 
-  const assignedValues = [
+  const assignedSibsIds = [
     ...new Set(
       (user.assignedAccounts || [])
         .map((account) =>
@@ -243,8 +370,8 @@ function getAuditDisplayValue(user = {}, type = "creator") {
     ),
   ];
 
-  if (directValue) return directValue;
-  if (assignedValues.length) return assignedValues.join(", ");
+  if (directSibsId) return directSibsId;
+  if (assignedSibsIds.length) return assignedSibsIds.join(", ");
 
   return "—";
 }
@@ -928,7 +1055,7 @@ function DraggableTableScroll({ children }) {
 function LoadingRows() {
   return Array.from({ length: PAGE_LIMIT }).map((_, index) => (
     <tr key={index}>
-      <td colSpan={9} className="border-b border-[#E6ECF2] px-5 py-5">
+      <td colSpan={11} className="border-b border-[#E6ECF2] px-5 py-5">
         <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
       </td>
     </tr>
@@ -1053,16 +1180,20 @@ function EmployeeSearchBox({
       {selectedEmployee ? (
         <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4">
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-sibs-primary-1">
-                {formatEmployeeName(selectedEmployee)}
-              </p>
-              <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                {selectedEmployee.sibsId} · Employee ID {selectedEmployee.gyEmpId}
-              </p>
-              <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                {selectedEmployee.email || "No email available"}
-              </p>
+            <div className="flex min-w-0 items-start gap-3">
+              <ProfileAvatar employee={selectedEmployee} size="lg" />
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold text-sibs-primary-1">
+                  {formatEmployeeName(selectedEmployee)}
+                </p>
+                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                  SIBS ID: {selectedEmployee.sibsId || "—"}
+                </p>
+                <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                  {selectedEmployee.email || "No email available"}
+                </p>
+              </div>
             </div>
 
             <button
@@ -1085,7 +1216,7 @@ function EmployeeSearchBox({
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search SIBS ID, employee ID, name, or email..."
+              placeholder="Search SIBS ID, name, or email..."
               autoComplete="off"
               className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white pl-11 pr-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
             />
@@ -1112,17 +1243,22 @@ function EmployeeSearchBox({
                       key={`${employee.gyEmpId}-${employee.sibsId}`}
                       type="button"
                       onClick={() => onSelect(employee)}
-                      className="block w-full border-b border-[#EEF2F6] px-4 py-3 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
+                      className="flex w-full items-start gap-3 border-b border-[#EEF2F6] px-4 py-3 text-left transition last:border-b-0 hover:bg-[#F8FAFC]"
                     >
-                      <p className="truncate text-sm font-extrabold text-sibs-primary-1">
-                        {formatEmployeeName(employee)}
-                      </p>
-                      <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                        {employee.sibsId} · Employee ID {employee.gyEmpId}
-                      </p>
-                      <p className="mt-1 truncate text-xs font-medium text-sibs-tertiary-5">
-                        {employee.account || "No account"} · {employee.department || "No department"}
-                      </p>
+                      <ProfileAvatar employee={employee} />
+
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-extrabold text-sibs-primary-1">
+                          {formatEmployeeName(employee)}
+                        </span>
+                        <span className="mt-1 block truncate text-xs font-semibold text-sibs-tertiary-5">
+                          SIBS ID: {employee.sibsId || "—"}
+                        </span>
+                        <span className="mt-1 block truncate text-xs font-medium text-sibs-tertiary-5">
+                          {employee.account || "No account"} ·{" "}
+                          {employee.department || "No department"}
+                        </span>
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1432,6 +1568,21 @@ function AccessModal({
         fullName: user.fullName,
         email: user.email,
         status: user.status,
+
+        employeeProfileId:
+          user.employeeProfileId || user.employee_profile_id,
+        profileFilename:
+          user.profileFilename || user.profile_filename,
+        profile_filename:
+          user.profileFilename || user.profile_filename,
+        profilePicture:
+          user.profilePicture || user.profile_picture,
+        profile_picture:
+          user.profilePicture || user.profile_picture,
+        profilePictureUrl:
+          user.profilePictureUrl || user.profile_picture_url,
+        profile_picture_url:
+          user.profilePictureUrl || user.profile_picture_url,
       });
       setAdminAccess(String(user.adminAccess ?? 0));
       setSelectedAccountIds(
@@ -1616,15 +1767,25 @@ function AccessModal({
             <p className="text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
               Employee
             </p>
-            <p className="mt-2 text-base font-extrabold text-sibs-primary-1">
-              {formatEmployeeName(selectedEmployee || {})}
-            </p>
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              {selectedEmployee?.sibsId} · Employee ID {selectedEmployee?.gyEmpId}
-            </p>
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Employee information is read-only.
-            </p>
+
+            <div className="mt-3 flex items-start gap-3">
+              <ProfileAvatar
+                employee={selectedEmployee || {}}
+                size="lg"
+              />
+
+              <div className="min-w-0">
+                <p className="truncate text-base font-extrabold text-sibs-primary-1">
+                  {formatEmployeeName(selectedEmployee || {})}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
+                  SIBS ID: {selectedEmployee?.sibsId || "—"}
+                </p>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  Employee information is read-only.
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           <EmployeeSearchBox
@@ -1742,36 +1903,29 @@ function MobileUserCard({ user, onEdit, onDelete }) {
   return (
     <article className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-sm font-extrabold text-sibs-primary-1">
-            {formatEmployeeName(user)}
-          </h3>
-          <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-            {user.email || "No email"}
-          </p>
+        <div className="flex min-w-0 items-start gap-3">
+          <ProfileAvatar employee={user} size="lg" />
+
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-extrabold text-sibs-primary-1">
+              {formatEmployeeName(user)}
+            </h3>
+            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+              {user.email || "No email"}
+            </p>
+          </div>
         </div>
 
         <StatusPill status={user.status} />
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-            SIBS ID
-          </p>
-          <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-            {user.sibsId || "—"}
-          </p>
-        </div>
-
-        <div className="rounded-xl bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-            Employee ID
-          </p>
-          <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-            {user.gyEmpId || "—"}
-          </p>
-        </div>
+      <div className="mt-4 rounded-xl bg-[#F8FAFC] p-3">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+          SIBS ID
+        </p>
+        <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+          {user.sibsId || "—"}
+        </p>
       </div>
 
       <div className="mt-3">
@@ -1791,11 +1945,11 @@ function MobileUserCard({ user, onEdit, onDelete }) {
         <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
           Audit
         </p>
-        <p className="mt-1 text-xs font-semibold text-[#344054]">
-          Created by: {getAuditDisplayValue(user, "creator")}
+        <p className="mt-2 text-xs font-semibold leading-5 text-[#344054]">
+          Creator: {getAuditDisplayValue(user, "creator")}
         </p>
-        <p className="mt-1 text-xs font-semibold text-[#344054]">
-          Updated by: {getAuditDisplayValue(user, "updater")}
+        <p className="mt-1 text-xs font-semibold leading-5 text-[#344054]">
+          Updater: {getAuditDisplayValue(user, "updater")}
         </p>
         <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
           {formatDateTime(getAuditDateValue(user, "updated"))}
@@ -2406,16 +2560,18 @@ export default function AccountSettingsPage() {
               </div>
 
               <DraggableTableScroll>
-                <table className="w-full min-w-[1550px] border-separate border-spacing-0 text-left">
+                <table className="w-full min-w-[1900px] border-separate border-spacing-0 text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+                      <th className="px-5 py-4">SIBS ID</th>
+                      <th className="px-5 py-4 text-center">Profile</th>
                       <th className="px-5 py-4">Employee</th>
-                      <th className="px-5 py-4">SIBS / Employee ID</th>
                       <th className="px-5 py-4">Status</th>
                       <th className="px-5 py-4">Admin Access</th>
                       <th className="px-5 py-4">Assigned Accounts</th>
                       <th className="px-5 py-4">Departments</th>
-                      <th className="px-5 py-4">Creator / Updater</th>
+                      <th className="px-5 py-4">Creator</th>
+                      <th className="px-5 py-4">Updater</th>
                       <th className="px-5 py-4">Created / Updated</th>
                       <th className="px-5 py-4 text-right">Actions</th>
                     </tr>
@@ -2430,32 +2586,27 @@ export default function AccountSettingsPage() {
                           key={assignedUser.id}
                           className="transition hover:bg-[#FAFBFC]"
                         >
-                          <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-extrabold text-white">
-                                {formatEmployeeName(assignedUser)
-                                  .charAt(0)
-                                  .toUpperCase() || "U"}
-                              </div>
+                          <td className="whitespace-nowrap border-b border-[#E6ECF2] px-5 py-5">
+                            <p className="text-sm font-extrabold text-sibs-primary-1">
+                              {assignedUser.sibsId || "—"}
+                            </p>
+                          </td>
 
-                              <div className="min-w-0">
-                                <p className="max-w-[260px] truncate text-sm font-extrabold text-[#101828]">
-                                  {formatEmployeeName(assignedUser)}
-                                </p>
-                                <p className="mt-1 max-w-[260px] truncate text-xs font-semibold text-sibs-tertiary-5">
-                                  {assignedUser.email || "No email available"}
-                                </p>
-                              </div>
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <div className="flex justify-center">
+                              <ProfileAvatar employee={assignedUser} />
                             </div>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="text-sm font-extrabold text-sibs-primary-1">
-                              {assignedUser.sibsId || "—"}
-                            </p>
-                            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                              Employee ID: {assignedUser.gyEmpId || "—"}
-                            </p>
+                            <div className="min-w-0">
+                              <p className="max-w-[280px] truncate text-sm font-extrabold text-[#101828]">
+                                {formatEmployeeName(assignedUser)}
+                              </p>
+                              <p className="mt-1 max-w-[280px] truncate text-xs font-semibold text-sibs-tertiary-5">
+                                {assignedUser.email || "No email available"}
+                              </p>
+                            </div>
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5">
@@ -2482,15 +2633,16 @@ export default function AccountSettingsPage() {
                           </td>
 
                           <td className="border-b border-[#E6ECF2] px-5 py-5">
-                            <p className="text-xs font-bold text-[#344054]">
-                              Creator:{" "}
+                            <p className="min-w-[220px] max-w-[300px] whitespace-normal break-words text-xs font-bold leading-5 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "creator",
                               )}
                             </p>
-                            <p className="mt-1 text-xs font-bold text-[#344054]">
-                              Updater:{" "}
+                          </td>
+
+                          <td className="border-b border-[#E6ECF2] px-5 py-5">
+                            <p className="min-w-[220px] max-w-[300px] whitespace-normal break-words text-xs font-bold leading-5 text-[#344054]">
                               {getAuditDisplayValue(
                                 assignedUser,
                                 "updater",
@@ -2542,7 +2694,7 @@ export default function AccountSettingsPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={9}>
+                        <td colSpan={11}>
                           <EmptyState />
                         </td>
                       </tr>

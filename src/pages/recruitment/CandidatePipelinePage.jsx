@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Header from "../../components/layout/Header";
 import { useCandidatePipeline } from "../../services/context/CandidatePipelineContext";
+import { getTalentPoolApplications } from "../../lib/axios/getTalentPool";
 
 import {
   Search,
@@ -116,6 +117,151 @@ function getCandidateAccount(candidate = {}) {
     candidate.accountFit ||
     "Not assigned yet"
   );
+}
+
+function getDropOffReason(candidate = {}) {
+  return (
+    candidate.dropOffReason ||
+    candidate.drop_off_reason ||
+    candidate.reasonForMovement ||
+    candidate.reason_for_movement ||
+    candidate.remarks ||
+    "No reason provided."
+  );
+}
+
+function getDropOffDate(candidate = {}) {
+  return (
+    candidate.droppedOffAt ||
+    candidate.dropped_off_at ||
+    candidate.dateMoved ||
+    candidate.date_moved ||
+    candidate.updatedAt ||
+    candidate.updated_at ||
+    candidate.lastActivity ||
+    candidate.last_activity ||
+    ""
+  );
+}
+
+function getDropOffBy(candidate = {}) {
+  return (
+    candidate.droppedOffByName ||
+    candidate.dropped_off_by_name ||
+    candidate.currentTaOwner ||
+    candidate.current_ta_owner ||
+    ""
+  );
+}
+
+function isDropOffCandidate(candidate = {}) {
+  const possibleValues = [
+    candidate.currentStage,
+    candidate.currentPipelineStage,
+    candidate.pipelineStage,
+    candidate.stage,
+    candidate.status,
+    candidate.pipelineStatus,
+    candidate.dropOffCategory,
+  ]
+    .map(normalizeText)
+    .filter(Boolean);
+
+  const acceptedValues = new Set([
+    "drop off",
+    "drop-off",
+    "drop offs",
+    "drop-offs",
+    "dropped off",
+  ]);
+
+  return (
+    possibleValues.some((value) => acceptedValues.has(value)) ||
+    Boolean(
+      cleanText(
+        candidate.dropOffReason ||
+          candidate.drop_off_reason ||
+          candidate.droppedOffAt ||
+          candidate.dropped_off_at,
+      ),
+    )
+  );
+}
+
+function getDropOffCandidateKey(candidate = {}) {
+  return normalizeText(
+    candidate.sourceTalentPoolId ||
+      candidate.source_talent_pool_id ||
+      candidate.candidateId ||
+      candidate.candidate_id ||
+      candidate.candidateApplicationId ||
+      candidate.applicationId ||
+      candidate.id ||
+      candidate.email ||
+      candidate.name,
+  );
+}
+
+function mergeUniqueCandidates(...candidateGroups) {
+  const candidateMap = new Map();
+
+  candidateGroups
+    .flat()
+    .filter(Boolean)
+    .forEach((candidate) => {
+      const key = getDropOffCandidateKey(candidate);
+
+      if (!key) return;
+
+      if (!candidateMap.has(key)) {
+        candidateMap.set(key, candidate);
+        return;
+      }
+
+      candidateMap.set(key, {
+        ...candidateMap.get(key),
+        ...candidate,
+      });
+    });
+
+  return Array.from(candidateMap.values());
+}
+
+function matchesDropOffFilters(
+  candidate,
+  search,
+  roleFilter,
+  accountFilter,
+) {
+  const keyword = normalizeText(search);
+
+  const searchableText = normalizeText(
+    [
+      getCandidateName(candidate),
+      getRawCandidateEmail(candidate),
+      getCandidateId(candidate),
+      getCandidateRole(candidate),
+      getCandidateAccount(candidate),
+      candidate.applyingLocation,
+      getDropOffReason(candidate),
+      getDropOffBy(candidate),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+
+  const matchesSearch = !keyword || searchableText.includes(keyword);
+
+  const matchesRole =
+    roleFilter === "All Roles" ||
+    normalizeText(getCandidateRole(candidate)) === normalizeText(roleFilter);
+
+  const matchesAccount =
+    accountFilter === "All Accounts" ||
+    normalizeText(getCandidateAccount(candidate)) ===
+      normalizeText(accountFilter);
+
+  return matchesSearch && matchesRole && matchesAccount;
 }
 
 function isPlaceholderCandidate(candidate = {}) {
@@ -364,11 +510,93 @@ function LoadingPipelineBoard() {
   );
 }
 
-function DropOffListSection({ candidates = [], onViewCandidate }) {
-  const [expanded, setExpanded] = useState(false);
+function DropOffListSection({
+  candidates = [],
+  onViewCandidate,
+  isLoading = false,
+  loadError = "",
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const dropOffTableScrollRef = useRef(null);
+  const dropOffDragStateRef = useRef({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    scrollLeft: 0,
+  });
+  const [isDropOffTableDragging, setIsDropOffTableDragging] = useState(false);
 
   const visibleCandidates = expanded ? candidates : candidates.slice(0, 3);
   const hasMore = candidates.length > 3;
+
+  function handleDropOffTablePointerDown(event) {
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+
+    const interactiveElement = event.target.closest(
+      "button, a, input, select, textarea, [role='button']",
+    );
+
+    if (interactiveElement) return;
+
+    const container = dropOffTableScrollRef.current;
+
+    if (!container || container.scrollWidth <= container.clientWidth) return;
+
+    dropOffDragStateRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      scrollLeft: container.scrollLeft,
+    };
+
+    container.setPointerCapture?.(event.pointerId);
+    setIsDropOffTableDragging(true);
+    event.preventDefault();
+  }
+
+  function handleDropOffTablePointerMove(event) {
+    const container = dropOffTableScrollRef.current;
+    const dragState = dropOffDragStateRef.current;
+
+    if (
+      !container ||
+      !dragState.active ||
+      dragState.pointerId !== event.pointerId
+    ) {
+      return;
+    }
+
+    const distance = event.clientX - dragState.startX;
+
+    container.scrollLeft = dragState.scrollLeft - distance;
+    event.preventDefault();
+  }
+
+  function stopDropOffTableDragging(event) {
+    const container = dropOffTableScrollRef.current;
+    const pointerId = dropOffDragStateRef.current.pointerId;
+
+    if (
+      container &&
+      pointerId !== null &&
+      container.hasPointerCapture?.(pointerId)
+    ) {
+      try {
+        container.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already be released by the browser.
+      }
+    }
+
+    dropOffDragStateRef.current = {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      scrollLeft: container?.scrollLeft || 0,
+    };
+
+    setIsDropOffTableDragging(false);
+  }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
@@ -407,7 +635,22 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
 
       {expanded && (
         <div className="p-5">
-          {candidates.length === 0 ? (
+          {loadError && (
+            <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {loadError}
+            </div>
+          )}
+
+          {isLoading && candidates.length === 0 ? (
+            <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10">
+              <div className="flex flex-col items-center text-center">
+                <Loader2 size={22} className="animate-spin text-sibs-primary-1" />
+                <p className="mt-3 text-sm font-extrabold text-[#101828]">
+                  Loading drop-off candidates...
+                </p>
+              </div>
+            </div>
+          ) : candidates.length === 0 ? (
             <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-sibs-tertiary-5">
                 <AlertTriangle size={22} />
@@ -423,31 +666,50 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
             </div>
           ) : (
             <>
-              <div className="hidden overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white lg:block">
-                <table className="w-full table-fixed text-left">
+              <div className="hidden lg:block">
+                <div
+                  ref={dropOffTableScrollRef}
+                  onPointerDown={handleDropOffTablePointerDown}
+                  onPointerMove={handleDropOffTablePointerMove}
+                  onPointerUp={stopDropOffTableDragging}
+                  onPointerCancel={stopDropOffTableDragging}
+                  onLostPointerCapture={stopDropOffTableDragging}
+                  onDragStart={(event) => event.preventDefault()}
+                  className={`overflow-x-auto overscroll-x-contain rounded-2xl border border-[#D9E2EC] bg-white sibs-scrollbar ${
+                    isDropOffTableDragging
+                      ? "cursor-grabbing select-none"
+                      : "cursor-grab"
+                  }`}
+                  aria-label="Drop-off candidates table. Drag left or right to view all drop-off columns."
+                >
+                  <table className="w-full min-w-[1520px] table-fixed text-left">
                   <thead>
                     <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                      <th className="w-[18%] px-6 py-4 text-left">
+                      <th className="w-[15%] px-6 py-4 text-left">
                         Candidate
                       </th>
 
-                      <th className="w-[22%] px-6 py-4 text-left">
+                      <th className="w-[17%] px-6 py-4 text-left">
                         Applied Position
                       </th>
 
-                      <th className="w-[24%] px-6 py-4 text-left">
+                      <th className="w-[18%] px-6 py-4 text-left">
                         Preferred Location / Final Account
                       </th>
 
-                      <th className="w-[14%] px-6 py-4 text-center">
-                        Drop-off Category
+                      <th className="w-[12%] px-6 py-4 text-center">
+                        Status
                       </th>
 
-                      <th className="w-[14%] px-6 py-4 text-left">
-                        Last Activity
+                      <th className="w-[20%] px-6 py-4 text-left">
+                        Drop-off Reason
                       </th>
 
-                      <th className="w-[8%] px-6 py-4 text-center">
+                      <th className="w-[11%] px-6 py-4 text-left">
+                        Date
+                      </th>
+
+                      <th className="w-[130px] whitespace-nowrap px-5 py-4 text-center">
                         Actions
                       </th>
                     </tr>
@@ -499,26 +761,34 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                         <td className="px-6 py-5 text-center align-middle">
                           <span className="inline-flex max-w-full rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold text-red-700">
                             <span className="truncate">
-                              {candidate.dropOffCategory || "Drop-off"}
+                              {candidate.dropOffCategory || "Drop Off"}
                             </span>
                           </span>
                         </td>
 
                         <td className="px-6 py-5 align-middle">
+                          <p className="line-clamp-2 font-semibold leading-5 text-[#344054]">
+                            {getDropOffReason(candidate)}
+                          </p>
+
+                          {getDropOffBy(candidate) && (
+                            <p className="mt-1 truncate text-xs font-bold text-sibs-primary-1">
+                              By: {getDropOffBy(candidate)}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-6 py-5 align-middle">
                           <p className="font-bold text-[#344054]">
-                            {formatDisplayDate(
-                              candidate.dateMoved ||
-                                candidate.updatedAt ||
-                                candidate.lastActivity,
-                            )}
+                            {formatDisplayDate(getDropOffDate(candidate))}
                           </p>
                         </td>
 
-                        <td className="px-6 py-5 text-center align-middle">
+                        <td className="w-[130px] px-5 py-5 text-center align-middle">
                           <button
                             type="button"
                             onClick={() => onViewCandidate(candidate)}
-                            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm"
+                            className="mx-auto inline-flex h-10 min-w-[96px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] hover:shadow-sm"
                           >
                             <Eye size={16} />
                             View
@@ -527,7 +797,8 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
 
               <div className="space-y-3 lg:hidden">
@@ -553,7 +824,7 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                       </div>
 
                       <span className="shrink-0 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold text-red-700">
-                        {candidate.dropOffCategory || "Drop-off"}
+                        {candidate.dropOffCategory || "Drop Off"}
                       </span>
                     </div>
 
@@ -582,18 +853,12 @@ function DropOffListSection({ candidates = [], onViewCandidate }) {
                     </div>
 
                     <p className="mt-4 rounded-xl bg-white p-3 text-sm font-semibold leading-6 text-[#475467]">
-                      {candidate.dropOffReason ||
-                        candidate.reasonForMovement ||
-                        "No reason provided."}
+                      {getDropOffReason(candidate)}
                     </p>
 
                     <div className="mt-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-bold text-sibs-tertiary-5">
-                        {formatDisplayDate(
-                          candidate.dateMoved ||
-                            candidate.updatedAt ||
-                            candidate.lastActivity,
-                        )}
+                        {formatDisplayDate(getDropOffDate(candidate))}
                       </p>
 
                       <button
@@ -713,6 +978,54 @@ export default function CandidatePipelinePage() {
     handleScheduleNhoAuto,
   } = useCandidatePipeline();
 
+  const [talentPoolDropOffCandidates, setTalentPoolDropOffCandidates] = useState(
+    [],
+  );
+  const [dropOffListLoading, setDropOffListLoading] = useState(true);
+  const [dropOffListError, setDropOffListError] = useState("");
+
+  async function loadTalentPoolDropOffCandidates() {
+    setDropOffListLoading(true);
+    setDropOffListError("");
+
+    try {
+      const response = await getTalentPoolApplications({
+        page: 1,
+        limit: 500,
+        status: "Drop Off",
+      });
+
+      if (!response?.success) {
+        setTalentPoolDropOffCandidates([]);
+        setDropOffListError(
+          response?.message || "Failed to load Talent Pool drop-off records.",
+        );
+        return;
+      }
+
+      const records = Array.isArray(response?.data) ? response.data : [];
+
+      setTalentPoolDropOffCandidates(
+        records.filter((candidate) => isDropOffCandidate(candidate)),
+      );
+    } catch (error) {
+      console.error("Load Talent Pool drop-off records error:", error);
+
+      setTalentPoolDropOffCandidates([]);
+      setDropOffListError(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to load Talent Pool drop-off records.",
+      );
+    } finally {
+      setDropOffListLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadTalentPoolDropOffCandidates();
+  }, []);
+
   const safeFilteredCandidates = useMemo(() => {
     if (isLoading) return [];
 
@@ -748,12 +1061,37 @@ export default function CandidatePipelinePage() {
   }, [isLoading, metrics]);
 
   const dropOffCandidates = useMemo(() => {
-    return safeFilteredCandidates.filter((candidate) => {
-      const stage = getCandidateStage(candidate);
+    const pipelineDropOffCandidates = safeFilteredCandidates.filter(
+      isDropOffCandidate,
+    );
 
-      return stage === "Drop-off" || stage === "Drop-offs";
-    });
-  }, [safeFilteredCandidates]);
+    return mergeUniqueCandidates(
+      pipelineDropOffCandidates,
+      talentPoolDropOffCandidates,
+    )
+      .filter((candidate) =>
+        matchesDropOffFilters(candidate, search, roleFilter, accountFilter),
+      )
+      .sort((firstCandidate, secondCandidate) => {
+        const firstDate = new Date(getDropOffDate(firstCandidate)).getTime();
+        const secondDate = new Date(getDropOffDate(secondCandidate)).getTime();
+
+        return (
+          (Number.isFinite(secondDate) ? secondDate : 0) -
+          (Number.isFinite(firstDate) ? firstDate : 0)
+        );
+      });
+  }, [
+    safeFilteredCandidates,
+    talentPoolDropOffCandidates,
+    search,
+    roleFilter,
+    accountFilter,
+  ]);
+
+  const selectedCandidateIsDropOff = useMemo(() => {
+    return isDropOffCandidate(selectedCandidate || {});
+  }, [selectedCandidate]);
 
   const hasActiveFilters =
     cleanText(search) ||
@@ -764,6 +1102,13 @@ export default function CandidatePipelinePage() {
     setSearch("");
     setRoleFilter("All Roles");
     setAccountFilter("All Accounts");
+  }
+
+  async function handleRefreshPage() {
+    await Promise.all([
+      Promise.resolve(refreshCandidatePipeline?.()),
+      loadTalentPoolDropOffCandidates(),
+    ]);
   }
 
   return (
@@ -795,7 +1140,7 @@ export default function CandidatePipelinePage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={refreshCandidatePipeline}
+                onClick={handleRefreshPage}
                 disabled={isLoading}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -966,6 +1311,8 @@ export default function CandidatePipelinePage() {
 
               <DropOffListSection
                 candidates={dropOffCandidates}
+                isLoading={dropOffListLoading}
+                loadError={dropOffListError}
                 onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
               />
             </div>
@@ -988,7 +1335,9 @@ export default function CandidatePipelinePage() {
         onOpenScheduleModal={handleOpenScheduleInterview}
         onOpenMoveModal={handleOpenMoveModal}
         onOpenAssessmentModal={handleOpenAssessmentModal}
-        onOpenDropOffModal={handleOpenDropOffModal}
+        onOpenDropOffModal={
+          selectedCandidateIsDropOff ? undefined : handleOpenDropOffModal
+        }
         onCompleteInterview={handleCompleteInterview}
         onSendAssessmentEmail={handleSendAssessmentEmail}
         onCancelInterview={handleCancelInterview}
