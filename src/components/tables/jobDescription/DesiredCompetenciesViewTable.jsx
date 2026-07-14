@@ -1,548 +1,263 @@
-import React from "react";
-import { Check, PencilLine, SquarePen } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  PencilLine,
+  Plus,
+  SquarePen,
+  Trash2,
+} from "lucide-react";
 
-const proficiencyOptions = ["Average", "Proficient", "Excellent"];
+const PROFICIENCY_LEVELS = [
+  "Average",
+  "Proficient",
+  "Excellent",
+];
 
-function normalizeLevel(item = {}) {
-  if (item.level) return String(item.level);
+function normalizeLevel(competency = {}) {
+  const rawLevel = String(
+    competency.level ||
+      competency.proficiencyLevel ||
+      competency.proficiency_level ||
+      competency.selectedLevel ||
+      competency.selected_level ||
+      "",
+  )
+    .trim()
+    .toLowerCase();
 
-  if (Number(item.average) === 1) return "Average";
-  if (Number(item.proficient) === 1) return "Proficient";
-  if (Number(item.excellent) === 1) return "Excellent";
+  if (rawLevel === "average") return "Average";
+  if (rawLevel === "proficient") {
+    return "Proficient";
+  }
+  if (rawLevel === "excellent") return "Excellent";
+
+  if (
+    Number(competency.average) === 1 ||
+    competency.average === true
+  ) {
+    return "Average";
+  }
+
+  if (
+    Number(competency.proficient) === 1 ||
+    competency.proficient === true
+  ) {
+    return "Proficient";
+  }
+
+  if (
+    Number(competency.excellent) === 1 ||
+    competency.excellent === true
+  ) {
+    return "Excellent";
+  }
 
   return "";
 }
 
-function normalizeRevisionCompareText(value = "") {
+function normalizeCompetency(
+  competency = {},
+  index = 0,
+) {
+  const title = String(
+    competency.title ||
+      competency.competency ||
+      competency.competencyName ||
+      competency.competency_name ||
+      competency.label ||
+      "",
+  ).trim();
+
+  const description = String(
+    competency.description ||
+      competency.details ||
+      competency.competencyDescription ||
+      competency.competency_description ||
+      competency.definition ||
+      "",
+  ).trim();
+
+  const level = normalizeLevel(competency);
+
+  return {
+    id:
+      competency.id ??
+      competency.competencyId ??
+      competency.competency_id ??
+      null,
+    _key: String(
+      competency._key ||
+        competency.id ||
+        competency.competencyId ||
+        `competency-${index}-${title}`,
+    ),
+    title,
+    description,
+    level,
+    average: level === "Average" ? 1 : 0,
+    proficient: level === "Proficient" ? 1 : 0,
+    excellent: level === "Excellent" ? 1 : 0,
+  };
+}
+
+function normalizeCompetencies(
+  competencies = [],
+) {
+  if (!Array.isArray(competencies)) return [];
+
+  return competencies.map(normalizeCompetency);
+}
+
+function createEmptyCompetency() {
+  return {
+    id: null,
+    _key: `new-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}`,
+    title: "",
+    description: "",
+    level: "Average",
+    average: 1,
+    proficient: 0,
+    excellent: 0,
+  };
+}
+
+function getCompetencyText(competency = {}) {
+  const title = String(
+    competency.title || "",
+  ).trim();
+
+  const description = String(
+    competency.description || "",
+  ).trim();
+
+  if (title && description) {
+    return `${title}: ${description}`;
+  }
+
+  return title || description;
+}
+
+function normalizeCompareText(value = "") {
   return String(value || "")
     .trim()
-    .replace(/^[-•*]\s*/, "")
-    .replace(/^\d+[.)]\s*/, "")
-    .replace(/^[a-zA-Z][.)]\s*/, "")
-    .replace(/[.]+$/g, "")
     .replace(/\s+/g, " ")
     .toLowerCase();
 }
 
-function normalizeSelectedPhrase(value = "") {
-  return String(value || "")
-    .trim()
-    .replace(/^[-•*]\s*/, "")
-    .replace(/^\d+[.)]\s*/, "")
-    .replace(/^[a-zA-Z][.)]\s*/, "")
-    .replace(/\s+/g, " ");
+function getCommentSelectedText(comment = {}) {
+  return String(
+    comment.selectedText ||
+      comment.selected_text ||
+      "",
+  ).trim();
 }
 
-function buildNormalizedTextMap(value = "") {
-  const original = String(value || "");
-  let normalized = "";
-  const map = [];
-  let lastWasSpace = false;
-
-  for (let index = 0; index < original.length; index += 1) {
-    const char = original[index];
-
-    if (/\s/.test(char)) {
-      if (!lastWasSpace && normalized.length > 0) {
-        normalized += " ";
-        map.push(index);
-        lastWasSpace = true;
-      }
-
-      continue;
-    }
-
-    normalized += char.toLowerCase();
-    map.push(index);
-    lastWasSpace = false;
-  }
-
-  return {
-    normalized: normalized.trim(),
-    map,
-  };
-}
-
-function findSelectedPhraseRange(text = "", selectedText = "") {
-  const sourceText = String(text || "");
-  const cleanSelectedText = normalizeSelectedPhrase(selectedText);
-
-  if (!sourceText.trim() || !cleanSelectedText.trim()) return null;
-
-  const directIndex = sourceText
-    .toLowerCase()
-    .indexOf(cleanSelectedText.toLowerCase());
-
-  if (directIndex >= 0) {
-    return {
-      start: directIndex,
-      end: directIndex + cleanSelectedText.length,
-    };
-  }
-
-  const source = buildNormalizedTextMap(sourceText);
-  const selected = buildNormalizedTextMap(cleanSelectedText);
-
-  if (!source.normalized || !selected.normalized) return null;
-
-  const normalizedIndex = source.normalized.indexOf(selected.normalized);
-
-  if (normalizedIndex < 0) return null;
-
-  const start = source.map[normalizedIndex];
-  const endMapIndex = normalizedIndex + selected.normalized.length - 1;
-  const end = Number(source.map[endMapIndex] ?? start) + 1;
-
-  return {
-    start,
-    end,
-  };
-}
-
-function parseCompetencyContent(value = "") {
-  const lines = String(value || "")
-    .replace(/\r/g, "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (!lines.length) return [];
-
-  return lines.map((line, index) => ({
-    key: `line-${index}`,
-    text: line
-      .replace(/^[-•*]\s*/, "")
-      .replace(/^\d+[.)]\s*/, "")
-      .replace(/^[a-zA-Z][.)]\s*/, "")
-      .trim(),
-  }));
-}
-
-function getSelectedTextCandidatePhrases(selectedText = "") {
-  const rawSelectedText = String(selectedText || "").trim();
-
-  if (!rawSelectedText) return [];
-
-  const phrases = [];
-
-  const pushPhrase = (value = "") => {
-    const cleanValue = normalizeSelectedPhrase(value);
-
-    if (!cleanValue) return;
-
-    const alreadyExists = phrases.some(
-      (phrase) =>
-        phrase.toLowerCase().replace(/\s+/g, " ").trim() ===
-        cleanValue.toLowerCase().replace(/\s+/g, " ").trim(),
-    );
-
-    if (!alreadyExists) {
-      phrases.push(cleanValue);
-    }
-  };
-
-  pushPhrase(rawSelectedText);
-
-  parseCompetencyContent(rawSelectedText).forEach((line) => {
-    pushPhrase(line.text);
-  });
-
-  return phrases.sort((a, b) => b.length - a.length);
-}
-
-function getInlineCommentMatches(text = "", comments = []) {
-  const matches = comments
-    .flatMap((comment) => {
-      const selectedText = comment.selectedText || comment.selected_text || "";
-      const candidatePhrases = getSelectedTextCandidatePhrases(selectedText);
-
-      return candidatePhrases
-        .map((phrase) => {
-          const range = findSelectedPhraseRange(text, phrase);
-
-          if (!range) return null;
-
-          return {
-            comment,
-            phrase,
-            start: range.start,
-            end: range.end,
-          };
-        })
-        .filter(Boolean);
-    })
-    .sort((a, b) => a.start - b.start || b.end - a.end);
-
-  const nonOverlappingMatches = [];
-  let cursor = 0;
-
-  matches.forEach((match) => {
-    if (match.start < cursor) return;
-
-    nonOverlappingMatches.push(match);
-    cursor = match.end;
-  });
-
-  return nonOverlappingMatches;
-}
-
-function getCommentStableKey(comment = {}) {
+function getCommentKey(comment = {}, fallback = "") {
   return String(
     comment.id ||
-      `${comment.sectionKey || ""}-${comment.selectedText || ""}-${
-        comment.comment || ""
-      }`,
+      `${comment.competencyId || ""}-${getCommentSelectedText(
+        comment,
+      )}-${comment.comment || ""}-${fallback}`,
   );
 }
 
-function getFirstMatchedLineKey(lines = [], comment = {}) {
-  for (const line of lines) {
-    const hasMatch = getInlineCommentMatches(line.text, [comment]).length > 0;
-
-    if (hasMatch) return line.key;
-  }
-
-  return "";
-}
-
-function getLastMatchedLineKey(lines = [], comment = {}) {
-  let lastKey = "";
-
-  lines.forEach((line) => {
-    const hasMatch = getInlineCommentMatches(line.text, [comment]).length > 0;
-
-    if (hasMatch) {
-      lastKey = line.key;
-    }
-  });
-
-  return lastKey;
-}
-
-function getCommentsForTextLine(text = "", comments = []) {
-  const matches = getInlineCommentMatches(text, comments);
-  const uniqueComments = [];
-
-  matches.forEach((match) => {
-    const exists = uniqueComments.some(
-      (comment) =>
-        String(comment.id || "") === String(match.comment.id || "") &&
-        String(comment.comment || "") === String(match.comment.comment || "") &&
-        String(comment.selectedText || "") ===
-          String(match.comment.selectedText || ""),
-    );
-
-    if (!exists) {
-      uniqueComments.push(match.comment);
-    }
-  });
-
-  return uniqueComments;
-}
-
-function InlineCommentedText({
-  text = "",
+function getCommentsForCompetency(
   comments = [],
-  className = "",
-  boundaryMap = {},
-}) {
-  const matches = getInlineCommentMatches(text, comments);
-
-  if (!matches.length) {
-    return <span className={className}>{text}</span>;
-  }
-
-  const nodes = [];
-  let cursor = 0;
-
-  matches.forEach((match, index) => {
-    if (match.start > cursor) {
-      nodes.push(
-        <span key={`text-before-${index}`}>
-          {text.slice(cursor, match.start)}
-        </span>,
-      );
-    }
-
-    const commentKey = getCommentStableKey(match.comment);
-    const boundary = boundaryMap[commentKey] || {};
-    const isStart = Boolean(boundary.start);
-    const isEnd = Boolean(boundary.end);
-
-    nodes.push(
-      <span
-        key={`highlight-fragment-${commentKey}-${match.start}`}
-        className="inline-flex items-center gap-1 align-middle"
-      >
-        {isStart && (
-          <span className="inline-flex items-center self-center text-sm font-extrabold leading-none text-orange-600">
-            &gt;&gt;&gt;
-          </span>
-        )}
-
-        <span
-          className="inline-flex items-center self-center rounded-md bg-[#FFF3B8] px-1.5 py-0.5 font-[inherit] leading-normal text-[#101828] ring-1 ring-amber-300"
-          title={match.comment.comment || "Marked for revision"}
-        >
-          {text.slice(match.start, match.end)}
-        </span>
-
-        {isEnd && (
-          <span className="inline-flex items-center self-center text-sm font-extrabold leading-none text-orange-600">
-            &lt;&lt;&lt;
-          </span>
-        )}
-      </span>,
-    );
-
-    cursor = match.end;
-  });
-
-  if (cursor < text.length) {
-    nodes.push(<span key="text-after">{text.slice(cursor)}</span>);
-  }
-
-  return <span className={className}>{nodes}</span>;
-}
-
-function getCompetencyTitleAndDescription(item = {}) {
-  const rawTitle = String(item.title || "").trim();
-  const rawDescription = String(item.description || "").trim();
-
-  if (rawTitle) {
-    return {
-      title: rawTitle,
-      description: rawDescription,
-    };
-  }
-
-  const lines = rawDescription
-    .replace(/\r/g, "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length <= 1) {
-    return {
-      title: "",
-      description: rawDescription,
-    };
-  }
-
-  return {
-    title: lines[0],
-    description: lines.slice(1).join("\n"),
-  };
-}
-
-function isCompetencySection(sectionKey = "") {
-  const key = String(sectionKey || "").toLowerCase();
-
-  return key.includes("competenc") || key.includes("desired");
-}
-
-function getCompetencyComments(item = {}, comments = []) {
-  const competencyId = Number(item.id || item.competencyId || 0);
-
-  const { title, description } = getCompetencyTitleAndDescription(item);
-
-  const competencyText = normalizeRevisionCompareText(
-    `${title || ""} ${description || ""}`,
+  competency = {},
+) {
+  const competencyId = String(
+    competency.id || "",
   );
 
-  const descriptionText = normalizeRevisionCompareText(description || "");
-  const titleText = normalizeRevisionCompareText(title || "");
+  const competencyText =
+    normalizeCompareText(
+      getCompetencyText(competency),
+    );
+
+  const title = normalizeCompareText(
+    competency.title,
+  );
 
   return comments.filter((comment) => {
-    const commentSectionKey = String(comment.sectionKey || "").toLowerCase();
-
-    if (!isCompetencySection(commentSectionKey)) return false;
-
-    const commentCompetencyId = Number(
-      comment.competencyId || comment.competency_id || 0,
+    const commentCompetencyId = String(
+      comment.competencyId ||
+        comment.competency_id ||
+        "",
     );
 
-    if (competencyId && commentCompetencyId) {
-      return competencyId === commentCompetencyId;
+    if (
+      competencyId &&
+      commentCompetencyId &&
+      competencyId === commentCompetencyId
+    ) {
+      return true;
     }
 
-    const selectedText = normalizeRevisionCompareText(
-      comment.selectedText || comment.selected_text || "",
-    );
+    const selectedText =
+      normalizeCompareText(
+        getCommentSelectedText(comment),
+      );
 
     if (!selectedText) return false;
 
-    if (!competencyText && !descriptionText && !titleText) return false;
-
     return (
       selectedText === competencyText ||
-      selectedText === descriptionText ||
-      selectedText === titleText ||
+      selectedText === title ||
       competencyText.includes(selectedText) ||
-      selectedText.includes(competencyText) ||
-      descriptionText.includes(selectedText) ||
-      selectedText.includes(descriptionText) ||
-      titleText.includes(selectedText) ||
-      selectedText.includes(titleText)
+      selectedText.includes(title)
     );
   });
 }
 
-function CompetencyRevisionBlock({ comment }) {
-  if (!comment) return null;
-
+function CompetencyCommentCard({ comment }) {
   return (
-    <div className="mt-4 overflow-hidden rounded-xl border border-amber-300 bg-amber-50 shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-amber-300 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-orange-700">
-            Text Marked for Revision
-          </p>
+    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+          Reviewer Comment
+        </p>
 
-          <p className="mt-1 text-xs font-semibold text-orange-700/90">
-            The highlighted phrase above needs to be reviewed and updated.
-          </p>
-        </div>
-
-        <span className="w-fit rounded-full border border-amber-300 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-orange-700">
-          {comment.status || "Open"}
+        <span className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase text-amber-700">
+          {comment?.status || "Open"}
         </span>
       </div>
 
-      <div className="space-y-4 px-4 py-4">
-        <div className="rounded-xl border border-orange-100 bg-white px-4 py-4">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-
-            <p className="text-[11px] font-extrabold uppercase tracking-wide text-orange-700">
-              Reviewer Comment
-            </p>
-          </div>
-
-          <div className="flex items-center">
-            <p className="whitespace-pre-line text-sm font-semibold leading-6 text-orange-800">
-              {comment.comment || "No revision comment provided."}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LevelIndicator({ active = false }) {
-  return (
-    <div
-      className={`flex h-7 w-7 items-center justify-center rounded-full border transition ${
-        active
-          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-          : "border-[#D7DEE8] bg-white text-transparent"
-      }`}
-    >
-      {active && <Check size={15} strokeWidth={3} />}
-    </div>
-  );
-}
-
-function CompetencyTextWithComments({
-  title = "",
-  description = "",
-  comments = [],
-  hasComments = false,
-}) {
-  const titleLines = title
-    ? [
-        {
-          key: "title",
-          text: title,
-          type: "title",
-        },
-      ]
-    : [];
-
-  const descriptionLines = parseCompetencyContent(description).map((line) => ({
-    ...line,
-    type: "description",
-  }));
-
-  const allLines = [...titleLines, ...descriptionLines];
-
-  if (!allLines.length) {
-    return (
-      <p
-        className={`whitespace-pre-line text-[15px] font-medium leading-7 selection:bg-[#FFF3B8] selection:text-[#101828] text-[#344054]`}
-      >
-        —
+      <p className="mt-2 whitespace-pre-line text-xs font-semibold leading-5 text-amber-800">
+        {comment?.comment ||
+          "No revision comment provided."}
       </p>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      {allLines.map((line) => {
-        const lineComments = getCommentsForTextLine(line.text, comments);
-
-        const lineCommentsToDisplay = lineComments.filter(
-          (comment) => getLastMatchedLineKey(allLines, comment) === line.key,
-        );
-
-        const boundaryMap = Object.fromEntries(
-          lineComments.map((comment) => {
-            const commentKey = getCommentStableKey(comment);
-
-            return [
-              commentKey,
-              {
-                start: getFirstMatchedLineKey(allLines, comment) === line.key,
-                end: getLastMatchedLineKey(allLines, comment) === line.key,
-              },
-            ];
-          }),
-        );
-
-        return (
-          <div key={line.key}>
-            {line.type === "title" ? (
-              <p className="text-sm font-extrabold leading-6 text-[#101828] selection:bg-[#FFF3B8] selection:text-[#101828]">
-                <InlineCommentedText
-                  text={line.text}
-                  comments={comments}
-                  boundaryMap={boundaryMap}
-                />
-              </p>
-            ) : (
-              <p
-                className={`whitespace-pre-line text-[15px] font-medium leading-7 selection:bg-[#FFF3B8] selection:text-[#101828] text-[#344054]`}
-              >
-                <InlineCommentedText
-                  text={line.text}
-                  comments={comments}
-                  boundaryMap={boundaryMap}
-                />
-              </p>
-            )}
-
-            {lineCommentsToDisplay.length > 0 && (
-              <div className="space-y-3">
-                {lineCommentsToDisplay.map((comment, index) => (
-                  <CompetencyRevisionBlock
-                    key={
-                      comment.id ||
-                      `${line.key}-${comment.comment || ""}-${index}`
-                    }
-                    comment={comment}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }
 
-const DesiredCompetenciesViewTable = ({
+function ProficiencyRadio({
+  checked = false,
+  label,
+  name,
+  onChange,
+}) {
+  return (
+    <label className="inline-flex cursor-pointer items-center justify-center gap-2">
+      <input
+        type="radio"
+        name={name}
+        value={label}
+        checked={checked}
+        onChange={() => onChange?.(label)}
+        className="h-4 w-4 accent-[#0D4676]"
+      />
+
+      <span className="sr-only">{label}</span>
+    </label>
+  );
+}
+
+export default function DesiredCompetenciesViewTable({
   competencies = [],
   comments = [],
   onAddComment,
@@ -550,28 +265,280 @@ const DesiredCompetenciesViewTable = ({
   disableComment = false,
   canManageActions = false,
   onEditedChange,
-}) => {
-  return (
-    <section>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div>
-          <h4 className="text-base font-extrabold text-[#101828]">
-            Desired Competencies
-          </h4>
+  onCompetenciesChange,
+}) {
+  const normalizedCompetencies = useMemo(
+    () => normalizeCompetencies(competencies),
+    [competencies],
+  );
 
-          <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-            Expected competency level required for this position.
+  const [isEditing, setIsEditing] =
+    useState(false);
+
+  const [drafts, setDrafts] = useState(
+    normalizedCompetencies,
+  );
+
+  const [
+    selectedCompetencyKey,
+    setSelectedCompetencyKey,
+  ] = useState("");
+
+  const [validationMessage, setValidationMessage] =
+    useState("");
+
+  useEffect(() => {
+    if (isEditing) return;
+
+    setDrafts(normalizedCompetencies);
+  }, [isEditing, normalizedCompetencies]);
+
+  useEffect(() => {
+    setSelectedCompetencyKey((currentKey) =>
+      normalizedCompetencies.some(
+        (competency) =>
+          competency._key === currentKey,
+      )
+        ? currentKey
+        : "",
+    );
+  }, [normalizedCompetencies]);
+
+  function startEditing() {
+    if (disableEdit) return;
+
+    setDrafts(
+      normalizedCompetencies.length > 0
+        ? normalizedCompetencies
+        : [createEmptyCompetency()],
+    );
+
+    setValidationMessage("");
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setDrafts(normalizedCompetencies);
+    setValidationMessage("");
+    setIsEditing(false);
+  }
+
+  function updateDraft(
+    key,
+    field,
+    value,
+  ) {
+    setDrafts((previous) =>
+      previous.map((competency) => {
+        if (competency._key !== key) {
+          return competency;
+        }
+
+        if (field === "level") {
+          return {
+            ...competency,
+            level: value,
+            average:
+              value === "Average" ? 1 : 0,
+            proficient:
+              value === "Proficient" ? 1 : 0,
+            excellent:
+              value === "Excellent" ? 1 : 0,
+          };
+        }
+
+        return {
+          ...competency,
+          [field]: value,
+        };
+      }),
+    );
+
+    setValidationMessage("");
+  }
+
+  function addDraft() {
+    setDrafts((previous) => [
+      ...previous,
+      createEmptyCompetency(),
+    ]);
+  }
+
+  function removeDraft(key) {
+    setDrafts((previous) =>
+      previous.filter(
+        (competency) =>
+          competency._key !== key,
+      ),
+    );
+
+    setValidationMessage("");
+  }
+
+  function saveEditing() {
+    const meaningfulDrafts = drafts.filter(
+      (competency) =>
+        String(competency.title || "").trim() ||
+        String(
+          competency.description || "",
+        ).trim(),
+    );
+
+    const invalidDraft = meaningfulDrafts.find(
+      (competency) =>
+        !String(
+          competency.title || "",
+        ).trim() ||
+        !String(
+          competency.level || "",
+        ).trim(),
+    );
+
+    if (invalidDraft) {
+      setValidationMessage(
+        "Each competency must have a competency name and one selected proficiency level.",
+      );
+      return;
+    }
+
+    const nextCompetencies =
+      meaningfulDrafts.map(
+        (competency) => {
+          const title = String(
+            competency.title || "",
+          ).trim();
+
+          const description = String(
+            competency.description || "",
+          ).trim();
+
+          const level =
+            PROFICIENCY_LEVELS.includes(
+              competency.level,
+            )
+              ? competency.level
+              : "Average";
+
+          return {
+            id: competency.id || null,
+            title,
+            description,
+            level,
+            average:
+              level === "Average" ? 1 : 0,
+            proficient:
+              level === "Proficient" ? 1 : 0,
+            excellent:
+              level === "Excellent" ? 1 : 0,
+          };
+        },
+      );
+
+    onCompetenciesChange?.(
+      nextCompetencies,
+    );
+
+    onEditedChange?.(true);
+    setValidationMessage("");
+    setIsEditing(false);
+  }
+
+  function selectCompetencyForComment(
+    competency,
+  ) {
+    if (
+      disableComment ||
+      !canManageActions
+    ) {
+      return;
+    }
+
+    setSelectedCompetencyKey(
+      (currentKey) =>
+        currentKey === competency._key
+          ? ""
+          : competency._key,
+    );
+  }
+
+  function handleAddComment() {
+    const selectedCompetency =
+      normalizedCompetencies.find(
+        (competency) =>
+          competency._key ===
+          selectedCompetencyKey,
+      );
+
+    if (!selectedCompetency) return;
+
+    onAddComment?.(
+      "competencies",
+      "Desired Competencies",
+      {
+        competencyId:
+          selectedCompetency.id || null,
+        selectedText:
+          getCompetencyText(
+            selectedCompetency,
+          ),
+      },
+    );
+
+    setSelectedCompetencyKey("");
+  }
+
+  const selectedCompetency =
+    normalizedCompetencies.find(
+      (competency) =>
+        competency._key ===
+        selectedCompetencyKey,
+    );
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-base font-extrabold text-[#101828]">
+              Desired Competencies
+            </h4>
+
+            {comments.length > 0 && (
+              <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-extrabold text-amber-700">
+                {comments.length} comment
+                {comments.length > 1 ? "s" : ""}
+              </span>
+            )}
+
+            {selectedCompetency && !isEditing && (
+              <span className="rounded-full border border-amber-300 bg-[#FFF3B8] px-2.5 py-1 text-[11px] font-extrabold text-[#101828]">
+                1 selected
+              </span>
+            )}
+          </div>
+
+          <p className="mt-1 text-sm font-medium text-[#315F8C]">
+            Expected competency level required for
+            this position.
           </p>
+
+          {canManageActions &&
+            !isEditing &&
+            normalizedCompetencies.length > 0 && (
+              <p className="mt-1 text-xs font-semibold text-sibs-primary-1/80">
+                Select a competency row before
+                adding a comment.
+              </p>
+            )}
         </div>
 
-        {canManageActions && (
-          <div className="flex shrink-0 items-center gap-2">
+        {canManageActions && !isEditing && (
+          <div className="jd-mobile-actions-row flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <button
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
+              onClick={startEditing}
               disabled={disableEdit}
-              onClick={() => onEditedChange?.(true)}
-              className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
                 disableEdit
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-[#D7DEE8] bg-white text-sibs-primary-1 hover:bg-[#F8FAFC]"
@@ -583,13 +550,14 @@ const DesiredCompetenciesViewTable = ({
 
             <button
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() =>
-                onAddComment?.("competencies", "Desired Competencies")
+              onClick={handleAddComment}
+              disabled={
+                disableComment ||
+                !selectedCompetency
               }
-              disabled={disableComment}
-              className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                disableComment
+              className={`inline-flex flex-1 items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:flex-none ${
+                disableComment ||
+                !selectedCompetency
                   ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                   : "border-blue-100 bg-blue-50 text-sibs-primary-1 hover:bg-blue-100"
               }`}
@@ -601,74 +569,389 @@ const DesiredCompetenciesViewTable = ({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white selection:bg-[#FFF3B8] selection:text-[#101828]">
-        <div className="hidden grid-cols-[minmax(0,1fr)_110px_110px_110px] border-b border-[#D7DEE8] bg-[#F8FAFC] sm:grid">
-          <div className="px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            Competency for this Position
-          </div>
+      {isEditing ? (
+        <div className="overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-sm">
+          <div className="thin-scroll overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse">
+              <thead className="bg-[#F8FAFC]">
+                <tr>
+                  <th className="w-[50%] border-b border-r border-[#D7DEE8] px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
+                    Competency for this position
+                  </th>
 
-          {proficiencyOptions.map((option) => (
-            <div
-              key={option}
-              className="flex items-center justify-center border-l border-[#E6ECF2] px-3 py-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1"
-            >
-              {option}
-            </div>
-          ))}
-        </div>
+                  {PROFICIENCY_LEVELS.map(
+                    (level) => (
+                      <th
+                        key={level}
+                        className="w-[15%] border-b border-r border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
+                      >
+                        {level}
+                      </th>
+                    ),
+                  )}
 
-        {competencies.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm font-semibold text-sibs-tertiary-5">
-            No competencies provided.
-          </div>
-        ) : (
-          <div className="divide-y divide-[#E6ECF2]">
-            {competencies.map((item, index) => {
-              const level = normalizeLevel(item);
-              const rowComments = getCompetencyComments(item, comments);
-              const hasComments = rowComments.length > 0;
-              const { title, description } =
-                getCompetencyTitleAndDescription(item);
+                  <th className="w-[5%] border-b border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1">
+                    Remove
+                  </th>
+                </tr>
+              </thead>
 
-              return (
-                <div
-                  key={item.id || `${title}-${index}`}
-                  className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_110px_110px_110px]"
-                >
-                  <div
-                    className={`px-4 py-5 selection:bg-[#FFF3B8] selection:text-[#101828] sm:border-r sm:border-[#E6ECF2]
-                       bg-inherit`}
-                  >
-                    <CompetencyTextWithComments
-                      title={title}
-                      description={
-                        description || (!title ? item.description : "")
-                      }
-                      comments={rowComments}
-                      hasComments={hasComments}
-                    />
-                  </div>
-
-                  {proficiencyOptions.map((option) => (
-                    <div
-                      key={option}
-                      className={`flex items-center justify-between gap-3 border-t border-[#E6ECF2] px-4 py-4 sm:justify-center sm:border-l sm:border-t-0 bg-inherit`}
+              <tbody>
+                {drafts.map(
+                  (competency, index) => (
+                    <tr
+                      key={competency._key}
+                      className="align-top"
                     >
-                      <span className="text-sm font-bold text-sibs-primary-1 sm:hidden">
-                        {option}
-                      </span>
+                      <td className="border-b border-r border-[#D7DEE8] p-3">
+                        <div className="space-y-2">
+                          <input
+                            value={competency.title}
+                            onChange={(event) =>
+                              updateDraft(
+                                competency._key,
+                                "title",
+                                event.target.value,
+                              )
+                            }
+                            placeholder={`Competency ${
+                              index + 1
+                            }`}
+                            className="h-10 w-full rounded-lg border border-[#C9D8E8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                          />
 
-                      <LevelIndicator active={level === option} />
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
+                          <textarea
+                            rows={2}
+                            value={
+                              competency.description
+                            }
+                            onChange={(event) =>
+                              updateDraft(
+                                competency._key,
+                                "description",
+                                event.target.value,
+                              )
+                            }
+                            placeholder="Optional competency description"
+                            className="min-h-[70px] w-full resize-y rounded-lg border border-[#C9D8E8] bg-white px-3 py-2 text-sm font-medium leading-5 text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+                          />
+                        </div>
+                      </td>
+
+                      {PROFICIENCY_LEVELS.map(
+                        (level) => (
+                          <td
+                            key={level}
+                            className="border-b border-r border-[#D7DEE8] px-3 py-5 text-center last:border-r-0"
+                          >
+                            <ProficiencyRadio
+                              name={`competency-level-${competency._key}`}
+                              label={level}
+                              checked={
+                                competency.level ===
+                                level
+                              }
+                              onChange={(
+                                nextLevel,
+                              ) =>
+                                updateDraft(
+                                  competency._key,
+                                  "level",
+                                  nextLevel,
+                                )
+                              }
+                            />
+                          </td>
+                        ),
+                      )}
+
+                      <td className="border-b border-[#D7DEE8] px-3 py-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeDraft(
+                              competency._key,
+                            )
+                          }
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                          aria-label={`Remove competency ${
+                            index + 1
+                          }`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          <div className="border-t border-[#E6ECF2] bg-[#F8FAFC] p-3 sm:p-4">
+            <button
+              type="button"
+              onClick={addDraft}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-sibs-primary-1/40 bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-blue-50 sm:w-auto"
+            >
+              <Plus size={16} />
+              Add Competency
+            </button>
+
+            {validationMessage && (
+              <p className="mt-3 text-sm font-bold text-red-600">
+                {validationMessage}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={cancelEditing}
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#D7DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] sm:w-auto"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={saveEditing}
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:opacity-90 sm:w-auto"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="hidden overflow-hidden rounded-xl border border-[#D7DEE8] bg-white md:block">
+            <table className="w-full table-fixed border-collapse">
+              <thead className="bg-[#F8FAFC]">
+                <tr>
+                  <th className="w-[65%] border-b border-r border-[#D7DEE8] px-4 py-3 text-left text-xs font-extrabold uppercase text-sibs-primary-1">
+                    Competency for this position
+                  </th>
+
+                  {PROFICIENCY_LEVELS.map(
+                    (level) => (
+                      <th
+                        key={level}
+                        className="border-b border-r border-[#D7DEE8] px-3 py-3 text-center text-xs font-extrabold uppercase text-sibs-primary-1 last:border-r-0"
+                      >
+                        {level}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+
+              <tbody>
+                {normalizedCompetencies.length >
+                0 ? (
+                  normalizedCompetencies.map(
+                    (competency) => {
+                      const selected =
+                        competency._key ===
+                        selectedCompetencyKey;
+
+                      const competencyComments =
+                        getCommentsForCompetency(
+                          comments,
+                          competency,
+                        );
+
+                      return (
+                        <tr
+                          key={competency._key}
+                          onClick={() =>
+                            selectCompetencyForComment(
+                              competency,
+                            )
+                          }
+                          className={`transition ${
+                            canManageActions &&
+                            !disableComment
+                              ? "cursor-pointer"
+                              : ""
+                          } ${
+                            selected
+                              ? "bg-[#FFF8D9]"
+                              : competencyComments.length >
+                                  0
+                                ? "bg-amber-50/50"
+                                : "hover:bg-[#F8FAFC]"
+                          }`}
+                        >
+                          <td className="border-b border-r border-[#D7DEE8] px-4 py-4 align-top last:border-b-0">
+                            <p className="font-extrabold leading-5 text-[#344054]">
+                              {competency.title ||
+                                "Untitled competency"}
+                            </p>
+
+                            {competency.description && (
+                              <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-[#667085]">
+                                {
+                                  competency.description
+                                }
+                              </p>
+                            )}
+
+                            {competencyComments.length >
+                              0 && (
+                              <div className="mt-3 space-y-2">
+                                {competencyComments.map(
+                                  (
+                                    comment,
+                                    index,
+                                  ) => (
+                                    <CompetencyCommentCard
+                                      key={getCommentKey(
+                                        comment,
+                                        `${competency._key}-${index}`,
+                                      )}
+                                      comment={
+                                        comment
+                                      }
+                                    />
+                                  ),
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {PROFICIENCY_LEVELS.map(
+                            (level) => (
+                              <td
+                                key={level}
+                                className="border-b border-r border-[#D7DEE8] px-3 py-4 text-center align-top last:border-r-0"
+                              >
+                                <span
+                                  className={`mx-auto flex h-5 w-5 items-center justify-center rounded-full border ${
+                                    competency.level ===
+                                    level
+                                      ? "border-sibs-primary-1 bg-sibs-primary-1"
+                                      : "border-[#C9D8E8] bg-white"
+                                  }`}
+                                >
+                                  {competency.level ===
+                                    level && (
+                                    <span className="h-2 w-2 rounded-full bg-white" />
+                                  )}
+                                </span>
+                              </td>
+                            ),
+                          )}
+                        </tr>
+                      );
+                    },
+                  )
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-4 py-9 text-center text-sm font-bold text-[#315F8C]"
+                    >
+                      No competencies provided.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-3 md:hidden">
+            {normalizedCompetencies.length >
+            0 ? (
+              normalizedCompetencies.map(
+                (competency) => {
+                  const selected =
+                    competency._key ===
+                    selectedCompetencyKey;
+
+                  const competencyComments =
+                    getCommentsForCompetency(
+                      comments,
+                      competency,
+                    );
+
+                  return (
+                    <button
+                      key={competency._key}
+                      type="button"
+                      onClick={() =>
+                        selectCompetencyForComment(
+                          competency,
+                        )
+                      }
+                      className={`w-full rounded-xl border p-4 text-left transition ${
+                        selected
+                          ? "border-amber-300 bg-[#FFF8D9] ring-1 ring-amber-300"
+                          : competencyComments.length > 0
+                            ? "border-amber-200 bg-amber-50/50"
+                            : "border-[#D7DEE8] bg-white"
+                      }`}
+                    >
+                      <p className="font-extrabold leading-5 text-[#344054]">
+                        {competency.title ||
+                          "Untitled competency"}
+                      </p>
+
+                      {competency.description && (
+                        <p className="mt-1 whitespace-pre-line text-sm font-medium leading-5 text-[#667085]">
+                          {competency.description}
+                        </p>
+                      )}
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {PROFICIENCY_LEVELS.map(
+                          (level) => (
+                            <span
+                              key={level}
+                              className={`rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${
+                                competency.level ===
+                                level
+                                  ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                                  : "border-[#D7DEE8] bg-[#F8FAFC] text-[#667085]"
+                              }`}
+                            >
+                              {level}
+                            </span>
+                          ),
+                        )}
+                      </div>
+
+                      {competencyComments.length >
+                        0 && (
+                        <div className="mt-3 space-y-2">
+                          {competencyComments.map(
+                            (
+                              comment,
+                              index,
+                            ) => (
+                              <CompetencyCommentCard
+                                key={getCommentKey(
+                                  comment,
+                                  `${competency._key}-${index}`,
+                                )}
+                                comment={comment}
+                              />
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                },
+              )
+            ) : (
+              <div className="rounded-xl border border-[#D7DEE8] bg-white px-4 py-9 text-center text-sm font-bold text-[#315F8C]">
+                No competencies provided.
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
-};
-
-export default DesiredCompetenciesViewTable;
+}
