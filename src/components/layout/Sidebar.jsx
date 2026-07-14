@@ -24,6 +24,7 @@ import {
   PieChart,
   Shield,
   Table2,
+  UserCog,
   Users,
   X,
 } from "lucide-react";
@@ -703,6 +704,12 @@ export default function Sidebar() {
       icon: FileCog,
       path: "/settings/recruitment-settings",
       allowedUsers: [1, 2, 3, 6, 7],
+    },
+    {
+      name: "Account Settings",
+      icon: UserCog,
+      path: "/settings/account-settings",
+      allowedUsers: [7],
     },
   ];
 

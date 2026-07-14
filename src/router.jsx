@@ -39,6 +39,7 @@ import AvailablePositionsPage from "./pages/recruitment/AvailablePositionsPage";
 
 import FinalInterviewForms from "./components/recruitment/forms/FinalInterviewForms";
 import RecruitmentSettingsPage from "./pages/Settings/RecruitmentSettingsPage";
+import AccountSettingsPage from "./pages/Settings/AccountSettingsPage";
 
 import ApprovalRequest from "./pages/communication/ApprovalRequest";
 import KronosDatasPage from "./pages/kronos-datas/KronosDatasPage";
@@ -372,6 +373,15 @@ export default function Router() {
         element={
           <PrivateRoute>
             <RecruitmentSettingsPage />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/settings/account-settings"
+        element={
+          <PrivateRoute>
+            <AccountSettingsPage />
           </PrivateRoute>
         }
       />
