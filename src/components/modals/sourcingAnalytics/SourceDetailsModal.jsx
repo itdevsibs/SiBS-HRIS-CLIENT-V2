@@ -8,11 +8,13 @@ import {
   AlertTriangle,
   CalendarRange,
   CheckCircle2,
+  Clock3,
   Loader2,
   PencilLine,
   ReceiptText,
   Target,
   Trash2,
+  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
@@ -74,7 +76,9 @@ function formatDate(value) {
 
   const parsed = new Date(`${normalized}T00:00:00`);
 
-  if (Number.isNaN(parsed.getTime())) return "—";
+  if (Number.isNaN(parsed.getTime())) {
+    return "—";
+  }
 
   return parsed.toLocaleDateString("en-PH", {
     month: "short",
@@ -99,7 +103,10 @@ function formatDateRange(entry = {}) {
   const formattedFrom = formatDate(dateFrom);
   const formattedTo = formatDate(dateTo);
 
-  if (formattedFrom === "—" && formattedTo === "—") {
+  if (
+    formattedFrom === "—" &&
+    formattedTo === "—"
+  ) {
     return "—";
   }
 
@@ -114,78 +121,39 @@ function getStatusClasses(status) {
   switch (cleanText(status).toLowerCase()) {
     case "upcoming":
       return "border-blue-200 bg-blue-50 text-blue-700";
+
     case "ongoing":
       return "border-amber-200 bg-amber-50 text-amber-700";
+
     case "completed":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
+
     default:
       return "border-gray-200 bg-gray-50 text-gray-600";
   }
 }
 
-
-function InfoBox({ label, value }) {
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
-      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-        {label}
-      </p>
-
-      <div className="break-words text-sm font-bold text-[#344054]">
-        {value === 0 ? 0 : value || "—"}
-      </div>
-    </div>
-  );
-}
-
-function FunnelRow({ label, value, max }) {
-  const safeValue = Number(value || 0);
-  const safeMax = Number(max || 0);
-  const percentage =
-    safeMax > 0
-      ? Math.round((safeValue / safeMax) * 100)
-      : 0;
-
-  return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <p className="text-sm font-bold text-[#344054]">
-          {label}
-        </p>
-
-        <p className="text-sm font-bold text-sibs-primary-1">
-          {safeValue}
-        </p>
-      </div>
-
-      <div className="h-2.5 overflow-hidden rounded-full bg-white">
-        <div
-          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
-          style={{
-            width: `${Math.min(Math.max(percentage, 0), 100)}%`,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function SummaryMetric({
+function CompactMetric({
   label,
   value,
   icon,
   valueClassName = "text-sibs-primary-1",
 }) {
   return (
-    <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+    <div className="min-w-0 rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-sibs-tertiary-5">
             {label}
           </p>
 
           <p
-            className={`mt-2 truncate text-xl font-extrabold ${valueClassName}`}
+            className={`mt-2 break-words text-lg font-extrabold leading-tight sm:text-xl ${valueClassName}`}
+            title={
+              typeof value === "string"
+                ? value
+                : undefined
+            }
           >
             {value}
           </p>
@@ -199,18 +167,102 @@ function SummaryMetric({
   );
 }
 
-function FormLabel({ children, required = false }) {
+function FunnelRow({
+  label,
+  value,
+  max,
+  helper,
+}) {
+  const safeValue = Number(value || 0);
+  const safeMax = Number(max || 0);
+
+  const percentage =
+    safeMax > 0
+      ? Math.round((safeValue / safeMax) * 100)
+      : 0;
+
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3.5">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-extrabold text-[#344054]">
+            {label}
+          </p>
+
+          {helper ? (
+            <p className="mt-0.5 text-[11px] font-semibold text-sibs-tertiary-5">
+              {helper}
+            </p>
+          ) : null}
+        </div>
+
+        <p className="shrink-0 text-sm font-extrabold text-sibs-primary-1">
+          {safeValue}
+        </p>
+      </div>
+
+      <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-white">
+        <div
+          className="h-full rounded-full bg-sibs-primary-1 transition-all duration-700 ease-out"
+          style={{
+            width: `${Math.min(
+              Math.max(percentage, 0),
+              100,
+            )}%`,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function InfoTile({
+  label,
+  value,
+  icon,
+}) {
+  return (
+    <div className="rounded-xl border border-[#E6ECF2] bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+          {icon}
+        </div>
+
+        <div className="min-w-0">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-sibs-tertiary-5">
+            {label}
+          </p>
+
+          <p className="mt-1 break-words text-sm font-extrabold text-[#344054]">
+            {value || "—"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormLabel({
+  children,
+  required = false,
+}) {
   return (
     <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
       {children}
+
       {required ? (
-        <span className="ml-1 text-red-500">*</span>
+        <span className="ml-1 text-red-500">
+          *
+        </span>
       ) : null}
     </label>
   );
 }
 
-function ModalMessage({ type = "error", children }) {
+function ModalMessage({
+  type = "error",
+  children,
+}) {
   if (!children) return null;
 
   const isSuccess = type === "success";
@@ -228,6 +280,68 @@ function ModalMessage({ type = "error", children }) {
   );
 }
 
+function ExpenseCard({
+  entry,
+  mutating,
+  onEdit,
+  onRemove,
+}) {
+  return (
+    <article className="rounded-xl border border-[#E1E8F0] bg-[#F8FAFC] p-4 transition hover:border-[#CCD8E5] hover:bg-white">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="break-words text-sm font-extrabold leading-6 text-[#101828]">
+            {entry.description || "—"}
+          </p>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sibs-tertiary-5">
+              <CalendarRange size={14} />
+              {formatDateRange(entry)}
+            </span>
+
+            <span
+              className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${getStatusClasses(
+                entry.status,
+              )}`}
+            >
+              {entry.status || "Unknown"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
+          <p className="text-base font-extrabold text-sibs-primary-1">
+            {formatCurrency(entry.amount)}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onEdit(entry)}
+              disabled={mutating || !entry?.id}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <PencilLine size={14} />
+              Edit
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onRemove(entry)}
+              disabled={mutating || !entry?.id}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-extrabold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              Remove
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function SourceDetailsModal({
   open,
   source,
@@ -240,13 +354,26 @@ export default function SourceDetailsModal({
     mutating,
   } = useSourcingAnalytics();
 
-  const [editingEntry, setEditingEntry] = useState(null);
-  const [removingEntry, setRemovingEntry] = useState(null);
-  const [editForm, setEditForm] = useState(EMPTY_EDIT_FORM);
-  const [actionError, setActionError] = useState("");
-  const [actionMessage, setActionMessage] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
+  const [editingEntry, setEditingEntry] =
+    useState(null);
+
+  const [removingEntry, setRemovingEntry] =
+    useState(null);
+
+  const [editForm, setEditForm] =
+    useState(EMPTY_EDIT_FORM);
+
+  const [actionError, setActionError] =
+    useState("");
+
+  const [actionMessage, setActionMessage] =
+    useState("");
+
+  const [isSaving, setIsSaving] =
+    useState(false);
+
+  const [isRemoving, setIsRemoving] =
+    useState(false);
 
   const sourceName = cleanText(source?.source);
 
@@ -260,14 +387,17 @@ export default function SourceDetailsModal({
           sourceName.toLowerCase(),
       ) || source
     );
-  }, [sourceRows, source, sourceName]);
+  }, [
+    sourceRows,
+    source,
+    sourceName,
+  ]);
 
   const costEntries = useMemo(() => {
     return Array.isArray(liveSource?.costEntries)
       ? liveSource.costEntries
       : [];
   }, [liveSource]);
-
 
   useEffect(() => {
     if (!open) {
@@ -280,19 +410,27 @@ export default function SourceDetailsModal({
   }, [open]);
 
   useEffect(() => {
-    if (!open || typeof document === "undefined") {
+    if (
+      !open ||
+      typeof document === "undefined"
+    ) {
       return undefined;
     }
 
-    const previousOverflow = document.body.style.overflow;
+    const previousOverflow =
+      document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow =
+        previousOverflow;
     };
   }, [open]);
 
-  if (!open || !liveSource) return null;
+  if (!open || !liveSource) {
+    return null;
+  }
 
   function clearMessages() {
     setActionError("");
@@ -303,20 +441,28 @@ export default function SourceDetailsModal({
     clearMessages();
 
     setEditingEntry(entry);
+
     setEditForm({
-      source: cleanText(entry?.source) || sourceName,
-      description: cleanText(entry?.description),
+      source:
+        cleanText(entry?.source) ||
+        sourceName,
+
+      description:
+        cleanText(entry?.description),
+
       amount:
         entry?.amount === null ||
         entry?.amount === undefined
           ? ""
           : String(entry.amount),
+
       dateFrom: normalizeDate(
         entry?.dateFrom ||
           entry?.date_from ||
           entry?.dateSpent ||
           entry?.date_spent,
       ),
+
       dateTo: normalizeDate(
         entry?.dateTo ||
           entry?.date_to ||
@@ -356,7 +502,10 @@ export default function SourceDetailsModal({
         .replace(/[₱\s]/g, ""),
     );
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
       return "Amount must be greater than zero.";
     }
 
@@ -368,7 +517,10 @@ export default function SourceDetailsModal({
       return "Date To is required.";
     }
 
-    if (editForm.dateTo < editForm.dateFrom) {
+    if (
+      editForm.dateTo <
+      editForm.dateFrom
+    ) {
       return "Date To cannot be earlier than Date From.";
     }
 
@@ -378,7 +530,8 @@ export default function SourceDetailsModal({
   async function handleSaveEdit(event) {
     event.preventDefault();
 
-    const validationError = validateEditForm();
+    const validationError =
+      validateEditForm();
 
     if (validationError) {
       setActionError(validationError);
@@ -397,20 +550,29 @@ export default function SourceDetailsModal({
     setActionMessage("");
 
     try {
-      await updateSourceCostEntry(editingEntry.id, {
-        source: sourceName,
-        description: cleanText(editForm.description),
-        amount: Number(
-          String(editForm.amount)
-            .replace(/,/g, "")
-            .replace(/[₱\s]/g, ""),
-        ),
-        dateFrom: editForm.dateFrom,
-        dateTo: editForm.dateTo,
-      });
+      await updateSourceCostEntry(
+        editingEntry.id,
+        {
+          source: sourceName,
+
+          description: cleanText(
+            editForm.description,
+          ),
+
+          amount: Number(
+            String(editForm.amount)
+              .replace(/,/g, "")
+              .replace(/[₱\s]/g, ""),
+          ),
+
+          dateFrom: editForm.dateFrom,
+          dateTo: editForm.dateTo,
+        },
+      );
 
       setEditingEntry(null);
       setEditForm(EMPTY_EDIT_FORM);
+
       setActionMessage(
         "Source cost entry updated successfully.",
       );
@@ -449,9 +611,12 @@ export default function SourceDetailsModal({
     setActionMessage("");
 
     try {
-      await deleteSourceCostEntry(removingEntry.id);
+      await deleteSourceCostEntry(
+        removingEntry.id,
+      );
 
       setRemovingEntry(null);
+
       setActionMessage(
         "Source cost entry removed successfully.",
       );
@@ -465,342 +630,275 @@ export default function SourceDetailsModal({
     }
   }
 
-  const displayCostPerHire = formatCostPerHire(
-    liveSource.costPerHire,
-    liveSource.hired,
-  );
+  const displayCostPerHire =
+    formatCostPerHire(
+      liveSource.costPerHire,
+      liveSource.hired,
+    );
+
+  const conversionDisplay =
+    `${Number(
+      liveSource.conversionRate || 0,
+    ).toFixed(1)}%`;
 
   return (
     <>
       <div
-        className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+        className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-3 py-3 backdrop-blur-[1px] sm:px-5 sm:py-5"
         onClick={onClose}
       >
-        <div
-          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-          onClick={(event) => event.stopPropagation()}
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="source-performance-title"
+          onClick={(event) =>
+            event.stopPropagation()
+          }
+          className="flex max-h-[94dvh] w-full max-w-[1280px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
-          <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6 sm:py-5">
+          <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
             <div className="min-w-0">
-              <h2 className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
+              <h2
+                id="source-performance-title"
+                className="text-lg font-extrabold text-sibs-primary-1 sm:text-xl"
+              >
                 Source Performance Details
               </h2>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                {liveSource.source || "—"}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <p className="text-sm font-semibold text-sibs-tertiary-5">
+                  {liveSource.source || "—"}
+                </p>
+
+                <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+                  {costEntries.length}{" "}
+                  {costEntries.length === 1
+                    ? "Cost Entry"
+                    : "Cost Entries"}
+                </span>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={onClose}
               className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Close modal"
+              aria-label="Close source performance modal"
             >
               <X size={20} />
             </button>
-          </div>
+          </header>
 
-          <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-6">
-            <div className="mb-5 space-y-3">
-              <ModalMessage type="success">
-                {actionMessage}
-              </ModalMessage>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F6F8FB] p-4 sm:p-5">
+            <div className="mx-auto max-w-[1220px]">
+              <div className="mb-4 space-y-3">
+                <ModalMessage type="success">
+                  {actionMessage}
+                </ModalMessage>
 
-              {!editingEntry && !removingEntry ? (
-                <ModalMessage>{actionError}</ModalMessage>
-              ) : null}
-            </div>
+                {!editingEntry &&
+                !removingEntry ? (
+                  <ModalMessage>
+                    {actionError}
+                  </ModalMessage>
+                ) : null}
+              </div>
 
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-              <div className="space-y-5">
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                        Sourcing Platform
-                      </p>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+                <CompactMetric
+                  label="Applicants"
+                  value={Number(
+                    liveSource.volume || 0,
+                  )}
+                  icon={<UsersRound size={19} />}
+                />
 
-                      <h3 className="mt-1 text-xl font-extrabold text-[#101828]">
-                        {liveSource.source || "—"}
-                      </h3>
+                <CompactMetric
+                  label="Hired"
+                  value={Number(
+                    liveSource.hired || 0,
+                  )}
+                  valueClassName="text-emerald-600"
+                  icon={
+                    <CheckCircle2 size={19} />
+                  }
+                />
 
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                          Total Cost:{" "}
-                          {formatCurrency(
-                            liveSource.sourceCost,
-                          )}
-                        </span>
+                <CompactMetric
+                  label="Conversion"
+                  value={conversionDisplay}
+                  icon={<Activity size={19} />}
+                />
 
-                        <span className="inline-flex rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                          {costEntries.length} Cost Entries
-                        </span>
-                      </div>
-                    </div>
+                <CompactMetric
+                  label="Total Source Cost"
+                  value={formatCurrency(
+                    liveSource.sourceCost,
+                  )}
+                  icon={<ReceiptText size={19} />}
+                />
 
-                    <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4 text-center">
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-sibs-primary-1/70">
-                        Cost per Hire
-                      </p>
-
-                      <p className="mt-1 text-3xl font-extrabold text-sibs-primary-1">
-                        {displayCostPerHire}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <SummaryMetric
-                    label="Applicants"
-                    value={liveSource.volume || 0}
-                    icon={<UsersRound size={20} />}
-                  />
-
-                  <SummaryMetric
-                    label="Hired"
-                    value={liveSource.hired || 0}
-                    valueClassName="text-emerald-600"
-                    icon={<CheckCircle2 size={20} />}
-                  />
-
-                  <SummaryMetric
-                    label="Conversion"
-                    value={`${Number(
-                      liveSource.conversionRate || 0,
-                    ).toFixed(1)}%`}
-                    icon={<Activity size={20} />}
-                  />
-
-                  <SummaryMetric
-                    label="Source Cost"
-                    value={formatCurrency(
-                      liveSource.sourceCost,
-                    )}
-                    icon={<ReceiptText size={20} />}
+                <div className="col-span-2 md:col-span-1">
+                  <CompactMetric
+                    label="Cost per Hire"
+                    value={displayCostPerHire}
+                    valueClassName="text-sibs-primary-1"
+                    icon={<Target size={19} />}
                   />
                 </div>
+              </div>
 
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <h3 className="mb-5 text-sm font-extrabold text-[#101828]">
-                    Source Funnel
-                  </h3>
-
-                  <div className="space-y-3">
-                    <FunnelRow
-                      label="Candidate Volume"
-                      value={liveSource.volume}
-                      max={liveSource.volume}
-                    />
-
-                    <FunnelRow
-                      label="Screened"
-                      value={liveSource.screened}
-                      max={liveSource.volume}
-                    />
-
-                    <FunnelRow
-                      label="Interviewed"
-                      value={liveSource.interviewed}
-                      max={liveSource.volume}
-                    />
-
-                    <FunnelRow
-                      label="Offered"
-                      value={liveSource.offered}
-                      max={liveSource.volume}
-                    />
-
-                    <FunnelRow
-                      label="Hired"
-                      value={liveSource.hired}
-                      max={liveSource.volume}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
+              <div className="mt-4 grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+                <section className="rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm sm:p-5">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-sm font-extrabold text-[#101828]">
-                        Source Cost Entries
+                        Source Funnel
                       </h3>
 
                       <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                        Edit or remove expenses recorded for this
+                        Candidate progress for this
                         sourcing option.
                       </p>
                     </div>
 
-                    <CalendarRange
-                      size={20}
-                      className="shrink-0 text-sibs-primary-1"
-                    />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                      <Activity size={19} />
+                    </div>
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    {costEntries.length > 0 ? (
-                      costEntries.map((entry) => (
-                        <div
-                          key={
-                            entry.id ||
-                            `${entry.description}-${entry.dateFrom}-${entry.amount}`
-                          }
-                          className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"
-                        >
-                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <p className="break-words text-sm font-extrabold text-[#101828]">
-                                {entry.description || "—"}
-                              </p>
-
-                              <div className="mt-2 flex flex-wrap items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-sibs-tertiary-5">
-                                  <CalendarRange size={14} />
-                                  {formatDateRange(entry)}
-                                </span>
-
-                                <span
-                                  className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${getStatusClasses(
-                                    entry.status,
-                                  )}`}
-                                >
-                                  {entry.status || "Unknown"}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-                              <p className="text-sm font-extrabold text-sibs-primary-1">
-                                {formatCurrency(entry.amount)}
-                              </p>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openEditModal(entry)
-                                  }
-                                  disabled={
-                                    mutating ||
-                                    !entry?.id
-                                  }
-                                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#D7DEE8] bg-white px-3 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <PencilLine size={14} />
-                                  Edit
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openRemoveModal(entry)
-                                  }
-                                  disabled={
-                                    mutating ||
-                                    !entry?.id
-                                  }
-                                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 text-xs font-extrabold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                  <Trash2 size={14} />
-                                  Remove
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-8 text-center text-sm font-bold text-gray-500">
-                        No cost entries tagged to this source yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                  <h3 className="text-sm font-extrabold text-[#101828]">
-                    Source Summary
-                  </h3>
-
-                  <div className="mt-4 grid grid-cols-1 gap-3">
-                    <InfoBox
-                      label="Source"
-                      value={liveSource.source}
-                    />
-                    <InfoBox
-                      label="Total Source Cost"
-                      value={formatCurrency(
-                        liveSource.sourceCost,
-                      )}
-                    />
-                    <InfoBox
-                      label="Cost per Hire"
-                      value={displayCostPerHire}
-                    />
-                    <InfoBox
-                      label="Applicants"
+                    <FunnelRow
+                      label="Candidate Volume"
                       value={liveSource.volume}
+                      max={liveSource.volume}
+                      helper="All public applicants"
                     />
-                    <InfoBox
+
+                    <FunnelRow
                       label="Screened"
                       value={liveSource.screened}
+                      max={liveSource.volume}
                     />
-                    <InfoBox
+
+                    <FunnelRow
                       label="Interviewed"
-                      value={liveSource.interviewed}
+                      value={
+                        liveSource.interviewed
+                      }
+                      max={liveSource.volume}
                     />
-                    <InfoBox
+
+                    <FunnelRow
                       label="Offered"
                       value={liveSource.offered}
+                      max={liveSource.volume}
                     />
-                    <InfoBox
+
+                    <FunnelRow
                       label="Hired"
                       value={liveSource.hired}
+                      max={liveSource.volume}
+                      helper="Currently Hired / Active"
                     />
-                    <InfoBox
-                      label="Conversion"
-                      value={`${Number(
-                        liveSource.conversionRate || 0,
-                      ).toFixed(1)}%`}
-                    />
-                    <InfoBox
-                      label="Cost Entries"
-                      value={costEntries.length}
-                    />
-                    <InfoBox
+                  </div>
+                </section>
+
+                <div className="min-w-0 space-y-4">
+                  <section className="flex min-h-[300px] flex-col rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm sm:p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-extrabold text-[#101828]">
+                          Source Cost Entries
+                        </h3>
+
+                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                          Edit or remove recorded
+                          expenses.
+                        </p>
+                      </div>
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                        <CalendarRange size={19} />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 max-h-[340px] min-h-0 space-y-3 overflow-y-auto pr-1 sibs-scrollbar xl:flex-1">
+                      {costEntries.length > 0 ? (
+                        costEntries.map((entry) => (
+                          <ExpenseCard
+                            key={
+                              entry.id ||
+                              `${entry.description}-${entry.dateFrom}-${entry.amount}`
+                            }
+                            entry={entry}
+                            mutating={mutating}
+                            onEdit={openEditModal}
+                            onRemove={
+                              openRemoveModal
+                            }
+                          />
+                        ))
+                      ) : (
+                        <div className="flex min-h-[180px] items-center justify-center rounded-xl border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-5 text-center">
+                          <div>
+                            <ReceiptText
+                              size={24}
+                              className="mx-auto text-sibs-tertiary-5"
+                            />
+
+                            <p className="mt-3 text-sm font-extrabold text-[#344054]">
+                              No cost entries yet
+                            </p>
+
+                            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                              Add a source cost from
+                              the Sourcing Analytics
+                              page.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <InfoTile
                       label="Latest Applicant"
-                      value={liveSource.latestCandidate}
+                      value={
+                        liveSource.latestCandidate ||
+                        "—"
+                      }
+                      icon={<UserRound size={18} />}
                     />
-                    <InfoBox
+
+                    <InfoTile
                       label="Last Activity"
                       value={formatDate(
                         liveSource.lastActivity,
                       )}
+                      icon={<Clock3 size={18} />}
                     />
                   </div>
-                </div>
 
-                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sibs-primary-1">
-                      <Target size={18} />
-                    </div>
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-sibs-primary-1">
+                        <Target size={18} />
+                      </div>
 
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-sibs-primary-1">
-                        Cost per Hire Rule
-                      </h3>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-extrabold text-sibs-primary-1">
+                          Cost per Hire Rule
+                        </h3>
 
-                      <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                        Cost per Hire is calculated by dividing the
-                        total source cost by the number of candidates
-                        currently tagged as Hired / Active for the
-                        same source.
-                      </p>
+                        <p className="mt-1.5 text-xs font-semibold leading-5 text-sibs-primary-1/80">
+                          Total source cost divided by
+                          candidates currently tagged
+                          as Hired / Active for the same
+                          source.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -808,33 +906,33 @@ export default function SourceDetailsModal({
             </div>
           </div>
 
-          <div className="border-t border-gray-100 bg-white px-5 py-4 sm:px-6">
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+          <footer className="flex shrink-0 items-center justify-end border-t border-[#E6ECF2] bg-white px-5 py-3.5 sm:px-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90"
+            >
+              Close
+            </button>
+          </footer>
+        </section>
       </div>
 
       {editingEntry ? (
         <div
-          className="fixed inset-0 z-[10000] flex h-dvh items-end justify-center bg-black/50 px-3 pb-3 pt-8 sm:items-center sm:px-4 sm:py-6"
+          className="fixed inset-0 z-[10000] flex h-dvh items-end justify-center bg-black/55 px-3 pb-3 pt-8 backdrop-blur-[1px] sm:items-center sm:px-4 sm:py-6"
           onClick={closeEditModal}
         >
           <form
             onSubmit={handleSaveEdit}
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             className="flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
           >
             <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
               <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-sibs-tertiary-5">
                   Source Cost Entry
                 </p>
 
@@ -855,22 +953,31 @@ export default function SourceDetailsModal({
             </div>
 
             <div className="flex-1 space-y-5 overflow-y-auto bg-[#F8FAFC] px-5 py-5">
-              <ModalMessage>{actionError}</ModalMessage>
+              <ModalMessage>
+                {actionError}
+              </ModalMessage>
 
               <div>
-                <FormLabel>Sourcing Option</FormLabel>
+                <FormLabel>
+                  Sourcing Option
+                </FormLabel>
 
                 <div className="flex min-h-11 w-full items-center rounded-xl border border-[#D7DEE8] bg-[#F3F6F9] px-3 text-sm font-semibold text-[#344054]">
-                  {editForm.source || sourceName || "—"}
+                  {editForm.source ||
+                    sourceName ||
+                    "—"}
                 </div>
 
                 <p className="mt-1.5 text-xs font-medium text-sibs-tertiary-5">
-                  The sourcing option is fixed for this expense and cannot be changed.
+                  The sourcing option is fixed for
+                  this expense and cannot be changed.
                 </p>
               </div>
 
               <div>
-                <FormLabel required>Description</FormLabel>
+                <FormLabel required>
+                  Description
+                </FormLabel>
 
                 <textarea
                   rows={4}
@@ -882,15 +989,17 @@ export default function SourceDetailsModal({
                     )
                   }
                   disabled={isSaving || mutating}
-                  className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 py-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  className="w-full resize-none rounded-xl border border-[#D7DEE8] bg-white px-3 py-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-100"
                   placeholder="Enter expense description"
                 />
               </div>
 
               <div>
-                <FormLabel required>Amount</FormLabel>
+                <FormLabel required>
+                  Amount
+                </FormLabel>
 
-                <div className="flex h-11 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white focus-within:border-sibs-primary-1">
+                <div className="flex h-11 overflow-hidden rounded-xl border border-[#D7DEE8] bg-white focus-within:border-sibs-primary-1 focus-within:ring-4 focus-within:ring-sibs-primary-1/10">
                   <span className="flex items-center border-r border-[#E6ECF2] bg-[#F8FAFC] px-3 text-sm font-extrabold text-sibs-primary-1">
                     ₱
                   </span>
@@ -915,7 +1024,9 @@ export default function SourceDetailsModal({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <FormLabel required>Date From</FormLabel>
+                  <FormLabel required>
+                    Date From
+                  </FormLabel>
 
                   <input
                     type="date"
@@ -926,26 +1037,35 @@ export default function SourceDetailsModal({
 
                       setEditForm((current) => ({
                         ...current,
-                        dateFrom: nextDateFrom,
+
+                        dateFrom:
+                          nextDateFrom,
+
                         dateTo:
                           current.dateTo &&
-                          current.dateTo < nextDateFrom
+                          current.dateTo <
+                            nextDateFrom
                             ? nextDateFrom
                             : current.dateTo,
                       }));
                     }}
                     disabled={isSaving || mutating}
-                    className="h-11 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    className="h-11 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-100"
                   />
                 </div>
 
                 <div>
-                  <FormLabel required>Date To</FormLabel>
+                  <FormLabel required>
+                    Date To
+                  </FormLabel>
 
                   <input
                     type="date"
                     value={editForm.dateTo}
-                    min={editForm.dateFrom || undefined}
+                    min={
+                      editForm.dateFrom ||
+                      undefined
+                    }
                     onChange={(event) =>
                       updateEditField(
                         "dateTo",
@@ -953,7 +1073,7 @@ export default function SourceDetailsModal({
                       )
                     }
                     disabled={isSaving || mutating}
-                    className="h-11 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-gray-100"
+                    className="h-11 w-full rounded-xl border border-[#D7DEE8] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-100"
                   />
                 </div>
               </div>
@@ -996,14 +1116,16 @@ export default function SourceDetailsModal({
 
       {removingEntry ? (
         <div
-          className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/50 px-4 py-6"
+          className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/55 px-4 py-6 backdrop-blur-[1px]"
           onClick={closeRemoveModal}
         >
           <div
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="remove-cost-entry-title"
-            onClick={(event) => event.stopPropagation()}
+            onClick={(event) =>
+              event.stopPropagation()
+            }
             className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
           >
             <div className="px-5 pb-4 pt-5">
@@ -1021,29 +1143,37 @@ export default function SourceDetailsModal({
                   </h3>
 
                   <p className="mt-2 text-sm font-medium leading-6 text-sibs-tertiary-5">
-                    This expense will be removed from the
-                    analytics totals. The database record will
-                    remain available for audit history.
+                    This expense will be removed
+                    from the analytics totals. The
+                    database record remains for
+                    audit history.
                   </p>
                 </div>
               </div>
 
               <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
-                <p className="text-sm font-extrabold text-[#101828]">
-                  {removingEntry.description || "—"}
+                <p className="break-words text-sm font-extrabold text-[#101828]">
+                  {removingEntry.description ||
+                    "—"}
                 </p>
 
                 <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                  {formatDateRange(removingEntry)}
+                  {formatDateRange(
+                    removingEntry,
+                  )}
                 </p>
 
-                <p className="mt-2 text-sm font-extrabold text-sibs-primary-1">
-                  {formatCurrency(removingEntry.amount)}
+                <p className="mt-2 text-base font-extrabold text-sibs-primary-1">
+                  {formatCurrency(
+                    removingEntry.amount,
+                  )}
                 </p>
               </div>
 
               <div className="mt-4">
-                <ModalMessage>{actionError}</ModalMessage>
+                <ModalMessage>
+                  {actionError}
+                </ModalMessage>
               </div>
             </div>
 
@@ -1051,7 +1181,9 @@ export default function SourceDetailsModal({
               <button
                 type="button"
                 onClick={closeRemoveModal}
-                disabled={isRemoving || mutating}
+                disabled={
+                  isRemoving || mutating
+                }
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
@@ -1060,7 +1192,9 @@ export default function SourceDetailsModal({
               <button
                 type="button"
                 onClick={handleRemoveEntry}
-                disabled={isRemoving || mutating}
+                disabled={
+                  isRemoving || mutating
+                }
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-extrabold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isRemoving || mutating ? (
