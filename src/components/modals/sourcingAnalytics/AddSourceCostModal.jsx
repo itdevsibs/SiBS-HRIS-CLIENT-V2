@@ -17,30 +17,17 @@ import {
 } from "lucide-react";
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 
-const sourcingOptions = [
-  "Employee Referral Program",
-  "Print Ads (Billboards, Brochures, Flyers, Posters)",
-  "Social Media Pages",
-  "Social Media Ads",
-  "Online Job Portals",
-  "Walk In",
-  "Word of Mouth",
-  "Institutional Partnership",
-  "External Referral Listings",
-  "Job Fairs",
-  "Employee Retention Program",
-  "Others",
-];
 
 const initialForm = {
   source: "",
   description: "",
   amount: "",
-  dateSpent: "",
+  dateFrom: "",
+  dateTo: "",
 };
 
 function getTodayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return toDateInputValue(new Date());
 }
 
 function FieldLabel({ children, required = false }) {
@@ -496,21 +483,92 @@ function DateDropdown({
 }
 
 export default function AddSourceCostModal({ open, onClose, onStatus }) {
-  const { createSourceCostEntry, addSourceCost, fetchList } =
-    useSourcingAnalytics();
+  const {
+    createSourceCostEntry,
+    addSourceCost,
+    sourcingOptions = [],
+    fetchSourcingOptions,
+  } = useSourcingAnalytics();
+
+  const sourceOptionValues = useMemo(() => {
+    return sourcingOptions
+      .map((option) => {
+        if (typeof option === "string") {
+          return option.trim();
+        }
+
+        return String(
+          option?.value ||
+            option?.optionValue ||
+            option?.option_value ||
+            option?.label ||
+            option?.optionLabel ||
+            option?.option_label ||
+            "",
+        ).trim();
+      })
+      .filter(Boolean);
+  }, [sourcingOptions]);
 
   const [form, setForm] = useState({
     ...initialForm,
-    dateSpent: getTodayISO(),
+    dateFrom: getTodayISO(),
+    dateTo: getTodayISO(),
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   useEffect(() => {
     if (open) {
       handleReset();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (
+      !open ||
+      sourceOptionValues.length > 0 ||
+      !fetchSourcingOptions
+    ) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadOptions() {
+      setIsLoadingOptions(true);
+
+      try {
+        await fetchSourcingOptions();
+      } catch (error) {
+        if (!active) return;
+
+        onStatus?.({
+          type: "error",
+          title: "Unable to Load Options",
+          message:
+            error?.message ||
+            "Unable to load sourcing options from Talent Pool settings.",
+        });
+      } finally {
+        if (active) {
+          setIsLoadingOptions(false);
+        }
+      }
+    }
+
+    loadOptions();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    open,
+    sourceOptionValues.length,
+    fetchSourcingOptions,
+    onStatus,
+  ]);
 
   if (!open) return null;
 
@@ -522,9 +580,12 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
   }
 
   function handleReset() {
+    const today = getTodayISO();
+
     setForm({
       ...initialForm,
-      dateSpent: getTodayISO(),
+      dateFrom: today,
+      dateTo: today,
     });
   }
 
@@ -558,11 +619,29 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
       return;
     }
 
-    if (!form.dateSpent) {
+    if (!form.dateFrom) {
       onStatus?.({
         type: "error",
         title: "Required",
-        message: "Date spent is required.",
+        message: "Date From is required.",
+      });
+      return;
+    }
+
+    if (!form.dateTo) {
+      onStatus?.({
+        type: "error",
+        title: "Required",
+        message: "Date To is required.",
+      });
+      return;
+    }
+
+    if (form.dateTo < form.dateFrom) {
+      onStatus?.({
+        type: "error",
+        title: "Invalid Date Range",
+        message: "Date To cannot be earlier than Date From.",
       });
       return;
     }
@@ -571,7 +650,8 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
       source: form.source,
       description: form.description.trim(),
       amount: Number(form.amount || 0),
-      dateSpent: form.dateSpent,
+      dateFrom: form.dateFrom,
+      dateTo: form.dateTo,
     };
 
     setIsSubmitting(true);
@@ -586,7 +666,6 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
       }
 
       await submitter(payload);
-      await fetchList?.();
 
       onStatus?.({
         type: "success",
@@ -630,8 +709,8 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
               </h2>
 
               <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                Tag a cost entry to one sourcing option. This will be used for
-                cost per hire calculation.
+                Tag a cost entry to one sourcing option and define the period
+                covered by the expense.
               </p>
             </div>
 
@@ -665,10 +744,14 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
 
                 <CustomSelect
                   value={form.source}
-                  options={sourcingOptions}
+                  options={sourceOptionValues}
                   onChange={(value) => updateField("source", value)}
-                  placeholder="Select sourcing option"
-                  disabled={isSubmitting}
+                  placeholder={
+                    isLoadingOptions
+                      ? "Loading sourcing options..."
+                      : "Select sourcing option"
+                  }
+                  disabled={isSubmitting || isLoadingOptions}
                 />
               </div>
 
@@ -699,15 +782,38 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 />
               </div>
 
-              <div>
-                <FieldLabel required>Date Spent</FieldLabel>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                  <FieldLabel required>Date From</FieldLabel>
 
-                <DateDropdown
-                  value={form.dateSpent}
-                  onChange={(value) => updateField("dateSpent", value)}
-                  disabled={isSubmitting}
-                  placeholder="Select date spent"
-                />
+                  <DateDropdown
+                    value={form.dateFrom}
+                    onChange={(value) => {
+                      updateField("dateFrom", value);
+
+                      if (
+                        value &&
+                        form.dateTo &&
+                        form.dateTo < value
+                      ) {
+                        updateField("dateTo", value);
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    placeholder="Select date from"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel required>Date To</FieldLabel>
+
+                  <DateDropdown
+                    value={form.dateTo}
+                    onChange={(value) => updateField("dateTo", value)}
+                    disabled={isSubmitting}
+                    placeholder="Select date to"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -719,7 +825,8 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
 
             <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
               Cost per Hire = Total Source Cost / Hires from candidates who
-              selected that source.
+              selected that source. The entry becomes completed automatically
+              after Date To.
             </p>
           </div>
         </div>

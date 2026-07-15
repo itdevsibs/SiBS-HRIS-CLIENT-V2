@@ -2,22 +2,29 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BadgeCheck,
   BriefcaseBusiness,
   Check,
   ChevronDown,
+  ChevronRight,
   Eye,
   FileImage,
   FileSpreadsheet,
   FileText,
   GraduationCap,
   Loader2,
+  Mail,
+  MapPin,
   Network,
-  Pencil,
   Phone,
   RefreshCcw,
   ShieldCheck,
+  Sparkles,
+  StickyNote,
   UploadCloud,
   UserRound,
+  UserRoundPen,
+  WalletCards,
   X,
 } from "lucide-react";
 
@@ -106,6 +113,49 @@ function cleanText(value) {
 
 function normalizeLower(value) {
   return cleanText(value).toLowerCase();
+}
+
+function hasCandidateValue(value) {
+  if (Array.isArray(value)) {
+    return value.some((item) => hasCandidateValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).some((item) => hasCandidateValue(item));
+  }
+
+  if (value === null || value === undefined) return false;
+
+  const normalized = cleanText(value).toLowerCase();
+
+  return !["", "—", "-", "n/a", "na", "none", "null", "undefined"].includes(
+    normalized,
+  );
+}
+
+function firstCandidateValue(...values) {
+  return values.find((value) => hasCandidateValue(value)) ?? "";
+}
+
+function normalizeCandidateRecordList(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [parsed];
+    } catch {
+      return [trimmed];
+    }
+  }
+
+  if (value && typeof value === "object") return [value];
+
+  return [];
 }
 
 function getApiErrorMessage(error, fallback = "Request failed.") {
@@ -332,6 +382,224 @@ function AnimatedProfileTabPanel({ children }) {
     <div className="candidate-profile-tab-panel-in">
       {children}
     </div>
+  );
+}
+
+function CandidateProfileSideNav({
+  tabs = [],
+  activeTab = "",
+  onTabChange,
+}) {
+  const activeParent = String(activeTab || "").split(".")[0];
+  const [openParent, setOpenParent] = useState(activeParent || "personal");
+
+  useEffect(() => {
+    if (activeParent) setOpenParent(activeParent);
+  }, [activeParent]);
+
+  function isParentActive(tab) {
+    return (
+      activeTab === tab.key ||
+      String(activeTab || "").startsWith(`${tab.key}.`)
+    );
+  }
+
+  function handleParentClick(tab) {
+    const hasChildren = Array.isArray(tab.children) && tab.children.length > 0;
+
+    if (!hasChildren) {
+      setOpenParent("");
+      onTabChange?.(tab.key);
+      return;
+    }
+
+    const isActive = isParentActive(tab);
+    setOpenParent((previous) =>
+      previous === tab.key && isActive ? "" : tab.key,
+    );
+
+    if (!isActive) {
+      onTabChange?.(tab.children[0].key);
+    }
+  }
+
+  const activeParentTab = tabs.find((tab) => isParentActive(tab));
+  const activeChildren = Array.isArray(activeParentTab?.children)
+    ? activeParentTab.children
+    : [];
+
+  return (
+    <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
+      {/* Mobile and tablet navigation */}
+      <div className="lg:hidden">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon || FileText;
+            const parentActive = isParentActive(tab);
+            const hasChildren =
+              Array.isArray(tab.children) && tab.children.length > 0;
+
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => handleParentClick(tab)}
+                aria-current={parentActive ? "page" : undefined}
+                aria-expanded={hasChildren ? parentActive : undefined}
+                className={`group inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] ${
+                  parentActive
+                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    : "bg-white text-sibs-primary-1 hover:-translate-y-0.5 hover:bg-[#F2F6FA] hover:shadow-sm"
+                }`}
+              >
+                {hasChildren && (
+                  <ChevronRight
+                    size={14}
+                    className={`shrink-0 transition-transform duration-200 ${
+                      parentActive ? "rotate-90" : ""
+                    }`}
+                  />
+                )}
+
+                <span
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+                    parentActive
+                      ? "bg-white/15 text-white"
+                      : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
+                  }`}
+                >
+                  <Icon size={16} />
+                </span>
+
+                <span className="truncate">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {activeChildren.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 rounded-xl bg-[#F8FAFC] p-2">
+            {activeChildren.map((child) => {
+              const childActive = activeTab === child.key;
+
+              return (
+                <button
+                  key={child.key}
+                  type="button"
+                  onClick={() => onTabChange?.(child.key)}
+                  aria-current={childActive ? "page" : undefined}
+                  className={`inline-flex h-9 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-bold transition-all duration-200 active:scale-[0.98] ${
+                    childActive
+                      ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
+                      : "bg-white text-sibs-primary-1/80 hover:bg-[#EEF5FB]"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                      childActive
+                        ? "bg-sibs-primary-1"
+                        : "bg-sibs-primary-1/40"
+                    }`}
+                  />
+                  <span className="truncate">{child.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop navigation */}
+      <div className="hidden flex-col gap-2 lg:flex">
+        {tabs.map((tab) => {
+          const Icon = tab.icon || FileText;
+          const hasChildren =
+            Array.isArray(tab.children) && tab.children.length > 0;
+          const parentActive = isParentActive(tab);
+          const isOpen = openParent === tab.key;
+
+          return (
+            <div key={tab.key} className="min-w-0">
+              <button
+                type="button"
+                onClick={() => handleParentClick(tab)}
+                aria-current={parentActive ? "page" : undefined}
+                aria-expanded={hasChildren ? isOpen : undefined}
+                className={`group flex w-full min-w-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] ${
+                  parentActive
+                    ? "bg-sibs-primary-1 text-white shadow-sm lg:translate-x-1"
+                    : "bg-white text-sibs-primary-1 hover:translate-x-1 hover:bg-[#F2F6FA] hover:shadow-sm"
+                }`}
+              >
+                {hasChildren ? (
+                  <ChevronRight
+                    size={14}
+                    className={`shrink-0 transition-transform duration-200 ${
+                      isOpen ? "rotate-90" : ""
+                    }`}
+                  />
+                ) : (
+                  <span className="w-[14px] shrink-0" />
+                )}
+
+                <span
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
+                    parentActive
+                      ? "bg-white/15 text-white"
+                      : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
+                  }`}
+                >
+                  <Icon size={16} />
+                </span>
+
+                <span className="truncate">{tab.label}</span>
+              </button>
+
+              {hasChildren && (
+                <div
+                  className={`grid transition-all duration-200 ease-out ${
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="mt-1 space-y-1 pl-9 pr-1">
+                      {tab.children.map((child) => {
+                        const childActive = activeTab === child.key;
+
+                        return (
+                          <button
+                            key={child.key}
+                            type="button"
+                            onClick={() => onTabChange?.(child.key)}
+                            aria-current={childActive ? "page" : undefined}
+                            className={`group/sub flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-200 ${
+                              childActive
+                                ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
+                                : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
+                            }`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                childActive
+                                  ? "bg-sibs-primary-1"
+                                  : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
+                              }`}
+                            />
+                            <span className="truncate">{child.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </aside>
   );
 }
 
@@ -1941,7 +2209,6 @@ export default function CandidateProfileModal() {
     selectedCandidate,
     setSelectedCandidate,
     currentTaOwner,
-    openEditCandidate,
     openStatus,
     openMoveToPipeline,
     refreshTalentPool,
@@ -1950,7 +2217,7 @@ export default function CandidateProfileModal() {
 
   const [showFullApplicationHistory, setShowFullApplicationHistory] =
     useState(false);
-  const [activeTab, setActiveTab] = useState("personal");
+  const [activeTab, setActiveTab] = useState("personal.basic");
   const [tabAnimationKey, setTabAnimationKey] = useState(0);
 
   const [statusModal, setStatusModal] = useState({
@@ -1985,7 +2252,7 @@ export default function CandidateProfileModal() {
   );
 
   useEffect(() => {
-    setActiveTab("personal");
+    setActiveTab("personal.basic");
     setShowFullApplicationHistory(false);
     setSelectedNhoFile(null);
     setShowNhoUploadModal(false);
@@ -2297,59 +2564,87 @@ export default function CandidateProfileModal() {
 
   const profileTabs = [
     {
-      id: "personal",
-      label: "Personal Information",
+      key: "personal",
+      label: "Personal",
       icon: UserRound,
+      children: [
+        { key: "personal.basic", label: "Basic Info" },
+        { key: "personal.contact", label: "Contact" },
+        { key: "personal.address", label: "Address" },
+        { key: "personal.ids", label: "Government IDs" },
+      ],
     },
     {
-      id: "applicationSource",
-      label: "Application Source",
-      icon: BriefcaseBusiness,
+      key: "family",
+      label: "Family",
+      icon: UserRoundPen,
+      children: [
+        { key: "family.spouse", label: "Spouse" },
+        { key: "family.parents", label: "Parents" },
+        { key: "family.children", label: "Children" },
+        { key: "family.emergency", label: "Emergency Contact" },
+      ],
     },
     {
-      id: "pipeline",
-      label: "Pipeline Link",
-      icon: Network,
-    },
-    {
-      id: "qualifications",
-      label: "Qualifications",
+      key: "education",
+      label: "Education",
       icon: GraduationCap,
     },
     {
-      id: "workExperience",
-      label: "Work Experience",
+      key: "eligibility",
+      label: "Eligibility",
+      icon: BadgeCheck,
+    },
+    {
+      key: "experience",
+      label: "Experience",
       icon: BriefcaseBusiness,
     },
     {
-      id: "readiness",
-      label: "Readiness",
-      icon: ShieldCheck,
+      key: "training",
+      label: "Training",
+      icon: GraduationCap,
     },
     {
-      id: "references",
+      key: "skills",
+      label: "Skills",
+      icon: Sparkles,
+      children: [
+        { key: "skills.skills", label: "Skills" },
+        { key: "skills.recognitions", label: "Recognition" },
+        { key: "skills.organizations", label: "Organizations" },
+      ],
+    },
+    {
+      key: "references",
       label: "References",
       icon: Phone,
     },
     {
-      id: "files",
-      label: "Files",
-      icon: FileText,
-    },
-    {
-      id: "preEmploymentFiles",
-      label: "Pre-Employment Files",
-      icon: FileText,
-    },
-    {
-      id: "applicationHistory",
-      label: "Application History",
+      key: "application",
+      label: "Application",
       icon: Network,
+      children: [
+        { key: "application.overview", label: "Overview" },
+        { key: "application.pipeline", label: "Pipeline" },
+        { key: "application.assessment", label: "Assessment" },
+        { key: "application.readiness", label: "Readiness" },
+        { key: "application.history", label: "Status History" },
+      ],
     },
     {
-      id: "remarks",
-      label: "General Remarks",
+      key: "documents",
+      label: "Documents",
       icon: FileText,
+      children: [
+        { key: "documents.uploaded", label: "Uploaded Files" },
+        { key: "documents.preEmployment", label: "Pre-Employment Files" },
+      ],
+    },
+    {
+      key: "notes",
+      label: "Notes",
+      icon: StickyNote,
     },
   ];
 
@@ -2362,19 +2657,6 @@ export default function CandidateProfileModal() {
 
   function handleCloseCandidateProfile() {
     setSelectedCandidate(null);
-  }
-
-  function handleEditCandidate() {
-    if (typeof openEditCandidate !== "function") {
-      showStatusModal({
-        type: "error",
-        title: "Action Unavailable",
-        message: "Edit Profile action is not available right now.",
-      });
-      return;
-    }
-
-    openEditCandidate(selectedCandidate);
   }
 
   function handleUpdateCandidateStatus() {
@@ -2780,108 +3062,493 @@ export default function CandidateProfileModal() {
     });
   }
 
-  function renderPersonalInformation() {
-  return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <SectionTitle
-        icon={UserRound}
-        title="Personal Information"
-        description="Candidate master profile and contact information."
-      />
+  function renderPersonalBasic() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={UserRound}
+          title="Personal Information"
+          description="Basic identity and personal details."
+        />
 
-      <div className="space-y-3">
+        <div className="space-y-3">
+          <ProfileGrid cols="md:grid-cols-2">
+            <ProfileDetail
+              label="Candidate ID"
+              value={getCandidatePublicId(activeCandidate)}
+            />
+            <ProfileDetail
+              label="Candidate Status"
+              value={activeCandidate.status}
+            />
+          </ProfileGrid>
+
+          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+            <ProfileDetail label="First Name" value={activeCandidate.firstName} />
+            <ProfileDetail
+              label="Middle Name"
+              value={activeCandidate.middleName}
+            />
+            <ProfileDetail label="Last Name" value={activeCandidate.lastName} />
+            <ProfileDetail
+              label="Name Extension"
+              value={firstCandidateValue(
+                activeCandidate.suffix,
+                activeCandidate.nameExtension,
+                activeCandidate.name_extension,
+              )}
+            />
+          </ProfileGrid>
+
+          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+            <ProfileDetail label="Preferred Name" value={activeCandidate.nickname} />
+            <ProfileDetail
+              label="Birth Date"
+              value={formatDate(
+                firstCandidateValue(
+                  activeCandidate.dateOfBirth,
+                  activeCandidate.birthdate,
+                  activeCandidate.birthDate,
+                ),
+              )}
+            />
+            <ProfileDetail
+              label="Age"
+              value={firstCandidateValue(
+                activeCandidate.ageAsOfApplication,
+                activeCandidate.age,
+              )}
+            />
+            <ProfileDetail label="Encoded By" value={encodedBy} />
+          </ProfileGrid>
+
+          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+            <ProfileDetail
+              label="Place of Birth"
+              value={firstCandidateValue(
+                activeCandidate.placeOfBirth,
+                activeCandidate.place_of_birth,
+                activeCandidate.birthPlace,
+              )}
+            />
+            <ProfileDetail label="Gender" value={activeCandidate.gender} />
+            <ProfileDetail
+              label="Civil Status"
+              value={firstCandidateValue(
+                activeCandidate.civilStatus,
+                activeCandidate.civil_status,
+                activeCandidate.maritalStatus,
+              )}
+            />
+            <ProfileDetail
+              label="Citizenship"
+              value={firstCandidateValue(
+                activeCandidate.citizenship,
+                activeCandidate.nationality,
+              )}
+            />
+          </ProfileGrid>
+
+          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+            <ProfileDetail
+              label="Blood Type"
+              value={firstCandidateValue(
+                activeCandidate.bloodType,
+                activeCandidate.blood_type,
+              )}
+            />
+            <ProfileDetail label="Height" value={activeCandidate.height} />
+            <ProfileDetail label="Weight" value={activeCandidate.weight} />
+            <ProfileDetail
+              label="Created At"
+              value={formatDate(activeCandidate.createdAt)}
+            />
+          </ProfileGrid>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPersonalContact() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={Mail}
+          title="Contact Information"
+          description="Candidate email, mobile number, and telephone details."
+        />
+
         <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-          <ProfileDetail label="First Name" value={activeCandidate.firstName} />
-          <ProfileDetail label="Middle Name" value={activeCandidate.middleName} />
-          <ProfileDetail label="Last Name" value={activeCandidate.lastName} />
-          <ProfileDetail label="Suffix" value={activeCandidate.suffix} />
-        </ProfileGrid>
-
-        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-          <ProfileDetail label="Nickname" value={activeCandidate.nickname} />
-
-          <ProfileDetail
-            label="Date of Birth"
-            value={formatDate(activeCandidate.dateOfBirth)}
-          />
-
-          <ProfileDetail
-            label="Age"
-            value={
-              activeCandidate.ageAsOfApplication
-                ? `${activeCandidate.ageAsOfApplication}`
-                : "—"
-            }
-          />
-
-          <ProfileDetail label="Encoded By" value={encodedBy} />
-        </ProfileGrid>
-
-        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
           <ProfileDetail label="Email" value={activeCandidate.email} />
-
           <ProfileDetail
             label="Phone 1"
-            value={
-              activeCandidate.phoneNumber1 ||
-              activeCandidate.contactNumber ||
-              activeCandidate.phone
-            }
+            value={firstCandidateValue(
+              activeCandidate.phoneNumber1,
+              activeCandidate.contactNumber,
+              activeCandidate.phone,
+            )}
           />
-
           <ProfileDetail label="Phone 2" value={activeCandidate.phoneNumber2} />
+          <ProfileDetail
+            label="Telephone"
+            value={firstCandidateValue(
+              activeCandidate.telephone,
+              activeCandidate.telephoneNumber,
+            )}
+          />
         </ProfileGrid>
+      </section>
+    );
+  }
+
+  function renderPersonalAddress() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={MapPin}
+          title="Address Information"
+          description="Candidate physical address and preferred work location."
+        />
 
         <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
           <ProfileDetail
-            label="Address"
-            value={activeCandidate.physicalAddress}
+            label="Physical Address"
+            value={firstCandidateValue(
+              activeCandidate.physicalAddress,
+              activeCandidate.address,
+            )}
           />
-
+          <ProfileDetail
+            label="Residential Address"
+            value={firstCandidateValue(
+              activeCandidate.residentialAddress,
+              activeCandidate.residential_address,
+            )}
+          />
+          <ProfileDetail
+            label="Permanent Address"
+            value={firstCandidateValue(
+              activeCandidate.permanentAddress,
+              activeCandidate.permanent_address,
+            )}
+          />
           <ProfileDetail
             label="Preferred Location"
             value={activeCandidate.applyingLocation}
           />
+        </ProfileGrid>
+      </section>
+    );
+  }
 
+  function renderGovernmentIds() {
+    const governmentIds = {
+      gsis: firstCandidateValue(
+        activeCandidate.gsis,
+        activeCandidate.gsisNo,
+        activeCandidate.gsis_no,
+      ),
+      sss: firstCandidateValue(
+        activeCandidate.sss,
+        activeCandidate.sssNo,
+        activeCandidate.sss_no,
+      ),
+      philHealth: firstCandidateValue(
+        activeCandidate.phic,
+        activeCandidate.philhealth,
+        activeCandidate.philhealthNo,
+        activeCandidate.philhealth_no,
+      ),
+      pagIbig: firstCandidateValue(
+        activeCandidate.hdmf,
+        activeCandidate.pagibig,
+        activeCandidate.pagibigNo,
+        activeCandidate.pagibig_no,
+      ),
+      tin: firstCandidateValue(
+        activeCandidate.tin,
+        activeCandidate.tinNo,
+        activeCandidate.tin_no,
+      ),
+    };
+
+    const hasGovernmentId = Object.values(governmentIds).some(hasCandidateValue);
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={WalletCards}
+          title="Government IDs"
+          description="Government identification numbers collected from the candidate."
+        />
+
+        {hasGovernmentId ? (
+          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-5">
+            <ProfileDetail label="GSIS" value={governmentIds.gsis} />
+            <ProfileDetail label="SSS" value={governmentIds.sss} />
+            <ProfileDetail label="PhilHealth" value={governmentIds.philHealth} />
+            <ProfileDetail label="PAG-IBIG / HDMF" value={governmentIds.pagIbig} />
+            <ProfileDetail label="TIN" value={governmentIds.tin} />
+          </ProfileGrid>
+        ) : (
+          <EmptyState
+            title="No government ID information"
+            description="Government ID information has not been collected at the candidate stage."
+          />
+        )}
+      </section>
+    );
+  }
+
+  function renderFamilySection(section) {
+    if (section === "spouse") {
+      const fields = [
+        firstCandidateValue(activeCandidate.spouseSurname, activeCandidate.spouse_surname),
+        firstCandidateValue(activeCandidate.spouseFirstName, activeCandidate.spouse_first_name),
+        firstCandidateValue(activeCandidate.spouseMiddleName, activeCandidate.spouse_middle_name),
+        firstCandidateValue(activeCandidate.spouseOccupation, activeCandidate.spouse_occupation),
+        firstCandidateValue(activeCandidate.spouseEmployer, activeCandidate.spouse_employer),
+        firstCandidateValue(activeCandidate.spouseTelephone, activeCandidate.spouse_telephone),
+        firstCandidateValue(
+          activeCandidate.spouseBusinessAddress,
+          activeCandidate.spouse_business_address,
+        ),
+      ];
+
+      return (
+        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <SectionTitle
+            icon={UserRoundPen}
+            title="Spouse Information"
+            description="Candidate spouse and family background details."
+          />
+
+          {fields.some(hasCandidateValue) ? (
+            <div className="space-y-3">
+              <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+                <ProfileDetail label="Surname" value={fields[0]} />
+                <ProfileDetail label="First Name" value={fields[1]} />
+                <ProfileDetail label="Middle Name" value={fields[2]} />
+                <ProfileDetail label="Occupation" value={fields[3]} />
+                <ProfileDetail label="Employer / Business" value={fields[4]} />
+                <ProfileDetail label="Telephone" value={fields[5]} />
+              </ProfileGrid>
+              <ProfileTextarea label="Business Address" value={fields[6]} />
+            </div>
+          ) : (
+            <EmptyState title="No spouse information provided." />
+          )}
+        </section>
+      );
+    }
+
+    if (section === "parents") {
+      const father = [
+        firstCandidateValue(activeCandidate.fatherSurname, activeCandidate.father_surname),
+        firstCandidateValue(activeCandidate.fatherFirstName, activeCandidate.father_first_name),
+        firstCandidateValue(activeCandidate.fatherMiddleName, activeCandidate.father_middle_name),
+      ];
+      const mother = [
+        firstCandidateValue(
+          activeCandidate.motherMaidenSurname,
+          activeCandidate.mother_maiden_surname,
+          activeCandidate.motherSurname,
+        ),
+        firstCandidateValue(activeCandidate.motherFirstName, activeCandidate.mother_first_name),
+        firstCandidateValue(activeCandidate.motherMiddleName, activeCandidate.mother_middle_name),
+      ];
+
+      return (
+        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <SectionTitle
+            icon={UserRound}
+            title="Parents Information"
+            description="Candidate father and mother details."
+          />
+
+          {[...father, ...mother].some(hasCandidateValue) ? (
+            <div className="space-y-5">
+              <div>
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Father
+                </p>
+                <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+                  <ProfileDetail label="Surname" value={father[0]} />
+                  <ProfileDetail label="First Name" value={father[1]} />
+                  <ProfileDetail label="Middle Name" value={father[2]} />
+                </ProfileGrid>
+              </div>
+
+              <div>
+                <p className="mb-3 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                  Mother
+                </p>
+                <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+                  <ProfileDetail label="Maiden Surname" value={mother[0]} />
+                  <ProfileDetail label="First Name" value={mother[1]} />
+                  <ProfileDetail label="Middle Name" value={mother[2]} />
+                </ProfileGrid>
+              </div>
+            </div>
+          ) : (
+            <EmptyState title="No parent information provided." />
+          )}
+        </section>
+      );
+    }
+
+    if (section === "children") {
+      const children = normalizeCandidateRecordList(activeCandidate.children);
+
+      return (
+        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <SectionTitle
+            icon={UserRound}
+            title="Children"
+            description="Candidate child records."
+          />
+
+          {children.length > 0 ? (
+            <div className="space-y-3">
+              {children.map((child, index) => {
+                const item =
+                  child && typeof child === "object" ? child : { name: child };
+
+                return (
+                  <div
+                    key={`${item.name || "child"}-${index}`}
+                    className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                  >
+                    <ProfileGrid cols="sm:grid-cols-2">
+                      <ProfileDetail
+                        label={`Child ${index + 1}`}
+                        value={firstCandidateValue(
+                          item.name,
+                          item.fullName,
+                          item.full_name,
+                        )}
+                      />
+                      <ProfileDetail
+                        label="Birth Date"
+                        value={formatDate(
+                          firstCandidateValue(
+                            item.birthDate,
+                            item.birth_date,
+                            item.dateOfBirth,
+                          ),
+                        )}
+                      />
+                    </ProfileGrid>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <EmptyState title="No children records provided." />
+          )}
+        </section>
+      );
+    }
+
+    const emergencyFields = [
+      firstCandidateValue(
+        activeCandidate.emergencyName,
+        activeCandidate.emergencyContactName,
+        activeCandidate.emergency_contact_name,
+      ),
+      firstCandidateValue(
+        activeCandidate.emergencyRelationship,
+        activeCandidate.emergencyContactRelationship,
+        activeCandidate.emergency_contact_relationship,
+      ),
+      firstCandidateValue(
+        activeCandidate.emergencyPhone,
+        activeCandidate.emergencyContactNumber,
+        activeCandidate.emergency_contact_number,
+      ),
+      firstCandidateValue(
+        activeCandidate.emergencyEmail,
+        activeCandidate.emergency_contact_email,
+      ),
+    ];
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={Phone}
+          title="Emergency Contact"
+          description="Candidate emergency contact details."
+        />
+
+        {emergencyFields.some(hasCandidateValue) ? (
+          <ProfileGrid cols="sm:grid-cols-2">
+            <ProfileDetail label="Name" value={emergencyFields[0]} />
+            <ProfileDetail label="Relationship" value={emergencyFields[1]} />
+            <ProfileDetail label="Phone Number" value={emergencyFields[2]} />
+            <ProfileDetail label="Email" value={emergencyFields[3]} />
+          </ProfileGrid>
+        ) : (
+          <EmptyState title="No emergency contact provided." />
+        )}
+      </section>
+    );
+  }
+
+  function renderApplicationOverview() {
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={BriefcaseBusiness}
+          title="Application Overview"
+          description="Candidate source, role preference, and recruitment application details."
+        />
+
+        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+          <ProfileDetail
+            label="Applied Position"
+            value={activeCandidate.openPosition || activeCandidate.roleCapability}
+          />
+          <ProfileDetail
+            label="Preferred Location"
+            value={activeCandidate.applyingLocation}
+          />
+          <ProfileDetail label="Source" value={activeCandidate.source} />
+          <ProfileDetail
+            label="How did you hear about us"
+            value={formatList(activeCandidate.hearAboutUs)}
+          />
+          <ProfileDetail label="Referred By" value={activeCandidate.referredBy} />
+          <ProfileDetail label="Employee ID" value={activeCandidate.employeeId} />
+          <ProfileDetail
+            label="Expected Salary"
+            value={firstCandidateValue(
+              activeCandidate.expectedSalary,
+              activeCandidate.expected_salary,
+            )}
+          />
+          <ProfileDetail
+            label="Availability"
+            value={firstCandidateValue(
+              activeCandidate.availability,
+              activeCandidate.availableDate,
+            )}
+          />
+          <ProfileDetail
+            label="Recruiter"
+            value={firstCandidateValue(
+              activeCandidate.recruiter,
+              activeCandidate.recruiterName,
+              activeCandidate.currentTaOwner,
+            )}
+          />
           <ProfileDetail
             label="Created At"
             value={formatDate(activeCandidate.createdAt)}
           />
         </ProfileGrid>
-      </div>
-    </section>
-  );
-}
-
-  function renderApplicationSource() {
-  return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <SectionTitle
-        icon={BriefcaseBusiness}
-        title="Application Source"
-        description="Candidate source information and referral details."
-      />
-
-      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
-        <ProfileDetail
-          label="Applied Position"
-          value={activeCandidate.openPosition || activeCandidate.roleCapability}
-        />
-
-        <ProfileDetail
-          label="How did you hear about us"
-          value={formatList(activeCandidate.hearAboutUs)}
-        />
-
-        <ProfileDetail label="Source" value={activeCandidate.source} />
-
-        <ProfileDetail label="Referred By" value={activeCandidate.referredBy} />
-
-        <ProfileDetail label="Employee ID" value={activeCandidate.employeeId} />
-      </ProfileGrid>
-    </section>
-  );
-}
+      </section>
+    );
+  }
 
   function renderPipelineLink() {
   return (
@@ -2936,39 +3603,279 @@ export default function CandidateProfileModal() {
   );
 }
 
-  function renderQualifications() {
-  return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <SectionTitle
-        icon={GraduationCap}
-        title="Qualifications"
-        description="Education, skills, trainings, and certifications."
-      />
+  function renderEducation() {
+    const records = normalizeCandidateRecordList(
+      firstCandidateValue(
+        activeCandidate.education,
+        activeCandidate.educationalBackground,
+        activeCandidate.educational_background,
+      ),
+    );
+    const attainment = activeCandidate.educationalAttainment;
 
-      <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-        <ProfileDetail
-          label="Educational Attainment"
-          value={activeCandidate.educationalAttainment}
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={GraduationCap}
+          title="Educational Background"
+          description="Candidate educational attainment and academic records."
         />
 
-        <ProfileDetail
-          label="Skills / Language"
-          value={activeCandidate.skillsLanguage}
+        {hasCandidateValue(attainment) && (
+          <div className="mb-4">
+            <ProfileDetail label="Educational Attainment" value={attainment} />
+          </div>
+        )}
+
+        {records.length > 0 ? (
+          <div className="space-y-3">
+            {records.map((record, index) => {
+              const item =
+                record && typeof record === "object"
+                  ? record
+                  : { degree: record };
+
+              return (
+                <div
+                  key={`${item.school || item.degree || "education"}-${index}`}
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                >
+                  <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+                    <ProfileDetail
+                      label="Level"
+                      value={firstCandidateValue(item.level, item.educationLevel)}
+                    />
+                    <ProfileDetail
+                      label="School"
+                      value={firstCandidateValue(item.school, item.schoolName)}
+                    />
+                    <ProfileDetail
+                      label="Degree / Course"
+                      value={firstCandidateValue(item.degree, item.course)}
+                    />
+                    <ProfileDetail
+                      label="Year Graduated"
+                      value={firstCandidateValue(
+                        item.yearGraduated,
+                        item.year_graduated,
+                      )}
+                    />
+                  </ProfileGrid>
+                </div>
+              );
+            })}
+          </div>
+        ) : !hasCandidateValue(attainment) ? (
+          <EmptyState title="No education information provided." />
+        ) : null}
+      </section>
+    );
+  }
+
+  function renderEligibility() {
+    const records = normalizeCandidateRecordList(
+      firstCandidateValue(
+        activeCandidate.eligibility,
+        activeCandidate.certifications,
+        activeCandidate.licenses,
+        activeCandidate.licenseAndEligibility,
+      ),
+    );
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={BadgeCheck}
+          title="Eligibility"
+          description="Candidate licenses, certifications, and eligibility records."
         />
 
-        <ProfileDetail
-          label="Affiliations"
-          value={formatList(activeCandidate.affiliations)}
+        {records.length > 0 ? (
+          <div className="space-y-3">
+            {records.map((record, index) => {
+              const item =
+                record && typeof record === "object"
+                  ? record
+                  : { title: record };
+
+              return (
+                <div
+                  key={`${item.title || item.name || "eligibility"}-${index}`}
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                >
+                  <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+                    <ProfileDetail
+                      label="Eligibility / License"
+                      value={firstCandidateValue(item.title, item.name)}
+                    />
+                    <ProfileDetail label="Rating" value={item.rating} />
+                    <ProfileDetail
+                      label="License Number"
+                      value={firstCandidateValue(
+                        item.licenseNumber,
+                        item.license_number,
+                      )}
+                    />
+                    <ProfileDetail
+                      label="Validity Date"
+                      value={formatDate(
+                        firstCandidateValue(
+                          item.validityDate,
+                          item.validity_date,
+                        ),
+                      )}
+                    />
+                  </ProfileGrid>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState title="No eligibility or license information provided." />
+        )}
+      </section>
+    );
+  }
+
+  function renderTraining() {
+    const records = normalizeCandidateRecordList(
+      firstCandidateValue(
+        activeCandidate.trainings,
+        activeCandidate.training,
+        activeCandidate.trainingRecords,
+      ),
+    );
+    const attended = activeCandidate.trainingAttended;
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={GraduationCap}
+          title="Training"
+          description="Candidate training programs, seminars, and interventions attended."
         />
 
-        <ProfileDetail
-          label="Training Attended"
-          value={activeCandidate.trainingAttended}
+        {hasCandidateValue(attended) && (
+          <div className="mb-4">
+            <ProfileTextarea label="Training Attended" value={attended} />
+          </div>
+        )}
+
+        {records.length > 0 ? (
+          <div className="space-y-3">
+            {records.map((record, index) => {
+              const item =
+                record && typeof record === "object"
+                  ? record
+                  : { title: record };
+
+              return (
+                <div
+                  key={`${item.title || "training"}-${index}`}
+                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
+                >
+                  <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
+                    <ProfileDetail label="Training Title" value={item.title} />
+                    <ProfileDetail
+                      label="From"
+                      value={formatDate(firstCandidateValue(item.from, item.startDate))}
+                    />
+                    <ProfileDetail
+                      label="To"
+                      value={formatDate(firstCandidateValue(item.to, item.endDate))}
+                    />
+                    <ProfileDetail
+                      label="Conducted By"
+                      value={firstCandidateValue(
+                        item.conductedBy,
+                        item.sponsor,
+                        item.provider,
+                      )}
+                    />
+                  </ProfileGrid>
+                </div>
+              );
+            })}
+          </div>
+        ) : !hasCandidateValue(attended) ? (
+          <EmptyState title="No training information provided." />
+        ) : null}
+      </section>
+    );
+  }
+
+  function renderSkillsSection(section) {
+    const skills = firstCandidateValue(
+      activeCandidate.skillsLanguage,
+      activeCandidate.skills,
+      activeCandidate.languages,
+    );
+    const recognitions = firstCandidateValue(
+      activeCandidate.recognitions,
+      activeCandidate.awards,
+      activeCandidate.distinctions,
+    );
+    const affiliations = firstCandidateValue(
+      activeCandidate.affiliations,
+      activeCandidate.organizations,
+      activeCandidate.memberships,
+    );
+
+    if (section === "recognitions") {
+      return (
+        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <SectionTitle
+            icon={BadgeCheck}
+            title="Recognition"
+            description="Candidate awards, distinctions, and recognition received."
+          />
+          {hasCandidateValue(recognitions) ? (
+            <ProfileTextarea
+              label="Recognition"
+              value={formatList(recognitions)}
+            />
+          ) : (
+            <EmptyState title="No recognition information provided." />
+          )}
+        </section>
+      );
+    }
+
+    if (section === "organizations") {
+      return (
+        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+          <SectionTitle
+            icon={UserRoundPen}
+            title="Organizations"
+            description="Candidate affiliations, organizations, and memberships."
+          />
+          {hasCandidateValue(affiliations) ? (
+            <ProfileTextarea
+              label="Affiliations / Organizations"
+              value={formatList(affiliations)}
+            />
+          ) : (
+            <EmptyState title="No organization information provided." />
+          )}
+        </section>
+      );
+    }
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={Sparkles}
+          title="Skills"
+          description="Candidate skills, languages, and competencies."
         />
-      </ProfileGrid>
-    </section>
-  );
-}
+        {hasCandidateValue(skills) ? (
+          <ProfileTextarea label="Skills / Language" value={formatList(skills)} />
+        ) : (
+          <EmptyState title="No skills information provided." />
+        )}
+      </section>
+    );
+  }
 
   function renderWorkExperience() {
     return (
@@ -3055,6 +3962,61 @@ export default function CandidateProfileModal() {
     );
   }
 
+  function renderAssessment() {
+    const assessmentStatus = firstCandidateValue(
+      activeCandidate.assessmentStatus,
+      activeCandidate.assessment_status,
+    );
+    const assessmentScore = firstCandidateValue(
+      activeCandidate.assessmentScore,
+      activeCandidate.assessment_score,
+      activeCandidate.onlineAssessmentScore,
+    );
+    const assessmentResult = firstCandidateValue(
+      activeCandidate.assessmentResult,
+      activeCandidate.assessment_result,
+      activeCandidate.onlineAssessmentResult,
+    );
+    const assessmentRemarks = firstCandidateValue(
+      activeCandidate.assessmentRemarks,
+      activeCandidate.assessment_remarks,
+    );
+    const hasAssessment = [
+      assessmentStatus,
+      assessmentScore,
+      assessmentResult,
+      assessmentRemarks,
+    ].some(hasCandidateValue);
+
+    return (
+      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <SectionTitle
+          icon={BadgeCheck}
+          title="Assessment"
+          description="Candidate assessment status, score, and results."
+        />
+
+        {hasAssessment ? (
+          <div className="space-y-3">
+            <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+              <ProfileDetail label="Assessment Status" value={assessmentStatus} />
+              <ProfileDetail label="Assessment Score" value={assessmentScore} />
+              <ProfileDetail label="Assessment Result" value={assessmentResult} />
+            </ProfileGrid>
+            {hasCandidateValue(assessmentRemarks) && (
+              <ProfileTextarea
+                label="Assessment Remarks"
+                value={assessmentRemarks}
+              />
+            )}
+          </div>
+        ) : (
+          <EmptyState title="No assessment information provided." />
+        )}
+      </section>
+    );
+  }
+
  function renderReadiness() {
   return (
     <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
@@ -3128,7 +4090,7 @@ export default function CandidateProfileModal() {
     );
   }
 
-  function renderFiles() {
+  function renderUploadedFiles() {
     const audioFileUrl = getResolvedFileUrl(activeCandidate.audioFileUrl);
     const attachmentFileUrl = getResolvedFileUrl(activeCandidate.attachmentFileUrl);
 
@@ -3151,8 +4113,8 @@ export default function CandidateProfileModal() {
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
         <SectionTitle
           icon={FileText}
-          title="Files"
-          description="Uploaded audio and supporting attachments."
+          title="Uploaded Files"
+          description="Candidate audio recording and supporting attachments."
         />
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
@@ -3403,32 +4365,60 @@ export default function CandidateProfileModal() {
     <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
       <SectionTitle
         icon={FileText}
-        title="General Remarks"
-        description="Additional notes for this candidate."
+        title="Notes"
+        description="Candidate profile notes and general remarks."
       />
 
       <ProfileTextarea
-        label="General Remarks"
-        value={activeCandidate.remarks || "No additional remarks."}
+        label="Notes"
+        value={activeCandidate.remarks || "No additional notes."}
       />
     </section>
   );
 }
 
   function renderActiveTabContent() {
-    if (activeTab === "personal") return renderPersonalInformation();
-    if (activeTab === "applicationSource") return renderApplicationSource();
-    if (activeTab === "pipeline") return renderPipelineLink();
-    if (activeTab === "qualifications") return renderQualifications();
-    if (activeTab === "workExperience") return renderWorkExperience();
-    if (activeTab === "readiness") return renderReadiness();
-    if (activeTab === "references") return renderReferences();
-    if (activeTab === "files") return renderFiles();
-    if (activeTab === "preEmploymentFiles") return renderPreEmploymentFiles();
-    if (activeTab === "applicationHistory") return renderApplicationHistory();
-    if (activeTab === "remarks") return renderRemarks();
+    if (activeTab === "personal.basic") return renderPersonalBasic();
+    if (activeTab === "personal.contact") return renderPersonalContact();
+    if (activeTab === "personal.address") return renderPersonalAddress();
+    if (activeTab === "personal.ids") return renderGovernmentIds();
 
-    return null;
+    if (activeTab === "family.spouse") return renderFamilySection("spouse");
+    if (activeTab === "family.parents") return renderFamilySection("parents");
+    if (activeTab === "family.children") return renderFamilySection("children");
+    if (activeTab === "family.emergency") return renderFamilySection("emergency");
+
+    if (activeTab === "education") return renderEducation();
+    if (activeTab === "eligibility") return renderEligibility();
+    if (activeTab === "experience") return renderWorkExperience();
+    if (activeTab === "training") return renderTraining();
+
+    if (activeTab === "skills.skills") return renderSkillsSection("skills");
+    if (activeTab === "skills.recognitions") {
+      return renderSkillsSection("recognitions");
+    }
+    if (activeTab === "skills.organizations") {
+      return renderSkillsSection("organizations");
+    }
+
+    if (activeTab === "references") return renderReferences();
+
+    if (activeTab === "application.overview") {
+      return renderApplicationOverview();
+    }
+    if (activeTab === "application.pipeline") return renderPipelineLink();
+    if (activeTab === "application.assessment") return renderAssessment();
+    if (activeTab === "application.readiness") return renderReadiness();
+    if (activeTab === "application.history") return renderApplicationHistory();
+
+    if (activeTab === "documents.uploaded") return renderUploadedFiles();
+    if (activeTab === "documents.preEmployment") {
+      return renderPreEmploymentFiles();
+    }
+
+    if (activeTab === "notes") return renderRemarks();
+
+    return renderPersonalBasic();
   }
 
   return (
@@ -3522,11 +4512,13 @@ export default function CandidateProfileModal() {
                             {activeCandidate.status || "—"}
                           </span>
 
-                          {currentStage && (
-                            <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
-                              {currentStage}
-                            </span>
-                          )}
+                          {currentStage &&
+                            normalizeLower(currentStage) !==
+                              normalizeLower(activeCandidate.status) && (
+                              <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
+                                {currentStage}
+                              </span>
+                            )}
 
                           {activeCandidate.isPublicSubmission && (
                             <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
@@ -3538,15 +4530,6 @@ export default function CandidateProfileModal() {
                     </div>
 
                     <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:items-center">
-                      <button
-                        type="button"
-                        onClick={handleEditCandidate}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
-                      >
-                        <Pencil size={16} />
-                        Edit Profile
-                      </button>
-
                       <button
                         type="button"
                         onClick={handleUpdateCandidateStatus}
@@ -3617,39 +4600,11 @@ export default function CandidateProfileModal() {
               <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
                 <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
                   {/* LEFT TABS */}
-                  <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
-                    <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
-                      {profileTabs.map((tab) => {
-                        const Icon = tab.icon;
-                        const isActive = activeTab === tab.id;
-
-                        return (
-                          <button
-                            key={tab.id}
-                            type="button"
-                            onClick={() => handleProfileTabChange(tab.id)}
-                            className={`group inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] lg:min-w-0 ${
-                              isActive
-                                ? "bg-sibs-primary-1 text-white shadow-sm lg:translate-x-1"
-                                : "bg-white text-sibs-primary-1 hover:-translate-y-0.5 hover:bg-[#F2F6FA] hover:shadow-sm lg:hover:translate-x-1 lg:hover:translate-y-0"
-                            }`}
-                          >
-                            <span
-                              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-                                isActive
-                                  ? "bg-white/15 text-white"
-                                  : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
-                              }`}
-                            >
-                              <Icon size={16} />
-                            </span>
-
-                            <span className="truncate">{tab.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </aside>
+                  <CandidateProfileSideNav
+                    tabs={profileTabs}
+                    activeTab={activeTab}
+                    onTabChange={handleProfileTabChange}
+                  />
 
                   {/* RIGHT TAB CONTENT */}
                   <div className="min-w-0 bg-[#F8FAFC] p-4 sm:p-5">
