@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   FileText,
@@ -19,6 +20,85 @@ const pipelineIcons = {
   users: Users,
 };
 
+function parseAnimatedValue(value) {
+  const cleanValue = String(value ?? "").trim();
+  const numericValue = Number(cleanValue.replace(/,/g, "").replace("%", ""));
+
+  return {
+    raw: cleanValue,
+    number: Number.isFinite(numericValue) ? numericValue : 0,
+    isNumeric: Number.isFinite(numericValue),
+    hasPercent: cleanValue.includes("%"),
+    hasComma:
+      typeof value === "number" ||
+      cleanValue.includes(",") ||
+      Math.abs(numericValue) >= 1000,
+    decimals: cleanValue.includes(".")
+      ? cleanValue.split(".")[1]?.replace("%", "").length || 0
+      : 0,
+  };
+}
+
+function formatAnimatedValue(value, meta) {
+  if (!meta.isNumeric) return meta.raw;
+
+  const formattedNumber = meta.hasComma
+    ? value.toLocaleString("en-US", {
+        minimumFractionDigits: meta.decimals,
+        maximumFractionDigits: meta.decimals,
+      })
+    : value.toFixed(meta.decimals);
+
+  return meta.hasPercent ? `${formattedNumber}%` : formattedNumber;
+}
+
+function useAnimatedNumber(value, duration = 850) {
+  const meta = useMemo(() => parseAnimatedValue(value), [value]);
+
+  const [displayValue, setDisplayValue] = useState(() =>
+    formatAnimatedValue(0, meta),
+  );
+
+  useEffect(() => {
+    if (!meta.isNumeric) {
+      setDisplayValue(meta.raw);
+      return;
+    }
+
+    let animationFrameId;
+    const startTime = performance.now();
+    const startValue = 0;
+    const endValue = meta.number;
+
+    function animate(currentTime) {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const currentValue = startValue + (endValue - startValue) * easedProgress;
+
+      setDisplayValue(formatAnimatedValue(currentValue, meta));
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [duration, meta]);
+
+  return displayValue;
+}
+
+function AnimatedNumber({ value, className = "" }) {
+  const displayValue = useAnimatedNumber(value);
+
+  return <span className={className}>{displayValue}</span>;
+}
+
 export function WorkforceHiringOverviewPipelineStrip() {
   const {
     overview: { pipeline, summary },
@@ -38,9 +118,10 @@ export function WorkforceHiringOverviewPipelineStrip() {
                 </div>
 
                 <div className="flex items-center justify-center gap-2.5">
-                  <span className="text-[30px] font-bold leading-none">
-                    {stage.count}
-                  </span>
+                  <AnimatedNumber
+                    value={stage.count}
+                    className="text-[30px] font-bold leading-none"
+                  />
                   <StageIcon className="h-8 w-8" strokeWidth={2.4} />
                 </div>
               </div>
@@ -56,15 +137,21 @@ export function WorkforceHiringOverviewPipelineStrip() {
 
         <div className="rounded-lg border border-slate-200 p-3 text-center text-slate-800">
           <h4 className="text-sm font-bold">Leads to Interview</h4>
+
           <strong className="mt-1 block text-2xl font-bold leading-none">
-            {formatOverviewNumber(summary.leadsToInterview)}
+            <AnimatedNumber
+              value={formatOverviewNumber(summary.leadsToInterview)}
+            />
           </strong>
+
           <div className="mx-2 my-2 h-px bg-slate-200" />
+
           <span className="block text-xs font-medium">
             Accepted JO to Leads Rate
           </span>
+
           <b className="block text-lg font-bold">
-            {summary.hiringRate.toFixed(1)}%
+            <AnimatedNumber value={`${summary.hiringRate.toFixed(1)}%`} />
           </b>
         </div>
       </div>
@@ -78,8 +165,8 @@ export function HiringFunnelCard() {
   } = useWorkforceHiringView();
 
   return (
-    <div className="min-h-[330px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-base font-bold uppercase text-sibs-primary-90">
+    <div className="flex h-full min-h-[330px] flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <h3 className="mb-3 text-lg font-bold uppercase text-sibs-primary-90">
         Hiring Funnel
       </h3>
 
@@ -104,21 +191,35 @@ export function HiringFunnelCard() {
                 <SmallTd className={`text-left ${stage.text}`}>
                   {stage.stage}
                 </SmallTd>
-                <SmallTd className={stage.text}>{stage.count}</SmallTd>
-                <SmallTd>
-                  {stage.stepConversion
-                    ? `${stage.stepConversion.toFixed(2)}%`
-                    : "-"}
+
+                <SmallTd className={stage.text}>
+                  <AnimatedNumber value={stage.count} />
                 </SmallTd>
-                <SmallTd>{stage.cumulative.toFixed(1)}%</SmallTd>
+
+                <SmallTd>
+                  {stage.stepConversion ? (
+                    <AnimatedNumber
+                      value={`${stage.stepConversion.toFixed(2)}%`}
+                    />
+                  ) : (
+                    "-"
+                  )}
+                </SmallTd>
+
+                <SmallTd>
+                  <AnimatedNumber value={`${stage.cumulative.toFixed(1)}%`} />
+                </SmallTd>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-3 grid h-[50px] place-items-center rounded-xl bg-slate-50 text-sm font-bold text-sibs-primary-90">
-        Hiring Rate (Leads to JO): {summary.hiringRate.toFixed(1)}%
+      <div className="mt-auto grid h-[50px] place-items-center rounded-xl bg-slate-50 text-sm font-bold text-sibs-primary-90">
+        <span>
+          Hiring Rate (Leads to JO):{" "}
+          <AnimatedNumber value={`${summary.hiringRate.toFixed(1)}%`} />
+        </span>
       </div>
     </div>
   );

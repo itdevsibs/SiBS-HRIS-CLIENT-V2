@@ -510,6 +510,39 @@ function buildTrendSummaryFromEndpoint(trendData, fallbackSummary = {}) {
   };
 }
 
+function buildTrendDetailsFromEndpoint(trendData) {
+  if (!Array.isArray(trendData?.data)) {
+    return [];
+  }
+
+  return trendData.data;
+}
+
+function buildTrendMetaFromEndpoint(trendData, weeklyVersion = {}) {
+  const activeWeek = weeklyVersion.activeWeek || {};
+
+  return {
+    weekStart:
+      trendData?.weekStart ||
+      trendData?.week_start ||
+      activeWeek.startDate ||
+      activeWeek.weekStart ||
+      "",
+
+    weekEnd:
+      trendData?.weekEnd ||
+      trendData?.week_end ||
+      activeWeek.endDate ||
+      activeWeek.weekEnd ||
+      "",
+
+    todayDate: trendData?.todayDate || trendData?.today_date || "",
+
+    cluster: trendData?.cluster || "All",
+    account: trendData?.account || "All",
+  };
+}
+
 function buildSummary(totals) {
   return {
     ...EMPTY_SUMMARY,
@@ -593,6 +626,8 @@ export function useWorkforceHiringView(optional = false) {
   const endpointTrends = buildTrendsFromEndpoint(tables.trendData);
   const endpointTrendWeeks = buildTrendWeeksFromEndpoint(tables.trendData);
   const trendSummary = buildTrendSummaryFromEndpoint(tables.trendData, summary);
+  const trendDetails = buildTrendDetailsFromEndpoint(tables.trendData);
+  const trendMeta = buildTrendMetaFromEndpoint(tables.trendData, weeklyVersion);
 
   return {
     filters: {
@@ -633,6 +668,8 @@ export function useWorkforceHiringView(optional = false) {
     overview: {
       summary,
       trendSummary,
+      trendDetails,
+      trendMeta,
 
       pipeline: buildPipeline(totals),
       attritionStages: buildAttritionStages(totals),
@@ -642,6 +679,14 @@ export function useWorkforceHiringView(optional = false) {
 
       trendsLoading: Boolean(tables.trendsLoading),
       trendsError: tables.trendsError || "",
+    },
+
+    sixWeekTable: {
+      rows: buildDetailRows(tables.sixWeekTableRows || []),
+      rawRows: tables.sixWeekTableRows || [],
+      weeks: tables.sixWeekTableWeeks || [],
+      loading: Boolean(tables.sixWeekTableLoading),
+      error: tables.sixWeekTableError || "",
     },
 
     detailTable: {
