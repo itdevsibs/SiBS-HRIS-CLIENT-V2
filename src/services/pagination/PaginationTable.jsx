@@ -67,6 +67,9 @@ export default function PaginationTable({
   onPrevious,
   onNext,
 
+  controlsClassName = "",
+  searchClassName = "",
+  rightContentClassName = "",
   className = "",
 }) {
   const dropdownRefs = useRef({});
@@ -227,9 +230,19 @@ export default function PaginationTable({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end lg:justify-end">
+          <div
+            className={
+              controlsClassName ||
+              "grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end lg:justify-end"
+            }
+          >
             {showSearch && (
-              <div className="relative w-full lg:w-[340px]">
+              <div
+                className={
+                  searchClassName ||
+                  "relative w-full sm:col-span-2 lg:w-[340px]"
+                }
+              >
                 {searchLabel && <FieldLabel>{searchLabel}</FieldLabel>}
 
                 <div className="relative">
@@ -371,7 +384,12 @@ export default function PaginationTable({
             })}
 
             {rightContent && (
-              <div className="flex w-full items-end lg:w-auto">
+              <div
+                className={
+                  rightContentClassName ||
+                  "flex w-full items-end lg:w-auto"
+                }
+              >
                 {rightContent}
               </div>
             )}
