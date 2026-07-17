@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
+  Search,
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
@@ -104,58 +105,571 @@ function createEmptyExperience() {
   };
 }
 
-const emptyPublicForm = {
-  hearAboutUs: [],
-  openPosition: "",
-  nickname: "",
-  applyingLocation: "",
-  referredBy: "",
-  employeeId: "",
+/* EDUCATION RULES START */
+const EDUCATION_SECTION_KEYS = [
+  "elementary",
+  "highSchool",
+  "seniorHighSchool",
+  "college",
+  "vocational",
+  "lawSchool",
+  "masters",
+  "doctorate",
+];
 
-  firstName: "",
-  lastName: "",
-  middleName: "",
-  suffix: "",
-  dateOfBirth: "",
-  email: "",
-  physicalAddress: "",
-  workExperience: "",
-  phone1: "",
-  phone2: "",
+function createEmptyEducationSchool() {
+  return {
+    schoolName: "",
+    address: "",
+    course: "",
+    schoolYearGraduated: "",
+  };
+}
 
-  industryRelevantExperience: "",
-  lengthOfWorkExperience: "",
-  years: "",
-  role: "",
-  company: "",
-  monthlyCompensation: "",
-  reasonForLeaving: "",
-  hasOtherExperience: "",
-  otherExperiences: [],
+function createEmptyEducationDetails() {
+  return {
+    attendedSeniorHighSchool: false,
+    elementary: createEmptyEducationSchool(),
+    highSchool: createEmptyEducationSchool(),
+    seniorHighSchool: createEmptyEducationSchool(),
+    college: createEmptyEducationSchool(),
+    vocational: createEmptyEducationSchool(),
+    lawSchool: createEmptyEducationSchool(),
+    masters: createEmptyEducationSchool(),
+    doctorate: createEmptyEducationSchool(),
+  };
+}
 
-  highestEducationalAttainment: "",
-  affiliationsAndCertifications: [],
-  trainingAttended: "",
-
-  fullyVaccinated: "",
-  comfortableOnSite: "",
-  willingGraveyard: "",
-  employmentInterest: "",
-  remoteWorkAccess: "",
-  willingDrugTest: "",
-  willingBackgroundCheck: "",
-
-  reference1Name: "",
-  reference1Phone: "",
-  reference2Name: "",
-  reference2Phone: "",
-  reference3Name: "",
-  reference3Phone: "",
-
-  audioFile: null,
-  attachmentFile: null,
-  consent: false,
+const EDUCATION_ATTAINMENT_CONFIG = {
+  highSchoolGraduate: {
+    key: "highSchoolGraduate",
+    label: "High School Graduate",
+    seniorHighMode: "hidden",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+    ],
+  },
+  seniorHighSchoolGraduate: {
+    key: "seniorHighSchoolGraduate",
+    label: "Senior High School Graduate",
+    seniorHighMode: "required",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "seniorHighSchool",
+        title: "Senior High School",
+        schoolNameLabel: "Senior High School Name",
+        requireYear: true,
+      },
+    ],
+  },
+  collegeLevel: {
+    key: "collegeLevel",
+    label: "College Level",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "college",
+        title: "Current College",
+        schoolNameLabel: "Current College Name",
+        courseLabel: "Current Course",
+        requireCourse: true,
+        requireYear: false,
+      },
+    ],
+  },
+  collegeGraduate: {
+    key: "collegeGraduate",
+    label: "College Graduate",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "college",
+        title: "College",
+        schoolNameLabel: "College School Name",
+        courseLabel: "College Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+    ],
+  },
+  vocational: {
+    key: "vocational",
+    label: "Vocational / Technical",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "vocational",
+        title: "Technical and Vocational School",
+        schoolNameLabel: "Technical and Vocational School Name",
+        courseLabel: "Technical or Vocational Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+    ],
+  },
+  graduateSchoolLevel: {
+    key: "graduateSchoolLevel",
+    label: "Graduate School Level",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "college",
+        title: "College",
+        schoolNameLabel: "College School Name",
+        courseLabel: "College Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+      {
+        key: "lawSchool",
+        title: "Law School",
+        schoolNameLabel: "Law School Name",
+        requireYear: true,
+      },
+    ],
+  },
+  mastersDegreeGraduate: {
+    key: "mastersDegreeGraduate",
+    label: "Master's Degree Graduate",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "college",
+        title: "College",
+        schoolNameLabel: "College School Name",
+        courseLabel: "College Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+      {
+        key: "masters",
+        title: "Master's Degree",
+        schoolNameLabel: "Master's Degree School Name",
+        courseLabel: "Master's Degree Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+    ],
+  },
+  doctorateDegreeGraduate: {
+    key: "doctorateDegreeGraduate",
+    label: "Doctorate Degree Graduate",
+    seniorHighMode: "optional",
+    sections: [
+      {
+        key: "elementary",
+        title: "Elementary School",
+        schoolNameLabel: "Elementary School Name",
+        requireYear: true,
+      },
+      {
+        key: "highSchool",
+        title: "High School",
+        schoolNameLabel: "High School Name",
+        requireYear: true,
+      },
+      {
+        key: "college",
+        title: "College",
+        schoolNameLabel: "College School Name",
+        courseLabel: "College Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+      {
+        key: "doctorate",
+        title: "Doctorate Degree",
+        schoolNameLabel: "Doctorate School Name",
+        courseLabel: "Doctorate Course",
+        requireCourse: true,
+        requireYear: true,
+      },
+    ],
+  },
 };
+
+function normalizeEducationAttainmentKey(value) {
+  const compactValue = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+
+  const aliases = {
+    highschoolgraduate: "highSchoolGraduate",
+    seniorhighschoolgraduate: "seniorHighSchoolGraduate",
+    collegelevel: "collegeLevel",
+    collegegraduate: "collegeGraduate",
+    vocational: "vocational",
+    vocationaltechnical: "vocational",
+    vocationalgraduate: "vocational",
+    technicalvocational: "vocational",
+    technicalandvocational: "vocational",
+    graduateschoollevel: "graduateSchoolLevel",
+    lawschoollevel: "graduateSchoolLevel",
+    mastersdegreegraduate: "mastersDegreeGraduate",
+    masterdegreegraduate: "mastersDegreeGraduate",
+    mastersgraduate: "mastersDegreeGraduate",
+    doctoratedegreegraduate: "doctorateDegreeGraduate",
+    doctoratedegree: "doctorateDegreeGraduate",
+    doctorategraduate: "doctorateDegreeGraduate",
+    doctoraldegreegraduate: "doctorateDegreeGraduate",
+  };
+
+  if (EDUCATION_ATTAINMENT_CONFIG[value]) return value;
+
+  return aliases[compactValue] || "";
+}
+
+function getEducationAttainmentConfig(value) {
+  const key = normalizeEducationAttainmentKey(value);
+  return EDUCATION_ATTAINMENT_CONFIG[key] || null;
+}
+
+function normalizeSchoolYearInputValue(value) {
+  return String(value ?? "")
+    .replace(/[–—]/g, "-")
+    .replace(/[^0-9 -]/g, "")
+    .replace(/ {2,}/g, " ")
+    .slice(0, 13);
+}
+
+function normalizeSchoolYearValue(value) {
+  const cleaned = normalizeSchoolYearInputValue(value)
+    .replace(/\s+/g, "")
+    .slice(0, 9);
+
+  if (!cleaned.includes("-") && cleaned.length > 4) {
+    return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}`;
+  }
+
+  return cleaned;
+}
+
+function isValidSchoolYearRange(value) {
+  const cleaned = normalizeSchoolYearValue(value);
+
+  if (!/^\d{4}-\d{4}$/.test(cleaned)) return false;
+
+  const [startYear, endYear] = cleaned.split("-").map(Number);
+
+  return (
+    Number.isInteger(startYear) &&
+    Number.isInteger(endYear) &&
+    startYear >= 1900 &&
+    endYear >= startYear &&
+    endYear <= 2200
+  );
+}
+
+function buildSchoolYearOptions() {
+  const currentYear = new Date().getFullYear();
+  const options = [];
+
+  for (let endYear = currentYear; endYear >= 1901; endYear -= 1) {
+    const startYear = endYear - 1;
+    const value = `${startYear}-${endYear}`;
+
+    options.push({
+      id: value,
+      value,
+      label: value,
+    });
+  }
+
+  return options;
+}
+
+function getEducationSchoolDraft(section = {}) {
+  return {
+    schoolName: String(section?.schoolName ?? ""),
+    address: String(section?.address ?? ""),
+    course: String(section?.course ?? ""),
+    schoolYearGraduated: normalizeSchoolYearInputValue(
+      section?.schoolYearGraduated,
+    ),
+  };
+}
+
+function normalizeEducationSchool(section = {}) {
+  const draft = getEducationSchoolDraft(section);
+
+  return {
+    schoolName: draft.schoolName.trim(),
+    address: draft.address.trim(),
+    course: draft.course.trim(),
+    schoolYearGraduated: normalizeSchoolYearValue(
+      draft.schoolYearGraduated,
+    ),
+  };
+}
+
+function getEducationDetailsDraft(details = {}) {
+  const draft = createEmptyEducationDetails();
+
+  draft.attendedSeniorHighSchool = Boolean(
+    details?.attendedSeniorHighSchool,
+  );
+
+  EDUCATION_SECTION_KEYS.forEach((sectionKey) => {
+    draft[sectionKey] = getEducationSchoolDraft(details?.[sectionKey]);
+  });
+
+  return draft;
+}
+
+function normalizeEducationDetails(details = {}) {
+  const normalized = createEmptyEducationDetails();
+
+  normalized.attendedSeniorHighSchool = Boolean(
+    details?.attendedSeniorHighSchool,
+  );
+
+  EDUCATION_SECTION_KEYS.forEach((sectionKey) => {
+    normalized[sectionKey] = normalizeEducationSchool(details?.[sectionKey]);
+  });
+
+  return normalized;
+}
+
+function prepareEducationDetailsForAttainment(details, attainment) {
+  const config = getEducationAttainmentConfig(attainment);
+  const current = getEducationDetailsDraft(details);
+  const next = createEmptyEducationDetails();
+
+  if (!config) return next;
+
+  const allowedSectionKeys = new Set(
+    config.sections.map((section) => section.key),
+  );
+
+  if (
+    config.seniorHighMode === "required" ||
+    (config.seniorHighMode === "optional" &&
+      current.attendedSeniorHighSchool)
+  ) {
+    allowedSectionKeys.add("seniorHighSchool");
+  }
+
+  allowedSectionKeys.forEach((sectionKey) => {
+    next[sectionKey] = getEducationSchoolDraft(current[sectionKey]);
+  });
+
+  next.attendedSeniorHighSchool =
+    config.seniorHighMode === "required"
+      ? true
+      : config.seniorHighMode === "optional"
+        ? current.attendedSeniorHighSchool
+        : false;
+
+  return next;
+}
+
+function getEducationSectionsForValidation(attainment, details) {
+  const config = getEducationAttainmentConfig(attainment);
+
+  if (!config) return [];
+
+  const sections = [...config.sections];
+  const normalizedDetails = normalizeEducationDetails(details);
+
+  if (
+    config.seniorHighMode === "optional" &&
+    normalizedDetails.attendedSeniorHighSchool
+  ) {
+    sections.splice(2, 0, {
+      key: "seniorHighSchool",
+      title: "Senior High School",
+      schoolNameLabel: "Senior High School Name",
+      requireYear: true,
+    });
+  }
+
+  return sections;
+}
+
+function validateEducationDetails(attainment, details) {
+  const config = getEducationAttainmentConfig(attainment);
+
+  if (!config) {
+    return "Please select a supported highest educational attainment.";
+  }
+
+  const normalizedDetails = normalizeEducationDetails(details);
+  const sections = getEducationSectionsForValidation(
+    attainment,
+    normalizedDetails,
+  );
+
+  for (const section of sections) {
+    const values = normalizedDetails[section.key] || createEmptyEducationSchool();
+
+    if (!values.schoolName) {
+      return `${section.title} name is required.`;
+    }
+
+    if (!values.address) {
+      return `${section.title} address is required.`;
+    }
+
+    if (section.requireCourse && !values.course) {
+      return `${section.title} course or program is required.`;
+    }
+
+    if (section.requireYear !== false) {
+      if (!values.schoolYearGraduated) {
+        return `${section.title} school year graduated is required.`;
+      }
+
+      if (!isValidSchoolYearRange(values.schoolYearGraduated)) {
+        return `${section.title} school year graduated must use YYYY-YYYY format and the ending year cannot be earlier than the starting year.`;
+      }
+    }
+  }
+
+  return "";
+}
+/* EDUCATION RULES END */
+
+function createEmptyPublicForm() {
+  return {
+    hearAboutUs: [],
+    openPosition: "",
+    nickname: "",
+    applyingLocation: "",
+    referredBy: "",
+    employeeId: "",
+
+    firstName: "",
+    lastName: "",
+    middleName: "",
+    suffix: "",
+    dateOfBirth: "",
+    email: "",
+    physicalAddress: "",
+    workExperience: "",
+    phone1: "",
+    phone2: "",
+
+    industryRelevantExperience: "",
+    lengthOfWorkExperience: "",
+    years: "",
+    role: "",
+    company: "",
+    monthlyCompensation: "",
+    reasonForLeaving: "",
+    hasOtherExperience: "",
+    otherExperiences: [],
+
+    highestEducationalAttainment: "",
+    educationDetails: createEmptyEducationDetails(),
+    affiliationsAndCertifications: [],
+    trainingAttended: "",
+
+    fullyVaccinated: "",
+    comfortableOnSite: "",
+    willingGraveyard: "",
+    employmentInterest: "",
+    remoteWorkAccess: "",
+    willingDrugTest: "",
+    willingBackgroundCheck: "",
+
+    reference1Name: "",
+    reference1Phone: "",
+    reference2Name: "",
+    reference2Phone: "",
+    reference3Name: "",
+    reference3Phone: "",
+
+    audioFile: null,
+    attachmentFile: null,
+    consent: false,
+  };
+}
+
 
 function getFileExtension(file) {
   const name = String(file?.name || "");
@@ -390,6 +904,42 @@ function textareaClass(extra = "") {
   return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
 }
 
+function AutoResizeTextarea({
+  value,
+  onChange,
+  minHeight = 44,
+  className = "",
+  ...props
+}) {
+  const textareaRef = useRef(null);
+
+  function resizeTextarea(textarea) {
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
+  }
+
+  useEffect(() => {
+    resizeTextarea(textareaRef.current);
+  }, [value, minHeight]);
+
+  return (
+    <textarea
+      {...props}
+      ref={textareaRef}
+      value={value}
+      rows={1}
+      onChange={(event) => {
+        onChange?.(event);
+        resizeTextarea(event.currentTarget);
+      }}
+      onInput={(event) => resizeTextarea(event.currentTarget)}
+      className={`${className} overflow-hidden`}
+    />
+  );
+}
+
 function getOptionValue(option) {
   if (typeof option === "string") return option;
   return option?.value || "";
@@ -398,6 +948,50 @@ function getOptionValue(option) {
 function getOptionLabel(option) {
   if (typeof option === "string") return option;
   return option?.label || option?.value || "";
+}
+
+function normalizeEducationalAttainmentOptionText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[’']/g, "")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+const EXCLUDED_EDUCATIONAL_ATTAINMENTS = new Set(
+  [
+    "Master's Degree Holder",
+    "Doctorate Degree Holder",
+    "Vocational / Technical Graduate",
+  ].map(normalizeEducationalAttainmentOptionText),
+);
+
+function isExcludedEducationalAttainmentOption(option) {
+  return [getOptionValue(option), getOptionLabel(option)]
+    .map(normalizeEducationalAttainmentOptionText)
+    .some((optionText) => EXCLUDED_EDUCATIONAL_ATTAINMENTS.has(optionText));
+}
+
+function normalizeEducationalAttainmentOption(option) {
+  const optionValue = getOptionValue(option);
+  const optionLabel = getOptionLabel(option);
+  const normalizedTexts = [optionValue, optionLabel].map(
+    normalizeEducationalAttainmentOptionText,
+  );
+
+  if (!normalizedTexts.includes("vocational")) {
+    return option;
+  }
+
+  return {
+    ...(option && typeof option === "object" ? option : {}),
+    id:
+      option && typeof option === "object"
+        ? option.id || optionValue || optionLabel
+        : optionValue || optionLabel,
+    value: optionValue || optionLabel || "Vocational",
+    label: "Vocational / Technical",
+  };
 }
 
 function normalizeDropdownOptions(options = []) {
@@ -431,6 +1025,8 @@ function normalizeOptionsPayload(payload) {
       : [],
     educationalAttainment: Array.isArray(data.educationalAttainment)
       ? data.educationalAttainment
+          .filter((option) => !isExcludedEducationalAttainmentOption(option))
+          .map(normalizeEducationalAttainmentOption)
       : [],
     affiliationCertification: Array.isArray(data.affiliationCertification)
       ? data.affiliationCertification
@@ -994,6 +1590,435 @@ function CalendarDatePicker({
   );
 }
 
+function SchoolYearSearchableDropdown({
+  value,
+  onChange,
+  required = true,
+  placeholder = "Search and select school year",
+  zIndex = "z-[180]",
+}) {
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const schoolYearOptions = useMemo(() => buildSchoolYearOptions(), []);
+  const normalizedValue = normalizeSchoolYearValue(value);
+
+  const selectedOption =
+    schoolYearOptions.find(
+      (option) => String(option.value) === String(normalizedValue),
+    ) ||
+    (isValidSchoolYearRange(normalizedValue)
+      ? {
+          id: normalizedValue,
+          value: normalizedValue,
+          label: normalizedValue,
+        }
+      : null);
+
+  const normalizedSearchTerm = searchTerm
+    .trim()
+    .toLowerCase()
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, "");
+
+  const matchingOptions = schoolYearOptions.filter((option) => {
+    if (!normalizedSearchTerm) return true;
+
+    return option.label
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .includes(normalizedSearchTerm);
+  });
+
+  const selectedMatchesSearch =
+    selectedOption &&
+    (!normalizedSearchTerm ||
+      selectedOption.label
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .includes(normalizedSearchTerm));
+
+  const visibleOptions = selectedMatchesSearch
+    ? [
+        selectedOption,
+        ...matchingOptions.filter(
+          (option) => option.value !== selectedOption.value,
+        ),
+      ]
+    : matchingOptions;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+        setSearchTerm("");
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+        setSearchTerm("");
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function openSearch() {
+    setSearchTerm("");
+    setOpen(true);
+
+    window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 0);
+  }
+
+  function closeSearch() {
+    setOpen(false);
+    setSearchTerm("");
+  }
+
+  function handleToggle() {
+    if (open) {
+      closeSearch();
+      return;
+    }
+
+    openSearch();
+  }
+
+  function handleSelect(nextValue) {
+    onChange(nextValue);
+    closeSearch();
+  }
+
+  function handleInputFocus() {
+    if (!open) {
+      openSearch();
+    }
+  }
+
+  function handleInputChange(event) {
+    if (!open) {
+      setOpen(true);
+    }
+
+    setSearchTerm(event.target.value);
+  }
+
+  function handleInputKeyDown(event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (visibleOptions.length > 0) {
+        handleSelect(visibleOptions[0].value);
+      }
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeSearch();
+    }
+  }
+
+  const inputValue = open ? searchTerm : selectedOption?.label || "";
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+    >
+      <div
+        className={`flex h-11 w-full min-w-0 items-center gap-3 rounded-xl border bg-white px-4 text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+        }`}
+      >
+        <Search
+          size={17}
+          className="shrink-0 text-[var(--sibs-primary-1)]"
+        />
+
+        <input
+          ref={searchInputRef}
+          type="text"
+          autoComplete="off"
+          value={inputValue}
+          onFocus={handleInputFocus}
+          onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
+          placeholder={open ? "Search school year" : placeholder}
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold outline-none placeholder:text-gray-400 ${
+            selectedOption && !open ? "text-gray-800" : "text-gray-700"
+          }`}
+        />
+
+        <button
+          type="button"
+          onClick={handleToggle}
+          aria-label={open ? "Close school year options" : "Open school year options"}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#F2F6FA]"
+        >
+          <ChevronDown
+            size={18}
+            className={`text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      {required && (
+        <input
+          tabIndex={-1}
+          value={normalizedValue}
+          onChange={() => {}}
+          required
+          className="pointer-events-none absolute bottom-0 left-0 h-px w-px opacity-0"
+        />
+      )}
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-64 overflow-y-auto" role="listbox">
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((option) => {
+                const active = option.value === normalizedValue;
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-4 text-sm font-semibold text-gray-400">
+                No school year found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EducationSchoolFields({ section, value, onChange }) {
+  const school = getEducationSchoolDraft(value);
+
+  function updateField(field, nextValue) {
+    const normalizedValue =
+      field === "schoolYearGraduated"
+        ? normalizeSchoolYearInputValue(nextValue)
+        : String(nextValue ?? "").toUpperCase();
+
+    onChange({
+      ...school,
+      [field]: normalizedValue,
+    });
+  }
+
+  return (
+    <div className="rounded-3xl border border-blue-100 bg-blue-50/60 p-5">
+      <div className="flex flex-col gap-1">
+        <h4 className="text-sm font-extrabold text-sibs-primary-1">
+          {section.title}
+        </h4>
+        <p className="text-xs font-semibold leading-5 text-gray-500">
+          Complete all required information for this school level.
+        </p>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div>
+          <FieldLabel>
+            {section.schoolNameLabel || `${section.title} Name`} <RequiredMark />
+          </FieldLabel>
+          <AutoResizeTextarea
+            required
+            value={school.schoolName}
+            onChange={(event) => updateField("schoolName", event.target.value)}
+            placeholder={`Enter ${String(
+              section.schoolNameLabel || `${section.title} name`,
+            ).toLowerCase()}`}
+            className={textareaClass("min-h-11 leading-6")}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>
+            {section.title} Address <RequiredMark />
+          </FieldLabel>
+          <AutoResizeTextarea
+            required
+            value={school.address}
+            onChange={(event) => updateField("address", event.target.value)}
+            placeholder="Complete school address"
+            className={textareaClass("min-h-11 leading-6")}
+          />
+        </div>
+
+        {section.requireCourse && (
+          <div>
+            <FieldLabel>
+              {section.courseLabel || "Course or Program"} <RequiredMark />
+            </FieldLabel>
+            <input
+              required
+              value={school.course}
+              onChange={(event) => updateField("course", event.target.value)}
+              placeholder={`Enter ${String(
+                section.courseLabel || "course or program",
+              ).toLowerCase()}`}
+              className={inputClass()}
+            />
+          </div>
+        )}
+
+        {section.requireYear !== false && (
+          <div>
+            <FieldLabel>
+              School Year Graduated <RequiredMark />
+            </FieldLabel>
+            <SchoolYearSearchableDropdown
+              required
+              value={school.schoolYearGraduated}
+              onChange={(nextValue) =>
+                updateField("schoolYearGraduated", nextValue)
+              }
+              placeholder="Search and select school year"
+            />
+            <p className="mt-2 text-xs font-semibold text-gray-500">
+              Search using either the starting or ending year.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EducationDetailsFields({ attainment, details, onChange }) {
+  const config = getEducationAttainmentConfig(attainment);
+  const educationDetails = getEducationDetailsDraft(details);
+
+  if (!config) return null;
+
+  function updateSection(sectionKey, nextSection) {
+    onChange({
+      ...educationDetails,
+      [sectionKey]: getEducationSchoolDraft(nextSection),
+    });
+  }
+
+  function handleSeniorHighAttendanceChange(checked) {
+    onChange({
+      ...educationDetails,
+      attendedSeniorHighSchool: checked,
+      seniorHighSchool: checked
+        ? educationDetails.seniorHighSchool
+        : createEmptyEducationSchool(),
+    });
+  }
+
+  const seniorHighSection = {
+    key: "seniorHighSchool",
+    title: "Senior High School",
+    schoolNameLabel: "Senior High School Name",
+    requireYear: true,
+  };
+
+  return (
+    <div className="space-y-4 rounded-3xl border border-gray-100 bg-gray-50 p-5">
+      <div>
+        <h4 className="text-sm font-extrabold text-gray-900">
+          Required Education Details
+        </h4>
+        <p className="mt-1 text-sm leading-6 text-gray-500">
+          The school fields below are based on the selected highest educational
+          attainment. Every displayed school name and address is required.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {config.sections.map((section) => (
+          <React.Fragment key={section.key}>
+            <EducationSchoolFields
+              section={section}
+              value={educationDetails[section.key]}
+              onChange={(nextSection) =>
+                updateSection(section.key, nextSection)
+              }
+            />
+
+            {config.seniorHighMode === "optional" &&
+              section.key === "highSchool" && (
+                <>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-100 bg-white p-4">
+                    <input
+                      type="checkbox"
+                      checked={educationDetails.attendedSeniorHighSchool}
+                      onChange={(event) =>
+                        handleSeniorHighAttendanceChange(event.target.checked)
+                      }
+                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
+                    />
+                    <span>
+                      <span className="block text-sm font-extrabold text-sibs-primary-1">
+                        I attended Senior High School
+                      </span>
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-gray-500">
+                        Check this box to add the required Senior High School
+                        name, address, and school year graduated.
+                      </span>
+                    </span>
+                  </label>
+
+                  {educationDetails.attendedSeniorHighSchool && (
+                    <EducationSchoolFields
+                      section={seniorHighSection}
+                      value={educationDetails.seniorHighSchool}
+                      onChange={(nextSection) =>
+                        updateSection("seniorHighSchool", nextSection)
+                      }
+                    />
+                  )}
+                </>
+              )}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MultiSelectCheckboxGroup({ options, values, onChange }) {
   function toggleValue(optionValue) {
     if (values.includes(optionValue)) {
@@ -1242,9 +2267,10 @@ export default function PublicTalentPoolApplicationPage() {
   const audioInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const fileSectionRef = useRef(null);
+  const educationSectionRef = useRef(null);
   const consentRef = useRef(null);
 
-  const [form, setForm] = useState(emptyPublicForm);
+  const [form, setForm] = useState(createEmptyPublicForm);
   const [submittedRecord, setSubmittedRecord] = useState(null);
   const [activePositionOptions, setActivePositionOptions] = useState([]);
   const [formOptions, setFormOptions] = useState(defaultFormOptions);
@@ -1448,6 +2474,28 @@ export default function PublicTalentPoolApplicationPage() {
     }));
   }
 
+
+  function handleEducationalAttainmentChange(value) {
+    setForm((previous) => ({
+      ...previous,
+      highestEducationalAttainment: value,
+      educationDetails: prepareEducationDetailsForAttainment(
+        previous.educationDetails,
+        value,
+      ),
+    }));
+  }
+
+  function updateEducationDetails(nextDetails) {
+    setForm((previous) => ({
+      ...previous,
+      educationDetails: prepareEducationDetailsForAttainment(
+        nextDetails,
+        previous.highestEducationalAttainment,
+      ),
+    }));
+  }
+
   function handleReset() {
     audioFileRef.current = null;
     attachmentFileRef.current = null;
@@ -1460,7 +2508,7 @@ export default function PublicTalentPoolApplicationPage() {
       attachmentInputRef.current.value = "";
     }
 
-    setForm(emptyPublicForm);
+    setForm(createEmptyPublicForm());
     setSubmittedRecord(null);
     setHighlightAudio(false);
     setHighlightAttachment(false);
@@ -1729,6 +2777,23 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
+
+    const educationValidationMessage = validateEducationDetails(
+      form.highestEducationalAttainment,
+      form.educationDetails,
+    );
+
+    if (educationValidationMessage) {
+      scrollToRef(educationSectionRef);
+
+      showStatusModal({
+        type: "error",
+        title: "Incomplete education details",
+        message: educationValidationMessage,
+      });
+      return false;
+    }
+
     if (!form.fullyVaccinated) {
       showStatusModal({
         type: "error",
@@ -1942,6 +3007,7 @@ export default function PublicTalentPoolApplicationPage() {
 
     const submitForm = {
       ...normalizePublicFormFields(form),
+      educationDetails: normalizeEducationDetails(form.educationDetails),
       otherExperiences: form.otherExperiences.map(normalizeExperienceValues),
       audioFile: audioFileRef.current || form.audioFile,
       attachmentFile: attachmentFileRef.current || form.attachmentFile,
@@ -1975,7 +3041,7 @@ export default function PublicTalentPoolApplicationPage() {
       }
 
       setSubmittedRecord(savedSubmission);
-      setForm(emptyPublicForm);
+      setForm(createEmptyPublicForm());
       setHighlightAudio(false);
       setHighlightAttachment(false);
       setHighlightConsent(false);
@@ -2369,13 +3435,14 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Physical Address <RequiredMark />
                   </FieldLabel>
-                  <input
+                  <AutoResizeTextarea
+                    required
                     value={form.physicalAddress}
                     onChange={(e) =>
                       updateFormField("physicalAddress", e.target.value)
                     }
                     placeholder="Complete physical address"
-                    className={inputClass()}
+                    className={textareaClass("min-h-11 leading-6")}
                   />
                 </div>
               </div>
@@ -2462,53 +3529,59 @@ export default function PublicTalentPoolApplicationPage() {
               </div>
             </SectionCard>
 
-            <SectionCard
-              icon={GraduationCap}
-              title="Education, Affiliations, and Training"
-              description="Select educational attainment and any applicable affiliations or certifications."
-            >
-              <div className="space-y-5">
-                <div>
-                  <FieldLabel>
-                    Highest Educational Attainment <RequiredMark />
-                  </FieldLabel>
-                  <DatabaseSelect
-                    required
-                    value={form.highestEducationalAttainment}
-                    options={formOptions.educationalAttainment}
-                    placeholder="Select educational attainment"
-                    onChange={(value) =>
-                      updateFormField("highestEducationalAttainment", value)
-                    }
-                    zIndex="z-[170]"
-                  />
-                </div>
+            <div ref={educationSectionRef}>
+              <SectionCard
+                icon={GraduationCap}
+                title="Education, Affiliations, and Training"
+                description="Select educational attainment and complete the school details required for that level."
+              >
+                <div className="space-y-5">
+                  <div>
+                    <FieldLabel>
+                      Highest Educational Attainment <RequiredMark />
+                    </FieldLabel>
+                    <DatabaseSelect
+                      required
+                      value={form.highestEducationalAttainment}
+                      options={formOptions.educationalAttainment}
+                      placeholder="Select educational attainment"
+                      onChange={handleEducationalAttainmentChange}
+                      zIndex="z-[170]"
+                    />
+                  </div>
 
-                <div>
-                  <FieldLabel>Affiliations and Certifications</FieldLabel>
-                  <MultiSelectCheckboxGroup
-                    options={formOptions.affiliationCertification}
-                    values={form.affiliationsAndCertifications}
-                    onChange={(values) =>
-                      updateFormField("affiliationsAndCertifications", values)
-                    }
+                  <EducationDetailsFields
+                    attainment={form.highestEducationalAttainment}
+                    details={form.educationDetails}
+                    onChange={updateEducationDetails}
                   />
-                </div>
 
-                <div>
-                  <FieldLabel>Training Attended</FieldLabel>
-                  <textarea
-                    value={form.trainingAttended}
-                    onChange={(e) =>
-                      updateFormField("trainingAttended", e.target.value)
-                    }
-                    placeholder="List trainings attended"
-                    rows={4}
-                    className={textareaClass()}
-                  />
+                  <div>
+                    <FieldLabel>Affiliations and Certifications</FieldLabel>
+                    <MultiSelectCheckboxGroup
+                      options={formOptions.affiliationCertification}
+                      values={form.affiliationsAndCertifications}
+                      onChange={(values) =>
+                        updateFormField("affiliationsAndCertifications", values)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Training Attended</FieldLabel>
+                    <textarea
+                      value={form.trainingAttended}
+                      onChange={(e) =>
+                        updateFormField("trainingAttended", e.target.value)
+                      }
+                      placeholder="List trainings attended"
+                      rows={4}
+                      className={textareaClass()}
+                    />
+                  </div>
                 </div>
-              </div>
-            </SectionCard>
+              </SectionCard>
+            </div>
 
             <SectionCard
               icon={ShieldCheck}

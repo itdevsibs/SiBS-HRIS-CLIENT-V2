@@ -158,6 +158,270 @@ function normalizeCandidateRecordList(value) {
   return [];
 }
 
+
+const CANDIDATE_EDUCATION_SECTION_DEFINITIONS = [
+  { key: "elementary", label: "Elementary School" },
+  { key: "highSchool", label: "High School" },
+  { key: "seniorHighSchool", label: "Senior High School" },
+  { key: "college", label: "College" },
+  { key: "vocational", label: "Vocational / Technical School" },
+  { key: "lawSchool", label: "Law School" },
+  { key: "masters", label: "Master's Degree" },
+  { key: "doctorate", label: "Doctorate Degree" },
+];
+
+function parseCandidateJsonObject(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value !== "string") return {};
+
+  const trimmed = value.trim();
+
+  if (!trimmed) return {};
+
+  try {
+    const parsed = JSON.parse(trimmed);
+
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function getCandidateEducationDetails(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+
+  const sources = [
+    safeCandidate.educationDetails,
+    safeCandidate.education_details,
+    safeCandidate.educationDetailsJson,
+    safeCandidate.education_details_json,
+
+    metadata.educationDetails,
+    metadata.education_details,
+    metadata.educationDetailsJson,
+    metadata.education_details_json,
+
+    candidateSnapshot.educationDetails,
+    candidateSnapshot.education_details,
+    candidateSnapshot.educationDetailsJson,
+    candidateSnapshot.education_details_json,
+
+    pipelineCandidate.educationDetails,
+    pipelineCandidate.education_details,
+    pipelineCandidate.educationDetailsJson,
+    pipelineCandidate.education_details_json,
+
+    pipelineDetails.educationDetails,
+    pipelineDetails.education_details,
+    pipelineDetails.educationDetailsJson,
+    pipelineDetails.education_details_json,
+  ];
+
+  for (const source of sources) {
+    const parsed = parseCandidateJsonObject(source);
+
+    if (Object.keys(parsed).length > 0) {
+      return parsed;
+    }
+  }
+
+  return {};
+}
+
+function getCandidateEducationAttainment(candidate = {}) {
+  return firstCandidateValue(
+    candidate.highestEducationalAttainment,
+    candidate.highest_educational_attainment,
+    candidate.educationalAttainment,
+    candidate.educational_attainment,
+  );
+}
+
+function getEducationSectionDisplayLabel(sectionKey, attainment = "") {
+  if (
+    sectionKey === "college" &&
+    normalizeLower(attainment) === "college level"
+  ) {
+    return "Current College";
+  }
+
+  return (
+    CANDIDATE_EDUCATION_SECTION_DEFINITIONS.find(
+      (section) => section.key === sectionKey,
+    )?.label || sectionKey
+  );
+}
+
+function normalizeCandidateEducationSchool(
+  sectionKey,
+  sectionValue,
+  attainment = "",
+) {
+  const section = parseCandidateJsonObject(sectionValue);
+
+  const record = {
+    source: "educationDetails",
+    sectionKey,
+    level: getEducationSectionDisplayLabel(sectionKey, attainment),
+    schoolName: firstCandidateValue(
+      section.schoolName,
+      section.school_name,
+      section.school,
+      section.name,
+    ),
+    address: firstCandidateValue(
+      section.address,
+      section.schoolAddress,
+      section.school_address,
+    ),
+    course: firstCandidateValue(
+      section.course,
+      section.program,
+      section.degree,
+      section.degreeCourse,
+      section.degree_course,
+    ),
+    schoolYearGraduated: firstCandidateValue(
+      section.schoolYearGraduated,
+      section.school_year_graduated,
+      section.yearGraduated,
+      section.year_graduated,
+      section.schoolYear,
+      section.school_year,
+    ),
+  };
+
+  return hasCandidateValue({
+    schoolName: record.schoolName,
+    address: record.address,
+    course: record.course,
+    schoolYearGraduated: record.schoolYearGraduated,
+  })
+    ? record
+    : null;
+}
+
+function getCandidateDetailedEducationRecords(candidate = {}) {
+  const attainment = getCandidateEducationAttainment(candidate);
+  const details = getCandidateEducationDetails(candidate);
+
+  return CANDIDATE_EDUCATION_SECTION_DEFINITIONS.map((section) =>
+    normalizeCandidateEducationSchool(
+      section.key,
+      details[section.key] || details[section.key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)],
+      attainment,
+    ),
+  ).filter(Boolean);
+}
+
+function normalizeLegacyEducationRecord(record, index = 0) {
+  const item =
+    record && typeof record === "object" && !Array.isArray(record)
+      ? record
+      : { degree: record };
+
+  const normalizedRecord = {
+    source: "legacy",
+    sectionKey: cleanText(item.key || item.sectionKey || `legacy-${index}`),
+    level: firstCandidateValue(
+      item.level,
+      item.educationLevel,
+      item.education_level,
+      item.type,
+    ),
+    schoolName: firstCandidateValue(
+      item.school,
+      item.schoolName,
+      item.school_name,
+      item.name,
+    ),
+    address: firstCandidateValue(
+      item.address,
+      item.schoolAddress,
+      item.school_address,
+    ),
+    course: firstCandidateValue(
+      item.degree,
+      item.course,
+      item.program,
+      item.degreeCourse,
+      item.degree_course,
+    ),
+    schoolYearGraduated: firstCandidateValue(
+      item.schoolYearGraduated,
+      item.school_year_graduated,
+      item.yearGraduated,
+      item.year_graduated,
+      item.schoolYear,
+      item.school_year,
+    ),
+  };
+
+  return hasCandidateValue({
+    level: normalizedRecord.level,
+    schoolName: normalizedRecord.schoolName,
+    address: normalizedRecord.address,
+    course: normalizedRecord.course,
+    schoolYearGraduated: normalizedRecord.schoolYearGraduated,
+  })
+    ? normalizedRecord
+    : null;
+}
+
+function getCandidateLegacyEducationRecords(candidate = {}) {
+  const sources = [
+    candidate.education,
+    candidate.educationalBackground,
+    candidate.educational_background,
+    candidate.academicRecords,
+    candidate.academic_records,
+  ];
+
+  return sources
+    .flatMap((source) => normalizeCandidateRecordList(source))
+    .map(normalizeLegacyEducationRecord)
+    .filter(Boolean);
+}
+
+function getCandidateEducationRecordKey(record = {}) {
+  return [
+    record.level,
+    record.schoolName,
+    record.address,
+    record.course,
+    record.schoolYearGraduated,
+  ]
+    .map((value) => normalizeLower(value))
+    .join("|");
+}
+
+function getCandidateEducationRecords(candidate = {}) {
+  const detailedRecords = getCandidateDetailedEducationRecords(candidate);
+  const legacyRecords = getCandidateLegacyEducationRecords(candidate);
+  const uniqueRecords = new Map();
+
+  [...detailedRecords, ...legacyRecords].forEach((record) => {
+    const key = getCandidateEducationRecordKey(record);
+
+    if (!key.replace(/\|/g, "")) return;
+
+    if (!uniqueRecords.has(key)) {
+      uniqueRecords.set(key, record);
+    }
+  });
+
+  return Array.from(uniqueRecords.values());
+}
+
 function getApiErrorMessage(error, fallback = "Request failed.") {
   return (
     error?.response?.data?.message ||
@@ -3604,70 +3868,90 @@ export default function CandidateProfileModal() {
 }
 
   function renderEducation() {
-    const records = normalizeCandidateRecordList(
-      firstCandidateValue(
-        activeCandidate.education,
-        activeCandidate.educationalBackground,
-        activeCandidate.educational_background,
-      ),
-    );
-    const attainment = activeCandidate.educationalAttainment;
+    const attainment = getCandidateEducationAttainment(activeCandidate);
+    const records = getCandidateEducationRecords(activeCandidate);
 
     return (
       <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
         <SectionTitle
           icon={GraduationCap}
           title="Educational Background"
-          description="Candidate educational attainment and academic records."
+          description="Candidate educational attainment and complete academic history."
         />
 
         {hasCandidateValue(attainment) && (
           <div className="mb-4">
-            <ProfileDetail label="Educational Attainment" value={attainment} />
+            <ProfileDetail
+              label="Highest Educational Attainment"
+              value={attainment}
+            />
           </div>
         )}
 
         {records.length > 0 ? (
-          <div className="space-y-3">
-            {records.map((record, index) => {
-              const item =
-                record && typeof record === "object"
-                  ? record
-                  : { degree: record };
+          <div className="space-y-4">
+            {records.map((record, index) => (
+              <article
+                key={`${record.sectionKey || record.level || "education"}-${
+                  record.schoolName || index
+                }-${index}`}
+                className="overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white"
+              >
+                <div className="flex items-start gap-3 border-b border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-5">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1">
+                    <GraduationCap size={19} />
+                  </div>
 
-              return (
-                <div
-                  key={`${item.school || item.degree || "education"}-${index}`}
-                  className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4"
-                >
-                  <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-                    <ProfileDetail
-                      label="Level"
-                      value={firstCandidateValue(item.level, item.educationLevel)}
-                    />
-                    <ProfileDetail
-                      label="School"
-                      value={firstCandidateValue(item.school, item.schoolName)}
-                    />
-                    <ProfileDetail
-                      label="Degree / Course"
-                      value={firstCandidateValue(item.degree, item.course)}
-                    />
-                    <ProfileDetail
-                      label="Year Graduated"
-                      value={firstCandidateValue(
-                        item.yearGraduated,
-                        item.year_graduated,
-                      )}
-                    />
-                  </ProfileGrid>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/60 sm:text-[11px]">
+                      Academic Record {index + 1}
+                    </p>
+                    <h4 className="mt-1 break-words text-sm font-extrabold text-[#101828] sm:text-base">
+                      {record.level || "Educational Background"}
+                    </h4>
+                  </div>
                 </div>
-              );
-            })}
+
+                <div className="space-y-3 p-4 sm:p-5">
+                  <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+                    <ProfileDetail
+                      label="School Name"
+                      value={record.schoolName}
+                    />
+
+                    {hasCandidateValue(record.course) && (
+                      <ProfileDetail
+                        label="Course / Program"
+                        value={record.course}
+                      />
+                    )}
+
+                    {hasCandidateValue(record.schoolYearGraduated) && (
+                      <ProfileDetail
+                        label="School Year Graduated"
+                        value={record.schoolYearGraduated}
+                      />
+                    )}
+                  </ProfileGrid>
+
+                  {hasCandidateValue(record.address) && (
+                    <ProfileTextarea
+                      label="School Address"
+                      value={record.address}
+                    />
+                  )}
+                </div>
+              </article>
+            ))}
           </div>
         ) : !hasCandidateValue(attainment) ? (
           <EmptyState title="No education information provided." />
-        ) : null}
+        ) : (
+          <EmptyState
+            title="No detailed school records provided."
+            description="The candidate's highest educational attainment is available, but school-level details were not saved for this record."
+          />
+        )}
       </section>
     );
   }
