@@ -60,6 +60,11 @@ function appendJson(formData, key, value) {
   formData.append(key, JSON.stringify(normalizeArray(value)));
 }
 
+function appendJsonValue(formData, key, value, fallback = {}) {
+  const finalValue = value === undefined || value === null ? fallback : value;
+  formData.append(key, JSON.stringify(finalValue));
+}
+
 function getPrimaryExperience(form = {}) {
   const workExperiences = normalizeArray(form.workExperiences).filter(Boolean);
   const primaryExperience = workExperiences[0] || {};
@@ -152,6 +157,9 @@ function appendPublicApplicationFormData(formData, form = {}) {
     "educationalAttainment",
     form.educationalAttainment || form.highestEducationalAttainment,
   );
+
+
+  appendJsonValue(formData, "educationDetails", form.educationDetails || {});
 
   appendJson(
     formData,

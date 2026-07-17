@@ -135,50 +135,120 @@ function getEmployeeSibsId(item = {}) {
   );
 }
 
+function escapeRegExp(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeSibsIdPrefix(value = "", sibsId = "") {
+  let employeeName = cleanText(value);
+  const cleanSibsId = normalizeSibsId(sibsId);
+
+  if (!employeeName || !cleanSibsId) {
+    return employeeName;
+  }
+
+  const escapedSibsId = escapeRegExp(cleanSibsId);
+  const prefixPattern = new RegExp(
+    `^(?:SIBS[-_ ]*)?${escapedSibsId}\\s*[-–—:]\\s*`,
+    "i",
+  );
+
+  /*
+   * Some API responses contain:
+   * 2435 - 2435 - BATACAN, ALENA MENDOZA
+   *
+   * Repeating the replacement removes every duplicated copy of the
+   * current employee's SIBS ID from the beginning of the name.
+   */
+  while (prefixPattern.test(employeeName)) {
+    employeeName = employeeName.replace(prefixPattern, "").trim();
+  }
+
+  return employeeName;
+}
+
 function getEmployeeName(item = {}) {
-  const fullName = cleanText(
+  const sibsId = getEmployeeSibsId(item);
+
+  /*
+   * Do not include displayName in this first group. Some approval-rule
+   * APIs return displayName as "SIBS ID - EMPLOYEE NAME".
+   */
+  const directName = cleanText(
     item.employeeName ||
       item.employee_name ||
       item.fullName ||
       item.full_name ||
       item.name ||
-      item.displayName ||
-      item.display_name ||
       item.gy_emp_fullname ||
       "",
   );
 
-  if (fullName) return fullName;
+  const cleanDirectName = removeSibsIdPrefix(
+    directName,
+    sibsId,
+  );
 
-  const displayName = cleanText(item.displayName || item.display_name || "");
+  if (cleanDirectName) {
+    return cleanDirectName;
+  }
+
+  const displayName = removeSibsIdPrefix(
+    item.displayName || item.display_name || "",
+    sibsId,
+  );
 
   if (displayName) {
-    return displayName.replace(/^\d+\s*-\s*/i, "").trim();
+    return displayName;
   }
 
   const lastName = cleanText(
-    item.lastName || item.last_name || item.gy_emp_lname || "",
-  );
-  const firstName = cleanText(
-    item.firstName || item.first_name || item.gy_emp_fname || "",
-  );
-  const middleName = cleanText(
-    item.middleName || item.middle_name || item.gy_emp_mname || "",
+    item.lastName ||
+      item.last_name ||
+      item.gy_emp_lname ||
+      "",
   );
 
-  const formatted =
+  const firstName = cleanText(
+    item.firstName ||
+      item.first_name ||
+      item.gy_emp_fname ||
+      "",
+  );
+
+  const middleName = cleanText(
+    item.middleName ||
+      item.middle_name ||
+      item.gy_emp_mname ||
+      "",
+  );
+
+  const formattedName =
     `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
       middleName ? ` ${middleName}` : ""
     }`
       .replace(/\s+/g, " ")
       .trim();
 
-  return formatted || "Unnamed Employee";
+  return formattedName || "Unnamed Employee";
+}
+
+function buildEmployeeLabel(sibsId, employeeName) {
+  const cleanSibsId = normalizeSibsId(sibsId);
+  const cleanEmployeeName = removeSibsIdPrefix(
+    employeeName,
+    cleanSibsId,
+  );
+
+  return [cleanSibsId, cleanEmployeeName]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 function normalizeApprovalUser(item = {}) {
   const sibsId = getEmployeeSibsId(item);
   const employeeName = getEmployeeName(item);
+  const label = buildEmployeeLabel(sibsId, employeeName);
 
   return {
     id:
@@ -190,14 +260,17 @@ function normalizeApprovalUser(item = {}) {
       sibsId,
     sibsId,
     employeeName,
-    displayName:
-      item.displayName ||
-      item.display_name ||
-      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
-    firstName: cleanText(item.firstName || item.first_name),
-    middleName: cleanText(item.middleName || item.middle_name),
-    lastName: cleanText(item.lastName || item.last_name),
-    label: `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
+    displayName: label,
+    firstName: cleanText(
+      item.firstName || item.first_name,
+    ),
+    middleName: cleanText(
+      item.middleName || item.middle_name,
+    ),
+    lastName: cleanText(
+      item.lastName || item.last_name,
+    ),
+    label,
     raw: item,
   };
 }
@@ -208,20 +281,48 @@ function normalizeCandidate(item = {}) {
 
   if (!sibsId) return null;
 
-  return {
-    id: item.id || item.employeeId || item.employee_id || sibsId,
+  const label = buildEmployeeLabel(
     sibsId,
     employeeName,
-    displayName:
-      item.displayName ||
-      item.display_name ||
-      `${sibsId}${employeeName ? ` - ${employeeName}` : ""}`,
-    firstName: cleanText(item.firstName || item.first_name),
-    middleName: cleanText(item.middleName || item.middle_name),
-    lastName: cleanText(item.lastName || item.last_name),
-    label: `${sibsId} - ${employeeName}`,
+  );
+
+  return {
+    id:
+      item.id ||
+      item.employeeId ||
+      item.employee_id ||
+      sibsId,
+    sibsId,
+    employeeName,
+    displayName: label,
+    firstName: cleanText(
+      item.firstName || item.first_name,
+    ),
+    middleName: cleanText(
+      item.middleName || item.middle_name,
+    ),
+    lastName: cleanText(
+      item.lastName || item.last_name,
+    ),
+    label,
     raw: item,
   };
+}
+
+function deduplicatePeopleBySibsId(rows = []) {
+  const uniqueRows = new Map();
+
+  rows.forEach((row) => {
+    if (!row?.sibsId) return;
+
+    const key = normalizeSibsId(row.sibsId).toLowerCase();
+
+    if (!uniqueRows.has(key)) {
+      uniqueRows.set(key, row);
+    }
+  });
+
+  return Array.from(uniqueRows.values());
 }
 
 function normalizeRows(responseData) {
@@ -437,7 +538,7 @@ function EmployeeSearchDropdown({
                   className="block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC]"
                 >
                   <span className="block text-sm font-extrabold text-[#101828]">
-                    {candidate.sibsId} - {candidate.employeeName}
+                    {candidate.label}
                   </span>
 
                   <span className="mt-0.5 block text-xs font-semibold text-sibs-tertiary-5">
@@ -466,7 +567,7 @@ function ApprovalUserRow({ user, description, removing, onRemove }) {
     <tr className="transition hover:bg-[#FAFBFC]">
       <td className="border-b border-[#E6ECF2] px-5 py-4">
         <p className="text-sm font-extrabold text-[#101828]">
-          {user.sibsId} - {user.employeeName}
+          {user.label}
         </p>
 
         <p className="mt-1 text-xs font-bold text-sibs-primary-1">
@@ -737,9 +838,11 @@ export default function ApprovalRulesSettings() {
       const apiMethods = getRuleApi(ruleKey);
       const result = await apiMethods.getUsers();
 
-      const rows = normalizeRows(result)
-        .map(normalizeApprovalUser)
-        .filter((item) => item.sibsId);
+      const rows = deduplicatePeopleBySibsId(
+        normalizeRows(result)
+          .map(normalizeApprovalUser)
+          .filter((item) => item.sibsId),
+      );
 
       setUsersByRule((previous) => ({
         ...previous,
@@ -781,9 +884,11 @@ export default function ApprovalRulesSettings() {
       const apiMethods = getRuleApi(ruleKey);
       const result = await apiMethods.searchEmployees(cleanKeyword);
 
-      const candidates = normalizeRows(result)
-        .map(normalizeCandidate)
-        .filter(Boolean);
+      const candidates = deduplicatePeopleBySibsId(
+        normalizeRows(result)
+          .map(normalizeCandidate)
+          .filter(Boolean),
+      );
 
       setCandidatesByRule((previous) => ({
         ...previous,

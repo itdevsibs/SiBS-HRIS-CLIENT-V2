@@ -516,6 +516,90 @@ export async function saveCandidatePipelineOfferDecision(id, payload = {}) {
   }
 }
 
+
+export async function getCandidatePipelineNhoFiles(id) {
+  try {
+    const res = await api.get(
+      `/api/candidate-pipeline/${encodeURIComponent(
+        id,
+      )}/nho/files`,
+      {
+        withCredentials: true,
+        params: {
+          _t: Date.now(),
+        },
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios getCandidatePipelineNhoFiles API error:",
+      err?.response?.status,
+      err?.response?.data ||
+        err?.message,
+    );
+
+    return errorResponse(
+      err,
+      "Failed to load pre-employment files.",
+      {
+        files: [],
+      },
+    );
+  }
+}
+
+export async function saveCandidatePipelineNhoFiles(
+  id,
+  formData,
+) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(
+        id,
+      )}/nho/files`,
+      formData,
+      {
+        withCredentials: true,
+        timeout: 90000,
+        headers: {
+          "Content-Type": undefined,
+        },
+        transformRequest: [
+          (data, headers) => {
+            if (headers?.delete) {
+              headers.delete("Content-Type");
+            } else if (headers) {
+              delete headers["Content-Type"];
+              delete headers["content-type"];
+            }
+
+            return data;
+          },
+        ],
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios saveCandidatePipelineNhoFiles API error:",
+      err?.response?.status,
+      err?.response?.data ||
+        err?.message,
+    );
+
+    return errorResponse(
+      err,
+      "Failed to save pre-employment files.",
+      {
+        files: [],
+      },
+    );
+  }
+}
+
 export async function scheduleCandidatePipelineNho(id, payload = {}) {
   try {
     const res = await api.post(
@@ -557,6 +641,8 @@ const candidatePipelineApi = {
   updateCandidatePipelineOfferApproval,
   sendCandidatePipelineOfferEmail,
   saveCandidatePipelineOfferDecision,
+  getCandidatePipelineNhoFiles,
+  saveCandidatePipelineNhoFiles,
   scheduleCandidatePipelineNho,
 };
 

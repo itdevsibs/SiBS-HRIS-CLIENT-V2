@@ -1,5 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 
 import {
@@ -9,7 +16,16 @@ import {
 } from "../../../lib/axios/getFinalInterviewDraft";
 
 import api from "../../../lib/axios/api-template";
+import { getFinalInterviewFormByPosition } from "../../../lib/axios/getRecruitmentSettings";
 import StatusModal from "../../../components/modals/StatusModal";
+import {
+  findMatchingFinalInterviewForm,
+  getFinalInterviewFormFields,
+  getFinalInterviewFormId,
+  getFinalInterviewFormPositionId,
+  getFinalInterviewFormPositionTitle,
+  getRecruitmentSettingsSnapshot,
+} from "../../../lib/utils/recruitment/finalInterviewFormMatching";
 
 const RECRUITMENT_SETTINGS_STORAGE_KEY = "sibs_recruitment_settings_temp";
 const DEFAULT_JOB_EVALUATION_FORM_ID = "default-job-evaluation";
@@ -94,12 +110,7 @@ const competenciesOptions = [
 ];
 
 function safeReadSettings() {
-  try {
-    const raw = localStorage.getItem(RECRUITMENT_SETTINGS_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return getRecruitmentSettingsSnapshot();
 }
 
 function normalizeText(value) {
@@ -130,6 +141,18 @@ function safeJsonParseValue(value, fallback) {
 function safeArray(value) {
   const parsed = safeJsonParseValue(value, value);
   return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+}
+
+function getFirstNonEmptyFieldArray(...sources) {
+  for (const source of sources) {
+    const fields = safeArray(source);
+
+    if (fields.length > 0) {
+      return fields;
+    }
+  }
+
+  return [];
 }
 
 function safeObject(value) {
@@ -731,33 +754,56 @@ function calculateJobEvaluationScore(answers = {}) {
   };
 }
 
-function calculateRatingScore(fields = [], answers = {}) {
-  const ratingFields = fields.filter(
-    (field) => field.enabled !== false && field.type === "Rating",
-  );
+function getFinalInterviewQuestionId(field = {}, index = 0) {
+  const rawId =
+    field.id ||
+    field.fieldId ||
+    field.field_id ||
+    field.questionId ||
+    field.question_id ||
+    field.key ||
+    field.name ||
+    `final-interview-question-${index + 1}`;
 
-  const ratedValues = ratingFields
-    .map((field) => Number(answers[field.id]))
+  return String(rawId).trim();
+}
+
+function getQuestionRatingKey(questionId) {
+  return `__final_interview_rating__${String(questionId || "").trim()}`;
+}
+
+function getQuestionRemarkKey(questionId) {
+  return `__final_interview_remark__${String(questionId || "").trim()}`;
+}
+
+function calculateRatingScore(fields = [], answers = {}) {
+  const scorableFields = fields.filter((field) => field.enabled !== false);
+
+  const ratedValues = scorableFields
+    .map((field, index) => {
+      const questionId = getFinalInterviewQuestionId(field, index);
+      const ratingKey = getQuestionRatingKey(questionId);
+
+      return Number(answers[ratingKey]);
+    })
     .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
 
-  if (!ratedValues.length) {
-    return {
-      totalRatingFields: ratingFields.length,
-      answeredRatingFields: 0,
-      totalScore: 0,
-      averageRating: 0,
-      percentageScore: 0,
-    };
-  }
-
+  const totalRatingFields = scorableFields.length;
+  const answeredRatingFields = ratedValues.length;
   const totalScore = ratedValues.reduce((sum, value) => sum + value, 0);
-  const averageRating = totalScore / ratedValues.length;
-  const percentageScore = (averageRating / 5) * 100;
+  const maximumScore = totalRatingFields * 5;
+
+  const averageRating =
+    answeredRatingFields > 0 ? totalScore / answeredRatingFields : 0;
+
+  const percentageScore =
+    maximumScore > 0 ? (totalScore / maximumScore) * 100 : 0;
 
   return {
-    totalRatingFields: ratingFields.length,
-    answeredRatingFields: ratedValues.length,
+    totalRatingFields,
+    answeredRatingFields,
     totalScore,
+    maximumScore,
     averageRating,
     percentageScore,
   };
@@ -839,6 +885,13 @@ function normalizeSavedFinalInterviewScore(savedScore = {}, computedScore = {}) 
       saved.totalScore ?? saved.total_score,
       computedScore.totalScore,
     ),
+    maximumScore: normalizeScoreNumber(
+      saved.maximumScore ??
+        saved.maximum_score ??
+        saved.maxScore ??
+        saved.max_score,
+      computedScore.maximumScore,
+    ),
     averageRating: normalizeScoreNumber(
       saved.averageRating ?? saved.average_rating,
       computedScore.averageRating,
@@ -870,7 +923,9 @@ function getSubmissionTimestamp(submission = {}) {
 }
 
 function getLatestSubmittedForm(candidate = {}, submissionId = "") {
-  const submittedForms = getSubmittedForms(candidate);
+  const submittedForms = getSubmittedForms(candidate).filter(
+    (form) => !form?.isDraftFallback,
+  );
 
   if (!submittedForms.length) return null;
 
@@ -1234,15 +1289,24 @@ function ScoreSummaryCard({
 
         <BreakdownPanel
           title="Final Interview Breakdown"
-          subtitle="Computed only from rating-type questions."
+          subtitle="Computed from the interviewer rating assigned to every enabled question."
         >
+          <BreakdownTextLine
+            label="Total Points"
+            value={
+              finalInterviewHasScore
+                ? `${finalInterviewRatingScore.totalScore}/${finalInterviewRatingScore.maximumScore}`
+                : `0/${finalInterviewRatingScore.maximumScore || 0}`
+            }
+          />
+
           <BreakdownTextLine
             label="Average Rating"
             value={finalInterviewHasScore ? `${finalInterviewAverage} / 5` : "—"}
           />
 
           <BreakdownTextLine
-            label="Answered Rating Fields"
+            label="Rated Questions"
             value={`${finalInterviewRatingScore.answeredRatingFields}/${finalInterviewRatingScore.totalRatingFields}`}
           />
 
@@ -1269,7 +1333,7 @@ function ScoreSummaryCard({
 
           <BreakdownTextLine
             label="Final Interview"
-            value="Rating questions only"
+            value="Every enabled question is rated from 1 to 5"
           />
 
           <BreakdownTextLine
@@ -1422,54 +1486,284 @@ function JobEvaluationSelectedAnswers({ answers = {} }) {
   );
 }
 
+
+function AnimatedRecruitmentDropdown({
+  open,
+  children,
+  className = "",
+}) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-full mt-2 grid transition-all duration-300 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      } ${className}`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl transition-all duration-300 ease-out ${
+            open ? "translate-y-0 scale-100" : "-translate-y-2 scale-[0.98]"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RecruitmentStyleDropdown({
+  value = "",
+  options = [],
+  onChange,
+  placeholder = "Select",
+  disabled = false,
+  className = "",
+  ariaLabel = "Select option",
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const selectedOption =
+    options.find((option) => String(option.value) === String(value)) || null;
+
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+    }
+  }, [disabled]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative ${
+        open ? "z-[160]" : "z-10"
+      } ${className}`}
+    >
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((previous) => !previous);
+        }}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+      >
+        <span
+          className={`truncate ${
+            selectedOption ? "text-[#344054]" : "text-[#98A2B3]"
+          }`}
+        >
+          {selectedOption?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatedRecruitmentDropdown open={open} className="z-[170]">
+        <div
+          role="listbox"
+          aria-label={ariaLabel}
+          className="max-h-64 overflow-y-auto py-2 sibs-scrollbar"
+        >
+          {options.length > 0 ? (
+            options.map((option) => {
+              const selected =
+                String(value) === String(option.value);
+
+              return (
+                <button
+                  key={`${option.value}-${option.label}`}
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => {
+                    onChange?.(option.value, option);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-4 py-3 text-left text-sm transition ${
+                    selected
+                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
+                      : "text-[#344054] hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <span className="block truncate">
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-4 py-3 text-sm font-bold text-sibs-tertiary-5">
+              No options available.
+            </div>
+          )}
+        </div>
+      </AnimatedRecruitmentDropdown>
+    </div>
+  );
+}
+
+const FINAL_INTERVIEW_RATING_OPTIONS = [
+  { value: "1", label: "1 - Poor" },
+  { value: "2", label: "2 - Fair" },
+  { value: "3", label: "3 - Good" },
+  { value: "4", label: "4 - Very Good" },
+  { value: "5", label: "5 - Excellent" },
+];
+
+const FINAL_INTERVIEW_RECOMMENDATION_OPTIONS = [
+  { value: "Recommended", label: "Recommended" },
+  { value: "For Review", label: "For Review" },
+  { value: "Not Recommended", label: "Not Recommended" },
+];
+
+function AutoResizeTextarea({
+  value = "",
+  onChange,
+  readOnly = false,
+  minRows = 2,
+  placeholder = "Type answer here...",
+  className = "",
+}) {
+  const textareaRef = useRef(null);
+
+  function resizeTextarea() {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+
+    const computedStyle = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(computedStyle.lineHeight) || 20;
+    const paddingTop = Number.parseFloat(computedStyle.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(computedStyle.paddingBottom) || 0;
+    const borderTop = Number.parseFloat(computedStyle.borderTopWidth) || 0;
+    const borderBottom = Number.parseFloat(computedStyle.borderBottomWidth) || 0;
+
+    const minimumHeight =
+      lineHeight * Math.max(Number(minRows) || 1, 1) +
+      paddingTop +
+      paddingBottom +
+      borderTop +
+      borderBottom;
+
+    textarea.style.height = `${Math.max(
+      textarea.scrollHeight,
+      minimumHeight,
+    )}px`;
+  }
+
+  useLayoutEffect(() => {
+    resizeTextarea();
+  }, [value, minRows]);
+
+  useEffect(() => {
+    function handleWindowResize() {
+      resizeTextarea();
+    }
+
+    window.addEventListener("resize", handleWindowResize);
+
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, []);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      rows={minRows}
+      value={value ?? ""}
+      disabled={readOnly}
+      onChange={(event) => {
+        onChange?.(event.target.value);
+        window.requestAnimationFrame(resizeTextarea);
+      }}
+      onInput={resizeTextarea}
+      placeholder={placeholder}
+      className={`w-full resize-none overflow-hidden ${className}`}
+    />
+  );
+}
+
 function FieldInput({ field, value, onChange, readOnly = false }) {
   const disabledClass =
     "disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#475467]";
 
   if (field.type === "Rating") {
     return (
-      <select
+      <RecruitmentStyleDropdown
         value={value || ""}
         disabled={readOnly}
-        onChange={(e) => onChange(e.target.value)}
-        className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
-      >
-        <option value="">Select rating</option>
-        <option value="1">1 - Poor</option>
-        <option value="2">2 - Fair</option>
-        <option value="3">3 - Good</option>
-        <option value="4">4 - Very Good</option>
-        <option value="5">5 - Excellent</option>
-      </select>
+        onChange={(nextValue) => onChange(nextValue)}
+        options={FINAL_INTERVIEW_RATING_OPTIONS}
+        placeholder="Select rating"
+        ariaLabel={field.label || "Select rating"}
+        className="mt-2"
+      />
     );
   }
 
   if (field.type === "Paragraph") {
     return (
-      <textarea
-        rows={4}
+      <AutoResizeTextarea
+        minRows={4}
         value={value || ""}
-        disabled={readOnly}
-        onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
+        onChange={onChange}
         placeholder="Type answer here..."
-        className={`mt-2 w-full resize-none rounded-lg border border-[#B8C2CF] bg-white px-3 py-2 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+        className={`mt-2 min-h-[104px] rounded-lg border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
       />
     );
   }
 
   if (field.type === "Dropdown") {
     return (
-      <select
+      <RecruitmentStyleDropdown
         value={value || ""}
         disabled={readOnly}
-        onChange={(e) => onChange(e.target.value)}
-        className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
-      >
-        <option value="">Select answer</option>
-        <option value="Recommended">Recommended</option>
-        <option value="For Review">For Review</option>
-        <option value="Not Recommended">Not Recommended</option>
-      </select>
+        onChange={(nextValue) => onChange(nextValue)}
+        options={FINAL_INTERVIEW_RECOMMENDATION_OPTIONS}
+        placeholder="Select answer"
+        ariaLabel={field.label || "Select answer"}
+        className="mt-2"
+      />
     );
   }
 
@@ -1514,13 +1808,71 @@ function FieldInput({ field, value, onChange, readOnly = false }) {
   }
 
   return (
-    <input
+    <AutoResizeTextarea
+      minRows={2}
       value={value || ""}
-      disabled={readOnly}
-      onChange={(e) => onChange(e.target.value)}
+      readOnly={readOnly}
+      onChange={onChange}
       placeholder="Type answer here..."
-      className={`mt-2 h-11 w-full rounded-lg border border-[#B8C2CF] bg-white px-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
+      className={`mt-2 min-h-[72px] rounded-lg border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${disabledClass}`}
     />
+  );
+}
+
+function QuestionRatingInput({
+  questionId,
+  answers = {},
+  onChange,
+  readOnly = false,
+}) {
+  const ratingKey = getQuestionRatingKey(questionId);
+  const remarkKey = getQuestionRemarkKey(questionId);
+
+  const ratingValue = answers[ratingKey] || "";
+  const remarkValue = answers[remarkKey] || "";
+
+  return (
+    <div className="mt-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div>
+          <label className="block text-sm font-extrabold text-sibs-primary-1">
+            Interviewer Rating
+            <span className="ml-1 text-red-500">*</span>
+          </label>
+
+          <RecruitmentStyleDropdown
+            value={ratingValue}
+            disabled={readOnly}
+            onChange={(nextValue) => onChange(ratingKey, nextValue)}
+            options={FINAL_INTERVIEW_RATING_OPTIONS}
+            placeholder="Select rating"
+            ariaLabel="Select interviewer rating"
+            className="mt-2"
+          />
+
+          {ratingValue && (
+            <p className="mt-2 text-xs font-extrabold text-blue-700">
+              {ratingValue} out of 5 points
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-extrabold text-sibs-primary-1">
+            Interviewer Remarks
+          </label>
+
+          <AutoResizeTextarea
+            minRows={3}
+            value={remarkValue}
+            readOnly={readOnly}
+            onChange={(value) => onChange(remarkKey, value)}
+            placeholder="Enter remarks about the applicant's response..."
+            className="mt-2 min-h-[96px] rounded-xl border border-[#B8C2CF] bg-white px-3 py-3 text-sm font-semibold leading-6 text-[#344054] outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#475467]"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1532,27 +1884,26 @@ function JobEvaluationSelect({
   onChange,
   readOnly,
 }) {
+  const dropdownOptions = options.map((option) => ({
+    value: option.label,
+    label: `${option.label} (${option.score} pts)`,
+  }));
+
   return (
     <div className="min-w-0">
       <label className="block truncate text-sm font-extrabold text-sibs-primary-1">
         {label}
       </label>
 
-      <select
+      <RecruitmentStyleDropdown
         value={value || ""}
         disabled={readOnly}
-        title={value || `Select ${label.toLowerCase()}`}
-        onChange={(e) => onChange(fieldKey, e.target.value)}
-        className="mt-2 block h-11 w-full min-w-0 truncate rounded-lg border border-[#B8C2CF] bg-white pl-3 pr-7 text-sm font-semibold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-[#475467] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-      >
-        <option value="">Select {label.toLowerCase()}</option>
-
-        {options.map((option) => (
-          <option key={option.label} value={option.label}>
-            {option.label} ({option.score} pts)
-          </option>
-        ))}
-      </select>
+        onChange={(nextValue) => onChange(fieldKey, nextValue)}
+        options={dropdownOptions}
+        placeholder={`Select ${label.toLowerCase()}`}
+        ariaLabel={`Select ${label.toLowerCase()}`}
+        className="mt-2"
+      />
     </div>
   );
 }
@@ -1614,20 +1965,26 @@ export default function FinalInterviewForms({ publicMode = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const { candidateList, handleSubmitFinalInterview } = useCandidatePipeline();
+  const {
+    candidateList,
+    handleSubmitFinalInterview,
+    refreshCandidatePipeline,
+  } = useCandidatePipeline();
 
   const candidateId = searchParams.get("candidateId") || "—";
   const candidateApplicationIdFromUrl =
     searchParams.get("candidateApplicationId") || "";
   const emailFromUrl = searchParams.get("email") || "";
   const positionId = searchParams.get("positionId") || "";
+  const positionTitleFromUrl =
+    searchParams.get("positionTitle") || "";
   const formId = searchParams.get("formId") || "";
   const submissionId = searchParams.get("submissionId") || "";
   const mode = searchParams.get("mode") || "";
   const continueMode = searchParams.get("continue") === "1";
 
   const isEditMode = mode === "edit" || continueMode;
-  const isViewMode = mode === "view" && !isEditMode;
+  const requestedViewMode = mode === "view" && !isEditMode;
 
   const [answers, setAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1639,6 +1996,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   const [publicLoading, setPublicLoading] = useState(false);
   const [publicError, setPublicError] = useState("");
   const [hasUserChangedAnswers, setHasUserChangedAnswers] = useState(false);
+  const pageTopRef = useRef(null);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -1688,7 +2046,8 @@ export default function FinalInterviewForms({ publicMode = false }) {
       }
 
       const shouldLoadPublic = publicMode;
-      const shouldLoadInternal = !publicMode && (isViewMode || submissionId);
+      const shouldLoadInternal =
+        !publicMode && (requestedViewMode || submissionId);
 
       if (!shouldLoadPublic && !shouldLoadInternal) {
         return;
@@ -1795,7 +2154,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     };
   }, [
     publicMode,
-    isViewMode,
+    requestedViewMode,
     candidateId,
     emailFromUrl,
     submissionId,
@@ -1803,7 +2162,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   const contextCandidate = useMemo(() => {
-    return candidateList.find((candidate) => {
+    return safeArray(candidateList).find((candidate) => {
       return (
         String(getCandidatePublicId(candidate) || "") ===
           String(candidateId || "") ||
@@ -1828,46 +2187,69 @@ export default function FinalInterviewForms({ publicMode = false }) {
     );
   }, [candidateApplicationIdFromUrl, currentCandidate]);
 
-  useEffect(() => {
+  function forceFinalInterviewScrollToTop() {
+    if (typeof window === "undefined") return;
+
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "auto",
+    });
+
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    pageTopRef.current?.scrollIntoView?.({
+      block: "start",
+      inline: "nearest",
+      behavior: "auto",
+    });
+
+    const scrollContainers = document.querySelectorAll(
+      [
+        "main",
+        "#root",
+        "[data-final-interview-scroll-root='true']",
+        ".overflow-y-auto",
+        ".overflow-auto",
+        ".overflow-y-scroll",
+      ].join(", "),
+    );
+
+    scrollContainers.forEach((container) => {
+      if (container && typeof container.scrollTo === "function") {
+        container.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "auto",
+        });
+      } else if (container) {
+        container.scrollTop = 0;
+        container.scrollLeft = 0;
+      }
+    });
+  }
+
+  useLayoutEffect(() => {
     const previousScrollRestoration = window.history.scrollRestoration;
 
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    function scrollToTop() {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto",
-      });
+    forceFinalInterviewScrollToTop();
 
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
+    const animationFrameId = window.requestAnimationFrame(
+      forceFinalInterviewScrollToTop,
+    );
 
-      const scrollContainers = document.querySelectorAll(
-        "main, #root, .overflow-y-auto, .overflow-auto",
-      );
-
-      scrollContainers.forEach((container) => {
-        if (container && typeof container.scrollTo === "function") {
-          container.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "auto",
-          });
-        }
-      });
-    }
-
-    scrollToTop();
-
-    const animationFrameId = window.requestAnimationFrame(scrollToTop);
-    const timeoutId = window.setTimeout(scrollToTop, 100);
+    const timeoutIds = [0, 100, 300, 600].map((delay) =>
+      window.setTimeout(forceFinalInterviewScrollToTop, delay),
+    );
 
     return () => {
       window.cancelAnimationFrame(animationFrameId);
-      window.clearTimeout(timeoutId);
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
 
       if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = previousScrollRestoration;
@@ -1877,6 +2259,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
     candidateId,
     candidateApplicationIdFromUrl,
     positionId,
+    positionTitleFromUrl,
     formId,
     submissionId,
     mode,
@@ -1884,71 +2267,176 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
   const settings = useMemo(() => safeReadSettings(), []);
 
-  const activeForm = useMemo(() => {
-    if (!settings?.forms?.length) return null;
+  const [databaseForm, setDatabaseForm] = useState(null);
+  const [databaseFormLoading, setDatabaseFormLoading] = useState(false);
+  const [databaseFormError, setDatabaseFormError] = useState("");
 
-    const forms = settings.forms;
-
-    const candidatePositionId = getCandidatePositionId(currentCandidate);
-    const candidatePositionName = getCandidatePositionName(currentCandidate);
-
-    const targetPositionId = positionId || candidatePositionId;
-    const targetPositionName = candidatePositionName;
-
-    const hasTarget = Boolean(targetPositionId || targetPositionName);
-
-    const formByExactId = forms.find(
-      (form) => String(form.id) === String(formId),
+  const databasePositionIdentifier = useMemo(() => {
+    return (
+      positionId ||
+      getCandidatePositionId(currentCandidate) ||
+      ""
     );
-
-    if (
-      formByExactId &&
-      (!hasTarget ||
-        formMatchesPosition(formByExactId, {
-          positionId: targetPositionId,
-          positionName: targetPositionName,
-        }))
-    ) {
-      return formByExactId;
-    }
-
-    const activeFormForPosition = forms.find((form) => {
-      if (form.status !== "Active") return false;
-
-      return formMatchesPosition(form, {
-        positionId: targetPositionId,
-        positionName: targetPositionName,
-      });
-    });
-
-    if (activeFormForPosition) return activeFormForPosition;
-
-    const formByPosition = forms.find((form) =>
-      formMatchesPosition(form, {
-        positionId: targetPositionId,
-        positionName: targetPositionName,
-      }),
-    );
-
-    if (formByPosition) return formByPosition;
-
-    return null;
-  }, [settings, formId, positionId, currentCandidate]);
-
-  const effectivePositionId = useMemo(() => {
-    return positionId || getCandidatePositionId(currentCandidate);
   }, [positionId, currentCandidate]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDatabaseFinalInterviewForm() {
+      if (!databasePositionIdentifier) {
+        setDatabaseForm(null);
+        setDatabaseFormError("");
+        return;
+      }
+
+      try {
+        setDatabaseFormLoading(true);
+        setDatabaseFormError("");
+
+        const response = await getFinalInterviewFormByPosition(
+          databasePositionIdentifier,
+        );
+
+        if (cancelled) return;
+
+        setDatabaseForm(
+          response?.success
+            ? response.data || null
+            : null,
+        );
+      } catch (error) {
+        if (cancelled) return;
+
+        setDatabaseForm(null);
+        setDatabaseFormError(
+          getApiErrorMessage(
+            error,
+            "Failed to load the database Final Interview form.",
+          ),
+        );
+      } finally {
+        if (!cancelled) {
+          setDatabaseFormLoading(false);
+        }
+      }
+    }
+
+    loadDatabaseFinalInterviewForm();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [databasePositionIdentifier]);
+
+  const activeForm = useMemo(() => {
+    if (databaseForm) {
+      return databaseForm;
+    }
+    const forms = safeArray(
+      settings?.forms ||
+        settings?.finalInterviewForms ||
+        settings?.final_interview_forms,
+    );
+
+    if (!forms.length) return null;
+
+    const candidatePositionId =
+      getCandidatePositionId(currentCandidate);
+
+    const candidatePositionName =
+      positionTitleFromUrl ||
+      getCandidatePositionName(currentCandidate);
+
+    return findMatchingFinalInterviewForm({
+      settings,
+      forms,
+      preferredFormId: formId,
+      positionId:
+        positionId ||
+        candidatePositionId,
+      positionTitle:
+        candidatePositionName,
+    });
+  }, [
+    settings,
+    formId,
+    positionId,
+    positionTitleFromUrl,
+    currentCandidate,
+    databaseForm,
+  ]);
+
+  const activeFormPositionId = useMemo(() => {
+    return activeForm
+      ? getFinalInterviewFormPositionId(activeForm)
+      : "";
+  }, [activeForm]);
+
+  const activeFormPositionTitle = useMemo(() => {
+    return activeForm
+      ? getFinalInterviewFormPositionTitle(activeForm)
+      : "";
+  }, [activeForm]);
+
+  const activeFormId = useMemo(() => {
+    return activeForm
+      ? getFinalInterviewFormId(activeForm)
+      : "";
+  }, [activeForm]);
+
+  const activeFormFields = useMemo(() => {
+    return activeForm
+      ? getFinalInterviewFormFields(activeForm)
+      : [];
+  }, [activeForm]);
+
+  const effectivePositionId = useMemo(() => {
+    return (
+      positionId ||
+      activeFormPositionId ||
+      getCandidatePositionId(currentCandidate) ||
+      ""
+    );
+  }, [
+    positionId,
+    activeFormPositionId,
+    currentCandidate,
+  ]);
+
   const effectiveFormId = useMemo(() => {
-    return formId || activeForm?.id || DEFAULT_JOB_EVALUATION_FORM_ID;
-  }, [formId, activeForm]);
+    return (
+      activeFormId ||
+      formId ||
+      (effectivePositionId
+        ? `final-interview-${effectivePositionId}`
+        : DEFAULT_JOB_EVALUATION_FORM_ID)
+    );
+  }, [formId, activeFormId, effectivePositionId]);
 
   const savedSubmission = useMemo(() => {
     return getLatestSubmittedForm(currentCandidate, submissionId);
   }, [submissionId, currentCandidate]);
 
+  const effectiveSubmissionId = useMemo(() => {
+    return (
+      submissionId ||
+      savedSubmission?.id ||
+      savedSubmission?.submissionId ||
+      savedSubmission?.submission_id ||
+      savedSubmission?.formSubmissionId ||
+      savedSubmission?.form_submission_id ||
+      ""
+    );
+  }, [submissionId, savedSubmission]);
+
   const isSubmittedView =
-  !isEditMode && (isViewMode || submittedSuccessfully || Boolean(savedSubmission));
+    !isEditMode && (submittedSuccessfully || Boolean(savedSubmission));
+
+  const openedWithoutSavedSubmission =
+    requestedViewMode &&
+    !publicLoading &&
+    !savedSubmission &&
+    Boolean(currentCandidate?.id || currentCandidate?.candidateId);
 
   const savedSubmissionScoreSummary = useMemo(() => {
     return safeObject(savedSubmission?.scoreSummary);
@@ -1958,11 +2446,66 @@ export default function FinalInterviewForms({ publicMode = false }) {
     return getJobEvaluationTitle(activeForm?.name || savedSubmission?.formName);
   }, [activeForm?.name, savedSubmission?.formName]);
 
+  const finalInterviewFields = useMemo(() => {
+    const publicAssessment = safeObject(
+      currentCandidate?.publicAssessment,
+    );
+
+    const displayForm = safeObject(
+      publicAssessment.displayForm ||
+        publicAssessment.submittedForm ||
+        publicAssessment.finishedForm ||
+        publicAssessment.form,
+    );
+
+    const draft = safeObject(
+      publicAssessment.draft ||
+        currentCandidate?.draft ||
+        currentCandidate?.publicDraft,
+    );
+
+    return getFirstNonEmptyFieldArray(
+      savedSubmission?.fieldsSnapshot,
+      savedSubmission?.fields_snapshot,
+      activeFormFields,
+      activeForm?.fields,
+      activeForm?.questions,
+      displayForm.fieldsSnapshot,
+      displayForm.fields_snapshot,
+      displayForm.fields,
+      displayForm.questions,
+      draft.fieldsSnapshot,
+      draft.fields_snapshot,
+      draft.fields,
+      draft.questions,
+      currentCandidate?.finalInterviewFields,
+      currentCandidate?.final_interview_fields,
+      currentCandidate?.finalInterviewQuestions,
+      currentCandidate?.final_interview_questions,
+    ).map((field) => ({
+      ...field,
+      required: false,
+    }));
+  }, [
+    activeForm,
+    activeFormFields,
+    savedSubmission,
+    currentCandidate,
+  ]);
+
   const groupedFields = useMemo(() => {
     return groupFieldsBySection(
-      savedSubmission?.fieldsSnapshot || activeForm?.fields || [],
+      finalInterviewFields,
     );
-  }, [activeForm, savedSubmission]);
+  }, [finalInterviewFields]);
+
+  const finalInterviewQuestionCount = useMemo(() => {
+    return groupedFields.reduce(
+      (total, group) =>
+        total + safeArray(group.questions).length,
+      0,
+    );
+  }, [groupedFields]);
 
   const passingScore = useMemo(() => {
     return getPassingScore(savedSubmission || activeForm);
@@ -1996,10 +2539,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
   const computedFinalInterviewRatingScore = useMemo(() => {
     return calculateRatingScore(
-      savedSubmission?.fieldsSnapshot || activeForm?.fields || [],
+      finalInterviewFields,
       answers,
     );
-  }, [activeForm, savedSubmission, answers]);
+  }, [finalInterviewFields, answers]);
 
   const finalInterviewRatingScore = useMemo(() => {
     if (isEditMode || hasUserChangedAnswers) {
@@ -2115,7 +2658,10 @@ export default function FinalInterviewForms({ publicMode = false }) {
           setAnswers(draftAnswers);
           setDraftSavedAt(getDraftSavedAt(draftPayload));
 
-          if (databaseDraftForm) {
+          if (
+            databaseDraftForm &&
+            !objectHasData(currentCandidate?.publicAssessment?.draft)
+          ) {
             setPublicCandidate((previous) =>
               mergeCandidateRecords(previous || currentCandidate, {
                 publicAssessment: {
@@ -2123,7 +2669,6 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   draft: draftPayload,
                   displayForm: databaseDraftForm,
                 },
-                finalInterviewSubmittedForms: [databaseDraftForm],
               }),
             );
           }
@@ -2170,6 +2715,29 @@ export default function FinalInterviewForms({ publicMode = false }) {
   ]);
 
   useEffect(() => {
+    if (publicLoading || databaseFormLoading || !draftHydrated) return;
+
+    const animationFrameId = window.requestAnimationFrame(
+      forceFinalInterviewScrollToTop,
+    );
+    const timeoutId = window.setTimeout(
+      forceFinalInterviewScrollToTop,
+      120,
+    );
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    publicLoading,
+    databaseFormLoading,
+    draftHydrated,
+    effectiveSubmissionId,
+    finalInterviewQuestionCount,
+  ]);
+
+  useEffect(() => {
     if (isSubmittedView || !draftHydrated) return;
     if (!hasUserChangedAnswers) return;
 
@@ -2194,7 +2762,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
           formName: jobEvaluationFormName || "Job Evaluation Form",
           answers,
           scoreSummary,
-          fieldsSnapshot: activeForm?.fields || [],
+          fieldsSnapshot: finalInterviewFields,
         });
 
         const savedAt =
@@ -2226,11 +2794,23 @@ export default function FinalInterviewForms({ publicMode = false }) {
     effectivePositionId,
     effectiveFormId,
     activeForm,
+    finalInterviewFields,
     jobEvaluationFormName,
   ]);
 
   function handleAnswerChange(fieldId, value) {
     if (isSubmittedView) return;
+
+    setHasUserChangedAnswers(true);
+
+    setAnswers((prev) => ({
+      ...prev,
+      [fieldId]: value,
+    }));
+  }
+
+  function handleInterviewerScoringChange(fieldId, value) {
+    if (publicMode) return;
 
     setHasUserChangedAnswers(true);
 
@@ -2269,26 +2849,28 @@ export default function FinalInterviewForms({ publicMode = false }) {
     });
   }
 
-  function validateRequiredFields() {
-    const requiredFields = (activeForm?.fields || []).filter(
-      (field) => field.enabled !== false && field.required,
+  function validateQuestionRatings() {
+    if (publicMode) return true;
+
+    const enabledFields = finalInterviewFields.filter(
+      (field) => field.enabled !== false,
     );
 
-    const missingField = requiredFields.find((field) => {
-      const value = answers[field.id];
+    const unratedField = enabledFields.find((field, index) => {
+      const questionId = getFinalInterviewQuestionId(field, index);
+      const ratingKey = getQuestionRatingKey(questionId);
+      const rating = Number(answers[ratingKey]);
 
-      if (typeof value === "boolean") return false;
-
-      return (
-        value === undefined || value === null || String(value).trim() === ""
-      );
+      return !Number.isFinite(rating) || rating < 1 || rating > 5;
     });
 
-    if (missingField) {
+    if (unratedField) {
       showStatusModal({
         type: "error",
-        title: "Required Question",
-        message: `Please answer required question: ${missingField.label}`,
+        title: "Missing Question Rating",
+        message: `Please rate: ${
+          unratedField.label || "Untitled Final Interview question"
+        }`,
       });
 
       return false;
@@ -2297,12 +2879,145 @@ export default function FinalInterviewForms({ publicMode = false }) {
     return true;
   }
 
+
+  async function handleSaveScoringChanges() {
+    if (publicMode || isSubmitting) return;
+    if (!validateQuestionRatings()) return;
+
+    const candidateRecordId = cleanText(
+      currentCandidate?.id ||
+        currentCandidate?.candidatePipelineId ||
+        currentCandidate?.candidate_pipeline_id ||
+        currentCandidate?.recordId ||
+        currentCandidate?.record_id ||
+        effectiveCandidateApplicationId ||
+        candidateId,
+    );
+
+    const databaseSubmissionId = cleanText(
+      effectiveSubmissionId || submissionId,
+    );
+
+    if (!candidateRecordId || candidateRecordId === "—") {
+      showStatusModal({
+        type: "error",
+        title: "Candidate Record Missing",
+        message:
+          "The candidate database record could not be identified. Refresh the Candidate Pipeline and open the saved Final Interview again.",
+      });
+      return;
+    }
+
+    if (!databaseSubmissionId) {
+      showStatusModal({
+        type: "error",
+        title: "Submission Record Missing",
+        message:
+          "No saved Final Interview submission ID was found. Open this assessment using its View link before updating ratings and remarks.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const finalFormId = effectiveFormId || DEFAULT_JOB_EVALUATION_FORM_ID;
+    const finalFormName = jobEvaluationFormName || "Job Evaluation Form";
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateRecordId,
+        )}/final-interview/submit`,
+        {
+          candidateId,
+          candidateApplicationId: effectiveCandidateApplicationId,
+          positionId: effectivePositionId,
+          formId: finalFormId,
+          formName: finalFormName,
+          submissionId: databaseSubmissionId,
+          passingScore,
+          answers,
+          fieldsSnapshot: finalInterviewFields,
+          scoreSummary,
+          interviewNotes: "Final Interview ratings and remarks updated.",
+          remarks: "Final Interview ratings and remarks updated.",
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload.success === false) {
+        throw new Error(
+          payload.message ||
+            "The Final Interview database submission could not be updated.",
+        );
+      }
+
+      const savedCandidate =
+        payload.candidate ||
+        payload.data?.candidate ||
+        payload.data ||
+        null;
+
+      const savedSubmission =
+        payload.submission ||
+        payload.data?.submission ||
+        null;
+
+      if (savedCandidate) {
+        setPublicCandidate(savedCandidate);
+      }
+
+      if (typeof refreshCandidatePipeline === "function") {
+        await refreshCandidatePipeline();
+      }
+
+      const savedAt =
+        savedSubmission?.submittedAtIso ||
+        savedSubmission?.submitted_at_iso ||
+        savedSubmission?.submittedAt ||
+        savedSubmission?.submitted_at ||
+        new Date().toISOString();
+
+      setDraftSavedAt(savedAt);
+      setDraftSaveStatus("Rating and remarks saved to database.");
+      setHasUserChangedAnswers(false);
+
+      showStatusModal({
+        type: "success",
+        title: "Saved to Database",
+        message:
+          "The Final Interview ratings, interviewer remarks, total points, percentage, and score summary were saved to the existing database submission.",
+      });
+    } catch (error) {
+      console.error(
+        "Save final interview database scoring changes error:",
+        error?.response?.data || error?.message,
+      );
+
+      showStatusModal({
+        type: "error",
+        title: "Database Save Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Failed to save the Final Interview score and remarks to the database.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
 
     if (isSubmittedView) return;
     if (isSubmitting) return;
-    if (!validateRequiredFields()) return;
+    if (!validateQuestionRatings()) return;
 
     setIsSubmitting(true);
 
@@ -2323,7 +3038,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
             formName: finalFormName,
             passingScore,
             answers,
-            fieldsSnapshot: activeForm?.fields || [],
+            fieldsSnapshot: finalInterviewFields,
             scoreSummary,
             assessmentStatus: "Taken",
             assessmentResult: "Submitted",
@@ -2373,7 +3088,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         submissionId: submissionId || undefined,
         passingScore,
         answers,
-        fieldsSnapshot: activeForm?.fields || [],
+        fieldsSnapshot: finalInterviewFields,
         scoreSummary,
       });
 
@@ -2425,7 +3140,12 @@ export default function FinalInterviewForms({ publicMode = false }) {
 
   return (
     <>
-      <div className={pageShellClass}>
+      <div
+        ref={pageTopRef}
+        data-final-interview-scroll-root="true"
+        className={pageShellClass}
+        style={{ overflowAnchor: "none" }}
+      >
         <div className="mx-auto max-w-[1180px] space-y-5">
           <section className="rounded-2xl border border-[#E6ECF2] bg-white p-6 shadow-sm">
             <div className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -2441,13 +3161,31 @@ export default function FinalInterviewForms({ publicMode = false }) {
               {effectiveCandidateApplicationId}
             </p>
 
-            {currentCandidate && (
+            {(currentCandidate ||
+              positionTitleFromUrl ||
+              activeForm) && (
               <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
-                Position: {getCandidatePositionName(currentCandidate) || "—"}
+                Position:{" "}
+                {positionTitleFromUrl ||
+                  getCandidatePositionName(
+                    currentCandidate,
+                  ) ||
+                  activeFormPositionTitle ||
+                  "—"}
               </p>
             )}
 
-            {publicMode && publicError && (
+            {activeForm && (
+              <p className="mt-1 text-xs font-bold text-emerald-700">
+                Final Interview Form matched from Recruitment Settings:{" "}
+                {activeForm.name ||
+                  activeForm.formName ||
+                  activeForm.form_name ||
+                  "Final Interview Form"}
+              </p>
+            )}
+
+            {publicError && (
               <p className="mt-2 text-xs font-bold text-red-600">
                 {publicError}
               </p>
@@ -2457,6 +3195,16 @@ export default function FinalInterviewForms({ publicMode = false }) {
               <p className="mt-2 text-xs font-bold text-sibs-tertiary-5">
                 Loading applicant assessment...
               </p>
+            )}
+
+            {openedWithoutSavedSubmission && (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-extrabold text-amber-800">
+                  No saved Final Interview submission was found for this link.
+                  The candidate's active interview form is opened below so the
+                  interview can continue.
+                </p>
+              </div>
             )}
 
             {isSubmittedView && (
@@ -2510,7 +3258,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
             )}
           </section>
 
-          {isSubmittedView && (
+          {!publicMode && (
             <ScoreSummaryCard
               answers={answers}
               jobEvaluationScore={jobEvaluationScore}
@@ -2588,65 +3336,225 @@ export default function FinalInterviewForms({ publicMode = false }) {
             </section>
 
             <section className="mt-10 border-t border-[#E6ECF2] pt-8">
-              <div>
-                <h2 className="text-base font-extrabold text-[#101828]">
-                  Final Interview Form
-                </h2>
-                <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-                  Additional role-based questions configured from Recruitment
-                  Settings.
-                </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="text-base font-extrabold text-[#101828]">
+                    Final Interview Questions
+                  </h2>
+
+                  <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+                    Role-based questions configured in Recruitment Settings for
+                    this candidate and position.
+                  </p>
+                </div>
+
+                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                  {finalInterviewQuestionCount}{" "}
+                  {finalInterviewQuestionCount === 1
+                    ? "question"
+                    : "questions"}
+                </span>
               </div>
 
+              {!publicMode && (
+                <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:grid-cols-3">
+                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      Total Final Interview Score
+                    </p>
+                    <p className="mt-2 text-2xl font-extrabold text-sibs-primary-1">
+                      {finalInterviewRatingScore.totalScore}/
+                      {finalInterviewRatingScore.maximumScore || 0}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      Percentage
+                    </p>
+                    <p className="mt-2 text-2xl font-extrabold text-blue-700">
+                      {finalInterviewRatingScore.percentageScore.toFixed(0)}%
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      Rated Questions
+                    </p>
+                    <p className="mt-2 text-2xl font-extrabold text-[#344054]">
+                      {finalInterviewRatingScore.answeredRatingFields}/
+                      {finalInterviewRatingScore.totalRatingFields}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {databaseFormLoading && (
+                <div className="mt-4 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-700">
+                  <Loader2 size={16} className="animate-spin" />
+                  Loading the position's saved database questions...
+                </div>
+              )}
+
+              {databaseFormError && (
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+                  {databaseFormError} The local form snapshot is being used as a fallback.
+                </div>
+              )}
+
               {groupedFields.length > 0 ? (
-                <div className="mt-6 space-y-8">
-                  {groupedFields.map((group) => (
-                    <section key={group.section}>
-                      <h3 className="text-sm font-extrabold uppercase tracking-wide text-[#101828]">
-                        {group.section}:
-                      </h3>
+                <div className="mt-6 space-y-6">
+                  {groupedFields.map((group, groupIndex) => {
+                    const previousQuestionCount =
+                      groupedFields
+                        .slice(0, groupIndex)
+                        .reduce(
+                          (total, previousGroup) =>
+                            total +
+                            safeArray(
+                              previousGroup.questions,
+                            ).length,
+                          0,
+                        );
 
-                      <div className="mt-6 space-y-6">
-                        {group.questions.map((field) => (
-                          <div key={field.id}>
-                            <label className="block text-base font-medium leading-8 text-sibs-primary-1">
-                              {field.label}
-                              {field.required && (
-                                <span className="text-red-500"> *</span>
-                              )}
-                            </label>
+                    return (
+                      <section
+                        key={`${group.section}-${groupIndex}`}
+                        className="overflow-visible rounded-[20px] border border-[#D9E2EC] bg-white"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4E7EC] bg-[#F8FAFC] px-5 py-4">
+                          <h3 className="text-sm font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                            {group.section}
+                          </h3>
 
-                            <FieldInput
-                              field={field}
-                              value={answers[field.id]}
-                              readOnly={isSubmittedView}
-                              onChange={(value) =>
-                                handleAnswerChange(field.id, value)
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                          <span className="text-xs font-extrabold text-[#667085]">
+                            {safeArray(group.questions).length}{" "}
+                            {safeArray(group.questions).length === 1
+                              ? "question"
+                              : "questions"}
+                          </span>
+                        </div>
+
+                        <div className="divide-y divide-[#E4E7EC]">
+                          {safeArray(group.questions).map(
+                            (field, fieldIndex) => {
+                              const questionNumber =
+                                previousQuestionCount +
+                                fieldIndex +
+                                1;
+
+                              const isRatingQuestion =
+                                String(field.type || "")
+                                  .trim()
+                                  .toLowerCase() === "rating";
+
+                              return (
+                                <div
+                                  key={
+                                    field.id ||
+                                    `${group.section}-${fieldIndex}`
+                                  }
+                                  className="px-5 py-5"
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="inline-flex rounded-full bg-sibs-primary-1 px-3 py-1 text-xs font-extrabold text-white">
+                                      Question {questionNumber}
+                                    </span>
+
+                                    <span className="inline-flex rounded-full bg-[#F2F4F7] px-3 py-1 text-xs font-extrabold text-[#475467]">
+                                      {field.type || "Text"}
+                                    </span>
+
+                                  </div>
+
+                                  <label className="mt-3 block text-base font-extrabold leading-8 text-sibs-primary-1">
+                                    {field.label ||
+                                      "Untitled Final Interview question"}
+                                  </label>
+
+                                  <div className="mt-4">
+                                    {(publicMode || !isRatingQuestion) && (
+                                      <>
+                                        <p className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+                                          {publicMode
+                                            ? "Your Answer"
+                                            : "Candidate Answer / Interview Notes"}
+                                        </p>
+
+                                        <FieldInput
+                                          field={field}
+                                          value={answers[field.id]}
+                                          readOnly={isSubmittedView}
+                                          onChange={(value) =>
+                                            handleAnswerChange(field.id, value)
+                                          }
+                                        />
+                                      </>
+                                    )}
+
+                                    {!publicMode && (
+                                      <QuestionRatingInput
+                                        questionId={getFinalInterviewQuestionId(
+                                          field,
+                                          questionNumber - 1,
+                                        )}
+                                        answers={answers}
+                                        readOnly={publicMode || isSubmitting}
+                                        onChange={handleInterviewerScoringChange}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            },
+                          )}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="mt-6 rounded-xl border border-dashed border-[#D6DEE8] bg-white px-4 py-10 text-center">
                   <p className="text-sm font-extrabold text-sibs-tertiary-5">
                     {isSubmittedView
-                      ? "No saved final interview questions found."
+                      ? "No saved Final Interview questions were found for this submission."
                       : currentCandidate
-                        ? `No final interview questions configured for ${
-                            getCandidatePositionName(currentCandidate) ||
-                            "this position"
-                          }.`
-                        : "No matching candidate or final interview questions found."}
+                        ? `No Final Interview questions are configured for ${
+                            getCandidatePositionName(
+                              currentCandidate,
+                            ) || "this position"
+                          }. Check Recruitment Settings → Final Interview Form.`
+                        : "No matching candidate or Final Interview questions were found."}
                   </p>
                 </div>
               )}
             </section>
 
-            {!isSubmittedView && (
+            {isSubmittedView ? (
+              !publicMode && (
+                <div className="mt-8 flex flex-col items-stretch justify-end gap-3 border-t border-[#E6ECF2] pt-6 sm:flex-row sm:items-center">
+                  <p className="mr-auto text-sm font-semibold text-sibs-tertiary-5">
+                    Candidate answers remain read-only. Ratings and interviewer remarks can still be updated.
+                  </p>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleSaveScoringChanges}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-6 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={17} className="animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Rating & Remarks"
+                    )}
+                  </button>
+                </div>
+              )
+            ) : !requestedViewMode ? (
               <div className="mt-8 flex justify-end">
                 <button
                   type="submit"
@@ -2656,7 +3564,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
                   {isSubmitting ? "Submitting..." : "Submit Job Evaluation Form"}
                 </button>
               </div>
-            )}
+            ) : null}
           </form>
         </div>
       </div>
@@ -2668,7 +3576,7 @@ export default function FinalInterviewForms({ publicMode = false }) {
         message={statusModal.message}
         onClose={closeStatusModal}
         variant="center"
-        lockScroll
+        lockScroll={false}
       />
     </>
   );

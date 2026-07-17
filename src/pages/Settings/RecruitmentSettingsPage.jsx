@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   ClipboardList,
-  Eye,
   FileCheck2,
   Filter,
   ListChecks,
@@ -2013,15 +2012,6 @@ export default function RecruitmentSettingsPage() {
           "Failed to save recruitment settings.",
       });
     }
-  }
-
-  function handlePreviewForm() {
-    openPageStatusModal({
-      type: "error",
-      title: "Preview Not Available",
-      message:
-        "Preview Form is not configured yet. Please finish the form setup first.",
-    });
   }
 
   function scrollToTop(behavior = "auto") {

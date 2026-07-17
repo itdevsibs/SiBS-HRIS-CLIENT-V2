@@ -13,6 +13,16 @@ import {
   moveTalentPoolCandidateToPipeline,
 } from "../../../lib/axios/getTalentPool";
 import StatusModal from "../StatusModal";
+import {
+  findMatchingFinalInterviewForm,
+  getCandidateAppliedPositionId,
+  getCandidateAppliedPositionTitle,
+  getFinalInterviewFormFields,
+  getFinalInterviewFormId,
+  getFinalInterviewFormName,
+  getFinalInterviewFormPositionId,
+  getFinalInterviewFormPositionTitle,
+} from "../../../lib/utils/recruitment/finalInterviewFormMatching";
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -216,14 +226,82 @@ export default function MoveToPipeLineModal() {
     return findMatchingPosition(positionSources, pipelineTarget);
   }, [positionSources, pipelineTarget]);
 
-  if (!pipelineTarget) return null;
-
+  const safePipelineTarget = pipelineTarget || {};
   const form = moveToPipelineForm || {};
   const ownerSource = form.taOwner || currentTaOwner;
   const ownerName = toDisplayPersonName(ownerSource, "Current User");
   const ownerSibsId = getSibsId(ownerSource);
   const isBusy = moveSaving || dropOffSaving;
-  const candidateName = getCandidateName(pipelineTarget);
+  const candidateName = getCandidateName(safePipelineTarget);
+
+  const positionAppliedId =
+    getCandidateAppliedPositionId(
+      safePipelineTarget,
+      matchedPosition?.positionId,
+    );
+
+  const positionApplied =
+    getCandidateAppliedPositionTitle(
+      safePipelineTarget,
+      matchedPosition?.positionTitle,
+    ) || "Not assigned yet";
+
+  const matchedFinalInterviewForm = useMemo(() => {
+    if (!pipelineTarget) return null;
+
+    return findMatchingFinalInterviewForm({
+      preferredFormId:
+        safePipelineTarget.finalInterviewFormId ||
+        safePipelineTarget.final_interview_form_id ||
+        "",
+      positionId: positionAppliedId,
+      positionTitle: positionApplied,
+    });
+  }, [
+    pipelineTarget,
+    safePipelineTarget.finalInterviewFormId,
+    safePipelineTarget.final_interview_form_id,
+    positionAppliedId,
+    positionApplied,
+  ]);
+
+  const matchedFinalInterviewFormId =
+    matchedFinalInterviewForm
+      ? getFinalInterviewFormId(
+          matchedFinalInterviewForm,
+        )
+      : "";
+
+  const matchedFinalInterviewFormName =
+    matchedFinalInterviewForm
+      ? getFinalInterviewFormName(
+          matchedFinalInterviewForm,
+        )
+      : "";
+
+  const matchedFinalInterviewPositionId =
+    matchedFinalInterviewForm
+      ? getFinalInterviewFormPositionId(
+          matchedFinalInterviewForm,
+        ) || positionAppliedId
+      : positionAppliedId;
+
+  const matchedFinalInterviewPositionTitle =
+    matchedFinalInterviewForm
+      ? getFinalInterviewFormPositionTitle(
+          matchedFinalInterviewForm,
+        ) || positionApplied
+      : positionApplied;
+
+  const matchedFinalInterviewFields =
+    matchedFinalInterviewForm
+      ? getFinalInterviewFormFields(
+          matchedFinalInterviewForm,
+        )
+      : [];
+
+  // All Hooks must run before this conditional return.
+  if (!pipelineTarget) return null;
 
   function showError(title, message) {
     setStatusModal({
@@ -352,26 +430,35 @@ export default function MoveToPipeLineModal() {
     setMoveSaving(true);
 
     try {
-      const finalPositionTitle =
-        cleanText(
-          pipelineTarget.openPosition ||
-            pipelineTarget.appliedPosition ||
-            pipelineTarget.roleCapability ||
-            pipelineTarget.currentAppliedRole ||
-            matchedPosition?.positionTitle,
-        ) || "Not assigned yet";
-
       const payload = {
         candidateId: pipelineTarget.candidateId || "",
         applicationId,
         candidateName,
         email: pipelineTarget.email || "",
-        openPosition: finalPositionTitle,
-        positionId:
-          pipelineTarget.positionId ||
-          pipelineTarget.openPositionId ||
-          matchedPosition?.positionId ||
-          "",
+        openPosition: positionApplied,
+        appliedPosition: positionApplied,
+        positionTitle: positionApplied,
+        positionId: positionAppliedId,
+        finalInterviewPositionId:
+          matchedFinalInterviewPositionId,
+        final_interview_position_id:
+          matchedFinalInterviewPositionId,
+        finalInterviewPositionTitle:
+          matchedFinalInterviewPositionTitle,
+        final_interview_position_title:
+          matchedFinalInterviewPositionTitle,
+        finalInterviewFormId:
+          matchedFinalInterviewFormId,
+        final_interview_form_id:
+          matchedFinalInterviewFormId,
+        finalInterviewFormName:
+          matchedFinalInterviewFormName,
+        final_interview_form_name:
+          matchedFinalInterviewFormName,
+        finalInterviewFields:
+          matchedFinalInterviewFields,
+        final_interview_fields:
+          matchedFinalInterviewFields,
         leadDepartmentId:
           pipelineTarget.leadDepartmentId ||
           pipelineTarget.departmentId ||
@@ -439,11 +526,36 @@ export default function MoveToPipeLineModal() {
       navigate("/recruitment/candidate-pipeline", {
         replace: true,
         state: {
-          movedCandidate:
-            response?.candidate ||
-            response?.data?.pipelineCandidate ||
-            response?.data ||
-            payload,
+          movedCandidate: {
+            ...payload,
+            ...(
+              response?.candidate ||
+              response?.data?.pipelineCandidate ||
+              response?.data ||
+              {}
+            ),
+            finalInterviewFormId:
+              response?.candidate?.finalInterviewFormId ||
+              response?.data?.pipelineCandidate
+                ?.finalInterviewFormId ||
+              response?.data?.finalInterviewFormId ||
+              matchedFinalInterviewFormId,
+            finalInterviewPositionId:
+              response?.candidate
+                ?.finalInterviewPositionId ||
+              response?.data?.pipelineCandidate
+                ?.finalInterviewPositionId ||
+              response?.data?.finalInterviewPositionId ||
+              matchedFinalInterviewPositionId,
+            finalInterviewPositionTitle:
+              response?.candidate
+                ?.finalInterviewPositionTitle ||
+              response?.data?.pipelineCandidate
+                ?.finalInterviewPositionTitle ||
+              response?.data
+                ?.finalInterviewPositionTitle ||
+              matchedFinalInterviewPositionTitle,
+          },
         },
       });
     } catch (error) {
@@ -496,6 +608,50 @@ export default function MoveToPipeLineModal() {
             This will create a pipeline application directly under Initial
             Screening. Department and account details are captured automatically
             from the candidate&apos;s available position record when present.
+          </div>
+
+          <div>
+            <FieldLabel>Position Applied</FieldLabel>
+
+            <div
+              className="mt-2 flex min-h-11 w-full items-center rounded-xl border border-[#D0D5DD] bg-[#F8FAFC] px-4 py-3 text-sm font-extrabold text-sibs-primary-1"
+              aria-readonly="true"
+              title={positionApplied}
+            >
+              {positionApplied}
+            </div>
+
+            <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
+              This value is read-only and comes from the candidate&apos;s applied
+              position record.
+            </p>
+          </div>
+
+          <div>
+            <FieldLabel>Matched Final Interview Form</FieldLabel>
+
+            <div
+              className={`mt-2 flex min-h-11 w-full items-center rounded-xl border px-4 py-3 text-sm font-extrabold ${
+                matchedFinalInterviewForm
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700"
+              }`}
+              aria-readonly="true"
+              title={
+                matchedFinalInterviewForm
+                  ? matchedFinalInterviewFormName
+                  : "No matching Final Interview Form"
+              }
+            >
+              {matchedFinalInterviewForm
+                ? matchedFinalInterviewFormName
+                : "No matching Final Interview Form"}
+            </div>
+
+            <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
+              Matched using Position Applied against Recruitment Settings →
+              Final Interview Form.
+            </p>
           </div>
 
           <div>

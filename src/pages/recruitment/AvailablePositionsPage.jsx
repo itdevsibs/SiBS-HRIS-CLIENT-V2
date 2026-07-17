@@ -47,6 +47,10 @@ import DropdownField from "../../components/recruitment/availablePositions/Dropd
 import PositionMobileCard from "../../components/recruitment/availablePositions/PositionMobileCard";
 import { StatusBadge } from "../../lib/utils/availablePositions/reactComponents/reactHelpers";
 import AvailablePositionsTable from "../../components/tables/availablePositions/AvailablePositionsTable";
+import {
+  normalizeAvailablePositionRecord,
+  normalizeAvailablePositionRecords,
+} from "../../lib/utils/availablePositions/availablePositionId";
 
 // main function
 export default function AvailablePositionsPage() {
@@ -262,7 +266,9 @@ export default function AvailablePositionsPage() {
         });
 
         setPositionList(
-          Array.isArray(positionsResponse.data) ? positionsResponse.data : [],
+          normalizeAvailablePositionRecords(
+            positionsResponse.data,
+          ),
         );
 
         setApprovedJdPositions(
@@ -431,7 +437,9 @@ export default function AvailablePositionsPage() {
         accountId: "All",
       });
 
-      const rows = Array.isArray(result?.data) ? result.data : [];
+      const rows = normalizeAvailablePositionRecords(
+        result?.data,
+      );
 
       if (result?.success) {
         setPositionList(rows);
@@ -534,7 +542,10 @@ export default function AvailablePositionsPage() {
 
       if (response.data) {
         setPositionList((prev) => {
-          const savedItem = response.data;
+          const savedItem =
+            normalizeAvailablePositionRecord(
+              response.data,
+            );
 
           if (formMode === "edit" && editTarget) {
             return prev.map((item) =>
@@ -748,6 +759,8 @@ export default function AvailablePositionsPage() {
     return positionList.filter((position) => {
       const text = [
         position.positionId,
+        position.sourcePositionId,
+        position.source_position_id,
         position.positionTitle,
         position.jdCode,
         position.jd_code,

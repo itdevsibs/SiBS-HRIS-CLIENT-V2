@@ -139,6 +139,12 @@ function appendCandidateFormData(formData, form = {}) {
 
   appendJson(
     formData,
+    "educationDetails",
+    form.educationDetails || form.education_details || {},
+  );
+
+  appendJson(
+    formData,
     "affiliationsAndCertifications",
     normalizeArray(form.affiliationsAndCertifications || form.affiliations),
   );

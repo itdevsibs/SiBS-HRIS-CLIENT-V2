@@ -53,11 +53,34 @@ import {
   buildOfferContractLink,
 } from "../../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
+import {
+  getVisibleCandidateTimeline,
+  getVisibleMovementReason,
+  isPipelineStageAtOrAfter,
+  normalizePipelineStageForVisibility,
+  shouldShowAssessmentArtifactsForTimelineEntry,
+} from "../../../lib/utils/candidatePipeline/candidatePipelineStageVisibility";
+
+import {
+  getCandidatePipelineIdentityKey,
+  getCandidatePipelineRecordId,
+  isSameCandidatePipelineRecord,
+  mergeCandidatePipelineRecord,
+} from "../../../lib/utils/candidatePipeline/candidatePipelineIdentity";
+
 import { useNavigate } from "react-router-dom";
 import { useCandidatePipeline } from "../../../services/context/CandidatePipelineContext";
 import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/react-utils/GetAssessmentTimelineFiles";
 import StatusModal from "../StatusModal";
 import api from "../../../lib/axios/api-template";
+import {
+  findMatchingFinalInterviewForm,
+  getCandidateAppliedPositionId,
+  getCandidateAppliedPositionTitle,
+  getFinalInterviewFormId,
+  getFinalInterviewFormPositionId,
+  getFinalInterviewFormPositionTitle,
+} from "../../../lib/utils/recruitment/finalInterviewFormMatching";
 
 const INCOMPLETE_ONBOARDING_STAGE = "For Onboarding - Incomplete Requirements";
 const ONBOARDING_STAGE = "Onboarding";
@@ -483,6 +506,76 @@ function getFinalInterviewScoreDisplay(scoreSummary = {}) {
   return "";
 }
 
+
+function getJobEvaluationScoreDisplay(scoreSummary = {}) {
+  const directSummary =
+    scoreSummary.jobEvaluation ||
+    scoreSummary.job_evaluation ||
+    scoreSummary.jobEvaluationScore ||
+    scoreSummary.job_evaluation_score ||
+    {};
+
+  const parsedSummary =
+    safeJsonParseValue(directSummary, directSummary) || {};
+
+  const totalScore =
+    parsedSummary.totalScore ??
+    parsedSummary.total_score ??
+    parsedSummary.percentageScore ??
+    parsedSummary.percentage_score ??
+    parsedSummary.score ??
+    scoreSummary.jobEvaluationTotalScore ??
+    scoreSummary.job_evaluation_total_score ??
+    scoreSummary.jobEvaluationPercentage ??
+    scoreSummary.job_evaluation_percentage ??
+    "";
+
+  if (cleanText(totalScore) === "") {
+    return "";
+  }
+
+  const maximumScore =
+    parsedSummary.maxScore ??
+    parsedSummary.max_score ??
+    parsedSummary.maximumScore ??
+    parsedSummary.maximum_score ??
+    scoreSummary.jobEvaluationMaxScore ??
+    scoreSummary.job_evaluation_max_score ??
+    100;
+
+  const rankValue =
+    parsedSummary.rank ??
+    parsedSummary.jobEvaluationRank ??
+    parsedSummary.job_evaluation_rank ??
+    scoreSummary.jobEvaluationRank ??
+    scoreSummary.job_evaluation_rank ??
+    "";
+
+  function formatScoreValue(value, fallback = "") {
+    if (value === null || value === undefined || value === "") {
+      return fallback;
+    }
+
+    const numberValue = Number(value);
+
+    if (!Number.isFinite(numberValue)) {
+      return cleanText(value);
+    }
+
+    return numberValue.toLocaleString("en-PH", {
+      maximumFractionDigits: 2,
+    });
+  }
+
+  const scoreText = formatScoreValue(totalScore);
+  const maximumText = formatScoreValue(maximumScore, "100");
+  const cleanRank = cleanText(rankValue).replace(/^rank\s+/i, "");
+
+  return `${scoreText} / ${maximumText}${
+    cleanRank ? ` · Rank ${cleanRank}` : ""
+  }`;
+}
+
 function getFinalInterviewResultClass(result = "") {
   const value = cleanText(result).toLowerCase();
 
@@ -561,6 +654,25 @@ function isFinalInterviewTimelineItem(item = {}) {
     remarksText.includes("final interview") ||
     remarksText.includes("job evaluation")
   );
+}
+
+
+function getLatestFinalInterviewTimelineIndex(items = []) {
+  const safeItems = Array.isArray(items)
+    ? items
+    : [];
+
+  for (
+    let index = safeItems.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    if (isFinalInterviewTimelineItem(safeItems[index])) {
+      return index;
+    }
+  }
+
+  return -1;
 }
 
 function normalizeRequirement(value = "") {
@@ -797,8 +909,64 @@ function normalizeUploadedFile(file = {}, candidateId = "") {
       file.applicant_folder_name ||
       file.folderName ||
       "",
+    candidatePipelineId:
+      file.candidatePipelineId ||
+      file.candidate_pipeline_id ||
+      file.ownerCandidatePipelineId ||
+      file.owner_candidate_pipeline_id ||
+      candidateId ||
+      "",
+    candidate_pipeline_id:
+      file.candidate_pipeline_id ||
+      file.candidatePipelineId ||
+      file.owner_candidate_pipeline_id ||
+      file.ownerCandidatePipelineId ||
+      candidateId ||
+      "",
+    ownerCandidatePipelineId:
+      file.ownerCandidatePipelineId ||
+      file.owner_candidate_pipeline_id ||
+      file.candidatePipelineId ||
+      file.candidate_pipeline_id ||
+      candidateId ||
+      "",
+    owner_candidate_pipeline_id:
+      file.owner_candidate_pipeline_id ||
+      file.ownerCandidatePipelineId ||
+      file.candidate_pipeline_id ||
+      file.candidatePipelineId ||
+      candidateId ||
+      "",
     rawFile: file.rawFile || null,
   };
+}
+
+function getNhoFileOwnerRecordId(file = {}) {
+  return cleanText(
+    file.ownerCandidatePipelineId ||
+      file.owner_candidate_pipeline_id ||
+      file.candidatePipelineId ||
+      file.candidate_pipeline_id,
+  );
+}
+
+function isNhoFileOwnedByCandidate(
+  file = {},
+  candidateRecordId = "",
+) {
+  const expectedRecordId = cleanText(
+    candidateRecordId,
+  ).toLowerCase();
+
+  const ownerRecordId = getNhoFileOwnerRecordId(
+    file,
+  ).toLowerCase();
+
+  if (!expectedRecordId || !ownerRecordId) {
+    return true;
+  }
+
+  return ownerRecordId === expectedRecordId;
 }
 
 function normalizeOfficialUploadedFile(file = {}, candidateId = "") {
@@ -810,8 +978,20 @@ function normalizeOfficialUploadedFile(file = {}, candidateId = "") {
 function filterOfficialUploadedFiles(files = [], candidateId = "") {
   return files
     .filter(Boolean)
+    .filter((file) =>
+      isNhoFileOwnedByCandidate(
+        file,
+        candidateId,
+      ),
+    )
     .map((file) => normalizeOfficialUploadedFile(file, candidateId))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((file) =>
+      isNhoFileOwnedByCandidate(
+        file,
+        candidateId,
+      ),
+    );
 }
 
 function getRequirementSortIndex(requirement = "") {
@@ -864,6 +1044,59 @@ function dedupeFiles(files = [], candidateId = "") {
 
     return cleanText(a.fileName).localeCompare(cleanText(b.fileName));
   });
+}
+
+
+function mergeLoadedNhoFilesWithPendingFiles(
+  loadedFiles = [],
+  currentFiles = [],
+  candidateId = "",
+) {
+  const pendingFiles = currentFiles.filter((file) =>
+    isRawBrowserFile(file?.rawFile),
+  );
+
+  return dedupeFiles(
+    [
+      ...pendingFiles,
+      ...loadedFiles,
+    ],
+    candidateId,
+  );
+}
+
+function getNhoRoutedStageFromPayload(
+  payload = {},
+  candidate = {},
+  savedMajorProgress = {},
+) {
+  const responsePayload = payload?.data ?? payload;
+
+  const payloadStage =
+    cleanText(payload.routedStage) ||
+    cleanText(payload.routed_stage) ||
+    cleanText(payload.nextStage) ||
+    cleanText(payload.next_stage) ||
+    cleanText(responsePayload?.routedStage) ||
+    cleanText(responsePayload?.routed_stage) ||
+    cleanText(responsePayload?.nextStage) ||
+    cleanText(responsePayload?.next_stage);
+
+  const candidateStage =
+    cleanText(candidate?.currentStage) ||
+    cleanText(candidate?.current_stage) ||
+    cleanText(candidate?.currentPipelineStage) ||
+    cleanText(candidate?.current_pipeline_stage) ||
+    cleanText(candidate?.pipelineStage) ||
+    cleanText(candidate?.pipeline_stage) ||
+    cleanText(candidate?.stage);
+
+  if (payloadStage) return payloadStage;
+  if (candidateStage) return candidateStage;
+
+  return savedMajorProgress?.isComplete
+    ? ONBOARDING_STAGE
+    : INCOMPLETE_ONBOARDING_STAGE;
 }
 
 function sortUploadedFiles(files = []) {
@@ -928,11 +1161,282 @@ function getFilesFromApiPayload(payload) {
 function getCandidateFromApiPayload(payload) {
   const responsePayload = payload?.data ?? payload;
 
+  if (!responsePayload || typeof responsePayload !== "object") {
+    return null;
+  }
+
   return (
-    responsePayload?.candidate ||
-    responsePayload?.data?.candidate ||
-    responsePayload?.data ||
-    null
+    responsePayload.candidate ||
+    responsePayload.data?.candidate ||
+    responsePayload.data ||
+    responsePayload
+  );
+}
+
+
+function unwrapCandidatePipelineResponse(response) {
+  if (!response || typeof response !== "object") {
+    return {};
+  }
+
+  const isAxiosResponse =
+    Object.prototype.hasOwnProperty.call(response, "status") ||
+    Object.prototype.hasOwnProperty.call(response, "headers") ||
+    Object.prototype.hasOwnProperty.call(response, "config") ||
+    Object.prototype.hasOwnProperty.call(response, "request");
+
+  if (isAxiosResponse && response.data !== undefined) {
+    return response.data || {};
+  }
+
+  return response;
+}
+
+function isPersistedNhoFile(file = {}) {
+  const savedName = cleanText(
+    file.savedFileName ||
+      file.saved_file_name ||
+      file.filename ||
+      file.storedFileName ||
+      file.stored_file_name,
+  );
+
+  const savedPath = cleanText(
+    file.storedPath ||
+      file.stored_path ||
+      file.filePath ||
+      file.file_path ||
+      file.path,
+  );
+
+  const fileUrl = cleanText(
+    file.fileUrl ||
+      file.url ||
+      file.downloadUrl ||
+      file.download_url,
+  );
+
+  return Boolean(
+    savedName ||
+      savedPath ||
+      (fileUrl &&
+        !fileUrl.startsWith("blob:") &&
+        !fileUrl.startsWith("data:")),
+  );
+}
+
+function isSameNhoReadBackFile(
+  pendingFile = {},
+  savedFile = {},
+) {
+  if (
+    normalizeRequirement(pendingFile.requirement) !==
+      normalizeRequirement(savedFile.requirement) ||
+    !isPersistedNhoFile(savedFile)
+  ) {
+    return false;
+  }
+
+  const pendingName = cleanText(
+    pendingFile.fileName ||
+      pendingFile.name,
+  ).toLowerCase();
+
+  const savedName = cleanText(
+    savedFile.fileName ||
+      savedFile.originalName ||
+      savedFile.original_name,
+  ).toLowerCase();
+
+  const pendingSize = Number(
+    pendingFile.fileSize ||
+      pendingFile.size ||
+      0,
+  );
+
+  const savedSize = Number(
+    savedFile.fileSize ||
+      savedFile.size ||
+      0,
+  );
+
+  return Boolean(
+    (pendingName &&
+      savedName &&
+      pendingName === savedName) ||
+      (pendingSize > 0 &&
+        savedSize > 0 &&
+        pendingSize === savedSize),
+  );
+}
+
+function getMissingReadBackNhoFiles(
+  pendingFiles = [],
+  savedFiles = [],
+) {
+  return pendingFiles.filter(
+    (pendingFile) =>
+      !savedFiles.some((savedFile) =>
+        isSameNhoReadBackFile(
+          pendingFile,
+          savedFile,
+        ),
+      ),
+  );
+}
+
+async function verifyNhoFilesByReadBack({
+  candidateId,
+  pendingFiles = [],
+}) {
+  const response = await api.get(
+    `/api/candidate-pipeline/${encodeURIComponent(
+      candidateId,
+    )}/nho/files`,
+    {
+      withCredentials: true,
+      params: {
+        _t: Date.now(),
+        verification: "read-back",
+      },
+    },
+  );
+
+  const payload =
+    unwrapCandidatePipelineResponse(response);
+
+  if (payload?.success === false) {
+    throw new Error(
+      payload?.message ||
+        "Unable to verify the uploaded files.",
+    );
+  }
+
+  const savedFiles = dedupeFiles(
+    getFilesFromApiPayload(payload),
+    candidateId,
+  );
+
+  const missingFiles =
+    getMissingReadBackNhoFiles(
+      pendingFiles,
+      savedFiles,
+    );
+
+  if (missingFiles.length) {
+    const missingRequirements = missingFiles
+      .map((file) => file.requirement)
+      .filter(Boolean)
+      .join(", ");
+
+    throw new Error(
+      `The server did not return the saved file${
+        missingFiles.length === 1 ? "" : "s"
+      } for: ${
+        missingRequirements ||
+        "the selected requirements"
+      }.`,
+    );
+  }
+
+  return {
+    payload,
+    files: savedFiles,
+    candidate:
+      getCandidateFromApiPayload(payload) ||
+      {},
+  };
+}
+
+function getCandidateStageValue(candidate = {}) {
+  return cleanText(
+    candidate.currentStage ||
+      candidate.current_stage ||
+      candidate.currentPipelineStage ||
+      candidate.current_pipeline_stage ||
+      candidate.pipelineStage ||
+      candidate.pipeline_stage ||
+      candidate.stage,
+  );
+}
+
+async function refreshNhoCandidate(candidateId) {
+  const response = await api.get(
+    `/api/candidate-pipeline/${encodeURIComponent(
+      candidateId,
+    )}`,
+    {
+      withCredentials: true,
+      params: {
+        _t: Date.now(),
+      },
+    },
+  );
+
+  const payload =
+    unwrapCandidatePipelineResponse(response);
+
+  return (
+    getCandidateFromApiPayload(payload) ||
+    {}
+  );
+}
+
+async function ensureNhoCandidateStage({
+  candidateId,
+  candidate,
+  majorProgress,
+  files,
+}) {
+  const expectedStage =
+    majorProgress?.isComplete
+      ? ONBOARDING_STAGE
+      : INCOMPLETE_ONBOARDING_STAGE;
+
+  if (
+    getCandidateStageValue(candidate) ===
+    expectedStage
+  ) {
+    return candidate;
+  }
+
+  const response = await api.post(
+    `/api/candidate-pipeline/${encodeURIComponent(
+      candidateId,
+    )}/move`,
+    {
+      targetStage: expectedStage,
+      nextStage: expectedStage,
+      stage: expectedStage,
+      reason:
+        expectedStage === ONBOARDING_STAGE
+          ? "Candidate completed all 5 major pre-employment requirements."
+          : "Candidate has incomplete major pre-employment requirements.",
+      remarks:
+        `${majorProgress.completed || 0} / ${
+          majorProgress.total || 5
+        } major requirements saved.`,
+      nhoFiles: files,
+      majorProgress,
+    },
+    {
+      withCredentials: true,
+    },
+  );
+
+  const payload =
+    unwrapCandidatePipelineResponse(response);
+
+  if (payload?.success === false) {
+    throw new Error(
+      payload?.message ||
+        "Files were saved, but the candidate stage could not be updated.",
+    );
+  }
+
+  return (
+    getCandidateFromApiPayload(payload) ||
+    candidate
   );
 }
 
@@ -1086,15 +1590,277 @@ function FormDropdown({
 }
 
 function getCandidateRecordId(candidate = {}) {
-  return (
-    candidate?.dbId ||
-    candidate?.id ||
-    candidate?.candidatePipelineId ||
-    candidate?.candidateId ||
-    candidate?.candidateApplicationId ||
-    candidate?.applicationId ||
-    ""
+  return getCandidatePipelineRecordId(candidate);
+}
+
+/*
+ * NHO file routes accept only candidate_pipeline.id.
+ * Public candidate IDs, application IDs, and Talent Pool IDs may be numeric
+ * and can collide with another Candidate Pipeline row, so they must never be
+ * used as a fallback for an upload route.
+ */
+function getStrictCandidatePipelineRecordId(candidate = {}) {
+  const safeCandidate =
+    candidate && typeof candidate === "object"
+      ? candidate
+      : {};
+
+  /*
+   * Use the exact same database-record resolver used by Assessment and the
+   * other Candidate Pipeline actions. In normalized board records, `id` can
+   * contain the public/application identifier (for example 21), while
+   * `dbId` / candidatePipelineId contains candidate_pipeline.id (for example
+   * 10). Never read generic `id` directly for NHO routes.
+   */
+  const recordId = cleanText(
+    safeCandidate.candidatePipelineRowId ||
+      safeCandidate.candidate_pipeline_row_id ||
+      getCandidatePipelineRecordId(safeCandidate),
   );
+
+  /*
+   * Do not fall back to generic id, candidateId, applicationId, or
+   * sourceTalentPoolId. A missing pipeline primary key must stop the upload
+   * instead of silently routing it to another numeric namespace.
+   */
+  return /^\d+$/.test(recordId) ? recordId : "";
+}
+
+function getCandidateNhoUploadIdentity(candidate = {}) {
+  const recordId = getStrictCandidatePipelineRecordId(
+    candidate,
+  );
+
+  const identityKey = cleanText(
+    getCandidatePipelineIdentityKey(candidate),
+  );
+
+  const candidateId =
+    cleanText(candidate.candidateId) ||
+    cleanText(candidate.candidate_id);
+
+  const applicationId =
+    cleanText(candidate.candidateApplicationId) ||
+    cleanText(candidate.candidate_application_id) ||
+    cleanText(candidate.applicationId) ||
+    cleanText(candidate.application_id);
+
+  return {
+    recordId,
+    stateKey: recordId
+      ? `record:${recordId.toLowerCase()}`
+      : identityKey,
+    candidateId,
+    applicationId,
+    candidateName:
+      cleanText(candidate.name) ||
+      cleanText(candidate.candidateName),
+    candidateEmail:
+      cleanText(candidate.email) ||
+      cleanText(candidate.candidateEmail) ||
+      cleanText(candidate.candidate_email),
+  };
+}
+
+/*
+ * API payloads can contain public/application/source IDs. For an open NHO
+ * session, the selected candidate_pipeline primary key is authoritative and
+ * must survive every response merge and local board update.
+ */
+function lockCandidatePipelinePrimaryKey(
+  candidate = {},
+  recordId = "",
+) {
+  const lockedRecordId = cleanText(recordId);
+
+  if (!lockedRecordId) {
+    return candidate && typeof candidate === "object"
+      ? { ...candidate }
+      : {};
+  }
+
+  const primaryKeyValue = /^\d+$/.test(lockedRecordId)
+    ? Number(lockedRecordId)
+    : lockedRecordId;
+
+  return {
+    ...(candidate && typeof candidate === "object"
+      ? candidate
+      : {}),
+    id: primaryKeyValue,
+    candidatePipelineRowId: primaryKeyValue,
+    candidate_pipeline_row_id: primaryKeyValue,
+    dbId: primaryKeyValue,
+    db_id: primaryKeyValue,
+    candidatePipelineId: primaryKeyValue,
+    candidate_pipeline_id: primaryKeyValue,
+    pipelineRecordId: primaryKeyValue,
+    pipeline_record_id: primaryKeyValue,
+  };
+}
+
+function isSameCandidateNhoUploadIdentity(
+  firstIdentity = {},
+  secondIdentity = {},
+) {
+  const firstRecordId = cleanText(
+    firstIdentity.recordId,
+  ).toLowerCase();
+
+  const secondRecordId = cleanText(
+    secondIdentity.recordId,
+  ).toLowerCase();
+
+  if (firstRecordId && secondRecordId) {
+    return firstRecordId === secondRecordId;
+  }
+
+  const firstStateKey = cleanText(
+    firstIdentity.stateKey,
+  ).toLowerCase();
+
+  const secondStateKey = cleanText(
+    secondIdentity.stateKey,
+  ).toLowerCase();
+
+  return Boolean(
+    firstStateKey &&
+    secondStateKey &&
+    firstStateKey === secondStateKey,
+  );
+}
+
+
+function buildOffersPageCandidateParams(candidate = {}) {
+  const params = new URLSearchParams();
+
+  const candidatePipelineId =
+    cleanText(getCandidateRecordId(candidate));
+
+  const candidateApplicationId =
+    cleanText(candidate.candidateApplicationId) ||
+    cleanText(candidate.candidate_application_id) ||
+    cleanText(candidate.applicationId) ||
+    cleanText(candidate.application_id);
+
+  const candidateId =
+    cleanText(candidate.candidateId) ||
+    cleanText(candidate.candidate_id);
+
+  const candidateName =
+    cleanText(candidate.name) ||
+    cleanText(candidate.candidateName) ||
+    cleanText(candidate.fullName) ||
+    cleanText(candidate.full_name);
+
+  const candidateEmail =
+    cleanText(candidate.email) ||
+    cleanText(candidate.candidateEmail) ||
+    cleanText(candidate.candidate_email);
+
+  if (candidatePipelineId) {
+    params.set(
+      "candidatePipelineId",
+      candidatePipelineId,
+    );
+  }
+
+  if (candidateApplicationId) {
+    params.set(
+      "candidateApplicationId",
+      candidateApplicationId,
+    );
+  }
+
+  if (candidateId) {
+    params.set("candidateId", candidateId);
+  }
+
+  if (candidateName) {
+    params.set("candidateName", candidateName);
+  }
+
+  if (candidateEmail) {
+    params.set("candidateEmail", candidateEmail);
+  }
+
+  params.set("source", "candidate-pipeline");
+
+  return params;
+}
+
+function isSameCandidateRecord(
+  firstCandidate = {},
+  secondCandidate = {},
+) {
+  return isSameCandidatePipelineRecord(
+    firstCandidate,
+    secondCandidate,
+  );
+}
+
+function getCandidateTimeline(candidate = {}) {
+  const safeCandidate =
+    candidate && typeof candidate === "object"
+      ? candidate
+      : {};
+
+  const rawTimeline =
+    safeCandidate.timeline ||
+    safeCandidate.movementTimeline ||
+    safeCandidate.movement_timeline ||
+    safeCandidate.pipelineTimeline ||
+    safeCandidate.pipeline_timeline ||
+    safeCandidate.history ||
+    safeCandidate.pipelineHistory ||
+    safeCandidate.pipeline_history ||
+    [];
+
+  const parsedTimeline = Array.isArray(rawTimeline)
+    ? rawTimeline
+    : safeJsonParseValue(rawTimeline, []);
+
+  return Array.isArray(parsedTimeline)
+    ? parsedTimeline.filter(Boolean)
+    : [];
+}
+
+function getCandidateFromRealtimePayload(payload = {}) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  return (
+    payload.candidate ||
+    payload.data?.candidate ||
+    payload.data?.data?.candidate ||
+    payload.updatedCandidate ||
+    payload.updated_candidate ||
+    payload.data ||
+    payload
+  );
+}
+
+function mergeCandidateRealtimeUpdate(
+  currentCandidate = {},
+  incomingCandidate = {},
+) {
+  const currentTimeline = getCandidateTimeline(currentCandidate);
+  const incomingTimeline = getCandidateTimeline(incomingCandidate);
+
+  const resolvedTimeline = incomingTimeline.length
+    ? incomingTimeline
+    : currentTimeline;
+
+  return {
+    ...(currentCandidate || {}),
+    ...(incomingCandidate || {}),
+    timeline: resolvedTimeline,
+    movementTimeline: resolvedTimeline,
+    movement_timeline: resolvedTimeline,
+    pipelineTimeline: resolvedTimeline,
+    pipeline_timeline: resolvedTimeline,
+  };
 }
 
 function RequirementCard({
@@ -2346,6 +3112,451 @@ function AssessmentDeadlineDatePicker({
   );
 }
 
+
+function getFirstSelectableNhoFriday(referenceDate = new Date()) {
+  const sourceDate =
+    referenceDate instanceof Date
+      ? referenceDate
+      : new Date(referenceDate);
+
+  const safeDate = Number.isNaN(sourceDate.getTime())
+    ? new Date()
+    : sourceDate;
+
+  const result = new Date(
+    safeDate.getFullYear(),
+    safeDate.getMonth(),
+    safeDate.getDate(),
+  );
+
+  const daysUntilFriday =
+    (5 - result.getDay() + 7) % 7;
+
+  result.setDate(
+    result.getDate() + daysUntilFriday,
+  );
+
+  return result;
+}
+
+function isSelectableNhoFriday(
+  date,
+  referenceDate = new Date(),
+) {
+  if (
+    !(date instanceof Date) ||
+    Number.isNaN(date.getTime())
+  ) {
+    return false;
+  }
+
+  const dateOnly = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  const earliestFriday =
+    getFirstSelectableNhoFriday(
+      referenceDate,
+    );
+
+  return (
+    dateOnly.getDay() === 5 &&
+    dateOnly.getTime() >=
+      earliestFriday.getTime()
+  );
+}
+
+function formatNhoScheduleDateDisplay(
+  value,
+) {
+  const date = parseDateInputValue(value);
+
+  if (!date) {
+    return "Select a Friday";
+  }
+
+  return date.toLocaleDateString(
+    "en-PH",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
+}
+
+function getCandidateNhoStartDateInput(
+  candidate = {},
+) {
+  const schedule =
+    candidate.nhoSchedule ||
+    candidate.nho_schedule ||
+    {};
+
+  const existingValue =
+    schedule.startDate ||
+    schedule.start_date ||
+    schedule.date ||
+    candidate.nhoStartDate ||
+    candidate.nho_start_date ||
+    candidate.nhoDate ||
+    candidate.nho_date ||
+    "";
+
+  const existingDate =
+    parseDateInputValue(
+      existingValue,
+    );
+
+  if (
+    existingDate &&
+    isSelectableNhoFriday(existingDate)
+  ) {
+    return toDateInputValue(existingDate);
+  }
+
+  return toDateInputValue(
+    getFirstSelectableNhoFriday(),
+  );
+}
+
+function NhoScheduleModal({
+  open,
+  candidate,
+  value,
+  isSaving = false,
+  onChange,
+  onClose,
+  onSubmit,
+}) {
+  const selectedDate =
+    parseDateInputValue(value);
+
+  const earliestFriday =
+    getFirstSelectableNhoFriday();
+
+  const [
+    displayDate,
+    setDisplayDate,
+  ] = useState(() => {
+    const source =
+      selectedDate || earliestFriday;
+
+    return new Date(
+      source.getFullYear(),
+      source.getMonth(),
+      1,
+    );
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    const source =
+      parseDateInputValue(value) ||
+      earliestFriday;
+
+    setDisplayDate(
+      new Date(
+        source.getFullYear(),
+        source.getMonth(),
+        1,
+      ),
+    );
+  }, [open, value]);
+
+  const calendarDays = useMemo(
+    () =>
+      buildAssessmentCalendarDays(
+        displayDate,
+      ),
+    [displayDate],
+  );
+
+  const earliestMonth = new Date(
+    earliestFriday.getFullYear(),
+    earliestFriday.getMonth(),
+    1,
+  );
+
+  const displayedMonth = new Date(
+    displayDate.getFullYear(),
+    displayDate.getMonth(),
+    1,
+  );
+
+  const disablePreviousMonth =
+    displayedMonth.getTime() <=
+    earliestMonth.getTime();
+
+  if (!open) return null;
+
+  function handleClose() {
+    if (isSaving) return;
+    onClose?.();
+  }
+
+  function handleSelectDate(date) {
+    if (
+      !isSelectableNhoFriday(date)
+    ) {
+      return;
+    }
+
+    onChange?.(
+      toDateInputValue(date),
+    );
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[11500] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+      onClick={handleClose}
+    >
+      <div
+        className="flex max-h-[92dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(event) =>
+          event.stopPropagation()
+        }
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h2 className="text-xl font-extrabold text-sibs-primary-1">
+              Schedule NHO
+            </h2>
+
+            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-tertiary-5">
+              Choose the candidate&apos;s
+              NHO start date. Only Fridays
+              are available.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Close NHO schedule modal"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
+          <div className="rounded-2xl border border-[#D9E2EC] bg-white p-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+              Candidate
+            </p>
+
+            <p className="mt-1 break-words text-base font-extrabold text-[#101828]">
+              {candidate?.name ||
+                candidate?.candidateName ||
+                "Candidate"}
+            </p>
+
+            <p className="mt-1 break-words text-sm font-bold text-sibs-tertiary-5">
+              {candidate?.email ||
+                candidate?.candidateEmail ||
+                "No email provided"}
+            </p>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+            <p className="text-sm font-bold leading-6 text-sibs-primary-1">
+              Earliest selectable date:{" "}
+              <span className="font-extrabold">
+                {formatNhoScheduleDateDisplay(
+                  toDateInputValue(
+                    earliestFriday,
+                  ),
+                )}
+              </span>
+            </p>
+
+            <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+              This week&apos;s Friday is
+              used when it has not passed.
+              Otherwise, selection begins
+              next Friday.
+            </p>
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
+              <button
+                type="button"
+                disabled={
+                  disablePreviousMonth ||
+                  isSaving
+                }
+                onClick={() =>
+                  setDisplayDate(
+                    (previous) =>
+                      new Date(
+                        previous.getFullYear(),
+                        previous.getMonth() - 1,
+                        1,
+                      ),
+                  )
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <ChevronLeft size={18} />
+              </button>
+
+              <p className="text-sm font-extrabold text-sibs-primary-1">
+                {
+                  assessmentEmailMonthNames[
+                    displayDate.getMonth()
+                  ]
+                }{" "}
+                {displayDate.getFullYear()}
+              </p>
+
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() =>
+                  setDisplayDate(
+                    (previous) =>
+                      new Date(
+                        previous.getFullYear(),
+                        previous.getMonth() + 1,
+                        1,
+                      ),
+                  )
+                }
+                className="flex h-9 w-9 items-center justify-center rounded-full text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="grid grid-cols-7 gap-1">
+                {assessmentEmailWeekdayLabels.map(
+                  (dayLabel) => (
+                    <div
+                      key={dayLabel}
+                      className="flex h-8 items-center justify-center text-xs font-extrabold text-[#174A7C]"
+                    >
+                      {dayLabel}
+                    </div>
+                  ),
+                )}
+
+                {calendarDays.map((day) => {
+                  const isFriday =
+                    day.date.getDay() === 5;
+
+                  const selectable =
+                    isSelectableNhoFriday(
+                      day.date,
+                    );
+
+                  const active =
+                    selectedDate &&
+                    isSameAssessmentDate(
+                      day.date,
+                      selectedDate,
+                    );
+
+                  return (
+                    <button
+                      key={day.dateValue}
+                      type="button"
+                      disabled={
+                        !selectable ||
+                        isSaving
+                      }
+                      onClick={() =>
+                        handleSelectDate(
+                          day.date,
+                        )
+                      }
+                      className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                        active
+                          ? "bg-sibs-primary-1 text-white shadow-sm"
+                          : selectable
+                            ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            : isFriday
+                              ? "cursor-not-allowed bg-amber-50 text-amber-300"
+                              : day.isCurrentMonth
+                                ? "cursor-not-allowed text-[#CBD5E1]"
+                                : "cursor-not-allowed text-[#E2E8F0]"
+                      }`}
+                      title={
+                        selectable
+                          ? "Select this Friday"
+                          : "Only upcoming Fridays can be selected"
+                      }
+                    >
+                      {day.dayNumber}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-wide text-emerald-700">
+              Selected NHO Start Date
+            </p>
+
+            <p className="mt-1 text-base font-extrabold text-emerald-800">
+              {formatNhoScheduleDateDisplay(
+                value,
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isSaving}
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={
+              isSaving ||
+              !selectedDate ||
+              !isSelectableNhoFriday(
+                selectedDate,
+              )
+            }
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSaving ? (
+              <Loader2
+                size={16}
+                className="animate-spin"
+              />
+            ) : (
+              <CalendarDays size={16} />
+            )}
+
+            {isSaving
+              ? "Scheduling..."
+              : "Schedule NHO"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getAssessmentClientBaseUrl() {
   const configuredUrl = cleanText(
     import.meta.env.VITE_CLIENT_APP_URL ||
@@ -2870,6 +4081,66 @@ const CandidatePipelineModal = ({
   const [interviewNotesDraft, setInterviewNotesDraft] = useState("");
   const [candidateFilesById, setCandidateFilesById] = useState({});
   const [localCandidate, setLocalCandidate] = useState(null);
+  const activeCandidateRef = useRef(null);
+
+  /*
+   * Lock NHO ownership to the candidate that opened this modal session.
+   * A board refresh can reorder/remove cards while the file picker or save
+   * request is open. The upload must keep the original candidate identity.
+   */
+  const nhoUploadSessionIdentityRef = useRef(null);
+  const nhoUploadSessionCandidateRef = useRef(null);
+  const nhoModalWasOpenRef = useRef(false);
+
+  if (
+    open &&
+    (
+      !nhoModalWasOpenRef.current ||
+      !nhoUploadSessionIdentityRef.current?.recordId
+    )
+  ) {
+    const rawOpenedCandidate =
+      candidate && typeof candidate === "object"
+        ? { ...candidate }
+        : null;
+
+    const openedIdentity =
+      getCandidateNhoUploadIdentity(
+        rawOpenedCandidate || {},
+      );
+
+    const openedCandidate =
+      rawOpenedCandidate
+        ? lockCandidatePipelinePrimaryKey(
+            rawOpenedCandidate,
+            openedIdentity.recordId,
+          )
+        : null;
+
+    nhoUploadSessionCandidateRef.current =
+      openedCandidate;
+    nhoUploadSessionIdentityRef.current =
+      openedIdentity;
+  }
+
+  if (!open && nhoModalWasOpenRef.current) {
+    nhoUploadSessionCandidateRef.current = null;
+    nhoUploadSessionIdentityRef.current = null;
+  }
+
+  nhoModalWasOpenRef.current = open;
+
+  const nhoUploadSessionIdentity =
+    nhoUploadSessionIdentityRef.current || {};
+
+  const nhoUploadSessionKey =
+    nhoUploadSessionIdentity.stateKey || "";
+
+  const openedModalCandidate =
+    nhoUploadSessionCandidateRef.current ||
+    candidate ||
+    null;
+
   const [selectedNhoFile, setSelectedNhoFile] = useState(null);
   const [isLoadingNhoFiles, setIsLoadingNhoFiles] = useState(false);
   const [isSavingNhoFiles, setIsSavingNhoFiles] = useState(false);
@@ -2883,6 +4154,11 @@ const CandidatePipelineModal = ({
     roleName: "",
   });
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [showNhoScheduleModal, setShowNhoScheduleModal] = useState(false);
+  const [nhoScheduleDate, setNhoScheduleDate] = useState(() =>
+    toDateInputValue(getFirstSelectableNhoFriday()),
+  );
+  const [isSchedulingNho, setIsSchedulingNho] = useState(false);
   const [nhoFilesError, setNhoFilesError] = useState("");
   const [nhoFilesSuccess, setNhoFilesSuccess] = useState("");
 
@@ -2892,10 +4168,14 @@ const CandidatePipelineModal = ({
     title: "",
     message: "",
     closeParentOnClose: false,
+    afterClose: null,
   });
 
-  const { handleStartInterview, handleScheduleNhoAuto } =
-    useCandidatePipeline();
+  const {
+    handleStartInterview,
+    setCandidateList,
+    syncSelectedCandidate,
+  } = useCandidatePipeline();
 
   const navigate = useNavigate();
 
@@ -2904,39 +4184,78 @@ const CandidatePipelineModal = ({
     title = "",
     message = "",
     closeParentOnClose = false,
+    afterClose = null,
   }) {
     setStatusModal({
       open: true,
       type,
       title,
       message,
-      closeParentOnClose,
+      closeParentOnClose:
+        Boolean(closeParentOnClose),
+      afterClose:
+        typeof afterClose === "function"
+          ? afterClose
+          : null,
     });
   }
 
   function closeStatusModal() {
-    const shouldCloseParent = statusModal.closeParentOnClose;
+    const shouldCloseParent =
+      statusModal.type === "success" &&
+      statusModal.closeParentOnClose;
+
+    const afterClose =
+      typeof statusModal.afterClose === "function"
+        ? statusModal.afterClose
+        : null;
 
     setStatusModal((previous) => ({
       ...previous,
       open: false,
       closeParentOnClose: false,
+      afterClose: null,
     }));
 
     if (shouldCloseParent) {
       setTimeout(() => {
         onClose?.();
+        afterClose?.();
       }, 150);
+
+      return;
     }
+
+    /*
+     * Errors close only the Failed modal. Candidate details and all
+     * write forms remain open so the user can correct and retry.
+     */
+    afterClose?.();
   }
 
   useEffect(() => {
+    if (!open) return;
+
+    const sessionCandidate =
+      nhoUploadSessionCandidateRef.current ||
+      openedModalCandidate ||
+      null;
+
     setShowTalentPoolDetails(false);
-    setInterviewNotesDraft(candidate?.interviewNotes || "");
-    setLocalCandidate(candidate || null);
+    setInterviewNotesDraft(
+      sessionCandidate?.interviewNotes || "",
+    );
+    setLocalCandidate(sessionCandidate);
     setSelectedNhoFile(null);
     setIsSendingAssessmentEmail(false);
     setShowAssessmentModal(false);
+    setShowNhoScheduleModal(false);
+    setIsSchedulingNho(false);
+    setNhoScheduleDate(
+      getCandidateNhoStartDateInput(
+        sessionCandidate || {},
+      ),
+    );
     setNhoFilesError("");
     setNhoFilesSuccess("");
     setStatusModal({
@@ -2945,34 +4264,157 @@ const CandidatePipelineModal = ({
       title: "",
       message: "",
       closeParentOnClose: false,
+      afterClose: null,
     });
   }, [
-    candidate?.id,
-    candidate?.candidateId,
-    candidate?.candidateApplicationId,
-    candidate?.prfStatus,
-    candidate?.prf_status,
-    candidate?.currentStage,
     open,
+    nhoUploadSessionKey,
   ]);
 
   const activeCandidate = useMemo(() => {
-    return {
-      ...(candidate || {}),
-      ...(localCandidate || {}),
+    const sessionCandidate =
+      openedModalCandidate || {};
+
+    if (!localCandidate) {
+      return sessionCandidate;
+    }
+
+    if (
+      !isSameCandidatePipelineRecord(
+        sessionCandidate,
+        localCandidate,
+      )
+    ) {
+      /*
+       * Keep the candidate that opened the modal. Never switch the open
+       * details modal to the next card after a board reorder or refresh.
+       */
+      return sessionCandidate;
+    }
+
+    return mergeCandidatePipelineRecord(
+      sessionCandidate,
+      localCandidate,
+    );
+  }, [openedModalCandidate, localCandidate]);
+
+  const candidateRealtimeSignature = useMemo(
+    () =>
+      JSON.stringify({
+        identity:
+          getCandidatePipelineIdentityKey(candidate),
+        interviewDate:
+          candidate?.interviewDate ||
+          candidate?.interview_date ||
+          "",
+        interviewType:
+          candidate?.interviewType ||
+          candidate?.interview_type ||
+          "",
+        interviewStatus:
+          candidate?.interviewStatus ||
+          candidate?.interview_status ||
+          "",
+        onlineInterviewLink:
+          candidate?.onlineInterviewLink ||
+          candidate?.online_interview_link ||
+          "",
+        timeline: getCandidateTimeline(candidate),
+      }),
+    [candidate],
+  );
+
+  useEffect(() => {
+    activeCandidateRef.current = activeCandidate;
+  }, [activeCandidate]);
+
+  useEffect(() => {
+    if (!open || !candidate) return;
+
+    setLocalCandidate((previousCandidate) => {
+      if (
+        previousCandidate &&
+        !isSameCandidateRecord(previousCandidate, candidate)
+      ) {
+        /* Ignore a different card injected by a board reorder. */
+        return previousCandidate;
+      }
+
+      return mergeCandidateRealtimeUpdate(
+        previousCandidate || candidate,
+        candidate,
+      );
+    });
+  }, [open, candidateRealtimeSignature]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleCandidateRealtimeUpdate(event) {
+      const incomingCandidate = getCandidateFromRealtimePayload(
+        event?.detail || {},
+      );
+
+      if (
+        !incomingCandidate ||
+        typeof incomingCandidate !== "object"
+      ) {
+        return;
+      }
+
+      const currentCandidate =
+        activeCandidateRef.current || {};
+
+      if (!isSameCandidateRecord(currentCandidate, incomingCandidate)) {
+        return;
+      }
+
+      setLocalCandidate((previousCandidate) =>
+        mergeCandidateRealtimeUpdate(
+          previousCandidate || currentCandidate,
+          incomingCandidate,
+        ),
+      );
+    }
+
+    window.addEventListener(
+      "ta-pipeline-candidates-updated",
+      handleCandidateRealtimeUpdate,
+    );
+
+    window.addEventListener(
+      "ta-interview-schedule-updated",
+      handleCandidateRealtimeUpdate,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "ta-pipeline-candidates-updated",
+        handleCandidateRealtimeUpdate,
+      );
+
+      window.removeEventListener(
+        "ta-interview-schedule-updated",
+        handleCandidateRealtimeUpdate,
+      );
     };
-  }, [candidate, localCandidate]);
+  }, [open]);
 
   const activePrfStatus = normalizePrfStatus(
     activeCandidate.prfStatus || activeCandidate.prf_status,
   );
 
-  const candidateUploadKey =
-    activeCandidate?.candidateId ||
-    activeCandidate?.candidateApplicationId ||
-    activeCandidate?.id;
+  const candidateNhoUploadIdentity =
+    nhoUploadSessionIdentityRef.current ||
+    getCandidateNhoUploadIdentity(
+      openedModalCandidate || {},
+    );
 
-  const candidateNhoUploadId = getCandidateRecordId(activeCandidate);
+  const candidateNhoUploadId =
+    candidateNhoUploadIdentity.recordId;
+
+  const candidateUploadKey =
+    candidateNhoUploadIdentity.stateKey;
 
   const candidateFiles = useMemo(() => {
     if (!candidateUploadKey) return [];
@@ -3012,12 +4454,16 @@ const CandidatePipelineModal = ({
     });
   }, [sortedCandidateFiles]);
 
-  const currentStage =
+  const rawCurrentStage =
     activeCandidate?.currentStage ||
     activeCandidate?.currentPipelineStage ||
     activeCandidate?.pipelineStage ||
     activeCandidate?.stage ||
     "";
+
+  const currentStage =
+    normalizePipelineStageForVisibility(rawCurrentStage) ||
+    rawCurrentStage;
 
   const nextStage = getNextStage(currentStage);
 
@@ -3028,18 +4474,77 @@ const CandidatePipelineModal = ({
   const isInterviewed = currentStage === "Interviewed";
   const isOffered = currentStage === "Offered";
   const isAccepted =
-    currentStage === "Accepted" || currentStage === "Accepted (For NHO)";
+    currentStage === "Accepted" ||
+    currentStage === "Accepted (For NHO)";
   const forNHO = currentStage === "For NHO";
-  const isIncompleteOnboarding = currentStage === INCOMPLETE_ONBOARDING_STAGE;
+  const isIncompleteOnboarding =
+    currentStage === INCOMPLETE_ONBOARDING_STAGE;
   const isOnboarding = currentStage === ONBOARDING_STAGE;
 
-  const canShowNhoUploads = forNHO || isIncompleteOnboarding || isOnboarding;
+  /*
+   * Stage-gated display values prevent stale fields from later
+   * processes from appearing while the candidate is still in an
+   * earlier stage.
+   */
+  const canShowAssessmentStageData =
+    isPipelineStageAtOrAfter(
+      currentStage,
+      "Online Assessment",
+    );
+
+  const visibleTimeline = useMemo(
+    () =>
+      getVisibleCandidateTimeline(
+        getCandidateTimeline(activeCandidate),
+        currentStage,
+      ),
+    [activeCandidate, currentStage],
+  );
+
+  const latestFinalInterviewTimelineIndex = useMemo(
+    () =>
+      getLatestFinalInterviewTimelineIndex(
+        visibleTimeline,
+      ),
+    [visibleTimeline],
+  );
+
+  const visibleMovementReason = useMemo(
+    () =>
+      getVisibleMovementReason(
+        visibleTimeline,
+        activeCandidate.reasonForMovement,
+      ),
+    [
+      visibleTimeline,
+      activeCandidate.reasonForMovement,
+    ],
+  );
+
+  const canShowNhoUploads =
+    forNHO ||
+    isIncompleteOnboarding ||
+    isOnboarding;
 
   useEffect(() => {
     let isActive = true;
+    const abortController =
+      new AbortController();
+
+    const requestIdentity =
+      getCandidateNhoUploadIdentity(
+        activeCandidate,
+      );
 
     async function loadSavedNhoFiles() {
-      if (!open || !candidateNhoUploadId || !canShowNhoUploads) return;
+      if (
+        !open ||
+        !requestIdentity.recordId ||
+        !requestIdentity.stateKey ||
+        !canShowNhoUploads
+      ) {
+        return;
+      }
 
       setIsLoadingNhoFiles(true);
       setNhoFilesError("");
@@ -3048,36 +4553,131 @@ const CandidatePipelineModal = ({
       try {
         const response = await api.get(
           `/api/candidate-pipeline/${encodeURIComponent(
-            candidateNhoUploadId,
+            requestIdentity.recordId,
           )}/nho/files`,
           {
             withCredentials: true,
+            signal: abortController.signal,
             params: {
               _t: Date.now(),
+              candidatePipelineId:
+                requestIdentity.recordId,
+              candidateId:
+                requestIdentity.candidateId,
+              candidateApplicationId:
+                requestIdentity.applicationId,
+              candidateName:
+                requestIdentity.candidateName,
+              candidateEmail:
+                requestIdentity.candidateEmail,
             },
           },
         );
 
-        if (!isActive) return;
+        if (
+          !isActive ||
+          abortController.signal.aborted
+        ) {
+          return;
+        }
 
-        const responseFiles = getFilesFromApiPayload(response);
-        const normalizedFiles = dedupeFiles(responseFiles, candidateNhoUploadId);
+        const responseCandidate =
+          getCandidateFromApiPayload(
+            response,
+          );
 
-        setCandidateFilesById((previous) => ({
-          ...previous,
-          [candidateUploadKey]: normalizedFiles,
-        }));
+        const responseIdentity =
+          getCandidateNhoUploadIdentity(
+            responseCandidate || {},
+          );
 
-        const responseCandidate = getCandidateFromApiPayload(response);
+        if (
+          responseIdentity.recordId &&
+          !isSameCandidateNhoUploadIdentity(
+            requestIdentity,
+            responseIdentity,
+          )
+        ) {
+          const ownershipError =
+            new Error(
+              "The server returned pre-employment files for a different candidate.",
+            );
 
-        if (responseCandidate && typeof responseCandidate === "object") {
-          setLocalCandidate((previous) => ({
-            ...(previous || activeCandidate),
-            ...responseCandidate,
-          }));
+          ownershipError.code =
+            "NHO_CANDIDATE_OWNERSHIP_MISMATCH";
+
+          throw ownershipError;
+        }
+
+        const currentIdentity =
+          getCandidateNhoUploadIdentity(
+            activeCandidateRef.current || {},
+          );
+
+        if (
+          !isSameCandidateNhoUploadIdentity(
+            requestIdentity,
+            currentIdentity,
+          )
+        ) {
+          return;
+        }
+
+        const responseFiles =
+          getFilesFromApiPayload(
+            response,
+          );
+
+        const normalizedFiles =
+          dedupeFiles(
+            responseFiles,
+            requestIdentity.recordId,
+          );
+
+        setCandidateFilesById(
+          (previous) => {
+            const currentFiles =
+              previous[
+                requestIdentity.stateKey
+              ] || [];
+
+            const mergedFiles =
+              mergeLoadedNhoFilesWithPendingFiles(
+                normalizedFiles,
+                currentFiles,
+                requestIdentity.recordId,
+              );
+
+            return {
+              ...previous,
+              [requestIdentity.stateKey]:
+                mergedFiles,
+            };
+          },
+        );
+
+        if (
+          responseCandidate &&
+          typeof responseCandidate === "object" &&
+          responseIdentity.recordId
+        ) {
+          setLocalCandidate(
+            (previous) => ({
+              ...(previous ||
+                activeCandidate),
+              ...responseCandidate,
+            }),
+          );
         }
       } catch (error) {
-        if (!isActive) return;
+        if (
+          !isActive ||
+          abortController.signal.aborted ||
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "CanceledError"
+        ) {
+          return;
+        }
 
         const message = getApiErrorMessage(
           error,
@@ -3092,7 +4692,10 @@ const CandidatePipelineModal = ({
           message,
         });
       } finally {
-        if (isActive) {
+        if (
+          isActive &&
+          !abortController.signal.aborted
+        ) {
           setIsLoadingNhoFiles(false);
         }
       }
@@ -3102,8 +4705,14 @@ const CandidatePipelineModal = ({
 
     return () => {
       isActive = false;
+      abortController.abort();
     };
-  }, [open, candidateNhoUploadId, candidateUploadKey, canShowNhoUploads]);
+  }, [
+    open,
+    candidateNhoUploadId,
+    candidateUploadKey,
+    canShowNhoUploads,
+  ]);
 
   const nhoScheduleDetails = useMemo(() => {
     const schedule = activeCandidate?.nhoSchedule || {};
@@ -3358,9 +4967,43 @@ const CandidatePipelineModal = ({
         ? "PRF status changed to Matched. Candidate is ready to move to Online Assessment."
         : `PRF status set to ${normalizedStatus}.`;
 
+    const incomingCandidatePatch =
+      typeof firstArg === "object" &&
+      firstArg !== null &&
+      isSameCandidatePipelineRecord(
+        activeCandidate,
+        firstArg,
+      )
+        ? firstArg
+        : {};
+
     const nextCandidate = {
       ...activeCandidate,
-      ...(typeof firstArg === "object" && firstArg !== null ? firstArg : {}),
+      ...incomingCandidatePatch,
+
+      /*
+       * A PRF dropdown change may update PRF fields only. Keep the
+       * exact candidate profile currently open in the modal.
+       */
+      id: activeCandidate.id,
+      dbId:
+        activeCandidate.dbId ||
+        activeCandidate.id,
+      candidateId:
+        activeCandidate.candidateId,
+      candidateApplicationId:
+        activeCandidate.candidateApplicationId,
+      applicationId:
+        activeCandidate.applicationId ||
+        activeCandidate.candidateApplicationId,
+      sourceTalentPoolId:
+        activeCandidate.sourceTalentPoolId,
+      name: activeCandidate.name,
+      candidateName:
+        activeCandidate.candidateName ||
+        activeCandidate.name,
+      email: activeCandidate.email,
+
       prfStatus: normalizedStatus,
       prf_status: normalizedStatus,
       prfReviewed: normalizedStatus === "Matched",
@@ -3411,6 +5054,77 @@ const CandidatePipelineModal = ({
     }
   }
 
+  function handleOpenInterviewSchedule() {
+    activeCandidateRef.current = activeCandidate;
+    onOpenScheduleModal?.(activeCandidate);
+  }
+
+  function handleGoToOffer() {
+    const params =
+      buildOffersPageCandidateParams(activeCandidate);
+
+    const nextPath =
+      `/recruitment/offers?${params.toString()}`;
+
+    const navigationState = {
+      selectedOfferCandidate: {
+        candidatePipelineId:
+          getCandidateRecordId(activeCandidate),
+        candidateApplicationId:
+          activeCandidate.candidateApplicationId ||
+          activeCandidate.candidate_application_id ||
+          activeCandidate.applicationId ||
+          activeCandidate.application_id ||
+          "",
+        candidateId:
+          activeCandidate.candidateId ||
+          activeCandidate.candidate_id ||
+          "",
+        candidateName:
+          activeCandidate.name ||
+          activeCandidate.candidateName ||
+          "",
+        candidateEmail:
+          activeCandidate.email ||
+          activeCandidate.candidateEmail ||
+          "",
+      },
+    };
+
+    /*
+     * Close every modal or temporary overlay owned by Candidate Pipeline
+     * before changing routes. This prevents the Candidate Details overlay,
+     * assessment modal, email modal, or status modal from remaining visible
+     * on the Offers page.
+     */
+    setShowAssessmentModal(false);
+    setShowAssessmentEmailModal(false);
+    setShowTalentPoolDetails(false);
+    setSelectedNhoFile(null);
+    setNhoFilesError("");
+    setNhoFilesSuccess("");
+    setStatusModal({
+      open: false,
+      type: "success",
+      title: "",
+      message: "",
+      closeParentOnClose: false,
+      afterClose: null,
+    });
+
+    onClose?.();
+
+    /*
+     * Let React apply the close state first, then navigate to the selected
+     * candidate filter on the Offers page.
+     */
+    requestAnimationFrame(() => {
+      navigate(nextPath, {
+        state: navigationState,
+      });
+    });
+  }
+
   function handleMoveToNextStage() {
     const candidateForMove = {
       ...activeCandidate,
@@ -3434,57 +5148,114 @@ const CandidatePipelineModal = ({
   }
 
   function handleRequirementUpload(requirement, filePayload) {
-    if (!candidateUploadKey) return;
+    const uploadIdentity =
+      nhoUploadSessionIdentityRef.current ||
+      {};
+
+    if (
+      !uploadIdentity.recordId ||
+      !uploadIdentity.stateKey
+    ) {
+      return;
+    }
 
     setNhoFilesError("");
     setNhoFilesSuccess("");
 
     setCandidateFilesById((previous) => {
-      const currentFiles = previous[candidateUploadKey] || [];
-      const requirementKey = normalizeRequirement(requirement);
+      const currentFiles =
+        previous[
+          uploadIdentity.stateKey
+        ] || [];
 
-      const withoutCurrentRequirement = currentFiles.filter(
-        (file) => normalizeRequirement(file.requirement) !== requirementKey,
-      );
-
-      const nextFile = normalizeUploadedFile(
-        {
-          ...filePayload,
+      const requirementKey =
+        normalizeRequirement(
           requirement,
-        },
-        candidateNhoUploadId,
-      );
+        );
+
+      const withoutCurrentRequirement =
+        currentFiles.filter(
+          (file) =>
+            normalizeRequirement(
+              file.requirement,
+            ) !== requirementKey,
+        );
+
+      const nextFile =
+        normalizeUploadedFile(
+          {
+            ...filePayload,
+            requirement,
+            candidatePipelineId:
+              uploadIdentity.recordId,
+            candidate_pipeline_id:
+              uploadIdentity.recordId,
+            ownerCandidatePipelineId:
+              uploadIdentity.recordId,
+            owner_candidate_pipeline_id:
+              uploadIdentity.recordId,
+          },
+          uploadIdentity.recordId,
+        );
 
       const nextFiles = dedupeFiles(
-        [nextFile, ...withoutCurrentRequirement],
-        candidateNhoUploadId,
+        [
+          nextFile,
+          ...withoutCurrentRequirement,
+        ],
+        uploadIdentity.recordId,
       );
 
       setSelectedNhoFile(nextFile);
 
       return {
         ...previous,
-        [candidateUploadKey]: nextFiles,
+        [uploadIdentity.stateKey]:
+          nextFiles,
       };
     });
   }
 
   function handleRequirementRemove(requirement) {
-    if (!candidateUploadKey) return;
+    const uploadIdentity =
+      nhoUploadSessionIdentityRef.current ||
+      {};
+
+    if (
+      !uploadIdentity.recordId ||
+      !uploadIdentity.stateKey
+    ) {
+      return;
+    }
 
     setNhoFilesError("");
     setNhoFilesSuccess("");
 
     setCandidateFilesById((previous) => {
-      const currentFiles = previous[candidateUploadKey] || [];
-      const requirementKey = normalizeRequirement(requirement);
+      const currentFiles =
+        previous[
+          uploadIdentity.stateKey
+        ] || [];
 
-      const nextFiles = currentFiles.filter(
-        (file) => normalizeRequirement(file.requirement) !== requirementKey,
-      );
+      const requirementKey =
+        normalizeRequirement(
+          requirement,
+        );
+
+      const nextFiles =
+        currentFiles.filter(
+          (file) =>
+            normalizeRequirement(
+              file.requirement,
+            ) !== requirementKey,
+        );
 
       setSelectedNhoFile((current) => {
-        if (normalizeRequirement(current?.requirement) === requirementKey) {
+        if (
+          normalizeRequirement(
+            current?.requirement,
+          ) === requirementKey
+        ) {
           return nextFiles[0] || null;
         }
 
@@ -3493,7 +5264,8 @@ const CandidatePipelineModal = ({
 
       return {
         ...previous,
-        [candidateUploadKey]: nextFiles,
+        [uploadIdentity.stateKey]:
+          nextFiles,
       };
     });
   }
@@ -3594,8 +5366,46 @@ const CandidatePipelineModal = ({
     return nextCandidate;
   }
 
+  function dispatchNhoSaveRefreshEvents(
+    refreshDetail,
+  ) {
+    if (
+      typeof window === "undefined" ||
+      !refreshDetail
+    ) {
+      return;
+    }
+
+    /*
+     * Candidate Pipeline state is already updated locally. Do not dispatch
+     * the global pipeline/talent events here because their current listeners
+     * perform a full GET /api/candidate-pipeline reload. That legacy read used
+     * to create duplicate rows and also kept the board loading after Save.
+     */
+    if (
+      cleanText(refreshDetail.routedStage) ===
+      ONBOARDING_STAGE
+    ) {
+      window.dispatchEvent(
+        new CustomEvent(
+          "ta-onboarding-updated",
+          {
+            detail: refreshDetail,
+          },
+        ),
+      );
+    }
+  }
+
   async function handleSavePreEmploymentRequirements() {
-    if (!candidateNhoUploadId) {
+    const saveIdentity =
+      nhoUploadSessionIdentityRef.current ||
+      {};
+
+    if (
+      !saveIdentity.recordId ||
+      !saveIdentity.stateKey
+    ) {
       const message = "Candidate Pipeline ID is missing.";
 
       setNhoFilesError(message);
@@ -3611,8 +5421,27 @@ const CandidatePipelineModal = ({
 
     const officialFiles = filterOfficialUploadedFiles(
       sortedCandidateFiles,
-      candidateNhoUploadId,
+      saveIdentity.recordId,
     );
+
+    const newFiles = officialFiles.filter((file) =>
+      isRawBrowserFile(file.rawFile),
+    );
+
+    if (!officialFiles.length) {
+      const message =
+        "Please select at least one pre-employment requirement file before saving.";
+
+      setNhoFilesError(message);
+
+      showStatusModal({
+        type: "error",
+        title: "No Files Selected",
+        message,
+      });
+
+      return;
+    }
 
     const currentMajorProgress = calculateProgress(
       officialFiles,
@@ -3635,7 +5464,11 @@ const CandidatePipelineModal = ({
         const hasNewFile = isRawBrowserFile(file.rawFile);
 
         if (hasNewFile) {
-          formData.append("nhoFiles", file.rawFile, file.fileName);
+          formData.append(
+            "nhoFiles",
+            file.rawFile,
+            file.fileName,
+          );
         }
 
         return {
@@ -3651,45 +5484,230 @@ const CandidatePipelineModal = ({
           fileSize: file.fileSize,
           uploadedAt: file.uploadedAt,
           uploadedBy: file.uploadedBy,
-          applicantFolderName: file.applicantFolderName,
+          applicantFolderName:
+            file.applicantFolderName,
+          candidatePipelineId:
+            saveIdentity.recordId,
+          candidate_pipeline_id:
+            saveIdentity.recordId,
+          ownerCandidatePipelineId:
+            saveIdentity.recordId,
+          owner_candidate_pipeline_id:
+            saveIdentity.recordId,
           hasNewFile,
         };
       });
 
-      formData.append("filePayloads", JSON.stringify(filePayloads));
-      formData.append("completed", String(currentTotalProgress.completed));
-      formData.append("total", String(currentTotalProgress.total));
-      formData.append("percent", String(currentTotalProgress.percent));
-      formData.append("majorCompleted", String(currentMajorProgress.completed));
-      formData.append("majorTotal", String(currentMajorProgress.total));
-      formData.append("majorPercent", String(currentMajorProgress.percent));
-      formData.append("majorComplete", String(currentMajorProgress.isComplete));
-      formData.append("previousEmploymentEnabled", "true");
+      formData.append(
+        "filePayloads",
+        JSON.stringify(filePayloads),
+      );
 
+      formData.append(
+        "completed",
+        String(currentTotalProgress.completed),
+      );
+
+      formData.append(
+        "total",
+        String(currentTotalProgress.total),
+      );
+
+      formData.append(
+        "percent",
+        String(currentTotalProgress.percent),
+      );
+
+      formData.append(
+        "majorCompleted",
+        String(currentMajorProgress.completed),
+      );
+
+      formData.append(
+        "majorTotal",
+        String(currentMajorProgress.total),
+      );
+
+      formData.append(
+        "majorPercent",
+        String(currentMajorProgress.percent),
+      );
+
+      formData.append(
+        "majorComplete",
+        String(currentMajorProgress.isComplete),
+      );
+
+      formData.append(
+        "previousEmploymentEnabled",
+        "true",
+      );
+
+      formData.append(
+        "candidatePipelineId",
+        saveIdentity.recordId,
+      );
+
+      formData.append(
+        "candidate_pipeline_id",
+        saveIdentity.recordId,
+      );
+
+      formData.append(
+        "candidateIdentityKey",
+        saveIdentity.stateKey,
+      );
+
+      formData.append(
+        "candidateId",
+        saveIdentity.candidateId,
+      );
+
+      formData.append(
+        "candidateApplicationId",
+        saveIdentity.applicationId,
+      );
+
+      formData.append(
+        "candidateName",
+        saveIdentity.candidateName,
+      );
+
+      formData.append(
+        "candidateEmail",
+        saveIdentity.candidateEmail,
+      );
+
+      /*
+       * Leave Content-Type unset so the browser generates the multipart
+       * boundary. Remove the shared Axios JSON header for this FormData.
+       */
       const saveResponse = await api.post(
         `/api/candidate-pipeline/${encodeURIComponent(
-          candidateNhoUploadId,
+          saveIdentity.recordId,
         )}/nho/files`,
         formData,
         {
           withCredentials: true,
+          timeout: 90000,
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": undefined,
           },
+          transformRequest: [
+            (data, headers) => {
+              if (headers?.delete) {
+                headers.delete("Content-Type");
+              } else if (headers) {
+                delete headers["Content-Type"];
+                delete headers["content-type"];
+              }
+
+              return data;
+            },
+          ],
         },
       );
 
-      const savePayload = saveResponse?.data || {};
+      let savePayload =
+        unwrapCandidatePipelineResponse(
+          saveResponse,
+        );
 
       if (savePayload?.success === false) {
-        throw new Error(savePayload?.message || "Failed to save uploads.");
+        throw new Error(
+          savePayload?.message ||
+            "Failed to save uploads.",
+        );
+      }
+
+      let responseFiles = dedupeFiles(
+        getFilesFromApiPayload(savePayload),
+        saveIdentity.recordId,
+      );
+
+      let saveCandidate =
+        lockCandidatePipelinePrimaryKey(
+          getCandidateFromApiPayload(
+            savePayload,
+          ) || {},
+          saveIdentity.recordId,
+        );
+
+      const saveResponseIdentity =
+        getCandidateNhoUploadIdentity(
+          saveCandidate,
+        );
+
+      if (
+        saveResponseIdentity.recordId &&
+        !isSameCandidateNhoUploadIdentity(
+          saveIdentity,
+          saveResponseIdentity,
+        )
+      ) {
+        const ownershipError =
+          new Error(
+            "The server saved or returned files for a different candidate.",
+          );
+
+        ownershipError.code =
+          "NHO_CANDIDATE_OWNERSHIP_MISMATCH";
+
+        throw ownershipError;
+      }
+
+      const responseVerified =
+        savePayload?.fileServerVerified === true ||
+        savePayload?.data?.fileServerVerified === true;
+
+      /*
+       * Older deployed routes may save successfully without returning
+       * fileServerVerified. Confirm the actual saved server files by
+       * reading them back instead of showing a false Save Failed modal.
+       */
+      if (
+        newFiles.length > 0 &&
+        (
+          !responseVerified ||
+          getMissingReadBackNhoFiles(
+            newFiles,
+            responseFiles,
+          ).length > 0
+        )
+      ) {
+        const readBack =
+          await verifyNhoFilesByReadBack({
+            candidateId:
+              saveIdentity.recordId,
+            pendingFiles: newFiles,
+          });
+
+        responseFiles =
+          readBack.files;
+
+        saveCandidate =
+          lockCandidatePipelinePrimaryKey(
+            readBack.candidate ||
+              saveCandidate,
+            saveIdentity.recordId,
+          );
+
+        savePayload = {
+          ...savePayload,
+          fileServerVerified: true,
+          files: responseFiles,
+          candidate: saveCandidate,
+        };
       }
 
       const savedFiles = dedupeFiles(
-        getFilesFromApiPayload(savePayload).length
-          ? getFilesFromApiPayload(savePayload)
-          : officialFiles,
-        candidateNhoUploadId,
+        responseFiles.length
+          ? responseFiles
+          : officialFiles.map((file) => ({
+              ...file,
+              rawFile: null,
+            })),
+        saveIdentity.recordId,
       );
 
       const savedMajorProgress = calculateProgress(
@@ -3697,91 +5715,205 @@ const CandidatePipelineModal = ({
         MAJOR_REQUIREMENTS,
       );
 
-      const savedTotalProgress = calculateProgress(savedFiles, ALL_REQUIREMENTS);
+      const savedTotalProgress = calculateProgress(
+        savedFiles,
+        ALL_REQUIREMENTS,
+      );
+
+      let refreshedCandidate = {};
+
+      try {
+        refreshedCandidate =
+          await refreshNhoCandidate(
+            saveIdentity.recordId,
+          );
+      } catch {
+        refreshedCandidate = {};
+      }
+
+      const candidateAfterRefresh =
+        lockCandidatePipelinePrimaryKey(
+          {
+            ...saveCandidate,
+            ...refreshedCandidate,
+          },
+          saveIdentity.recordId,
+        );
+
+      const stageCheckedCandidate =
+        await ensureNhoCandidateStage({
+          candidateId:
+            saveIdentity.recordId,
+          candidate:
+            candidateAfterRefresh,
+          majorProgress:
+            savedMajorProgress,
+          files: savedFiles,
+        });
+
+      const routedStage =
+        getCandidateStageValue(
+          stageCheckedCandidate,
+        ) ||
+        getNhoRoutedStageFromPayload(
+          savePayload,
+          candidateAfterRefresh,
+          savedMajorProgress,
+        );
+
+      const nextCandidate =
+        lockCandidatePipelinePrimaryKey(
+          {
+            ...activeCandidate,
+            ...candidateAfterRefresh,
+            ...stageCheckedCandidate,
+            currentStage:
+              routedStage ||
+              saveCandidate.currentStage ||
+              activeCandidate.currentStage,
+            currentPipelineStage:
+              routedStage ||
+              saveCandidate.currentPipelineStage ||
+              activeCandidate.currentPipelineStage,
+            pipelineStage:
+              routedStage ||
+              saveCandidate.pipelineStage ||
+              activeCandidate.pipelineStage,
+            stage:
+              routedStage ||
+              saveCandidate.stage ||
+              activeCandidate.stage,
+            nhoFiles: savedFiles,
+            nho_files: savedFiles,
+            preEmploymentFiles: savedFiles,
+            pre_employment_files: savedFiles,
+            uploadedFiles: savedFiles,
+            files: savedFiles,
+            majorNhoUploadProgress:
+              savedMajorProgress,
+            major_nho_upload_progress:
+              savedMajorProgress,
+          },
+          saveIdentity.recordId,
+        );
+
+      const currentUploadIdentity =
+        getCandidateNhoUploadIdentity(
+          activeCandidateRef.current ||
+            {},
+        );
+
+      if (
+        !isSameCandidateNhoUploadIdentity(
+          saveIdentity,
+          currentUploadIdentity,
+        )
+      ) {
+        return;
+      }
 
       setCandidateFilesById((previous) => ({
         ...previous,
-        [candidateUploadKey]: savedFiles,
+        [saveIdentity.stateKey]: savedFiles,
       }));
 
       setSelectedNhoFile(savedFiles[0] || null);
+      setLocalCandidate(nextCandidate);
 
-      const saveCandidate = getCandidateFromApiPayload(savePayload);
+      const movedToIncompleteStage =
+        routedStage ===
+        INCOMPLETE_ONBOARDING_STAGE;
 
-      if (saveCandidate && typeof saveCandidate === "object") {
-        setLocalCandidate((previous) => ({
-          ...(previous || activeCandidate),
-          ...saveCandidate,
-          nhoFiles: savedFiles,
-          nho_files: savedFiles,
-          majorNhoUploadProgress: savedMajorProgress,
-        }));
-      }
+      const movedToOnboarding =
+        routedStage === ONBOARDING_STAGE;
 
-      let routedStage = "";
+      const savedNewFileText =
+        newFiles.length > 0
+          ? `${newFiles.length} new file${
+              newFiles.length === 1 ? "" : "s"
+            }`
+          : "requirements";
 
-      if (!savedMajorProgress.isComplete) {
-        routedStage = INCOMPLETE_ONBOARDING_STAGE;
-
-        await moveCandidateToStage(
-          INCOMPLETE_ONBOARDING_STAGE,
-          savedFiles,
-          savedMajorProgress,
-        );
-      }
-
-      const successMessage =
-        routedStage === INCOMPLETE_ONBOARDING_STAGE
-          ? `Saved successfully. Candidate has fewer than 5 major requirements and was moved to Talent Pool under ${INCOMPLETE_ONBOARDING_STAGE}.`
+      const successMessage = movedToIncompleteStage
+        ? `Saved ${savedNewFileText}. Candidate has fewer than 5 major requirements and was moved to ${INCOMPLETE_ONBOARDING_STAGE}.`
+        : movedToOnboarding
+          ? `Saved ${savedNewFileText}. Candidate completed all 5 major requirements and was moved to Onboarding.`
           : `Saved successfully. ${savedMajorProgress.completed} of ${savedMajorProgress.total} major requirements completed. ${savedTotalProgress.completed} of ${savedTotalProgress.total} total requirements completed.`;
 
       setNhoFilesSuccess(successMessage);
 
+      applyScheduledCandidateToPipelineState(
+        nextCandidate,
+      );
+
+      const refreshDetail = {
+        candidate: nextCandidate,
+        files: savedFiles,
+        majorProgress:
+          savedMajorProgress,
+        routedStage,
+        fileServerVerified: true,
+        onboardingInserted:
+          savePayload?.onboardingInserted ??
+          savePayload?.data
+            ?.onboardingInserted ??
+          false,
+        onboardingRecord:
+          savePayload?.onboardingRecord ||
+          savePayload?.data
+            ?.onboardingRecord ||
+          null,
+      };
+
+      /*
+       * Keep the result modal mounted and visible first.
+       *
+       * Dispatching the pipeline refresh immediately can change the
+       * selected candidate's stage in the parent page. The old reset
+       * effect then closed the StatusModal before React painted it.
+       *
+       * Refresh Candidate Pipeline, Talent Pool, and Onboarding only
+       * after the user closes the result modal.
+       */
       showStatusModal({
         type: "success",
-        title:
-          routedStage === INCOMPLETE_ONBOARDING_STAGE
-            ? "Moved to Talent Pool"
+        title: movedToIncompleteStage
+          ? "Moved to Talent Pool"
+          : movedToOnboarding
+            ? "Moved to Onboarding"
             : "Requirements Saved",
-        message:
-          routedStage === INCOMPLETE_ONBOARDING_STAGE
-            ? `Saved successfully. Candidate has fewer than 5 major requirements and was moved to Talent Pool under ${INCOMPLETE_ONBOARDING_STAGE}.`
-            : successMessage,
-        closeParentOnClose: routedStage === INCOMPLETE_ONBOARDING_STAGE,
+        message: successMessage,
+        closeParentOnClose:
+          movedToIncompleteStage ||
+          movedToOnboarding,
+        afterClose: () => {
+          dispatchNhoSaveRefreshEvents(
+            refreshDetail,
+          );
+        },
       });
-
-      window.dispatchEvent(
-        new CustomEvent("ta-pipeline-candidates-updated", {
-          detail: {
-            candidate: saveCandidate || activeCandidate,
-            files: savedFiles,
-            majorProgress: savedMajorProgress,
-            routedStage,
-          },
-        }),
-      );
-
-      window.dispatchEvent(
-        new CustomEvent("ta-talent-pool-updated", {
-          detail: {
-            candidate: saveCandidate || activeCandidate,
-            files: savedFiles,
-            majorProgress: savedMajorProgress,
-            routedStage,
-          },
-        }),
-      );
     } catch (error) {
-      const message = getApiErrorMessage(
-        error,
-        "Failed to save pre-employment files.",
-      );
+      const errorText =
+        cleanText(error?.message).toLowerCase();
+
+      const isTimeout =
+        error?.code === "ECONNABORTED" ||
+        errorText.includes("timeout");
+
+      const message = isTimeout
+        ? "Saving took too long. Please check the file server connection and try again."
+        : getApiErrorMessage(
+            error,
+            "Failed to save pre-employment files.",
+          );
 
       setNhoFilesError(message);
 
       showStatusModal({
         type: "error",
-        title: "Save Failed",
+        title: isTimeout
+          ? "Save Timed Out"
+          : "Save Failed",
         message,
       });
     } finally {
@@ -3844,97 +5976,462 @@ const CandidatePipelineModal = ({
     }
   }
 
-  async function handleScheduleNhoClick() {
-    await handleScheduleNhoAuto(activeCandidate);
-    onClose?.();
+  function applyScheduledCandidateToPipelineState(nextCandidate) {
+    if (!nextCandidate || typeof nextCandidate !== "object") return;
+
+    if (typeof setCandidateList === "function") {
+      setCandidateList((previousCandidates = []) => {
+        let foundCandidate = false;
+
+        const nextCandidates = previousCandidates.map((item) => {
+          if (!isSameCandidatePipelineRecord(item, nextCandidate)) {
+            return item;
+          }
+
+          foundCandidate = true;
+
+          return mergeCandidatePipelineRecord(
+            item,
+            nextCandidate,
+          );
+        });
+
+        return foundCandidate
+          ? nextCandidates
+          : previousCandidates;
+      });
+    }
+
+    if (typeof syncSelectedCandidate === "function") {
+      syncSelectedCandidate(nextCandidate);
+    }
   }
 
- async function handleStartOrContinueInterview() {
-  if (!isInterviewInProgress) {
-    await handleStartInterview(activeCandidate);
+  function handleScheduleNhoClick() {
+    setNhoScheduleDate(
+      getCandidateNhoStartDateInput(
+        activeCandidate,
+      ),
+    );
+
+    setShowNhoScheduleModal(true);
   }
 
-  if (activeCandidate.onlineInterviewLink) {
-    window.open(
-      activeCandidate.onlineInterviewLink,
-      "_blank",
-      "noopener,noreferrer",
+  async function handleConfirmScheduleNho() {
+    const candidateId =
+      cleanText(candidateNhoUploadId);
+
+    const selectedDate =
+      parseDateInputValue(
+        nhoScheduleDate,
+      );
+
+    if (!candidateId) {
+      setShowNhoScheduleModal(false);
+
+      showStatusModal({
+        type: "error",
+        title: "NHO Scheduling Failed",
+        message:
+          "Candidate Pipeline ID is missing.",
+      });
+
+      return;
+    }
+
+    if (
+      !selectedDate ||
+      !isSelectableNhoFriday(
+        selectedDate,
+      )
+    ) {
+      setShowNhoScheduleModal(false);
+
+      showStatusModal({
+        type: "error",
+        title: "Invalid NHO Start Date",
+        message:
+          "Please select an available Friday starting from the current week's Friday.",
+      });
+
+      return;
+    }
+
+    const normalizedStage =
+      cleanText(currentStage);
+
+    if (
+      normalizedStage !== "Accepted" &&
+      normalizedStage !==
+        "Accepted (For NHO)"
+    ) {
+      setShowNhoScheduleModal(false);
+
+      showStatusModal({
+        type: "error",
+        title: "NHO Scheduling Failed",
+        message:
+          "Only accepted candidates can be scheduled for NHO.",
+      });
+
+      return;
+    }
+
+    setIsSchedulingNho(true);
+
+    try {
+      const selectedDateDisplay =
+        formatNhoScheduleDateDisplay(
+          nhoScheduleDate,
+        );
+
+      const schedulePayload = {
+        candidatePipelineId:
+          candidateNhoUploadIdentity.recordId,
+        candidateId:
+          candidateNhoUploadIdentity.candidateId,
+        candidateApplicationId:
+          candidateNhoUploadIdentity.applicationId,
+        candidateName:
+          candidateNhoUploadIdentity.candidateName,
+        candidateEmail:
+          candidateNhoUploadIdentity.candidateEmail,
+        startDate: nhoScheduleDate,
+        date: nhoScheduleDate,
+        account:
+          activeCandidate
+            ?.offerDetails
+            ?.account ||
+          activeCandidate?.account ||
+          activeCandidate
+            ?.nhoAccount ||
+          "—",
+        trainer:
+          activeCandidate?.trainer ||
+          activeCandidate?.nhoTrainer ||
+          "To be assigned",
+        updatedShiftSchedule:
+          activeCandidate
+            ?.updatedShiftSchedule ||
+          activeCandidate
+            ?.nhoShiftSchedule ||
+          "To be assigned",
+        shiftSchedule:
+          activeCandidate
+            ?.updatedShiftSchedule ||
+          activeCandidate
+            ?.nhoShiftSchedule ||
+          "To be assigned",
+        endorsementStatus:
+          "For Endorsement",
+        location:
+          activeCandidate
+            ?.workLocation ||
+          activeCandidate
+            ?.nhoLocation ||
+          activeCandidate
+            ?.applyingLocation ||
+          "—",
+        status: "Scheduled",
+        remarks:
+          `NHO scheduled for ${selectedDateDisplay}.`,
+      };
+
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateId,
+        )}/nho/schedule`,
+        schedulePayload,
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload =
+        unwrapCandidatePipelineResponse(
+          response,
+        );
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message ||
+            "Failed to schedule NHO.",
+        );
+      }
+
+      const apiCandidate =
+        lockCandidatePipelinePrimaryKey(
+          getCandidateFromApiPayload(
+            payload,
+          ) || {},
+          candidateNhoUploadIdentity.recordId,
+        );
+
+      const responseSchedule =
+        apiCandidate.nhoSchedule ||
+        apiCandidate.nho_schedule ||
+        payload.nhoSchedule ||
+        payload.nho_schedule ||
+        schedulePayload;
+
+      const nextCandidate =
+        lockCandidatePipelinePrimaryKey(
+          {
+            ...activeCandidate,
+            ...apiCandidate,
+            currentStage: "For NHO",
+            current_stage: "For NHO",
+            currentPipelineStage:
+              "For NHO",
+            current_pipeline_stage:
+              "For NHO",
+            pipelineStage: "For NHO",
+            pipeline_stage: "For NHO",
+            stage: "For NHO",
+            nhoSchedule:
+              responseSchedule,
+            nho_schedule:
+              responseSchedule,
+            nhoStartDate:
+              responseSchedule.startDate ||
+              responseSchedule.date ||
+              nhoScheduleDate,
+            nho_start_date:
+              responseSchedule.startDate ||
+              responseSchedule.date ||
+              nhoScheduleDate,
+          },
+          candidateNhoUploadIdentity.recordId,
+        );
+
+      setLocalCandidate(
+        nextCandidate,
+      );
+
+      /*
+       * Update the Candidate Pipeline board immediately from the successful
+       * response. This avoids dispatching the global refresh event, which
+       * reloads up to 500 candidates and keeps the page in a loading state.
+       */
+      applyScheduledCandidateToPipelineState(
+        nextCandidate,
+      );
+
+      setShowNhoScheduleModal(
+        false,
+      );
+
+      showStatusModal({
+        type: "success",
+        title: "NHO Scheduled",
+        message:
+          payload?.message ||
+          `${activeCandidate.name || "Candidate"}'s NHO was scheduled successfully for ${selectedDateDisplay}.`,
+        /*
+         * Clicking OK closes Candidate Pipeline Details. The board was
+         * already updated locally above, so no full pipeline reload is needed.
+         */
+        closeParentOnClose: true,
+      });
+    } catch (error) {
+      setShowNhoScheduleModal(
+        false,
+      );
+
+      showStatusModal({
+        type: "error",
+        title: "NHO Scheduling Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to schedule NHO.",
+        ),
+      });
+    } finally {
+      setIsSchedulingNho(false);
+    }
+  }
+
+ function openFinalInterviewForm() {
+    if (activeCandidate.onlineInterviewLink) {
+      window.open(
+        activeCandidate.onlineInterviewLink,
+        "_blank",
+        "noopener,noreferrer",
+      );
+    }
+
+    const submittedForms = Array.isArray(
+      activeCandidate.finalInterviewSubmittedForms,
+    )
+      ? activeCandidate.finalInterviewSubmittedForms
+      : [];
+
+    const latestSubmission = [...submittedForms].sort((a, b) => {
+      const aTime = new Date(
+        a.submittedAtIso ||
+          a.submittedAt ||
+          a.submitted_at ||
+          a.createdAt ||
+          a.created_at ||
+          0,
+      ).getTime();
+
+      const bTime = new Date(
+        b.submittedAtIso ||
+          b.submittedAt ||
+          b.submitted_at ||
+          b.createdAt ||
+          b.created_at ||
+          0,
+      ).getTime();
+
+      return (
+        (Number.isFinite(bTime) ? bTime : 0) -
+        (Number.isFinite(aTime) ? aTime : 0)
+      );
+    })[0];
+
+    const candidatePositionId =
+      getCandidateAppliedPositionId(
+        activeCandidate,
+        latestSubmission?.positionId ||
+          latestSubmission?.position_id ||
+          "",
+      );
+
+    const candidatePositionTitle =
+      getCandidateAppliedPositionTitle(
+        activeCandidate,
+        latestSubmission?.positionTitle ||
+          latestSubmission?.position_title ||
+          "",
+      );
+
+    const preferredFormId =
+      activeCandidate.finalInterviewFormId ||
+      activeCandidate.final_interview_form_id ||
+      latestSubmission?.formId ||
+      latestSubmission?.form_id ||
+      "";
+
+    const matchedSettingsForm =
+      findMatchingFinalInterviewForm({
+        preferredFormId,
+        positionId: candidatePositionId,
+        positionTitle: candidatePositionTitle,
+      });
+
+    const positionId =
+      getFinalInterviewFormPositionId(
+        matchedSettingsForm,
+      ) ||
+      candidatePositionId ||
+      "";
+
+    const positionTitle =
+      getFinalInterviewFormPositionTitle(
+        matchedSettingsForm,
+      ) ||
+      candidatePositionTitle ||
+      "";
+
+    const formId =
+      getFinalInterviewFormId(
+        matchedSettingsForm,
+      ) ||
+      preferredFormId ||
+      (
+        positionId
+          ? `final-interview-${positionId}`
+          : "default-job-evaluation"
+      );
+
+    const submissionId =
+      latestSubmission?.id ||
+      latestSubmission?.submissionId ||
+      latestSubmission?.submission_id ||
+      "";
+
+    const params = new URLSearchParams();
+
+    params.set(
+      "candidateId",
+      activeCandidate.candidateId || "",
+    );
+
+    params.set(
+      "candidateApplicationId",
+      activeCandidate.candidateApplicationId ||
+        activeCandidate.id ||
+        "",
+    );
+
+    if (positionId) {
+      params.set("positionId", positionId);
+    }
+
+    if (positionTitle) {
+      params.set("positionTitle", positionTitle);
+    }
+
+    if (formId) {
+      params.set("formId", formId);
+    }
+
+    params.set("mode", "edit");
+    params.set("continue", "1");
+
+    if (submissionId) {
+      params.set("submissionId", submissionId);
+    }
+
+    navigate(
+      `/recruitment/final-interview-form?${params.toString()}`,
+      {
+        state: {
+          candidate: {
+            ...activeCandidate,
+            positionId,
+            openPosition:
+              positionTitle ||
+              activeCandidate.openPosition,
+            finalInterviewPositionId: positionId,
+            finalInterviewPositionTitle:
+              positionTitle,
+            finalInterviewFormId: formId,
+          },
+          matchedFinalInterviewForm:
+            matchedSettingsForm,
+          allowEditSubmitted: true,
+        },
+      },
     );
   }
 
-  onClose?.();
+  async function handleStartOrContinueInterview() {
+    if (isInterviewInProgress) {
+      openFinalInterviewForm();
+      return;
+    }
 
-  const submittedForms = Array.isArray(activeCandidate.finalInterviewSubmittedForms)
-    ? activeCandidate.finalInterviewSubmittedForms
-    : [];
+    const response = await handleStartInterview(
+      activeCandidate,
+    );
 
-  const latestSubmission = [...submittedForms].sort((a, b) => {
-    const aTime = new Date(
-      a.submittedAtIso ||
-        a.submittedAt ||
-        a.submitted_at ||
-        a.createdAt ||
-        a.created_at ||
-        0,
-    ).getTime();
+    if (!response?.success) {
+      /*
+       * handleStartInterview keeps the existing failure handling.
+       * Do not navigate when the API request fails.
+       */
+      return;
+    }
 
-    const bTime = new Date(
-      b.submittedAtIso ||
-        b.submittedAt ||
-        b.submitted_at ||
-        b.createdAt ||
-        b.created_at ||
-        0,
-    ).getTime();
-
-    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
-  })[0];
-
-  const positionId =
-    activeCandidate.positionId ||
-    activeCandidate.finalInterviewPositionId ||
-    activeCandidate.offerDetails?.positionId ||
-    activeCandidate.hiringRequirementId ||
-    latestSubmission?.positionId ||
-    latestSubmission?.position_id ||
-    "";
-
-  const formId =
-    activeCandidate.finalInterviewFormId ||
-    activeCandidate.final_interview_form_id ||
-    latestSubmission?.formId ||
-    latestSubmission?.form_id ||
-    (positionId ? `final-interview-${positionId}` : "default-job-evaluation");
-
-  const submissionId =
-    latestSubmission?.id ||
-    latestSubmission?.submissionId ||
-    latestSubmission?.submission_id ||
-    "";
-
-  const params = new URLSearchParams();
-
-  params.set("candidateId", activeCandidate.candidateId || "");
-  params.set(
-    "candidateApplicationId",
-    activeCandidate.candidateApplicationId || activeCandidate.id || "",
-  );
-  params.set("positionId", positionId);
-  params.set("formId", formId);
-  params.set("mode", "edit");
-  params.set("continue", "1");
-
-  if (submissionId) {
-    params.set("submissionId", submissionId);
+    /*
+     * Start Interview is a direct transition.
+     * Do not show a success modal before opening the interview form.
+     */
+    openFinalInterviewForm();
   }
-
-  navigate(`/recruitment/final-interview-form?${params.toString()}`, {
-    state: {
-      candidate: activeCandidate,
-      allowEditSubmitted: true,
-    },
-  });
-}
 
   const nhoScheduleSection = (
     <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
@@ -4096,7 +6593,7 @@ const CandidatePipelineModal = ({
                           PRF: {activePrfStatus}
                         </span>
 
-                        {modalStatus && (
+                        {canShowAssessmentStageData && modalStatus && (
                           <span
                             className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getInterviewStatusClass(
                               modalStatus,
@@ -4106,7 +6603,9 @@ const CandidatePipelineModal = ({
                           </span>
                         )}
 
-                        {!isLeadStage && activeCandidate.assessmentResult && (
+                        {!isLeadStage &&
+                          canShowAssessmentStageData &&
+                          activeCandidate.assessmentResult && (
                           <span
                             className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getAssessmentResultClass(
                               activeCandidate.assessmentResult,
@@ -4162,7 +6661,14 @@ const CandidatePipelineModal = ({
                       </h3>
 
                       <div className="mt-5 space-y-4">
-                        {(activeCandidate.timeline || []).map((item, index) => {
+                        {!visibleTimeline.length && (
+                          <div className="rounded-xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-4 py-6 text-center text-sm font-semibold text-sibs-tertiary-5">
+                            No movement records are available for the current stage.
+                          </div>
+                        )}
+
+                        {visibleTimeline.map(
+                          (item, index) => {
                           const finalInterviewFormLink = getTimelineFinalInterviewFormLink(
                             item,
                             activeCandidate,
@@ -4186,13 +6692,41 @@ const CandidatePipelineModal = ({
                             finalInterviewScoreSummary,
                           );
 
-                          const shouldShowFinalInterviewResult =
-                            isFinalInterviewTimelineItem(timelineItem) &&
-                            (finalInterviewResult || finalInterviewScore);
+                          const jobEvaluationScore =
+                            getJobEvaluationScoreDisplay(
+                              finalInterviewScoreSummary,
+                            );
 
-                          const timelineAssessmentScore = formatAssessmentScoreDisplay(
-                            getTimelineAssessmentScore(timelineItem),
-                          );
+                          const isLatestFinalInterviewTimelineItem =
+                            index === latestFinalInterviewTimelineIndex &&
+                            isFinalInterviewTimelineItem(
+                              timelineItem,
+                            );
+
+                          const shouldShowJobEvaluationScore =
+                            isLatestFinalInterviewTimelineItem &&
+                            Boolean(jobEvaluationScore);
+
+                          const shouldShowFinalInterviewResult =
+                            isLatestFinalInterviewTimelineItem &&
+                            Boolean(
+                              finalInterviewResult ||
+                                finalInterviewScore,
+                            );
+
+                          const shouldShowAssessmentArtifacts =
+                            shouldShowAssessmentArtifactsForTimelineEntry(
+                              timelineItem,
+                            );
+
+                          const timelineAssessmentScore =
+                            shouldShowAssessmentArtifacts
+                              ? formatAssessmentScoreDisplay(
+                                  getTimelineAssessmentScore(
+                                    timelineItem,
+                                  ),
+                                )
+                              : "";
 
                           return (
                             <div
@@ -4245,36 +6779,52 @@ const CandidatePipelineModal = ({
                                   </div>
                                 )}
 
-                                <GetAssessmentTimelineFiles
-                                  item={timelineItem}
-                                  candidate={activeCandidate}
-                                />
+                                {shouldShowAssessmentArtifacts && (
+                                  <GetAssessmentTimelineFiles
+                                    item={timelineItem}
+                                    candidate={activeCandidate}
+                                  />
+                                )}
+
+                                {shouldShowJobEvaluationScore && (
+                                  <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 p-3">
+                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-violet-700">
+                                      Job Evaluation Score
+                                    </p>
+
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      <span className="inline-flex rounded-full border border-violet-100 bg-white px-3 py-1 text-xs font-extrabold text-violet-700">
+                                        {jobEvaluationScore}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
 
                                 {shouldShowFinalInterviewResult && (
-                                <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
-                                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                                    Final Interview Result
-                                  </p>
+                                  <div className="mt-3 rounded-xl border border-blue-100 bg-blue-50 p-3">
+                                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                                      Final Interview Result
+                                    </p>
 
-                                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    {finalInterviewResult && (
-                                      <span
-                                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getFinalInterviewResultClass(
-                                          finalInterviewResult,
-                                        )}`}
-                                      >
-                                        {finalInterviewResult}
-                                      </span>
-                                    )}
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      {finalInterviewResult && (
+                                        <span
+                                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-extrabold ${getFinalInterviewResultClass(
+                                            finalInterviewResult,
+                                          )}`}
+                                        >
+                                          {finalInterviewResult}
+                                        </span>
+                                      )}
 
-                                    {finalInterviewScore && (
-                                      <span className="inline-flex rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                                        Score: {finalInterviewScore}
-                                      </span>
-                                    )}
+                                      {finalInterviewScore && (
+                                        <span className="inline-flex rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                                          Score: {finalInterviewScore}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
                                 {finalInterviewFormLink && (
                                   <div className="mt-3">
@@ -4311,7 +6861,7 @@ const CandidatePipelineModal = ({
                       </h3>
 
                       <p className="mt-3 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-sm leading-6 text-[#344054]">
-                        {activeCandidate.reasonForMovement || "—"}
+                        {visibleMovementReason || "—"}
                       </p>
                     </div>
                   </div>
@@ -4453,9 +7003,7 @@ const CandidatePipelineModal = ({
                           <div className="mt-4 grid grid-cols-1 gap-2">
                             <button
                               type="button"
-                              onClick={() =>
-                                onOpenScheduleModal?.(activeCandidate)
-                              }
+                              onClick={handleOpenInterviewSchedule}
                               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
                             >
                               <CalendarDays size={16} />
@@ -4498,9 +7046,7 @@ const CandidatePipelineModal = ({
                           canScheduleInterview(activeCandidate) && (
                             <button
                               type="button"
-                              onClick={() =>
-                                onOpenScheduleModal?.(activeCandidate)
-                              }
+                              onClick={handleOpenInterviewSchedule}
                               className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 text-sm font-bold text-white transition hover:opacity-90"
                             >
                               <CalendarDays size={16} />
@@ -4743,7 +7289,7 @@ const CandidatePipelineModal = ({
                     candidateEmail={activeCandidate.email}
                     files={sortedCandidateFiles}
                     selectedFile={selectedNhoFile}
-                    disabled={isSavingNhoFiles || isLoadingNhoFiles}
+                    disabled={isSavingNhoFiles}
                     saveError={nhoFilesError}
                     saveSuccess={nhoFilesSuccess}
                     onUpload={handleRequirementUpload}
@@ -4768,21 +7314,42 @@ const CandidatePipelineModal = ({
                 </button>
               )}
 
+              {isOffered && (
+                <button
+                  type="button"
+                  onClick={handleGoToOffer}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                >
+                  <ArrowRight size={16} />
+                  Go to Offer
+                </button>
+              )}
+
               {isAccepted && (
                 <button
                   type="button"
+                  disabled={isSchedulingNho}
                   onClick={handleScheduleNhoClick}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <CalendarDays size={16} />
-                  Schedule NHO
+                  {isSchedulingNho ? (
+                    <Loader2
+                      size={16}
+                      className="animate-spin"
+                    />
+                  ) : (
+                    <CalendarDays size={16} />
+                  )}
+                  {isSchedulingNho
+                    ? "Scheduling..."
+                    : "Schedule NHO"}
                 </button>
               )}
 
               {canShowNhoUploads && (
                 <button
                   type="button"
-                  disabled={isSavingNhoFiles || isLoadingNhoFiles}
+                  disabled={isSavingNhoFiles}
                   onClick={handleSavePreEmploymentRequirements}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
                 >
@@ -4834,6 +7401,20 @@ const CandidatePipelineModal = ({
           </div>
         </div>
       </div>
+
+      <NhoScheduleModal
+        open={showNhoScheduleModal}
+        candidate={activeCandidate}
+        value={nhoScheduleDate}
+        isSaving={isSchedulingNho}
+        onChange={setNhoScheduleDate}
+        onClose={() => {
+          if (!isSchedulingNho) {
+            setShowNhoScheduleModal(false);
+          }
+        }}
+        onSubmit={handleConfirmScheduleNho}
+      />
 
       <UpdateAssessmentModal
         open={showAssessmentModal}

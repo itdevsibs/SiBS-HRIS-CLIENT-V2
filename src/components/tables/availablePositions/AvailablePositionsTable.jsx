@@ -4,6 +4,7 @@ import PositionMobileCard from "../../recruitment/availablePositions/PositionMob
 import { formatDate } from "../../layout/FormatDateTime";
 import { formatPersonName } from "../../../lib/utils/availablePositions/availablePositionsHelpers";
 import { StatusBadge } from "../../../lib/utils/availablePositions/reactComponents/reactHelpers";
+import { formatAvailablePositionId } from "../../../lib/utils/availablePositions/availablePositionId";
 
 function normalizeText(value = "") {
   return String(value || "")
@@ -158,7 +159,10 @@ export default function AvailablePositionsTable({
                           >
                             <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
                               <span className="inline-flex whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-extrabold text-sibs-primary-1">
-                                {position.positionId || "—"}
+                                {formatAvailablePositionId(
+                                  position.positionId,
+                                  position.id,
+                                )}
                               </span>
                             </td>
 
