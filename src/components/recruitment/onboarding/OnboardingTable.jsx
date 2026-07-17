@@ -25,6 +25,30 @@ const getShowStatusClass = (s) =>
     ? "border-amber-200 bg-amber-50 text-amber-700"
     : "border-gray-200 bg-gray-50 text-gray-600";
 
+
+function getOnboardingDisplayId(item = {}) {
+  return (
+    item.onboardingId ||
+    item.onboarding_id ||
+    (item.id
+      ? `ONB-${String(item.id).padStart(5, "0")}`
+      : "—")
+  );
+}
+
+function getRecordValue(
+  item = {},
+  camelKey,
+  snakeKey,
+  fallback = "",
+) {
+  return (
+    item?.[camelKey] ??
+    item?.[snakeKey] ??
+    fallback
+  );
+}
+
 const getOutcomeClass = (o) =>
   o === "True Hire"
     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -38,21 +62,67 @@ const getOutcomeClass = (o) =>
 
 export default function OnboardingTable({ onView }) {
   const { list, loading } = useOnboarding();
-  const { page, setPage, setPagination, search, filterValues } = usePagination("onboarding");
-  const limit = 8; // ONBOARDING_RECORDS_PER_PAGE parity
 
-  // 2. COMPLETE FILTERING (No Data Loss)
+  const {
+    page,
+    setPage,
+    setPagination,
+    search,
+    filterValues,
+  } = usePagination("onboarding");
+
+  const limit = 8;
+
+  const safeList = Array.isArray(list)
+    ? list
+    : [];
+
   const filteredList = useMemo(() => {
-    const keyword = (search || "").toLowerCase();
-    return list.filter((item) => {
+    const keyword = String(
+      search || "",
+    ).toLowerCase();
+
+    return safeList.filter((item) => {
+      const candidateName = String(
+        getRecordValue(
+          item,
+          "candidateName",
+          "candidate_name",
+        ) || "",
+      ).toLowerCase();
+
+      const candidateEmail = String(
+        getRecordValue(
+          item,
+          "candidateEmail",
+          "candidate_email",
+        ) || "",
+      ).toLowerCase();
+
+      const roleTitle = String(
+        getRecordValue(
+          item,
+          "roleTitle",
+          "role_title",
+        ) || "",
+      ).toLowerCase();
+
+      const onboardingId =
+        getOnboardingDisplayId(item)
+          .toLowerCase();
+
       const matchS =
         !keyword ||
-        item.candidateName?.toLowerCase().includes(keyword) ||
-        item.onboardingId?.toLowerCase().includes(keyword) ||
-        item.candidateEmail?.toLowerCase().includes(keyword) ||
-        item.roleTitle?.toLowerCase().includes(keyword) ||
-        item.account?.toLowerCase().includes(keyword) ||
-        item.owner?.toLowerCase().includes(keyword);
+        candidateName.includes(keyword) ||
+        onboardingId.includes(keyword) ||
+        candidateEmail.includes(keyword) ||
+        roleTitle.includes(keyword) ||
+        String(item.account || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(item.owner || "")
+          .toLowerCase()
+          .includes(keyword);
 
       const matchStatus =
         filterValues.showStatus === "All Status" ||
@@ -71,7 +141,7 @@ export default function OnboardingTable({ onView }) {
 
       return matchS && matchStatus && matchOutcome && matchOwner;
     });
-  }, [list, search, filterValues]);
+  }, [safeList, search, filterValues]);
 
   const totalPages = Math.ceil(filteredList.length / limit) || 1;
   const paginatedData = useMemo(
@@ -80,8 +150,34 @@ export default function OnboardingTable({ onView }) {
   );
 
   useEffect(() => {
-    setPagination({ total: filteredList.length, totalPages });
-  }, [filteredList.length, totalPages, setPagination]);
+    setPagination({
+      total: filteredList.length,
+      totalPages,
+    });
+  }, [
+    filteredList.length,
+    totalPages,
+    setPagination,
+  ]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages, setPage]);
+
+  const firstVisibleRecord =
+    filteredList.length > 0
+      ? (page - 1) * limit + 1
+      : 0;
+
+  const lastVisibleRecord =
+    filteredList.length > 0
+      ? Math.min(
+          page * limit,
+          filteredList.length,
+        )
+      : 0;
 
   return (
     <div className="p-4 sm:p-6">
@@ -127,7 +223,7 @@ export default function OnboardingTable({ onView }) {
               {paginatedData.map((item) => (
                 <tr key={item.id} className="transition duration-200 hover:bg-[#FAFBFC]">
                   <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-sibs-primary-1">
-                    {item.onboardingId}
+                    {getOnboardingDisplayId(item)}
                   </td>
                   <td className="border-b border-[#E6ECF2] px-5 py-5">
                     <p className="text-sm font-bold text-[#101828]">{item.candidateName}</p>
@@ -190,7 +286,8 @@ export default function OnboardingTable({ onView }) {
       {/* 5. FOOTER (Exact Original Text) */}
       <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <p className="text-sm font-semibold text-sibs-tertiary-5">
-          Showing {(page - 1) * limit + 1} to {Math.min(page * limit, filteredList.length)} of{" "}
+          Showing {firstVisibleRecord} to{" "}
+          {lastVisibleRecord} of{" "}
           {filteredList.length} onboarding records
         </p>
         <div className="flex flex-wrap items-center gap-2">

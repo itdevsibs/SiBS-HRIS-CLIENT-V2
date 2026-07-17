@@ -39,6 +39,12 @@ import {
   formatNhoScheduleDate,
 } from "../../lib/utils/candidatePipeline/candidatePipelineHelpers";
 
+import {
+  getCandidatePipelineRecordId,
+  isSameCandidatePipelineRecord,
+  mergeCandidatePipelineRecord,
+} from "../../lib/utils/candidatePipeline/candidatePipelineIdentity";
+
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 
 const CandidatePipelineContext = createContext(null);
@@ -619,48 +625,18 @@ function getApiCandidate(response) {
   return response?.data || response?.candidate || null;
 }
 
-function getCandidateIdentity(candidate = {}) {
-  return {
-    id: String(candidate.id || candidate.dbId || "").trim(),
-    candidateId: String(candidate.candidateId || "").trim(),
-    candidateApplicationId: String(
-      candidate.candidateApplicationId || candidate.applicationId || "",
-    ).trim(),
-    email: String(candidate.email || candidate.candidateEmail || "")
-      .trim()
-      .toLowerCase(),
-    name: String(candidate.name || candidate.candidateName || "")
-      .trim()
-      .toLowerCase(),
-  };
-}
-
-function isSamePipelineCandidate(candidateA = {}, candidateB = {}) {
-  const left = getCandidateIdentity(candidateA);
-  const right = getCandidateIdentity(candidateB);
-
-  return Boolean(
-    (left.id && right.id && left.id === right.id) ||
-      (left.candidateId &&
-        right.candidateId &&
-        left.candidateId === right.candidateId) ||
-      (left.candidateApplicationId &&
-        right.candidateApplicationId &&
-        left.candidateApplicationId === right.candidateApplicationId) ||
-      (left.email && right.email && left.email === right.email) ||
-      (left.name && right.name && left.name === right.name),
+function isSamePipelineCandidate(
+  candidateA = {},
+  candidateB = {},
+) {
+  return isSameCandidatePipelineRecord(
+    candidateA,
+    candidateB,
   );
 }
 
 function getCandidateRecordId(candidate = {}) {
-  return (
-    candidate.id ||
-    candidate.dbId ||
-    candidate.candidateId ||
-    candidate.candidateApplicationId ||
-    candidate.applicationId ||
-    ""
-  );
+  return getCandidatePipelineRecordId(candidate);
 }
 
 function normalizeRoleAccount(roleTitle, account) {
@@ -714,7 +690,15 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
     prfStatus === "Matched",
   );
 
-  return normalizeCandidate({
+  /*
+   * Preserve the real candidate_pipeline primary key before normalizeCandidate
+   * reshapes the public/application identifiers used by the board.
+   */
+  const pipelineRecordId = cleanText(
+    getCandidatePipelineRecordId(candidate),
+  );
+
+  const normalizedCandidate = normalizeCandidate({
     ...candidate,
 
     currentStage,
@@ -794,6 +778,33 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
       movedToPipeline: true,
     },
   });
+
+  if (!pipelineRecordId) {
+    return normalizedCandidate;
+  }
+
+  const primaryKeyValue = /^\d+$/.test(pipelineRecordId)
+    ? Number(pipelineRecordId)
+    : pipelineRecordId;
+
+  return {
+    ...normalizedCandidate,
+
+    /*
+     * The Candidate Pipeline board must expose candidate_pipeline.id in every
+     * pipeline-record alias. `candidateApplicationId` and
+     * `sourceTalentPoolId` remain separate and can never replace this value.
+     */
+    id: primaryKeyValue,
+    candidatePipelineRowId: primaryKeyValue,
+    candidate_pipeline_row_id: primaryKeyValue,
+    dbId: primaryKeyValue,
+    db_id: primaryKeyValue,
+    candidatePipelineId: primaryKeyValue,
+    candidate_pipeline_id: primaryKeyValue,
+    pipelineRecordId: primaryKeyValue,
+    pipeline_record_id: primaryKeyValue,
+  };
 }
 
 function mergeUpdatedCandidateList(list = [], updatedCandidate = {}) {
@@ -811,11 +822,33 @@ function mergeUpdatedCandidateList(list = [], updatedCandidate = {}) {
   return list.map((candidate, index) => {
     if (index !== existingIndex) return candidate;
 
+    const lockedPipelineRecordId =
+      getCandidatePipelineRecordId(candidate) ||
+      getCandidatePipelineRecordId(normalizedUpdated);
+
+    const primaryKeyValue = /^\d+$/.test(lockedPipelineRecordId)
+      ? Number(lockedPipelineRecordId)
+      : lockedPipelineRecordId;
+
     return normalizePipelineCandidateForBoard({
       ...candidate,
       ...normalizedUpdated,
-      id: candidate.id || normalizedUpdated.id,
-      dbId: candidate.dbId || normalizedUpdated.dbId,
+
+      /* Never let an application/Talent Pool event replace the row ID. */
+      ...(lockedPipelineRecordId
+        ? {
+            id: primaryKeyValue,
+            candidatePipelineRowId: primaryKeyValue,
+            candidate_pipeline_row_id: primaryKeyValue,
+            dbId: primaryKeyValue,
+            db_id: primaryKeyValue,
+            candidatePipelineId: primaryKeyValue,
+            candidate_pipeline_id: primaryKeyValue,
+            pipelineRecordId: primaryKeyValue,
+            pipeline_record_id: primaryKeyValue,
+          }
+        : {}),
+
       candidateId: candidate.candidateId || normalizedUpdated.candidateId,
       candidateApplicationId:
         candidate.candidateApplicationId ||
@@ -1033,12 +1066,34 @@ export function CandidatePipelineProvider({ children }) {
     }
   }
 
-  function showError(message, title = "Action not allowed", options = {}) {
-    openStatusModal("error", title, message, options);
+  function showError(
+    message,
+    title = "Action Failed",
+    options = {},
+  ) {
+    openStatusModal("error", title, message, {
+      ...options,
+      /*
+       * Failed API calls and validation errors must keep every
+       * Candidate Pipeline form open so the user can correct and retry.
+       */
+      closePipelineModals: false,
+    });
   }
 
-  function showSuccess(message, title = "Success", options = {}) {
-    openStatusModal("success", title, message, options);
+  function showSuccess(
+    message,
+    title = "Process Completed",
+    options = {},
+  ) {
+    openStatusModal("success", title, message, {
+      ...options,
+      /*
+       * Every successful Candidate Pipeline write closes all pipeline
+       * modals only after the user clicks OK on the Success modal.
+       */
+      closePipelineModals: true,
+    });
   }
 
   const refreshCandidatePipeline = useCallback(async () => {
@@ -1092,10 +1147,6 @@ export function CandidatePipelineProvider({ children }) {
       setLoadError(message);
       setCandidateList([]);
       setHasLoadedStorage(true);
-
-      if (isAuthenticated) {
-        showError(message, "Candidate Pipeline Error");
-      }
 
       return {
         success: false,
@@ -1494,15 +1545,24 @@ export function CandidatePipelineProvider({ children }) {
 
   async function runCandidateAction(action, options = {}) {
     const {
-      closeModal,
       activeStageAfter,
       setSelected = true,
       refresh = true,
       successEvent = true,
+      showSuccessModal = true,
+      mergeResponseCandidate = true,
+      successTitle = "Process Completed",
+      successMessage = "",
+      errorTitle = "Candidate Pipeline Error",
+      errorMessage = "Candidate action failed.",
     } = options;
 
     if (!isAuthenticated) {
-      showError("Please login first before using Candidate Pipeline.");
+      showError(
+        "Please login first before using Candidate Pipeline.",
+        "Authentication Required",
+      );
+
       return {
         success: false,
         message: "User is not logged in.",
@@ -1516,45 +1576,69 @@ export function CandidatePipelineProvider({ children }) {
       const response = await action();
 
       if (!response?.success) {
-        throw new Error(response?.message || "Candidate action failed.");
+        throw new Error(
+          response?.message ||
+            errorMessage ||
+            "Candidate action failed.",
+        );
       }
 
-      const updatedCandidate = getApiCandidate(response);
+      const apiCandidate = getApiCandidate(response);
+
+      const updatedCandidate =
+        mergeResponseCandidate
+          ? apiCandidate
+          : null;
 
       if (updatedCandidate) {
         const normalizedCandidate =
           normalizePipelineCandidateForBoard(updatedCandidate);
 
-        setCandidateList((prev) =>
-          mergeUpdatedCandidateList(prev, normalizedCandidate),
+        setCandidateList((previous) =>
+          mergeUpdatedCandidateList(
+            previous,
+            normalizedCandidate,
+          ),
         );
 
         if (setSelected) {
           syncSelectedCandidate(normalizedCandidate);
-          setSelectedCandidate((prev) =>
-            prev && isSamePipelineCandidate(prev, normalizedCandidate)
+
+          setSelectedCandidate((previous) =>
+            previous &&
+            isSamePipelineCandidate(
+              previous,
+              normalizedCandidate,
+            )
               ? normalizePipelineCandidateForBoard({
-                  ...prev,
+                  ...previous,
                   ...normalizedCandidate,
                 })
-              : prev,
+              : previous,
           );
         }
       }
 
       if (activeStageAfter) {
-        setActiveStage(normalizePipelineStageName(activeStageAfter));
+        setActiveStage(
+          normalizePipelineStageName(activeStageAfter),
+        );
       }
 
-      if (typeof closeModal === "function") {
-        closeModal();
-      }
+      /*
+       * Do not close an action form here.
+       * The current forms remain open behind the Success modal.
+       * closeStatusModal() closes them only after the user clicks OK.
+       */
 
       if (successEvent) {
         window.dispatchEvent(
-          new CustomEvent("ta-pipeline-candidates-updated", {
-            detail: updatedCandidate || response,
-          }),
+          new CustomEvent(
+            "ta-pipeline-candidates-updated",
+            {
+              detail: updatedCandidate || response,
+            },
+          ),
         );
       }
 
@@ -1562,14 +1646,36 @@ export function CandidatePipelineProvider({ children }) {
         await refreshCandidatePipeline();
       }
 
+      if (showSuccessModal) {
+        const resolvedSuccessMessage =
+          typeof successMessage === "function"
+            ? successMessage(response, updatedCandidate)
+            : successMessage;
+
+        showSuccess(
+          resolvedSuccessMessage ||
+            response?.message ||
+            "The Candidate Pipeline process was completed successfully.",
+          successTitle,
+        );
+      }
+
       return response;
     } catch (error) {
-      const message = error?.message || "Candidate action failed.";
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        errorMessage ||
+        "Candidate action failed.";
 
-      console.error("Candidate pipeline action error:", error);
+      console.error(
+        "Candidate pipeline action error:",
+        error,
+      );
 
       setLoadError(message);
-      showError(message, "Candidate Pipeline Error");
+      showError(message, errorTitle);
 
       return {
         success: false,
@@ -1597,121 +1703,346 @@ export function CandidatePipelineProvider({ children }) {
 
     setOfferCandidate(null);
     setOfferForm(emptyOfferForm);
+
+    /*
+     * Keep the Candidate Pipeline route mounted and return to its
+     * primary board view after a successful process is acknowledged.
+     */
+    setPageView("pipeline");
   }
 
-  async function handleUpdatePrfStatus(candidate, nextPrfStatus) {
-    if (!candidate) return null;
+  async function handleUpdatePrfStatus(
+    candidate,
+    nextPrfStatus,
+  ) {
+    if (!candidate) {
+      showError(
+        "Candidate information is missing.",
+        "Unable to Update PRF Status",
+      );
 
-    const normalizedNextPrfStatus = normalizePrfStatus(nextPrfStatus);
-
-    if (
-      !(await confirmAction(
-        `Set PRF status of ${candidate.name} to ${normalizedNextPrfStatus}?`,
-      ))
-    ) {
-      return null;
+      return {
+        success: false,
+        message: "Candidate information is missing.",
+      };
     }
 
-    const latestCandidate = getLatestCandidateRecord(candidate);
-    const currentStage = normalizePipelineStageName(
-      getCandidateStage(latestCandidate),
-    );
-    const id = getCandidateRecordId(latestCandidate);
+    const normalizedNextPrfStatus =
+      normalizePrfStatus(nextPrfStatus);
 
-    const optimisticCandidate = normalizePipelineCandidateForBoard({
-      ...latestCandidate,
-      prfStatus: normalizedNextPrfStatus,
-      prf_status: normalizedNextPrfStatus,
-      prfReviewed: true,
-      prf_reviewed: true,
-      prfReviewedAt: new Date().toISOString(),
-      prf_reviewed_at: new Date().toISOString(),
-      currentStage,
-      currentPipelineStage: currentStage,
-      stage: currentStage,
-      pipelineStage: currentStage,
-      candidateSnapshot: {
-        ...(latestCandidate.candidateSnapshot || {}),
+    /*
+     * Keep a strict snapshot of the candidate that the user actually
+     * opened. PRF status is the only profile field allowed to change.
+     */
+    const submittedCandidate =
+      normalizePipelineCandidateForBoard(candidate);
+
+    const latestCandidate =
+      getLatestCandidateRecord(
+        submittedCandidate,
+      ) || submittedCandidate;
+
+    const currentStage =
+      normalizePipelineStageName(
+        getCandidateStage(latestCandidate),
+      );
+
+    const id =
+      getCandidateRecordId(latestCandidate);
+
+    if (!id) {
+      showError(
+        "Candidate Pipeline database ID is missing.",
+        "Unable to Update PRF Status",
+      );
+
+      return {
+        success: false,
+        message:
+          "Candidate Pipeline database ID is missing.",
+      };
+    }
+
+    const optimisticCandidate =
+      normalizePipelineCandidateForBoard({
+        ...latestCandidate,
+
+        /*
+         * Preserve the exact opened candidate identity and profile.
+         */
+        id: submittedCandidate.id,
+        dbId:
+          submittedCandidate.dbId ||
+          submittedCandidate.id,
+        candidateId:
+          submittedCandidate.candidateId,
+        candidateApplicationId:
+          submittedCandidate.candidateApplicationId,
+        applicationId:
+          submittedCandidate.applicationId ||
+          submittedCandidate.candidateApplicationId,
+        sourceTalentPoolId:
+          submittedCandidate.sourceTalentPoolId,
+        name: submittedCandidate.name,
+        candidateName:
+          submittedCandidate.candidateName ||
+          submittedCandidate.name,
+        email: submittedCandidate.email,
+
         prfStatus: normalizedNextPrfStatus,
         prf_status: normalizedNextPrfStatus,
-        prfReviewed: true,
-        prf_reviewed: true,
+        prfReviewed:
+          normalizedNextPrfStatus === "Matched",
+        prf_reviewed:
+          normalizedNextPrfStatus === "Matched",
+        prfReviewedAt:
+          new Date().toISOString(),
+        prf_reviewed_at:
+          new Date().toISOString(),
+
         currentStage,
         currentPipelineStage: currentStage,
+        stage: currentStage,
         pipelineStage: currentStage,
-      },
-    });
 
-    setCandidateList((prev) =>
-      mergeUpdatedCandidateList(prev, optimisticCandidate),
+        candidateSnapshot: {
+          ...(latestCandidate.candidateSnapshot || {}),
+          candidateId:
+            submittedCandidate.candidateId,
+          candidateApplicationId:
+            submittedCandidate.candidateApplicationId,
+          applicationId:
+            submittedCandidate.applicationId ||
+            submittedCandidate.candidateApplicationId,
+          name: submittedCandidate.name,
+          email: submittedCandidate.email,
+          prfStatus:
+            normalizedNextPrfStatus,
+          prf_status:
+            normalizedNextPrfStatus,
+          prfReviewed:
+            normalizedNextPrfStatus === "Matched",
+          prf_reviewed:
+            normalizedNextPrfStatus === "Matched",
+          currentStage,
+          currentPipelineStage: currentStage,
+          pipelineStage: currentStage,
+        },
+      });
+
+    setCandidateList((previous) =>
+      mergeUpdatedCandidateList(
+        previous,
+        optimisticCandidate,
+      ),
     );
 
-    syncSelectedCandidate(optimisticCandidate);
+    syncSelectedCandidate(
+      optimisticCandidate,
+    );
 
-    setSelectedCandidate((prev) =>
-      prev && isSamePipelineCandidate(prev, optimisticCandidate)
+    setSelectedCandidate((previous) =>
+      previous &&
+      isSameCandidatePipelineRecord(
+        previous,
+        optimisticCandidate,
+      )
         ? normalizePipelineCandidateForBoard({
-            ...prev,
+            ...previous,
             ...optimisticCandidate,
           })
-        : optimisticCandidate,
+        : previous,
     );
 
-    const response = await runCandidateAction(
-      () =>
-        updateCandidatePipelinePrfStatus(id, {
-          prfStatus: normalizedNextPrfStatus,
-          prf_status: normalizedNextPrfStatus,
-          prfReviewStatus: normalizedNextPrfStatus,
-          prf_review_status: normalizedNextPrfStatus,
-          status: normalizedNextPrfStatus,
-          remarks: `PRF Status: ${normalizedNextPrfStatus}`,
-        }),
-      {
-        activeStageAfter: currentStage,
-        refresh: false,
-        setSelected: true,
-      },
-    );
+    const response =
+      await runCandidateAction(
+        () =>
+          updateCandidatePipelinePrfStatus(
+            id,
+            {
+              prfStatus:
+                normalizedNextPrfStatus,
+              prf_status:
+                normalizedNextPrfStatus,
+              prfReviewStatus:
+                normalizedNextPrfStatus,
+              prf_review_status:
+                normalizedNextPrfStatus,
+              status:
+                normalizedNextPrfStatus,
+              remarks:
+                `PRF Status: ${normalizedNextPrfStatus}`,
+            },
+          ),
+        {
+          activeStageAfter: currentStage,
+          refresh: false,
+          setSelected: false,
 
-    if (response?.success) {
-      const responseCandidate = normalizePipelineCandidateForBoard({
-        ...optimisticCandidate,
-        ...(getApiCandidate(response) || {}),
-        prfStatus: normalizedNextPrfStatus,
-        prf_status: normalizedNextPrfStatus,
-        prfReviewed: true,
-        prf_reviewed: true,
+          /*
+           * The response is validated below before it may touch local
+           * Candidate Pipeline state. This prevents another candidate
+           * returned by an ambiguous backend identifier from replacing
+           * the selected candidate.
+           */
+          mergeResponseCandidate: false,
+          successEvent: false,
+
+          /*
+           * Matched / Unmatched remains an immediate dropdown update.
+           */
+          showSuccessModal: false,
+        },
+      );
+
+    if (!response?.success) {
+      setCandidateList((previous) =>
+        mergeUpdatedCandidateList(
+          previous,
+          latestCandidate,
+        ),
+      );
+
+      syncSelectedCandidate(
+        latestCandidate,
+      );
+
+      setSelectedCandidate((previous) =>
+        previous &&
+        isSameCandidatePipelineRecord(
+          previous,
+          optimisticCandidate,
+        )
+          ? normalizePipelineCandidateForBoard({
+              ...previous,
+              ...latestCandidate,
+            })
+          : previous,
+      );
+
+      return response;
+    }
+
+    const apiCandidate =
+      getApiCandidate(response);
+
+    const safeApiCandidate =
+      apiCandidate &&
+      isSameCandidatePipelineRecord(
+        optimisticCandidate,
+        apiCandidate,
+      )
+        ? apiCandidate
+        : null;
+
+    if (
+      apiCandidate &&
+      !safeApiCandidate
+    ) {
+      console.warn(
+        "Ignored mismatched PRF update response.",
+        {
+          requestedCandidate:
+            optimisticCandidate,
+          responseCandidate:
+            apiCandidate,
+        },
+      );
+    }
+
+    const responseCandidate =
+      normalizePipelineCandidateForBoard(
+        mergeCandidatePipelineRecord(
+          optimisticCandidate,
+          safeApiCandidate || {},
+          {
+            preserveProfile: true,
+          },
+        ),
+      );
+
+    const finalCandidate =
+      normalizePipelineCandidateForBoard({
+        ...responseCandidate,
+
+        /*
+         * PRF updates must never replace the candidate's identity,
+         * name, or email.
+         */
+        id: optimisticCandidate.id,
+        dbId:
+          optimisticCandidate.dbId ||
+          optimisticCandidate.id,
+        candidateId:
+          optimisticCandidate.candidateId,
+        candidateApplicationId:
+          optimisticCandidate.candidateApplicationId,
+        applicationId:
+          optimisticCandidate.applicationId ||
+          optimisticCandidate.candidateApplicationId,
+        sourceTalentPoolId:
+          optimisticCandidate.sourceTalentPoolId,
+        name: optimisticCandidate.name,
+        candidateName:
+          optimisticCandidate.candidateName ||
+          optimisticCandidate.name,
+        email: optimisticCandidate.email,
+
+        prfStatus:
+          normalizedNextPrfStatus,
+        prf_status:
+          normalizedNextPrfStatus,
+        prfReviewed:
+          normalizedNextPrfStatus === "Matched",
+        prf_reviewed:
+          normalizedNextPrfStatus === "Matched",
+
         currentStage,
         currentPipelineStage: currentStage,
         stage: currentStage,
         pipelineStage: currentStage,
       });
 
-      setCandidateList((prev) =>
-        mergeUpdatedCandidateList(prev, responseCandidate),
-      );
+    setCandidateList((previous) =>
+      mergeUpdatedCandidateList(
+        previous,
+        finalCandidate,
+      ),
+    );
 
-      syncSelectedCandidate(responseCandidate);
-      setSelectedCandidate(responseCandidate);
+    syncSelectedCandidate(
+      finalCandidate,
+    );
 
-      showSuccess(
-        `PRF status was updated to ${normalizedNextPrfStatus}. You can now move the candidate to Online Assessment.`,
-        "PRF Status Updated",
+    setSelectedCandidate((previous) =>
+      previous &&
+      isSameCandidatePipelineRecord(
+        previous,
+        finalCandidate,
+      )
+        ? normalizePipelineCandidateForBoard({
+            ...previous,
+            ...finalCandidate,
+          })
+        : previous,
+    );
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "ta-pipeline-candidates-updated",
         {
-          closePipelineModals: false,
+          detail: finalCandidate,
         },
-      );
+      ),
+    );
 
-      window.dispatchEvent(
-        new CustomEvent("ta-pipeline-candidates-updated", {
-          detail: responseCandidate,
-        }),
-      );
-    }
-
-    return response;
+    return {
+      ...response,
+      data: finalCandidate,
+      candidate: finalCandidate,
+    };
   }
+
 
   async function handleOpenScheduleInterview(candidate) {
     if (!candidate) return;
@@ -1749,7 +2080,13 @@ export function CandidatePipelineProvider({ children }) {
   async function handleSubmitScheduleInterview(e) {
     e?.preventDefault?.();
 
-    if (!scheduleCandidate) return null;
+    if (!scheduleCandidate) {
+      showError(
+        "No candidate is selected for interview scheduling.",
+        "Unable to Save Interview Schedule",
+      );
+      return null;
+    }
 
     const currentStage = normalizePipelineStageName(
       getCandidateStage(scheduleCandidate),
@@ -1805,14 +2142,25 @@ export function CandidatePipelineProvider({ children }) {
           remarks: scheduleForm.remarks,
         }),
       {
-        closeModal: handleCloseScheduleInterview,
         activeStageAfter: "Interview Scheduled",
+        successTitle: isUpdatingSchedule
+          ? "Interview Schedule Updated"
+          : "Interview Scheduled",
+        successMessage: isUpdatingSchedule
+          ? `${scheduleCandidate.name}'s interview schedule was updated successfully.`
+          : `${scheduleCandidate.name}'s interview was scheduled successfully.`,
       },
     );
   }
 
   async function handleCancelInterview(candidate) {
-    if (!candidate) return null;
+    if (!candidate) {
+      showError(
+        "Candidate information is missing.",
+        "Unable to Cancel Interview",
+      );
+      return null;
+    }
 
     const currentStage = normalizePipelineStageName(getCandidateStage(candidate));
 
@@ -1831,16 +2179,28 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(candidate);
 
-    return runCandidateAction(() =>
-      cancelCandidatePipelineInterview(id, {
-        reason: cleanedReason,
-        cancellationReason: cleanedReason,
-      }),
+    return runCandidateAction(
+      () =>
+        cancelCandidatePipelineInterview(id, {
+          reason: cleanedReason,
+          cancellationReason: cleanedReason,
+        }),
+      {
+        successTitle: "Interview Cancelled",
+        successMessage: `${candidate.name}'s interview was cancelled successfully.`,
+        errorTitle: "Interview Cancellation Failed",
+      },
     );
   }
 
   async function handleCompleteInterview(candidate) {
-    if (!candidate) return null;
+    if (!candidate) {
+      showError(
+        "Candidate information is missing.",
+        "Unable to Complete Interview",
+      );
+      return null;
+    }
 
     if (!hasInterviewSchedule(candidate)) {
       showError("Create the interview schedule first.");
@@ -1865,6 +2225,9 @@ export function CandidatePipelineProvider({ children }) {
         }),
       {
         activeStageAfter: "Interviewed",
+        successTitle: "Interview Completed",
+        successMessage: `${candidate.name}'s interview was marked as completed.`,
+        errorTitle: "Interview Completion Failed",
       },
     );
   }
@@ -1878,11 +2241,17 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(candidate);
 
-    return runCandidateAction(() =>
-      saveCandidatePipelineInterviewNotes(id, {
-        interviewNotes: String(notes || "").trim(),
-        notes: String(notes || "").trim(),
-      }),
+    return runCandidateAction(
+      () =>
+        saveCandidatePipelineInterviewNotes(id, {
+          interviewNotes: String(notes || "").trim(),
+          notes: String(notes || "").trim(),
+        }),
+      {
+        successTitle: "Interview Notes Saved",
+        successMessage: `${candidate.name}'s interview notes were saved successfully.`,
+        errorTitle: "Interview Notes Save Failed",
+      },
     );
   }
 
@@ -1926,10 +2295,20 @@ export function CandidatePipelineProvider({ children }) {
     setOfferForm(emptyOfferForm);
   }
 
-  async function handleSubmitOfferDetails(e) {
-    e?.preventDefault?.();
+  async function handleSubmitOfferDetails(event) {
+    event?.preventDefault?.();
 
-    if (!offerCandidate) return null;
+    if (!offerCandidate) {
+      showError(
+        "No candidate is selected for offer preparation.",
+        "Unable to Proceed",
+      );
+
+      return {
+        success: false,
+        message: "No candidate is selected.",
+      };
+    }
 
     if (
       !offerForm.hiringRequirementId ||
@@ -1940,21 +2319,30 @@ export function CandidatePipelineProvider({ children }) {
     ) {
       showError(
         "Hiring requirement, final role, final account, basic pay, and deminimis / daily rate are required.",
+        "Incomplete Offer Details",
       );
-      return null;
+
+      return {
+        success: false,
+        message: "Required offer details are incomplete.",
+      };
     }
 
-    if (
-      !(await confirmAction(
-        `Proceed with offer assignment for ${offerCandidate.name}?`,
-      ))
-    ) {
-      return null;
+    const confirmed = await confirmAction(
+      `Proceed with offer assignment for ${offerCandidate.name}?`,
+    );
+
+    if (!confirmed) {
+      return {
+        success: false,
+        cancelled: true,
+        message: "Offer submission was cancelled.",
+      };
     }
 
     const id = getCandidateRecordId(offerCandidate);
 
-    return runCandidateAction(
+    const response = await runCandidateAction(
       () =>
         saveCandidatePipelineOffer(id, {
           hiringRequirementId: offerForm.hiringRequirementId,
@@ -1963,7 +2351,9 @@ export function CandidatePipelineProvider({ children }) {
           account: offerForm.account,
           finalAccount: offerForm.account,
           basicPay: Number(offerForm.basicPay),
-          deminimisDailyRate: Number(offerForm.deminimisDailyRate),
+          deminimisDailyRate: Number(
+            offerForm.deminimisDailyRate,
+          ),
           remarks:
             offerForm.remarks ||
             `Hiring Requirement: ${
@@ -1977,11 +2367,35 @@ export function CandidatePipelineProvider({ children }) {
             )}`,
         }),
       {
-        closeModal: handleCloseOfferModal,
         activeStageAfter: "Offered",
+        successTitle: "Offer Submitted for Approval",
+        successMessage:
+          `${offerCandidate.name}'s offer was submitted for approval successfully.`,
+        errorTitle: "Offer Submission Failed",
       },
     );
+
+    if (!response?.success) {
+      return response;
+    }
+
+    showSuccess(
+      response?.message ||
+        `${offerCandidate.name}'s offer was submitted for approval successfully.`,
+      "Offer Submitted for Approval",
+      {
+        /*
+         * closeStatusModal() reads this flag. When the user clicks OK,
+         * closeAllPipelineModals() clears selectedCandidate,
+         * offerCandidate, and every other pipeline modal state.
+         */
+        closePipelineModals: true,
+      },
+    );
+
+    return response;
   }
+
 
   async function handleOpenMoveModal(candidate, forcedStage = "") {
     if (!candidate) return;
@@ -2062,7 +2476,6 @@ export function CandidatePipelineProvider({ children }) {
             remarks: "Assessment email has been triggered to the candidate.",
           }),
         {
-          closeModal: handleCloseMoveModal,
           activeStageAfter: "Online Assessment",
           refresh: false,
         },
@@ -2141,7 +2554,13 @@ export function CandidatePipelineProvider({ children }) {
   async function handleSubmitMove(e) {
     e?.preventDefault?.();
 
-    if (!moveCandidate) return null;
+    if (!moveCandidate) {
+      showError(
+        "No candidate is selected for movement.",
+        "Unable to Move Candidate",
+      );
+      return null;
+    }
 
     const latestMoveCandidate = getLatestCandidateRecord(moveCandidate);
     const normalizedMoveCandidate =
@@ -2253,7 +2672,6 @@ export function CandidatePipelineProvider({ children }) {
           remarks: moveForm.remarks.trim(),
         }),
       {
-        closeModal: handleCloseMoveModal,
         activeStageAfter: nextStage,
         refresh: false,
       },
@@ -2346,10 +2764,16 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(candidate);
 
-    const response = await runCandidateAction(() =>
-      sendCandidatePipelineAssessmentEmail(id, {
-        remarks: buildAssessmentLink(candidate),
-      }),
+    const response = await runCandidateAction(
+      () =>
+        sendCandidatePipelineAssessmentEmail(id, {
+          remarks: buildAssessmentLink(candidate),
+        }),
+      {
+        successTitle: "Assessment Email Sent",
+        successMessage: `Assessment email was sent to ${candidate.name}.`,
+        errorTitle: "Assessment Email Failed",
+      },
     );
 
     if (response?.success) {
@@ -2362,7 +2786,13 @@ export function CandidatePipelineProvider({ children }) {
   async function handleSubmitAssessment(e) {
     e?.preventDefault?.();
 
-    if (!assessmentCandidate) return null;
+    if (!assessmentCandidate) {
+      showError(
+        "No candidate is selected for assessment.",
+        "Unable to Save Assessment",
+      );
+      return null;
+    }
 
     if (!assessmentForm.assessmentStatus) {
       showError("Assessment status is required.");
@@ -2394,8 +2824,11 @@ export function CandidatePipelineProvider({ children }) {
           assessmentRemarks: assessmentForm.assessmentRemarks.trim(),
         }),
       {
-        closeModal: handleCloseAssessmentModal,
         activeStageAfter: "Online Assessment",
+        successTitle: "Assessment Saved",
+        successMessage:
+          `${assessmentCandidate.name}'s assessment was saved successfully.`,
+        errorTitle: "Assessment Save Failed",
       },
     );
   }
@@ -2425,7 +2858,13 @@ export function CandidatePipelineProvider({ children }) {
   async function handleSubmitDropOff(e) {
     e?.preventDefault?.();
 
-    if (!dropOffCandidate) return null;
+    if (!dropOffCandidate) {
+      showError(
+        "No candidate is selected for Drop-off.",
+        "Unable to Save Drop-off",
+      );
+      return null;
+    }
 
     const currentStage = normalizePipelineStageName(
       getCandidateStage(dropOffCandidate),
@@ -2458,8 +2897,11 @@ export function CandidatePipelineProvider({ children }) {
           previousStage: currentStage,
         }),
       {
-        closeModal: handleCloseDropOffModal,
         activeStageAfter: "Drop-off",
+        successTitle: "Candidate Moved to Drop-off",
+        successMessage:
+          `${dropOffCandidate.name} was moved to Drop-off successfully.`,
+        errorTitle: "Drop-off Failed",
       },
     );
   }
@@ -2498,13 +2940,20 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(candidate);
 
-    return runCandidateAction(() =>
-      updateCandidatePipelineOfferApproval(id, {
-        approver,
-        approvedBy: approver,
-        status,
-        approvalStatus: status,
-      }),
+    return runCandidateAction(
+      () =>
+        updateCandidatePipelineOfferApproval(id, {
+          approver,
+          approvedBy: approver,
+          status,
+          approvalStatus: status,
+        }),
+      {
+        successTitle: "Offer Approval Updated",
+        successMessage:
+          `${candidate.name}'s offer approval was updated to ${status}.`,
+        errorTitle: "Offer Approval Update Failed",
+      },
     );
   }
 
@@ -2524,10 +2973,17 @@ export function CandidatePipelineProvider({ children }) {
 
     const id = getCandidateRecordId(candidate);
 
-    const response = await runCandidateAction(() =>
-      sendCandidatePipelineOfferEmail(id, {
-        remarks: buildOfferContractLink(candidate),
-      }),
+    const response = await runCandidateAction(
+      () =>
+        sendCandidatePipelineOfferEmail(id, {
+          remarks: buildOfferContractLink(candidate),
+        }),
+      {
+        successTitle: "Offer Email Sent",
+        successMessage:
+          `The approved offer email was sent to ${candidate.name}.`,
+        errorTitle: "Offer Email Failed",
+      },
     );
 
     if (response?.success) {
@@ -2573,6 +3029,10 @@ export function CandidatePipelineProvider({ children }) {
         }),
       {
         activeStageAfter: nextStage,
+        successTitle: "Offer Decision Saved",
+        successMessage:
+          `${candidate.name}'s offer response was recorded as ${decision}.`,
+        errorTitle: "Offer Decision Save Failed",
       },
     );
   }
@@ -2629,18 +3089,40 @@ export function CandidatePipelineProvider({ children }) {
         }),
       {
         activeStageAfter: "For NHO",
+        successTitle: "NHO Scheduled",
+        successMessage:
+          `${candidate.name}'s NHO was scheduled successfully.`,
+        errorTitle: "NHO Scheduling Failed",
       },
     );
   }
 
   async function handleStartInterview(candidate) {
-    if (!candidate) return null;
+    if (!candidate) {
+      showError(
+        "Candidate information is missing.",
+        "Unable to Start Interview",
+      );
+
+      return {
+        success: false,
+        message: "Candidate information is missing.",
+      };
+    }
 
     const id = getCandidateRecordId(candidate);
 
-    return runCandidateAction(() => startCandidatePipelineInterview(id), {
-      refresh: true,
-    });
+    return runCandidateAction(
+      () => startCandidatePipelineInterview(id),
+      {
+        refresh: true,
+        /*
+         * CandidatePipelineModal displays this Success modal locally
+         * because it navigates to the final interview form after OK.
+         */
+        showSuccessModal: false,
+      },
+    );
   }
 
   async function handleSubmitFinalInterview({
@@ -2742,7 +3224,6 @@ export function CandidatePipelineProvider({ children }) {
 
   async function handleResetSampleData() {
     await refreshCandidatePipeline();
-    showSuccess("Candidate Pipeline data has been refreshed from database.");
   }
 
   const value = {

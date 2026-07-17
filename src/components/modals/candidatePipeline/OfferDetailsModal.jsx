@@ -480,6 +480,10 @@ function inputClass() {
   return "h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F8FAFC] disabled:text-sibs-tertiary-5 disabled:opacity-80";
 }
 
+function handleNumberInputWheel(event) {
+  event.currentTarget.blur();
+}
+
 function textareaClass() {
   return "min-h-[92px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-bold leading-6 text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10";
 }
@@ -922,6 +926,7 @@ export default function OfferDetailsModal({
                         basicPay: event.target.value,
                       })
                     }
+                    onWheel={handleNumberInputWheel}
                     placeholder="0.00"
                     className={inputClass()}
                   />
@@ -943,6 +948,7 @@ export default function OfferDetailsModal({
                         deminimisDailyRate: event.target.value,
                       })
                     }
+                    onWheel={handleNumberInputWheel}
                     placeholder="0.00"
                     className={inputClass()}
                   />
