@@ -1,5 +1,7 @@
 import {
   CalendarDays,
+  CalendarX,
+  CalendarX2,
   CheckCircle2,
   Gauge,
   TrendingUp,
@@ -45,13 +47,14 @@ export default function WorkforceHiringOverviewSummary() {
           value={`${summary.bufferPercentage.toFixed(2)}%`}
           icon={Gauge}
           subtitle="vs Required HC"
-          tone={summary.bufferPercentage < 0 ? "red" : "green"}
+          tone="green2"
+          // tone={summary.bufferPercentage < 0 ? "red" : "green"}
         />
         <KpiCard
           title="Absenteeism"
           value={Math.round(summary.absenteeism)}
           sideValue={`${summary.absenteeismPercentage.toFixed(2)}%`}
-          icon={CalendarDays}
+          icon={CalendarX2}
           subtitle="Absenteeism %"
           tone="orange"
         />

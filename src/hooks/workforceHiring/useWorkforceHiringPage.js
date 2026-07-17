@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getWorkforceHiringPlanAccounts,
   getWorkforceHiringPlanAccountTrends,
-  getWorkforceHiringPlanTrends,
+  getWorkforceHiringPlanSixWeekTable,
   getWorkforceHiringPlanWeeks,
   lockWorkforceHiringPlanSnapshot,
   openWorkforceHiringPlanFile,
@@ -138,6 +138,10 @@ export default function useWorkforceHiringPage() {
   const [trendData, setTrendData] = useState(null);
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [trendsError, setTrendsError] = useState("");
+  const [sixWeekTableRows, setSixWeekTableRows] = useState([]);
+  const [sixWeekTableWeeks, setSixWeekTableWeeks] = useState([]);
+  const [sixWeekTableLoading, setSixWeekTableLoading] = useState(false);
+  const [sixWeekTableError, setSixWeekTableError] = useState("");
 
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
@@ -227,6 +231,83 @@ export default function useWorkforceHiringPage() {
   useEffect(() => {
     fetchSixWeekTrends();
   }, [fetchSixWeekTrends]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchSixWeekTable() {
+      const selectedWeek = activeWeek;
+
+      if (!selectedWeek?.weekStart && !selectedWeek?.startDate) {
+        setSixWeekTableRows([]);
+        setSixWeekTableWeeks([]);
+        setSixWeekTableError("");
+        return;
+      }
+
+      const weekStart = selectedWeek.weekStart || selectedWeek.startDate;
+      const weekEnd = selectedWeek.weekEnd || selectedWeek.endDate;
+
+      const selectedCluster =
+        Array.isArray(selectedClusters) && selectedClusters.length === 1
+          ? selectedClusters[0]
+          : "All";
+
+      const selectedAccount =
+        Array.isArray(selectedAccounts) && selectedAccounts.length === 1
+          ? selectedAccounts[0]
+          : "All";
+
+      setSixWeekTableLoading(true);
+      setSixWeekTableError("");
+
+      try {
+        const result = await getWorkforceHiringPlanSixWeekTable({
+          cluster: selectedCluster || "All",
+          account: selectedAccount || "All",
+          weekStart,
+          weekEnd,
+          startDate: weekStart,
+          endDate: weekEnd,
+        });
+
+        if (cancelled) return;
+
+        if (!result?.success) {
+          setSixWeekTableRows([]);
+          setSixWeekTableWeeks([]);
+          setSixWeekTableError(
+            result?.message || "Failed to load six-week table data.",
+          );
+          return;
+        }
+
+        setSixWeekTableRows(Array.isArray(result.data) ? result.data : []);
+        setSixWeekTableWeeks(Array.isArray(result.weeks) ? result.weeks : []);
+        setSixWeekTableError("");
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("Fetch six-week table error:", error);
+
+        setSixWeekTableRows([]);
+        setSixWeekTableWeeks([]);
+        setSixWeekTableError(
+          error?.message || "Failed to load six-week table data.",
+        );
+      } finally {
+        if (!cancelled) {
+          setSixWeekTableLoading(false);
+        }
+      }
+    }
+
+    fetchSixWeekTable();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWeek, selectedClusters, selectedAccounts]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -2465,6 +2546,11 @@ export default function useWorkforceHiringPage() {
       trendData,
       trendsLoading,
       trendsError,
+
+      sixWeekTableRows,
+      sixWeekTableWeeks,
+      sixWeekTableLoading,
+      sixWeekTableError,
 
       onViewPlan: setSelectedPlan,
       tableKey: `${activeWeekId}-${selectedClusters.join(

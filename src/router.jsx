@@ -262,7 +262,8 @@ export default function Router() {
         path="/recruitment/workforce-hiring-plan"
         element={
           <PrivateRoute>
-            <WorkforceHiringPlanPage />
+            {/* <WorkforceHiringPlanPage /> */}
+            <NotFound />
           </PrivateRoute>
         }
       />

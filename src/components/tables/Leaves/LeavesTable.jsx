@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Eye, Search, X } from "lucide-react";
 
 import PaginationTable from "@/services/pagination/PaginationTable";
@@ -205,10 +206,11 @@ function InlineDateRangeFilter({ visible }) {
           }
 
           .leaves-date-filter-inline > div {
-            display: flex !important;
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             align-items: center !important;
             gap: 12px !important;
-            flex-wrap: wrap !important;
+            width: 100% !important;
           }
 
           .leaves-date-filter-inline > div > button,
@@ -218,7 +220,8 @@ function InlineDateRangeFilter({ visible }) {
           .leaves-date-filter-inline button[data-state] {
             height: 44px !important;
             min-height: 44px !important;
-            min-width: 220px !important;
+            width: 100% !important;
+            min-width: 0 !important;
             border-radius: 10px !important;
             border: 1px solid #D0D5DD !important;
             background: #FFFFFF !important;
@@ -267,15 +270,15 @@ function InlineDateRangeFilter({ visible }) {
             color: #0D4676 !important;
           }
 
-          @media (max-width: 1023px) {
-            .leaves-date-filter-inline,
-            .leaves-date-filter-inline > div,
-            .leaves-date-filter-inline > div > button,
-            .leaves-date-filter-inline > div > div,
-            .leaves-date-filter-inline > div > div > button,
-            .leaves-date-filter-inline > div > div > div,
-            .leaves-date-filter-inline > div > div > div > button {
-              width: 100% !important;
+          .leaves-date-filter-inline > div > div,
+          .leaves-date-filter-inline > div > div > div {
+            width: 100% !important;
+            min-width: 0 !important;
+          }
+
+          @media (max-width: 639px) {
+            .leaves-date-filter-inline > div {
+              grid-template-columns: minmax(0, 1fr) !important;
             }
           }
 
@@ -396,7 +399,12 @@ function InlineDateRangeFilter({ visible }) {
 function LeaveDetailsModal({ open, item, onClose }) {
   const [isClosing, setIsClosing] = useState(false);
 
-  if (!open || !item) return null;
+  const portalTarget =
+    typeof document !== "undefined" ? document.body : null;
+
+  if (!open || !item || !portalTarget) {
+    return null;
+  }
 
   function handleAnimatedClose() {
     if (isClosing) return;
@@ -409,19 +417,19 @@ function LeaveDetailsModal({ open, item, onClose }) {
     }, 220);
   }
 
-  return (
+return createPortal(
+  <div
+    className={`fixed inset-0 z-[999999] flex h-dvh items-center justify-center bg-black/40 p-4 ${
+      isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
+    }`}
+    onClick={handleAnimatedClose}
+  >
     <div
-      className={`fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 p-4 ${
-        isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
+      className={`flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${
+        isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
       }`}
-      onClick={handleAnimatedClose}
+      onClick={(event) => event.stopPropagation()}
     >
-      <div
-        className={`flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ${
-          isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-start justify-between gap-4 border-b border-[#f3f4f6] px-6 py-5 max-sm:px-4">
           <div>
             <h2 className="m-0 text-xl font-bold text-sibs-primary-1">
@@ -584,7 +592,8 @@ function LeaveDetailsModal({ open, item, onClose }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    portalTarget,
   );
 }
 
@@ -712,7 +721,7 @@ export default function LeavesTable({
                       options: accountDropdownOptions,
                       allLabel: "All Accounts",
                       placeholder: "Search accounts...",
-                      className: "sm:w-[280px]",
+                      className: "w-full min-w-0 xl:col-span-2",
                       searchable: true,
                       includeAll: true,
                     },
@@ -730,11 +739,14 @@ export default function LeavesTable({
                   { label: "Pending", value: "Pending" },
                   { label: "Rejected", value: "Rejected" },
                 ],
-                className: "sm:w-[190px]",
+                className: "w-full min-w-0 xl:col-span-2",
                 searchable: false,
               },
             ]}
             rightContent={<InlineDateRangeFilter visible />}
+            controlsClassName="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 xl:grid-cols-12 xl:items-end"
+            searchClassName="relative min-w-0 w-full sm:col-span-2 xl:col-span-4"
+            rightContentClassName="flex min-w-0 w-full items-end sm:col-span-2 xl:col-span-4"
             showPagination={false}
             className="mb-3"
           />

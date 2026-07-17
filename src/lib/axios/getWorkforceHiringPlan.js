@@ -89,9 +89,11 @@ export async function getWorkforceHiringPlanTrends({
   weekEnd = "",
   startDate = "",
   endDate = "",
+  rangeStartDate = "",
+  rangeEndDate = "",
 } = {}) {
   try {
-    const res = await api.get("/api/weekly-hiring-plan/accounts/trends", {
+    const response = await api.get("/api/weekly-hiring-plan/accounts/trends", {
       params: {
         cluster,
         account,
@@ -99,21 +101,44 @@ export async function getWorkforceHiringPlanTrends({
         weekEnd,
         startDate,
         endDate,
+
+        /*
+          Only modal filter sends these.
+          Dashboard default should NOT send these.
+        */
+        rangeStartDate,
+        rangeEndDate,
       },
       withCredentials: true,
     });
 
-    console.log("getWorkforceHiringPlanTrends res:", res.data);
-
-    return res.data || null;
-  } catch (err) {
+    return response.data;
+  } catch (error) {
     console.error(
-      "Axios getWorkforceHiringPlanTrends API error:",
-      err?.response?.status,
-      err?.response?.data || err?.message,
+      "Axios getWorkforceHiringPlanAccountTrends API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
     );
 
-    return null;
+    return {
+      success: false,
+      labels: [],
+      trends: {
+        absenteeism: [],
+        attrition: [],
+        buffer: [],
+      },
+      data: [],
+      weeklyResults: [],
+      averages: {},
+      totals: {},
+      summary: {},
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to fetch 6-week trends.",
+    };
   }
 }
 
@@ -232,10 +257,63 @@ export async function openWorkforceHiringPlanFile({ sibsId, filename }) {
   }, 60_000);
 }
 
+export async function getWorkforceHiringPlanSixWeekTable({
+  cluster = "All",
+  account = "All",
+  weekStart = "",
+  weekEnd = "",
+  startDate = "",
+  endDate = "",
+  rangeStartDate = "",
+  rangeEndDate = "",
+} = {}) {
+  try {
+    const response = await api.get(
+      "/api/weekly-hiring-plan/accounts/six-week-table",
+      {
+        params: {
+          cluster,
+          account,
+          weekStart,
+          weekEnd,
+          startDate,
+          endDate,
+          rangeStartDate,
+          rangeEndDate,
+        },
+        withCredentials: true,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Axios getWorkforceHiringPlanSixWeekTable API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return {
+      success: false,
+      data: [],
+      summary: {},
+      totals: {},
+      weeks: [],
+      labels: [],
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to fetch six-week table.",
+    };
+  }
+}
+
 export default {
   getWorkforceHiringPlanWeeks,
   getWorkforceHiringPlanFilterOptions,
   getWorkforceHiringPlanAccounts,
+  getWorkforceHiringPlanSixWeekTable,
 
   getWorkforceHiringPlanTrends,
   getWorkforceHiringPlanAccountTrends,
