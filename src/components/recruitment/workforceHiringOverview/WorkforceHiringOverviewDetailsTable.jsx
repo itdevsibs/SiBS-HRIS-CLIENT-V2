@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { useWorkforceHiringView } from "../../../services/context/WorkforceHiringContextAdapter";
 import {
   formatOverviewNumber,
@@ -40,6 +41,138 @@ function BodyTd({ children, className = "" }) {
   );
 }
 
+function SortHeaderButton({
+  label,
+  active = false,
+  direction = "asc",
+  onClick,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "group inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase leading-tight transition",
+        active
+          ? "bg-[#EAF2FB] text-sibs-primary-1"
+          : "text-sibs-primary-90 hover:bg-slate-100 hover:text-sibs-primary-1",
+      ].join(" ")}
+    >
+      <span>{label}</span>
+
+      <span className="relative flex h-4 w-3 shrink-0 flex-col items-center justify-center">
+        <span
+          className={[
+            "h-0 w-0 border-x-[4px] border-b-[5px] border-x-transparent transition",
+            active && direction === "asc"
+              ? "border-b-sibs-primary-1"
+              : "border-b-slate-300 group-hover:border-b-sibs-primary-1/70",
+          ].join(" ")}
+        />
+
+        <span
+          className={[
+            "mt-0.5 h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent transition",
+            active && direction === "desc"
+              ? "border-t-sibs-primary-1"
+              : "border-t-slate-300 group-hover:border-t-sibs-primary-1/70",
+          ].join(" ")}
+        />
+      </span>
+    </button>
+  );
+}
+
+function getSortableText(row = {}, key = "") {
+  if (key === "cluster") {
+    return String(row.cluster || "").trim();
+  }
+
+  if (key === "account") {
+    return String(row.account || "").trim();
+  }
+
+  return "";
+}
+
+function toNumber(value) {
+  const numberValue = Number(value || 0);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function getPercent(numerator, denominator) {
+  return denominator ? (numerator / denominator) * 100 : 0;
+}
+
+function buildFilteredTotals(rows = [], fallbackTotals = {}) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return fallbackTotals;
+  }
+
+  const sum = rows.reduce(
+    (total, row) => {
+      total.requiredHeadcount += toNumber(row.requiredHeadcount);
+      total.actualHeadcount += toNumber(row.actualHeadcount);
+      total.absenteeism += toNumber(row.absenteeism);
+      total.attrition += toNumber(row.attrition);
+      total.acceptedJo += toNumber(row.acceptedJo);
+      total.nho += toNumber(row.nho);
+      total.fst += toNumber(row.fst);
+      total.pst += toNumber(row.pst);
+      total.goLive += toNumber(row.goLive);
+      total.joNhoCount += toNumber(row.joNhoCount);
+      total.nhoFstCount += toNumber(row.nhoFstCount);
+      total.fstPstCount += toNumber(row.fstPstCount);
+      total.nhoPstCount += toNumber(row.nhoPstCount);
+      total.pstGoLiveCount += toNumber(row.pstGoLiveCount);
+      total.hiredCount += toNumber(row.hiredCount);
+
+      return total;
+    },
+    {
+      requiredHeadcount: 0,
+      actualHeadcount: 0,
+      absenteeism: 0,
+      attrition: 0,
+      acceptedJo: 0,
+      nho: 0,
+      fst: 0,
+      pst: 0,
+      goLive: 0,
+      joNhoCount: 0,
+      nhoFstCount: 0,
+      fstPstCount: 0,
+      nhoPstCount: 0,
+      pstGoLiveCount: 0,
+      hiredCount: 0,
+    },
+  );
+
+  const netActualHc = sum.actualHeadcount - sum.absenteeism - sum.attrition;
+  const hiringNeeded = Math.max(0, sum.requiredHeadcount - netActualHc);
+
+  return {
+    ...fallbackTotals,
+    ...sum,
+    cluster: "TOTAL / AVERAGE",
+    account: "",
+    bufferPercentage: getPercent(
+      netActualHc - sum.requiredHeadcount,
+      sum.requiredHeadcount,
+    ),
+    absenteeismPercentage: getPercent(sum.absenteeism, sum.actualHeadcount),
+    attritionPercentage: getPercent(sum.attrition, sum.actualHeadcount),
+    netActualHc,
+    hiringNeeded,
+    joNhoPercentage: getPercent(sum.joNhoCount, sum.acceptedJo),
+    nhoFstPercentage: getPercent(sum.nhoFstCount, sum.nho),
+    fstPstPercentage: getPercent(sum.fstPstCount, sum.fst),
+    nhoPstPercentage: getPercent(sum.nhoPstCount, sum.nho),
+    pstGoLivePercentage: getPercent(sum.pstGoLiveCount, sum.pst),
+    hiringRate: getPercent(sum.hiredCount, sum.acceptedJo),
+  };
+}
+
 function getBufferColor(value) {
   const numberValue = Number(value || 0);
 
@@ -68,8 +201,62 @@ export default function WorkforceHiringOverviewDetailsTable() {
   const scrollLeftRef = useRef(0);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "cluster",
+    direction: "asc",
+  });
 
-  const rows = [...detailRows, totals];
+  const sourceRows = Array.isArray(detailRows) ? detailRows : [];
+
+  function handleSort(nextKey) {
+    setSortConfig((current) => {
+      if (current.key === nextKey) {
+        return {
+          key: nextKey,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+
+      return {
+        key: nextKey,
+        direction: "asc",
+      };
+    });
+  }
+
+  const visibleRows = useMemo(() => {
+    const cleanSearch = searchQuery.trim().toLowerCase();
+
+    const filteredRows = cleanSearch
+      ? sourceRows.filter((row) => {
+          const cluster = getSortableText(row, "cluster").toLowerCase();
+          const account = getSortableText(row, "account").toLowerCase();
+
+          return cluster.includes(cleanSearch) || account.includes(cleanSearch);
+        })
+      : sourceRows;
+
+    return [...filteredRows].sort((firstRow, secondRow) => {
+      const firstValue = getSortableText(firstRow, sortConfig.key);
+      const secondValue = getSortableText(secondRow, sortConfig.key);
+
+      const comparison = firstValue.localeCompare(secondValue, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+
+      return sortConfig.direction === "asc" ? comparison : -comparison;
+    });
+  }, [searchQuery, sortConfig.direction, sortConfig.key, sourceRows]);
+
+  const activeTotals = useMemo(
+    () =>
+      searchQuery.trim() ? buildFilteredTotals(visibleRows, totals) : totals,
+    [searchQuery, totals, visibleRows],
+  );
+
+  const rows = [...visibleRows, activeTotals];
 
   function handleDragStart(event) {
     const container = dragScrollRef.current;
@@ -142,9 +329,56 @@ export default function WorkforceHiringOverviewDetailsTable() {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-4 text-base font-bold uppercase tracking-tight text-sibs-primary-90">
-        Detailed Performance by Cluster / Account
-      </h2>
+      <div className="mb-4 border-b border-slate-200 pb-4">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 pt-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-base font-extrabold uppercase tracking-tight text-sibs-primary-90">
+                Detailed Performance by Cluster / Account
+              </h2>
+
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                {sourceRows.length > 0
+                  ? `${visibleRows.length} of ${sourceRows.length} account rows`
+                  : "No rows"}
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Main table view grouped by cluster and account for the selected
+              weekly version.
+            </p>
+          </div>
+
+          <div className="w-full xl:w-[520px]">
+            <div className="relative">
+              <Search
+                size={20}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-primary-70"
+                strokeWidth={2.25}
+              />
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search cluster or account then press Enter..."
+                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-12 pr-24 text-sm font-semibold text-sibs-primary-90 outline-none transition placeholder:text-slate-400 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-extrabold text-slate-500 transition hover:bg-slate-100 hover:text-sibs-primary-90"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div
@@ -164,8 +398,22 @@ export default function WorkforceHiringOverviewDetailsTable() {
           <table className="w-full min-w-[1840px] border-collapse">
             <thead>
               <tr>
-                <HeaderTh rowSpan={2}>Cluster</HeaderTh>
-                <HeaderTh rowSpan={2}>Account</HeaderTh>
+                <HeaderTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Cluster"
+                    active={sortConfig.key === "cluster"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("cluster")}
+                  />
+                </HeaderTh>
+                <HeaderTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Account"
+                    active={sortConfig.key === "account"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("account")}
+                  />
+                </HeaderTh>
 
                 <HeaderTh rowSpan={2}>
                   Required
@@ -314,7 +562,7 @@ export default function WorkforceHiringOverviewDetailsTable() {
 
             <tbody>
               {rows.map((row, index) => {
-                const isTotalRow = index === detailRows.length;
+                const isTotalRow = index === visibleRows.length;
 
                 return (
                   <tr

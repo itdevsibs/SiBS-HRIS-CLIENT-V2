@@ -294,11 +294,12 @@ export default function TrendSvg({ weeks = [], trends = {} }) {
           />
 
           <text
-            x="20"
+            x={left - 20}
             y={yScale(tick) + 4}
+            textAnchor="end"
             className="fill-slate-700 text-[11px] font-semibold"
           >
-            {tick}%
+            {tick} %
           </text>
         </g>
       ))}
