@@ -13,11 +13,13 @@ import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import TalentPoolStats from "../../../components/recruitment/talentPool/TalentPoolStats";
 import TalentPoolFilters from "../../../components/recruitment/talentPool/TalentPoolFilters";
 import TalentPoolTable from "../../../components/recruitment/talentPool/TalentPoolTable";
+import DropOffListSection from "../../../components/recruitment/shared/DropOffListSection";
 
 import AddCandidateModal from "../../../components/modals/talentPool/AddCandidateModal";
 import CandidateProfileModal from "../../../components/modals/talentPool/CandidateProfileModal";
 import UpdateStatusModal from "../../../components/modals/talentPool/UpdateStatusModal";
 import MoveToPipeLineModal from "../../../components/modals/talentPool/MoveToPipeLineModal";
+import useCombinedDropOffCandidates from "../../../hooks/useCombinedDropOffCandidates";
 
 export default function TalentPoolPage() {
   const {
@@ -27,10 +29,27 @@ export default function TalentPoolPage() {
     downloadLeadTemplate,
     uploadLeadsFile,
     refreshTalentPool,
+    setSelectedCandidate,
     isLoading,
     isSaving,
     loadError,
   } = useTalentPool();
+
+  const {
+    candidates: dropOffCandidates,
+    isLoading: dropOffListLoading,
+    loadError: dropOffListError,
+    refresh: refreshDropOffCandidates,
+  } = useCombinedDropOffCandidates();
+
+  const pageIsRefreshing = isLoading || dropOffListLoading;
+
+  async function handleRefreshPage() {
+    await Promise.all([
+      Promise.resolve(refreshTalentPool?.()),
+      refreshDropOffCandidates(),
+    ]);
+  }
 
   return (
     <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
@@ -60,13 +79,13 @@ export default function TalentPoolPage() {
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
                 type="button"
-                onClick={refreshTalentPool}
-                disabled={isLoading || isSaving}
+                onClick={handleRefreshPage}
+                disabled={pageIsRefreshing || isSaving}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw
                   size={18}
-                  className={isLoading ? "animate-spin" : ""}
+                  className={pageIsRefreshing ? "animate-spin" : ""}
                 />
                 Refresh
               </button>
@@ -137,6 +156,13 @@ export default function TalentPoolPage() {
               <TalentPoolTable />
             </div>
           </section>
+
+          <DropOffListSection
+            candidates={dropOffCandidates}
+            isLoading={dropOffListLoading}
+            loadError={dropOffListError}
+            onViewCandidate={(candidate) => setSelectedCandidate(candidate)}
+          />
 
           <section className="sibs-profile-tab-panel mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5">
             <h3 className="text-sm font-bold text-sibs-primary-1">

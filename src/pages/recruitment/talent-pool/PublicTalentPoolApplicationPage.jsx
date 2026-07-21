@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
+  checkTalentPoolCandidateFullName,
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
   submitPublicTalentPoolApplication,
@@ -478,9 +479,9 @@ function normalizeEducationSchool(section = {}) {
   const draft = getEducationSchoolDraft(section);
 
   return {
-    schoolName: draft.schoolName.trim(),
-    address: draft.address.trim(),
-    course: draft.course.trim(),
+    schoolName: draft.schoolName.trim().toUpperCase(),
+    address: draft.address.trim().toUpperCase(),
+    course: draft.course.trim().toUpperCase(),
     schoolYearGraduated: normalizeSchoolYearValue(
       draft.schoolYearGraduated,
     ),
@@ -753,7 +754,6 @@ const uppercasePublicTextFields = new Set([
   "phone1",
   "phone2",
   "industryRelevantExperience",
-  "lengthOfWorkExperience",
   "years",
   "role",
   "company",
@@ -948,6 +948,36 @@ function getOptionValue(option) {
 function getOptionLabel(option) {
   if (typeof option === "string") return option;
   return option?.label || option?.value || "";
+}
+
+function normalizeReferralSourceText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function isEmployeeReferralProgramOption(option) {
+  const employeeReferralKey = "employeereferralprogram";
+
+  return [getOptionValue(option), getOptionLabel(option)]
+    .map(normalizeReferralSourceText)
+    .includes(employeeReferralKey);
+}
+
+function isEmployeeReferralProgramSelected(selectedValues, options) {
+  const selectedValueSet = new Set(
+    toArray(selectedValues).map((value) => String(value)),
+  );
+
+  return toArray(options).some((option) => {
+    const optionValue = getOptionValue(option);
+
+    return (
+      selectedValueSet.has(String(optionValue)) &&
+      isEmployeeReferralProgramOption(option)
+    );
+  });
 }
 
 function normalizeEducationalAttainmentOptionText(value) {
@@ -1837,7 +1867,7 @@ function EducationSchoolFields({ section, value, onChange }) {
     const normalizedValue =
       field === "schoolYearGraduated"
         ? normalizeSchoolYearInputValue(nextValue)
-        : String(nextValue ?? "").toUpperCase();
+        : String(nextValue ?? "");
 
     onChange({
       ...school,
@@ -2126,10 +2156,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                industryRelevantExperience: normalizeExperienceFieldValue(
-                  "industryRelevantExperience",
-                  e.target.value,
-                ),
+                industryRelevantExperience: e.target.value,
               })
             }
             placeholder="Example: BPO, Healthcare, RCM, Finance"
@@ -2169,7 +2196,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                years: normalizeExperienceFieldValue("years", e.target.value),
+                years: e.target.value,
               })
             }
             placeholder="Example: 2"
@@ -2187,7 +2214,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                role: normalizeExperienceFieldValue("role", e.target.value),
+                role: e.target.value,
               })
             }
             placeholder="Previous role"
@@ -2205,7 +2232,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                company: normalizeExperienceFieldValue("company", e.target.value),
+                company: e.target.value,
               })
             }
             placeholder="Previous company"
@@ -2225,10 +2252,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                monthlyCompensation: normalizeExperienceFieldValue(
-                  "monthlyCompensation",
-                  e.target.value,
-                ),
+                monthlyCompensation: e.target.value,
               })
             }
             placeholder="Example: 20000"
@@ -2246,10 +2270,7 @@ function ExperienceFields({
             onChange={(e) =>
               onChange({
                 ...experience,
-                reasonForLeaving: normalizeExperienceFieldValue(
-                  "reasonForLeaving",
-                  e.target.value,
-                ),
+                reasonForLeaving: e.target.value,
               })
             }
             placeholder="Reason for leaving"
@@ -2277,6 +2298,10 @@ export default function PublicTalentPoolApplicationPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState("");
+  const [isCheckingDuplicateFullName, setIsCheckingDuplicateFullName] =
+    useState(false);
+  const [duplicateFullNameExists, setDuplicateFullNameExists] =
+    useState(false);
 
   const [highlightAudio, setHighlightAudio] = useState(false);
   const [highlightAttachment, setHighlightAttachment] = useState(false);
@@ -2412,12 +2437,65 @@ export default function PublicTalentPoolApplicationPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const firstName = cleanText(form.firstName);
+    const middleName = cleanText(form.middleName);
+    const lastName = cleanText(form.lastName);
+    const suffix = cleanText(form.suffix);
+
+    if (!firstName || !lastName) {
+      setIsCheckingDuplicateFullName(false);
+      setDuplicateFullNameExists(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+
+    setIsCheckingDuplicateFullName(true);
+    setDuplicateFullNameExists(false);
+
+    const timeoutId = window.setTimeout(async () => {
+      const response = await checkTalentPoolCandidateFullName(
+        {
+          firstName,
+          middleName,
+          lastName,
+          suffix,
+        },
+        {
+          signal: controller.signal,
+        },
+      );
+
+      if (controller.signal.aborted) return;
+
+      setDuplicateFullNameExists(
+        Boolean(response?.success && response?.data?.exists),
+      );
+      setIsCheckingDuplicateFullName(false);
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [form.firstName, form.middleName, form.lastName, form.suffix]);
+
   const age = calculateAge(form.dateOfBirth);
   const isMinor = age !== null && age < 18;
 
   const hasRelevantExperience =
     form.workExperience ===
     "Has work Experience (at least 6 months relevant work experience)";
+
+  const hasEmployeeReferralProgram = useMemo(
+    () =>
+      isEmployeeReferralProgramSelected(
+        form.hearAboutUs,
+        formOptions.hearAboutUs,
+      ),
+    [form.hearAboutUs, formOptions.hearAboutUs],
+  );
 
   const openPositionOptions = useMemo(() => {
     return activePositionOptions.map((position) => ({
@@ -2430,10 +2508,19 @@ export default function PublicTalentPoolApplicationPage() {
   const canSubmit = useMemo(() => {
     if (isLoadingData) return false;
     if (isSubmitting) return false;
+    if (isCheckingDuplicateFullName) return false;
+    if (duplicateFullNameExists) return false;
     if (loadError) return false;
     if (isMinor) return false;
     return true;
-  }, [isLoadingData, isSubmitting, loadError, isMinor]);
+  }, [
+    duplicateFullNameExists,
+    isCheckingDuplicateFullName,
+    isLoadingData,
+    isMinor,
+    isSubmitting,
+    loadError,
+  ]);
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
@@ -2463,17 +2550,33 @@ export default function PublicTalentPoolApplicationPage() {
   function updateFormField(field, value) {
     setForm((previous) => ({
       ...previous,
-      [field]: normalizePublicFormFieldValue(field, value),
+      // Keep the exact editing value in state. Transforming a controlled
+      // value here moves the browser caret to the end after every keystroke.
+      [field]: value,
     }));
   }
 
   function updateFormFields(nextFields) {
     setForm((previous) => ({
       ...previous,
-      ...normalizePublicFormFields(nextFields),
+      // Uppercase normalization is applied only when the form is submitted.
+      ...nextFields,
     }));
   }
 
+  function handleHearAboutUsChange(values) {
+    const hasEmployeeReferralProgram = isEmployeeReferralProgramSelected(
+      values,
+      formOptions.hearAboutUs,
+    );
+
+    setForm((previous) => ({
+      ...previous,
+      hearAboutUs: values,
+      referredBy: hasEmployeeReferralProgram ? previous.referredBy : "",
+      employeeId: hasEmployeeReferralProgram ? previous.employeeId : "",
+    }));
+  }
 
   function handleEducationalAttainmentChange(value) {
     setForm((previous) => ({
@@ -2596,13 +2699,11 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   function updateOtherExperience(index, nextExperience) {
-    const normalizedNextExperience = normalizeExperienceValues(nextExperience);
-
     setForm((previous) => ({
       ...previous,
       otherExperiences: previous.otherExperiences.map(
         (experience, itemIndex) =>
-          itemIndex === index ? normalizedNextExperience : experience,
+          itemIndex === index ? nextExperience : experience,
       ),
     }));
   }
@@ -2696,6 +2797,25 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
+    if (hasEmployeeReferralProgram && !form.referredBy.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "Referrer name required",
+        message:
+          "Please enter the name of the employee who referred you.",
+      });
+      return false;
+    }
+
+    if (hasEmployeeReferralProgram && !form.employeeId.trim()) {
+      showStatusModal({
+        type: "error",
+        title: "Referrer employee ID required",
+        message: "Please enter the employee ID of your referrer.",
+      });
+      return false;
+    }
+
     if (!form.openPosition) {
       showStatusModal({
         type: "error",
@@ -2728,6 +2848,15 @@ export default function PublicTalentPoolApplicationPage() {
         type: "error",
         title: "Last name required",
         message: "Please enter your last name.",
+      });
+      return false;
+    }
+
+    if (duplicateFullNameExists) {
+      showStatusModal({
+        type: "error",
+        title: "Duplicate candidate",
+        message: "Candidate already exists.",
       });
       return false;
     }
@@ -3007,6 +3136,8 @@ export default function PublicTalentPoolApplicationPage() {
 
     const submitForm = {
       ...normalizePublicFormFields(form),
+      referredBy: hasEmployeeReferralProgram ? form.referredBy : "",
+      employeeId: hasEmployeeReferralProgram ? form.employeeId : "",
       educationDetails: normalizeEducationDetails(form.educationDetails),
       otherExperiences: form.otherExperiences.map(normalizeExperienceValues),
       audioFile: audioFileRef.current || form.audioFile,
@@ -3017,9 +3148,15 @@ export default function PublicTalentPoolApplicationPage() {
       const response = await submitPublicTalentPoolApplication(submitForm);
 
       if (!response?.success) {
+        const isDuplicateFullName =
+          response?.status === 409 ||
+          response?.code === "DUPLICATE_FULL_NAME";
+
         showStatusModal({
           type: "error",
-          title: "Application not saved",
+          title: isDuplicateFullName
+            ? "Duplicate candidate"
+            : "Application not saved",
           message:
             response?.message ||
             "The application was not saved. Please check the required fields and try again.",
@@ -3224,7 +3361,7 @@ export default function PublicTalentPoolApplicationPage() {
                   <MultiSelectCheckboxGroup
                     options={formOptions.hearAboutUs}
                     values={form.hearAboutUs}
-                    onChange={(values) => updateFormField("hearAboutUs", values)}
+                    onChange={handleHearAboutUsChange}
                   />
                 </div>
 
@@ -3283,35 +3420,39 @@ export default function PublicTalentPoolApplicationPage() {
                     />
                   </div>
 
-                  <div>
-                    <FieldLabel>
-                      Who referred you to us? <RequiredMark />
-                    </FieldLabel>
-                    <input
-                      required
-                      value={form.referredBy}
-                      onChange={(e) =>
-                        updateFormField("referredBy", e.target.value)
-                      }
-                      placeholder="Referrer name or N/A"
-                      className={inputClass()}
-                    />
-                  </div>
+                  {hasEmployeeReferralProgram && (
+                    <>
+                      <div>
+                        <FieldLabel>
+                          Who referred you to us? <RequiredMark />
+                        </FieldLabel>
+                        <input
+                          required
+                          value={form.referredBy}
+                          onChange={(e) =>
+                            updateFormField("referredBy", e.target.value)
+                          }
+                          placeholder="Referrer name"
+                          className={inputClass()}
+                        />
+                      </div>
 
-                  <div>
-                    <FieldLabel>
-                      Employee ID <RequiredMark />
-                    </FieldLabel>
-                    <input
-                      required
-                      value={form.employeeId}
-                      onChange={(e) =>
-                        updateFormField("employeeId", e.target.value)
-                      }
-                      placeholder="Referrer employee ID or N/A"
-                      className={inputClass()}
-                    />
-                  </div>
+                      <div>
+                        <FieldLabel>
+                          Employee ID <RequiredMark />
+                        </FieldLabel>
+                        <input
+                          required
+                          value={form.employeeId}
+                          onChange={(e) =>
+                            updateFormField("employeeId", e.target.value)
+                          }
+                          placeholder="Referrer employee ID"
+                          className={inputClass()}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </SectionCard>
@@ -3373,6 +3514,12 @@ export default function PublicTalentPoolApplicationPage() {
                     className={inputClass()}
                   />
                 </div>
+
+                {duplicateFullNameExists && (
+                  <div className="md:col-span-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                    Candidate already exists.
+                  </div>
+                )}
 
                 <div>
                   <FieldLabel>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -24,6 +24,7 @@ import {
   UploadCloud,
   UserRound,
   UserRoundPen,
+  UserX,
   WalletCards,
   X,
 } from "lucide-react";
@@ -36,9 +37,12 @@ import {
   formatList,
   getEncodedByName,
   getStatusClass,
+  textareaClass,
+  toDisplayPersonName,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 
 import {
+  FieldLabel,
   ReferenceCard,
   StatusTile,
   ViewableFileRow,
@@ -48,12 +52,27 @@ import GetAssessmentTimelineFiles from "../../../lib/utils/candidatePipeline/rea
 import StatusModal from "../StatusModal";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
+import {
+  markTalentPoolCandidateAsDropOff,
+  updateTalentPoolApplicationStatus,
+} from "../../../lib/axios/getTalentPool";
 
+const TALENT_POOL_ROUTE = "/recruitment/talent-pool";
 const CANDIDATE_PIPELINE_ROUTE = "/recruitment/candidate-pipeline";
 const ONBOARDING_ROUTE = "/recruitment/onboarding";
 
 const INCOMPLETE_ONBOARDING_STAGE = "For Onboarding - Incomplete Requirements";
 const ONBOARDING_STAGE = "Onboarding";
+
+const TALENT_POOL_STATUS_OPTIONS = [
+  { value: "New Applicant", label: "New Applicant" },
+  { value: "Silver Pool", label: "Silver Pool" },
+  { value: "Recyclable", label: "Recyclable" },
+  { value: "Do Not Reprocess", label: "Do Not Reprocess" },
+  { value: "Hired / Active", label: "Hired / Active" },
+  { value: "Initial Screening", label: "Initial Screening" },
+  { value: "Active", label: "Active" },
+];
 
 const MAJOR_PRE_EMPLOYMENT_REQUIREMENTS = [
   "Transcript of Records and/or Diploma",
@@ -111,8 +130,45 @@ function cleanText(value) {
   return String(value ?? "").trim();
 }
 
+function getTalentPoolApplicationId(candidate = {}) {
+  return cleanText(
+    candidate.rawId ||
+      candidate.applicationRawId ||
+      candidate.applicationId ||
+      candidate.application_id ||
+      candidate.dbId ||
+      candidate.databaseId ||
+      candidate.id ||
+      candidate.candidateId ||
+      "",
+  );
+}
+
+function getTalentPoolOwnerSibsId(value) {
+  if (!value || typeof value !== "object") return "";
+
+  return cleanText(
+    value.sibsId ||
+      value.sibs_id ||
+      value.employeeId ||
+      value.employee_id ||
+      value.userId ||
+      value.user_id ||
+      "",
+  );
+}
+
 function normalizeLower(value) {
   return cleanText(value).toLowerCase();
+}
+
+function isDropOffCandidateStatus(value = "") {
+  return (
+    normalizeLower(value)
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim() === "drop off"
+  );
 }
 
 function hasCandidateValue(value) {
@@ -2466,6 +2522,125 @@ function CandidateNhoFilesSection({
   );
 }
 
+function TalentPoolStatusDropdown({
+  value,
+  onChange,
+  options = [],
+  placeholder = "Select status",
+  disabled = false,
+}) {
+  const dropdownRef = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find(
+    (option) => String(option.value) === String(value || ""),
+  );
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (!dropdownRef.current) return;
+
+      if (!dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  function handleSelect(nextValue) {
+    onChange?.(nextValue);
+    setOpen(false);
+  }
+
+  return (
+    <div
+      ref={dropdownRef}
+      className={`relative min-w-0 ${open ? "z-[100050]" : "z-[1]"}`}
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((previous) => !previous)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+          open
+            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
+        } ${
+          disabled
+            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
+            : "text-[#344054]"
+        }`}
+      >
+        <span
+          className={`min-w-0 flex-1 truncate ${
+            selectedOption ? "text-[#344054]" : "text-gray-400"
+          }`}
+        >
+          {selectedOption?.label || placeholder}
+        </span>
+
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100060] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+          <div className="max-h-72 overflow-y-auto" role="listbox">
+            {options.length > 0 ? (
+              options.map((option) => {
+                const active =
+                  String(option.value) === String(value || "");
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={active}
+                    onClick={() => handleSelect(option.value)}
+                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                      active
+                        ? "bg-[#EAF4FF] text-sibs-primary-1"
+                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                    }`}
+                  >
+                    <span className="block min-w-0 truncate">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+                No status options found.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CandidateProfileModal() {
   const navigate = useNavigate();
 
@@ -2473,7 +2648,6 @@ export default function CandidateProfileModal() {
     selectedCandidate,
     setSelectedCandidate,
     currentTaOwner,
-    openStatus,
     openMoveToPipeline,
     refreshTalentPool,
     setCandidateList,
@@ -2510,6 +2684,16 @@ export default function CandidateProfileModal() {
   const [showNhoUploadModal, setShowNhoUploadModal] = useState(false);
   const [isMovingToOnboarding, setIsMovingToOnboarding] = useState(false);
 
+  const [statusUpdateOpen, setStatusUpdateOpen] = useState(false);
+  const [statusUpdateValue, setStatusUpdateValue] = useState("");
+  const [statusUpdateSaving, setStatusUpdateSaving] = useState(false);
+  const [statusUpdateValidation, setStatusUpdateValidation] = useState("");
+
+  const [dropOffOpen, setDropOffOpen] = useState(false);
+  const [dropOffReason, setDropOffReason] = useState("");
+  const [dropOffSaving, setDropOffSaving] = useState(false);
+  const [dropOffValidation, setDropOffValidation] = useState("");
+
   const candidatePipelineLookupId = useMemo(
     () => getCandidatePipelineLookupId(selectedCandidate),
     [selectedCandidate],
@@ -2525,6 +2709,12 @@ export default function CandidateProfileModal() {
     setCandidatePipelineFiles([]);
     setCandidatePipelineFilesError("");
     setPipelineCandidateDetailsError("");
+    setStatusUpdateOpen(false);
+    setStatusUpdateValue("");
+    setStatusUpdateValidation("");
+    setDropOffOpen(false);
+    setDropOffReason("");
+    setDropOffValidation("");
   }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
 
   const loadCandidatePipelineNhoFiles = useCallback(async () => {
@@ -2763,9 +2953,18 @@ export default function CandidateProfileModal() {
 
   const activeCandidate = profileCandidate || selectedCandidate;
   const encodedBy = getEncodedByName(activeCandidate, currentTaOwner);
+  const dropOffOwnerName = toDisplayPersonName(currentTaOwner, "Current User");
+  const dropOffOwnerSibsId = getTalentPoolOwnerSibsId(currentTaOwner);
+  const candidateDisplayName =
+    cleanText(activeCandidate.name || activeCandidate.candidateName) ||
+    "Candidate";
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
+  const isDropOffCandidate = isDropOffCandidateStatus(activeCandidate.status);
 
   const isAlreadyInPipeline = isCandidateLinkedToPipeline(activeCandidate);
+  const hasActivePipelineLink = Boolean(
+    isAlreadyInPipeline && !isDropOffCandidate
+  );
   const currentStage = isAlreadyInPipeline
     ? getCandidateStageValue(activeCandidate)
     : "";
@@ -2779,19 +2978,21 @@ export default function CandidateProfileModal() {
 
   const canUploadFollowUpNhoRequirements = Boolean(
     (resolvedPipelineId || candidatePipelineLookupId) &&
-      isAlreadyInPipeline &&
+      hasActivePipelineLink &&
       hasMissingPreEmploymentRequirements
   );
 
   const canMoveToOnboarding = Boolean(
-    isAlreadyInPipeline &&
+    hasActivePipelineLink &&
       majorRequirementProgress.isComplete &&
       (resolvedPipelineId || candidatePipelineLookupId) &&
       !isAlreadyOnboarding,
   );
 
   const shouldShowLinkedButton = Boolean(
-    isAlreadyInPipeline && !isIncompleteRequirementsStage && !canMoveToOnboarding,
+    hasActivePipelineLink &&
+      !isIncompleteRequirementsStage &&
+      !canMoveToOnboarding,
   );
 
   const candidateInitials =
@@ -2923,17 +3124,243 @@ export default function CandidateProfileModal() {
     setSelectedCandidate(null);
   }
 
-  function handleUpdateCandidateStatus() {
-    if (typeof openStatus !== "function") {
-      showStatusModal({
-        type: "error",
-        title: "Action Unavailable",
-        message: "Update Status action is not available right now.",
-      });
+  function handleUpdateCandidateStatus(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    const currentStatus = cleanText(activeCandidate.status);
+    const isAllowedStatus = TALENT_POOL_STATUS_OPTIONS.some(
+      (option) => option.value === currentStatus,
+    );
+
+    setStatusUpdateValue(isAllowedStatus ? currentStatus : "");
+    setStatusUpdateValidation("");
+    setStatusUpdateOpen(true);
+  }
+
+  function handleCloseStatusUpdate() {
+    if (statusUpdateSaving) return;
+
+    setStatusUpdateOpen(false);
+    setStatusUpdateValue("");
+    setStatusUpdateValidation("");
+  }
+
+  async function handleSaveCandidateStatus(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (statusUpdateSaving) return;
+
+    const nextStatus = cleanText(statusUpdateValue);
+
+    if (!nextStatus) {
+      setStatusUpdateValidation("Please select a new status.");
       return;
     }
 
-    openStatus(selectedCandidate);
+    if (normalizeLower(nextStatus) === "drop off") {
+      setStatusUpdateValidation(
+        "Drop Off is managed through the dedicated Mark as Drop Off action.",
+      );
+      return;
+    }
+
+    const applicationId = getTalentPoolApplicationId(activeCandidate);
+
+    if (!applicationId) {
+      setStatusUpdateValidation("Missing candidate application ID.");
+      return;
+    }
+
+    setStatusUpdateSaving(true);
+    setStatusUpdateValidation("");
+
+    try {
+      const response = await updateTalentPoolApplicationStatus(applicationId, {
+        status: nextStatus,
+      });
+
+      if (!response?.success) {
+        setStatusUpdateValidation(
+          response?.message || "Failed to update candidate status.",
+        );
+        return;
+      }
+
+      const responseCandidate = safeObject(
+        response?.candidate ||
+          response?.data?.candidate ||
+          response?.data ||
+          {},
+      );
+
+      const nextCandidate = {
+        ...activeCandidate,
+        ...responseCandidate,
+        status: responseCandidate.status || nextStatus,
+      };
+
+      applyLocalCandidateUpdate(nextCandidate);
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: response?.data || nextCandidate,
+        }),
+      );
+
+      if (typeof refreshTalentPool === "function") {
+        try {
+          await refreshTalentPool();
+        } catch (refreshError) {
+          console.error(
+            "Refresh Talent Pool after status update error:",
+            refreshError,
+          );
+        }
+      }
+
+      setStatusUpdateOpen(false);
+      setStatusUpdateValue("");
+      setStatusUpdateValidation("");
+      setDropOffOpen(false);
+      setShowNhoUploadModal(false);
+      setStatusModal((previous) => ({
+        ...previous,
+        open: false,
+        closeProfileOnClose: false,
+      }));
+
+      // Close Candidate Profile and return to the refreshed Talent Pool page.
+      setSelectedCandidate(null);
+      navigate(TALENT_POOL_ROUTE, { replace: true });
+    } catch (error) {
+      console.error("Update candidate status error:", error);
+
+      setStatusUpdateValidation(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update candidate status.",
+      );
+    } finally {
+      setStatusUpdateSaving(false);
+    }
+  }
+
+  function handleOpenDropOff(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (
+      dropOffSaving ||
+      isAlreadyInPipeline ||
+      isDoNotReprocess ||
+      isDropOffCandidate
+    ) {
+      return;
+    }
+
+    setDropOffReason("");
+    setDropOffValidation("");
+    setDropOffOpen(true);
+  }
+
+  function handleCloseDropOff() {
+    if (dropOffSaving) return;
+
+    setDropOffOpen(false);
+    setDropOffReason("");
+    setDropOffValidation("");
+  }
+
+  async function handleConfirmDropOff(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (dropOffSaving) return;
+
+    const reason = cleanText(dropOffReason);
+
+    if (!reason) {
+      setDropOffValidation("Drop Off Reason is required.");
+      return;
+    }
+
+    const applicationId = getTalentPoolApplicationId(activeCandidate);
+
+    if (!applicationId) {
+      setDropOffValidation("Missing candidate application ID.");
+      return;
+    }
+
+    setDropOffSaving(true);
+    setDropOffValidation("");
+
+    try {
+      const response = await markTalentPoolCandidateAsDropOff(applicationId, {
+        reason,
+        droppedOffBySibsId: dropOffOwnerSibsId,
+        droppedOffByName: dropOffOwnerName,
+      });
+
+      if (!response?.success) {
+        setDropOffValidation(
+          response?.message || "Failed to mark candidate as Drop Off.",
+        );
+        return;
+      }
+
+      const responseCandidate = safeObject(
+        response?.candidate ||
+          response?.data?.candidate ||
+          response?.data ||
+          {},
+      );
+
+      const nextCandidate = {
+        ...activeCandidate,
+        ...responseCandidate,
+        status: responseCandidate.status || "Drop Off",
+        dropOffReason: reason,
+        drop_off_reason: reason,
+      };
+
+      applyLocalCandidateUpdate(nextCandidate);
+
+      window.dispatchEvent(
+        new CustomEvent("ta-talent-pool-updated", {
+          detail: response?.data || nextCandidate,
+        }),
+      );
+
+      if (typeof refreshTalentPool === "function") {
+        try {
+          await refreshTalentPool();
+        } catch (refreshError) {
+          console.error("Refresh Talent Pool after Drop Off error:", refreshError);
+        }
+      }
+
+      setDropOffOpen(false);
+      setDropOffReason("");
+
+      showStatusModal({
+        type: "success",
+        title: "Candidate marked as Drop Off",
+        message: `${candidateDisplayName} remains in Talent Pool with the Drop Off status.`,
+        closeProfileOnClose: true,
+      });
+    } catch (error) {
+      console.error("Mark candidate as Drop Off error:", error);
+
+      setDropOffValidation(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to mark candidate as Drop Off.",
+      );
+    } finally {
+      setDropOffSaving(false);
+    }
   }
 
   function handleOpenLinkedCandidateDestination() {
@@ -2985,6 +3412,16 @@ export default function CandidateProfileModal() {
   function handleMoveToPipeline(event) {
     event?.preventDefault?.();
     event?.stopPropagation?.();
+
+    if (isDropOffCandidate) {
+      showStatusModal({
+        type: "error",
+        title: "Cannot Move Candidate",
+        message:
+          "This candidate is marked as Drop-off. Please update the candidate status before moving to the pipeline.",
+      });
+      return;
+    }
 
     if (isDoNotReprocess) {
       showStatusModal({
@@ -4903,7 +5340,12 @@ export default function CandidateProfileModal() {
 
           <div className="relative z-[40] flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
             <p className="text-xs font-bold leading-5 text-sibs-tertiary-5">
-              {canMoveToOnboarding ? (
+              {isDropOffCandidate ? (
+                <span className="font-extrabold text-red-600">
+                  Candidate is marked as Drop-off. Update the candidate status
+                  before using Candidate Pipeline actions.
+                </span>
+              ) : canMoveToOnboarding ? (
                 <span className="font-extrabold text-emerald-600">
                   Candidate completed the 5 major requirements and can be moved
                   to Onboarding.
@@ -4939,6 +5381,21 @@ export default function CandidateProfileModal() {
                 Close
               </button>
 
+
+              {!isAlreadyInPipeline &&
+                !isDoNotReprocess &&
+                !isDropOffCandidate && (
+                <button
+                  type="button"
+                  onClick={handleOpenDropOff}
+                  disabled={dropOffSaving}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-extrabold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <UserX size={17} />
+                  {dropOffSaving ? "Saving..." : "Mark as Drop Off"}
+                </button>
+              )}
+
               {canMoveToOnboarding && (
                 <button
                   type="button"
@@ -4966,7 +5423,9 @@ export default function CandidateProfileModal() {
                 </button>
               )}
 
-              {!isAlreadyInPipeline && !isDoNotReprocess && (
+              {!isAlreadyInPipeline &&
+                !isDoNotReprocess &&
+                !isDropOffCandidate && (
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
@@ -4980,6 +5439,198 @@ export default function CandidateProfileModal() {
           </div>
         </div>
       </div>
+
+      {statusUpdateOpen && (
+        <div
+          className="fixed inset-0 z-[10025] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleCloseStatusUpdate();
+          }}
+        >
+          <div
+            className="w-full max-w-lg overflow-visible rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4">
+              <div className="min-w-0">
+                <h3 className="text-lg font-extrabold text-sibs-primary-1">
+                  Update Candidate Status
+                </h3>
+                <p className="mt-1 truncate text-sm font-medium text-sibs-tertiary-5">
+                  {candidateDisplayName}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseStatusUpdate}
+                disabled={statusUpdateSaving}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close update candidate status modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCandidateStatus} className="space-y-4 p-5">
+              <div className="rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] px-4 py-4">
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                  Current Status
+                </p>
+                <p className="mt-1 text-sm font-extrabold text-[#101828]">
+                  {activeCandidate.status || "—"}
+                </p>
+              </div>
+
+              <div className="relative z-[100040]">
+                <FieldLabel>New Status</FieldLabel>
+                <TalentPoolStatusDropdown
+                  value={statusUpdateValue}
+                  options={TALENT_POOL_STATUS_OPTIONS}
+                  disabled={statusUpdateSaving}
+                  placeholder="Select status"
+                  onChange={(nextValue) => {
+                    setStatusUpdateValue(nextValue);
+
+                    if (statusUpdateValidation) {
+                      setStatusUpdateValidation("");
+                    }
+                  }}
+                />
+
+                {statusUpdateValidation && (
+                  <p className="mt-2 text-xs font-bold text-red-600">
+                    {statusUpdateValidation}
+                  </p>
+                )}
+              </div>
+            </form>
+
+            <div className="border-t border-[#E6ECF2] px-5 py-4">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCloseStatusUpdate}
+                  disabled={statusUpdateSaving}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveCandidateStatus}
+                  disabled={statusUpdateSaving || !cleanText(statusUpdateValue)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:shadow-md hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {statusUpdateSaving ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <RefreshCcw size={16} />
+                  )}
+                  {statusUpdateSaving ? "Saving..." : "Save Status"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {dropOffOpen && (
+        <div
+          className="fixed inset-0 z-[10030] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleCloseDropOff();
+          }}
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-[#B42318]">
+                  Mark as Drop Off
+                </h3>
+                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                  {candidateDisplayName}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseDropOff}
+                disabled={dropOffSaving}
+                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Close Drop Off reason modal"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDropOff} className="space-y-4 p-5">
+              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-[#B42318]">
+                The candidate will remain visible in Talent Pool with the Drop
+                Off status. Enter the reason before confirming.
+              </div>
+
+              <div>
+                <FieldLabel>Drop Off Reason</FieldLabel>
+                <textarea
+                  autoFocus
+                  rows={5}
+                  value={dropOffReason}
+                  onChange={(event) => {
+                    setDropOffReason(event.target.value);
+
+                    if (dropOffValidation) {
+                      setDropOffValidation("");
+                    }
+                  }}
+                  disabled={dropOffSaving}
+                  className={`${textareaClass()} ${
+                    dropOffValidation
+                      ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                      : ""
+                  }`}
+                  placeholder="Enter the reason for dropping off this candidate."
+                />
+
+                {dropOffValidation && (
+                  <p className="mt-1.5 text-xs font-bold text-red-600">
+                    {dropOffValidation}
+                  </p>
+                )}
+              </div>
+            </form>
+
+            <div className="border-t border-gray-100 px-5 py-4">
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCloseDropOff}
+                  disabled={dropOffSaving}
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmDropOff}
+                  disabled={dropOffSaving || !cleanText(dropOffReason)}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <UserX size={17} />
+                  {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {canUploadFollowUpNhoRequirements && (
         <NhoUploadModal
