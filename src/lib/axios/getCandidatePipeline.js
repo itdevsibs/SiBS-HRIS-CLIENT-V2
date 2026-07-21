@@ -256,6 +256,62 @@ export async function updateCandidatePipelinePrfStatus(id, payload = {}) {
   }
 }
 
+export async function proceedCandidatePipelineInitialScreening(
+  id,
+  payload = {},
+) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(id)}/initial-screening/proceed`,
+      payload,
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios proceedCandidatePipelineInitialScreening API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(
+      err,
+      "Failed to proceed with initial screening.",
+    );
+  }
+}
+
+export async function resendCandidatePipelineAssessmentEmail(
+  id,
+  payload = {},
+) {
+  try {
+    const res = await api.post(
+      `/api/candidate-pipeline/${encodeURIComponent(id)}/assessment/send-email`,
+      {
+        ...payload,
+        resend: true,
+      },
+      {
+        withCredentials: true,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "Axios resendCandidatePipelineAssessmentEmail API error:",
+      err?.response?.status,
+      err?.response?.data || err?.message,
+    );
+
+    return errorResponse(err, "Failed to resend assessment email.");
+  }
+}
+
 export async function scheduleCandidatePipelineInterview(id, payload = {}) {
   try {
     const res = await api.post(
@@ -629,6 +685,8 @@ const candidatePipelineApi = {
   updateCandidatePipelineCandidate,
   moveCandidatePipelineStage,
   updateCandidatePipelinePrfStatus,
+  proceedCandidatePipelineInitialScreening,
+  resendCandidatePipelineAssessmentEmail,
   scheduleCandidatePipelineInterview,
   startCandidatePipelineInterview,
   completeCandidatePipelineInterview,

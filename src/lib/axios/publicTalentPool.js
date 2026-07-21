@@ -344,6 +344,56 @@ export async function getTalentPoolOpenPositions() {
 }
 
 /* =========================================
+   PUBLIC DUPLICATE FULL-NAME CHECK
+========================================= */
+
+export async function checkTalentPoolCandidateFullName(
+  nameParts = {},
+  options = {},
+) {
+  try {
+    const res = await publicApi.get(
+      "/api/talent-pool/check-full-name",
+      {
+        params: {
+          firstName: nameParts.firstName || "",
+          middleName: nameParts.middleName || "",
+          lastName: nameParts.lastName || "",
+          suffix: nameParts.suffix || "",
+        },
+        signal: options.signal,
+      },
+    );
+
+    return res.data;
+  } catch (err) {
+    const cancelled = axios.isCancel(err) || err?.code === "ERR_CANCELED";
+
+    if (!cancelled) {
+      console.error(
+        "Public checkTalentPoolCandidateFullName API error:",
+        err?.response?.status,
+        err?.response?.data || err?.message,
+      );
+    }
+
+    return {
+      success: false,
+      cancelled,
+      data: {
+        exists: false,
+      },
+      message: cancelled
+        ? "Duplicate-name check cancelled."
+        : err?.response?.data?.message ||
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to check candidate name.",
+    };
+  }
+}
+
+/* =========================================
    PUBLIC APPLICATION SUBMIT
 ========================================= */
 
@@ -375,6 +425,9 @@ export async function submitPublicTalentPoolApplication(form) {
     return {
       success: false,
       data: null,
+      status: err?.response?.status || null,
+      code: err?.response?.data?.code || null,
+      field: err?.response?.data?.field || null,
       message:
         err?.response?.data?.message ||
         err?.response?.data?.error ||

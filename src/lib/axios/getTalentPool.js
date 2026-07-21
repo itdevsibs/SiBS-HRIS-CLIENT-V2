@@ -342,6 +342,7 @@ export async function getTalentPoolApplications({
         limit,
         search,
         status,
+        _t: Date.now(),
       },
       withCredentials: true,
     });

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, UserX, X } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 
 import { useTalentPool } from "../../../services/context/TalentPoolContext";
 import {
@@ -8,10 +8,7 @@ import {
   toDisplayPersonName,
 } from "../../../lib/utils/talentPool/talentPoolHelpers";
 import { FieldLabel } from "../../recruitment/talentPool/TalentPoolShared";
-import {
-  markTalentPoolCandidateAsDropOff,
-  moveTalentPoolCandidateToPipeline,
-} from "../../../lib/axios/getTalentPool";
+import { moveTalentPoolCandidateToPipeline } from "../../../lib/axios/getTalentPool";
 import StatusModal from "../StatusModal";
 import {
   findMatchingFinalInterviewForm,
@@ -165,20 +162,6 @@ function getApplicationId(candidate = {}) {
   );
 }
 
-function getSibsId(value) {
-  if (!value || typeof value !== "object") return "";
-
-  return cleanText(
-    value.sibsId ||
-      value.sibs_id ||
-      value.employeeId ||
-      value.employee_id ||
-      value.userId ||
-      value.user_id ||
-      "",
-  );
-}
-
 function getCandidateName(candidate = {}) {
   return cleanText(candidate.name || candidate.candidateName) || "Candidate";
 }
@@ -199,10 +182,6 @@ export default function MoveToPipeLineModal() {
   } = useTalentPool();
 
   const [moveSaving, setMoveSaving] = useState(false);
-  const [dropOffOpen, setDropOffOpen] = useState(false);
-  const [dropOffReason, setDropOffReason] = useState("");
-  const [dropOffSaving, setDropOffSaving] = useState(false);
-  const [dropOffValidation, setDropOffValidation] = useState("");
   const [statusModal, setStatusModal] = useState({
     open: false,
     type: "error",
@@ -230,8 +209,7 @@ export default function MoveToPipeLineModal() {
   const form = moveToPipelineForm || {};
   const ownerSource = form.taOwner || currentTaOwner;
   const ownerName = toDisplayPersonName(ownerSource, "Current User");
-  const ownerSibsId = getSibsId(ownerSource);
-  const isBusy = moveSaving || dropOffSaving;
+  const isBusy = moveSaving;
   const candidateName = getCandidateName(safePipelineTarget);
 
   const positionAppliedId =
@@ -327,21 +305,6 @@ export default function MoveToPipeLineModal() {
     }
   }
 
-  function handleOpenDropOff() {
-    if (isBusy) return;
-
-    setDropOffReason("");
-    setDropOffValidation("");
-    setDropOffOpen(true);
-  }
-
-  function handleCloseDropOff() {
-    if (dropOffSaving) return;
-
-    setDropOffOpen(false);
-    setDropOffReason("");
-    setDropOffValidation("");
-  }
 
   async function refreshAfterChange(responseData) {
     window.dispatchEvent(
@@ -352,66 +315,6 @@ export default function MoveToPipeLineModal() {
 
     if (typeof refreshTalentPool === "function") {
       await refreshTalentPool();
-    }
-  }
-
-  async function handleConfirmDropOff(event) {
-    event?.preventDefault?.();
-
-    if (dropOffSaving) return;
-
-    const reason = cleanText(dropOffReason);
-
-    if (!reason) {
-      setDropOffValidation("Drop Off Reason is required.");
-      return;
-    }
-
-    const applicationId = getApplicationId(pipelineTarget);
-
-    if (!applicationId) {
-      setDropOffValidation("Missing candidate application ID.");
-      return;
-    }
-
-    setDropOffSaving(true);
-    setDropOffValidation("");
-
-    try {
-      const response = await markTalentPoolCandidateAsDropOff(applicationId, {
-        reason,
-        droppedOffBySibsId: ownerSibsId,
-        droppedOffByName: ownerName,
-      });
-
-      if (!response?.success) {
-        setDropOffValidation(
-          response?.message || "Failed to mark candidate as Drop Off.",
-        );
-        return;
-      }
-
-      await refreshAfterChange(response.data);
-
-      setDropOffOpen(false);
-      setDropOffReason("");
-      setStatusModal({
-        open: true,
-        type: "success",
-        title: "Candidate marked as Drop Off",
-        message: `${candidateName} remains in Talent Pool with the Drop Off status.`,
-        closeParent: true,
-      });
-    } catch (error) {
-      console.error("Mark candidate as Drop Off error:", error);
-
-      setDropOffValidation(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to mark candidate as Drop Off.",
-      );
-    } finally {
-      setDropOffSaving(false);
     }
   }
 
@@ -604,12 +507,6 @@ export default function MoveToPipeLineModal() {
         </div>
 
         <form onSubmit={handleMoveCandidate} className="space-y-4 p-5">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm font-semibold leading-6 text-sibs-primary-1">
-            This will create a pipeline application directly under Initial
-            Screening. Department and account details are captured automatically
-            from the candidate&apos;s available position record when present.
-          </div>
-
           <div>
             <FieldLabel>Position Applied</FieldLabel>
 
@@ -624,33 +521,6 @@ export default function MoveToPipeLineModal() {
             <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
               This value is read-only and comes from the candidate&apos;s applied
               position record.
-            </p>
-          </div>
-
-          <div>
-            <FieldLabel>Matched Final Interview Form</FieldLabel>
-
-            <div
-              className={`mt-2 flex min-h-11 w-full items-center rounded-xl border px-4 py-3 text-sm font-extrabold ${
-                matchedFinalInterviewForm
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : "border-amber-200 bg-amber-50 text-amber-700"
-              }`}
-              aria-readonly="true"
-              title={
-                matchedFinalInterviewForm
-                  ? matchedFinalInterviewFormName
-                  : "No matching Final Interview Form"
-              }
-            >
-              {matchedFinalInterviewForm
-                ? matchedFinalInterviewFormName
-                : "No matching Final Interview Form"}
-            </div>
-
-            <p className="mt-1.5 text-xs font-semibold text-sibs-tertiary-5">
-              Matched using Position Applied against Recruitment Settings →
-              Final Interview Form.
             </p>
           </div>
 
@@ -683,15 +553,6 @@ export default function MoveToPipeLineModal() {
               Cancel
             </button>
 
-            <button
-              type="button"
-              onClick={handleOpenDropOff}
-              disabled={isBusy}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 text-sm font-bold text-red-700 transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-100 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <UserX size={17} />
-              Mark as Drop Off
-            </button>
 
             <button
               type="button"
@@ -705,101 +566,6 @@ export default function MoveToPipeLineModal() {
           </div>
         </div>
       </div>
-
-      {dropOffOpen && (
-        <div
-          className="fixed inset-0 z-[10020] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
-          onClick={(event) => {
-            event.stopPropagation();
-            handleCloseDropOff();
-          }}
-        >
-          <div
-            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4">
-              <div>
-                <h3 className="text-lg font-bold text-[#B42318]">
-                  Mark as Drop Off
-                </h3>
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  {candidateName}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCloseDropOff}
-                disabled={dropOffSaving}
-                className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label="Close Drop Off reason modal"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleConfirmDropOff} className="space-y-4 p-5">
-              <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-semibold leading-6 text-[#B42318]">
-                The candidate will remain visible in Talent Pool with the Drop
-                Off status. Enter the reason before confirming.
-              </div>
-
-              <div>
-                <FieldLabel>Drop Off Reason</FieldLabel>
-                <textarea
-                  autoFocus
-                  rows={5}
-                  value={dropOffReason}
-                  onChange={(event) => {
-                    setDropOffReason(event.target.value);
-
-                    if (dropOffValidation) {
-                      setDropOffValidation("");
-                    }
-                  }}
-                  disabled={dropOffSaving}
-                  className={`${textareaClass()} ${
-                    dropOffValidation
-                      ? "border-red-400 focus:border-red-500 focus:ring-red-100"
-                      : ""
-                  }`}
-                  placeholder="Enter the reason for dropping off this candidate."
-                />
-
-                {dropOffValidation && (
-                  <p className="mt-1.5 text-xs font-bold text-red-600">
-                    {dropOffValidation}
-                  </p>
-                )}
-              </div>
-            </form>
-
-            <div className="border-t border-gray-100 px-5 py-4">
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={handleCloseDropOff}
-                  disabled={dropOffSaving}
-                  className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleConfirmDropOff}
-                  disabled={dropOffSaving || !cleanText(dropOffReason)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-red-600 px-5 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-red-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <UserX size={17} />
-                  {dropOffSaving ? "Saving..." : "Confirm Drop Off"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <StatusModal
         open={statusModal.open}

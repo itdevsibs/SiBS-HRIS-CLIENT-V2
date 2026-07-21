@@ -641,6 +641,43 @@ function getHistoryTitle(item = {}) {
   );
 }
 
+function isUncommittedPrfStatusTimelineEntry(item = {}) {
+  const reasonText = cleanText(
+    item.reason ||
+      item.description ||
+      item.message ||
+      item.note ||
+      "",
+  ).toLowerCase();
+
+  const remarksText = cleanText(item.remarks).toLowerCase();
+  const stageText = getHistoryTitle(item).toLowerCase();
+
+  const isPrfSelectionOnly =
+    /^prf status (?:updated|changed) to (?:matched|not matched)\.?$/.test(
+      reasonText,
+    ) ||
+    /^prf status:\s*(?:matched|not matched)\.?$/.test(remarksText);
+
+  const hasCommittedMovement = Boolean(
+    cleanText(
+      item.toStage ||
+        item.to_stage ||
+        item.extra?.toStage ||
+        item.extra?.to_stage ||
+        "",
+    ),
+  );
+
+  const isCommittedStage = [
+    "online assessment",
+    "drop-off",
+    "drop off",
+  ].includes(stageText);
+
+  return isPrfSelectionOnly && !hasCommittedMovement && !isCommittedStage;
+}
+
 function isFinalInterviewTimelineItem(item = {}) {
   const stageText = getHistoryTitle(item).toLowerCase();
   const reasonText = cleanText(item.reason).toLowerCase();
@@ -4146,6 +4183,14 @@ const CandidatePipelineModal = ({
   const [isSavingNhoFiles, setIsSavingNhoFiles] = useState(false);
   const [isSendingAssessmentEmail, setIsSendingAssessmentEmail] =
     useState(false);
+  const [isProceedingInitialScreening, setIsProceedingInitialScreening] =
+    useState(false);
+  const [
+    hasSelectedPrfStatusThisSession,
+    setHasSelectedPrfStatusThisSession,
+  ] = useState(false);
+  const [isResendingAssessmentEmail, setIsResendingAssessmentEmail] =
+    useState(false);
   const [showAssessmentEmailModal, setShowAssessmentEmailModal] = useState(false);
   const [assessmentEmailForm, setAssessmentEmailForm] = useState({
     recipientEmail: "",
@@ -4248,6 +4293,9 @@ const CandidatePipelineModal = ({
     setLocalCandidate(sessionCandidate);
     setSelectedNhoFile(null);
     setIsSendingAssessmentEmail(false);
+    setIsProceedingInitialScreening(false);
+    setHasSelectedPrfStatusThisSession(false);
+    setIsResendingAssessmentEmail(false);
     setShowAssessmentModal(false);
     setShowNhoScheduleModal(false);
     setIsSchedulingNho(false);
@@ -4469,6 +4517,10 @@ const CandidatePipelineModal = ({
 
   const isLeadStage = false;
   const isInitialScreening = currentStage === "Initial Screening";
+  const canProceedInitialScreening =
+    isInitialScreening &&
+    hasSelectedPrfStatusThisSession &&
+    ["Matched", "Not Matched"].includes(activePrfStatus);
   const isOnlineAssessment = currentStage === "Online Assessment";
   const isInterviewScheduled = currentStage === "Interview Scheduled";
   const isInterviewed = currentStage === "Interviewed";
@@ -4497,6 +4549,8 @@ const CandidatePipelineModal = ({
       getVisibleCandidateTimeline(
         getCandidateTimeline(activeCandidate),
         currentStage,
+      ).filter(
+        (item) => !isUncommittedPrfStatusTimelineEntry(item),
       ),
     [activeCandidate, currentStage],
   );
@@ -4795,6 +4849,189 @@ const CandidatePipelineModal = ({
     return mergedCandidate;
   }
 
+  async function handleProceedInitialScreening(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (isProceedingInitialScreening) return;
+
+    if (!candidateNhoUploadId) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Proceed",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    if (!["Matched", "Not Matched"].includes(activePrfStatus)) {
+      showStatusModal({
+        type: "error",
+        title: "PRF Status Required",
+        message: "Select Matched or Unmatched before proceeding.",
+      });
+      return;
+    }
+
+    const recipientEmail = cleanText(activeCandidate.email);
+
+    if (!recipientEmail) {
+      showStatusModal({
+        type: "error",
+        title: "Candidate Email Required",
+        message: "Add the candidate email before proceeding.",
+      });
+      return;
+    }
+
+    setIsProceedingInitialScreening(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateNhoUploadId,
+        )}/initial-screening/proceed`,
+        {
+          prfStatus: activePrfStatus,
+          prf_status: activePrfStatus,
+          recipientEmail,
+          email: recipientEmail,
+          roleName: getAssessmentEmailRole(activeCandidate),
+          emailSubject:
+            activePrfStatus === "Matched"
+              ? "SiBS Online Assessment Invitation"
+              : `Application Update - ${getAssessmentEmailRole(
+                  activeCandidate,
+                )}`,
+          emailDeadline: addDaysToInputDate(7),
+          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(
+          payload?.message || "Failed to proceed with initial screening.",
+        );
+      }
+
+      const apiCandidate = getCandidateFromApiPayload(payload) || {};
+      syncCandidateAfterAction(apiCandidate, { payload });
+      const isUnmatched = payload?.outcome === "unmatched";
+
+      showStatusModal({
+        type: "success",
+        title: isUnmatched
+          ? "Candidate Moved to Drop-off"
+          : "Candidate Moved to Online Assessment",
+        message:
+          payload?.message ||
+          (isUnmatched
+            ? "The unmatched notification was sent and the candidate was moved to Drop-off."
+            : "The assessment invitation was sent and the candidate was moved to Online Assessment."),
+        closeParentOnClose: true,
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Initial Screening Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to proceed with initial screening.",
+        ),
+      });
+    } finally {
+      setIsProceedingInitialScreening(false);
+    }
+  }
+
+  async function handleResendAssessmentEmail(event) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (isResendingAssessmentEmail) return;
+
+    if (!candidateNhoUploadId) {
+      showStatusModal({
+        type: "error",
+        title: "Unable to Resend",
+        message: "Candidate Pipeline ID is missing.",
+      });
+      return;
+    }
+
+    const recipientEmail =
+      cleanText(
+        activeCandidate.assessmentEmailRecipient ||
+          activeCandidate.assessment_email_recipient,
+      ) || cleanText(activeCandidate.email);
+
+    if (!recipientEmail) {
+      showStatusModal({
+        type: "error",
+        title: "Candidate Email Required",
+        message: "Add the candidate email before resending the assessment.",
+      });
+      return;
+    }
+
+    setIsResendingAssessmentEmail(true);
+
+    try {
+      const response = await api.post(
+        `/api/candidate-pipeline/${encodeURIComponent(
+          candidateNhoUploadId,
+        )}/assessment/send-email`,
+        {
+          recipientEmail,
+          email: recipientEmail,
+          emailSubject: "SiBS Online Assessment Invitation",
+          subject: "SiBS Online Assessment Invitation",
+          emailDeadline: addDaysToInputDate(7),
+          deadline: addDaysToInputDate(7),
+          roleName: getAssessmentEmailRole(activeCandidate),
+          assessmentLink: SIBS_ASSESSMENT_PUBLIC_LINK,
+          resend: true,
+        },
+        {
+          withCredentials: true,
+        },
+      );
+
+      const payload = response?.data || {};
+
+      if (payload?.success === false) {
+        throw new Error(payload?.message || "Failed to resend assessment email.");
+      }
+
+      const apiCandidate = getCandidateFromApiPayload(payload) || {};
+      syncCandidateAfterAction(apiCandidate, { payload });
+
+      showStatusModal({
+        type: "success",
+        title: "Assessment Email Resent",
+        message:
+          payload?.message ||
+          `Assessment email resent successfully to ${recipientEmail}.`,
+      });
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Resend Assessment Email Failed",
+        message: getApiErrorMessage(
+          error,
+          "Failed to resend assessment email.",
+        ),
+      });
+    } finally {
+      setIsResendingAssessmentEmail(false);
+    }
+  }
+
   function handleSendAssessmentEmailClick(event) {
     event.preventDefault();
     event.stopPropagation();
@@ -4958,6 +5195,8 @@ const CandidatePipelineModal = ({
 
     const normalizedStatus = normalizePrfStatus(nextPrfStatus);
 
+    setHasSelectedPrfStatusThisSession(false);
+
     const currentTimeline = Array.isArray(activeCandidate.timeline)
       ? activeCandidate.timeline
       : [];
@@ -5044,12 +5283,19 @@ const CandidatePipelineModal = ({
 
       if (response === null || response?.success === false) {
         setLocalCandidate(activeCandidate);
+        setHasSelectedPrfStatusThisSession(false);
+        return response;
       }
+
+      setHasSelectedPrfStatusThisSession(
+        ["Matched", "Not Matched"].includes(normalizedStatus),
+      );
 
       return response;
     } catch (error) {
       console.error("Update PRF status from modal error:", error);
       setLocalCandidate(activeCandidate);
+      setHasSelectedPrfStatusThisSession(false);
       return null;
     }
   }
@@ -6909,18 +7155,18 @@ const CandidatePipelineModal = ({
                           <div className="mt-4 grid grid-cols-1 gap-2">
                             <button
                               type="button"
-                              disabled={isSendingAssessmentEmail}
-                              onClick={handleSendAssessmentEmailClick}
+                              disabled={isResendingAssessmentEmail}
+                              onClick={handleResendAssessmentEmail}
                               className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-bold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                              {isSendingAssessmentEmail ? (
+                              {isResendingAssessmentEmail ? (
                                 <Loader2 size={16} className="animate-spin" />
                               ) : (
                                 <Mail size={16} />
                               )}
-                              {isSendingAssessmentEmail
-                                ? "Sending..."
-                                : "Send Assessment Email"}
+                              {isResendingAssessmentEmail
+                                ? "Resending..."
+                                : "Resend Assessment Email"}
                             </button>
 
                             <button
@@ -7303,7 +7549,7 @@ const CandidatePipelineModal = ({
 
           <div className="border-t border-gray-100 px-5 py-4 sm:px-6">
             <div className="flex flex-col justify-end gap-2 sm:flex-row">
-              {activeCandidate.currentStage !== "Drop-off" && (
+              {!isInitialScreening && currentStage !== "Drop-off" && (
                 <button
                   type="button"
                   onClick={() => onOpenDropOffModal?.(activeCandidate)}
@@ -7387,14 +7633,23 @@ const CandidatePipelineModal = ({
                 </button>
               )}
 
-              {isInitialScreening && nextStage && (
+              {canProceedInitialScreening && (
                 <button
                   type="button"
-                  onClick={handleMoveToNextStage}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+                  disabled={isProceedingInitialScreening}
+                  onClick={handleProceedInitialScreening}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <ArrowRight size={16} />
-                  Move to Online Assessment
+                  {isProceedingInitialScreening ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <ArrowRight size={16} />
+                  )}
+                  {isProceedingInitialScreening
+                    ? "Processing..."
+                    : activePrfStatus === "Not Matched"
+                      ? "Proceed"
+                      : "Proceed on Initial Screening"}
                 </button>
               )}
             </div>

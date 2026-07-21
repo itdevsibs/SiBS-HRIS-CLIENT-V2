@@ -613,12 +613,88 @@ function getOptionLabel(option) {
   return option?.label || option?.value || "";
 }
 
+function normalizeReferralSourceText(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+function isEmployeeReferralProgramOption(option) {
+  const employeeReferralKey = "employeereferralprogram";
+
+  return [getOptionValue(option), getOptionLabel(option)]
+    .map(normalizeReferralSourceText)
+    .includes(employeeReferralKey);
+}
+
+function isEmployeeReferralProgramSelected(selectedValues, options) {
+  const selectedValueSet = new Set(
+    toArray(selectedValues).map((value) => String(value)),
+  );
+
+  return toArray(options).some((option) => {
+    const optionValue = getOptionValue(option);
+
+    return (
+      selectedValueSet.has(String(optionValue)) &&
+      isEmployeeReferralProgramOption(option)
+    );
+  });
+}
+
 function normalizeEducationalAttainmentOptionText(value) {
   return String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/[’']/g, "")
     .replace(/[^a-z0-9]+/g, "");
+}
+
+const EDUCATION_AUTO_AFFILIATION_KEYS = {
+  mastersDegreeGraduate: new Set([
+    "masterdegreeholder",
+    "mastersdegreeholder",
+  ]),
+  doctorateDegreeGraduate: new Set([
+    "doctorateholder",
+    "doctoratedegreeholder",
+  ]),
+};
+
+function getEducationAutoAffiliationValues(attainment, options = []) {
+  const attainmentKey = normalizeEducationAttainmentKey(attainment);
+  const acceptedKeys = EDUCATION_AUTO_AFFILIATION_KEYS[attainmentKey];
+
+  if (!acceptedKeys) return [];
+
+  const matchedOption = toArray(options).find((option) =>
+    [getOptionValue(option), getOptionLabel(option)]
+      .map(normalizeEducationalAttainmentOptionText)
+      .some((optionText) => acceptedKeys.has(optionText)),
+  );
+
+  if (!matchedOption) return [];
+
+  const matchedValue = getOptionValue(matchedOption) || getOptionLabel(matchedOption);
+
+  return cleanText(matchedValue) ? [matchedValue] : [];
+}
+
+function mergeUniqueOptionValues(currentValues = [], additionalValues = []) {
+  const nextValues = [];
+  const seenValues = new Set();
+
+  [...toArray(currentValues), ...toArray(additionalValues)].forEach((value) => {
+    const key = String(value);
+
+    if (!key || seenValues.has(key)) return;
+
+    seenValues.add(key);
+    nextValues.push(value);
+  });
+
+  return nextValues;
 }
 
 const EXCLUDED_EDUCATIONAL_ATTAINMENTS = new Set(
@@ -2299,6 +2375,29 @@ export default function AddCandidateModal() {
       candidateForm.educationalAttainment ||
       "";
 
+    const employeeReferralSelected = isEmployeeReferralProgramSelected(
+      candidateForm.hearAboutUs,
+      formOptions?.hearAboutUs,
+    );
+
+    if (employeeReferralSelected && !cleanText(candidateForm.referredBy)) {
+      showStatusModal({
+        type: "error",
+        title: "Referrer Name Required",
+        message: "Please enter the name of the employee who referred the candidate.",
+      });
+      return;
+    }
+
+    if (employeeReferralSelected && !cleanText(candidateForm.employeeId)) {
+      showStatusModal({
+        type: "error",
+        title: "Referral SiBS ID Required",
+        message: "Please enter the SiBS ID of the employee who referred the candidate.",
+      });
+      return;
+    }
+
     const educationValidationMessage = validateEducationDetails(
       selectedEducationalAttainment,
       candidateForm.educationDetails,
@@ -2422,6 +2521,11 @@ export default function AddCandidateModal() {
     candidateForm.workExperience,
   );
 
+  const hasEmployeeReferralProgram = isEmployeeReferralProgramSelected(
+    candidateForm.hearAboutUs,
+    safeFormOptions.hearAboutUs,
+  );
+
   const hasOtherExperience =
     hasRelevantExperience && candidateForm.workExperiences?.length > 1;
 
@@ -2437,6 +2541,24 @@ export default function AddCandidateModal() {
     });
   }
 
+  function handleHearAboutUsChange(values) {
+    const employeeReferralSelected = isEmployeeReferralProgramSelected(
+      values,
+      safeFormOptions.hearAboutUs,
+    );
+
+    setCandidateForm({
+      ...candidateForm,
+      hearAboutUs: values,
+      referredBy: employeeReferralSelected
+        ? candidateForm.referredBy || ""
+        : "",
+      employeeId: employeeReferralSelected
+        ? candidateForm.employeeId || ""
+        : "",
+    });
+  }
+
   const selectedEducationalAttainment =
     candidateForm.highestEducationalAttainment ||
     candidateForm.educationalAttainment ||
@@ -2447,6 +2569,11 @@ export default function AddCandidateModal() {
   );
 
   function handleEducationalAttainmentChange(value) {
+    const autoAffiliationValues = getEducationAutoAffiliationValues(
+      value,
+      safeFormOptions.affiliationCertification,
+    );
+
     setCandidateForm({
       ...candidateForm,
       educationalAttainment: value,
@@ -2454,6 +2581,10 @@ export default function AddCandidateModal() {
       educationDetails: prepareEducationDetailsForAttainment(
         candidateForm.educationDetails,
         value,
+      ),
+      affiliations: mergeUniqueOptionValues(
+        candidateForm.affiliations,
+        autoAffiliationValues,
       ),
     });
   }
@@ -2682,7 +2813,7 @@ export default function AddCandidateModal() {
                   <MultiCheckGroup
                     options={safeFormOptions.hearAboutUs}
                     value={candidateForm.hearAboutUs}
-                    onChange={(value) => updateField("hearAboutUs", value)}
+                    onChange={handleHearAboutUsChange}
                   />
                 </div>
 
@@ -2732,25 +2863,29 @@ export default function AddCandidateModal() {
                     />
                   </div>
 
-                  <TextField
-                    label="Who referred you to us?"
-                    value={candidateForm.referredBy}
-                    onChange={(event) =>
-                      updateField("referredBy", event.target.value)
-                    }
-                    placeholder="Referrer name or N/A"
-                    required
-                  />
+                  {hasEmployeeReferralProgram && (
+                    <>
+                      <TextField
+                        label="Who referred you to us?"
+                        value={candidateForm.referredBy}
+                        onChange={(event) =>
+                          updateField("referredBy", event.target.value)
+                        }
+                        placeholder="Referrer name"
+                        required
+                      />
 
-                  <TextField
-                    label="Employee ID"
-                    value={candidateForm.employeeId}
-                    onChange={(event) =>
-                      updateField("employeeId", event.target.value)
-                    }
-                    placeholder="Referrer employee ID or N/A"
-                    required
-                  />
+                      <TextField
+                        label="Referral SiBS ID"
+                        value={candidateForm.employeeId}
+                        onChange={(event) =>
+                          updateField("employeeId", event.target.value)
+                        }
+                        placeholder="Referrer SiBS ID"
+                        required
+                      />
+                    </>
+                  )}
                 </div>
 
                 {!positionOptions.length && (
