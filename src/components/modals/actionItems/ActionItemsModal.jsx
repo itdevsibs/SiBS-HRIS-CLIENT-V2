@@ -119,14 +119,6 @@ const emptyActionForm = {
   remarks: "",
 };
 
-function inputClass(extra = "") {
-  return `h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
-}
-
-function readonlyInputClass(extra = "") {
-  return `h-12 w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-gray-600 outline-none ${extra}`;
-}
-
 function textareaClass(extra = "") {
   return `w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${extra}`;
 }
@@ -523,14 +515,39 @@ export function AddActionItemModal({
   onSubmit,
   onReset,
 }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onClose]);
+
   if (!open) return null;
 
   const selectedRole = activeHiringGaps.find(
     (role) => String(role.weeklyPlanItemId) === String(form.weeklyPlanItemId),
   );
 
-  const remainingGap =
-    Number(form.requirement || 0) - Number(form.filled || 0);
+  const requirement = Number(form.requirement || 0);
+  const filled = Number(form.filled || 0);
+  const remainingGap = Math.max(requirement - filled, 0);
+  const completionPercent =
+    requirement > 0
+      ? Math.min(100, Math.max(0, Math.round((filled / requirement) * 100)))
+      : 0;
 
   function handleRoleChange(weeklyPlanItemId) {
     const selectedGap = activeHiringGaps.find(
@@ -567,54 +584,90 @@ export function AddActionItemModal({
     setForm(emptyActionForm);
   }
 
+  function getRoleStatusClass(status) {
+    switch (status) {
+      case "On Track":
+        return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      case "At Risk":
+        return "border-amber-200 bg-amber-50 text-amber-700";
+      case "Delayed":
+        return "border-red-200 bg-red-50 text-red-700";
+      default:
+        return "border-gray-200 bg-gray-50 text-gray-600";
+    }
+  }
+
+  function getRiskClass(risk) {
+    switch (risk) {
+      case "High":
+        return "border-red-200 bg-red-50 text-red-700";
+      case "Medium":
+        return "border-amber-200 bg-amber-50 text-amber-700";
+      case "Low":
+        return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      default:
+        return "border-gray-200 bg-gray-50 text-gray-600";
+    }
+  }
+
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4 font-jakarta"
-      onClick={onClose}
+      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 p-3 font-jakarta sm:p-5"
+      onMouseDown={onClose}
+      role="presentation"
     >
-      <div
-        className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+      <form
+        onSubmit={onSubmit}
+        onMouseDown={(event) => event.stopPropagation()}
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-action-item-modal-title"
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <ClipboardList size={14} />
-              Recruitment Action
+        <header className="shrink-0 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                <ClipboardList size={14} />
+                Recruitment Action
+              </div>
+
+              <h2
+                id="add-action-item-modal-title"
+                className="mt-3 text-xl font-extrabold text-sibs-primary-1"
+              >
+                Add Action Item
+              </h2>
+
+              <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-sibs-tertiary-5">
+                Create a clear next step for an active hiring gap and assign its
+                owner, deadline, status, risk level, and expected follow-up.
+              </p>
             </div>
 
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1 sm:text-xl">
-              Add Action Item
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Create an action item linked to a hiring gap, role, owner, and
-              workforce hiring plan item.
-            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-[#F1F5F9] hover:text-gray-700 active:scale-[0.98]"
+              aria-label="Close add action item modal"
+            >
+              <X size={20} />
+            </button>
           </div>
+        </header>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-100 hover:text-gray-700 active:scale-[0.98]"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_360px]">
-            <div className="space-y-5">
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
+        <main className="min-h-0 flex-1 overflow-y-auto bg-[#F5F7FA] p-4 sibs-scrollbar sm:p-5">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+            <div className="space-y-4">
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-bold text-[#101828]">
                       Link to Hiring Gap
                     </h3>
 
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      Select the role or account that needs a linked action.
+                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                      Select the role or account that needs a tracked action.
                     </p>
                   </div>
 
@@ -623,84 +676,101 @@ export function AddActionItemModal({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <CustomSelect
-                      label="Role / Account with Hiring Gap"
-                      required
-                      value={form.weeklyPlanItemId}
-                      options={activeHiringGaps}
-                      onChange={handleRoleChange}
-                      placeholder="Select role with hiring gap"
-                      zIndex="z-50"
-                      optionValue={(role) => role.weeklyPlanItemId}
-                      optionLabel={(role) => role.roleAccount}
-                      optionDescription={(role) => {
-                        const gap = role.requirement - role.filled;
-                        return `${role.filled}/${role.requirement} filled • ${gap} remaining • ${role.roleStatus}`;
-                      }}
-                    />
+                <CustomSelect
+                  label="Role / Account with Hiring Gap"
+                  required
+                  value={form.weeklyPlanItemId}
+                  options={activeHiringGaps}
+                  onChange={handleRoleChange}
+                  placeholder="Select role with hiring gap"
+                  zIndex="z-50"
+                  optionValue={(role) => role.weeklyPlanItemId}
+                  optionLabel={(role) => role.roleAccount}
+                  optionDescription={(role) => {
+                    const gap = role.requirement - role.filled;
+
+                    return `${role.filled}/${role.requirement} filled • ${gap} remaining • ${role.roleStatus}`;
+                  }}
+                />
+
+                <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.05em] text-sibs-tertiary-5">
+                        Selected Role Summary
+                      </p>
+
+                      <p className="mt-2 truncate text-sm font-extrabold text-[#101828]">
+                        {selectedRole?.roleTitle || "No hiring gap selected"}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
+                        {selectedRole?.account ||
+                          "Choose a role to populate its hiring details."}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`inline-flex w-fit shrink-0 rounded-full border px-3 py-1 text-[10px] font-extrabold ${
+                        selectedRole
+                          ? getRoleStatusClass(selectedRole.roleStatus)
+                          : "border-gray-200 bg-white text-gray-500"
+                      }`}
+                    >
+                      {selectedRole?.roleStatus || "Not Selected"}
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Role Title
-                    </label>
+                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Requirement
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                        {selectedRole ? requirement : "—"}
+                      </p>
+                    </div>
 
-                    <input
-                      readOnly
-                      value={form.roleTitle}
-                      className={readonlyInputClass()}
-                    />
-                  </div>
+                    <div className="rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Filled
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-emerald-600">
+                        {selectedRole ? filled : "—"}
+                      </p>
+                    </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Account
-                    </label>
+                    <div className="rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Remaining
+                      </p>
+                      <p className="mt-1 text-sm font-extrabold text-red-600">
+                        {selectedRole ? remainingGap : "—"}
+                      </p>
+                    </div>
 
-                    <input
-                      readOnly
-                      value={form.account}
-                      className={readonlyInputClass()}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Approved Requirement
-                    </label>
-
-                    <input
-                      readOnly
-                      value={form.requirement || ""}
-                      className={readonlyInputClass()}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Current Filled
-                    </label>
-
-                    <input
-                      readOnly
-                      value={form.filled || ""}
-                      className={readonlyInputClass()}
-                    />
+                    <div className="rounded-lg border border-[#E6ECF2] bg-white px-3 py-2.5">
+                      <p className="text-[9px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
+                        Suggested Gap
+                      </p>
+                      <p className="mt-1 truncate text-sm font-extrabold text-sibs-primary-1">
+                        {selectedRole?.suggestedGap || "—"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-bold text-[#101828]">
                       Action Details
                     </h3>
 
-                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                      Add the owner, deadline, status, risk, and linked gap.
+                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                      Define the action, responsible owner, deadline, and
+                      reporting classification.
                     </p>
                   </div>
 
@@ -718,12 +788,12 @@ export function AddActionItemModal({
                     <textarea
                       required
                       value={form.actionItem}
-                      onChange={(e) =>
-                        setForm({ ...form, actionItem: e.target.value })
+                      onChange={(event) =>
+                        setForm({ ...form, actionItem: event.target.value })
                       }
                       rows={4}
-                      placeholder="Example: Add 50 sourced candidates for CSR role before Friday."
-                      className={textareaClass()}
+                      placeholder="Example: Add 50 sourced candidates for the CSR role before Friday."
+                      className={textareaClass("min-h-[112px]")}
                     />
                   </div>
 
@@ -763,7 +833,9 @@ export function AddActionItemModal({
                     required
                     value={form.riskLevel}
                     options={actionRiskOptions}
-                    onChange={(value) => setForm({ ...form, riskLevel: value })}
+                    onChange={(value) =>
+                      setForm({ ...form, riskLevel: value })
+                    }
                     placeholder="Select risk level"
                     zIndex="z-20"
                   />
@@ -789,153 +861,220 @@ export function AddActionItemModal({
 
                     <textarea
                       value={form.remarks}
-                      onChange={(e) =>
-                        setForm({ ...form, remarks: e.target.value })
+                      onChange={(event) =>
+                        setForm({ ...form, remarks: event.target.value })
                       }
                       rows={3}
-                      placeholder="Optional notes for weekly hiring call or report."
-                      className={textareaClass()}
+                      placeholder="Optional notes for the weekly hiring call or report."
+                      className={textareaClass("min-h-[96px]")}
                     />
                   </div>
                 </div>
-              </div>
+              </section>
             </div>
 
-            <div className="space-y-5">
-              <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1">
-                    <ClipboardList size={20} />
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-sibs-primary-1">
-                      How this connects to TA-HRIS
+            <aside className="space-y-4 xl:sticky xl:top-0">
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Selected Hiring Gap
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-                      Action Items are created when a role is not fully hired.
-                      They connect the workforce hiring plan to execution and make
-                      sure every gap has an owner, deadline, and follow-up
-                      action.
+                    <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
+                      Current delivery position for the selected role.
                     </p>
                   </div>
-                </div>
-              </div>
 
-              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-bold text-[#101828]">
-                    Selected Hiring Gap
-                  </h3>
-
-                  <span className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                    {selectedRole ? selectedRole.roleStatus : "No Role"}
+                  <span
+                    className={`inline-flex w-fit shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${
+                      selectedRole
+                        ? getRiskClass(form.riskLevel)
+                        : "border-gray-200 bg-gray-50 text-gray-500"
+                    }`}
+                  >
+                    {selectedRole ? `${form.riskLevel} Risk` : "No Risk"}
                   </span>
                 </div>
 
-                <div>
-                  <DetailRow label="Role / Account" value={form.roleAccount} />
-                  <DetailRow label="Requirement" value={form.requirement} />
-                  <DetailRow label="Filled" value={form.filled} />
-                  <DetailRow
-                    label="Remaining Gap"
-                    value={
-                      selectedRole
-                        ? `${Math.max(remainingGap, 0)} headcount`
-                        : "—"
-                    }
+                {selectedRole ? (
+                  <>
+                    <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+                      <p className="text-sm font-extrabold leading-5 text-sibs-primary-1">
+                        {form.roleTitle}
+                      </p>
+
+                      <p className="mt-1 text-xs font-semibold text-sibs-primary-1/75">
+                        {form.account}
+                      </p>
+
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+                            Filled Progress
+                          </p>
+
+                          <p className="text-xs font-extrabold text-sibs-primary-1">
+                            {completionPercent}%
+                          </p>
+                        </div>
+
+                        <div className="h-2 overflow-hidden rounded-full bg-white">
+                          <div
+                            className="h-full rounded-full bg-sibs-primary-1 transition-[width] duration-500"
+                            style={{ width: `${completionPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <DetailRow label="Role / Account" value={form.roleAccount} />
+                      <DetailRow label="Requirement" value={requirement} />
+                      <DetailRow label="Filled" value={filled} />
+                      <DetailRow
+                        label="Remaining Gap"
+                        value={`${remainingGap} headcount`}
+                      />
+                      <DetailRow label="Linked Gap" value={form.linkedGap} />
+                      <DetailRow label="Risk Level" value={form.riskLevel} />
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-xl border border-dashed border-[#D7E0E9] bg-[#F8FAFC] px-4 py-8 text-center">
+                    <BriefcaseBusiness
+                      size={24}
+                      className="mx-auto text-sibs-tertiary-8"
+                    />
+
+                    <p className="mt-3 text-sm font-bold text-[#344054]">
+                      No hiring gap selected
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                      Select a role on the left to display its requirement,
+                      filled headcount, and remaining gap.
+                    </p>
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F2F6FA] text-sibs-primary-1">
+                    <CheckCircle2 size={19} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-[#101828]">
+                      Action Guidelines
+                    </h3>
+
+                    <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                      Make every action easy to own, monitor, and include in the
+                      weekly report.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {[
+                    "Use a specific and measurable next step.",
+                    "Assign one accountable owner.",
+                    "Set a realistic deadline before the report cut-off.",
+                    "Link the action to the correct recruitment gap.",
+                  ].map((guideline) => (
+                    <div
+                      key={guideline}
+                      className="flex items-start gap-2.5 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5"
+                    >
+                      <CheckCircle2
+                        size={15}
+                        className="mt-0.5 shrink-0 text-emerald-600"
+                      />
+
+                      <p className="text-[11px] font-semibold leading-5 text-[#344054]">
+                        {guideline}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-100 bg-amber-50 px-3.5 py-3">
+                  <AlertTriangle
+                    size={16}
+                    className="mt-0.5 shrink-0 text-amber-600"
                   />
-                  <DetailRow label="Suggested Gap" value={form.linkedGap} />
-                  <DetailRow label="Risk Level" value={form.riskLevel} />
-                </div>
-              </div>
 
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-5">
+                  <p className="text-[11px] font-semibold leading-5 text-amber-800">
+                    Every role where Current Filled is lower than Approved
+                    Requirement should have at least one Planned or Ongoing
+                    action before the weekly report is generated.
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-red-100 bg-red-50 p-4 sm:p-5">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-emerald-600">
-                    <CheckCircle2 size={20} />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-red-600">
+                    <AlertTriangle size={19} />
                   </div>
 
-                  <div>
-                    <h3 className="text-sm font-bold text-emerald-700">
-                      Action Rule
-                    </h3>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-bold text-red-700">
+                        Backend Later
+                      </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-emerald-700/90">
-                      Make sure each open hiring gap has a clear owner,
-                      deadline, and next step before it is included in the
-                      weekly hiring report.
+                      <span className="rounded-full border border-red-200 bg-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-red-600">
+                        Temporary
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-xs font-semibold leading-5 text-red-700/90">
+                      This form should later call POST
+                      /api/recruitment/action-items and save
+                      weekly_plan_item_id, hiring_need_id, linked_gap, owner,
+                      deadline, status, and risk level.
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-amber-100 bg-amber-50 p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-amber-600">
-                    <AlertTriangle size={20} />
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-amber-700">
-                      Required Rule
-                    </h3>
-
-                    <p className="mt-2 text-sm leading-6 text-amber-700/90">
-                      Every role where Current Filled is lower than Approved
-                      Requirement should have at least one Planned or Ongoing
-                      action item before the weekly report is generated.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-red-100 bg-red-50 p-5">
-                <h3 className="text-sm font-bold text-red-700">
-                  Backend Later
-                </h3>
-
-                <p className="mt-2 text-sm leading-6 text-red-700/90">
-                  This form should later call POST /api/recruitment/action-items
-                  and save weekly_plan_item_id, hiring_need_id, linked_gap,
-                  owner, deadline, status, and risk level.
-                </p>
-              </div>
-            </div>
+              </section>
+            </aside>
           </div>
-        </form>
+        </main>
 
-        <div className="border-t border-[#E6ECF2] px-5 py-4 sm:px-6">
-          <div className="flex flex-col justify-end gap-2 sm:flex-row">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={handleResetClick}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98]"
             >
               <RotateCcw size={17} />
               Reset
             </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-gray-50 hover:shadow-sm active:scale-[0.98]"
-            >
-              Cancel
-            </button>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-[#F8FAFC] hover:text-sibs-primary-1 active:scale-[0.98]"
+              >
+                Cancel
+              </button>
 
-            <button
-              type="button"
-              onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={17} />
-              Save Action Item
-            </button>
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
+              >
+                <Plus size={17} />
+                Save Action Item
+              </button>
+            </div>
           </div>
-        </div>
-      </div>
+        </footer>
+      </form>
     </div>
   );
 }
