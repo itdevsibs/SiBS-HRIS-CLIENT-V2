@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
@@ -220,7 +215,10 @@ function normalizeAssignedAccounts(user, assignedAccounts = []) {
     return assignedAccounts;
   }
 
-  if (Array.isArray(user?.assignedAccounts) && user.assignedAccounts.length > 0) {
+  if (
+    Array.isArray(user?.assignedAccounts) &&
+    user.assignedAccounts.length > 0
+  ) {
     return user.assignedAccounts;
   }
 
@@ -456,6 +454,12 @@ export default function WeeklyVersionTable(props = {}) {
 
     user = null,
     assignedAccounts = [],
+
+    forecastWeekMode = false,
+    forecastWeeklyVersions = [],
+    selectedForecastWeek = null,
+    selectedForecastWeekId = "",
+    setSelectedForecastWeekId,
   } = {
     ...(weeklyPlan.weeklyVersion || {}),
     ...props,
@@ -463,6 +467,24 @@ export default function WeeklyVersionTable(props = {}) {
   const weekButtonRef = useRef(null);
   const clusterButtonRef = useRef(null);
   const accountInputRef = useRef(null);
+
+  const isForecastWeeklyVersionLoading = Boolean(
+    forecastWeekMode && weeklyPlan.weeklyVersion?.forecastLoading,
+  );
+
+  const displayWeeklyVersions = forecastWeekMode
+    ? Array.isArray(forecastWeeklyVersions)
+      ? forecastWeeklyVersions
+      : []
+    : filteredWeeklyVersions;
+
+  const displayActiveWeek = forecastWeekMode
+    ? selectedForecastWeek || null
+    : activeWeek;
+
+  const displayActiveWeekId = forecastWeekMode
+    ? selectedForecastWeekId || ""
+    : activeWeekId;
 
   const canViewAllAccounts = canViewAllWeeklyAccounts(user);
   const isRestrictedManager = !canViewAllAccounts;
@@ -554,6 +576,13 @@ export default function WeeklyVersionTable(props = {}) {
   }
 
   function handleWeeklyVersionChange(week) {
+    if (forecastWeekMode) {
+      setSelectedForecastWeekId?.(week.id);
+      setWeekSearch?.("");
+      setShowWeekDropdown?.(false);
+      return;
+    }
+
     setActiveWeekId?.(week.id);
     setSelectedClusters?.(["All"]);
     setSelectedAccounts?.(["All"]);
@@ -608,14 +637,18 @@ export default function WeeklyVersionTable(props = {}) {
                 setWeekSearch?.("");
                 closeOtherDropdowns("week");
               }}
-              disabled={weeksLoading}
+              disabled={weeksLoading || isForecastWeeklyVersionLoading}
               className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
             >
               <span className="min-w-0 truncate">
-                {weeksLoading
-                  ? "Loading weekly versions..."
-                  : formatWeeklyVersionDisplay(activeWeek) ||
-                    "Select weekly version"}
+                {isForecastWeeklyVersionLoading
+                  ? "Loading forecast weeks..."
+                  : weeksLoading
+                    ? "Loading weekly versions..."
+                    : formatWeeklyVersionDisplay(displayActiveWeek) ||
+                      (forecastWeekMode
+                        ? "No forecast weeks available"
+                        : "Select weekly version")}
               </span>
 
               <ChevronDown
@@ -627,14 +660,18 @@ export default function WeeklyVersionTable(props = {}) {
             </button>
 
             <DropdownPortal
-              open={showWeekDropdown && !weeksLoading}
+              open={
+                showWeekDropdown &&
+                !weeksLoading &&
+                !isForecastWeeklyVersionLoading
+              }
               anchorRef={weekButtonRef}
               maxHeight={288}
               onClose={() => setShowWeekDropdown?.(false)}
             >
-              {filteredWeeklyVersions.length > 0 ? (
-                filteredWeeklyVersions.map((week) => {
-                  const isSelected = week.id === activeWeekId;
+              {displayWeeklyVersions.length > 0 ? (
+                displayWeeklyVersions.map((week) => {
+                  const isSelected = week.id === displayActiveWeekId;
 
                   return (
                     <button

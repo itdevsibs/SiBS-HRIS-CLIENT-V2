@@ -309,11 +309,64 @@ export async function getWorkforceHiringPlanSixWeekTable({
   }
 }
 
+export async function getWorkforceHiringPlanForecast({
+  cluster = "All",
+  account = "All",
+  weekStart = "",
+  weekEnd = "",
+  startDate = "",
+  endDate = "",
+  basisWeeks = 6,
+  forecastWeeks = 6,
+} = {}) {
+  try {
+    const response = await api.get(
+      "/api/weekly-hiring-plan/accounts/forecast",
+      {
+        params: {
+          cluster,
+          account,
+          weekStart,
+          weekEnd,
+          startDate,
+          endDate,
+          basisWeeks,
+          forecastWeeks,
+        },
+        withCredentials: true,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      "Axios getWorkforceHiringPlanForecast API error:",
+      error?.response?.status,
+      error?.response?.data || error?.message,
+    );
+
+    return {
+      success: false,
+      data: [],
+      summary: {},
+      totals: {},
+      weeks: [],
+      labels: [],
+      message:
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to fetch workforce hiring forecast.",
+    };
+  }
+}
+
 export default {
   getWorkforceHiringPlanWeeks,
   getWorkforceHiringPlanFilterOptions,
   getWorkforceHiringPlanAccounts,
   getWorkforceHiringPlanSixWeekTable,
+  getWorkforceHiringPlanForecast,
 
   getWorkforceHiringPlanTrends,
   getWorkforceHiringPlanAccountTrends,

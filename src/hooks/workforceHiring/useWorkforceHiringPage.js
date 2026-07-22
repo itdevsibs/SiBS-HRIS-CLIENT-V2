@@ -3,6 +3,7 @@ import {
   getWorkforceHiringPlanAccounts,
   getWorkforceHiringPlanAccountTrends,
   getWorkforceHiringPlanSixWeekTable,
+  getWorkforceHiringPlanForecast,
   getWorkforceHiringPlanWeeks,
   lockWorkforceHiringPlanSnapshot,
   openWorkforceHiringPlanFile,
@@ -48,6 +49,56 @@ import {
   isApprovedRecruitmentSettingsRequest,
   isHrEditorByUser,
 } from "../../lib/utils/workforceHiringPlan/workforceHiringPlanHelpers";
+
+function formatForecastWeekDate(value, includeYear = false) {
+  if (!value) return "";
+
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(includeYear ? { year: "numeric" } : {}),
+  });
+}
+
+function formatForecastWeekRange(startDate, endDate) {
+  const startLabel = formatForecastWeekDate(startDate, false);
+  const endLabel = formatForecastWeekDate(endDate, true);
+
+  if (!startLabel || !endLabel) return "";
+
+  return `${startLabel} - ${endLabel}`;
+}
+
+function isAllWorkforceFilterValue(value) {
+  const cleanValue = String(value || "").trim();
+
+  return (
+    !cleanValue ||
+    cleanValue === "All" ||
+    cleanValue === "All Clusters" ||
+    cleanValue === "All Accounts"
+  );
+}
+
+function normalizeWorkforceFilterRequestValue(values, fallback = "All") {
+  const cleanValues = (Array.isArray(values) ? values : [values])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+
+  const realValues = cleanValues.filter(
+    (value) => !isAllWorkforceFilterValue(value),
+  );
+
+  if (realValues.length > 0) {
+    return realValues.join(",");
+  }
+
+  return fallback;
+}
 
 export default function useWorkforceHiringPage() {
   const { user } = useUser();
@@ -143,9 +194,20 @@ export default function useWorkforceHiringPage() {
   const [sixWeekTableLoading, setSixWeekTableLoading] = useState(false);
   const [sixWeekTableError, setSixWeekTableError] = useState("");
 
+  const [forecastRows, setForecastRows] = useState([]);
+  const [forecastWeeks, setForecastWeeks] = useState([]);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  const [forecastError, setForecastError] = useState("");
+  const [selectedForecastWeekId, setSelectedForecastWeekId] = useState("");
+
   const activeWeek =
     weeklyVersions.find((week) => week.id === activeWeekId) ||
     weeklyVersions[0];
+
+  const selectedForecastWeek =
+    forecastWeeks.find((week) => week.id === selectedForecastWeekId) ||
+    forecastWeeks[0] ||
+    null;
 
   const activeWeekKey = buildWeekKey(activeWeek);
 
@@ -193,6 +255,16 @@ export default function useWorkforceHiringPage() {
     });
   }, [weeklyVersions, weekSearch]);
 
+  const selectedClusterRequestValue = useMemo(
+    () => normalizeWorkforceFilterRequestValue(selectedClusters, "All"),
+    [selectedClusters],
+  );
+
+  const selectedAccountRequestValue = useMemo(
+    () => normalizeWorkforceFilterRequestValue(selectedAccounts, "All"),
+    [selectedAccounts],
+  );
+
   const fetchSixWeekTrends = useCallback(async () => {
     const weekStart = getSelectedWeekStart(activeWeek);
     const weekEnd = getSelectedWeekEnd(activeWeek);
@@ -202,16 +274,13 @@ export default function useWorkforceHiringPage() {
       return;
     }
 
-    const selectedCluster = getSingleSelectedValue(selectedClusters, "All");
-    const selectedAccount = getSingleSelectedValue(selectedAccounts, "All");
-
     try {
       setTrendsLoading(true);
       setTrendsError("");
 
       const result = await getWorkforceHiringPlanAccountTrends({
-        cluster: selectedCluster,
-        account: selectedAccount,
+        cluster: selectedClusterRequestValue,
+        account: selectedAccountRequestValue,
         weekStart,
         weekEnd,
         startDate: weekStart,
@@ -226,7 +295,7 @@ export default function useWorkforceHiringPage() {
     } finally {
       setTrendsLoading(false);
     }
-  }, [activeWeek, selectedClusters, selectedAccounts]);
+  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
 
   useEffect(() => {
     fetchSixWeekTrends();
@@ -248,15 +317,8 @@ export default function useWorkforceHiringPage() {
       const weekStart = selectedWeek.weekStart || selectedWeek.startDate;
       const weekEnd = selectedWeek.weekEnd || selectedWeek.endDate;
 
-      const selectedCluster =
-        Array.isArray(selectedClusters) && selectedClusters.length === 1
-          ? selectedClusters[0]
-          : "All";
-
-      const selectedAccount =
-        Array.isArray(selectedAccounts) && selectedAccounts.length === 1
-          ? selectedAccounts[0]
-          : "All";
+      const selectedCluster = selectedClusterRequestValue;
+      const selectedAccount = selectedAccountRequestValue;
 
       setSixWeekTableLoading(true);
       setSixWeekTableError("");
@@ -307,7 +369,141 @@ export default function useWorkforceHiringPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeWeek, selectedClusters, selectedAccounts]);
+  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchForecastData() {
+      const selectedWeek = activeWeek;
+
+      if (!selectedWeek?.weekStart && !selectedWeek?.startDate) {
+        setForecastRows([]);
+        setForecastWeeks([]);
+        setForecastError("");
+        setSelectedForecastWeekId("");
+        return;
+      }
+
+      const weekStart = selectedWeek.weekStart || selectedWeek.startDate;
+      const weekEnd = selectedWeek.weekEnd || selectedWeek.endDate;
+
+      const selectedCluster = selectedClusterRequestValue;
+      const selectedAccount = selectedAccountRequestValue;
+
+      setForecastLoading(true);
+      setForecastError("");
+
+      try {
+        const result = await getWorkforceHiringPlanForecast({
+          cluster: selectedCluster || "All",
+          account: selectedAccount || "All",
+          weekStart,
+          weekEnd,
+          startDate: weekStart,
+          endDate: weekEnd,
+          basisWeeks: 6,
+          forecastWeeks: 6,
+          gapWeeks: 4,
+        });
+
+        if (cancelled) return;
+
+        if (!result?.success) {
+          setForecastRows([]);
+          setForecastWeeks([]);
+          setForecastError(result?.message || "Failed to load forecast data.");
+          setSelectedForecastWeekId("");
+          return;
+        }
+
+        const rows = Array.isArray(result.data) ? result.data : [];
+
+        const weeksFromResponse = Array.isArray(result.forecastWeeksData)
+          ? result.forecastWeeksData
+          : Array.isArray(result.forecast_weeks_data)
+            ? result.forecast_weeks_data
+            : rows;
+
+        const nextForecastWeeks = weeksFromResponse.map((week, index) => {
+          const row = rows[index] || {};
+          const weekStartValue =
+            week.weekStart ||
+            week.week_start ||
+            row.weekStart ||
+            row.week_start ||
+            "";
+          const weekEndValue =
+            week.weekEnd || week.week_end || row.weekEnd || row.week_end || "";
+          const weekNumber =
+            week.weekNumber ||
+            week.week_number ||
+            row.weekNumber ||
+            row.week_number ||
+            index + 1;
+          const year =
+            week.year ||
+            row.year ||
+            (weekStartValue
+              ? new Date(`${weekStartValue}T00:00:00`).getFullYear()
+              : "");
+
+          return {
+            id: `FORECAST-WEEK-${weekNumber}-${weekStartValue || index}`,
+            originalId: `FORECAST-WEEK-${weekNumber}-${weekStartValue || index}`,
+            year,
+            weekNumber,
+            label: `${year} Week ${weekNumber}`,
+            weekRange:
+              weekStartValue && weekEndValue
+                ? formatForecastWeekRange(weekStartValue, weekEndValue)
+                : week.label || row.label || `Forecast Week ${index + 1}`,
+            startDate: weekStartValue,
+            endDate: weekEndValue,
+            weekStart: weekStartValue,
+            weekEnd: weekEndValue,
+            week_start: weekStartValue,
+            week_end: weekEndValue,
+            type: "forecast",
+            forecast: true,
+            isForecast: true,
+            sourceRow: row,
+          };
+        });
+
+        setForecastRows(rows);
+        setForecastWeeks(nextForecastWeeks);
+        setForecastError("");
+
+        setSelectedForecastWeekId((currentId) => {
+          const stillExists = nextForecastWeeks.some(
+            (week) => week.id === currentId,
+          );
+
+          return stillExists ? currentId : nextForecastWeeks[0]?.id || "";
+        });
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error("Fetch forecast data error:", error);
+
+        setForecastRows([]);
+        setForecastWeeks([]);
+        setForecastError(error?.message || "Failed to load forecast data.");
+        setSelectedForecastWeekId("");
+      } finally {
+        if (!cancelled) {
+          setForecastLoading(false);
+        }
+      }
+    }
+
+    fetchForecastData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWeek, selectedAccountRequestValue, selectedClusterRequestValue]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -2484,6 +2680,15 @@ export default function useWorkforceHiringPage() {
       activeWeek,
       activeWeekId,
       setActiveWeekId,
+
+      selectedForecastWeek,
+      selectedForecastWeekId,
+      setSelectedForecastWeekId,
+      forecastWeeklyVersions: forecastWeeks,
+      forecastRows,
+      forecastLoading,
+      forecastError,
+
       weeksLoading,
       weekSearch,
       setWeekSearch,
@@ -2539,9 +2744,23 @@ export default function useWorkforceHiringPage() {
       actionItemSubmitting,
     },
     tables: {
+      activeWeek,
+      activeWeekId,
+      selectedClusters,
+      selectedAccounts,
+      selectedClusterRequestValue,
+      selectedAccountRequestValue,
+      selectedForecastWeek,
+      selectedForecastWeekId,
+
       filteredPlans,
       displayData,
       hiringPlanAdjustedData,
+
+      forecastRows,
+      forecastWeeks,
+      forecastLoading,
+      forecastError,
 
       trendData,
       trendsLoading,

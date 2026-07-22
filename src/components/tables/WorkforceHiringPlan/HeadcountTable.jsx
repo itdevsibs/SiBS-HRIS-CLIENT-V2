@@ -1,16 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo } from "react";
 import {
-  CalendarDays,
+  CalendarX2,
+  CheckCircle2,
   Gauge,
-  Filter,
   TrendingUp,
   UserPlus,
   UserRoundX,
-  UsersRound,
+  Users,
 } from "lucide-react";
-
-const EDGE = "rounded-[10px]";
-const CARD_BORDER = "border border-[#E8EEF5]";
+import KpiCard from "../../recruitment/workforceHiringOverview/shared/KpiCard";
 
 function toNumber(value) {
   if (value === null || value === undefined || value === "") return 0;
@@ -202,77 +200,6 @@ function normalizeRate(value) {
   return cleanValue;
 }
 
-function formatNumber(value, maximumFractionDigits = 0) {
-  return toNumber(value).toLocaleString("en-PH", {
-    maximumFractionDigits,
-  });
-}
-
-function formatAnimatedValue(value, decimals = 0, suffix = "") {
-  return `${toNumber(value).toLocaleString("en-PH", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  })}${suffix}`;
-}
-
-function AnimatedNumber({
-  value,
-  decimals = 0,
-  suffix = "",
-  duration = 650,
-  className = "",
-}) {
-  const [displayValue, setDisplayValue] = useState(toNumber(value));
-  const displayValueRef = useRef(displayValue);
-
-  useEffect(() => {
-    const target = toNumber(value);
-    const start = toNumber(displayValueRef.current);
-    const difference = target - start;
-
-    if (difference === 0) return undefined;
-
-    let frameId = 0;
-    const startTime = performance.now();
-
-    function animateNumber(currentTime) {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easedProgress = 1 - Math.pow(1 - progress, 3);
-      const nextValue = start + difference * easedProgress;
-
-      displayValueRef.current = nextValue;
-      setDisplayValue(nextValue);
-
-      if (progress < 1) {
-        frameId = requestAnimationFrame(animateNumber);
-      } else {
-        displayValueRef.current = target;
-        setDisplayValue(target);
-      }
-    }
-
-    frameId = requestAnimationFrame(animateNumber);
-
-    return () => cancelAnimationFrame(frameId);
-  }, [value, duration]);
-
-  return (
-    <span className={`inline-block tabular-nums ${className}`}>
-      {formatAnimatedValue(displayValue, decimals, suffix)}
-    </span>
-  );
-}
-
-function getSignedClass(value = 0) {
-  const cleanValue = toNumber(value);
-
-  if (cleanValue < 0) return "text-red-600";
-  if (cleanValue > 0) return "text-emerald-600";
-
-  return "text-slate-700";
-}
-
 function getTotals(filteredPlans = []) {
   const rows = (filteredPlans || []).filter((item) => !item.isAssignedEmptyRow);
 
@@ -406,184 +333,104 @@ function getTotals(filteredPlans = []) {
   };
 }
 
-function KpiCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-blue-50 text-sibs-primary-1",
-}) {
-  return (
-    <div
-      className={`${EDGE} ${CARD_BORDER} whp-kpi-card min-h-[132px] bg-white px-5 py-4 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 hover:shadow-md`}
-    >
-      <div className="flex h-full flex-col items-center justify-center text-center">
-        <p className="min-h-[36px] text-[13px] font-extrabold leading-[18px] text-[#101828]">
-          {title}
-        </p>
+function formatKpiNumber(value, decimals = 0) {
+  const numberValue = toNumber(value);
 
-        <div
-          className={`mt-2 flex h-10 w-10 items-center justify-center rounded-full ${iconClassName}`}
-        >
-          {React.createElement(icon, { size: 28, strokeWidth: 2.4 })}
-        </div>
+  return numberValue.toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
 
-        <div
-          className={`whp-kpi-value mt-2 text-3xl font-extrabold leading-none ${valueClassName}`}
-        >
-          {value}
-        </div>
-
-        {subtitle && (
-          <p className="mt-1 text-[11px] font-bold leading-4 text-[#344054]">
-            {subtitle}
-          </p>
-        )}
-      </div>
-    </div>
-  );
+function formatKpiPercent(value, decimals = 2) {
+  return `${formatKpiNumber(value, decimals)}%`;
 }
 
 export default function HeadcountTable({ filteredPlans = [] }) {
   const totals = useMemo(() => getTotals(filteredPlans), [filteredPlans]);
 
   return (
-    <div className="bg-transparent">
-      <style>
-        {`
-          @keyframes whpKpiFadeUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
+    <section className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-4">
+        <h2 className="text-base font-bold uppercase tracking-tight text-slate-900">
+          Workforce Plan Overview (Aggregated)
+        </h2>
+        <p className="mt-1 text-sm font-medium text-sibs-primary-70">
+          Aggregated workforce hiring plan metrics based on the selected week,
+          cluster, and account filters.
+        </p>
+      </div>
 
-          @keyframes whpKpiPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.035); }
-          }
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-9">
+        <KpiCard
+          title="Required Headcount"
+          value={formatKpiNumber(totals.requiredHeadcount)}
+          icon={Users}
+          tone="blue"
+        />
 
-          .whp-kpi-card { animation: whpKpiFadeUp 0.42s ease-out both; }
-          .whp-kpi-card:hover .whp-kpi-value { animation: whpKpiPulse 0.45s ease-out both; }
-          .whp-kpi-card:nth-child(1) { animation-delay: 0ms; }
-          .whp-kpi-card:nth-child(2) { animation-delay: 45ms; }
-          .whp-kpi-card:nth-child(3) { animation-delay: 90ms; }
-          .whp-kpi-card:nth-child(4) { animation-delay: 135ms; }
-          .whp-kpi-card:nth-child(5) { animation-delay: 180ms; }
-          .whp-kpi-card:nth-child(6) { animation-delay: 225ms; }
-          .whp-kpi-card:nth-child(7) { animation-delay: 270ms; }
-          .whp-kpi-card:nth-child(8) { animation-delay: 315ms; }
-          .whp-kpi-card:nth-child(9) { animation-delay: 360ms; }
-        `}
-      </style>
+        <KpiCard
+          title="Actual Headcount"
+          value={formatKpiNumber(totals.actualHeadcount)}
+          icon={Users}
+          tone="blue"
+        />
 
-      <section
-        className={`${EDGE} border border-[#E1E7EF] bg-white p-5 shadow-sm`}
-      >
-        <div className="mb-4 flex flex-col gap-1">
-          <h2 className="text-base font-extrabold uppercase tracking-wide text-[#101828]">
-            Workforce Plan Overview (Aggregated)
-          </h2>
-          <p className="text-sm font-semibold text-[#255C95]">
-            Aggregated workforce hiring plan metrics based on the selected week,
-            cluster, and account filters.
-          </p>
-        </div>
+        <KpiCard
+          title="Buffer Percentage"
+          value={formatKpiPercent(totals.bufferPercentage, 2)}
+          icon={Gauge}
+          subtitle="vs Required HC"
+          tone="green2"
+        />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-9">
-          <KpiCard
-            title="Required Headcount"
-            value={<AnimatedNumber value={totals.requiredHeadcount} />}
-            icon={UsersRound}
-            valueClassName="text-sibs-primary-1"
-            iconClassName="bg-blue-50 text-sibs-primary-1"
-          />
+        <KpiCard
+          title="Absenteeism"
+          value={formatKpiNumber(Math.round(totals.absenteeismTotal))}
+          sideValue={formatKpiPercent(totals.absenteeismPercentage, 2)}
+          icon={CalendarX2}
+          subtitle="Absenteeism %"
+          tone="orange"
+        />
 
-          <KpiCard
-            title="Actual Headcount"
-            value={<AnimatedNumber value={totals.actualHeadcount} />}
-            icon={UsersRound}
-            valueClassName="text-sibs-primary-1"
-            iconClassName="bg-blue-50 text-sibs-primary-1"
-          />
+        <KpiCard
+          title="Attrition"
+          value={formatKpiNumber(totals.attritionTotal)}
+          sideValue={formatKpiPercent(totals.attritionPercentage, 2)}
+          icon={UserRoundX}
+          subtitle="Attrition %"
+          tone="red"
+        />
 
-          <KpiCard
-            title="Buffer Percentage"
-            value={
-              <AnimatedNumber
-                value={totals.bufferPercentage}
-                decimals={2}
-                suffix="%"
-                className={getSignedClass(totals.bufferPercentage)}
-              />
-            }
-            subtitle="vs Required HC"
-            icon={Gauge}
-            valueClassName={getSignedClass(totals.bufferPercentage)}
-            iconClassName={
-              getSignedClass(totals.bufferPercentage) + " text-sibs-primary-1"
-            }
-          />
+        <KpiCard
+          title="Net Actual HC"
+          value={formatKpiNumber(Math.round(totals.netActualHeadcount))}
+          icon={Users}
+          tone="blue"
+        />
 
-          <KpiCard
-            title="Absenteeism"
-            value={
-              <AnimatedNumber value={totals.absenteeismTotal} decimals={2} />
-            }
-            subtitle={`${formatNumber(totals.absenteeismPercentage, 2)}% Absenteeism %`}
-            icon={CalendarDays}
-            valueClassName="text-orange-500"
-            iconClassName="bg-orange-50 text-orange-500"
-          />
+        <KpiCard
+          title="Hiring Needed"
+          value={formatKpiNumber(Math.round(totals.hiringNeeded))}
+          icon={UserPlus}
+          tone="purple"
+        />
 
-          <KpiCard
-            title="Attrition (6 weeks)"
-            value={<AnimatedNumber value={totals.attritionTotal} />}
-            subtitle={`${formatNumber(totals.attritionPercentage, 2)}% Attrition %`}
-            icon={UserRoundX}
-            valueClassName="text-red-600"
-            iconClassName="bg-red-50 text-red-600"
-          />
+        <KpiCard
+          title="Hiring Rate"
+          value={formatKpiPercent(totals.hiringRate * 100, 1)}
+          icon={TrendingUp}
+          subtitle="Leads to JO"
+          tone="teal"
+        />
 
-          <KpiCard
-            title="Net Actual HC"
-            value={<AnimatedNumber value={totals.netActualHeadcount} />}
-            icon={UsersRound}
-            valueClassName="text-sibs-primary-1"
-            iconClassName="bg-blue-50 text-sibs-primary-1"
-          />
-
-          <KpiCard
-            title="Hiring Needed"
-            value={<AnimatedNumber value={totals.hiringNeeded} />}
-            icon={UserPlus}
-            valueClassName="text-emerald-600"
-            iconClassName="bg-emerald-50 text-emerald-600"
-          />
-
-          <KpiCard
-            title="Hiring Rate (Leads to JO)"
-            value={
-              <AnimatedNumber
-                value={totals.hiringRate * 100}
-                decimals={1}
-                suffix="%"
-              />
-            }
-            icon={TrendingUp}
-            valueClassName="text-cyan-600"
-            iconClassName="bg-cyan-50 text-cyan-600"
-          />
-
-          <KpiCard
-            title="Leads to Interview"
-            value={<AnimatedNumber value={totals.leadsToInterviewToGenerate} />}
-            subtitle="To Generate"
-            icon={Filter}
-            valueClassName="text-violet-700"
-            iconClassName="bg-violet-50 text-violet-700"
-          />
-        </div>
-      </section>
-    </div>
+        <KpiCard
+          title="Hired Count"
+          value={formatKpiNumber(totals.hiredCount)}
+          icon={CheckCircle2}
+          tone="green"
+        />
+      </div>
+    </section>
   );
 }

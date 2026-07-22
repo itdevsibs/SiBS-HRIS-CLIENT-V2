@@ -2,6 +2,7 @@ import React from "react";
 import { ClipboardList, Sparkles } from "lucide-react";
 import WeeklyVersionTable from "../../tables/WorkforceHiringPlan/WeeklyVersionTable";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
+import ForecastWeeklyVersionTable from "../../tables/WorkforceHiringPlan/ForecastWeeklyVersionTable";
 
 export default function WorkforceHiringPlanHeader() {
   const { pageHeader } = useWorkforceHiring();
@@ -39,7 +40,7 @@ export default function WorkforceHiringPlanHeader() {
               : "Ask AI"}
         </button>
 
-        <WeeklyVersionTable />
+        <ForecastWeeklyVersionTable />
       </div>
     </div>
   );
