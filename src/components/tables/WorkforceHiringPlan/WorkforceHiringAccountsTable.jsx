@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
+import { getWorkforceHiringPlanForecast } from "../../../lib/axios/getWorkforceHiringPlan";
+import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
 
 const PAGE_LIMIT = 15;
 
@@ -136,10 +138,10 @@ function formatSignedPercentWhole(value, decimals = 2) {
 function getSignedNumberClass(value = 0) {
   const numberValue = Number(value || 0);
 
-  if (numberValue < 0) return "text-red-700";
-  if (numberValue > 0) return "text-emerald-700";
+  if (numberValue < 0) return "text-red-600";
+  if (numberValue > 0) return "text-emerald-600";
 
-  return "text-slate-700";
+  return "text-sibs-primary-90";
 }
 
 function getRequiredHeadcount(item = {}) {
@@ -257,36 +259,169 @@ function getLeadsToInterview(item = {}) {
   );
 }
 
-function getRowMetrics(item) {
-  const requiredHeadcount = getRequiredHeadcount(item);
-  const actualHeadcount = getActualHeadcount(item);
-  const absenteeismSixWeeks = getSixWeekSeriesTotal(item, "absenteeism");
-  const attritionSixWeeks = getSixWeekSeriesTotal(item, "attrition");
-  const netActualHeadcount = Math.max(0, actualHeadcount - attritionSixWeeks);
+function getDirectForecastNumber(item = {}, keys = []) {
+  for (const key of keys) {
+    const value = item?.[key];
+
+    if (value !== undefined && value !== null && value !== "") {
+      return toNumber(value);
+    }
+  }
+
+  return null;
+}
+
+function getRowMetrics(item = {}) {
+  /*
+    Use forecast endpoint fields first.
+
+    This table is now the account-level 6 forecast weeks average table.
+    Do not rebuild values from old/current weekly rows unless a field is missing.
+  */
+  const requiredHeadcount =
+    getDirectForecastNumber(item, [
+      "requiredHeadcount",
+      "required_headcount",
+    ]) ?? getRequiredHeadcount(item);
+
+  const actualHeadcount =
+    getDirectForecastNumber(item, ["actualHeadcount", "actual_headcount"]) ??
+    getActualHeadcount(item);
+
+  const absenteeismSixWeeks =
+    getDirectForecastNumber(item, [
+      "absenteeism",
+      "absenteeismCount",
+      "absenteeism_count",
+      "averageAbsentHeadcount",
+      "average_absent_headcount",
+    ]) ?? getSixWeekSeriesTotal(item, "absenteeism");
+
+  const attritionSixWeeks =
+    getDirectForecastNumber(item, [
+      "attrition",
+      "attritionCount",
+      "attrition_count",
+      "attritionPastCount",
+      "attrition_past_count",
+    ]) ?? getSixWeekSeriesTotal(item, "attrition");
+
+  const directNetActualHeadcount = getDirectForecastNumber(item, [
+    "netActualHc",
+    "net_actual_hc",
+    "netActualHC",
+    "netActualHeadcount",
+    "net_actual_headcount",
+  ]);
+
+  const netActualHeadcount =
+    directNetActualHeadcount !== null
+      ? directNetActualHeadcount
+      : Math.max(0, actualHeadcount - absenteeismSixWeeks - attritionSixWeeks);
+
+  const directBufferPercentage = getDirectForecastNumber(item, [
+    "bufferPercentage",
+    "buffer_percentage",
+    "bufferPercent",
+    "buffer_percent",
+    "actualBufferPercent",
+    "actual_buffer_percent",
+  ]);
+
   const bufferPercentage =
-    requiredHeadcount > 0
-      ? ((actualHeadcount - requiredHeadcount) / requiredHeadcount) * 100
-      : 0;
-  const hiringNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
-  const acceptedJobOffer = getAcceptedJobOffer(item);
-  const nhoCount = getNhoCount(item);
-  const fstCount = getFstCount(item);
-  const pstCount = getPstCount(item);
-  const goLiveCount = getGoLiveCount(item);
-  const hiredCount = getHiredCount(item);
-  const directLeadsToInterview = getLeadsToInterview(item);
-  const hiringRateFromLeads =
-    acceptedJobOffer > 0 && directLeadsToInterview > 0
-      ? acceptedJobOffer / directLeadsToInterview
-      : 0;
+    directBufferPercentage !== null
+      ? directBufferPercentage
+      : requiredHeadcount > 0
+        ? ((netActualHeadcount - requiredHeadcount) / requiredHeadcount) * 100
+        : 0;
+
+  const directHiringNeeded = getDirectForecastNumber(item, [
+    "hiringNeeded",
+    "hiring_needed",
+    "actualHeadcountNeeds",
+    "actual_headcount_needs",
+  ]);
+
+  const hiringNeeded =
+    directHiringNeeded !== null
+      ? directHiringNeeded
+      : Math.max(0, requiredHeadcount - netActualHeadcount);
+
+  const acceptedJobOffer =
+    getDirectForecastNumber(item, [
+      "acceptedJo",
+      "acceptedJO",
+      "accepted_jo",
+      "acceptedJobOffer",
+      "accepted_job_offer",
+      "interviewCount",
+      "interview_count",
+    ]) ?? getAcceptedJobOffer(item);
+
+  const nhoCount =
+    getDirectForecastNumber(item, ["nho", "nhoCount", "nho_count"]) ??
+    getNhoCount(item);
+
+  const fstCount =
+    getDirectForecastNumber(item, ["fst", "fstCount", "fst_count"]) ??
+    getFstCount(item);
+
+  const pstCount =
+    getDirectForecastNumber(item, ["pst", "pstCount", "pst_count"]) ??
+    getPstCount(item);
+
+  const goLiveCount =
+    getDirectForecastNumber(item, [
+      "goLive",
+      "go_live",
+      "goLiveCount",
+      "go_live_count",
+      "projectedToBeEndorsed",
+      "projected_to_be_endorsed",
+    ]) ?? getGoLiveCount(item);
+
+  const hiredCount =
+    getDirectForecastNumber(item, [
+      "hiredCount",
+      "hired_count",
+      "hired",
+      "actualHiredCount",
+      "actual_hired_count",
+    ]) ?? getHiredCount(item);
+
+  const directHiringRate = getDirectForecastNumber(item, [
+    "hiringRate",
+    "hiring_rate",
+    "hiringRateDecimal",
+    "hiring_rate_decimal",
+    "hiringPlanPercent",
+    "hiring_plan_percent",
+  ]);
+
   const hiringRate =
-    hiringRateFromLeads || normalizeRate(item.hiringRate ?? item.hiring_rate);
+    directHiringRate !== null
+      ? normalizeRate(directHiringRate)
+      : acceptedJobOffer > 0
+        ? fstCount / acceptedJobOffer
+        : 0;
+
+  const directLeadsToInterview = getDirectForecastNumber(item, [
+    "leadsToInterview",
+    "leads_to_interview",
+    "leadsToInterviewCount",
+    "leads_to_interview_count",
+    "targetLeads",
+    "target_leads",
+  ]);
+
   const leadsToInterviewToGenerate =
-    hiringNeeded <= 0
-      ? 0
-      : hiringRate > 0
-        ? Math.ceil(hiringNeeded / hiringRate)
-        : hiringNeeded;
+    directLeadsToInterview !== null
+      ? directLeadsToInterview
+      : hiringNeeded <= 0
+        ? 0
+        : hiringRate > 0
+          ? Math.ceil(hiringNeeded / hiringRate)
+          : hiringNeeded;
 
   return {
     requiredHeadcount,
@@ -307,849 +442,1213 @@ function getRowMetrics(item) {
   };
 }
 
-function HeaderCell({ children, className = "" }) {
-  return (
-    <th
-      className={`sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top ${className}`}
-    >
-      <div className="leading-tight">{children}</div>
-    </th>
-  );
-}
-
 function ColumnGroup() {
   return (
     <colgroup>
-      <col style={{ width: "210px" }} />
-      <col style={{ width: "240px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "130px" }} />
-      <col style={{ width: "130px" }} />
-      <col style={{ width: "130px" }} />
-      <col style={{ width: "130px" }} />
-      <col style={{ width: "130px" }} />
-      <col style={{ width: "150px" }} />
-      <col style={{ width: "180px" }} />
+      <col style={{ width: "105px" }} />
+      <col style={{ width: "165px" }} />
+      <col style={{ width: "92px" }} />
+      <col style={{ width: "92px" }} />
+      <col style={{ width: "96px" }} />
+      <col style={{ width: "92px" }} />
+      <col style={{ width: "92px" }} />
+      <col style={{ width: "88px" }} />
+      <col style={{ width: "78px" }} />
+      <col style={{ width: "78px" }} />
+      <col style={{ width: "78px" }} />
+      <col style={{ width: "78px" }} />
+      <col style={{ width: "82px" }} />
+      <col style={{ width: "112px" }} />
+      <col style={{ width: "132px" }} />
     </colgroup>
   );
 }
 
-function DesktopTableHeader() {
+function HeaderTh({
+  children,
+  rowSpan,
+  colSpan,
+  className = "",
+  group = false,
+}) {
   return (
-    <table className="w-full table-fixed border-separate border-spacing-0 bg-white text-left">
-      <ColumnGroup />
-
-      <thead>
-        <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-          <th
-            rowSpan={2}
-            className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-middle first:rounded-tl-2xl"
-          >
-            Cluster
-          </th>
-          <th
-            rowSpan={2}
-            className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-middle"
-          >
-            Account
-          </th>
-          <HeaderCell>
-            Required
-            <br />
-            Headcount
-          </HeaderCell>
-          <HeaderCell>
-            Actual
-            <br />
-            Headcount
-          </HeaderCell>
-          <HeaderCell>
-            Buffer
-            <br />
-            Percentage
-          </HeaderCell>
-          <HeaderCell>
-            Net Actual
-            <br />
-            HC
-          </HeaderCell>
-          <HeaderCell>
-            Hiring
-            <br />
-            Needed
-          </HeaderCell>
-          <th
-            colSpan={5}
-            className="sticky top-0 z-20 border-x border-[#DDE7F2] bg-[#F5F7FA] px-5 py-4 text-center align-top"
-          >
-            Pipeline Plan (Candidates)
-          </th>
-          <HeaderCell>
-            Hired
-            <br />
-            Count
-          </HeaderCell>
-          <HeaderCell>
-            Hiring Rate
-            <br />
-            (Leads to JO)
-          </HeaderCell>
-          <HeaderCell className="last:rounded-tr-2xl">
-            Leads to Interview
-            <br />
-            (To Generate)
-          </HeaderCell>
-        </tr>
-
-        <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-          <HeaderCell>
-            Required
-            <br />
-            Headcount
-          </HeaderCell>
-          <HeaderCell>
-            Actual
-            <br />
-            Headcount
-          </HeaderCell>
-          <HeaderCell>
-            Buffer
-            <br />
-            Percentage
-          </HeaderCell>
-          <HeaderCell>
-            Net Actual
-            <br />
-            HC
-          </HeaderCell>
-          <HeaderCell>
-            Hiring
-            <br />
-            Needed
-          </HeaderCell>
-          <HeaderCell>
-            Accepted
-            <br />
-            Job Offer
-          </HeaderCell>
-          <HeaderCell>
-            NHO
-            <br />
-            Count
-          </HeaderCell>
-          <HeaderCell>
-            FST
-            <br />
-            Count
-          </HeaderCell>
-          <HeaderCell>
-            PST
-            <br />
-            Count
-          </HeaderCell>
-          <HeaderCell>Go Live</HeaderCell>
-          <HeaderCell>
-            Hired
-            <br />
-            Count
-          </HeaderCell>
-          <HeaderCell>
-            Hiring Rate
-            <br />
-            (Leads to JO)
-          </HeaderCell>
-          <HeaderCell>
-            Leads to Interview
-            <br />
-            (To Generate)
-          </HeaderCell>
-        </tr>
-      </thead>
-    </table>
+    <th
+      rowSpan={rowSpan}
+      colSpan={colSpan}
+      className={[
+        "border border-slate-200 px-2 py-2 text-center align-middle text-[10px] font-extrabold uppercase leading-tight text-sibs-primary-90",
+        group ? "bg-slate-100" : "bg-slate-50",
+        className,
+      ].join(" ")}
+    >
+      {children}
+    </th>
   );
 }
 
-export default function WorkforceHiringAccountsTable({
-  accountsLoading = false,
-  filteredPlans = [],
-  onViewPlan,
+function BodyTd({ children, className = "" }) {
+  return (
+    <td
+      className={[
+        "border border-slate-200 px-2 py-1.5 text-center align-middle text-[12px] font-semibold leading-tight text-sibs-primary-90",
+        className,
+      ].join(" ")}
+    >
+      {children}
+    </td>
+  );
+}
+
+function SortHeaderButton({
+  label,
+  active = false,
+  direction = "asc",
+  onClick,
 }) {
-  const tableScrollRef = useRef(null);
-  const mobileScrollRef = useRef(null);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-no-table-drag="true"
+      className={[
+        "group inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase leading-tight transition",
+        active
+          ? "bg-[#EAF2FB] text-sibs-primary-1"
+          : "text-sibs-primary-90 hover:bg-slate-100 hover:text-sibs-primary-1",
+      ].join(" ")}
+    >
+      <span>{label}</span>
 
-  const dragStateRef = useRef({
-    isDown: false,
-    startX: 0,
-    scrollLeft: 0,
-    moved: false,
-  });
+      <span className="relative flex h-4 w-3 shrink-0 flex-col items-center justify-center">
+        <span
+          className={[
+            "h-0 w-0 border-x-[4px] border-b-[5px] border-x-transparent transition",
+            active && direction === "asc"
+              ? "border-b-sibs-primary-1"
+              : "border-b-slate-300 group-hover:border-b-sibs-primary-1/70",
+          ].join(" ")}
+        />
 
-  const [isDraggingTable, setIsDraggingTable] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+        <span
+          className={[
+            "mt-0.5 h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent transition",
+            active && direction === "desc"
+              ? "border-t-sibs-primary-1"
+              : "border-t-slate-300 group-hover:border-t-sibs-primary-1/70",
+          ].join(" ")}
+        />
+      </span>
+    </button>
+  );
+}
 
-  const computedPlans = useMemo(() => {
-    const safePlans = Array.isArray(filteredPlans) ? filteredPlans : [];
+function getSortableText(row = {}, key = "") {
+  if (key === "cluster") {
+    return String(row.cluster || row.clusterName || "").trim();
+  }
 
-    return safePlans.map((item) => ({
-      ...item,
-      planMetrics: getRowMetrics(item),
-    }));
-  }, [filteredPlans]);
+  if (key === "account") {
+    return String(row.account || row.accountName || "").trim();
+  }
 
-  const displayPlans = useMemo(() => {
-    const keyword = String(search || "")
-      .trim()
-      .toLowerCase();
+  return "";
+}
 
-    return computedPlans.filter((item) => {
-      const metrics = item.planMetrics || getRowMetrics(item);
-      const searchableText = [
-        item.id,
-        item.week,
-        item.account,
-        item.accountName,
-        item.cluster,
-        item.clusterName,
-        metrics.requiredHeadcount,
-        metrics.actualHeadcount,
-        formatSignedPercentWhole(metrics.bufferPercentage),
-        metrics.netActualHeadcount,
-        metrics.hiringNeeded,
-        metrics.acceptedJobOffer,
-        metrics.nhoCount,
-        metrics.fstCount,
-        metrics.pstCount,
-        metrics.goLiveCount,
-        metrics.hiredCount,
-        formatPercent(metrics.hiringRate),
-        metrics.leadsToInterviewToGenerate,
-      ]
-        .filter((value) => value !== undefined && value !== null)
-        .join(" ")
-        .toLowerCase();
+function getDateValue(row = {}, keys = []) {
+  for (const key of keys) {
+    const value = row?.[key];
 
-      return !keyword || searchableText.includes(keyword);
+    if (value) return String(value).slice(0, 10);
+  }
+
+  return "";
+}
+
+function getWeekStart(row = {}) {
+  return getDateValue(row, [
+    "weekStart",
+    "week_start",
+    "startDate",
+    "start_date",
+    "dateStart",
+    "date_start",
+    "weekStartDate",
+    "week_start_date",
+  ]);
+}
+
+function getWeekEnd(row = {}) {
+  return getDateValue(row, [
+    "weekEnd",
+    "week_end",
+    "endDate",
+    "end_date",
+    "dateEnd",
+    "date_end",
+    "weekEndDate",
+    "week_end_date",
+  ]);
+}
+
+function normalizeRequestFilter(value) {
+  if (Array.isArray(value)) {
+    const cleanValues = value
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+
+    if (
+      cleanValues.length === 0 ||
+      cleanValues.includes("All") ||
+      cleanValues.includes("All Clusters") ||
+      cleanValues.includes("All Accounts")
+    ) {
+      return "All";
+    }
+
+    return cleanValues.join(",");
+  }
+
+  const cleanValue = String(value || "").trim();
+
+  if (
+    !cleanValue ||
+    cleanValue === "All" ||
+    cleanValue === "All Clusters" ||
+    cleanValue === "All Accounts"
+  ) {
+    return "All";
+  }
+
+  return cleanValue;
+}
+
+function getForecastTableStateFromContext(context = {}) {
+  const tables = context?.tables || {};
+  const weeklyVersion = context?.weeklyVersion || {};
+
+  const sourceWeek =
+    tables.sourceWeek ||
+    tables.baseWeek ||
+    tables.currentWeek ||
+    tables.dashboardWeek ||
+    weeklyVersion.sourceWeek ||
+    weeklyVersion.baseWeek ||
+    weeklyVersion.currentWeek ||
+    weeklyVersion.dashboardWeek ||
+    tables.activeWeek ||
+    weeklyVersion.activeWeek ||
+    weeklyVersion.selectedWeek ||
+    {};
+
+  const selectedCluster =
+    tables.cluster ||
+    tables.selectedCluster ||
+    weeklyVersion.selectedClusters ||
+    weeklyVersion.cluster ||
+    weeklyVersion.selectedCluster ||
+    "All";
+
+  const selectedAccount =
+    tables.account ||
+    tables.selectedAccount ||
+    weeklyVersion.selectedAccounts ||
+    weeklyVersion.account ||
+    weeklyVersion.selectedAccount ||
+    "All";
+
+  return {
+    sourceWeek,
+    selectedCluster,
+    selectedAccount,
+  };
+}
+
+function getForecastAccountRowsByWeekFromResponse(response = {}) {
+  const candidates = [
+    response?.accountForecastRowsByWeek,
+    response?.account_forecast_rows_by_week,
+    response?.data?.accountForecastRowsByWeek,
+    response?.data?.account_forecast_rows_by_week,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
+
+  return [];
+}
+
+function getForecastAccountRowsFromResponse(response = {}) {
+  const candidates = [
+    response?.accountForecastRows,
+    response?.account_forecast_rows,
+    response?.data?.accountForecastRows,
+    response?.data?.account_forecast_rows,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
+
+  return [];
+}
+
+function getAccountKey(row = {}) {
+  return [
+    String(row.cluster || row.clusterName || row.cluster_name || "").trim(),
+    String(row.account || row.accountName || row.account_name || "").trim(),
+  ]
+    .join("||")
+    .toLowerCase();
+}
+
+function getAccountDisplayIdentity(row = {}) {
+  return {
+    id:
+      row.id ||
+      `${row.cluster || row.clusterName || row.cluster_name || "All"}-${
+        row.account || row.accountName || row.account_name || "Account"
+      }`,
+    cluster: row.cluster || row.clusterName || row.cluster_name || "",
+    clusterName: row.clusterName || row.cluster || row.cluster_name || "",
+    account: row.account || row.accountName || row.account_name || "",
+    accountName: row.accountName || row.account || row.account_name || "",
+  };
+}
+
+function flattenForecastAccountRows(response = {}) {
+  const groupedRows = getForecastAccountRowsByWeekFromResponse(response);
+
+  if (groupedRows.length > 0) {
+    return groupedRows.flatMap((group, groupIndex) => {
+      const rows = Array.isArray(group?.rows) ? group.rows : [];
+      const groupWeekStart = getWeekStart(group);
+      const groupWeekEnd = getWeekEnd(group);
+      const groupWeekLabel =
+        group.weekLabel ||
+        group.week_label ||
+        group.label ||
+        `Forecast Week ${groupIndex + 1}`;
+
+      return rows.map((row) => ({
+        ...row,
+        weekStart: getWeekStart(row) || groupWeekStart,
+        weekEnd: getWeekEnd(row) || groupWeekEnd,
+        weekLabel: row.weekLabel || row.week_label || groupWeekLabel,
+      }));
     });
-  }, [computedPlans, search]);
+  }
 
-  const totals = useMemo(() => {
-    const validRows = displayPlans.filter((item) => !item.isAssignedEmptyRow);
+  return getForecastAccountRowsFromResponse(response);
+}
 
-    const sum = validRows.reduce(
-      (acc, item) => {
-        const metrics = item.planMetrics || getRowMetrics(item);
+function buildSixWeekAverageForecastRows(response = {}) {
+  const rows = flattenForecastAccountRows(response);
+  const groupedRows = new Map();
 
-        acc.requiredHeadcount += metrics.requiredHeadcount;
-        acc.actualHeadcount += metrics.actualHeadcount;
-        acc.netActualHeadcount += metrics.netActualHeadcount;
-        acc.hiringNeeded += metrics.hiringNeeded;
-        acc.acceptedJobOffer += metrics.acceptedJobOffer;
-        acc.nhoCount += metrics.nhoCount;
-        acc.fstCount += metrics.fstCount;
-        acc.pstCount += metrics.pstCount;
-        acc.goLiveCount += metrics.goLiveCount;
-        acc.hiredCount += metrics.hiredCount;
-        acc.leadsToInterviewToGenerate += metrics.leadsToInterviewToGenerate;
+  rows.forEach((row) => {
+    const key = getAccountKey(row);
 
-        return acc;
-      },
-      {
+    if (!key) return;
+
+    if (!groupedRows.has(key)) {
+      groupedRows.set(key, {
+        base: getAccountDisplayIdentity(row),
+        count: 0,
+
         requiredHeadcount: 0,
         actualHeadcount: 0,
-        netActualHeadcount: 0,
-        hiringNeeded: 0,
+        absenteeismSixWeeks: 0,
+        attritionSixWeeks: 0,
+
         acceptedJobOffer: 0,
         nhoCount: 0,
         fstCount: 0,
         pstCount: 0,
         goLiveCount: 0,
         hiredCount: 0,
-        leadsToInterviewToGenerate: 0,
-      },
+      });
+    }
+
+    const entry = groupedRows.get(key);
+    const metrics = getRowMetrics(row);
+
+    entry.count += 1;
+
+    /*
+      Excel-style source averaging:
+      Average only the source/count columns across the 6 forecast weeks.
+      Derived columns are recalculated after these averages are finalized.
+    */
+    entry.requiredHeadcount += metrics.requiredHeadcount;
+    entry.actualHeadcount += metrics.actualHeadcount;
+    entry.absenteeismSixWeeks += metrics.absenteeismSixWeeks;
+    entry.attritionSixWeeks += metrics.attritionSixWeeks;
+
+    entry.acceptedJobOffer += metrics.acceptedJobOffer;
+    entry.nhoCount += metrics.nhoCount;
+    entry.fstCount += metrics.fstCount;
+    entry.pstCount += metrics.pstCount;
+    entry.goLiveCount += metrics.goLiveCount;
+    entry.hiredCount += metrics.hiredCount;
+  });
+
+  return Array.from(groupedRows.values()).map((entry, index) => {
+    const divisor = Math.max(entry.count, 1);
+
+    const requiredHeadcount = entry.requiredHeadcount / divisor;
+    const actualHeadcount = entry.actualHeadcount / divisor;
+    const absenteeismSixWeeks = entry.absenteeismSixWeeks / divisor;
+    const attritionSixWeeks = entry.attritionSixWeeks / divisor;
+
+    const acceptedJobOffer = entry.acceptedJobOffer / divisor;
+    const nhoCount = entry.nhoCount / divisor;
+    const fstCount = entry.fstCount / divisor;
+    const pstCount = entry.pstCount / divisor;
+    const goLiveCount = entry.goLiveCount / divisor;
+    const hiredCount = entry.hiredCount / divisor;
+
+    /*
+      Excel logic after the 6-week averaged values are finalized:
+      - Net Actual HC = Actual HC - Absenteeism - Attrition
+      - Buffer % = (Net Actual HC - Required HC) / Required HC
+      - Hiring Needed = Required HC - Net Actual HC
+      - Hiring Rate = FST / Accepted JO
+      - Leads to Interview = Hiring Needed / Hiring Rate
+    */
+    const netActualHeadcount = Math.max(
+      0,
+      actualHeadcount - absenteeismSixWeeks - attritionSixWeeks,
     );
 
     const bufferPercentage =
-      sum.requiredHeadcount > 0
-        ? ((sum.actualHeadcount - sum.requiredHeadcount) /
-            sum.requiredHeadcount) *
-          100
+      requiredHeadcount > 0
+        ? ((netActualHeadcount - requiredHeadcount) / requiredHeadcount) * 100
         : 0;
 
-    const hiringRate =
-      sum.leadsToInterviewToGenerate > 0
-        ? sum.hiringNeeded / sum.leadsToInterviewToGenerate
-        : 0;
+    const hiringNeeded = Math.max(0, requiredHeadcount - netActualHeadcount);
+
+    const hiringRate = acceptedJobOffer > 0 ? fstCount / acceptedJobOffer : 0;
+
+    const leadsToInterviewToGenerate =
+      hiringNeeded <= 0
+        ? 0
+        : hiringRate > 0
+          ? Math.ceil(hiringNeeded / hiringRate)
+          : hiringNeeded;
 
     return {
-      ...sum,
+      ...entry.base,
+      id: `${entry.base.id || "forecast-account"}-${index}`,
+      week: "6 forecast weeks average",
+      weekLabel: "6 forecast weeks average",
+      forecastWeeksCount: divisor,
+
+      requiredHeadcount,
+      actualHeadcount,
+      absenteeismSixWeeks,
+      attritionSixWeeks,
+
       bufferPercentage,
+      netActualHc: netActualHeadcount,
+      netActualHeadcount,
+      hiringNeeded,
+
+      acceptedJobOffer,
+      acceptedJo: acceptedJobOffer,
+      nhoCount,
+      nho: nhoCount,
+      fstCount,
+      fst: fstCount,
+      pstCount,
+      pst: pstCount,
+      goLiveCount,
+      goLive: goLiveCount,
+      hiredCount,
       hiringRate,
+      leadsToInterview: leadsToInterviewToGenerate,
+      leadsToInterviewToGenerate,
     };
-  }, [displayPlans]);
+  });
+}
 
-  const totalRecords = displayPlans.length;
-  const totalPages = Math.max(Math.ceil(totalRecords / PAGE_LIMIT), 1);
-  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
-  const hasPreviousPage = safeCurrentPage > 1;
-  const hasNextPage = safeCurrentPage < totalPages;
+function buildTotalsFromRows(rows = []) {
+  const sum = rows.reduce(
+    (acc, item) => {
+      const metrics = item.planMetrics || getRowMetrics(item);
 
-  const paginatedPlans = useMemo(() => {
-    const startIndex = (safeCurrentPage - 1) * PAGE_LIMIT;
+      acc.requiredHeadcount += metrics.requiredHeadcount;
+      acc.actualHeadcount += metrics.actualHeadcount;
+      acc.absenteeismSixWeeks += metrics.absenteeismSixWeeks;
+      acc.attritionSixWeeks += metrics.attritionSixWeeks;
 
-    return displayPlans.slice(startIndex, startIndex + PAGE_LIMIT);
-  }, [displayPlans, safeCurrentPage]);
+      acc.acceptedJobOffer += metrics.acceptedJobOffer;
+      acc.nhoCount += metrics.nhoCount;
+      acc.fstCount += metrics.fstCount;
+      acc.pstCount += metrics.pstCount;
+      acc.goLiveCount += metrics.goLiveCount;
+      acc.hiredCount += metrics.hiredCount;
+
+      return acc;
+    },
+    {
+      requiredHeadcount: 0,
+      actualHeadcount: 0,
+      absenteeismSixWeeks: 0,
+      attritionSixWeeks: 0,
+      acceptedJobOffer: 0,
+      nhoCount: 0,
+      fstCount: 0,
+      pstCount: 0,
+      goLiveCount: 0,
+      hiredCount: 0,
+    },
+  );
+
+  const netActualHeadcount = Math.max(
+    0,
+    sum.actualHeadcount - sum.absenteeismSixWeeks - sum.attritionSixWeeks,
+  );
+
+  const bufferPercentage =
+    sum.requiredHeadcount > 0
+      ? ((netActualHeadcount - sum.requiredHeadcount) / sum.requiredHeadcount) *
+        100
+      : 0;
+
+  const hiringNeeded = Math.max(0, sum.requiredHeadcount - netActualHeadcount);
+
+  const hiringRate =
+    sum.acceptedJobOffer > 0 ? sum.fstCount / sum.acceptedJobOffer : 0;
+
+  const leadsToInterviewToGenerate =
+    hiringNeeded <= 0
+      ? 0
+      : hiringRate > 0
+        ? Math.ceil(hiringNeeded / hiringRate)
+        : hiringNeeded;
+
+  return {
+    ...sum,
+    netActualHeadcount,
+    hiringNeeded,
+    bufferPercentage,
+    hiringRate,
+    leadsToInterviewToGenerate,
+  };
+}
+
+export default function WorkforceHiringAccountsTable({
+  accountsLoading = false,
+  filteredPlans = [],
+  onViewPlan,
+  basisWeeks = 6,
+  forecastWeeks = 6,
+}) {
+  const workforceHiring = useWorkforceHiring(true);
+  const { sourceWeek, selectedCluster, selectedAccount } =
+    getForecastTableStateFromContext(workforceHiring);
+
+  const weekStart = getWeekStart(sourceWeek);
+  const weekEnd = getWeekEnd(sourceWeek);
+
+  const [forecastData, setForecastData] = useState({
+    response: {},
+    loading: false,
+    loaded: false,
+    error: "",
+  });
+
+  const dragScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
+
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+  const movedRef = useRef(false);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "cluster",
+    direction: "asc",
+  });
 
   useEffect(() => {
-    if (tableScrollRef.current) {
-      tableScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
+    let cancelled = false;
+
+    async function loadForecastAverageRows() {
+      if (!weekStart || !weekEnd) {
+        setForecastData({
+          response: {},
+          loading: false,
+          loaded: true,
+          error: "Missing selected week date range for forecast averages.",
+        });
+
+        return;
+      }
+
+      setForecastData((current) => ({
+        ...current,
+        loading: true,
+        error: "",
+      }));
+
+      try {
+        const response = await getWorkforceHiringPlanForecast({
+          cluster: normalizeRequestFilter(selectedCluster),
+          account: normalizeRequestFilter(selectedAccount),
+          weekStart,
+          weekEnd,
+          startDate: weekStart,
+          endDate: weekEnd,
+          basisWeeks,
+          forecastWeeks,
+        });
+
+        if (cancelled) return;
+
+        setForecastData({
+          response: response || {},
+          loading: false,
+          loaded: true,
+          error:
+            response?.success === false
+              ? response?.message || "Failed to load forecast average rows."
+              : "",
+        });
+      } catch (error) {
+        if (cancelled) return;
+
+        setForecastData({
+          response: {},
+          loading: false,
+          loaded: true,
+          error:
+            error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            error?.message ||
+            "Failed to load forecast average rows.",
+        });
+      }
+    }
+
+    loadForecastAverageRows();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    basisWeeks,
+    forecastWeeks,
+    selectedAccount,
+    selectedCluster,
+    weekEnd,
+    weekStart,
+  ]);
+
+  const sixWeekAverageForecastRows = useMemo(
+    () => buildSixWeekAverageForecastRows(forecastData.response),
+    [forecastData.response],
+  );
+
+  const computedPlans = useMemo(() => {
+    const safePlans = Array.isArray(sixWeekAverageForecastRows)
+      ? sixWeekAverageForecastRows
+      : [];
+
+    return safePlans.map((item) => ({
+      ...item,
+      planMetrics: getRowMetrics(item),
+    }));
+  }, [sixWeekAverageForecastRows]);
+
+  const visibleRows = useMemo(() => {
+    const cleanSearch = searchQuery.trim().toLowerCase();
+
+    const filteredRows = cleanSearch
+      ? computedPlans.filter((item) => {
+          const metrics = item.planMetrics || getRowMetrics(item);
+
+          const searchableText = [
+            item.id,
+            item.week,
+            item.account,
+            item.accountName,
+            item.cluster,
+            item.clusterName,
+            metrics.requiredHeadcount,
+            metrics.actualHeadcount,
+            formatSignedPercentWhole(metrics.bufferPercentage),
+            metrics.netActualHeadcount,
+            metrics.hiringNeeded,
+            metrics.acceptedJobOffer,
+            metrics.nhoCount,
+            metrics.fstCount,
+            metrics.pstCount,
+            metrics.goLiveCount,
+            metrics.hiredCount,
+            formatPercent(metrics.hiringRate),
+            metrics.leadsToInterviewToGenerate,
+          ]
+            .filter((value) => value !== undefined && value !== null)
+            .join(" ")
+            .toLowerCase();
+
+          return searchableText.includes(cleanSearch);
+        })
+      : computedPlans;
+
+    return [...filteredRows].sort((firstRow, secondRow) => {
+      const firstValue = getSortableText(firstRow, sortConfig.key);
+      const secondValue = getSortableText(secondRow, sortConfig.key);
+
+      const comparison = firstValue.localeCompare(secondValue, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+
+      return sortConfig.direction === "asc" ? comparison : -comparison;
+    });
+  }, [computedPlans, searchQuery, sortConfig.direction, sortConfig.key]);
+
+  const totals = useMemo(() => buildTotalsFromRows(visibleRows), [visibleRows]);
+
+  const legacyFilteredPlanCount = Array.isArray(filteredPlans)
+    ? filteredPlans.length
+    : 0;
+
+  const combinedLoading = Boolean(accountsLoading || forecastData.loading);
+
+  useEffect(() => {
+    if (dragScrollRef.current) {
+      dragScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
     }
 
     if (mobileScrollRef.current) {
       mobileScrollRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [safeCurrentPage, search]);
+  }, [searchQuery, sortConfig.direction, sortConfig.key]);
 
-  function handlePreviousPage() {
-    if (accountsLoading || !hasPreviousPage) return;
-    setCurrentPage(Math.max(safeCurrentPage - 1, 1));
+  function handleSort(nextKey) {
+    setSortConfig((current) => {
+      if (current.key === nextKey) {
+        return {
+          key: nextKey,
+          direction: current.direction === "asc" ? "desc" : "asc",
+        };
+      }
+
+      return {
+        key: nextKey,
+        direction: "asc",
+      };
+    });
   }
 
-  function handleNextPage() {
-    if (accountsLoading || !hasNextPage) return;
-    setCurrentPage(Math.min(safeCurrentPage + 1, totalPages));
-  }
-
-  function handleSearchKeyDown(e) {
-    if (e.key !== "Enter") return;
-
-    setSearch(searchInput);
-    setCurrentPage(1);
-  }
-
-  function handleDragStart(e) {
-    if (e.button !== 0) return;
-
-    const target = e.target;
+  function handleDragStart(event) {
+    const target = event.target;
     const isInteractiveElement = target.closest(
       "button, a, input, select, textarea, [data-no-table-drag='true']",
     );
 
     if (isInteractiveElement) return;
 
-    const container = tableScrollRef.current;
+    const container = dragScrollRef.current;
+
     if (!container) return;
 
-    dragStateRef.current = {
-      isDown: true,
-      startX: e.pageX - container.offsetLeft,
-      scrollLeft: container.scrollLeft,
-      moved: false,
-    };
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    setIsDragging(true);
 
-    setIsDraggingTable(true);
+    startXRef.current = event.pageX - container.offsetLeft;
+    scrollLeftRef.current = container.scrollLeft;
+
+    container.style.userSelect = "none";
   }
 
-  function handleDragMove(e) {
-    const container = tableScrollRef.current;
-    const dragState = dragStateRef.current;
+  function handleDragMove(event) {
+    const container = dragScrollRef.current;
 
-    if (!dragState.isDown || !container) return;
+    if (!container || !isDraggingRef.current) return;
 
-    e.preventDefault();
+    event.preventDefault();
 
-    const x = e.pageX - container.offsetLeft;
-    const walk = (x - dragState.startX) * 1.4;
+    const x = event.pageX - container.offsetLeft;
+    const walk = x - startXRef.current;
 
     if (Math.abs(walk) > 4) {
-      dragStateRef.current.moved = true;
+      movedRef.current = true;
     }
 
-    container.scrollLeft = dragState.scrollLeft - walk;
+    container.scrollLeft = scrollLeftRef.current - walk;
   }
 
   function handleDragEnd() {
-    dragStateRef.current.isDown = false;
+    const container = dragScrollRef.current;
+
+    isDraggingRef.current = false;
+    setIsDragging(false);
+
+    if (container) {
+      container.style.userSelect = "";
+    }
 
     window.setTimeout(() => {
-      setIsDraggingTable(false);
-      dragStateRef.current.moved = false;
+      movedRef.current = false;
     }, 0);
   }
 
+  function handleTouchStart(event) {
+    const container = dragScrollRef.current;
+
+    if (!container) return;
+
+    const touch = event.touches?.[0];
+
+    if (!touch) return;
+
+    isDraggingRef.current = true;
+    movedRef.current = false;
+    setIsDragging(true);
+
+    startXRef.current = touch.pageX - container.offsetLeft;
+    scrollLeftRef.current = container.scrollLeft;
+  }
+
+  function handleTouchMove(event) {
+    const container = dragScrollRef.current;
+
+    if (!container || !isDraggingRef.current) return;
+
+    const touch = event.touches?.[0];
+
+    if (!touch) return;
+
+    const x = touch.pageX - container.offsetLeft;
+    const walk = x - startXRef.current;
+
+    if (Math.abs(walk) > 4) {
+      movedRef.current = true;
+    }
+
+    container.scrollLeft = scrollLeftRef.current - walk;
+  }
+
   function handleRowClick(item) {
-    if (dragStateRef.current.moved) return;
+    if (movedRef.current) return;
     onViewPlan?.(item);
   }
 
-  function handleRowKeyDown(e, item) {
-    if (e.key !== "Enter" && e.key !== " ") return;
+  function handleRowKeyDown(event, item) {
+    if (event.key !== "Enter" && event.key !== " ") return;
 
-    e.preventDefault();
+    event.preventDefault();
     handleRowClick(item);
   }
 
-  function renderRow(item) {
+  function renderDesktopRow(item, index) {
     const metrics = item.planMetrics || getRowMetrics(item);
 
     return (
       <tr
-        key={item.id}
+        key={item.id || `${item.cluster}-${item.account}-${index}`}
         role="button"
         tabIndex={0}
         onClick={() => handleRowClick(item)}
-        onKeyDown={(e) => handleRowKeyDown(e, item)}
-        className="cursor-pointer transition hover:bg-[#F3F7FB] focus:bg-[#F3F7FB] focus:outline-none"
+        onKeyDown={(event) => handleRowKeyDown(event, item)}
+        className={[
+          index % 2 === 0 ? "bg-white" : "bg-slate-50/50",
+          "cursor-pointer transition hover:bg-blue-50/50 focus:bg-blue-50/50 focus:outline-none",
+        ].join(" ")}
       >
-        <td className="border-b border-[#E6ECF2] px-5 py-5">
-          <p className="max-w-[180px] truncate text-sm font-extrabold text-[#101828]">
-            {item.cluster || item.clusterName || "--"}
-          </p>
-        </td>
+        <BodyTd className="text-left font-semibold text-sibs-primary-90">
+          {item.cluster || item.clusterName || "--"}
+        </BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5">
-          <p className="max-w-[220px] truncate text-sm font-extrabold text-[#101828]">
+        <BodyTd className="text-left font-semibold">
+          <p className="max-w-[150px] truncate">
             {item.account || item.accountName || "--"}
           </p>
+        </BodyTd>
 
-          {item.week && (
-            <p className="mt-1 max-w-[220px] truncate text-[11px] font-bold text-[#667085]">
-              {item.week}
-            </p>
-          )}
-        </td>
+        <BodyTd>{formatNumber(metrics.requiredHeadcount)}</BodyTd>
+        <BodyTd>{formatNumber(metrics.actualHeadcount)}</BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.requiredHeadcount)}
-        </td>
-
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.actualHeadcount)}
-        </td>
-
-        <td
-          className={`border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold ${getSignedNumberClass(metrics.bufferPercentage)}`}
-        >
+        <BodyTd className={getSignedNumberClass(metrics.bufferPercentage)}>
           {formatSignedPercentWhole(metrics.bufferPercentage)}
-        </td>
+        </BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-          {formatNumber(metrics.netActualHeadcount)}
-        </td>
+        <BodyTd>{formatNumber(metrics.netActualHeadcount)}</BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-red-600">
+        <BodyTd
+          className={
+            metrics.hiringNeeded > 0 ? "text-red-600" : "text-emerald-600"
+          }
+        >
           {formatNumber(metrics.hiringNeeded)}
-        </td>
+        </BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.acceptedJobOffer)}
-        </td>
+        <BodyTd>{formatNumber(metrics.acceptedJobOffer)}</BodyTd>
+        <BodyTd>{formatNumber(metrics.nhoCount)}</BodyTd>
+        <BodyTd>{formatNumber(metrics.fstCount)}</BodyTd>
+        <BodyTd>{formatNumber(metrics.pstCount)}</BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.nhoCount)}
-        </td>
-
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.fstCount)}
-        </td>
-
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-          {formatNumber(metrics.pstCount)}
-        </td>
-
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-emerald-700">
+        <BodyTd className="text-emerald-600">
           {formatNumber(metrics.goLiveCount)}
-        </td>
+        </BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
+        <BodyTd className="text-emerald-600">
           {formatNumber(metrics.hiredCount)}
-        </td>
+        </BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-          {formatPercent(metrics.hiringRate)}
-        </td>
+        <BodyTd>{formatPercent(metrics.hiringRate)}</BodyTd>
 
-        <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-violet-700">
+        <BodyTd className="text-violet-600">
           {formatNumber(metrics.leadsToInterviewToGenerate)}
-        </td>
+        </BodyTd>
       </tr>
     );
   }
 
   return (
-    <section className="rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-[#E6ECF2] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h2 className="text-lg font-extrabold uppercase tracking-wide text-sibs-primary-1">
-            Details by Cluster / Account (6-Week Aggregated Plan)
-          </h2>
-          <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-            Account-level workforce plan and pipeline plan candidates.
-          </p>
-        </div>
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 border-b border-slate-200 pb-3">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0 pt-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-base font-extrabold uppercase leading-tight tracking-tight text-sibs-primary-90">
+                Details by Cluster / Account (6-Week Forecast Average Plan)
+              </h2>
 
-        <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
-          <label className="relative block min-w-0 sm:w-[300px]">
-            <Search
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-            <input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Search cluster or account..."
-              className="h-10 w-full rounded-[10px] border border-[#D0D5DD] bg-white pl-9 pr-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-            />
-          </label>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                {computedPlans.length > 0
+                  ? `${visibleRows.length} of ${computedPlans.length} average forecast rows`
+                  : forecastData.loaded
+                    ? "No forecast rows"
+                    : `${legacyFilteredPlanCount} source rows`}
+              </span>
+            </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setSearch(searchInput);
-              setCurrentPage(1);
-            }}
-            disabled={accountsLoading}
-            className="h-10 rounded-[10px] bg-sibs-primary-1 px-4 text-sm font-extrabold text-white transition hover:bg-sibs-primary-1/90 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Search
-          </button>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Account-level average forecast data across all 6 forecast weeks.
+            </p>
+          </div>
+
+          <div className="w-full xl:w-[520px]">
+            <div className="relative">
+              <Search
+                size={20}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-primary-70"
+                strokeWidth={2.25}
+              />
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search cluster or account then press Enter..."
+                className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-12 pr-24 text-sm font-semibold text-sibs-primary-90 outline-none transition placeholder:text-slate-400 hover:border-sibs-primary-1/40 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              />
+
+              {searchQuery ? (
+                <button
+                  type="button"
+                  data-no-table-drag="true"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1.5 text-xs font-extrabold text-slate-500 transition hover:bg-slate-100 hover:text-sibs-primary-90"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="p-4">
-        <div className="hidden lg:block">
-          <div
-            ref={tableScrollRef}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            className={`sibs-scrollbar max-h-[720px] overflow-auto rounded-2xl border border-[#E6ECF2] ${
-              isDraggingTable ? "cursor-grabbing select-none" : "cursor-grab"
-            }`}
-          >
-            <table className="w-full min-w-[2300px] table-fixed border-separate border-spacing-0 bg-white text-left">
-              <ColumnGroup />
-
-              <thead>
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-middle first:rounded-tl-2xl"
-                  >
-                    Cluster
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-left align-middle"
-                  >
-                    Account
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Required
-                    <br />
-                    Headcount
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Actual
-                    <br />
-                    Headcount
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Buffer
-                    <br />
-                    Percentage
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Net Actual
-                    <br />
-                    HC
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Hiring
-                    <br />
-                    Needed
-                  </th>
-                  <th
-                    colSpan={5}
-                    className="sticky top-0 z-20 border-x border-[#DDE7F2] bg-[#F5F7FA] px-5 py-4 text-center align-top"
-                  >
-                    Pipeline Plan (Candidates)
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Hired
-                    <br />
-                    Count
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle"
-                  >
-                    Hiring Rate
-                    <br />
-                    (Leads to JO)
-                  </th>
-                  <th
-                    rowSpan={2}
-                    className="sticky top-0 z-20 bg-[#F5F7FA] px-5 py-4 text-center align-middle last:rounded-tr-2xl"
-                  >
-                    Leads to Interview
-                    <br />
-                    (To Generate)
-                  </th>
-                </tr>
-
-                <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                  <th className="sticky top-[48px] z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                    Accepted
-                    <br />
-                    Job Offer
-                  </th>
-                  <th className="sticky top-[48px] z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                    NHO
-                    <br />
-                    Count
-                  </th>
-                  <th className="sticky top-[48px] z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                    FST
-                    <br />
-                    Count
-                  </th>
-                  <th className="sticky top-[48px] z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                    PST
-                    <br />
-                    Count
-                  </th>
-                  <th className="sticky top-[48px] z-20 bg-[#F5F7FA] px-5 py-4 text-center align-top">
-                    Go Live
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody key={`${safeCurrentPage}-${search}-${accountsLoading}`}>
-                {accountsLoading ? (
-                  Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                    <tr key={index}>
-                      <td
-                        className="border-b border-[#E6ECF2] px-5 py-5"
-                        colSpan={15}
-                      >
-                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-                      </td>
-                    </tr>
-                  ))
-                ) : paginatedPlans.length === 0 ? (
-                  <tr>
-                    <td
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                      colSpan={15}
-                    >
-                      No workforce hiring plan records found.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedPlans.map(renderRow)
-                )}
-              </tbody>
-
-              {!accountsLoading && displayPlans.length > 0 && (
-                <tfoot>
-                  <tr className="bg-[#F8FAFC] text-sm font-extrabold text-sibs-primary-1">
-                    <td className="px-5 py-4" colSpan={2}>
-                      TOTAL / AVG.
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.requiredHeadcount)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.actualHeadcount)}
-                    </td>
-                    <td
-                      className={`px-5 py-4 text-center ${getSignedNumberClass(totals.bufferPercentage)}`}
-                    >
-                      {formatSignedPercentWhole(totals.bufferPercentage)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.netActualHeadcount)}
-                    </td>
-                    <td className="px-5 py-4 text-center text-red-600">
-                      {formatNumber(totals.hiringNeeded)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.acceptedJobOffer)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.nhoCount)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.fstCount)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.pstCount)}
-                    </td>
-                    <td className="px-5 py-4 text-center text-emerald-700">
-                      {formatNumber(totals.goLiveCount)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatNumber(totals.hiredCount)}
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {formatPercent(totals.hiringRate)}
-                    </td>
-                    <td className="px-5 py-4 text-center text-violet-700">
-                      {formatNumber(totals.leadsToInterviewToGenerate)}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-
-          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table. Click
-            any row to view details.
-          </p>
+      {forecastData.error ? (
+        <div className="mb-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+          {forecastData.error}
         </div>
+      ) : null}
 
-        <div ref={mobileScrollRef} className="space-y-3 lg:hidden">
-          <DesktopTableHeader />
+      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white lg:block">
+        <div
+          ref={dragScrollRef}
+          className={[
+            "max-h-[760px] overflow-auto sibs-scrollbar",
+            isDragging ? "cursor-grabbing" : "cursor-pointer",
+          ].join(" ")}
+          onMouseDown={handleDragStart}
+          onMouseMove={handleDragMove}
+          onMouseUp={handleDragEnd}
+          onMouseLeave={handleDragEnd}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleDragEnd}
+        >
+          <table className="w-full min-w-[1460px] border-collapse">
+            <ColumnGroup />
 
-          {accountsLoading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-36 animate-sibs-pulse rounded-2xl bg-gray-200"
-              />
-            ))
-          ) : paginatedPlans.length === 0 ? (
-            <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] px-5 py-12 text-center text-sm font-bold text-gray-500">
-              No workforce hiring plan records found.
-            </div>
-          ) : (
-            paginatedPlans.map((item) => {
-              const metrics = item.planMetrics || getRowMetrics(item);
+            <thead>
+              <tr>
+                <HeaderTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Cluster"
+                    active={sortConfig.key === "cluster"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("cluster")}
+                  />
+                </HeaderTh>
 
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleRowClick(item)}
-                  className="block w-full rounded-2xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-[#F8FAFC]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold text-[#101828]">
-                        {item.account || item.accountName || "--"}
-                      </p>
-                      <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                        {item.cluster || item.clusterName || "--"}
-                      </p>
-                    </div>
-                    <p className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
-                      {formatNumber(metrics.hiringNeeded)} needed
+                <HeaderTh rowSpan={2}>
+                  <SortHeaderButton
+                    label="Account"
+                    active={sortConfig.key === "account"}
+                    direction={sortConfig.direction}
+                    onClick={() => handleSort("account")}
+                  />
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Required
+                  <br />
+                  Headcount
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Actual
+                  <br />
+                  Headcount
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Buffer
+                  <br />
+                  Percentage
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Net Actual
+                  <br />
+                  HC
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Hiring
+                  <br />
+                  Needed
+                </HeaderTh>
+
+                <HeaderTh colSpan={5} group>
+                  Pipeline Plan (Candidates)
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Hired
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Hiring Rate
+                  <br />
+                  (Leads to JO)
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Leads to Interview
+                  <br />
+                  (To Generate)
+                </HeaderTh>
+              </tr>
+
+              <tr>
+                <HeaderTh>
+                  Accepted
+                  <br />
+                  Job Offer
+                </HeaderTh>
+
+                <HeaderTh>
+                  NHO
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh>
+                  FST
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh>
+                  PST
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh>
+                  Go
+                  <br />
+                  Live
+                </HeaderTh>
+              </tr>
+            </thead>
+
+            <tbody>
+              {combinedLoading ? (
+                Array.from({ length: 10 }).map((_, index) => (
+                  <tr key={index}>
+                    <BodyTd className="py-2" colSpan={15}>
+                      <div className="h-5 w-full animate-sibs-pulse rounded bg-slate-200" />
+                    </BodyTd>
+                  </tr>
+                ))
+              ) : visibleRows.length === 0 ? (
+                <tr>
+                  <BodyTd
+                    className="py-12 text-center text-sm font-bold text-slate-500"
+                    colSpan={15}
+                  >
+                    No workforce hiring plan records found.
+                  </BodyTd>
+                </tr>
+              ) : (
+                visibleRows.map(renderDesktopRow)
+              )}
+            </tbody>
+
+            {!combinedLoading && visibleRows.length > 0 ? (
+              <tfoot>
+                <tr className="bg-slate-50 font-extrabold">
+                  <BodyTd className="text-left font-extrabold" colSpan={2}>
+                    TOTAL / AVG.
+                  </BodyTd>
+                  <BodyTd
+                    className="text-left font-extrabold"
+                    colSpan={2}
+                  ></BodyTd>
+                  <BodyTd>{formatNumber(totals.requiredHeadcount)}</BodyTd>
+                  <BodyTd>{formatNumber(totals.actualHeadcount)}</BodyTd>
+                  <BodyTd
+                    className={getSignedNumberClass(totals.bufferPercentage)}
+                  >
+                    {formatSignedPercentWhole(totals.bufferPercentage)}
+                  </BodyTd>
+                  <BodyTd>{formatNumber(totals.netActualHeadcount)}</BodyTd>
+                  <BodyTd
+                    className={
+                      totals.hiringNeeded > 0
+                        ? "text-red-600"
+                        : "text-emerald-600"
+                    }
+                  >
+                    {formatNumber(totals.hiringNeeded)}
+                  </BodyTd>
+                  <BodyTd>{formatNumber(totals.acceptedJobOffer)}</BodyTd>
+                  <BodyTd>{formatNumber(totals.nhoCount)}</BodyTd>
+                  <BodyTd>{formatNumber(totals.fstCount)}</BodyTd>
+                  <BodyTd>{formatNumber(totals.pstCount)}</BodyTd>
+                  <BodyTd className="text-emerald-600">
+                    {formatNumber(totals.goLiveCount)}
+                  </BodyTd>
+                  <BodyTd className="text-emerald-600">
+                    {formatNumber(totals.hiredCount)}
+                  </BodyTd>
+                  <BodyTd>{formatPercent(totals.hiringRate)}</BodyTd>
+                  <BodyTd className="text-violet-600">
+                    {formatNumber(totals.leadsToInterviewToGenerate)}
+                  </BodyTd>
+                </tr>
+              </tfoot>
+            ) : null}
+          </table>
+        </div>
+      </div>
+
+      <div ref={mobileScrollRef} className="space-y-3 lg:hidden">
+        {combinedLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-36 animate-sibs-pulse rounded-2xl bg-gray-200"
+            />
+          ))
+        ) : visibleRows.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-12 text-center text-sm font-bold text-slate-500">
+            No workforce hiring plan records found.
+          </div>
+        ) : (
+          visibleRows.map((item) => {
+            const metrics = item.planMetrics || getRowMetrics(item);
+
+            return (
+              <button
+                key={item.id || `${item.cluster}-${item.account}`}
+                type="button"
+                onClick={() => handleRowClick(item)}
+                className="block w-full rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-200 hover:bg-slate-50"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold text-sibs-primary-90">
+                      {item.account || item.accountName || "--"}
+                    </p>
+                    <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                      {item.cluster || item.clusterName || "--"}
                     </p>
                   </div>
+                  <p className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold text-sibs-primary-1">
+                    {formatNumber(metrics.hiringNeeded)} needed
+                  </p>
+                </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <MobileMetric
-                      label="Required HC"
-                      value={formatNumber(metrics.requiredHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Actual HC"
-                      value={formatNumber(metrics.actualHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Buffer %"
-                      value={formatSignedPercentWhole(metrics.bufferPercentage)}
-                      valueClassName={getSignedNumberClass(
-                        metrics.bufferPercentage,
-                      )}
-                    />
-                    <MobileMetric
-                      label="Net Actual HC"
-                      value={formatNumber(metrics.netActualHeadcount)}
-                    />
-                    <MobileMetric
-                      label="Accepted JO"
-                      value={formatNumber(metrics.acceptedJobOffer)}
-                    />
-                    <MobileMetric
-                      label="NHO / FST / PST"
-                      value={`${formatNumber(metrics.nhoCount)} / ${formatNumber(metrics.fstCount)} / ${formatNumber(metrics.pstCount)}`}
-                    />
-                    <MobileMetric
-                      label="Go Live"
-                      value={formatNumber(metrics.goLiveCount)}
-                      valueClassName="text-emerald-700"
-                    />
-                    <MobileMetric
-                      label="Leads to Interview"
-                      value={formatNumber(metrics.leadsToInterviewToGenerate)}
-                      valueClassName="text-violet-700"
-                    />
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-
-        <div className="mt-4 flex flex-col gap-3 border-t border-[#E6ECF2] pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold text-sibs-tertiary-5">
-            Showing{" "}
-            {totalRecords === 0 ? 0 : (safeCurrentPage - 1) * PAGE_LIMIT + 1}–
-            {Math.min(safeCurrentPage * PAGE_LIMIT, totalRecords)} of{" "}
-            {totalRecords} records
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePreviousPage}
-              disabled={accountsLoading || !hasPreviousPage}
-              className="h-10 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="rounded-[10px] border border-[#D0D5DD] bg-[#F8FAFC] px-4 py-2 text-sm font-extrabold text-sibs-primary-1">
-              {safeCurrentPage} / {totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={handleNextPage}
-              disabled={accountsLoading || !hasNextPage}
-              className="h-10 rounded-[10px] border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <MobileMetric
+                    label="Required HC"
+                    value={formatNumber(metrics.requiredHeadcount)}
+                  />
+                  <MobileMetric
+                    label="Actual HC"
+                    value={formatNumber(metrics.actualHeadcount)}
+                  />
+                  <MobileMetric
+                    label="Buffer Percentage"
+                    value={formatSignedPercentWhole(metrics.bufferPercentage)}
+                    valueClassName={getSignedNumberClass(
+                      metrics.bufferPercentage,
+                    )}
+                  />
+                  <MobileMetric
+                    label="Net Actual HC"
+                    value={formatNumber(metrics.netActualHeadcount)}
+                  />
+                  <MobileMetric
+                    label="Accepted Job Offer"
+                    value={formatNumber(metrics.acceptedJobOffer)}
+                  />
+                  <MobileMetric
+                    label="NHO / FST / PST"
+                    value={`${formatNumber(metrics.nhoCount)} / ${formatNumber(metrics.fstCount)} / ${formatNumber(metrics.pstCount)}`}
+                  />
+                  <MobileMetric
+                    label="Go Live"
+                    value={formatNumber(metrics.goLiveCount)}
+                    valueClassName="text-emerald-600"
+                  />
+                  <MobileMetric
+                    label="Leads to Interview"
+                    value={formatNumber(metrics.leadsToInterviewToGenerate)}
+                    valueClassName="text-violet-600"
+                  />
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
     </section>
   );
@@ -1161,8 +1660,8 @@ function MobileMetric({
   valueClassName = "text-sibs-primary-1",
 }) {
   return (
-    <div className="rounded-xl bg-[#F8FAFC] p-3">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+    <div className="rounded-xl bg-slate-50 p-3">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
         {label}
       </p>
       <p className={`mt-1 text-sm font-extrabold ${valueClassName}`}>{value}</p>
