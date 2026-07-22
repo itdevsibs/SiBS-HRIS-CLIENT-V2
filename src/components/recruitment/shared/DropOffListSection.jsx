@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
   Eye,
   Loader2,
+  Search,
+  X,
 } from "lucide-react";
 
 import {
@@ -18,6 +20,56 @@ import {
   getDropOffReason,
 } from "../../../lib/utils/recruitment/dropOffCandidates";
 
+function normalizeDropOffSearchValue(value = "") {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function getDropOffCandidateSearchText(candidate = {}) {
+  const appliedPosition =
+    candidate.openPosition ||
+    candidate.open_position ||
+    candidate.roleCapability ||
+    candidate.role_capability ||
+    getDropOffCandidateRole(candidate);
+
+  const preferredLocation =
+    candidate.applyingLocation ||
+    candidate.applying_location ||
+    "";
+
+  const status =
+    candidate.dropOffCategory ||
+    candidate.drop_off_category ||
+    "Drop Off";
+
+  const skills =
+    candidate.skillsLanguage ||
+    candidate.skills_language ||
+    "";
+
+  const rawDropOffDate = getDropOffDate(candidate);
+
+  return [
+    getDropOffCandidateName(candidate),
+    getDropOffCandidateId(candidate),
+    appliedPosition,
+    skills,
+    preferredLocation,
+    getDropOffCandidateAccount(candidate),
+    status,
+    getDropOffReason(candidate),
+    getDropOffBy(candidate),
+    rawDropOffDate,
+    formatDropOffDate(rawDropOffDate),
+  ]
+    .map(normalizeDropOffSearchValue)
+    .filter(Boolean)
+    .join(" ");
+}
+
 export default function DropOffListSection({
   candidates = [],
   onViewCandidate,
@@ -25,6 +77,7 @@ export default function DropOffListSection({
   loadError = "",
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropOffTableScrollRef = useRef(null);
   const dropOffDragStateRef = useRef({
     active: false,
@@ -33,6 +86,18 @@ export default function DropOffListSection({
     scrollLeft: 0,
   });
   const [isDropOffTableDragging, setIsDropOffTableDragging] = useState(false);
+
+  const normalizedSearchQuery = normalizeDropOffSearchValue(searchQuery);
+
+  const filteredCandidates = useMemo(() => {
+    if (!normalizedSearchQuery) {
+      return candidates;
+    }
+
+    return candidates.filter((candidate) =>
+      getDropOffCandidateSearchText(candidate).includes(normalizedSearchQuery),
+    );
+  }, [candidates, normalizedSearchQuery]);
 
   function handleDropOffTablePointerDown(event) {
     if (event.pointerType !== "mouse" || event.button !== 0) return;
@@ -141,6 +206,60 @@ export default function DropOffListSection({
 
       {expanded && (
         <div className="p-5">
+          <div className="mb-5 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-4">
+            <label
+              htmlFor="drop-off-list-search"
+              className="block text-xs font-extrabold uppercase tracking-wide text-[#101828]"
+            >
+              Search
+            </label>
+
+            <div className="relative mt-2">
+              <Search
+                size={18}
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-primary-1"
+              />
+
+              <input
+                id="drop-off-list-search"
+                type="search"
+                value={searchQuery}
+                disabled={isLoading}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search drop-off candidates..."
+                className="h-11 w-full rounded-xl border border-[#D6DEE8] bg-white pl-11 pr-11 text-sm font-semibold text-[#344054] shadow-sm outline-none transition placeholder:text-[#98A2B3] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  aria-label="Clear Drop-off List search"
+                  className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F2F6FA] hover:text-sibs-primary-1"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-semibold text-sibs-tertiary-5">
+                Showing {filteredCandidates.length} of {candidates.length}{" "}
+                drop-off candidates
+              </p>
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="w-fit text-xs font-extrabold text-sibs-primary-1 transition hover:underline"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          </div>
+
           {loadError && (
             <div className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
               {loadError}
@@ -169,6 +288,29 @@ export default function DropOffListSection({
               <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
                 Candidates moved to Drop-off will appear here.
               </p>
+            </div>
+          ) : filteredCandidates.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-[#D9E2EC] bg-[#F8FAFC] px-5 py-10 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#E6ECF2] bg-white text-sibs-primary-1">
+                <Search size={22} />
+              </div>
+
+              <p className="mt-3 text-sm font-extrabold text-[#101828]">
+                No drop-off candidates match your search.
+              </p>
+
+              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+                Try searching by candidate, position, location, account,
+                status, reason, or date.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
+              >
+                Clear search
+              </button>
             </div>
           ) : (
             <>
@@ -220,7 +362,7 @@ export default function DropOffListSection({
                     </thead>
 
                     <tbody>
-                      {candidates.map((candidate) => (
+                      {filteredCandidates.map((candidate) => (
                         <tr
                           key={`${getDropOffCandidateId(candidate)}-${
                             candidate.pipelineRecordId ||
@@ -311,7 +453,7 @@ export default function DropOffListSection({
               </div>
 
               <div className="space-y-3 lg:hidden">
-                {candidates.map((candidate) => (
+                {filteredCandidates.map((candidate) => (
                   <div
                     key={`${getDropOffCandidateId(candidate)}-${
                       candidate.pipelineRecordId ||
