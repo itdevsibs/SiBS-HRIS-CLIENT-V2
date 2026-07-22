@@ -1,25 +1,48 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  Search,
-  Mail,
-  Phone,
   Briefcase,
   Building2,
   CalendarDays,
-  UserRound,
+  Mail,
   MapPin,
+  Phone,
+  UserRound,
+  UserRoundCheck,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-import { getEmployee } from "../../../lib/axios/getEmployee";
-import { formatDate } from "../../../lib/axios/dateFormatter";
+import { getEmployee } from "@/lib/axios/getEmployee";
+import { useUser } from "@/services/context/UserContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import PaginationTable from "@/services/pagination/PaginationTable";
-import { useUser } from "../../../services/context/UserContext";
 
-const EMPLOYEE_STATE_KEY = "employeePageState";
+const ENTITY = "employees";
 const PAGE_LIMIT = 15;
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+
+const columns = [
+  "SIBS ID",
+  "EMPLOYEE NAME",
+  "ACCOUNT / SITE",
+  "DEPARTMENT / POSITION",
+  "CONTACT & EMAIL",
+  "HR METADATA",
+];
+
+const AVATAR_TONES = [
+  "border-orange-100 bg-orange-50 text-[#FF5C28]",
+  "border-emerald-100 bg-emerald-50 text-emerald-700",
+  "border-blue-100 bg-blue-50 text-[#042C51]",
+  "border-pink-100 bg-pink-50 text-pink-700",
+  "border-violet-100 bg-violet-50 text-violet-700",
+];
+
+function getCleanValue(...values) {
+  const match = values.find((value) => {
+    return value !== undefined && value !== null && String(value).trim() !== "";
+  });
+
+  return match === undefined || match === null ? "" : String(match).trim();
+}
 
 function normalizeRole(value) {
   return String(value || "")
@@ -61,65 +84,6 @@ function canViewEmployeeFilters(user) {
   );
 }
 
-function formatEmployeeName(emp) {
-  const lastName = String(emp?.lastName || emp?.gy_emp_lname || "").trim();
-  const firstName = String(emp?.firstName || emp?.gy_emp_fname || "").trim();
-  const middleName = String(emp?.middleName || emp?.gy_emp_mname || "").trim();
-
-  if (lastName || firstName || middleName) {
-    return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
-      middleName ? ` ${middleName}` : ""
-    }`
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();
-  }
-
-  return (
-    String(emp?.fullName || emp?.gy_emp_fullname || "")
-      .trim()
-      .toUpperCase() || "N/A"
-  );
-}
-
-function getAccountManager(emp) {
-  return (
-    emp?.accountManager ||
-    emp?.account_manager ||
-    emp?.manager ||
-    emp?.managerName ||
-    emp?.accountManagerName ||
-    emp?.gy_acc_manager ||
-    emp?.gy_emp_om ||
-    emp?.gy_emp_supervisor ||
-    "N/A"
-  );
-}
-
-function getProfileImageUrl(emp) {
-  const directUrl =
-    emp?.profilePictureUrl ||
-    emp?.profile_picture_url ||
-    emp?.profileUrl ||
-    emp?.profile_url ||
-    "";
-
-  if (directUrl) return directUrl;
-
-  const filename =
-    emp?.profile_filename ||
-    emp?.profileFilename ||
-    emp?.profilePicture ||
-    emp?.profile_picture ||
-    "";
-
-  if (!filename) return "";
-
-  if (String(filename).startsWith("http")) return filename;
-
-  return `${API_URL}/api/employee-profile/file/${encodeURIComponent(filename)}`;
-}
-
 function normalizeDepartmentOption(option) {
   if (typeof option === "string" || typeof option === "number") {
     return {
@@ -130,17 +94,19 @@ function normalizeDepartmentOption(option) {
 
   return {
     label:
-      option?.label ||
-      option?.name_department ||
-      option?.departmentName ||
-      option?.name ||
-      "N/A",
+      getCleanValue(
+        option?.label,
+        option?.name_department,
+        option?.departmentName,
+        option?.name,
+      ) || "Unnamed Department",
     value: String(
-      option?.value ||
-        option?.id_department ||
-        option?.departmentId ||
-        option?.id ||
-        "",
+      getCleanValue(
+        option?.value,
+        option?.id_department,
+        option?.departmentId,
+        option?.id,
+      ),
     ),
   };
 }
@@ -154,24 +120,158 @@ function normalizeAccountOption(option) {
   }
 
   return {
-    label: option?.label || option?.account || option?.gy_acc_name || "N/A",
-    value: String(option?.value || option?.account || option?.gy_acc_name || ""),
+    label:
+      getCleanValue(
+        option?.label,
+        option?.account,
+        option?.accountName,
+        option?.gy_acc_name,
+      ) || "Unnamed Account",
+    value: String(
+      getCleanValue(
+        option?.value,
+        option?.account,
+        option?.accountName,
+        option?.gy_acc_name,
+      ),
+    ),
   };
 }
 
-function getAssignedSite(emp) {
-  const value =
-    emp?.site ??
-    emp?.assignedSite ??
-    emp?.location ??
-    emp?.gy_assignedloc ??
-    emp?.assigned_loc ??
-    "";
+function getNameParts(employee = {}) {
+  return {
+    firstName: getCleanValue(
+      employee.firstName,
+      employee.first_name,
+      employee.gy_emp_fname,
+    ),
+    middleName: getCleanValue(
+      employee.middleName,
+      employee.middle_name,
+      employee.gy_emp_mname,
+    ),
+    lastName: getCleanValue(
+      employee.lastName,
+      employee.last_name,
+      employee.gy_emp_lname,
+    ),
+  };
+}
 
-  const raw = String(value ?? "").trim();
+function getEmployeeName(employee = {}) {
+  const { firstName, middleName, lastName } = getNameParts(employee);
+
+  if (firstName || middleName || lastName) {
+    const givenNames = [firstName, middleName].filter(Boolean).join(" ");
+
+    return [lastName ? lastName.toUpperCase() : "", givenNames]
+      .filter(Boolean)
+      .join(lastName && givenNames ? ", " : "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  return (
+    getCleanValue(
+      employee.fullName,
+      employee.full_name,
+      employee.gy_emp_fullname,
+      employee.name,
+    ) || "Unnamed Employee"
+  );
+}
+
+function getInitials(employee = {}) {
+  const { firstName, lastName } = getNameParts(employee);
+
+  if (firstName || lastName) {
+    return `${firstName.slice(0, 1)}${lastName.slice(0, 1)}`.toUpperCase();
+  }
+
+  const tokens = getEmployeeName(employee)
+    .replace(",", " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return `${tokens[0]?.[0] || "E"}${tokens[1]?.[0] || ""}`.toUpperCase();
+}
+
+function getAvatarTone(employee = {}) {
+  const seed = getEmployeeName(employee)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+
+  return AVATAR_TONES[seed % AVATAR_TONES.length];
+}
+
+function getSibsId(employee = {}) {
+  return getCleanValue(
+    employee.sibsId,
+    employee.sibs_id,
+    employee.employeeId,
+    employee.employee_id,
+    employee.gy_emp_id,
+    employee.username,
+  );
+}
+
+function getPreferredName(employee = {}) {
+  return getCleanValue(
+    employee.preferredName,
+    employee.preferred_name,
+    employee.nickname,
+    employee.nickName,
+  );
+}
+
+function getDepartment(employee = {}) {
+  return (
+    getCleanValue(
+      employee.department,
+      employee.departmentName,
+      employee.department_name,
+      employee.name_department,
+      employee.gy_dept_name,
+    ) || "Unassigned"
+  );
+}
+
+function getAccount(employee = {}) {
+  return (
+    getCleanValue(
+      employee.account,
+      employee.accountName,
+      employee.account_name,
+      employee.gy_acc_name,
+    ) || "Unassigned"
+  );
+}
+
+function getPosition(employee = {}) {
+  return (
+    getCleanValue(
+      employee.position,
+      employee.positionTitle,
+      employee.position_title,
+      employee.jobTitle,
+      employee.job_title,
+      employee.role,
+      employee.gy_pos_name,
+    ) || "No position"
+  );
+}
+
+function getAssignedSite(employee = {}) {
+  const raw = getCleanValue(
+    employee.site,
+    employee.assignedSite,
+    employee.assigned_site,
+    employee.location,
+    employee.gy_assignedloc,
+    employee.assigned_loc,
+  );
 
   if (!raw) return "N/A";
-
   if (raw === "0") return "Tagum";
   if (raw === "1") return "Davao";
   if (raw === "2") return "Both Tagum and Davao";
@@ -180,132 +280,197 @@ function getAssignedSite(emp) {
   return raw;
 }
 
-function ProfileAvatar({ emp, size = "md" }) {
-  const imageUrl = getProfileImageUrl(emp);
+function getEmail(employee = {}) {
+  return (
+    getCleanValue(
+      employee.email,
+      employee.emailAddress,
+      employee.email_address,
+      employee.gy_emp_email,
+    ) || "No email"
+  );
+}
 
-  const sizeClass =
-    size === "lg"
-      ? "h-12 w-12"
-      : size === "sm"
-        ? "h-9 w-9"
-        : "h-10 w-10";
+function getContact(employee = {}) {
+  return (
+    getCleanValue(
+      employee.contact,
+      employee.mobileNumber,
+      employee.mobile_number,
+      employee.phone,
+      employee.phoneNumber,
+      employee.phone_number,
+      employee.gy_emp_mobile,
+    ) || "No contact"
+  );
+}
+
+function getGender(employee = {}) {
+  return getCleanValue(employee.gender, employee.gy_emp_gender) || "N/A";
+}
+
+function getCivilStatus(employee = {}) {
+  return (
+    getCleanValue(
+      employee.civilStatus,
+      employee.civil_status,
+      employee.maritalStatus,
+      employee.marital_status,
+      employee.gy_emp_civilstatus,
+    ) || "N/A"
+  );
+}
+
+function getHireDate(employee = {}) {
+  return getCleanValue(
+    employee.hireDate,
+    employee.hire_date,
+    employee.dateHired,
+    employee.date_hired,
+    employee.gy_emp_hiredate,
+  );
+}
+
+function formatCompactDate(value) {
+  const raw = getCleanValue(value);
+
+  if (!raw) return "N/A";
+
+  const isoDate = raw.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+
+  const parsedDate = new Date(raw);
+  if (Number.isNaN(parsedDate.getTime())) return raw;
+
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsedDate);
+}
+
+function EmployeeAvatar({ employee, size = "md" }) {
+  const sizeClass = size === "lg" ? "h-11 w-11" : "h-9 w-9";
 
   return (
-    <div
-      className={`flex ${sizeClass} shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#D9E2EC] bg-[#F2F6FA] shadow-sm`}
+    <span
+      className={`inline-flex ${sizeClass} shrink-0 items-center justify-center rounded-full border text-xs font-extrabold shadow-inner ${getAvatarTone(
+        employee,
+      )}`}
+      aria-hidden="true"
     >
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt="Profile"
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-            const fallback = e.currentTarget.nextElementSibling;
-            if (fallback) fallback.style.display = "flex";
-          }}
-        />
-      ) : null}
-
-      <div
-        className="flex h-full w-full items-center justify-center text-sibs-primary-1"
-        style={{ display: imageUrl ? "none" : "flex" }}
-      >
-        <UserRound size={size === "lg" ? 24 : 20} />
-      </div>
-    </div>
+      {getInitials(employee)}
+    </span>
   );
 }
 
-function MobileInfoItem({ icon: Icon, label, value }) {
+function EmptyState({ loading, message }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
-      <div className="flex items-start gap-2">
-        <Icon size={14} className="mt-0.5 shrink-0 text-sibs-tertiary-5" />
-
-        <div className="min-w-0">
-          <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {label}
-          </p>
-
-          <strong className="mt-1 block break-words text-sm font-bold leading-snug text-sibs-primary-1">
-            {value || "N/A"}
-          </strong>
-        </div>
+    <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EAF2FB] text-[#042C51]">
+        <UserRoundCheck size={22} />
       </div>
+
+      <h3 className="mt-3 text-sm font-extrabold text-[#042C51]">
+        {loading ? "Loading employees..." : "No employees found"}
+      </h3>
+
+      <p className="mt-1 max-w-xl text-xs font-bold leading-4 text-[#667085]">
+        {loading
+          ? "Fetching the latest employee directory records."
+          : message ||
+            "Try adjusting the search or refresh the employee directory."}
+      </p>
     </div>
   );
 }
 
-function MobileEmployeeCard({ emp, onOpen }) {
-  const fullName = formatEmployeeName(emp);
+function DetailLine({ icon, children, breakAll = false }) {
+  const DetailIcon = icon;
+
+  return (
+    <span className="flex min-w-0 items-start gap-1.5 text-[11px] font-semibold leading-4 text-[#667085]">
+      <DetailIcon size={13} className="mt-0.5 shrink-0 text-[#98A2B3]" />
+      <span className={breakAll ? "min-w-0 break-all" : "min-w-0 break-words"}>
+        {children}
+      </span>
+    </span>
+  );
+}
+
+function MobileEmployeeCard({ employee, onOpen }) {
+  const preferredName = getPreferredName(employee);
 
   return (
     <button
       type="button"
-      onClick={() => onOpen(emp)}
-      className="sibs-page-card-in block w-full cursor-pointer rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md active:scale-[0.99]"
+      onClick={() => onOpen(employee)}
+      className="sibs-card w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#FF5C28]/30"
+      aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
     >
       <div className="flex items-start gap-3">
-        <ProfileAvatar emp={emp} size="lg" />
+        <EmployeeAvatar employee={employee} size="lg" />
 
         <div className="min-w-0 flex-1">
-          <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
-            {emp.sibsId || "N/A"}
-          </p>
+          <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+            {getSibsId(employee) || "N/A"}
+          </span>
 
-          <h3 className="mt-1 text-sm font-bold leading-tight text-sibs-primary-1">
-            {fullName}
+          <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
+            {getEmployeeName(employee)}
           </h3>
+
+          {preferredName ? (
+            <p className="mt-1 text-[11px] font-semibold text-[#667085]">
+              Preferred: {preferredName}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3">
-        <MobileInfoItem icon={Mail} label="Email" value={emp.email} />
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <MobileInfoItem icon={UserRound} label="Gender" value={emp.gender} />
-
-          <MobileInfoItem
-            icon={CalendarDays}
-            label="Birthdate"
-            value={formatDate(emp.birthdate)}
-          />
-
-          <MobileInfoItem
-            icon={Briefcase}
-            label="Civil Status"
-            value={emp.civilStatus}
-          />
-
-          <MobileInfoItem icon={Briefcase} label="Account" value={emp.account} />
-
-          <MobileInfoItem
-            icon={MapPin}
-            label="Site"
-            value={getAssignedSite(emp)}
-          />
-
-          <MobileInfoItem
-            icon={UserRound}
-            label="Account Manager"
-            value={getAccountManager(emp)}
-          />
-
-          <MobileInfoItem
-            icon={Building2}
-            label="Department"
-            value={emp.department || "N/A"}
-          />
-
-          <MobileInfoItem icon={Phone} label="Contact" value={emp.contact} />
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            Account / Site
+          </p>
+          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+            {getAccount(employee)}
+          </p>
+          <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
         </div>
 
-        <MobileInfoItem
-          icon={CalendarDays}
-          label="Hire Date"
-          value={formatDate(emp.hireDate)}
-        />
+        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            Department / Position
+          </p>
+          <p className="mt-1 break-words text-xs font-extrabold text-[#042C51]">
+            {getPosition(employee)}
+          </p>
+          <DetailLine icon={Building2}>{getDepartment(employee)}</DetailLine>
+        </div>
+
+        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            Contact & Email
+          </p>
+          <div className="mt-1 space-y-1">
+            <DetailLine icon={Mail} breakAll>
+              {getEmail(employee)}
+            </DetailLine>
+            <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3">
+          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+            HR Metadata
+          </p>
+          <div className="mt-1 space-y-1 text-[11px] font-semibold text-[#667085]">
+            <p>Gender: {getGender(employee)}</p>
+            <p>Civil: {getCivilStatus(employee)}</p>
+            <p className="font-mono">Hired: {formatCompactDate(getHireDate(employee))}</p>
+          </div>
+        </div>
       </div>
     </button>
   );
@@ -313,82 +478,64 @@ function MobileEmployeeCard({ emp, onOpen }) {
 
 export default function EmployeeTable() {
   const { user } = useUser();
+  const navigate = useNavigate();
   const showEmployeeFilters = canViewEmployeeFilters(user);
 
-  const [employees, setEmployees] = useState([]);
-  const [isDraggingTable, setIsDraggingTable] = useState(false);
-
-  const [departmentFilter, setDepartmentFilter] = useState("All");
-  const [accountFilter, setAccountFilter] = useState("All");
-
-  const [departmentOptions, setDepartmentOptions] = useState([]);
-  const [accountOptions, setAccountOptions] = useState([]);
-
+  const tableScrollRef = useRef(null);
+  const mobileScrollRef = useRef(null);
   const loadedDepartmentOptionsRef = useRef(false);
   const loadedAccountOptionsKeyRef = useRef("");
 
-  const paginationContext = usePagination("employees");
+  const [employees, setEmployees] = useState([]);
+  const [departmentFilter, setDepartmentFilter] = useState("All");
+  const [accountFilter, setAccountFilter] = useState("All");
+  const [departmentOptions, setDepartmentOptions] = useState([]);
+  const [accountOptions, setAccountOptions] = useState([]);
 
   const {
     page = 1,
+    setPage,
     search = "",
     searchInput = "",
     setSearch,
     setSearchInput,
+    commitSearch,
     handleSearchKeyDown,
     loading,
     setLoading,
-    setPagination,
     pagination,
-    setPage,
-    setCurrentPage,
-    handlePageChange,
-  } = paginationContext;
+    setPagination,
+  } = usePagination(ENTITY);
 
-  const navigate = useNavigate();
+  const safePagination = useMemo(
+    () => ({
+      currentPage: Number(pagination?.currentPage || page || 1),
+      totalPages: Math.max(Number(pagination?.totalPages || 1), 1),
+      total: Number(pagination?.total || 0),
+      limit: Number(pagination?.limit || PAGE_LIMIT),
+    }),
+    [page, pagination],
+  );
 
-  const tableScrollRef = useRef(null);
-  const mobileScrollRef = useRef(null);
-
-  const dragStateRef = useRef({
-    isDown: false,
-    startX: 0,
-    scrollLeft: 0,
-    moved: false,
-  });
-
-  const navigateRef = useRef(navigate);
-  const setLoadingRef = useRef(setLoading);
-  const setPaginationRef = useRef(setPagination);
-
-  const safePagination = pagination || {
-    currentPage: page || 1,
-    totalPages: 1,
-    total: 0,
-    limit: PAGE_LIMIT,
-  };
-
-  const currentPage = Number(safePagination.currentPage || page || 1);
-  const totalPages = Number(safePagination.totalPages || 1);
-  const totalRecords = Number(safePagination.total || 0);
-
-  const hasPreviousPage = currentPage > 1;
-  const hasNextPage = currentPage < totalPages;
+  const currentPage = safePagination.currentPage;
+  const totalPages = safePagination.totalPages;
+  const totalRecords = safePagination.total;
 
   const departmentDropdownOptions = useMemo(() => {
     return (Array.isArray(departmentOptions) ? departmentOptions : [])
       .map(normalizeDepartmentOption)
-      .filter((item) => item.value && item.label);
+      .filter((option) => option.value && option.label)
+      .sort((a, b) => String(a.label).localeCompare(String(b.label)));
   }, [departmentOptions]);
 
   const accountDropdownOptions = useMemo(() => {
     const backendOptions = (Array.isArray(accountOptions) ? accountOptions : [])
       .map(normalizeAccountOption)
-      .filter((item) => item.value && item.label);
+      .filter((option) => option.value && option.label);
 
     const loadedOptions = employees
-      .map((emp) => String(emp?.account || "").trim())
-      .filter(Boolean)
+      .map((employee) => getAccount(employee))
+      .filter((account) => account && account !== "Unassigned")
       .map((account) => ({ label: account, value: account }));
 
     const optionMap = new Map();
@@ -404,45 +551,22 @@ export default function EmployeeTable() {
   }, [accountOptions, employees]);
 
   useEffect(() => {
-    navigateRef.current = navigate;
-    setLoadingRef.current = setLoading;
-    setPaginationRef.current = setPagination;
-  }, [navigate, setLoading, setPagination]);
+    if (showEmployeeFilters) return;
 
-  useEffect(() => {
-    if (!showEmployeeFilters) {
-      if (departmentFilter !== "All") setDepartmentFilter("All");
-      if (accountFilter !== "All") setAccountFilter("All");
-
-      loadedDepartmentOptionsRef.current = false;
-      loadedAccountOptionsKeyRef.current = "";
-    }
-  }, [showEmployeeFilters, departmentFilter, accountFilter]);
-
-  useEffect(() => {
-    if (tableScrollRef.current) {
-      tableScrollRef.current.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "smooth",
-      });
-    }
-
-    if (mobileScrollRef.current) {
-      mobileScrollRef.current.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "smooth",
-      });
-    }
-  }, [page, search, departmentFilter, accountFilter]);
+    setDepartmentFilter("All");
+    setAccountFilter("All");
+    setDepartmentOptions([]);
+    setAccountOptions([]);
+    loadedDepartmentOptionsRef.current = false;
+    loadedAccountOptionsKeyRef.current = "";
+  }, [showEmployeeFilters]);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchEmployees() {
+    async function loadEmployees() {
       try {
-        setLoadingRef.current?.(true);
+        setLoading?.(true);
 
         const accountOptionsKey = `${departmentFilter || "All"}`;
         const shouldLoadDepartments =
@@ -466,22 +590,22 @@ export default function EmployeeTable() {
 
         if (!result?.success) {
           if (result?.status === 401) {
-            navigateRef.current("/login");
+            navigate("/login");
             return;
           }
 
           setEmployees([]);
-          setPaginationRef.current?.({
+          setPagination?.({
             currentPage: 1,
             totalPages: 1,
             total: 0,
             limit: PAGE_LIMIT,
           });
-
           return;
         }
 
-        setEmployees(result.data || []);
+        const records = Array.isArray(result.data) ? result.data : [];
+        setEmployees(records);
 
         if (
           showEmployeeFilters &&
@@ -501,21 +625,19 @@ export default function EmployeeTable() {
           loadedAccountOptionsKeyRef.current = accountOptionsKey;
         }
 
-        setPaginationRef.current?.(
-          result.pagination || {
-            currentPage: page,
-            totalPages: 1,
-            total: result.data?.length || 0,
-            limit: PAGE_LIMIT,
-          },
-        );
-      } catch (err) {
+        setPagination?.({
+          ...(result.pagination || {}),
+          total: Number(result.pagination?.total || records.length || 0),
+          currentPage: Number(result.pagination?.currentPage || page || 1),
+          totalPages: Math.max(Number(result.pagination?.totalPages || 1), 1),
+          limit: Number(result.pagination?.limit || PAGE_LIMIT),
+        });
+      } catch (error) {
         if (cancelled) return;
 
-        console.error("Fetch employees error:", err);
-
+        console.error("Employee directory load error:", error);
         setEmployees([]);
-        setPaginationRef.current?.({
+        setPagination?.({
           currentPage: 1,
           totalPages: 1,
           total: 0,
@@ -523,400 +645,306 @@ export default function EmployeeTable() {
         });
       } finally {
         if (!cancelled) {
-          setLoadingRef.current?.(false);
+          setLoading?.(false);
         }
       }
     }
 
-    fetchEmployees();
+    loadEmployees();
 
     return () => {
       cancelled = true;
     };
-  }, [page, search, departmentFilter, accountFilter, showEmployeeFilters]);
+  }, [
+    accountFilter,
+    departmentFilter,
+    navigate,
+    page,
+    search,
+    setLoading,
+    setPagination,
+    showEmployeeFilters,
+  ]);
 
-  function goToPage(nextPage) {
-    const cleanPage = Math.max(Number(nextPage) || 1, 1);
+  useEffect(() => {
+    tableScrollRef.current?.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
 
-    if (typeof setPage === "function") {
-      setPage(cleanPage);
+    mobileScrollRef.current?.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
+  }, [accountFilter, currentPage, departmentFilter, search]);
+
+  function goToEmployee(employee) {
+    const sibsId = getSibsId(employee);
+
+    try {
+      if (sibsId) {
+        sessionStorage.setItem("selectedEmployeeId", sibsId);
+      }
+    } catch (error) {
+      console.error("Unable to save selected employee:", error);
+    }
+
+    navigate("/employee/employee-data", {
+      state: {
+        employee,
+        sibsId,
+      },
+    });
+  }
+
+  function submitSearch() {
+    setPage?.(1);
+
+    if (typeof commitSearch === "function") {
+      commitSearch();
       return;
     }
 
-    if (typeof setCurrentPage === "function") {
-      setCurrentPage(cleanPage);
-      return;
-    }
-
-    if (typeof handlePageChange === "function") {
-      handlePageChange(cleanPage);
-      return;
-    }
-
-    console.error(
-      "Pagination context does not expose setPage, setCurrentPage, or handlePageChange.",
-    );
+    setSearch?.(searchInput);
   }
 
-  function handlePreviousPage() {
-    if (loading || !hasPreviousPage) return;
-    goToPage(currentPage - 1);
-  }
-
-  function handleNextPage() {
-    if (loading || !hasNextPage) return;
-    goToPage(currentPage + 1);
-  }
-
-  function handleEmployeeSearchSubmit() {
-    goToPage(1);
-
-    if (typeof setSearch === "function") {
-      setSearch(searchInput);
-    }
-  }
-
-  function handleEmployeeSearchKeyDown(e) {
+  function handleEmployeeSearchKeyDown(event) {
     if (typeof handleSearchKeyDown === "function") {
-      handleSearchKeyDown(e);
+      handleSearchKeyDown(event);
     }
 
-    if (e.key === "Enter") {
-      goToPage(1);
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitSearch();
     }
   }
 
-  function handleDepartmentSelect(nextDepartment) {
-    const cleanDepartment = nextDepartment || "All";
+  function resetToFirstPage() {
+    setPage?.(1);
+  }
 
-    setDepartmentFilter(cleanDepartment);
+  function handleDepartmentChange(value) {
+    setDepartmentFilter(value);
     setAccountFilter("All");
     setAccountOptions([]);
     loadedAccountOptionsKeyRef.current = "";
-
-    goToPage(1);
+    resetToFirstPage();
   }
 
-  function handleAccountSelect(nextAccount) {
-    setAccountFilter(nextAccount || "All");
-    goToPage(1);
+  function handleAccountChange(value) {
+    setAccountFilter(value);
+    resetToFirstPage();
   }
 
-  function handleDragStart(e) {
-    if (e.button !== 0) return;
-
-    const target = e.target;
-    const isInteractiveElement = target.closest(
-      "button, a, input, select, textarea, [data-no-table-drag='true']",
-    );
-
-    if (isInteractiveElement) return;
-
-    const container = tableScrollRef.current;
-    if (!container) return;
-
-    dragStateRef.current = {
-      isDown: true,
-      startX: e.pageX - container.offsetLeft,
-      scrollLeft: container.scrollLeft,
-      moved: false,
-    };
-
-    setIsDraggingTable(true);
-  }
-
-  function handleDragMove(e) {
-    const container = tableScrollRef.current;
-    const dragState = dragStateRef.current;
-
-    if (!dragState.isDown || !container) return;
-
-    e.preventDefault();
-
-    const x = e.pageX - container.offsetLeft;
-    const walk = (x - dragState.startX) * 1.4;
-
-    if (Math.abs(walk) > 4) {
-      dragStateRef.current.moved = true;
+  function handleRowKeyDown(event, employee) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      goToEmployee(employee);
     }
-
-    container.scrollLeft = dragState.scrollLeft - walk;
-  }
-
-  function handleDragEnd() {
-    dragStateRef.current.isDown = false;
-
-    window.setTimeout(() => {
-      setIsDraggingTable(false);
-      dragStateRef.current.moved = false;
-    }, 0);
-  }
-
-  function handleOpenEmployee(emp) {
-    if (dragStateRef.current.moved) return;
-
-    sessionStorage.setItem("selectedEmployeeId", emp.sibsId);
-    sessionStorage.setItem(EMPLOYEE_STATE_KEY, JSON.stringify({ page }));
-
-    navigate("/employee/employee-data");
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl bg-white">
-      <div className="p-4 sm:p-5">
+    <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+      <div className="border-b border-[#F1F5F9] p-4 sm:p-5">
         <PaginationTable
-          title=""
-          subtitle=""
+          filterLayout="ta-inline"
+          showFilterPanel={false}
+          showFilterHeader={false}
+          showPagination={false}
           loading={loading}
           searchValue={searchInput}
-          searchPlaceholder="Search employee..."
+          searchPlaceholder="Search by employee, SIBS ID, department, or account..."
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleEmployeeSearchKeyDown}
+          searchClassName="relative min-w-0 flex-1"
           dropdownFilters={
             showEmployeeFilters
               ? [
                   {
                     key: "department",
                     value: departmentFilter,
-                    onChange: handleDepartmentSelect,
                     options: departmentDropdownOptions,
+                    onChange: handleDepartmentChange,
+                    includeAll: true,
                     allLabel: "All Departments",
                     placeholder: "Search departments...",
-                    className: "sm:w-[280px]",
                     searchable: true,
-                    includeAll: true,
+                    className: "w-full sm:w-[200px] xl:w-[220px]",
                   },
                   {
                     key: "account",
                     value: accountFilter,
-                    onChange: handleAccountSelect,
                     options: accountDropdownOptions,
+                    onChange: handleAccountChange,
+                    includeAll: true,
                     allLabel: "All Accounts",
                     placeholder: "Search accounts...",
-                    className: "sm:w-[320px]",
                     searchable: true,
-                    includeAll: true,
+                    className: "w-full sm:w-[190px] xl:w-[210px]",
                   },
                 ]
               : []
           }
-          showPagination={false}
-          className="mb-3"
+          className="border-0 bg-transparent p-0 shadow-none"
         />
+      </div>
 
-        <div className="mb-5 block sm:hidden">
-          <button
-            type="button"
-            onClick={handleEmployeeSearchSubmit}
-            disabled={loading}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Search size={17} />
-            Search
-          </button>
+      <div className="min-h-0 flex-1 p-4 sm:p-5">
+        <div ref={mobileScrollRef} className="lg:hidden">
+          {loading ? (
+            <EmptyState loading />
+          ) : employees.length === 0 ? (
+            <EmptyState loading={false} />
+          ) : (
+            <div className="space-y-3">
+              {employees.map((employee, index) => (
+                <MobileEmployeeCard
+                  key={getSibsId(employee) || `${getEmployeeName(employee)}-${index}`}
+                  employee={employee}
+                  onOpen={goToEmployee}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
-          <div
-            ref={tableScrollRef}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            className={`max-h-[670px] select-none overflow-auto ${
-              isDraggingTable ? "cursor-grabbing" : "cursor-grab"
-            }`}
-          >
-            <table className="w-full min-w-[1750px] border-collapse bg-white">
-              <thead className="sticky top-0 z-10 bg-slate-50">
-                <tr>
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    SiBS ID
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Profile
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Full Name
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Email
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Gender
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Birthdate
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Civil Status
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Account
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Site
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Account Manager
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Department
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Contact
-                  </th>
-
-                  <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                    Hire Date
-                  </th>
+        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
+          <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
+            <table className="w-full min-w-[1180px] border-collapse text-left">
+              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                <tr className="border-b border-[#E6ECF2]">
+                  {columns.map((column) => (
+                    <th
+                      key={column}
+                      scope="col"
+                      className="px-4 py-3.5 text-[10px] font-extrabold uppercase tracking-[0.04em] text-[#7B8DB3]"
+                    >
+                      {column}
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
-              <tbody
-                key={`${page}-${search}-${departmentFilter}-${accountFilter}-${loading}`}
-              >
+              <tbody className="divide-y divide-[#EEF2F6]">
                 {loading ? (
                   Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                    <tr key={index}>
-                      <td
-                        colSpan={13}
-                        className="border-t border-[#f3f4f6] px-5 py-4"
-                      >
-                        <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
+                    <tr key={`employee-skeleton-${index}`}>
+                      <td colSpan={columns.length} className="px-4 py-4">
+                        <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
                       </td>
                     </tr>
                   ))
                 ) : employees.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={13}
-                      className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
-                    >
-                      No employees found.
+                    <td colSpan={columns.length}>
+                      <EmptyState loading={false} />
                     </td>
                   </tr>
                 ) : (
-                  employees.map((emp, index) => (
-                    <tr
-                      key={emp.sibsId || index}
-                      onClick={() => handleOpenEmployee(emp)}
-                      className="cursor-pointer transition-all duration-200 hover:bg-slate-50"
-                    >
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
-                        {emp.sibsId || "N/A"}
-                      </td>
+                  employees.map((employee, index) => {
+                    const preferredName = getPreferredName(employee);
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4">
-                        <div className="flex justify-center">
-                          <ProfileAvatar emp={emp} />
-                        </div>
-                      </td>
+                    return (
+                      <tr
+                        key={getSibsId(employee) || `${getEmployeeName(employee)}-${index}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => goToEmployee(employee)}
+                        onKeyDown={(event) => handleRowKeyDown(event, employee)}
+                        aria-label={`Open employee profile for ${getEmployeeName(employee)}`}
+                        className="group cursor-pointer transition-colors hover:bg-[#FFF9F6] focus-visible:bg-[#FFF9F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/30"
+                      >
+                        <td className="whitespace-nowrap px-4 py-4 align-middle text-xs font-extrabold text-[#FF5C28]">
+                          {getSibsId(employee) || "N/A"}
+                        </td>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
-                        {formatEmployeeName(emp)}
-                      </td>
+                        <td className="px-4 py-4 align-middle">
+                          <div className="flex min-w-[230px] items-center gap-3">
+                            <EmployeeAvatar employee={employee} />
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.email || "N/A"}
-                      </td>
+                            <div className="min-w-0">
+                              <p className="break-words text-xs font-extrabold leading-tight text-[#042C51] transition-colors group-hover:text-[#FF5C28]">
+                                {getEmployeeName(employee)}
+                              </p>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.gender || "N/A"}
-                      </td>
+                              {preferredName ? (
+                                <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
+                                  Preferred: {preferredName}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+                        </td>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {formatDate(emp.birthdate)}
-                      </td>
+                        <td className="px-4 py-4 align-middle">
+                          <div className="min-w-[170px]">
+                            <span className="inline-flex max-w-full rounded border border-blue-100 bg-[#EFF6FF] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                              <span className="truncate">{getAccount(employee)}</span>
+                            </span>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.civilStatus || "N/A"}
-                      </td>
+                            <div className="mt-1">
+                              <DetailLine icon={MapPin}>{getAssignedSite(employee)}</DetailLine>
+                            </div>
+                          </div>
+                        </td>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.account || "N/A"}
-                      </td>
+                        <td className="px-4 py-4 align-middle">
+                          <div className="min-w-[210px]">
+                            <p className="break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                              {getPosition(employee)}
+                            </p>
+                            <div className="mt-1">
+                              <DetailLine icon={Briefcase}>{getDepartment(employee)}</DetailLine>
+                            </div>
+                          </div>
+                        </td>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {getAssignedSite(emp)}
-                      </td>
+                        <td className="px-4 py-4 align-middle">
+                          <div className="min-w-[250px] space-y-1">
+                            <DetailLine icon={Mail} breakAll>
+                              {getEmail(employee)}
+                            </DetailLine>
+                            <DetailLine icon={Phone}>{getContact(employee)}</DetailLine>
+                          </div>
+                        </td>
 
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {getAccountManager(emp)}
-                      </td>
-
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.department || "N/A"}
-                      </td>
-
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {emp.contact || "N/A"}
-                      </td>
-
-                      <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                        {formatDate(emp.hireDate)}
-                      </td>
-                    </tr>
-                  ))
+                        <td className="px-4 py-4 align-middle">
+                          <div className="min-w-[135px] space-y-0.5 text-[10px] font-semibold leading-4 text-[#7B8DB3]">
+                            <p>Gender: {getGender(employee)}</p>
+                            <p>Civil: {getCivilStatus(employee)}</p>
+                            <p>
+                              Hired:{" "}
+                              <span className="font-mono font-bold text-[#536887]">
+                                {formatCompactDate(getHireDate(employee))}
+                              </span>
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
-
-          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table.
-          </p>
         </div>
+      </div>
 
-        <div className="block lg:hidden">
-          <div ref={mobileScrollRef} className="max-h-[670px] overflow-y-auto">
-            {loading ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                Loading...
-              </div>
-            ) : employees.length === 0 ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                No employees found.
-              </div>
-            ) : (
-              <div
-                key={`${page}-${search}-${departmentFilter}-${accountFilter}`}
-                className="flex flex-col gap-3"
-              >
-                {employees.map((emp, index) => (
-                  <MobileEmployeeCard
-                    key={emp.sibsId || index}
-                    emp={emp}
-                    onOpen={handleOpenEmployee}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
+      <div className="shrink-0 px-4 pb-4 sm:px-5 sm:pb-5">
         <PaginationTable
           loading={loading}
           showSearch={false}
-          showPagination
           currentPage={currentPage}
           totalPages={totalPages}
           loadedCount={employees.length}
           totalRecords={totalRecords}
           recordLabel="employee records"
-          onPrevious={handlePreviousPage}
-          onNext={handleNextPage}
+          onPrevious={() => setPage?.(Math.max(currentPage - 1, 1))}
+          onNext={() => setPage?.(Math.min(currentPage + 1, totalPages))}
+          showCount
+          className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
     </div>

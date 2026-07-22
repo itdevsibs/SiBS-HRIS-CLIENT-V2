@@ -1,26 +1,22 @@
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { createPortal } from "react-dom";
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
   Clock3,
-  Eye,
   FileCheck2,
   FileText,
   ListChecks,
   Loader2,
   Mail,
   Plus,
+  Paperclip,
   RefreshCcw,
-  Search,
   Send,
   TrendingDown,
   UserCheck,
@@ -33,12 +29,17 @@ import {
 
 import Header from "../../components/layout/Header";
 import StatusModal from "../../components/modals/StatusModal";
+import PaginationTable from "../../services/pagination/PaginationTable";
 import { useUser } from "../../services/context/UserContext";
 import {
   ResignationManagementModal,
   ViewResignationModal,
 } from "../../components/modals/resignation-management/ResignationManagementModal";
-import TableFooter from "../../components/tables/footer/TableFooter";
+import AttachmentsModal from "../../components/modals/resignation/attachmentsModal";
+import {
+  getAttachmentCount,
+  getAttachmentCountLabel,
+} from "../../lib/utils/resignation/attachmentUtils.js";
 
 import {
   getManagedEmployees,
@@ -77,6 +78,8 @@ const STATUS_OPTIONS = [
 ];
 
 const TYPE_OPTIONS = ["All", "Formal", "Immediate"];
+const PAGE_LIMIT = 15;
+
 
 function normalizeRoleKey(value) {
   return String(value || "")
@@ -213,7 +216,7 @@ function getProfileImageUrl(item) {
 function ProfileAvatar({ item, size = "md" }) {
   const sibsId = getEmployeeSibsId(item);
   const [fetchedEmployee, setFetchedEmployee] = useState(null);
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedImageKey, setFailedImageKey] = useState("");
 
   const mergedItem = {
     ...(item || {}),
@@ -221,16 +224,14 @@ function ProfileAvatar({ item, size = "md" }) {
   };
 
   const imageUrl = getProfileImageUrl(mergedItem);
+  const imageKey = `${sibsId || "employee"}::${imageUrl || "no-image"}`;
+  const imageFailed = failedImageKey === imageKey;
 
   const shouldFetchProfile =
     sibsId &&
     sibsId !== "--" &&
     !getProfileImageUrl(item || {}) &&
     !fetchedEmployee;
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [imageUrl, sibsId]);
 
   useEffect(() => {
     if (!shouldFetchProfile) return undefined;
@@ -294,7 +295,7 @@ function ProfileAvatar({ item, size = "md" }) {
         src={imageUrl}
         alt="Profile"
         className="h-full w-full object-cover"
-        onError={() => setImageFailed(true)}
+        onError={() => setFailedImageKey(imageKey)}
       />
     ) : (
       <div className="flex h-full w-full items-center justify-center text-sibs-primary-1">
@@ -392,6 +393,11 @@ function getStatusIcon(status) {
   }
 }
 
+function renderStatusIcon(status, size = 12) {
+  const IconComponent = getStatusIcon(status);
+  return <IconComponent size={size} />;
+}
+
 function getStageClass(status) {
   switch (status) {
     case "Approved":
@@ -407,164 +413,6 @@ function getStageClass(status) {
   }
 }
 
-function DropdownPortal({
-  open,
-  anchorRef,
-  children,
-  onClose,
-  maxHeight = 256,
-}) {
-  const dropdownRef = useRef(null);
-  const [style, setStyle] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
-
-  useLayoutEffect(() => {
-    if (!open || !anchorRef.current) return undefined;
-
-    function updatePosition() {
-      const rect = anchorRef.current.getBoundingClientRect();
-
-      setStyle({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-
-    updatePosition();
-
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, [open, anchorRef]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    function handleClickOutside(e) {
-      const clickedAnchor = anchorRef.current?.contains(e.target);
-      const clickedDropdown = dropdownRef.current?.contains(e.target);
-
-      if (!clickedAnchor && !clickedDropdown) {
-        onClose?.();
-      }
-    }
-
-    function handleEscape(e) {
-      if (e.key === "Escape") {
-        onClose?.();
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open, anchorRef, onClose]);
-
-  if (!open || typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      className={`fixed z-[999999] overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-lg`}
-      style={{
-        top: `${style.top}px`,
-        left: `${style.left}px`,
-        width: `${style.width}px`,
-      }}
-    >
-      <div
-        className="overflow-y-auto py-2 sibs-scrollbar"
-        style={{ maxHeight }}
-      >
-        {children}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-function CustomSelect({
-  label,
-  value,
-  options = [],
-  onChange,
-  allLabel = "",
-}) {
-  const [open, setOpen] = useState(false);
-  const anchorRef = useRef(null);
-
-  const displayValue =
-    value === "All" && allLabel ? allLabel : value || allLabel || "Select";
-
-  return (
-    <div className="relative">
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
-        {label}
-      </label>
-
-      <button
-        ref={anchorRef}
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full items-center justify-between ${EDGE} border bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition-all duration-200 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 ${open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#D0D5DD]"
-          }`}
-      >
-        <span className="truncate">{displayValue}</span>
-
-        <ChevronDown
-          size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
-            }`}
-        />
-      </button>
-
-      <DropdownPortal
-        open={open}
-        anchorRef={anchorRef}
-        onClose={() => setOpen(false)}
-      >
-        {options.map((option) => {
-          const optionLabel = option === "All" && allLabel ? allLabel : option;
-          const selected = value === option;
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option);
-                setOpen(false);
-              }}
-              className={`block w-full px-4 py-3 text-left text-sm transition ${selected
-                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                  : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
-            >
-              <span className="block truncate">{optionLabel}</span>
-            </button>
-          );
-        })}
-      </DropdownPortal>
-    </div>
-  );
-}
-
 function ResignationSummaryCards({ stats, loading }) {
   const normalizedStats = {
     ...DEFAULT_COUNTS,
@@ -574,95 +422,121 @@ function ResignationSummaryCards({ stats, loading }) {
   const cards = [
     {
       title: "Total Resignations",
+      description: "Records currently loaded",
       value: normalizedStats.total,
       icon: FileCheck2,
-      className: "bg-blue-50 text-sibs-primary-1",
+      tone: "navy",
     },
     {
       title: "For Approval",
+      description: "Awaiting approval routing",
       value: normalizedStats.pending,
       icon: Clock3,
-      className: "bg-amber-50 text-amber-700",
+      tone: "amber",
     },
     {
       title: "Notice Period",
+      description: "Employees currently rendering",
       value: normalizedStats.notice,
       icon: AlertCircle,
-      className: "bg-cyan-50 text-cyan-700",
+      tone: "orange",
     },
     {
       title: "Completed",
+      description: "Clearance and offboarding done",
       value: normalizedStats.completed,
       icon: CheckCircle2,
-      className: "bg-emerald-50 text-emerald-700",
+      tone: "emerald",
     },
     {
       title: "Declined",
+      description: "Declined or retained requests",
       value: normalizedStats.declined,
       icon: XCircle,
-      className: "bg-red-50 text-red-700",
+      tone: "red",
     },
   ];
 
+  const tones = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      iconWrap: "bg-[#EAF2FB]",
+      icon: "text-[#042C51]",
+    },
+    amber: {
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      iconWrap: "bg-[#FFFBEB]",
+      icon: "text-[#F59E0B]",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      iconWrap: "bg-[#FFF0EB]",
+      icon: "text-[#FF5C28]",
+    },
+    emerald: {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3]",
+      icon: "text-[#059669]",
+    },
+    red: {
+      label: "text-[#BE123C]",
+      value: "text-[#E11D48]",
+      iconWrap: "bg-[#FFF1F2]",
+      icon: "text-[#E11D48]",
+    },
+  };
+
   return (
-    <section className={`${EDGE} ${PANEL_BORDER} overflow-hidden bg-white`}>
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <FileCheck2 size={14} />
-              Resignation Overview
-            </div>
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+      {cards.map((card, index) => {
+        const IconComponent = card.icon;
+        const tone = tones[card.tone] || tones.navy;
 
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
-              Resignation Summary
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Monitor filed resignation records, current progress, notice
-              period, and completed clearance.
-            </p>
-          </div>
-
-          <div
-            className={`inline-flex w-fit items-center gap-2 ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]`}
+        return (
+          <article
+            key={card.title}
+            className="sibs-metric-card"
+            style={{
+              animationDelay: `${index * 55}ms`,
+              animationFillMode: "both",
+            }}
           >
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            Records: {normalizedStats.total}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 xl:grid-cols-5">
-        {cards.map((card) => {
-          const Icon = card.icon;
-
-          return (
-            <div
-              key={card.title}
-              className={`${EDGE} ${SOFT_PANEL_BORDER} bg-white p-4 transition hover:bg-[#FAFBFC]`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                    {card.title}
-                  </p>
-
-                  <p className="mt-2 text-2xl font-extrabold text-sibs-primary-1">
-                    {loading ? "..." : card.value}
-                  </p>
-                </div>
-
-                <div
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} ${card.className}`}
+            <div className="flex h-full items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`m-0 truncate text-xs font-extrabold uppercase ${tone.label}`}
                 >
-                  <Icon size={21} />
-                </div>
+                  {card.title}
+                </p>
+
+                <p
+                  className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${tone.value}`}
+                >
+                  {loading ? "..." : card.value}
+                </p>
+
+                <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+                  {card.description}
+                </p>
               </div>
+
+              <span
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone.iconWrap} ${tone.icon}`}
+              >
+                {loading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <IconComponent size={17} strokeWidth={2} />
+                )}
+              </span>
             </div>
-          );
-        })}
-      </div>
+          </article>
+        );
+      })}
     </section>
   );
 }
@@ -697,35 +571,39 @@ function ApprovalStageRow({ stage, approver, role, status }) {
 
 function ResignationProcessStep({
   number,
-  icon: Icon,
+  icon,
   title,
   description,
   active,
   done,
 }) {
+  const IconComponent = icon;
+
   return (
     <div className="relative min-w-0 flex-1">
       <div className="flex min-w-0 flex-col items-center text-center">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-full border-4 border-white shadow-sm transition-all duration-300 ${done
-              ? "bg-emerald-600 text-white"
+          className={`flex h-10 w-10 items-center justify-center rounded-full border-4 border-white text-xs font-extrabold shadow-sm transition-all duration-300 ${
+            done
+              ? "bg-[#042C51] text-white"
               : active
-                ? "bg-sibs-primary-1 text-white"
-                : "bg-[#eef2f6] text-sibs-tertiary-5"
-            }`}
+                ? "scale-105 bg-[#FF5C28] text-white shadow-[#FF5C28]/20"
+                : "bg-[#EEF2F6] text-[#98A2B3]"
+          }`}
         >
-          <Icon size={20} />
+          {done ? <CheckCircle2 size={17} /> : <IconComponent size={17} />}
         </div>
 
-        <div className="mt-3 min-w-0">
+        <div className="mt-2 min-w-0">
           <p
-            className={`text-xs font-bold ${done || active ? "text-sibs-primary-1" : "text-sibs-tertiary-5"
-              }`}
+            className={`text-[11px] font-extrabold ${
+              done || active ? "text-[#042C51]" : "text-[#98A2B3]"
+            }`}
           >
             {number}. {title}
           </p>
 
-          <p className="mt-1 text-xs font-medium leading-5 text-sibs-tertiary-5">
+          <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
             {description}
           </p>
         </div>
@@ -821,7 +699,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
       <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
         <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase text-sibs-primary-1">
               <ListChecks size={14} />
               Process Flow
             </div>
@@ -905,7 +783,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] border-collapse">
               <thead>
-                <tr className="bg-white text-left text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                <tr className="bg-white text-left text-xs font-bold uppercase text-sibs-tertiary-5">
                   <th className="px-4 py-3">Stage</th>
                   <th className="px-4 py-3">Approver</th>
                   <th className="px-4 py-3">Role</th>
@@ -933,7 +811,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
         <div className={`min-w-0 ${EDGE} ${PANEL_BORDER} bg-white p-5`}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-red-700">
+              <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1 text-xs font-extrabold uppercase text-red-700">
                 <TrendingDown size={14} />
                 Trend
               </div>
@@ -1035,148 +913,145 @@ function ResignationFilters({
   onClearFilters,
 }) {
   return (
-    <div className={`${EDGE} ${PANEL_BORDER} bg-white p-5`}>
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1fr_240px_240px] xl:items-end">
-        <div>
-          <label className="mb-1 block text-sm font-bold text-[#101828]">
-            Search
-          </label>
-
-          <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search employee, SIBS ID, department, type, status, reason..."
-              className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
-            />
-          </div>
-        </div>
-
-        <CustomSelect
-          label="Resignation Status"
-          value={statusFilter}
-          options={STATUS_OPTIONS}
-          allLabel="All Status"
-          onChange={setStatusFilter}
-        />
-
-        <CustomSelect
-          label="Resignation Type"
-          value={typeFilter}
-          options={TYPE_OPTIONS}
-          allLabel="All Types"
-          onChange={setTypeFilter}
-        />
-      </div>
-
-      {hasActiveFilters && (
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="inline-flex rounded-full border border-[#E6ECF2] bg-white px-3 py-1 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC]"
-          >
-            Clear Filters
-          </button>
-        </div>
-      )}
-    </div>
+    <section className="sibs-page-card-in sibs-card overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <PaginationTable
+        filterLayout="ta-inline"
+        showFilterPanel={false}
+        showFilterHeader={false}
+        showPagination={false}
+        showSearch
+        searchValue={search}
+        searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
+        onSearchChange={(value) => setSearch(value)}
+        controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
+        searchClassName="relative min-w-0 flex-1"
+        filters={[
+          {
+            key: "status",
+            value: statusFilter,
+            onChange: setStatusFilter,
+            options: STATUS_OPTIONS.map((option) => ({
+              label: option === "All" ? "All Statuses" : option,
+              value: option,
+            })),
+            allLabel: "All Statuses",
+            className: "w-full sm:w-[190px] xl:w-[210px]",
+            searchable: false,
+            includeAll: false,
+          },
+          {
+            key: "type",
+            value: typeFilter,
+            onChange: setTypeFilter,
+            options: TYPE_OPTIONS.map((option) => ({
+              label: option === "All" ? "All Types" : option,
+              value: option,
+            })),
+            allLabel: "All Types",
+            className: "w-full sm:w-[170px] xl:w-[190px]",
+            searchable: false,
+            includeAll: false,
+          },
+        ]}
+        rightContent={
+          hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={onClearFilters}
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-4 text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] sm:w-auto"
+            >
+              Clear
+            </button>
+          ) : null
+        }
+        rightContentClassName="flex w-full items-center sm:w-auto"
+        className="border-0 bg-transparent p-0 shadow-none"
+      />
+    </section>
   );
 }
 
-function ResignationTableCard({ data, totalRecords, loading, onView }) {
-  return (
-    <section className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-      <div className="border-b border-[#E6ECF2] px-5 py-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <ListChecks size={14} />
-              Resignation List
-            </div>
+function ResignationTableCard({
+  data,
+  loading,
+  onView,
+  onOpenAttachments,
+}) {
+  const [pageState, setPageState] = useState({ data, page: 1 });
+  const totalPages = Math.max(Math.ceil(data.length / PAGE_LIMIT), 1);
+  const currentPage = Math.min(
+    Math.max(pageState.data === data ? pageState.page : 1, 1),
+    totalPages,
+  );
 
-            <h2 className="mt-3 text-lg font-extrabold text-sibs-primary-1">
-              All Resignations
+  const pageData = useMemo(() => {
+    const safePage = Math.min(Math.max(currentPage, 1), totalPages);
+    const start = (safePage - 1) * PAGE_LIMIT;
+    return data.slice(start, start + PAGE_LIMIT);
+  }, [data, currentPage, totalPages]);
+
+  const startRecord = pageData.length
+    ? (currentPage - 1) * PAGE_LIMIT + 1
+    : 0;
+  const endRecord = pageData.length
+    ? startRecord + pageData.length - 1
+    : 0;
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
+      <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="sibs-section-title">
+              Employee Resignation Records
             </h2>
 
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              View all resignation records filed by TL, OM or direct supervisors.
+            <p className="sibs-section-subtitle">
+              View filing details and submitted resignation attachments.
             </p>
-          </div>
-
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 text-sm font-bold text-[#344054]">
-            {loading && <Loader2 size={15} className="animate-spin" />}
-            Showing: {data.length} / {totalRecords}
           </div>
         </div>
       </div>
 
-      <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
-        <div className="hidden lg:block">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1250px] table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white text-left">
-              <thead>
-                <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-                  <th className="w-[20%] px-5 py-4 first:rounded-tl-2xl">
-                    Employee
-                  </th>
-
-                  <th className="w-[16%] px-5 py-4">Filed By</th>
-
-                  <th className="w-[8%] px-5 py-4 text-center">Type</th>
-
-                  <th className="w-[11%] px-5 py-4 text-center">
-                    Resignation Date
-                  </th>
-
-                  <th className="w-[12%] px-5 py-4 text-center">
-                    Last Working Date
-                  </th>
-
-                  <th className="w-[13%] px-5 py-4 text-center">Status</th>
-
-                  <th className="w-[12%] px-5 py-4">Reason</th>
-
-                  <th className="w-[8%] px-5 py-4 text-right last:rounded-tr-2xl">
-                    Actions
-                  </th>
+      <div className="p-4 sm:p-5">
+        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] lg:block">
+          <div className="max-h-[620px] overflow-auto sibs-scrollbar">
+            <table className="w-full min-w-[1380px] border-collapse bg-white text-left">
+              <thead className="sticky top-0 z-10 bg-[#F8FAFC]">
+                <tr className="border-b border-[#E6ECF2]">
+                  <th className="sibs-data-table-th w-[240px] whitespace-nowrap py-3 text-left">Employee</th>
+                  <th className="sibs-data-table-th w-[190px] whitespace-nowrap py-3 text-left">Filed By</th>
+                  <th className="sibs-data-table-th w-[110px] whitespace-nowrap py-3 text-center">Type</th>
+                  <th className="sibs-data-table-th w-[140px] whitespace-nowrap py-3 text-center">Resignation Date</th>
+                  <th className="sibs-data-table-th w-[150px] whitespace-nowrap py-3 text-center">Last Working Date</th>
+                  <th className="sibs-data-table-th w-[150px] whitespace-nowrap py-3 text-center">Status</th>
+                  <th className="sibs-data-table-th w-[220px] whitespace-nowrap py-3 text-left">Reason</th>
+                  <th className="sibs-data-table-th w-[170px] whitespace-nowrap py-3 text-center">Attachments</th>
                 </tr>
               </thead>
 
               <tbody>
                 {loading ? (
+                  Array.from({ length: 7 }).map((_, index) => (
+                    <tr key={index}>
+                      <td colSpan={8} className="border-t border-[#EEF2F6] px-4 py-3.5">
+                        <div className="h-5 w-full animate-sibs-pulse rounded bg-[#E9EEF5]" />
+                      </td>
+                    </tr>
+                  ))
+                ) : pageData.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={8}
-                      className="px-5 py-12 text-center text-sm font-bold text-gray-500"
-                    >
-                      <Loader2
-                        size={28}
-                        className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-                      />
-                      Loading resignations...
-                    </td>
-                  </tr>
-                ) : data.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-5 py-16 text-center text-sm font-bold text-gray-500"
-                    >
+                    <td colSpan={8} className="px-5 py-16 text-center text-sm font-bold text-[#667085]">
                       No resignation records found.
                     </td>
                   </tr>
                 ) : (
-                  data.map((item, index) => (
+                  pageData.map((item, index) => (
                     <ResignationRow
                       key={item?.id || item?.resignationId || index}
                       item={item}
                       onView={() => onView(item)}
+                      onOpenAttachments={() => onOpenAttachments?.(item)}
                     />
                   ))
                 )}
@@ -1187,56 +1062,72 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
 
         <div className="block lg:hidden">
           {loading ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
-              <Loader2
-                size={28}
-                className="mx-auto mb-3 animate-spin text-sibs-primary-1"
-              />
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-[#667085]">
+              <Loader2 size={28} className="mx-auto mb-3 animate-spin text-[#042C51]" />
               Loading resignations...
             </div>
-          ) : data.length === 0 ? (
-            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-gray-500">
+          ) : pageData.length === 0 ? (
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-5 py-10 text-center text-sm font-bold text-[#667085]">
               No resignation records found.
             </div>
           ) : (
             <div className="space-y-3">
-              {data.map((item, index) => (
+              {pageData.map((item, index) => (
                 <ResignationMobileCard
                   key={item?.id || item?.resignationId || index}
                   item={item}
                   onView={() => onView(item)}
+                  onOpenAttachments={() => onOpenAttachments?.(item)}
                 />
               ))}
             </div>
           )}
         </div>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <p className="text-sm font-semibold text-sibs-tertiary-5">
-            Showing {data.length > 0 ? 1 : 0} to {data.length} of{" "}
-            {totalRecords} resignation records
+        <div className="mt-5 flex flex-col justify-between gap-4 border-t border-[#EEF2F6] pt-4 sm:flex-row sm:items-center">
+          <p className="text-xs font-bold text-[#667085]">
+            Showing {startRecord} to {endRecord} of {data.length} filtered records
           </p>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
+              onClick={() =>
+                setPageState((current) => ({
+                  data,
+                  page: Math.max(
+                    (current.data === data ? current.page : currentPage) - 1,
+                    1,
+                  ),
+                }))
+              }
+              disabled={loading || currentPage <= 1}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-[#C5CED8] disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
+              aria-label="Previous page"
             >
               <ChevronLeft size={16} />
             </button>
 
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-sibs-primary-1 text-sm font-bold text-white"
-            >
-              1
-            </button>
+            <span className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-[#FF5C28] px-3 text-xs font-extrabold text-white">
+              {currentPage}
+            </span>
+
+            <span className="text-xs font-bold text-[#98A2B3]">of {totalPages}</span>
 
             <button
               type="button"
-              disabled
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-400"
+              onClick={() =>
+                setPageState((current) => ({
+                  data,
+                  page: Math.min(
+                    (current.data === data ? current.page : currentPage) + 1,
+                    totalPages,
+                  ),
+                }))
+              }
+              disabled={loading || currentPage >= totalPages}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-[#C5CED8] disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
+              aria-label="Next page"
             >
               <ChevronRight size={16} />
             </button>
@@ -1247,10 +1138,10 @@ function ResignationTableCard({ data, totalRecords, loading, onView }) {
   );
 }
 
-function ResignationRow({ item, onView }) {
+function ResignationRow({ item, onView, onOpenAttachments }) {
   const status = getResignationStatus(item);
-  const StatusIcon = getStatusIcon(status);
   const employeeName = getFullName(item);
+  const attachmentCount = getAttachmentCount(item);
 
   const filedBy =
     item?.filedByName ||
@@ -1266,185 +1157,133 @@ function ResignationRow({ item, onView }) {
     "Direct supervisor";
 
   const reason = item?.reason || item?.remarks || "—";
-
   const resignationDate =
     item?.resignationDate || item?.resignation_date || getItemDate(item);
-
   const lastWorkingDate = item?.lastWorkingDate || item?.last_working_date;
-
   const resignationType = item?.resignationType || item?.type || "—";
 
+  function handleRowKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onView?.();
+    }
+  }
+
   return (
-    <tr className="transition hover:bg-[#FAFBFC]">
-      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
+    <tr
+      role="button"
+      tabIndex={0}
+      onClick={onView}
+      onKeyDown={handleRowKeyDown}
+      title="Open resignation details"
+      className="sibs-data-table-row"
+    >
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 align-middle">
         <div className="flex min-w-0 items-center gap-3">
           <ProfileAvatar item={item} />
-
           <div className="min-w-0">
-            <p
-              title={employeeName}
-              className="truncate text-sm font-extrabold text-[#101828]"
-            >
-              {employeeName}
-            </p>
-
-            <p
-              title={`${getEmployeeSibsId(item)} · ${getEmployeeDepartment(
-                item,
-              )}`}
-              className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5"
-            >
-              {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
-            </p>
+            <p title={employeeName} className="truncate text-xs font-extrabold text-[#101828]">{employeeName}</p>
+            <p className="mt-1 truncate text-[11px] font-bold text-[#667085]">{getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}</p>
           </div>
         </div>
       </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-        <div className="min-w-0">
-          <p
-            title={filedBy}
-            className="truncate text-sm font-bold text-[#344054]"
-          >
-            {filedBy}
-          </p>
-
-          <p
-            title={filedByRole}
-            className="mt-1 truncate text-xs font-semibold text-sibs-primary-1"
-          >
-            {filedByRole}
-          </p>
-        </div>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 align-middle">
+        <p className="truncate text-xs font-extrabold text-[#344054]">{filedBy}</p>
+        <p className="mt-1 truncate text-[11px] font-bold text-[#667085]">{filedByRole}</p>
       </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-        <span
-          title={resignationType}
-          className="inline-flex max-w-full rounded-full border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-1 text-xs font-bold text-[#344054]"
-        >
-          <span className="truncate">{resignationType}</span>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center align-middle">
+        <span className="inline-flex rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-2.5 py-1 text-[11px] font-extrabold text-[#344054]">{resignationType}</span>
+      </td>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center text-xs font-bold text-[#344054]">{formatDate(resignationDate)}</td>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center text-xs font-bold text-[#344054]">{formatDate(lastWorkingDate)}</td>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center">
+        <span className={`inline-flex min-w-[124px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-extrabold ${getStatusClass(status)}`}>
+          {renderStatusIcon(status, 12)}
+          {status}
         </span>
       </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-        <p
-          title={formatDate(resignationDate)}
-          className="truncate whitespace-nowrap text-sm font-semibold text-[#344054]"
-        >
-          {formatDate(resignationDate)}
-        </p>
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-xs font-semibold text-[#344054]">
+        <p title={reason} className="truncate">{reason}</p>
       </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-        <p
-          title={formatDate(lastWorkingDate)}
-          className="truncate whitespace-nowrap text-sm font-semibold text-[#344054]"
-        >
-          {formatDate(lastWorkingDate)}
-        </p>
-      </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center align-middle">
-        <span
-          title={status}
-          className={`mx-auto inline-flex max-w-full items-center justify-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-            status,
-          )}`}
-        >
-          <StatusIcon size={14} className="shrink-0" />
-          <span className="truncate">{status}</span>
-        </span>
-      </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 align-middle">
-        <p
-          title={reason}
-          className="truncate text-sm font-semibold text-[#344054]"
-        >
-          {reason}
-        </p>
-      </td>
-
-      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right align-middle">
+      <td className="border-t border-[#EEF2F6] px-4 py-3.5 text-center">
         <button
           type="button"
-          onClick={onView}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98]"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenAttachments?.();
+          }}
+          disabled={attachmentCount === 0}
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-3 text-[11px] font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] disabled:cursor-not-allowed disabled:border-[#E6ECF2] disabled:bg-[#F8FAFC] disabled:text-[#98A2B3]"
         >
-          <Eye size={16} />
-          View
+          <Paperclip size={13} />
+          {getAttachmentCountLabel(item)}
         </button>
       </td>
     </tr>
   );
 }
 
-function ResignationMobileCard({ item, onView }) {
+function ResignationMobileCard({ item, onView, onOpenAttachments }) {
   const status = getResignationStatus(item);
-  const StatusIcon = getStatusIcon(status);
+  const attachmentCount = getAttachmentCount(item);
 
   return (
-    <button
-      type="button"
+    <article
+      role="button"
+      tabIndex={0}
       onClick={onView}
-      className={`w-full ${EDGE} border border-[#E6ECF2] bg-white p-4 text-left transition hover:bg-[#F8FAFC]`}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onView?.();
+        }
+      }}
+      title="Open resignation details"
+      className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C28]/30"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <ProfileAvatar item={item} size="lg" />
-
           <div className="min-w-0">
-            <h3 className="text-sm font-extrabold leading-tight text-[#101828]">
-              {getFullName(item)}
-            </h3>
-
-            <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-              {getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}
-            </p>
+            <h3 className="text-sm font-extrabold leading-tight text-[#101828]">{getFullName(item)}</h3>
+            <p className="mt-1 text-xs font-semibold text-[#667085]">{getEmployeeSibsId(item)} · {getEmployeeDepartment(item)}</p>
           </div>
         </div>
-
-        <span
-          className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold ${getStatusClass(
-            status,
-          )}`}
-        >
-          <StatusIcon size={12} />
+        <span className={`inline-flex min-w-[118px] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getStatusClass(status)}`}>
+          {renderStatusIcon(status, 12)}
           {status}
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <MobileMetric label="Type" value={item?.resignationType || item?.type} />
-
-        <MobileMetric
-          label="Date"
-          value={formatDate(item?.resignationDate || getItemDate(item))}
-        />
-
-        <MobileMetric
-          label="Last Working"
-          value={formatDate(item?.lastWorkingDate || item?.last_working_date)}
-        />
-
-        <MobileMetric label="Filed By" value={item?.filedByName || "TL / OM"} />
+        <MobileMetric label="Date" value={formatDate(item?.resignationDate || getItemDate(item))} />
+        <MobileMetric label="Last Working" value={formatDate(item?.lastWorkingDate || item?.last_working_date)} />
+        <MobileMetric label="Filed By" value={item?.filedByName || item?.supervisorName || "TL / OM"} />
       </div>
 
-      <div
-        className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1`}
-      >
-        <Eye size={16} />
-        View Details
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenAttachments?.();
+          }}
+          disabled={attachmentCount === 0}
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28] disabled:cursor-not-allowed disabled:bg-[#D0D5DD]"
+        >
+          <Paperclip size={15} />
+          {getAttachmentCountLabel(item)}
+        </button>
       </div>
-    </button>
+    </article>
   );
 }
 
 function MobileMetric({ label, value }) {
   return (
     <div className={`${EDGE} bg-[#F8FAFC] p-3`}>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-sibs-tertiary-5">
+      <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
         {label}
       </p>
 
@@ -1468,6 +1307,7 @@ export default function ResignationManagementPage() {
   const [resignations, setResignations] = useState([]);
   const [resignationLoading, setResignationLoading] = useState(false);
   const [selectedResignation, setSelectedResignation] = useState(null);
+  const [attachmentResignation, setAttachmentResignation] = useState(null);
 
   const [managedEmployees, setManagedEmployees] = useState([]);
   const [employeePickerLoading, setEmployeePickerLoading] = useState(false);
@@ -1683,6 +1523,15 @@ export default function ResignationManagementPage() {
   useEffect(() => {
     fetchResignations();
   }, [fetchResignations]);
+
+  const handleOpenAttachments = useCallback((item) => {
+    if (!item) return;
+    setAttachmentResignation(item);
+  }, []);
+
+  const handleCloseAttachments = useCallback(() => {
+    setAttachmentResignation(null);
+  }, []);
 
   function forceUnlockPageScroll() {
     window.setTimeout(() => {
@@ -1922,56 +1771,82 @@ export default function ResignationManagementPage() {
         ref={mainScrollRef}
         className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
       >
-        <div className="sibs-page-header-in mb-6 flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              <FileText size={14} />
-              Employee Movement
+        <section
+          className="sibs-page-header-in sibs-page-card-in relative mb-5 overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+          style={{ animationDelay: "0ms", animationFillMode: "both" }}
+        >
+          <span className="sibs-top-accent" aria-hidden="true" />
+
+          <div className="mt-1 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  Resignation Management View
+                </span>
+
+                <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                  Module: Core HR
+                </span>
+
+                {isViewOnly && (
+                  <span className="inline-flex rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#667085]">
+                    Read-Only Access
+                  </span>
+                )}
+              </div>
+
+              <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                Resignation Management
+              </h1>
+
+              <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                {isViewOnly
+                  ? "View and monitor resignation requests. Approval decisions remain in Approval Request."
+                  : "File, monitor, analyze, and track resignation records. Approval decisions remain in Approval Request."}
+              </p>
             </div>
 
-            <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-              Resignation Management
-            </h1>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              {isViewOnly
-                ? "View and monitor all resignation requests. HR, HR Admin, and Executive access is view-only."
-                : "File, monitor, analyze, and track resignation records. Approval decisions are handled in Approval Request."}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={resignationLoading}
-              className={`inline-flex h-11 w-fit items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              {resignationLoading ? (
-                <Loader2 size={17} className="animate-spin" />
-              ) : (
-                <RefreshCcw size={17} />
-              )}
-              Refresh
-            </button>
-
-            {canCreateResignation && (
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <button
                 type="button"
-                onClick={handleOpenAddResignation}
-                className={`inline-flex h-11 w-fit items-center justify-center gap-2 ${EDGE} bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-95 active:scale-[0.98]`}
+                onClick={handleRefresh}
+                disabled={resignationLoading}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[#D6DEE8] bg-white px-4 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Plus size={17} />
-                New Resignation
+                {resignationLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <RefreshCcw size={16} />
+                )}
+                Refresh
               </button>
-            )}
+
+              {canCreateResignation && (
+                <button
+                  type="button"
+                  onClick={handleOpenAddResignation}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+                >
+                  <Plus size={16} />
+                  New Resignation
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        </section>
 
         <div className="space-y-5">
           <div className="relative z-[20] sibs-profile-tab-panel">
             <ResignationSummaryCards
               stats={stats}
+              loading={resignationLoading}
+            />
+          </div>
+
+          <div className="relative z-[0] sibs-profile-tab-panel">
+            <ResignationAnalytics
+              data={resignations}
               loading={resignationLoading}
             />
           </div>
@@ -1990,18 +1865,11 @@ export default function ResignationManagementPage() {
           </div>
 
           <div className="relative z-[0] sibs-profile-tab-panel">
-            <ResignationAnalytics
-              data={resignations}
-              loading={resignationLoading}
-            />
-          </div>
-
-          <div className="relative z-[0] sibs-profile-tab-panel">
             <ResignationTableCard
               data={filteredResignations}
-              totalRecords={resignations.length}
               loading={resignationLoading}
               onView={setSelectedResignation}
+              onOpenAttachments={handleOpenAttachments}
             />
           </div>
         </div>
@@ -2027,7 +1895,14 @@ export default function ResignationManagementPage() {
       <ViewResignationModal
         open={!!selectedResignation}
         item={selectedResignation}
+        onOpenAttachments={handleOpenAttachments}
         onClose={() => setSelectedResignation(null)}
+      />
+
+      <AttachmentsModal
+        open={!!attachmentResignation}
+        resignation={attachmentResignation}
+        onClose={handleCloseAttachments}
       />
 
       <StatusModal

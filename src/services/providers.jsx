@@ -2,6 +2,7 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { UserProvider } from "./context/UserContext";
+import { SidebarNotificationProvider } from "./context/SidebarNotificationContext";
 import HeaderProvider from "./context/HeaderContext";
 import { AdminProvider } from "./context/AdminContext";
 import { PaginationProvider } from "./context/PaginationContext";
@@ -27,31 +28,33 @@ export default function Providers({ children }) {
       <PaginationProvider>
         <HeaderProvider>
           <UserProvider>
-            <AdminProvider>
-              <RecruitmentSettingsProvider>
-                <JobDescriptionProvider>
-                  <TalentPoolProvider>
-                    <CandidatePipelineProvider>
-                      <OffersProvider>
-                        <HiringNeedsProvider>
-                          <OnboardingProvider>
-                            <ActionItemsProvider>
-                              <SourcingProvider>
-                                <WorkforceHiringProvider>
-                                  <ResignationListProvider>
-                                    {children}
-                                  </ResignationListProvider>
-                                </WorkforceHiringProvider>
-                              </SourcingProvider>
-                            </ActionItemsProvider>
-                          </OnboardingProvider>
-                        </HiringNeedsProvider>
-                      </OffersProvider>
-                    </CandidatePipelineProvider>
-                  </TalentPoolProvider>
-                </JobDescriptionProvider>
-              </RecruitmentSettingsProvider>
-            </AdminProvider>
+            <SidebarNotificationProvider>
+              <AdminProvider>
+                <RecruitmentSettingsProvider>
+                  <JobDescriptionProvider>
+                    <TalentPoolProvider>
+                      <CandidatePipelineProvider>
+                        <OffersProvider>
+                          <HiringNeedsProvider>
+                            <OnboardingProvider>
+                              <ActionItemsProvider>
+                                <SourcingProvider>
+                                  <WorkforceHiringProvider>
+                                    <ResignationListProvider>
+                                      {children}
+                                    </ResignationListProvider>
+                                  </WorkforceHiringProvider>
+                                </SourcingProvider>
+                              </ActionItemsProvider>
+                            </OnboardingProvider>
+                          </HiringNeedsProvider>
+                        </OffersProvider>
+                      </CandidatePipelineProvider>
+                    </TalentPoolProvider>
+                  </JobDescriptionProvider>
+                </RecruitmentSettingsProvider>
+              </AdminProvider>
+            </SidebarNotificationProvider>
           </UserProvider>
         </HeaderProvider>
       </PaginationProvider>
