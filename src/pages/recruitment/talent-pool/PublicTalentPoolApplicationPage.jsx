@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import StatusModal from "@/components/modals/StatusModal";
 import {
-  checkTalentPoolCandidateFullName,
   getTalentPoolFormOptions,
   getTalentPoolOpenPositions,
   submitPublicTalentPoolApplication,
@@ -2298,11 +2297,6 @@ export default function PublicTalentPoolApplicationPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [isCheckingDuplicateFullName, setIsCheckingDuplicateFullName] =
-    useState(false);
-  const [duplicateFullNameExists, setDuplicateFullNameExists] =
-    useState(false);
-
   const [highlightAudio, setHighlightAudio] = useState(false);
   const [highlightAttachment, setHighlightAttachment] = useState(false);
   const [highlightConsent, setHighlightConsent] = useState(false);
@@ -2437,50 +2431,6 @@ export default function PublicTalentPoolApplicationPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const firstName = cleanText(form.firstName);
-    const middleName = cleanText(form.middleName);
-    const lastName = cleanText(form.lastName);
-    const suffix = cleanText(form.suffix);
-
-    if (!firstName || !lastName) {
-      setIsCheckingDuplicateFullName(false);
-      setDuplicateFullNameExists(false);
-      return undefined;
-    }
-
-    const controller = new AbortController();
-
-    setIsCheckingDuplicateFullName(true);
-    setDuplicateFullNameExists(false);
-
-    const timeoutId = window.setTimeout(async () => {
-      const response = await checkTalentPoolCandidateFullName(
-        {
-          firstName,
-          middleName,
-          lastName,
-          suffix,
-        },
-        {
-          signal: controller.signal,
-        },
-      );
-
-      if (controller.signal.aborted) return;
-
-      setDuplicateFullNameExists(
-        Boolean(response?.success && response?.data?.exists),
-      );
-      setIsCheckingDuplicateFullName(false);
-    }, 500);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
-  }, [form.firstName, form.middleName, form.lastName, form.suffix]);
-
   const age = calculateAge(form.dateOfBirth);
   const isMinor = age !== null && age < 18;
 
@@ -2508,19 +2458,10 @@ export default function PublicTalentPoolApplicationPage() {
   const canSubmit = useMemo(() => {
     if (isLoadingData) return false;
     if (isSubmitting) return false;
-    if (isCheckingDuplicateFullName) return false;
-    if (duplicateFullNameExists) return false;
     if (loadError) return false;
     if (isMinor) return false;
     return true;
-  }, [
-    duplicateFullNameExists,
-    isCheckingDuplicateFullName,
-    isLoadingData,
-    isMinor,
-    isSubmitting,
-    loadError,
-  ]);
+  }, [isLoadingData, isMinor, isSubmitting, loadError]);
 
   function showStatusModal({ type = "success", title = "", message = "" }) {
     setStatusModal({
@@ -2852,15 +2793,6 @@ export default function PublicTalentPoolApplicationPage() {
       return false;
     }
 
-    if (duplicateFullNameExists) {
-      showStatusModal({
-        type: "error",
-        title: "Duplicate candidate",
-        message: "Candidate already exists.",
-      });
-      return false;
-    }
-
     if (!form.dateOfBirth) {
       showStatusModal({
         type: "error",
@@ -3148,15 +3080,9 @@ export default function PublicTalentPoolApplicationPage() {
       const response = await submitPublicTalentPoolApplication(submitForm);
 
       if (!response?.success) {
-        const isDuplicateFullName =
-          response?.status === 409 ||
-          response?.code === "DUPLICATE_FULL_NAME";
-
         showStatusModal({
           type: "error",
-          title: isDuplicateFullName
-            ? "Duplicate candidate"
-            : "Application not saved",
+          title: "Application not saved",
           message:
             response?.message ||
             "The application was not saved. Please check the required fields and try again.",
@@ -3193,12 +3119,9 @@ export default function PublicTalentPoolApplicationPage() {
 
       showStatusModal({
         type: "success",
-        title: "Application saved",
-        message: `Your application has been submitted successfully.${
-          savedSubmission?.candidateId
-            ? `\n\nTracking ID: ${savedSubmission.candidateId}`
-            : ""
-        }\n\nOur Talent Acquisition team will review your profile.`,
+        title: "Application Success",
+        message:
+          "We will review your application and we will send an update through email.",
       });
     } catch (error) {
       console.error("Submit public talent pool application error:", error);
@@ -3318,14 +3241,20 @@ export default function PublicTalentPoolApplicationPage() {
 
               <div>
                 <h2 className="text-lg font-extrabold text-emerald-700">
-                  Application submitted successfully
+                  Application Success
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-emerald-700/80">
-                  Your tracking ID is{" "}
-                  <span className="font-extrabold">
-                    {submittedRecord.candidateId}
-                  </span>
-                  . Our Talent Acquisition team will review your profile.
+                  We will review your application and we will send an update
+                  through email.
+                  {submittedRecord?.candidateId && (
+                    <>
+                      {" "}Your Candidate ID is{" "}
+                      <span className="font-extrabold">
+                        {submittedRecord.candidateId}
+                      </span>
+                      .
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -3514,12 +3443,6 @@ export default function PublicTalentPoolApplicationPage() {
                     className={inputClass()}
                   />
                 </div>
-
-                {duplicateFullNameExists && (
-                  <div className="md:col-span-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
-                    Candidate already exists.
-                  </div>
-                )}
 
                 <div>
                   <FieldLabel>

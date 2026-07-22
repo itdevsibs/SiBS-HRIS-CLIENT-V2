@@ -132,6 +132,9 @@ const ALL_REQUIREMENTS = PRE_EMPLOYMENT_REQUIREMENT_GROUPS.flatMap(
 );
 
 const ASSESSMENT_STATUS_OPTIONS = ["Not Take", "Taken"];
+const ASSESSMENT_FAILURE_THRESHOLD = 30;
+const ASSESSMENT_FAILURE_RESULT = "Assessment Not Fit";
+const ASSESSMENT_PASS_RESULT = "Assessment Fit";
 
 const ASSESSMENT_RESULT_OPTIONS = [
   "Assessment Fit",
@@ -156,6 +159,26 @@ const ASSESSMENT_RESULT_DROPDOWN_OPTIONS = [
     label: option,
   })),
 ];
+
+function getSuggestedAssessmentResult(scoreValue) {
+  const cleanScore = cleanText(scoreValue);
+
+  if (cleanScore === "") return "";
+
+  const numericScore = Number(cleanScore);
+
+  if (
+    !Number.isFinite(numericScore) ||
+    numericScore < 0 ||
+    numericScore > 100
+  ) {
+    return "";
+  }
+
+  return numericScore < ASSESSMENT_FAILURE_THRESHOLD
+    ? ASSESSMENT_FAILURE_RESULT
+    : ASSESSMENT_PASS_RESULT;
+}
 
 function safeJsonParseValue(value, fallback = null) {
   if (!value) return fallback;
@@ -1514,31 +1537,59 @@ function normalizePrfStatus(value) {
   return text;
 }
 
+function getPrfReviewCardDisplayStatus(value) {
+  const normalizedStatus = normalizePrfStatus(value);
+
+  return normalizedStatus === "Not Matched"
+    ? "Unmatched"
+    : normalizedStatus;
+}
+
 function FormDropdown({
   label,
   value,
   options = [],
   placeholder = "Select option...",
   disabled = false,
+  dropdownId = "",
+  openDropdownId = "",
+  onOpenDropdownChange,
   onChange,
 }) {
   const dropdownRef = useRef(null);
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = Boolean(
+    dropdownId && typeof onOpenDropdownChange === "function",
+  );
+
+  const open = isControlled
+    ? openDropdownId === dropdownId
+    : internalOpen;
 
   const selectedOption = options.find((option) => option.value === value);
 
   useEffect(() => {
+    function closeDropdown() {
+      if (isControlled) {
+        onOpenDropdownChange("");
+        return;
+      }
+
+      setInternalOpen(false);
+    }
+
     function handleClickOutside(event) {
       if (!dropdownRef.current) return;
 
       if (!dropdownRef.current.contains(event.target)) {
-        setOpen(false);
+        closeDropdown();
       }
     }
 
     function handleEscape(event) {
       if (event.key === "Escape") {
-        setOpen(false);
+        closeDropdown();
       }
     }
 
@@ -1549,13 +1600,30 @@ function FormDropdown({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []);
+  }, [isControlled, onOpenDropdownChange]);
+
+  function handleToggle() {
+    if (disabled) return;
+
+    if (isControlled) {
+      onOpenDropdownChange(open ? "" : dropdownId);
+      return;
+    }
+
+    setInternalOpen((previous) => !previous);
+  }
 
   function handleSelect(option) {
     if (disabled) return;
 
     onChange?.(option.value);
-    setOpen(false);
+
+    if (isControlled) {
+      onOpenDropdownChange("");
+      return;
+    }
+
+    setInternalOpen(false);
   }
 
   return (
@@ -1570,7 +1638,7 @@ function FormDropdown({
         <button
           type="button"
           disabled={disabled}
-          onClick={() => setOpen((previous) => !previous)}
+          onClick={handleToggle}
           className={`flex h-11 w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
             open
               ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
@@ -2384,6 +2452,21 @@ function UpdateAssessmentModal({
   const [assessmentFile, setAssessmentFile] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [openAssessmentDropdown, setOpenAssessmentDropdown] = useState("");
+
+  const assessmentScoreNumber = Number(assessmentScore);
+  const hasValidAssessmentScore = Boolean(
+    assessmentStatus === "Taken" &&
+      assessmentScore !== "" &&
+      Number.isFinite(assessmentScoreNumber) &&
+      assessmentScoreNumber >= 0 &&
+      assessmentScoreNumber <= 100,
+  );
+
+  const isAutomaticAssessmentFailure = Boolean(
+    hasValidAssessmentScore &&
+      assessmentScoreNumber < ASSESSMENT_FAILURE_THRESHOLD,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -2398,14 +2481,26 @@ function UpdateAssessmentModal({
       candidate?.assessment_score_percent ??
       "";
 
+    const initialScoreText =
+      initialScore === null || initialScore === undefined
+        ? ""
+        : String(initialScore);
+
+    const initialResult = cleanText(
+      candidate?.assessmentResult || candidate?.assessment_result || "",
+    );
+
     setAssessmentStatus(initialStatus);
-    setAssessmentResult(candidate?.assessmentResult || candidate?.assessment_result || "");
-    setAssessmentScore(
-      initialScore === null || initialScore === undefined ? "" : String(initialScore),
+    setAssessmentScore(initialScoreText);
+    setAssessmentResult(
+      initialStatus === "Taken"
+        ? initialResult || getSuggestedAssessmentResult(initialScoreText)
+        : "",
     );
     setAssessmentRemarks(candidate?.assessmentRemarks || candidate?.assessment_remarks || "");
     setAssessmentFile(null);
     setErrorMessage("");
+    setOpenAssessmentDropdown("");
   }, [
     open,
     candidate?.id,
@@ -2427,6 +2522,7 @@ function UpdateAssessmentModal({
 
     if (cleanValue === "") {
       setAssessmentScore("");
+      setAssessmentResult("");
       return;
     }
 
@@ -2437,6 +2533,18 @@ function UpdateAssessmentModal({
     if (numberValue > 100) return;
 
     setAssessmentScore(cleanValue);
+    setAssessmentResult(getSuggestedAssessmentResult(cleanValue));
+  }
+
+  function handleAssessmentScoreWheel(event) {
+    event.preventDefault();
+    event.currentTarget.blur();
+  }
+
+  function handleAssessmentScoreKeyDown(event) {
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+    }
   }
 
   async function handleSubmit(event) {
@@ -2450,8 +2558,8 @@ function UpdateAssessmentModal({
       return;
     }
 
-    if (assessmentStatus === "Taken" && !cleanText(assessmentResult)) {
-      setErrorMessage("Assessment result is required when status is Taken.");
+    if (assessmentStatus === "Taken" && assessmentScore === "") {
+      setErrorMessage("Assessment score is required when status is Taken.");
       return;
     }
 
@@ -2462,6 +2570,14 @@ function UpdateAssessmentModal({
         setErrorMessage("Assessment score must be from 0 to 100.");
         return;
       }
+    }
+
+    if (
+      assessmentStatus === "Taken" &&
+      !cleanText(assessmentResult)
+    ) {
+      setErrorMessage("Assessment result is required when status is Taken.");
+      return;
     }
 
     setIsSaving(true);
@@ -2608,6 +2724,9 @@ function UpdateAssessmentModal({
               value={assessmentStatus}
               options={ASSESSMENT_STATUS_DROPDOWN_OPTIONS}
               disabled={isSaving}
+              dropdownId="assessment-status"
+              openDropdownId={openAssessmentDropdown}
+              onOpenDropdownChange={setOpenAssessmentDropdown}
               placeholder="Select assessment status"
               onChange={(value) => {
                 setAssessmentStatus(value);
@@ -2617,15 +2736,6 @@ function UpdateAssessmentModal({
                   setAssessmentScore("");
                 }
               }}
-            />
-
-            <FormDropdown
-              label="Assessment Result"
-              value={assessmentResult}
-              options={ASSESSMENT_RESULT_DROPDOWN_OPTIONS}
-              disabled={isSaving || assessmentStatus !== "Taken"}
-              placeholder="Select assessment result"
-              onChange={setAssessmentResult}
             />
 
             <label className="block">
@@ -2638,19 +2748,55 @@ function UpdateAssessmentModal({
                 min="0"
                 max="100"
                 step="0.01"
+                inputMode="decimal"
                 value={assessmentScore}
                 disabled={isSaving || assessmentStatus !== "Taken"}
                 onChange={(event) =>
                   handleAssessmentScoreChange(event.target.value)
                 }
+                onWheel={handleAssessmentScoreWheel}
+                onKeyDown={handleAssessmentScoreKeyDown}
                 placeholder="Enter score from 0 to 100"
-                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                className="mt-2 h-11 w-full rounded-xl border border-[#D6DEE8] bg-white px-3 text-sm font-bold text-[#344054] outline-none transition [appearance:textfield] placeholder:text-slate-400 focus:border-sibs-primary-1 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               />
 
               <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
-                Example: 85, 92.5, or 100.
+                Enter the score first. The suggested result is selected automatically.
               </p>
             </label>
+
+            <div>
+              <FormDropdown
+                label="Assessment Result"
+                value={assessmentResult}
+                options={ASSESSMENT_RESULT_DROPDOWN_OPTIONS}
+                disabled={
+                  isSaving ||
+                  assessmentStatus !== "Taken" ||
+                  !hasValidAssessmentScore
+                }
+                dropdownId="assessment-result"
+                openDropdownId={openAssessmentDropdown}
+                onOpenDropdownChange={setOpenAssessmentDropdown}
+                placeholder="Select assessment result"
+                onChange={setAssessmentResult}
+              />
+
+              {hasValidAssessmentScore && (
+                <p className="mt-1 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                  Suggested from the score. You can still select another assessment result.
+                </p>
+              )}
+            </div>
+
+            {isAutomaticAssessmentFailure && (
+              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold leading-6 text-red-700">
+                This score is below {ASSESSMENT_FAILURE_THRESHOLD}. The result
+                will be set to <span className="font-extrabold">Assessment Not Fit</span>,
+                the candidate will be marked as Drop-off automatically, and a
+                notification email will be attempted after saving.
+              </div>
+            )}
 
             <label className="block">
               <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
@@ -4452,6 +4598,9 @@ const CandidatePipelineModal = ({
     activeCandidate.prfStatus || activeCandidate.prf_status,
   );
 
+  const prfReviewCardDisplayStatus =
+    getPrfReviewCardDisplayStatus(activePrfStatus);
+
   const candidateNhoUploadIdentity =
     nhoUploadSessionIdentityRef.current ||
     getCandidateNhoUploadIdentity(
@@ -5160,6 +5309,12 @@ const CandidatePipelineModal = ({
 
   function handleAssessmentSaved(nextCandidate, payload = {}) {
     const mergedCandidate = syncCandidateAfterAction(nextCandidate || {});
+    const automaticallyDropped = Boolean(
+      payload?.automaticDropOff || payload?.automatic_drop_off,
+    );
+    const emailWarning = cleanText(
+      payload?.emailWarning || payload?.email_warning,
+    );
 
     setShowAssessmentModal(false);
 
@@ -5180,8 +5335,16 @@ const CandidatePipelineModal = ({
 
     showStatusModal({
       type: "success",
-      title: "Assessment Saved",
-      message: payload?.message || "Assessment details were saved successfully.",
+      title: automaticallyDropped
+        ? "Candidate Moved to Drop-off"
+        : "Assessment Saved",
+      message:
+        payload?.message ||
+        emailWarning ||
+        (automaticallyDropped
+          ? "The assessment was saved and the candidate was automatically marked as Drop-off."
+          : "Assessment details were saved successfully."),
+      closeParentOnClose: automaticallyDropped,
     });
   }
 
@@ -6886,8 +7049,8 @@ const CandidatePipelineModal = ({
                   <LeadPrfReviewCard
                     candidate={{
                       ...activeCandidate,
-                      prfStatus: activePrfStatus,
-                      prf_status: activePrfStatus,
+                      prfStatus: prfReviewCardDisplayStatus,
+                      prf_status: prfReviewCardDisplayStatus,
                     }}
                     onUpdatePrfStatus={handleLocalPrfStatusUpdate}
                   />

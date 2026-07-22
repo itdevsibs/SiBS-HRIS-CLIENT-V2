@@ -53,6 +53,7 @@ import StatusModal from "../StatusModal";
 import NhoUploadModal from "../candidatePipeline/NhoUploadModal";
 import api from "../../../lib/axios/api-template";
 import {
+  getTalentPoolApplicationById,
   markTalentPoolCandidateAsDropOff,
   updateTalentPoolApplicationStatus,
 } from "../../../lib/axios/getTalentPool";
@@ -131,15 +132,23 @@ function cleanText(value) {
 }
 
 function getTalentPoolApplicationId(candidate = {}) {
+  const safeCandidate = safeObject(candidate);
+
   return cleanText(
-    candidate.rawId ||
-      candidate.applicationRawId ||
-      candidate.applicationId ||
-      candidate.application_id ||
-      candidate.dbId ||
-      candidate.databaseId ||
-      candidate.id ||
-      candidate.candidateId ||
+    safeCandidate.sourceTalentPoolId ||
+      safeCandidate.source_talent_pool_id ||
+      safeCandidate.talentPoolApplicationId ||
+      safeCandidate.talent_pool_application_id ||
+      safeCandidate.candidateApplicationId ||
+      safeCandidate.candidate_application_id ||
+      safeCandidate.rawId ||
+      safeCandidate.applicationRawId ||
+      safeCandidate.applicationId ||
+      safeCandidate.application_id ||
+      safeCandidate.dbId ||
+      safeCandidate.databaseId ||
+      safeCandidate.id ||
+      safeCandidate.candidateId ||
       "",
   );
 }
@@ -169,6 +178,102 @@ function isDropOffCandidateStatus(value = "") {
       .replace(/\s+/g, " ")
       .trim() === "drop off"
   );
+}
+
+function isDropOffCandidateRecord(candidate = {}) {
+  const safeCandidate =
+    candidate && typeof candidate === "object" ? candidate : {};
+
+  const explicitStatus = cleanText(
+    safeCandidate.status ||
+      safeCandidate.candidateStatus ||
+      safeCandidate.candidate_status ||
+      safeCandidate.talentPoolStatus ||
+      safeCandidate.talent_pool_status,
+  );
+
+  if (isDropOffCandidateStatus(explicitStatus)) {
+    return true;
+  }
+
+  /*
+   * A known active Talent Pool status is authoritative. This prevents a
+   * restored candidate from being treated as Drop-off only because old audit
+   * fields remain in metadata.
+   */
+  const hasKnownActiveStatus = TALENT_POOL_STATUS_OPTIONS.some(
+    (option) => normalizeLower(option.value) === normalizeLower(explicitStatus),
+  );
+
+  if (explicitStatus && hasKnownActiveStatus) {
+    return false;
+  }
+
+  const stageValues = [
+    safeCandidate.currentPipelineStage,
+    safeCandidate.current_pipeline_stage,
+    safeCandidate.currentStage,
+    safeCandidate.current_stage,
+    safeCandidate.pipelineStage,
+    safeCandidate.pipeline_stage,
+    safeCandidate.stage,
+    safeCandidate.pipelineStatus,
+    safeCandidate.pipeline_status,
+  ];
+
+  if (stageValues.some((value) => isDropOffCandidateStatus(value))) {
+    return true;
+  }
+
+  const dropOffFlags = [
+    safeCandidate.isDropOff,
+    safeCandidate.is_drop_off,
+    safeCandidate.droppedOff,
+    safeCandidate.dropped_off,
+    safeCandidate.isDroppedOff,
+    safeCandidate.is_dropped_off,
+  ];
+
+  if (
+    dropOffFlags.some((value) =>
+      [true, 1, "true", "1", "yes"].includes(
+        typeof value === "string" ? normalizeLower(value) : value,
+      ),
+    )
+  ) {
+    return true;
+  }
+
+  /*
+   * Shared Drop-off List rows can be lightweight records. They may not carry
+   * `status`, but they do carry the Drop-off category/reason/date used by the
+   * table. Treat those fields as the current record state when no known active
+   * Talent Pool status is present.
+   */
+  const dropOffCategory = cleanText(
+    safeCandidate.dropOffCategory ||
+      safeCandidate.drop_off_category ||
+      safeCandidate.dropoffCategory ||
+      safeCandidate.dropoff_category,
+  );
+
+  const dropOffReason = cleanText(
+    safeCandidate.dropOffReason ||
+      safeCandidate.drop_off_reason ||
+      safeCandidate.dropoffReason ||
+      safeCandidate.dropoff_reason,
+  );
+
+  const dropOffDate = cleanText(
+    safeCandidate.dropOffDate ||
+      safeCandidate.drop_off_date ||
+      safeCandidate.droppedOffAt ||
+      safeCandidate.dropped_off_at ||
+      safeCandidate.dropoffDate ||
+      safeCandidate.dropoff_date,
+  );
+
+  return Boolean(dropOffCategory || (dropOffReason && dropOffDate));
 }
 
 function hasCandidateValue(value) {
@@ -987,21 +1092,56 @@ function isTruthyFlag(value) {
   return ["true", "1", "yes", "linked", "moved"].includes(normalized);
 }
 
-function isCandidateLinkedToPipeline(candidate = {}) {
+function isCandidateActivelyLinkedToPipeline(candidate = {}) {
   const safeCandidate = safeObject(candidate);
-  const verifiedPipelineId = getCandidatePipelineLookupId(safeCandidate);
 
-  /*
-    A candidate is considered linked only when there is a real Candidate
-    Pipeline identifier or an explicit linked flag. Stage/status text alone is
-    not enough because another candidate can share the same email and appear in
-    the pipeline search result.
-  */
-  return Boolean(
-    verifiedPipelineId ||
-      isTruthyFlag(safeCandidate.movedToPipeline) ||
-      isTruthyFlag(safeCandidate.moved_to_pipeline),
+  if (!Object.keys(safeCandidate).length) return false;
+  if (isDropOffCandidateRecord(safeCandidate)) return false;
+
+  const hasCamelCaseFlag = Object.prototype.hasOwnProperty.call(
+    safeCandidate,
+    "movedToPipeline",
   );
+  const hasSnakeCaseFlag = Object.prototype.hasOwnProperty.call(
+    safeCandidate,
+    "moved_to_pipeline",
+  );
+
+  if (hasCamelCaseFlag || hasSnakeCaseFlag) {
+    const explicitMovedFlag = hasCamelCaseFlag
+      ? safeCandidate.movedToPipeline
+      : safeCandidate.moved_to_pipeline;
+
+    /*
+      The Talent Pool status endpoint explicitly returns false/0 after a
+      Drop-off candidate is restored. That value is authoritative even when an
+      old pipeline ID remains in metadata for audit history.
+    */
+    return isTruthyFlag(explicitMovedFlag);
+  }
+
+  const pipelineStatus = normalizeLower(
+    safeCandidate.pipelineStatus || safeCandidate.pipeline_status,
+  )
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (["drop off", "dropped off", "inactive", "deleted"].includes(pipelineStatus)) {
+    return false;
+  }
+
+  const verifiedPipelineId = getCandidatePipelineLookupId(safeCandidate);
+  const currentStage = getCandidateStageValue(safeCandidate);
+
+  return Boolean(
+    verifiedPipelineId &&
+      (currentStage || pipelineStatus === "active"),
+  );
+}
+
+function isCandidateLinkedToPipeline(candidate = {}) {
+  return isCandidateActivelyLinkedToPipeline(candidate);
 }
 
 function getResolvedFileUrl(fileUrl = "") {
@@ -1352,6 +1492,22 @@ function candidateMatchesPipeline(candidate = {}, pipelineCandidate = {}) {
     return true;
   }
 
+  const hasStrongCandidateIdentity = Boolean(
+    talentPoolId || candidateIds.length,
+  );
+  const hasStrongPipelineIdentity = Boolean(
+    sourceTalentPoolId || pipelineCandidateIds.length,
+  );
+
+  /*
+    Never connect two identified records only because they reuse the same
+    email and name. This prevents a new Talent Pool row from inheriting the
+    Drop-off stage or Already Linked state of another record.
+  */
+  if (hasStrongCandidateIdentity || hasStrongPipelineIdentity) {
+    return false;
+  }
+
   const email = normalizeLower(candidate.email);
   const pipelineEmail = normalizeLower(pipelineCandidate.email);
 
@@ -1412,20 +1568,26 @@ async function fetchPipelineCandidateByAnyIdentity(candidate = {}) {
     }
   }
 
-  const searchTerms = [
+  const structuralSearchTerms = [
     candidate.candidateId,
     candidate.candidate_id,
     candidate.candidateApplicationId,
     candidate.candidate_application_id,
     candidate.applicationId,
     candidate.application_id,
-    candidate.email,
-    candidate.name,
+    candidate.id,
+    candidate.rawId,
   ]
     .map(cleanText)
     .filter(Boolean);
 
-  const uniqueSearchTerms = Array.from(new Set(searchTerms));
+  const fallbackSearchTerms = structuralSearchTerms.length
+    ? []
+    : [candidate.email, candidate.name].map(cleanText).filter(Boolean);
+
+  const uniqueSearchTerms = Array.from(
+    new Set([...structuralSearchTerms, ...fallbackSearchTerms]),
+  );
 
   for (const term of uniqueSearchTerms) {
     try {
@@ -1663,11 +1825,27 @@ function getHistoryTitle(item = {}) {
     item.current_stage ||
     item.currentPipelineStage ||
     item.current_pipeline_stage ||
+    item.status ||
+    item.candidateStatus ||
+    item.candidate_status ||
     item.outcome ||
     item.title ||
     "Application Update";
 
   const title = cleanText(rawTitle);
+  const normalizedTitle = normalizeLower(title)
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (
+    normalizedTitle === "drop off" ||
+    normalizedTitle === "dropped off" ||
+    normalizedTitle.includes("marked as drop off") ||
+    normalizedTitle.includes("moved to drop off")
+  ) {
+    return "Drop-off";
+  }
 
   if (title.includes("PRF status changed")) return "Initial Screening";
   if (title.includes("PRF status updated")) return "Initial Screening";
@@ -1688,17 +1866,20 @@ function getHistoryTitle(item = {}) {
 
 function getHistoryDate(item = {}) {
   return (
-    item.date ||
+    item.timestamp ||
+    item.droppedOffAt ||
+    item.dropped_off_at ||
+    item.submittedAtIso ||
+    item.submitted_at_iso ||
     item.createdAt ||
     item.created_at ||
     item.updatedAt ||
     item.updated_at ||
     item.activityDate ||
     item.activity_date ||
-    item.timestamp ||
     item.submittedAt ||
     item.submitted_at ||
-    item.submittedAtIso ||
+    item.date ||
     ""
   );
 }
@@ -1724,6 +1905,215 @@ function getHistoryOwner(item = {}, candidate = {}, fallbackOwner = "—") {
     fallbackOwner ||
     "—"
   );
+}
+
+function getHistoryDropOffCategory(item = {}, candidate = {}) {
+  const safeItem = safeObject(item);
+  const itemExtra = safeObject(safeItem.extra);
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+
+  return cleanText(
+    firstCandidateValue(
+      safeItem.dropOffCategory,
+      safeItem.drop_off_category,
+      safeItem.dropoffCategory,
+      safeItem.dropoff_category,
+      safeItem.category,
+      itemExtra.dropOffCategory,
+      itemExtra.drop_off_category,
+      itemExtra.dropoffCategory,
+      itemExtra.dropoff_category,
+      itemExtra.category,
+      safeCandidate.dropOffCategory,
+      safeCandidate.drop_off_category,
+      safeCandidate.dropoffCategory,
+      safeCandidate.dropoff_category,
+      metadata.dropOffCategory,
+      metadata.drop_off_category,
+      candidateSnapshot.dropOffCategory,
+      candidateSnapshot.drop_off_category,
+      pipelineCandidate.dropOffCategory,
+      pipelineCandidate.drop_off_category,
+      pipelineDetails.dropOffCategory,
+      pipelineDetails.drop_off_category,
+    ),
+  );
+}
+
+function getHistoryAssessmentResult(item = {}, candidate = {}) {
+  const safeItem = safeObject(item);
+  const itemExtra = safeObject(safeItem.extra);
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+
+  return cleanText(
+    firstCandidateValue(
+      safeItem.assessmentResult,
+      safeItem.assessment_result,
+      itemExtra.assessmentResult,
+      itemExtra.assessment_result,
+      safeCandidate.assessmentResult,
+      safeCandidate.assessment_result,
+      metadata.assessmentResult,
+      metadata.assessment_result,
+      candidateSnapshot.assessmentResult,
+      candidateSnapshot.assessment_result,
+      pipelineCandidate.assessmentResult,
+      pipelineCandidate.assessment_result,
+      pipelineDetails.assessmentResult,
+      pipelineDetails.assessment_result,
+    ),
+  );
+}
+
+function isAssessmentFailureHistoryValue(value = "") {
+  const normalizedValue = normalizeLower(value)
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return (
+    normalizedValue === "assessment failed" ||
+    normalizedValue === "assessment not fit" ||
+    normalizedValue.includes("assessment failed") ||
+    normalizedValue.includes("assessment not fit")
+  );
+}
+
+function isAssessmentFailureReasonValue(value = "") {
+  const normalizedValue = normalizeLower(value)
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return Boolean(
+    isAssessmentFailureHistoryValue(normalizedValue) ||
+      normalizedValue.includes("minimum required assessment score") ||
+      normalizedValue.includes("did not meet the required assessment") ||
+      normalizedValue.includes("did not meet the assessment standard")
+  );
+}
+
+function getHistoryAssessmentStatus(item = {}, candidate = {}) {
+  const safeItem = safeObject(item);
+  const itemExtra = safeObject(safeItem.extra);
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+
+  return cleanText(
+    firstCandidateValue(
+      safeItem.assessmentStatus,
+      safeItem.assessment_status,
+      itemExtra.assessmentStatus,
+      itemExtra.assessment_status,
+      safeCandidate.assessmentStatus,
+      safeCandidate.assessment_status,
+      metadata.assessmentStatus,
+      metadata.assessment_status,
+      candidateSnapshot.assessmentStatus,
+      candidateSnapshot.assessment_status,
+      pipelineCandidate.assessmentStatus,
+      pipelineCandidate.assessment_status,
+      pipelineDetails.assessmentStatus,
+      pipelineDetails.assessment_status,
+    ),
+  );
+}
+
+function isAssessmentUpdateSubmitted(item = {}, candidate = {}) {
+  return normalizeLower(getHistoryAssessmentStatus(item, candidate)) === "taken";
+}
+
+function getHistoryStatusLabel(item = {}, historyTitle = "", candidate = {}) {
+  const extra = safeObject(item.extra);
+  const normalizedHistoryTitle = normalizeLower(historyTitle)
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const isDropOffHistory =
+    isDropOffCandidateStatus(historyTitle) ||
+    normalizedHistoryTitle === "drop off" ||
+    normalizedHistoryTitle === "dropped off" ||
+    isDropOffCandidateStatus(item.status) ||
+    isDropOffCandidateStatus(item.candidateStatus) ||
+    isDropOffCandidateStatus(item.candidate_status) ||
+    isDropOffCandidateStatus(extra.toStage) ||
+    isDropOffCandidateStatus(extra.to_stage);
+
+  if (isDropOffHistory) {
+    const assessmentSubmitted = isAssessmentUpdateSubmitted(item, candidate);
+    const dropOffCategory = getHistoryDropOffCategory(item, candidate);
+
+    if (dropOffCategory) {
+      if (isAssessmentFailureHistoryValue(dropOffCategory)) {
+        return assessmentSubmitted ? "Assessment Failed" : "Drop-off";
+      }
+
+      return dropOffCategory;
+    }
+
+    const assessmentResult = getHistoryAssessmentResult(item, candidate);
+
+    if (
+      assessmentSubmitted &&
+      isAssessmentFailureHistoryValue(assessmentResult)
+    ) {
+      return "Assessment Failed";
+    }
+
+    return "Drop-off";
+  }
+
+  const resolvedStatus = firstCandidateValue(
+    item.statusLabel,
+    item.status_label,
+    item.assessmentResult,
+    item.assessment_result,
+    extra.assessmentResult,
+    extra.assessment_result,
+    item.prfStatus,
+    item.prf_status,
+    extra.prfStatus,
+    extra.prf_status,
+    item.interviewStatus,
+    item.interview_status,
+    extra.interviewStatus,
+    extra.interview_status,
+    item.offerApprovalStatus,
+    item.offer_approval_status,
+    extra.approvalSummary,
+    extra.approval_summary,
+    item.offerDecision,
+    item.offer_decision,
+    item.candidateStatus,
+    item.candidate_status,
+    item.status,
+    extra.status,
+    item.outcome,
+    extra.outcome,
+    extra.toStage,
+    extra.to_stage,
+    historyTitle,
+  );
+
+  const normalizedStatus = cleanText(resolvedStatus);
+
+  if (isDropOffCandidateStatus(normalizedStatus)) {
+    return "Drop-off";
+  }
+
+  return normalizedStatus || cleanText(historyTitle) || "Application Update";
 }
 
 function getHistoryDescription(item = {}) {
@@ -1814,6 +2204,11 @@ function getOfferDetail(item = {}) {
 
 function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") {
   const historyTitle = getHistoryTitle(item);
+  const historyStatus = getHistoryStatusLabel(
+    item,
+    historyTitle,
+    candidate,
+  );
   const historyDate = getHistoryDate(item);
   const historyDescription = getHistoryDescription(item);
   const historyRemarks = item.remarks || item.dropOffReason || "";
@@ -1829,6 +2224,8 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
   return {
     ...item,
     stage: historyTitle,
+    statusLabel: historyStatus,
+    status_label: historyStatus,
     date: historyDate,
     owner: getHistoryOwner(item, candidate, fallbackOwner),
     description: historyDescription,
@@ -1837,6 +2234,7 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
     savedFormLink,
     _dedupeKey: [
       historyTitle,
+      historyStatus,
       sortDate,
       historyDescription,
       historyRemarks,
@@ -1848,6 +2246,244 @@ function normalizeHistoryItem(item = {}, candidate = {}, fallbackOwner = "—") 
       .trim(),
     _sortDate: sortDate,
   };
+}
+
+function toPersistedCandidateHistory(history = []) {
+  return safeArray(history)
+    .map((historyItem) => {
+      const {
+        _dedupeKey,
+        _sortDate,
+        ...persistedItem
+      } = safeObject(historyItem);
+
+      return {
+        ...persistedItem,
+        stage: persistedItem.stage || getHistoryTitle(persistedItem),
+        date: persistedItem.date || getHistoryDate(persistedItem),
+      };
+    })
+    .filter((historyItem) => historyItem.stage || historyItem.description);
+}
+
+function getCandidateDropOffHistoryEntry(
+  candidate = {},
+  fallbackOwner = "—",
+) {
+  const safeCandidate = safeObject(candidate);
+  const metadata = safeObject(safeCandidate.metadata);
+  const candidateSnapshot = safeObject(safeCandidate.candidateSnapshot);
+  const pipelineCandidate = safeObject(safeCandidate.pipelineCandidate);
+  const pipelineDetails = safeObject(safeCandidate.pipelineDetails);
+
+  const sources = [
+    safeCandidate,
+    metadata,
+    candidateSnapshot,
+    pipelineCandidate,
+    pipelineDetails,
+  ];
+
+  const getFirstSourceValue = (...fieldNames) => {
+    for (const source of sources) {
+      for (const fieldName of fieldNames) {
+        const value = source?.[fieldName];
+
+        if (hasCandidateValue(value)) {
+          return value;
+        }
+      }
+    }
+
+    return "";
+  };
+
+  const statusValues = sources.flatMap((source) => [
+    source.status,
+    source.candidateStatus,
+    source.candidate_status,
+    source.pipelineStatus,
+    source.pipeline_status,
+    source.currentPipelineStage,
+    source.current_pipeline_stage,
+    source.currentStage,
+    source.current_stage,
+    source.pipelineStage,
+    source.pipeline_stage,
+    source.stage,
+  ]);
+
+  const category = cleanText(
+    getFirstSourceValue(
+      "dropOffCategory",
+      "drop_off_category",
+      "dropoffCategory",
+      "dropoff_category",
+    ),
+  );
+
+  const assessmentStatus = cleanText(
+    getFirstSourceValue("assessmentStatus", "assessment_status"),
+  );
+
+  const assessmentResult = cleanText(
+    getFirstSourceValue("assessmentResult", "assessment_result"),
+  );
+
+  const assessmentScore = cleanText(
+    getFirstSourceValue(
+      "assessmentScore",
+      "assessment_score",
+      "assessmentScorePercent",
+      "assessment_score_percent",
+    ),
+  );
+
+  const reason = cleanText(
+    getFirstSourceValue(
+      "dropOffReason",
+      "drop_off_reason",
+      "dropoffReason",
+      "dropoff_reason",
+      "reasonForMovement",
+      "reason_for_movement",
+    ),
+  );
+
+  const droppedOffAt = cleanText(
+    getFirstSourceValue(
+      "droppedOffAt",
+      "dropped_off_at",
+      "dropOffDate",
+      "drop_off_date",
+      "dropoffDate",
+      "dropoff_date",
+      "dateMoved",
+      "date_moved",
+    ),
+  );
+
+  const hasDropOffStatus = statusValues.some((value) =>
+    isDropOffCandidateStatus(value),
+  );
+
+  const isAssessmentSubmitted =
+    normalizeLower(assessmentStatus) === "taken";
+  const numericAssessmentScore = Number(assessmentScore);
+  const isAssessmentFailure = Boolean(
+    isAssessmentSubmitted &&
+      (isAssessmentFailureHistoryValue(category) ||
+        isAssessmentFailureHistoryValue(assessmentResult) ||
+        (assessmentScore !== "" &&
+          Number.isFinite(numericAssessmentScore) &&
+          numericAssessmentScore < 30)),
+  );
+
+  if (
+    !hasDropOffStatus &&
+    !category &&
+    !reason &&
+    !droppedOffAt &&
+    !isAssessmentFailure
+  ) {
+    return null;
+  }
+
+  const resolvedCategory =
+    !isAssessmentSubmitted && isAssessmentFailureHistoryValue(category)
+      ? ""
+      : category || (isAssessmentFailure ? "Assessment Failed" : "");
+
+  const displayedAssessmentResult = isAssessmentSubmitted
+    ? assessmentResult
+    : "";
+  const displayedAssessmentScore = isAssessmentSubmitted
+    ? assessmentScore
+    : "";
+
+  const owner = cleanText(
+    getFirstSourceValue(
+      "droppedOffByName",
+      "dropped_off_by_name",
+      "dropOffOwner",
+      "drop_off_owner",
+      "updatedBy",
+      "updated_by",
+    ),
+  );
+
+  const fallbackDate = cleanText(
+    getFirstSourceValue(
+      "lastActivity",
+      "last_activity",
+      "updatedAt",
+      "updated_at",
+      "createdAt",
+      "created_at",
+    ),
+  );
+
+  const displayedReason =
+    !isAssessmentSubmitted && isAssessmentFailureReasonValue(reason)
+      ? ""
+      : reason;
+
+  const resolvedReason =
+    displayedReason ||
+    (isAssessmentFailure
+      ? "Candidate did not meet the minimum required assessment score."
+      : "Candidate was moved to Drop-off.");
+
+  const remarks = [
+    resolvedCategory ? `Category: ${resolvedCategory}` : "",
+    displayedAssessmentResult
+      ? `Assessment Result: ${displayedAssessmentResult}`
+      : "",
+    displayedAssessmentScore
+      ? `Assessment Score: ${displayedAssessmentScore} / 100`
+      : "",
+    resolvedReason ? `Reason: ${resolvedReason}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return {
+    stage: "Drop-off",
+    status: resolvedCategory || "Drop Off",
+    statusLabel: resolvedCategory || "Drop-off",
+    status_label: resolvedCategory || "Drop-off",
+    outcome: resolvedCategory || "Marked as Drop Off",
+    date: droppedOffAt || fallbackDate,
+    timestamp: droppedOffAt || fallbackDate,
+    owner: owner || fallbackOwner || "—",
+    description: isAssessmentFailure
+      ? "Candidate failed the assessment and was moved to Drop-off."
+      : "Candidate was moved to Drop-off.",
+    reason: resolvedReason,
+    remarks,
+    assessmentStatus,
+    assessment_status: assessmentStatus,
+    assessmentResult: displayedAssessmentResult,
+    assessment_result: displayedAssessmentResult,
+    assessmentScore: displayedAssessmentScore,
+    assessment_score: displayedAssessmentScore,
+    dropOffReason: resolvedReason,
+    drop_off_reason: resolvedReason,
+    dropOffCategory: resolvedCategory,
+    drop_off_category: resolvedCategory,
+    source: isAssessmentFailure ? "Assessment" : "Drop-off",
+    extra: {
+      category: resolvedCategory,
+      assessmentStatus,
+      assessmentResult: displayedAssessmentResult,
+      assessmentScore: displayedAssessmentScore,
+      toStage: "Drop-off",
+    },
+  };
+}
+
+function isDropOffHistoryItem(item = {}) {
+  return isDropOffCandidateStatus(getHistoryTitle(item));
 }
 
 function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
@@ -1901,6 +2537,57 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
     .map((item) => normalizeHistoryItem(item, safeCandidate, fallbackOwner))
     .filter((item) => item.stage || item.description);
 
+  const dropOffHistoryEntry = getCandidateDropOffHistoryEntry(
+    safeCandidate,
+    fallbackOwner,
+  );
+
+  if (dropOffHistoryEntry) {
+    const dropOffHistoryIndex = merged.findIndex((item) =>
+      isDropOffHistoryItem(item),
+    );
+
+    if (dropOffHistoryIndex >= 0) {
+      const existingDropOffHistory = merged[dropOffHistoryIndex];
+      const existingOwner = cleanText(existingDropOffHistory.owner);
+
+      merged[dropOffHistoryIndex] = normalizeHistoryItem(
+        {
+          ...existingDropOffHistory,
+          ...dropOffHistoryEntry,
+          date:
+            existingDropOffHistory.date ||
+            dropOffHistoryEntry.date,
+          timestamp:
+            existingDropOffHistory.timestamp ||
+            dropOffHistoryEntry.timestamp ||
+            existingDropOffHistory.date ||
+            dropOffHistoryEntry.date,
+          owner:
+            existingOwner && existingOwner !== "—"
+              ? existingOwner
+              : dropOffHistoryEntry.owner,
+          description:
+            dropOffHistoryEntry.description ||
+            existingDropOffHistory.description,
+          remarks:
+            dropOffHistoryEntry.remarks ||
+            existingDropOffHistory.remarks,
+        },
+        safeCandidate,
+        fallbackOwner,
+      );
+    } else {
+      merged.push(
+        normalizeHistoryItem(
+          dropOffHistoryEntry,
+          safeCandidate,
+          fallbackOwner,
+        ),
+      );
+    }
+  }
+
   const uniqueMap = new Map();
 
   merged.forEach((item) => {
@@ -1918,8 +2605,8 @@ function getCandidateApplicationHistory(candidate = {}, fallbackOwner = "—") {
     const dateB = new Date(b.date || 0).getTime();
 
     if (Number.isNaN(dateA) && Number.isNaN(dateB)) return 0;
-    if (Number.isNaN(dateA)) return -1;
-    if (Number.isNaN(dateB)) return 1;
+    if (Number.isNaN(dateA)) return 1;
+    if (Number.isNaN(dateB)) return -1;
 
     return dateA - dateB;
   });
@@ -2666,6 +3353,9 @@ export default function CandidateProfileModal() {
     closeProfileOnClose: false,
   });
 
+  const [talentPoolCandidateDetails, setTalentPoolCandidateDetails] =
+    useState(null);
+
   const [pipelineCandidateDetails, setPipelineCandidateDetails] = useState(null);
   const [pipelineCandidateDetailsLoading, setPipelineCandidateDetailsLoading] =
     useState(false);
@@ -2694,9 +3384,22 @@ export default function CandidateProfileModal() {
   const [dropOffSaving, setDropOffSaving] = useState(false);
   const [dropOffValidation, setDropOffValidation] = useState("");
 
-  const candidatePipelineLookupId = useMemo(
-    () => getCandidatePipelineLookupId(selectedCandidate),
+  const talentPoolApplicationId = useMemo(
+    () => getTalentPoolApplicationId(selectedCandidate),
     [selectedCandidate],
+  );
+
+  const shouldLoadCandidatePipelineData = useMemo(
+    () => isCandidateActivelyLinkedToPipeline(selectedCandidate),
+    [selectedCandidate],
+  );
+
+  const candidatePipelineLookupId = useMemo(
+    () =>
+      shouldLoadCandidatePipelineData
+        ? getCandidatePipelineLookupId(selectedCandidate)
+        : "",
+    [selectedCandidate, shouldLoadCandidatePipelineData],
   );
 
   useEffect(() => {
@@ -2704,6 +3407,7 @@ export default function CandidateProfileModal() {
     setShowFullApplicationHistory(false);
     setSelectedNhoFile(null);
     setShowNhoUploadModal(false);
+    setTalentPoolCandidateDetails(null);
     setPipelineCandidateDetails(null);
     setResolvedPipelineId("");
     setCandidatePipelineFiles([]);
@@ -2717,17 +3421,116 @@ export default function CandidateProfileModal() {
     setDropOffValidation("");
   }, [selectedCandidate?.id, selectedCandidate?.candidateId]);
 
+  const loadTalentPoolCandidateDetails = useCallback(async () => {
+    if (!selectedCandidate || !talentPoolApplicationId) {
+      setTalentPoolCandidateDetails(null);
+      return;
+    }
+
+    try {
+      const response = await getTalentPoolApplicationById(
+        talentPoolApplicationId,
+      );
+
+      if (!response?.success) {
+        throw new Error(
+          response?.message ||
+            "Unable to load the latest Talent Pool candidate details.",
+        );
+      }
+
+      const responseCandidate = safeObject(
+        response?.data ||
+          response?.application ||
+          response?.candidate ||
+          {},
+      );
+
+      const responsePipelineCandidate = safeObject(
+        response?.pipelineCandidate ||
+          response?.candidate ||
+          responseCandidate.pipelineCandidate ||
+          responseCandidate.pipelineDetails ||
+          {},
+      );
+
+      const responseApplicationHistory = safeArray(
+        responseCandidate.applicationHistory ||
+          responseCandidate.application_history ||
+          responseCandidate.movementTimeline ||
+          responseCandidate.movement_timeline ||
+          responseCandidate.timeline ||
+          response?.applicationHistory,
+      );
+
+      setTalentPoolCandidateDetails({
+        ...safeObject(selectedCandidate),
+        ...responseCandidate,
+        applicationHistory: responseApplicationHistory.length
+          ? responseApplicationHistory
+          : safeArray(selectedCandidate.applicationHistory),
+        application_history: responseApplicationHistory.length
+          ? responseApplicationHistory
+          : safeArray(
+              selectedCandidate.application_history ||
+                selectedCandidate.applicationHistory,
+            ),
+        movementTimeline: responseApplicationHistory.length
+          ? responseApplicationHistory
+          : safeArray(selectedCandidate.movementTimeline),
+        movement_timeline: responseApplicationHistory.length
+          ? responseApplicationHistory
+          : safeArray(selectedCandidate.movement_timeline),
+        timeline: responseApplicationHistory.length
+          ? responseApplicationHistory
+          : safeArray(selectedCandidate.timeline),
+        pipelineCandidate: Object.keys(responsePipelineCandidate).length
+          ? responsePipelineCandidate
+          : safeObject(selectedCandidate.pipelineCandidate),
+        pipelineDetails: Object.keys(responsePipelineCandidate).length
+          ? responsePipelineCandidate
+          : safeObject(selectedCandidate.pipelineDetails),
+      });
+    } catch (error) {
+      console.error(
+        "Load Talent Pool candidate details error:",
+        getApiErrorMessage(
+          error,
+          "Unable to load the latest Talent Pool candidate details.",
+        ),
+      );
+      setTalentPoolCandidateDetails(null);
+    }
+  }, [selectedCandidate, talentPoolApplicationId]);
+
+  useEffect(() => {
+    loadTalentPoolCandidateDetails();
+  }, [loadTalentPoolCandidateDetails]);
+
   const loadCandidatePipelineNhoFiles = useCallback(async () => {
     if (!selectedCandidate) return;
-
-    setPipelineCandidateDetailsLoading(true);
-    setCandidatePipelineFilesLoading(true);
-    setPipelineCandidateDetailsError("");
-    setCandidatePipelineFilesError("");
 
     const localFiles = getCandidatePreEmploymentFiles(selectedCandidate);
 
     setCandidatePipelineFiles(localFiles);
+    setPipelineCandidateDetailsError("");
+    setCandidatePipelineFilesError("");
+
+    if (!shouldLoadCandidatePipelineData) {
+      /*
+        A restored Drop-off candidate is now Talent Pool-only. Do not call the
+        Candidate Pipeline detail or NHO endpoints with the old soft-deleted
+        pipeline ID because those routes correctly return 404.
+      */
+      setPipelineCandidateDetails(null);
+      setResolvedPipelineId("");
+      setPipelineCandidateDetailsLoading(false);
+      setCandidatePipelineFilesLoading(false);
+      return;
+    }
+
+    setPipelineCandidateDetailsLoading(true);
+    setCandidatePipelineFilesLoading(true);
 
     try {
       const resolvedPipelineCandidate =
@@ -2808,7 +3611,11 @@ export default function CandidateProfileModal() {
       setPipelineCandidateDetailsLoading(false);
       setCandidatePipelineFilesLoading(false);
     }
-  }, [selectedCandidate, candidatePipelineLookupId]);
+  }, [
+    selectedCandidate,
+    candidatePipelineLookupId,
+    shouldLoadCandidatePipelineData,
+  ]);
 
   useEffect(() => {
     loadCandidatePipelineNhoFiles();
@@ -2860,14 +3667,28 @@ export default function CandidateProfileModal() {
     };
   }, [selectedCandidate, candidatePipelineFiles]);
 
-  const profileCandidate = useMemo(
-    () =>
-      mergeCandidateWithPipelineDetails(
-        selectedCandidate,
-        pipelineCandidateDetails,
-      ),
-    [selectedCandidate, pipelineCandidateDetails],
-  );
+  const profileCandidate = useMemo(() => {
+    const baseCandidate =
+      talentPoolCandidateDetails || selectedCandidate || {};
+    const embeddedPipelineCandidate = safeObject(
+      baseCandidate.pipelineCandidate ||
+        baseCandidate.pipelineDetails,
+    );
+    const resolvedPipelineCandidate =
+      pipelineCandidateDetails ||
+      (Object.keys(embeddedPipelineCandidate).length
+        ? embeddedPipelineCandidate
+        : null);
+
+    return mergeCandidateWithPipelineDetails(
+      baseCandidate,
+      resolvedPipelineCandidate,
+    );
+  }, [
+    selectedCandidate,
+    talentPoolCandidateDetails,
+    pipelineCandidateDetails,
+  ]);
 
   const displayedPreEmploymentFiles = useMemo(
     () =>
@@ -2959,9 +3780,13 @@ export default function CandidateProfileModal() {
     cleanText(activeCandidate.name || activeCandidate.candidateName) ||
     "Candidate";
   const isDoNotReprocess = activeCandidate.status === "Do Not Reprocess";
-  const isDropOffCandidate = isDropOffCandidateStatus(activeCandidate.status);
+  const isDropOffCandidate = isDropOffCandidateRecord(activeCandidate);
+  const candidateDisplayStatus = isDropOffCandidate
+    ? "Drop-off"
+    : activeCandidate.status;
 
-  const isAlreadyInPipeline = isCandidateLinkedToPipeline(activeCandidate);
+  const isAlreadyInPipeline =
+    isCandidateActivelyLinkedToPipeline(activeCandidate);
   const hasActivePipelineLink = Boolean(
     isAlreadyInPipeline && !isDropOffCandidate
   );
@@ -3020,9 +3845,13 @@ export default function CandidateProfileModal() {
 
   const collapsedHistoryLimit = 3;
 
+  const visibleApplicationHistoryStartIndex = showFullApplicationHistory
+    ? 0
+    : Math.max(applicationHistory.length - collapsedHistoryLimit, 0);
+
   const visibleApplicationHistory = showFullApplicationHistory
     ? applicationHistory
-    : applicationHistory.slice(0, collapsedHistoryLimit);
+    : applicationHistory.slice(visibleApplicationHistoryStartIndex);
 
   const hasMoreApplicationHistory =
     applicationHistory.length > collapsedHistoryLimit;
@@ -3128,7 +3957,7 @@ export default function CandidateProfileModal() {
     event?.preventDefault?.();
     event?.stopPropagation?.();
 
-    const currentStatus = cleanText(activeCandidate.status);
+    const currentStatus = cleanText(candidateDisplayStatus);
     const isAllowedStatus = TALENT_POOL_STATUS_OPTIONS.some(
       (option) => option.value === currentStatus,
     );
@@ -3195,13 +4024,69 @@ export default function CandidateProfileModal() {
           {},
       );
 
+      const isRestoredFromDropOff =
+        isDropOffCandidate && !isDropOffCandidateStatus(nextStatus);
+
+      /*
+       * Keep the complete movement timeline before removing the active
+       * Candidate Pipeline reference. The pipeline link is reset so a future
+       * move starts from Initial Screening, but previous screening, Drop-off,
+       * and status events remain visible under Status History.
+       */
+      const preservedApplicationHistory = toPersistedCandidateHistory(
+        getCandidateApplicationHistory(
+          {
+            ...activeCandidate,
+            ...responseCandidate,
+          },
+          encodedBy,
+        ),
+      );
+
       const nextCandidate = {
         ...activeCandidate,
         ...responseCandidate,
         status: responseCandidate.status || nextStatus,
+        applicationHistory: preservedApplicationHistory,
+        application_history: preservedApplicationHistory,
+        movementTimeline: preservedApplicationHistory,
+        movement_timeline: preservedApplicationHistory,
+        timeline: preservedApplicationHistory,
+        metadata: {
+          ...safeObject(activeCandidate.metadata),
+          ...safeObject(responseCandidate.metadata),
+          applicationHistory: preservedApplicationHistory,
+          application_history: preservedApplicationHistory,
+          timeline: preservedApplicationHistory,
+        },
+        ...(isRestoredFromDropOff
+          ? {
+              movedToPipeline: false,
+              moved_to_pipeline: 0,
+              pipelineStatus: null,
+              pipeline_status: null,
+              currentPipelineStage: "",
+              current_pipeline_stage: "",
+              currentStage: "",
+              current_stage: "",
+              pipelineStage: "",
+              pipeline_stage: "",
+              stage: "",
+              pipelineId: "",
+              pipeline_id: "",
+              pipelineDbId: "",
+              pipeline_db_id: "",
+              pipelineCandidateId: "",
+              pipeline_candidate_id: "",
+              pipelineCandidate: null,
+              pipelineDetails: null,
+            }
+          : {}),
       };
 
-      applyLocalCandidateUpdate(nextCandidate);
+      applyLocalCandidateUpdate(nextCandidate, {
+        selectCandidate: false,
+      });
 
       window.dispatchEvent(
         new CustomEvent("ta-talent-pool-updated", {
@@ -3458,8 +4343,13 @@ export default function CandidateProfileModal() {
     }, 50);
   }
 
-  function applyLocalCandidateUpdate(nextCandidate) {
-    setSelectedCandidate(nextCandidate);
+  function applyLocalCandidateUpdate(
+    nextCandidate,
+    { selectCandidate = true } = {},
+  ) {
+    if (selectCandidate) {
+      setSelectedCandidate(nextCandidate);
+    }
 
     if (typeof setCandidateList === "function") {
       setCandidateList((previousList = []) =>
@@ -3780,7 +4670,7 @@ export default function CandidateProfileModal() {
             />
             <ProfileDetail
               label="Candidate Status"
-              value={activeCandidate.status}
+              value={candidateDisplayStatus}
             />
           </ProfileGrid>
 
@@ -4959,6 +5849,9 @@ export default function CandidateProfileModal() {
               <div className="relative space-y-4">
                 {visibleApplicationHistory.map((item, index) => {
                   const historyTitle = item.stage || "Application Update";
+                  const historyStatus =
+                    item.statusLabel ||
+                    getHistoryStatusLabel(item, historyTitle, activeCandidate);
                   const historyDate = item.date || activeCandidate.lastActivity;
                   const historyOwner = item.owner || encodedBy || "—";
                   const historyDescription = item.description;
@@ -4974,7 +5867,7 @@ export default function CandidateProfileModal() {
                         )}
 
                         <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-sm font-extrabold text-blue-700 shadow-[0_0_0_6px_#FFFFFF]">
-                          {index + 1}
+                          {visibleApplicationHistoryStartIndex + index + 1}
                         </div>
                       </div>
 
@@ -4993,12 +5886,23 @@ export default function CandidateProfileModal() {
                             </p>
                           </div>
 
-                          <span
-                            title={historyOwner}
-                            className="inline-flex max-w-full shrink-0 items-center justify-center truncate rounded-full border border-[#D6DEE8] bg-white px-3 py-1 text-xs font-bold text-[#475467]"
-                          >
-                            {historyOwner}
-                          </span>
+                          <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+                            <span
+                              title={`Status: ${historyStatus}`}
+                              className={`inline-flex max-w-full items-center justify-center truncate rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
+                                historyStatus,
+                              )}`}
+                            >
+                              Status: {historyStatus}
+                            </span>
+
+                            <span
+                              title={historyOwner}
+                              className="inline-flex max-w-full items-center justify-center truncate rounded-full border border-[#D6DEE8] bg-white px-3 py-1 text-xs font-bold text-[#475467]"
+                            >
+                              {historyOwner}
+                            </span>
+                          </div>
                         </div>
 
                         <p className="mt-4 whitespace-pre-line break-words text-sm font-medium leading-6 text-[#475467]">
@@ -5227,15 +6131,15 @@ export default function CandidateProfileModal() {
 
                           <span
                             className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              activeCandidate.status,
+                              candidateDisplayStatus,
                             )}`}
                           >
-                            {activeCandidate.status || "—"}
+                            {candidateDisplayStatus || "—"}
                           </span>
 
                           {currentStage &&
                             normalizeLower(currentStage) !==
-                              normalizeLower(activeCandidate.status) && (
+                              normalizeLower(candidateDisplayStatus) && (
                               <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
                                 {currentStage}
                               </span>
@@ -5479,7 +6383,7 @@ export default function CandidateProfileModal() {
                   Current Status
                 </p>
                 <p className="mt-1 text-sm font-extrabold text-[#101828]">
-                  {activeCandidate.status || "—"}
+                  {candidateDisplayStatus || "—"}
                 </p>
               </div>
 
