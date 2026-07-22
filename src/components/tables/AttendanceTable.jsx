@@ -430,81 +430,219 @@ function getAssignedSite(item) {
   return raw;
 }
 
-function Badge({ children, className = "" }) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-    >
-      {children}
-    </span>
-  );
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
 }
 
 function StatCard({
   title,
   value,
-  icon: Icon,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  description,
+  icon,
+  tone = "navy",
   delay = 0,
 }) {
+  const tones = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      icon: "bg-[#EAF2FB] text-[#042C51]",
+    },
+    emerald: {
+      label: "text-emerald-700",
+      value: "text-emerald-600",
+      icon: "bg-emerald-50 text-emerald-600",
+    },
+    amber: {
+      label: "text-amber-700",
+      value: "text-amber-500",
+      icon: "bg-amber-50 text-amber-600",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      icon: "bg-[#FFF3ED] text-[#FF5C28]",
+    },
+  };
+
+  const selectedTone = tones[tone] || tones.navy;
+  const IconComponent = icon;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+    <article
+      className="sibs-metric-card flex min-h-[112px] flex-col justify-between overflow-hidden p-3.5"
+      style={getAnimationStyle(delay)}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-            {title}
-          </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
-          >
-            {value}
-          </p>
-        </div>
-
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={`text-[10px] font-extrabold uppercase ${selectedTone.label}`}
         >
-          <Icon size={22} />
-        </div>
+          {title}
+        </span>
+
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+        >
+          <IconComponent size={14} strokeWidth={2.2} />
+        </span>
       </div>
+
+      <div className="mt-2">
+        <p
+          className={`text-3xl font-extrabold leading-none tabular-nums ${selectedTone.value}`}
+        >
+          {value}
+        </p>
+        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
+          {description}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function TimeIndicator({ value, label, tone = "neutral" }) {
+  const tones = {
+    neutral: {
+      dot: "bg-slate-400",
+      label: "text-slate-500",
+    },
+    success: {
+      dot: "bg-emerald-500",
+      label: "text-emerald-600",
+    },
+    danger: {
+      dot: "bg-rose-500",
+      label: "text-rose-500",
+    },
+    warning: {
+      dot: "bg-amber-500",
+      label: "text-amber-600",
+    },
+  };
+
+  const selectedTone = tones[tone] || tones.neutral;
+
+  return (
+    <div className="flex min-w-[94px] flex-col">
+      <span className="text-xs font-extrabold tabular-nums text-[#042C51]">
+        {value}
+      </span>
+      <span
+        className={`mt-0.5 inline-flex items-center gap-1 text-[9px] font-extrabold ${selectedTone.label}`}
+      >
+        <span className={`h-1 w-1 rounded-full ${selectedTone.dot}`} />
+        {label}
+      </span>
     </div>
   );
 }
 
-function TimeBadge({ value, className = "" }) {
-  return (
-    <div
-      className={`inline-flex min-w-[74px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-    >
-      {value}
-    </div>
-  );
-}
+function MobileMetric({ label, value, tone = "navy" }) {
+  const valueTone = {
+    navy: "text-[#042C51]",
+    emerald: "text-emerald-600",
+    amber: "text-amber-600",
+    orange: "text-[#FF5C28]",
+    blue: "text-blue-600",
+  }[tone] || "text-[#042C51]";
 
-function MobileMetric({ label, value, className = "" }) {
   return (
-    <div className="rounded-xl border border-[#E6ECF2] bg-slate-50 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-sm">
-      <p className="m-0 text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+    <div className="sibs-info-tile">
+      <p className="sibs-kicker">
         {label}
       </p>
-
-      {className ? (
-        <div
-          className={`mt-1 inline-flex min-w-[70px] items-center justify-center rounded-full border px-3 py-1.5 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-        >
-          {value}
-        </div>
-      ) : (
-        <strong className="mt-1 block text-sm font-bold text-sibs-primary-1">
-          {value}
-        </strong>
-      )}
+      <p className={`mt-1 text-xs font-extrabold tabular-nums ${valueTone}`}>
+        {value}
+      </p>
     </div>
+  );
+}
+
+function getLoginIndicator(item) {
+  if (!item?.gy_tracker_login) {
+    return { label: "No clock-in", tone: "neutral" };
+  }
+
+  const actualLogin = getValidDate(item?.gy_tracker_login);
+  const scheduleStartRaw = getScheduleStart(item);
+  const scheduledLogin = scheduleStartRaw
+    ? buildDateTimeFromTrackerDate(item?.gy_tracker_date, scheduleStartRaw)
+    : null;
+
+  if (actualLogin && scheduledLogin) {
+    return isLateBySchedule(actualLogin, scheduledLogin)
+      ? { label: "Late clock-in", tone: "danger" }
+      : { label: "On-Time", tone: "success" };
+  }
+
+  const normalized = normalizeStatus(item?.login_status);
+  return normalized === "late"
+    ? { label: "Late clock-in", tone: "danger" }
+    : { label: "On-Time", tone: "success" };
+}
+
+function getLogoutIndicator(item) {
+  if (!item?.gy_tracker_logout) {
+    return { label: "No clock-out", tone: "neutral" };
+  }
+
+  const normalized = normalizeStatus(item?.logout_status);
+
+  if (normalized === "early-out" || normalized === "early") {
+    return { label: "Early logout", tone: "warning" };
+  }
+
+  return { label: "Full shift", tone: "success" };
+}
+
+function getSiteBadgeClass(site) {
+  const normalized = String(site || "").trim().toLowerCase();
+
+  if (normalized === "davao") {
+    return "border-violet-100 bg-violet-50 text-violet-700";
+  }
+
+  if (normalized === "tagum") {
+    return "border-blue-100 bg-blue-50 text-blue-700";
+  }
+
+  if (normalized === "hybrid") {
+    return "border-teal-100 bg-teal-50 text-teal-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-600";
+}
+
+function AttendanceStatusBadge({ status }) {
+  const normalized = String(status || "Pending").trim();
+
+  const tone =
+    normalized === "Approved"
+      ? {
+          wrap: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          dot: "bg-emerald-500",
+        }
+      : normalized === "Rejected"
+        ? {
+            wrap: "border-rose-200 bg-rose-50 text-rose-700",
+            dot: "bg-rose-500",
+          }
+        : {
+            wrap: "border-amber-200 bg-amber-50 text-amber-700",
+            dot: "bg-amber-500",
+          };
+
+  return (
+    <span
+      className={`inline-flex min-w-[94px] items-center justify-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase ${tone.wrap}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
+      {normalized || "Pending"}
+    </span>
   );
 }
 
@@ -512,201 +650,11 @@ function InlineDateRangeFilter({ visible }) {
   if (!visible) return null;
 
   return (
-    <div className="attendance-date-filter-inline w-full lg:w-auto">
-      <style>
-        {`
-          .attendance-date-filter-inline {
-            width: 100%;
-          }
-
-          .attendance-date-filter-inline > div {
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-            flex-wrap: wrap !important;
-          }
-
-          .attendance-date-filter-inline > div > button,
-          .attendance-date-filter-inline > div > div > button,
-          .attendance-date-filter-inline > div > div > div > button,
-          .attendance-date-filter-inline button[aria-haspopup="dialog"],
-          .attendance-date-filter-inline button[data-state] {
-            height: 44px !important;
-            min-height: 44px !important;
-            min-width: 220px !important;
-            border-radius: 10px !important;
-            border: 1px solid #D0D5DD !important;
-            background: #FFFFFF !important;
-            padding: 0 16px !important;
-            color: #0D4676 !important;
-            font-size: 14px !important;
-            font-weight: 700 !important;
-            box-shadow: none !important;
-            outline: none !important;
-            transition:
-              border-color 180ms ease,
-              background-color 180ms ease,
-              box-shadow 180ms ease,
-              transform 180ms ease !important;
-          }
-
-          .attendance-date-filter-inline > div > button:hover,
-          .attendance-date-filter-inline > div > div > button:hover,
-          .attendance-date-filter-inline > div > div > div > button:hover,
-          .attendance-date-filter-inline button[aria-haspopup="dialog"]:hover,
-          .attendance-date-filter-inline button[data-state]:hover {
-            border-color: rgba(13, 70, 118, 0.3) !important;
-            background: #F8FAFC !important;
-          }
-
-          .attendance-date-filter-inline > div > button:focus,
-          .attendance-date-filter-inline > div > div > button:focus,
-          .attendance-date-filter-inline > div > div > div > button:focus,
-          .attendance-date-filter-inline button[aria-haspopup="dialog"]:focus,
-          .attendance-date-filter-inline button[data-state="open"] {
-            border-color: #0D4676 !important;
-            box-shadow: 0 0 0 4px rgba(13, 70, 118, 0.10) !important;
-          }
-
-          .attendance-date-filter-inline > div > button:active,
-          .attendance-date-filter-inline > div > div > button:active,
-          .attendance-date-filter-inline > div > div > div > button:active,
-          .attendance-date-filter-inline button[aria-haspopup="dialog"]:active {
-            transform: scale(0.98) !important;
-          }
-
-          .attendance-date-filter-inline > div > button svg,
-          .attendance-date-filter-inline > div > div > button svg,
-          .attendance-date-filter-inline > div > div > div > button svg,
-          .attendance-date-filter-inline button[aria-haspopup="dialog"] svg {
-            color: #0D4676 !important;
-          }
-
-          @media (max-width: 1023px) {
-            .attendance-date-filter-inline,
-            .attendance-date-filter-inline > div,
-            .attendance-date-filter-inline > div > button,
-            .attendance-date-filter-inline > div > div,
-            .attendance-date-filter-inline > div > div > button,
-            .attendance-date-filter-inline > div > div > div,
-            .attendance-date-filter-inline > div > div > div > button {
-              width: 100% !important;
-            }
-          }
-
-          .attendance-date-filter-inline [data-radix-popper-content-wrapper] {
-            z-index: 999999 !important;
-          }
-
-          .attendance-date-filter-inline .rdp,
-          .attendance-date-filter-inline [data-slot="calendar"],
-          .attendance-date-filter-inline [role="dialog"] {
-            border-radius: 16px !important;
-            border: 1px solid #D9E2EC !important;
-            background: #FFFFFF !important;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14) !important;
-            overflow: hidden !important;
-          }
-
-          .attendance-date-filter-inline .rdp-month_caption,
-          .attendance-date-filter-inline .rdp-caption_label,
-          .attendance-date-filter-inline [class*="caption_label"] {
-            color: #0D4676 !important;
-            font-size: 14px !important;
-            font-weight: 800 !important;
-          }
-
-          .attendance-date-filter-inline .rdp-weekday {
-            color: #174A7C !important;
-            font-size: 12px !important;
-            font-weight: 800 !important;
-          }
-
-          .attendance-date-filter-inline .rdp-day_button,
-          .attendance-date-filter-inline [role="gridcell"] button {
-            width: 36px !important;
-            height: 36px !important;
-            min-width: 36px !important;
-            border: 0 !important;
-            border-radius: 9999px !important;
-            background: transparent !important;
-            color: #0D4676 !important;
-            font-size: 14px !important;
-            font-weight: 800 !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            outline: none !important;
-          }
-
-          .attendance-date-filter-inline .rdp-day_button:hover,
-          .attendance-date-filter-inline [role="gridcell"] button:hover {
-            background: #EAF2FB !important;
-            color: #0D4676 !important;
-          }
-
-          .attendance-date-filter-inline .rdp-selected .rdp-day_button,
-          .attendance-date-filter-inline [aria-selected="true"] button,
-          .attendance-date-filter-inline [data-selected="true"] button {
-            background: #E7F0FA !important;
-            color: #0D4676 !important;
-          }
-
-          .attendance-date-filter-inline .rdp-outside .rdp-day_button,
-          .attendance-date-filter-inline [data-outside="true"] button {
-            color: #98A7BA !important;
-            background: transparent !important;
-          }
-
-          .attendance-date-filter-inline .rdp-nav button,
-          .attendance-date-filter-inline button.rdp-button_previous,
-          .attendance-date-filter-inline button.rdp-button_next,
-          .attendance-date-filter-inline .rdp-button_previous,
-          .attendance-date-filter-inline .rdp-button_next {
-            width: 36px !important;
-            height: 36px !important;
-            min-width: 36px !important;
-            border: 0 !important;
-            border-radius: 9999px !important;
-            background: transparent !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            color: #0D4676 !important;
-          }
-
-          .attendance-date-filter-inline .rdp-nav button:hover,
-          .attendance-date-filter-inline button.rdp-button_previous:hover,
-          .attendance-date-filter-inline button.rdp-button_next:hover,
-          .attendance-date-filter-inline .rdp-button_previous:hover,
-          .attendance-date-filter-inline .rdp-button_next:hover {
-            background: #EAF2FB !important;
-          }
-
-          .attendance-date-filter-inline .rdp-footer button,
-          .attendance-date-filter-inline [class*="footer"] button {
-            height: auto !important;
-            min-height: 0 !important;
-            min-width: auto !important;
-            border: 0 !important;
-            border-radius: 8px !important;
-            background: transparent !important;
-            padding: 8px 10px !important;
-            color: #0D4676 !important;
-            font-size: 13px !important;
-            font-weight: 800 !important;
-            box-shadow: none !important;
-          }
-
-          .attendance-date-filter-inline .rdp-footer button:hover,
-          .attendance-date-filter-inline [class*="footer"] button:hover {
-            background: #F2F6FA !important;
-          }
-        `}
-      </style>
-
+    <div className="attendance-date-filter-inline w-full sm:w-auto">
       <PaginationDateRangeFilter
         entity="attendance"
         visible
-        className="m-0"
+        className="m-0 w-full"
       />
     </div>
   );
@@ -1130,101 +1078,9 @@ export default function AttendanceTable() {
     });
   }
 
-  function getTimeBadgeClass(value, statusKey) {
-    if (value === "—") {
-      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
-    }
-
-    const cleanStatus = normalizeStatus(statusKey);
-
-    if (
-      cleanStatus === "on-time" ||
-      cleanStatus === "ontime" ||
-      cleanStatus === "early"
-    ) {
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    }
-
-    if (
-      cleanStatus === "late" ||
-      cleanStatus === "over-break" ||
-      cleanStatus === "early-out"
-    ) {
-      return "border-red-200 bg-red-50 text-red-600";
-    }
-
-    return "border-emerald-200 bg-emerald-50 text-emerald-600";
-  }
-
-  function getLoginBadgeClass(item, value, statusKey) {
-    if (value === "—") {
-      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
-    }
-
-    const actualLogin = getValidDate(item?.gy_tracker_login);
-    const scheduleStartRaw = getScheduleStart(item);
-
-    const scheduledLogin = scheduleStartRaw
-      ? buildDateTimeFromTrackerDate(item?.gy_tracker_date, scheduleStartRaw)
-      : null;
-
-    if (actualLogin && scheduledLogin) {
-      if (isLateBySchedule(actualLogin, scheduledLogin)) {
-        return "border-red-200 bg-red-50 text-red-600";
-      }
-
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    }
-
-    const cleanStatus = normalizeStatus(statusKey);
-
-    if (cleanStatus === "late" && actualLogin) {
-      const loginMinute = actualLogin.getMinutes();
-
-      if (loginMinute === 0) {
-        return "border-emerald-200 bg-emerald-50 text-emerald-600";
-      }
-
-      return "border-red-200 bg-red-50 text-red-600";
-    }
-
-    return getTimeBadgeClass(value, statusKey);
-  }
-
-  function getManagerSafeTimeBadgeClass(item, value, statusKey) {
-    if (value === "—") {
-      return "border-slate-200 bg-slate-50 text-sibs-primary-1";
-    }
-
-    const workHours = getComputedWorkHours(item);
-    const isManagerOwnRow = managerView && isOwnAttendanceRow(item, user);
-
-    if (isManagerOwnRow && workHours >= 8) {
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    }
-
-    return getTimeBadgeClass(value, statusKey);
-  }
-
-  function getStatusBadgeClass(status) {
-    if (status === "Approved") {
-      return "border-emerald-200 bg-emerald-50 text-emerald-600";
-    }
-
-    return "border-amber-200 bg-amber-50 text-amber-600";
-  }
 
   function renderStatusBadge(status) {
-    const approved = status === "Approved";
-
-    return (
-      <Badge className={getStatusBadgeClass(status)}>
-        <span className="mr-1 inline-flex items-center">
-          {approved ? <CircleCheckBig size={15} /> : <CircleX size={15} />}
-        </span>
-        {status ?? "—"}
-      </Badge>
-    );
+    return <AttendanceStatusBadge status={status} />;
   }
 
   const pageStats = useMemo(() => {
@@ -1260,519 +1116,495 @@ export default function AttendanceTable() {
       : 10;
 
   return (
-  <>
-    {/* SUMMARY SECTION */}
-    <section
-      className="sibs-profile-tab-panel"
-      style={{ animationDelay: "60ms" }}
-    >
-      <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-[#101828]">
-              Current Page Summary
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              These totals are based only on the current attendance records
-              loaded for this page.
-            </p>
-          </div>
-
-          <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-            Page {currentPage}
-          </Badge>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-5 sm:space-y-6">
+      <section
+        className="sibs-profile-tab-panel"
+        style={getAnimationStyle(60)}
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Loaded Attendance"
             value={loading ? "..." : formatNumber(pageStats.totalLoaded)}
+            description="Records loaded on the current page"
             icon={CalendarDays}
+            tone="navy"
             delay={0}
           />
 
           <StatCard
             title="Approved"
             value={loading ? "..." : formatNumber(pageStats.approvedCount)}
+            description="Ready for payroll processing"
             icon={CircleCheckBig}
-            valueClassName="text-emerald-600"
-            iconClassName="bg-emerald-50 text-emerald-600"
+            tone="emerald"
             delay={60}
           />
 
           <StatCard
-            title="Pending"
+            title="Pending Review"
             value={loading ? "..." : formatNumber(pageStats.pendingCount)}
+            description="Awaiting attendance validation"
             icon={CircleX}
-            valueClassName="text-amber-500"
-            iconClassName="bg-amber-50 text-amber-600"
+            tone="amber"
             delay={120}
           />
 
           <StatCard
-            title="Page WH"
-            value={loading ? "..." : formatNumber(pageStats.totalWorkHours)}
+            title="Computed Work Hours"
+            value={loading ? "..." : `${formatNumber(pageStats.totalWorkHours)} hrs`}
+            description="Capped work hours from this page"
             icon={Timer}
+            tone="orange"
             delay={180}
           />
         </div>
-      </div>
-    </section>
+      </section>
 
-    {/* RECORDS SECTION */}
-    <section
-      className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: "120ms" }}
-    >
-      <div className="border-b border-[#E6ECF2] p-4 sm:p-5">
-        <PaginationTable
-          title="Attendance Records"
-          subtitle={
-            adminView
-              ? "View employee attendance records for the current page."
-              : "View your current page of attendance records."
-          }
-          loading={loading}
-          searchValue={searchInput}
-          searchPlaceholder={adminView ? "Search employee..." : "Search..."}
-          onSearchChange={(value) => setSearchInput?.(value)}
-          onSearchKeyDown={handleAttendanceSearchKeyDown}
-          dropdownFilters={
-            attendanceFiltersView
-              ? [
-                  {
-                    key: "department",
-                    value: departmentFilter,
-                    onChange: handleDepartmentSelect,
-                    options: departmentDropdownOptions,
-                    allLabel: "All Departments",
-                    placeholder: "Search departments...",
-                    className: "sm:w-[280px]",
-                    searchable: true,
-                    includeAll: true,
-                  },
-                  {
-                    key: "account",
-                    value: accountFilter,
-                    onChange: handleAccountSelect,
-                    options: accountDropdownOptions,
-                    allLabel: "All Accounts",
-                    placeholder: "Search accounts...",
-                    className: "sm:w-[320px]",
-                    searchable: true,
-                    includeAll: true,
-                  },
-                ]
-              : []
-          }
-          rightContent={
-            <InlineDateRangeFilter visible={attendanceDateRangeView} />
-          }
-          showPagination={false}
-          className="mb-0"
-        />
+      <section
+        className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+        style={getAnimationStyle(120)}
+      >
+        <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="sibs-section-title">Attendance Records</h2>
+              <p className="sibs-section-subtitle">
+                {adminView
+                  ? "Review employee time entries, work hours, breaks, and approval status."
+                  : "Review your time entries, work hours, breaks, and approval status."}
+              </p>
+            </div>
 
-        <div className="mt-4 block sm:hidden">
-          <button
-            type="button"
-            onClick={handleAttendanceSearchSubmit}
-            disabled={loading}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-4 text-sm font-bold text-white shadow-sm transition hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Search size={17} />
-            Search
-          </button>
-        </div>
-      </div>
+            <span className="inline-flex w-max items-center rounded-full border border-orange-100 bg-[#FFF3ED] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+              Page {currentPage}
+            </span>
+          </div>
 
-      <div className="p-4 sm:p-6">
-        <div className="hidden lg:block">
-          <div className="overflow-hidden rounded-xl border border-[#E6ECF2]">
-            <div
-              ref={tableScrollRef}
-              onMouseDown={handleDragStart}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
-              className={`max-h-[580px] select-none overflow-auto ${
-                isDraggingTable ? "cursor-grabbing" : "cursor-grab"
-              }`}
+          <div className="mt-4">
+            <PaginationTable
+              filterLayout="ta-inline"
+              showFilterPanel={false}
+              showFilterHeader={false}
+              showPagination={false}
+              loading={loading}
+              searchValue={searchInput}
+              searchPlaceholder={
+                adminView
+                  ? "Search by employee, SIBS ID, department, or account..."
+                  : "Search attendance records..."
+              }
+              onSearchChange={(value) => setSearchInput?.(value)}
+              onSearchKeyDown={handleAttendanceSearchKeyDown}
+              searchClassName="relative min-w-0 flex-1"
+              dropdownFilters={
+                attendanceFiltersView
+                  ? [
+                      {
+                        key: "department",
+                        value: departmentFilter,
+                        onChange: handleDepartmentSelect,
+                        options: departmentDropdownOptions,
+                        allLabel: "All Departments",
+                        placeholder: "Search departments...",
+                        className: "w-full sm:w-[190px] xl:w-[210px]",
+                        searchable: true,
+                        includeAll: true,
+                      },
+                      {
+                        key: "account",
+                        value: accountFilter,
+                        onChange: handleAccountSelect,
+                        options: accountDropdownOptions,
+                        allLabel: "All Accounts",
+                        placeholder: "Search accounts...",
+                        className: "w-full sm:w-[180px] xl:w-[200px]",
+                        searchable: true,
+                        includeAll: true,
+                      },
+                    ]
+                  : []
+              }
+              rightContent={
+                <InlineDateRangeFilter visible={attendanceDateRangeView} />
+              }
+              rightContentClassName="flex w-full items-center sm:w-auto"
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
+          </div>
+
+          <div className="mt-3 block sm:hidden">
+            <button
+              type="button"
+              onClick={handleAttendanceSearchSubmit}
+              disabled={loading}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1D] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <table className="w-full min-w-[1480px] border-collapse bg-white">
-                <thead className="sticky top-0 z-10 bg-slate-50">
-                  <tr>
-                    {adminView && (
-                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                        SiBS ID
+              <Search size={16} />
+              Apply Search
+            </button>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-5">
+          <div className="sibs-data-table-shell">
+            <div className="overflow-hidden">
+              <div
+                ref={tableScrollRef}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+                className={`max-h-[650px] select-none overflow-auto ${
+                  isDraggingTable ? "cursor-grabbing" : "cursor-grab"
+                }`}
+              >
+                <table className="w-full min-w-[1510px] border-collapse bg-white text-left">
+                  <thead className="sibs-data-table-head">
+                    <tr className="sibs-data-table-head-row">
+                      {adminView ? (
+                        <th className="sibs-data-table-th">
+                          SiBS ID
+                        </th>
+                      ) : null}
+
+                      {adminView ? (
+                        <th className="sibs-data-table-th min-w-[190px]">
+                          Employee Name
+                        </th>
+                      ) : null}
+
+                      {attendanceFiltersView ? (
+                        <th className="sibs-data-table-th min-w-[170px]">
+                          Department
+                        </th>
+                      ) : null}
+
+                      {attendanceFiltersView ? (
+                        <th className="sibs-data-table-th min-w-[145px]">
+                          Account
+                        </th>
+                      ) : null}
+
+                      {attendanceFiltersView ? (
+                        <th className="sibs-data-table-th">
+                          Site
+                        </th>
+                      ) : null}
+
+                      <th className="sibs-data-table-th">
+                        Tracker Date
                       </th>
-                    )}
-
-                    {adminView && (
-                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                        Employee Name
+                      <th className="sibs-data-table-th">
+                        Login (In)
                       </th>
-                    )}
-
-                    {attendanceFiltersView && (
-                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                        Department
+                      <th className="sibs-data-table-th">
+                        Start Break
                       </th>
-                    )}
-
-                    {attendanceFiltersView && (
-                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                        Account
+                      <th className="sibs-data-table-th">
+                        End Break
                       </th>
-                    )}
-
-                    {attendanceFiltersView && (
-                      <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                        Site
+                      <th className="sibs-data-table-th">
+                        Logout (Out)
                       </th>
-                    )}
-
-                    <th className="whitespace-nowrap px-5 py-4 text-left text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Tracker Date
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Login
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Start Break
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      End Break
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Logout
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      WH
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      BH
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      OT
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      ATH
-                    </th>
-
-                    <th className="whitespace-nowrap px-5 py-4 text-center text-xs font-bold uppercase tracking-[0.04em] text-sibs-tertiary-5">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody
-                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
-                >
-                  {loading ? (
-                    Array.from({ length: PAGE_LIMIT }).map((_, index) => (
-                      <tr key={index}>
-                        <td
-                          colSpan={emptyColSpan}
-                          className="border-t border-[#f3f4f6] px-5 py-4"
-                        >
-                          <div className="h-5 w-full animate-sibs-pulse rounded bg-gray-200" />
-                        </td>
-                      </tr>
-                    ))
-                  ) : attendance.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={emptyColSpan}
-                        className="border-t border-[#f3f4f6] p-10 text-center text-sm font-bold text-gray-500"
-                      >
-                        No attendance records found.
-                      </td>
+                      <th className="sibs-data-table-th px-3 text-center">
+                        WH
+                      </th>
+                      <th className="sibs-data-table-th px-3 text-center">
+                        BH
+                      </th>
+                      <th className="sibs-data-table-th px-3 text-center">
+                        OT
+                      </th>
+                      <th className="sibs-data-table-th px-3 text-center">
+                        ATH
+                      </th>
+                      <th className="sibs-data-table-th text-center">
+                        Status
+                      </th>
                     </tr>
-                  ) : (
-                    attendance.map((item, index) => {
-                      const loginTime = formatTime(item.gy_tracker_login);
-                      const breakoutTime = formatTime(item.gy_tracker_breakout);
-                      const breakinTime = formatTime(item.gy_tracker_breakin);
-                      const logoutTime = formatTime(item.gy_tracker_logout);
-                      const employeeName = formatEmployeeName(item);
+                  </thead>
 
-                      return (
-                        <tr
-                          key={`${
-                            item.gy_tracker_id || item.gy_tracker_date || "row"
-                          }-${index}`}
-                          className="transition-all duration-200 hover:bg-slate-50"
-                        >
-                          {adminView && (
-                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-sibs-primary-1">
-                              {item.gy_emp_code || "—"}
-                            </td>
-                          )}
-
-                          {adminView && (
-                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#101828]">
-                              {employeeName}
-                            </td>
-                          )}
-
-                          {attendanceFiltersView && (
-                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {item.department || "—"}
-                            </td>
-                          )}
-
-                          {attendanceFiltersView && (
-                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {item.gy_emp_account || "—"}
-                            </td>
-                          )}
-
-                          {attendanceFiltersView && (
-                            <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-semibold text-[#344054]">
-                              {getAssignedSite(item)}
-                            </td>
-                          )}
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-sm font-bold text-[#344054]">
-                            {formatDate(item.gy_tracker_date)}
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                            <TimeBadge
-                              value={loginTime}
-                              className={getLoginBadgeClass(
-                                item,
-                                loginTime,
-                                item.login_status,
-                              )}
-                            />
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                            <TimeBadge
-                              value={breakoutTime}
-                              className={
-                                breakoutTime === "—"
-                                  ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
-                                  : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                              }
-                            />
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                            <TimeBadge
-                              value={breakinTime}
-                              className={getManagerSafeTimeBadgeClass(
-                                item,
-                                breakinTime,
-                                item.breakin_status,
-                              )}
-                            />
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                            <TimeBadge
-                              value={logoutTime}
-                              className={getManagerSafeTimeBadgeClass(
-                                item,
-                                logoutTime,
-                                item.logout_status,
-                              )}
-                            />
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm font-bold text-sibs-primary-1">
-                            {displayCappedWorkHours(item)}
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                            {item.gy_tracker_bh ?? "—"}
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                            {item.gy_tracker_ot ?? "—"}
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center text-sm text-[#344054]">
-                            {item.gy_tracker_ath ?? "—"}
-                          </td>
-
-                          <td className="whitespace-nowrap border-t border-[#f3f4f6] px-5 py-4 text-center">
-                            {renderStatusBadge(item.gy_tracker_status)}
+                  <tbody
+                    key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}-${loading}`}
+                    className="divide-y divide-[#EEF2F6]"
+                  >
+                    {loading ? (
+                      Array.from({ length: PAGE_LIMIT }).map((_, index) => (
+                        <tr key={`attendance-skeleton-${index}`}>
+                          <td colSpan={emptyColSpan} className="px-4 py-4">
+                            <div className="h-7 w-full animate-sibs-pulse rounded bg-slate-100" />
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                      ))
+                    ) : attendance.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={emptyColSpan}
+                          className="px-5 py-12 text-center text-xs font-bold text-[#667085]"
+                        >
+                          No attendance records found.
+                        </td>
+                      </tr>
+                    ) : (
+                      attendance.map((item, index) => {
+                        const loginTime = formatTime(item.gy_tracker_login);
+                        const breakoutTime = formatTime(item.gy_tracker_breakout);
+                        const breakinTime = formatTime(item.gy_tracker_breakin);
+                        const logoutTime = formatTime(item.gy_tracker_logout);
+                        const employeeName = formatEmployeeName(item);
+                        const site = getAssignedSite(item);
+                        const loginIndicator = getLoginIndicator(item);
+                        const managerOwnRowCompleted =
+                          managerView &&
+                          isOwnAttendanceRow(item, user) &&
+                          getComputedWorkHours(item) >= 8;
+                        const logoutIndicator = managerOwnRowCompleted
+                          ? { label: "Full shift", tone: "success" }
+                          : getLogoutIndicator(item);
+                        const ot = getNumberValue(item.gy_tracker_ot);
+                        const ath = getNumberValue(item.gy_tracker_ath);
+
+                        return (
+                          <tr
+                            key={`${
+                              item.gy_tracker_id || item.gy_tracker_date || "row"
+                            }-${index}`}
+                            className="sibs-data-table-row"
+                          >
+                            {adminView ? (
+                              <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                                {item.gy_emp_code || "—"}
+                              </td>
+                            ) : null}
+
+                            {adminView ? (
+                              <td className="px-4 py-3.5">
+                                <p className="max-w-[220px] break-words text-xs font-extrabold leading-tight text-[#042C51]">
+                                  {employeeName}
+                                </p>
+                              </td>
+                            ) : null}
+
+                            {attendanceFiltersView ? (
+                              <td
+                                className="max-w-[190px] truncate px-4 py-3.5 text-xs font-semibold text-[#52637A]"
+                                title={item.department || "—"}
+                              >
+                                {item.department || "—"}
+                              </td>
+                            ) : null}
+
+                            {attendanceFiltersView ? (
+                              <td
+                                className="max-w-[160px] truncate px-4 py-3.5 text-xs font-extrabold text-[#344054]"
+                                title={item.gy_emp_account || "—"}
+                              >
+                                {item.gy_emp_account || "—"}
+                              </td>
+                            ) : null}
+
+                            {attendanceFiltersView ? (
+                              <td className="whitespace-nowrap px-4 py-3.5">
+                                <span
+                                  className={`inline-flex rounded-md border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getSiteBadgeClass(
+                                    site,
+                                  )}`}
+                                >
+                                  {site}
+                                </span>
+                              </td>
+                            ) : null}
+
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold text-[#536887]">
+                              {formatDate(item.gy_tracker_date)}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3.5">
+                              <TimeIndicator
+                                value={loginTime}
+                                label={loginIndicator.label}
+                                tone={loginIndicator.tone}
+                              />
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                              {breakoutTime}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3.5 text-xs font-extrabold tabular-nums text-[#7B8DB3]">
+                              {breakinTime}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3.5">
+                              <TimeIndicator
+                                value={logoutTime}
+                                label={logoutIndicator.label}
+                                tone={logoutIndicator.tone}
+                              />
+                            </td>
+
+                            <td className="bg-slate-50/60 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#101828]">
+                              {displayCappedWorkHours(item)}
+                            </td>
+
+                            <td className="px-3 py-3.5 text-center text-xs font-semibold tabular-nums text-[#667085]">
+                              {item.gy_tracker_bh ?? "—"}
+                            </td>
+
+                            <td className="bg-blue-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-blue-600">
+                              {ot > 0 ? `+${formatNumber(ot)}` : "—"}
+                            </td>
+
+                            <td className="bg-orange-50/20 px-3 py-3.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28]">
+                              {ath > 0 ? formatNumber(ath) : "—"}
+                            </td>
+
+                            <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                              {renderStatusBadge(item.gy_tracker_status)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            
+          </div>
+
+          <div className="lg:hidden">
+            <div ref={mobileScrollRef} className="max-h-[650px] overflow-y-auto">
+              {loading ? (
+                <div className="sibs-empty-panel">
+                  Loading attendance records...
+                </div>
+              ) : attendance.length === 0 ? (
+                <div className="sibs-empty-panel">
+                  No attendance records found.
+                </div>
+              ) : (
+                <div
+                  key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
+                  className="space-y-3"
+                >
+                  {attendance.map((item, index) => {
+                    const employeeName = formatEmployeeName(item);
+                    const loginTime = formatTime(item.gy_tracker_login);
+                    const breakoutTime = formatTime(item.gy_tracker_breakout);
+                    const breakinTime = formatTime(item.gy_tracker_breakin);
+                    const logoutTime = formatTime(item.gy_tracker_logout);
+                    const loginIndicator = getLoginIndicator(item);
+                    const managerOwnRowCompleted =
+                      managerView &&
+                      isOwnAttendanceRow(item, user) &&
+                      getComputedWorkHours(item) >= 8;
+                    const logoutIndicator = managerOwnRowCompleted
+                      ? { label: "Full shift", tone: "success" }
+                      : getLogoutIndicator(item);
+                    const ot = getNumberValue(item.gy_tracker_ot);
+                    const ath = getNumberValue(item.gy_tracker_ath);
+
+                    return (
+                      <article
+                        key={`${
+                          item.gy_tracker_id || item.gy_tracker_date || "mobile"
+                        }-${index}`}
+                        className="sibs-card rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:shadow-md"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            {adminView ? (
+                              <span className="text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                                {item.gy_emp_code || "N/A"}
+                              </span>
+                            ) : null}
+
+                            <h3 className="mt-1 break-words text-sm font-extrabold leading-tight text-[#042C51]">
+                              {adminView
+                                ? employeeName
+                                : formatDate(item.gy_tracker_date)}
+                            </h3>
+
+                            {attendanceFiltersView ? (
+                              <p className="mt-1 text-[11px] font-semibold leading-4 text-[#667085]">
+                                {item.department || "No department"} /{" "}
+                                {item.gy_emp_account || "No account"} /{" "}
+                                {getAssignedSite(item)}
+                              </p>
+                            ) : null}
+
+                            {adminView ? (
+                              <p className="mt-1 text-[10px] font-semibold text-[#8A98B8]">
+                                {formatDate(item.gy_tracker_date)}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          <div className="shrink-0">
+                            {renderStatusBadge(item.gy_tracker_status)}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-3">
+                          <MobileMetric
+                            label="Login"
+                            value={`${loginTime} · ${loginIndicator.label}`}
+                            tone={loginIndicator.tone === "danger" ? "amber" : "emerald"}
+                          />
+                          <MobileMetric
+                            label="Logout"
+                            value={`${logoutTime} · ${logoutIndicator.label}`}
+                            tone={logoutIndicator.tone === "warning" ? "amber" : "emerald"}
+                          />
+                          <MobileMetric label="Start Break" value={breakoutTime} />
+                          <MobileMetric label="End Break" value={breakinTime} />
+                          <MobileMetric
+                            label="WH"
+                            value={displayCappedWorkHours(item)}
+                          />
+                          <MobileMetric
+                            label="BH"
+                            value={item.gy_tracker_bh ?? "—"}
+                          />
+                          <MobileMetric
+                            label="OT"
+                            value={ot > 0 ? `+${formatNumber(ot)}` : "—"}
+                            tone="blue"
+                          />
+                          <MobileMetric
+                            label="ATH"
+                            value={ath > 0 ? formatNumber(ath) : "—"}
+                            tone="orange"
+                          />
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Hold left click and drag left or right to scroll the table.
-          </p>
-        </div>
-
-        <div className="block lg:hidden">
-          <div ref={mobileScrollRef} className="max-h-[580px] overflow-y-auto">
-            {loading ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                Loading...
-              </div>
-            ) : attendance.length === 0 ? (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-gray-500">
-                No attendance records found.
-              </div>
-            ) : (
-              <div
-                key={`${page}-${search}-${searchSubmitVersion}-${dateFrom}-${dateTo}-${departmentFilter}-${accountFilter}`}
-                className="flex flex-col gap-3"
-              >
-                {attendance.map((item, index) => {
-                  const employeeName = formatEmployeeName(item);
-                  const loginTime = formatTime(item.gy_tracker_login);
-                  const breakoutTime = formatTime(item.gy_tracker_breakout);
-                  const breakinTime = formatTime(item.gy_tracker_breakin);
-                  const logoutTime = formatTime(item.gy_tracker_logout);
-
-                  return (
-                    <div
-                      key={`${
-                        item.gy_tracker_id ||
-                        item.gy_tracker_date ||
-                        "mobile"
-                      }-${index}`}
-                      className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          {adminView && (
-                            <p className="m-0 text-xs font-semibold text-sibs-tertiary-5">
-                              {item.gy_emp_code || "N/A"}
-                            </p>
-                          )}
-
-                          <h3 className="m-0 text-sm font-bold leading-tight text-sibs-primary-1">
-                            {adminView
-                              ? employeeName
-                              : formatDate(item.gy_tracker_date)}
-                          </h3>
-
-                          {attendanceFiltersView && (
-                            <p className="mt-1 text-xs font-semibold text-[#344054]">
-                              {item.department || "No department"} /{" "}
-                              {item.gy_emp_account || "No account"} /{" "}
-                              {getAssignedSite(item)}
-                            </p>
-                          )}
-
-                          {adminView && (
-                            <p className="mt-1 text-xs font-medium text-sibs-tertiary-5">
-                              {formatDate(item.gy_tracker_date)}
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="shrink-0">
-                          {renderStatusBadge(item.gy_tracker_status)}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-3">
-                        <MobileMetric
-                          label="Login"
-                          value={loginTime}
-                          className={getLoginBadgeClass(
-                            item,
-                            loginTime,
-                            item.login_status,
-                          )}
-                        />
-
-                        <MobileMetric
-                          label="Logout"
-                          value={logoutTime}
-                          className={getManagerSafeTimeBadgeClass(
-                            item,
-                            logoutTime,
-                            item.logout_status,
-                          )}
-                        />
-
-                        <MobileMetric
-                          label="Start Break"
-                          value={breakoutTime}
-                          className={
-                            breakoutTime === "—"
-                              ? "border-slate-200 bg-slate-50 text-sibs-primary-1"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-600"
-                          }
-                        />
-
-                        <MobileMetric
-                          label="End Break"
-                          value={breakinTime}
-                          className={getManagerSafeTimeBadgeClass(
-                            item,
-                            breakinTime,
-                            item.breakin_status,
-                          )}
-                        />
-
-                        <MobileMetric
-                          label="WH"
-                          value={displayCappedWorkHours(item)}
-                        />
-
-                        <MobileMetric
-                          label="BH"
-                          value={item.gy_tracker_bh ?? "—"}
-                        />
-
-                        <MobileMetric
-                          label="OT"
-                          value={item.gy_tracker_ot ?? "—"}
-                        />
-
-                        <MobileMetric
-                          label="ATH"
-                          value={item.gy_tracker_ath ?? "—"}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+          <div className="mt-5">
+            <PaginationTable
+              loading={loading}
+              showSearch={false}
+              showPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadedCount={attendance.length}
+              totalRecords={totalRecords}
+              recordLabel="attendance records"
+              onPrevious={goPreviousPage}
+              onNext={goNextPage}
+              showCount
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
           </div>
         </div>
-
-        <div className="mt-5">
-          <PaginationTable
-            loading={loading}
-            showSearch={false}
-            showPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            loadedCount={attendance.length}
-            totalRecords={totalRecords}
-            recordLabel="attendance records"
-            onPrevious={goPreviousPage}
-            onNext={goNextPage}
-          />
-        </div>
-      </div>
-    </section>
-  </>
-);
+      </section>
+    </div>
+  );
 }

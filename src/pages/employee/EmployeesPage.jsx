@@ -1,16 +1,15 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  Users,
-  UserRoundCheck,
-  ShieldCheck,
   FileCheck2,
+  ShieldCheck,
+  UserRoundCheck,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import { usePagination } from "@/services/context/PaginationContext";
-import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import AccessRequestTable from "../../components/tables/employees/AccessRequestTable";
 import ChwcpTable from "../../components/tables/employees/ChwcpTable";
+import EmployeeTable from "../../components/tables/employees/EmployeeTable";
+import { usePagination } from "@/services/context/PaginationContext";
 
 const EMPLOYEE_STATE_KEY = "employeePageState";
 
@@ -18,10 +17,33 @@ const animationTiming = {
   header: 0,
   summary: 60,
   table: 120,
-
   summaryCardBase: 0,
   summaryCardStagger: 60,
 };
+
+const employeeTabs = [
+  {
+    label: "Employees",
+    count: 0,
+    icon: UserRoundCheck,
+    description: "Employee master records",
+    tone: "navy",
+  },
+  {
+    label: "Access Requests",
+    count: 5,
+    icon: ShieldCheck,
+    description: "System and permission requests",
+    tone: "orange",
+  },
+  {
+    label: "CHWCP",
+    count: 2,
+    icon: FileCheck2,
+    description: "Health and compliance records",
+    tone: "emerald",
+  },
+];
 
 function getAnimationStyle(delay = 0) {
   return {
@@ -30,33 +52,81 @@ function getAnimationStyle(delay = 0) {
   };
 }
 
-function SummaryCard({ label, value, icon: Icon, delay = 0 }) {
+function getMetricTone(tone) {
+  if (tone === "orange") {
+    return {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      iconWrap: "bg-[#FFF3ED]",
+      icon: "text-[#FF5C28]",
+    };
+  }
+
+  if (tone === "emerald") {
+    return {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3]",
+      icon: "text-[#059669]",
+    };
+  }
+
+  return {
+    label: "text-[#042C51]",
+    value: "text-[#042C51]",
+    iconWrap: "bg-[#EAF2FB]",
+    icon: "text-[#042C51]",
+  };
+}
+
+function SummaryCard({
+  label,
+  value,
+  description,
+  icon,
+  tone = "navy",
+  delay = 0,
+}) {
+  const metricTone = getMetricTone(tone);
+  const CardIcon = icon;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+    <article
+      className="sibs-metric-card"
       style={getAnimationStyle(delay)}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+      <div className="flex h-full items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p
+            className={`m-0 truncate text-xs font-extrabold uppercase tracking-wide ${metricTone.label}`}
+          >
             {label}
           </p>
 
-          <p className="mt-3 truncate text-3xl font-extrabold leading-none text-sibs-primary-1">
+          <p
+            className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${metricTone.value}`}
+          >
             {value}
+          </p>
+
+          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+            {description}
           </p>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-          <Icon size={22} />
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${metricTone.iconWrap} ${metricTone.icon}`}
+        >
+          <CardIcon size={17} strokeWidth={2} />
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
 export default function EmployeesPage() {
-  const { setSearch, setSearchInput, setPage } = usePagination("employees");
+  const { setSearch, setSearchInput, setPage, pagination } =
+    usePagination("employees");
 
   const [activeEmployeeTab, setActiveEmployeeTab] = useState("Employees");
 
@@ -64,38 +134,27 @@ export default function EmployeesPage() {
   const didMountTabRef = useRef(false);
   const mainScrollRef = useRef(null);
 
-  const employeeTabs = [
-    {
-      label: "Employees",
-      count: 0,
-      icon: UserRoundCheck,
-    },
-    {
-      label: "Access Requests",
-      count: 5,
-      icon: ShieldCheck,
-    },
-    {
-      label: "CHWCP",
-      count: 2,
-      icon: FileCheck2,
-    },
-  ];
+  const directoryTabs = employeeTabs.map((tab) =>
+    tab.label === "Employees"
+      ? { ...tab, count: Number(pagination?.total || 0) }
+      : tab,
+  );
 
   const activeTabIndex = Math.max(
     0,
-    employeeTabs.findIndex((tab) => tab.label === activeEmployeeTab),
+    directoryTabs.findIndex((tab) => tab.label === activeEmployeeTab),
   );
+
+  const activeTab = directoryTabs[activeTabIndex] || directoryTabs[0];
+  const ActiveTabIcon = activeTab.icon;
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
-      if (mainScrollRef.current) {
-        mainScrollRef.current.scrollTo({
-          top: 0,
-          left: 0,
-          behavior,
-        });
-      }
+      mainScrollRef.current?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior,
+      });
     });
   }
 
@@ -132,7 +191,7 @@ export default function EmployeesPage() {
 
         if (
           parsed?.activeTab &&
-          ["Employees", "Access Requests", "CHWCP"].includes(parsed.activeTab)
+          directoryTabs.some((tab) => tab.label === parsed.activeTab)
         ) {
           setActiveEmployeeTab(parsed.activeTab);
         }
@@ -140,12 +199,11 @@ export default function EmployeesPage() {
 
       setSearch?.("");
       setSearchInput?.("");
-    } catch (err) {
-      console.error("State restore error:", err);
+    } catch (error) {
+      console.error("Employee directory state restore error:", error);
     }
 
-    // Run only once on mount.
-    // Do not add pagination setters to dependencies because they may change per render.
+    // This restoration intentionally runs once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -162,6 +220,7 @@ export default function EmployeesPage() {
     if (tabLabel === activeEmployeeTab) return;
 
     setActiveEmployeeTab(tabLabel);
+    setPage?.(1);
 
     try {
       sessionStorage.setItem(
@@ -171,33 +230,9 @@ export default function EmployeesPage() {
           activeTab: tabLabel,
         }),
       );
-    } catch (err) {
-      console.error("Employee tab state save error:", err);
+    } catch (error) {
+      console.error("Employee directory tab state save error:", error);
     }
-  }
-
-  function getTableTitle() {
-    if (activeEmployeeTab === "Employees") return "Employee Records";
-    if (activeEmployeeTab === "Access Requests") return "Access Requests";
-    if (activeEmployeeTab === "CHWCP") return "CHWCP Records";
-
-    return activeEmployeeTab;
-  }
-
-  function getTableSubtitle() {
-    if (activeEmployeeTab === "Employees") {
-      return "Only 15 employee records are loaded from the backend per page.";
-    }
-
-    if (activeEmployeeTab === "Access Requests") {
-      return "Review and manage employee access requests.";
-    }
-
-    if (activeEmployeeTab === "CHWCP") {
-      return "View and manage CHWCP records.";
-    }
-
-    return "";
   }
 
   function renderActiveTable() {
@@ -217,164 +252,146 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main
         ref={mainScrollRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
-            className="sibs-page-header-in"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
             style={getAnimationStyle(animationTiming.header)}
           >
-            <div className="flex min-w-0 items-center gap-3">
-              <Users
-                size={34}
-                strokeWidth={2.2}
-                className="shrink-0 text-sibs-primary-1"
-              />
+            <span className="sibs-top-accent" aria-hidden="true" />
 
-              <h1 className="m-0 min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                Employees
-              </h1>
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
+                    Employee Directory View
+                  </span>
+
+                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+                    Module: Core HR
+                  </span>
+                </div>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Employee Directory
+                </h1>
+
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage employee records, access requests, and CHWCP compliance information.
+                </p>
+              </div>
+
+              <span className="inline-flex h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51]">
+                <ActiveTabIcon size={14} />
+                <span>Active Section: {activeEmployeeTab}</span>
+              </span>
             </div>
-
-            <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-              Manage employees, access requests, and CHWCP records
-            </p>
           </section>
 
           <section
-            className="sibs-profile-tab-panel"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
             style={getAnimationStyle(animationTiming.summary)}
           >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    Employee Summary
+            {directoryTabs.map((tab, index) => (
+              <SummaryCard
+                key={tab.label}
+                label={tab.label}
+                value={tab.count}
+                description={tab.description}
+                icon={tab.icon}
+                tone={tab.tone}
+                delay={
+                  animationTiming.summaryCardBase +
+                  index * animationTiming.summaryCardStagger
+                }
+              />
+            ))}
+          </section>
+
+          <section
+            className="sibs-profile-tab-panel sibs-page-card-in sibs-card min-h-[520px] overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
+            style={getAnimationStyle(animationTiming.table)}
+          >
+            <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0">
+                  <h2 className="sibs-section-title">
+                    {activeTab.label === "Employees"
+                      ? "Employee Records"
+                      : `${activeTab.label} Records`}
                   </h2>
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    Overview of employee records, access requests, and CHWCP
-                    requests.
+                  <p className="sibs-section-subtitle">
+                    {activeTab.description}
                   </p>
                 </div>
 
-                <span className="inline-flex w-max items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
-                  {activeEmployeeTab}
-                </span>
-              </div>
+                <div className="min-w-0 overflow-x-auto no-scrollbar">
+                  <div
+                    className="relative grid w-max min-w-full overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F2F4F7] p-1 shadow-sm sm:min-w-[500px] xl:w-[560px]"
+                    style={{
+                      gridTemplateColumns: `repeat(${directoryTabs.length}, minmax(145px, 1fr))`,
+                    }}
+                  >
+                    <div
+                      className="absolute bottom-1 top-1 rounded-lg bg-[#042C51] shadow-sm transition-all duration-300 ease-out"
+                      style={{
+                        width: `calc((100% - 8px) / ${directoryTabs.length})`,
+                        left: `calc(4px + ${activeTabIndex} * ((100% - 8px) / ${directoryTabs.length}))`,
+                      }}
+                    />
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                <SummaryCard
-                  label="Employees"
-                  value="0"
-                  icon={UserRoundCheck}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    0 * animationTiming.summaryCardStagger
-                  }
-                />
+                    {directoryTabs.map((tab) => {
+                      const { label, count } = tab;
+                      const TabIcon = tab.icon;
+                      const isActive = activeEmployeeTab === label;
 
-                <SummaryCard
-                  label="Access Requests"
-                  value="5"
-                  icon={ShieldCheck}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    1 * animationTiming.summaryCardStagger
-                  }
-                />
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => handleTabChange(label)}
+                          className={`relative z-[1] inline-flex min-h-10 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-xs font-extrabold transition-all duration-300 ease-out active:scale-[0.97] sm:text-sm ${
+                            isActive
+                              ? "text-white"
+                              : "text-[#344054] hover:bg-white/80 hover:text-[#042C51]"
+                          }`}
+                        >
+                          <TabIcon size={15} className="shrink-0" />
+                          <span className="truncate">{label}</span>
 
-                <SummaryCard
-                  label="CHWCP"
-                  value="2"
-                  icon={FileCheck2}
-                  delay={
-                    animationTiming.summaryCardBase +
-                    2 * animationTiming.summaryCardStagger
-                  }
-                />
+                          {count > 0 ? (
+                            <span
+                              className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[9px] font-extrabold leading-none ${
+                                isActive
+                                  ? "bg-white text-[#042C51]"
+                                  : "bg-[#042C51] text-white"
+                              }`}
+                            >
+                              {count}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
+
+            <div className="sibs-page-card-in" style={getAnimationStyle(60)}>
+              {renderActiveTable()}
+            </div>
           </section>
-
-          <section
-  className="sibs-profile-tab-panel min-h-[520px] overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
-  style={getAnimationStyle(animationTiming.table)}
->
-  <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
-  <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-    <div className="min-w-0">
-      <h2 className="text-base font-bold text-[#101828]">
-        {getTableTitle()}
-      </h2>
-
-      <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-        {getTableSubtitle()}
-      </p>
-    </div>
-
-    <div className="min-w-0 overflow-x-auto no-scrollbar">
-      <div
-        className="relative grid w-full min-w-[520px] overflow-hidden rounded-full border border-[#E6ECF2] bg-[#F2F4F7] p-1 shadow-sm xl:w-[560px]"
-        style={{
-          gridTemplateColumns: `repeat(${employeeTabs.length}, minmax(0, 1fr))`,
-        }}
-      >
-        <div
-          className="absolute bottom-1 top-1 rounded-full bg-sibs-primary-1 shadow-sm transition-all duration-300 ease-out"
-          style={{
-            width: `calc((100% - 8px) / ${employeeTabs.length})`,
-            left: `calc(4px + ${activeTabIndex} * ((100% - 8px) / ${employeeTabs.length}))`,
-          }}
-        />
-
-        {employeeTabs.map(({ label, count, icon: Icon }) => {
-          const isActive = activeEmployeeTab === label;
-
-          return (
-            <button
-              key={label}
-              type="button"
-              onClick={() => handleTabChange(label)}
-              className={`relative z-[1] inline-flex min-h-10 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold transition-all duration-300 ease-out active:scale-[0.97] ${
-                isActive
-                  ? "text-white"
-                  : "text-[#344054] hover:bg-white/80 hover:text-sibs-primary-1"
-              }`}
-            >
-              <Icon size={15} className="shrink-0" />
-
-              <span className="truncate">{label}</span>
-
-              {count > 0 && (
-                <span
-                  className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[9px] font-extrabold leading-none transition-all duration-300 ${
-                    isActive
-                      ? "bg-white text-sibs-primary-1"
-                      : "bg-sibs-primary-1 text-white"
-                  }`}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-</div>
-  <div className="sibs-page-card-in" style={getAnimationStyle(60)}>
-    {renderActiveTable()}
-  </div>
-</section>
         </div>
       </main>
     </div>

@@ -1,4 +1,12 @@
-import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const EDGE = "rounded-[10px]";
@@ -15,7 +23,9 @@ function AnimatedDropdown({ open, children, className = "" }) {
       <div className="min-h-0 overflow-hidden">
         <div
           className={`overflow-hidden ${EDGE} border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
-            open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
+            open
+              ? "translate-y-0 scale-100"
+              : "-translate-y-1 scale-[0.99]"
           }`}
         >
           {children}
@@ -35,9 +45,34 @@ function getOptionLabel(option) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1 block text-sm font-bold text-[#101828]">
+    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
       {children}
     </label>
+  );
+}
+
+function DateFilterField({ filter }) {
+  return (
+    <div className={`flex w-full flex-col ${filter.className || ""}`}>
+      {filter.label ? <FieldLabel>{filter.label}</FieldLabel> : null}
+
+      <div className="group relative">
+        <CalendarDays
+          size={16}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+        />
+
+        <input
+          type="date"
+          value={filter.value || ""}
+          onChange={(event) => filter.onChange?.(event.target.value, event)}
+          min={filter.min}
+          max={filter.max}
+          disabled={filter.disabled}
+          className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50`}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -55,7 +90,18 @@ export default function PaginationTable({
 
   filters = [],
   dropdownFilters = [],
+  dateFilters = [],
+  dateFrom = null,
+  dateTo = null,
   rightContent = null,
+
+  filterTitle = "Refine Filters",
+  resetLabel = "Reset all",
+  onReset,
+  showFilterHeader,
+  showFilterPanel,
+  filtersPanelClassName = "",
+  filterLayout = "panel",
 
   showPagination = true,
   showCount = true,
@@ -87,17 +133,19 @@ export default function PaginationTable({
   }, [filters]);
 
   const visibleDropdownFilters = useMemo(() => {
-    return dropdownFilters.filter((filter) => filter && filter.show !== false);
+    return dropdownFilters.filter(
+      (filter) => filter && filter.show !== false,
+    );
   }, [dropdownFilters]);
 
   const combinedDropdownFilters = useMemo(() => {
     const normalFilters = visibleFilters.map((filter) => ({
       ...filter,
       searchable: filter.searchable ?? false,
-      includeAll: false,
+      includeAll: filter.includeAll ?? false,
       placeholder: filter.placeholder || "Select...",
       allLabel: filter.allLabel || "All",
-      className: filter.className || "sm:w-[220px]",
+      className: filter.className || "sm:min-w-[190px]",
     }));
 
     const searchableFilters = visibleDropdownFilters.map((filter) => ({
@@ -106,29 +154,59 @@ export default function PaginationTable({
       includeAll: filter.includeAll ?? true,
       placeholder: filter.placeholder || "Search...",
       allLabel: filter.allLabel || "All",
-      className: filter.className || "sm:w-[280px]",
+      className: filter.className || "sm:min-w-[220px]",
     }));
 
     return [...searchableFilters, ...normalFilters];
   }, [visibleFilters, visibleDropdownFilters]);
 
-  const hasTopControls =
-    title ||
-    subtitle ||
+  const visibleDateFilters = useMemo(() => {
+    const suppliedDates = [
+      ...(Array.isArray(dateFilters) ? dateFilters : []),
+      dateFrom ? { key: "dateFrom", ...dateFrom } : null,
+      dateTo ? { key: "dateTo", ...dateTo } : null,
+    ];
+
+    return suppliedDates.filter(
+      (filter) => filter && filter.show !== false,
+    );
+  }, [dateFilters, dateFrom, dateTo]);
+
+  const isTaInlineLayout = filterLayout === "ta-inline";
+
+  const hasFilterControls =
     showSearch ||
     combinedDropdownFilters.length > 0 ||
-    rightContent;
+    visibleDateFilters.length > 0 ||
+    Boolean(rightContent);
+
+  const shouldShowFilterHeader = isTaInlineLayout
+    ? false
+    : showFilterHeader ??
+      (combinedDropdownFilters.length > 0 ||
+        visibleDateFilters.length > 0 ||
+        Boolean(onReset));
+
+  const shouldShowFilterPanel = isTaInlineLayout
+    ? false
+    : showFilterPanel ??
+      (combinedDropdownFilters.length > 0 ||
+        visibleDateFilters.length > 0 ||
+        Boolean(onReset));
+
+  const hasTopControls =
+    Boolean(title) || Boolean(subtitle) || hasFilterControls;
 
   useEffect(() => {
-    function handleClickOutside(e) {
+    function handleClickOutside(event) {
       if (!openDropdownKey) return;
 
       const activeRef = dropdownRefs.current?.[openDropdownKey];
 
-      if (activeRef && !activeRef.contains(e.target)) {
+      if (activeRef && !activeRef.contains(event.target)) {
         setOpenDropdownKey(null);
-        setDropdownSearch((prev) => ({
-          ...prev,
+        setDropdownSearch((previous) => ({
+          ...previous,
           [openDropdownKey]: "",
         }));
       }
@@ -149,6 +227,14 @@ export default function PaginationTable({
   function handleNext() {
     if (loading || !hasNextPage) return;
     onNext?.();
+  }
+
+  function handleReset() {
+    if (loading) return;
+
+    setOpenDropdownKey(null);
+    setDropdownSearch({});
+    onReset?.();
   }
 
   function getDropdownLabel(filter) {
@@ -173,26 +259,31 @@ export default function PaginationTable({
       .trim()
       .toLowerCase();
 
-    if (!keyword || filter.searchable === false) return options;
+    if (!keyword || filter.searchable === false) {
+      return options;
+    }
 
     return options.filter((option) => {
       const optionLabel = getOptionLabel(option);
-      return String(optionLabel || "").toLowerCase().includes(keyword);
+
+      return String(optionLabel || "")
+        .toLowerCase()
+        .includes(keyword);
     });
   }
 
   function openDropdown(filterKey) {
     setOpenDropdownKey(filterKey);
-    setDropdownSearch((prev) => ({
-      ...prev,
+    setDropdownSearch((previous) => ({
+      ...previous,
       [filterKey]: "",
     }));
   }
 
   function closeDropdown(filterKey) {
     setOpenDropdownKey(null);
-    setDropdownSearch((prev) => ({
-      ...prev,
+    setDropdownSearch((previous) => ({
+      ...previous,
       [filterKey]: "",
     }));
   }
@@ -200,9 +291,10 @@ export default function PaginationTable({
   function toggleDropdown(filterKey) {
     if (openDropdownKey === filterKey) {
       closeDropdown(filterKey);
-    } else {
-      openDropdown(filterKey);
+      return;
     }
+
+    openDropdown(filterKey);
   }
 
   function selectDropdownValue(filter, value) {
@@ -210,233 +302,332 @@ export default function PaginationTable({
     closeDropdown(filter.key);
   }
 
-  return (
-    <div className={`relative overflow-visible ${className}`}>
-      {hasTopControls && (
-        <div className="relative z-[50] overflow-visible">
-          {(title || subtitle) && (
-            <div className="mb-4 min-w-0">
-              {title && (
-                <h2 className="text-base font-extrabold text-sibs-primary-1">
-                  {title}
-                </h2>
-              )}
-
-              {subtitle && (
-                <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                  {subtitle}
-                </p>
-              )}
-            </div>
-          )}
-
+  function renderControls() {
+    return (
+      <div
+        className={
+          controlsClassName ||
+          (isTaInlineLayout
+            ? "flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
+            : "grid grid-cols-1 gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5")
+        }
+      >
+        {showSearch ? (
           <div
             className={
-              controlsClassName ||
-              "grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-end lg:justify-end"
+              searchClassName ||
+              (isTaInlineLayout
+                ? "relative min-w-0 flex-1"
+                : "relative w-full sm:col-span-2 xl:col-span-1")
             }
           >
-            {showSearch && (
-              <div
-                className={
-                  searchClassName ||
-                  "relative w-full sm:col-span-2 lg:w-[340px]"
+            {searchLabel && !isTaInlineLayout ? (
+              <FieldLabel>{searchLabel}</FieldLabel>
+            ) : null}
+
+            <div className="group relative">
+              <Search
+                size={17}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3] transition-colors group-focus-within:text-[#FF5C28]"
+              />
+
+              <input
+                type="text"
+                value={searchValue}
+                onChange={(event) =>
+                  onSearchChange?.(event.target.value, event)
                 }
-              >
-                {searchLabel && <FieldLabel>{searchLabel}</FieldLabel>}
+                onKeyDown={onSearchKeyDown}
+                placeholder={searchPlaceholder}
+                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+                  isTaInlineLayout ? "h-10" : "h-11"
+                }`}
+              />
+            </div>
+          </div>
+        ) : null}
 
-                <div className="relative">
-                  <Search
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
+        {isTaInlineLayout && combinedDropdownFilters.length > 0 ? (
+          <SlidersHorizontal
+            size={16}
+            className="hidden shrink-0 text-[#667085] sm:block"
+            aria-hidden="true"
+          />
+        ) : null}
 
+        {combinedDropdownFilters.map((filter) => {
+          const isOpen = openDropdownKey === filter.key;
+          const options = getFilteredDropdownOptions(filter);
+          const selectedLabel = getDropdownLabel(filter);
+          const isSearchable = filter.searchable !== false;
+          const label = filter.label || filter.title || "";
+
+          return (
+            <div
+              key={filter.key}
+              ref={(node) => {
+                dropdownRefs.current[filter.key] = node;
+              }}
+              className={`relative z-[60] w-full overflow-visible ${
+                filter.className ||
+                (isTaInlineLayout ? "sm:w-[190px]" : "")
+              }`}
+            >
+              {label && !isTaInlineLayout ? (
+                <FieldLabel>{label}</FieldLabel>
+              ) : null}
+
+              {isSearchable ? (
+                <div className="group relative overflow-visible">
                   <input
                     type="text"
-                    value={searchValue}
-                    onChange={(e) => onSearchChange?.(e.target.value, e)}
-                    onKeyDown={onSearchKeyDown}
-                    placeholder={searchPlaceholder}
-                    className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+                    value={
+                      isOpen
+                        ? dropdownSearch?.[filter.key] || ""
+                        : selectedLabel
+                    }
+                    onChange={(event) => {
+                      setDropdownSearch((previous) => ({
+                        ...previous,
+                        [filter.key]: event.target.value,
+                      }));
+                      setOpenDropdownKey(filter.key);
+                    }}
+                    onFocus={() => openDropdown(filter.key)}
+                    placeholder={filter.placeholder || "Search..."}
+                    autoComplete="off"
+                    disabled={filter.disabled}
+                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isTaInlineLayout ? "h-10" : "h-11"
+                    }`}
                   />
+
+                  <button
+                    type="button"
+                    onClick={() => toggleDropdown(filter.key)}
+                    disabled={filter.disabled}
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Toggle ${label || filter.key} dropdown`}
+                  >
+                    <ChevronDown
+                      size={17}
+                      className={`transition-transform duration-300 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
                 </div>
-              </div>
-            )}
-
-            {combinedDropdownFilters.map((filter) => {
-              const isOpen = openDropdownKey === filter.key;
-              const options = getFilteredDropdownOptions(filter);
-              const selectedLabel = getDropdownLabel(filter);
-              const isSearchable = filter.searchable !== false;
-              const label = filter.label || filter.title || "";
-
-              return (
-                <div
-                  key={filter.key}
-                  ref={(node) => {
-                    dropdownRefs.current[filter.key] = node;
-                  }}
-                  className={`relative z-[60] w-full overflow-visible ${filter.className}`}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown(filter.key)}
+                  disabled={filter.disabled}
+                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    isTaInlineLayout ? "h-10" : "h-11"
+                  }`}
+                  aria-expanded={isOpen}
                 >
-                  {label && <FieldLabel>{label}</FieldLabel>}
+                  <span className="block min-w-0 truncate">
+                    {selectedLabel}
+                  </span>
 
-                  {isSearchable ? (
-                    <div className="relative overflow-visible">
-                      <input
-                        type="text"
-                        value={
-                          isOpen
-                            ? dropdownSearch?.[filter.key] || ""
-                            : selectedLabel
-                        }
-                        onChange={(e) => {
-                          setDropdownSearch((prev) => ({
-                            ...prev,
-                            [filter.key]: e.target.value,
-                          }));
-                          setOpenDropdownKey(filter.key);
-                        }}
-                        onFocus={() => openDropdown(filter.key)}
-                        placeholder={filter.placeholder || "Search..."}
-                        autoComplete="off"
-                        className={`h-11 w-full ${EDGE} border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
-                      />
+                  <ChevronDown
+                    size={17}
+                    className={`shrink-0 text-[#667085] transition-transform duration-300 ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
 
-                      <ChevronDown
-                        size={18}
-                        onClick={() => toggleDropdown(filter.key)}
-                        className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
-                  ) : (
+              <AnimatedDropdown open={isOpen}>
+                <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
+                  {filter.includeAll ?? false ? (
                     <button
                       type="button"
-                      onClick={() => toggleDropdown(filter.key)}
-                      className={`flex h-11 w-full items-center justify-between ${EDGE} border border-[#D0D5DD] bg-white px-4 text-left text-sm font-bold text-[#344054] outline-none transition hover:border-sibs-primary-1/30 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10`}
+                      onClick={() =>
+                        selectDropdownValue(filter, "All")
+                      }
+                      className={`block w-full px-4 py-2.5 text-left text-xs transition ${
+                        filter.value === "All"
+                          ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                          : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                      }`}
                     >
-                      <span className="block min-w-0 truncate">
-                        {selectedLabel}
+                      <span className="block truncate">
+                        {filter.allLabel || "All"}
                       </span>
-
-                      <ChevronDown
-                        size={18}
-                        className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      />
                     </button>
-                  )}
+                  ) : null}
 
-                  <AnimatedDropdown open={isOpen}>
-                    <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar">
-                      {(filter.includeAll ?? false) && (
+                  {options.length > 0 ? (
+                    options.map((option, index) => {
+                      const optionValue = getOptionValue(option);
+                      const optionLabel = getOptionLabel(option);
+                      const checked = filter.value === optionValue;
+
+                      return (
                         <button
+                          key={`${filter.key}-${optionValue}-${index}`}
                           type="button"
-                          onClick={() => selectDropdownValue(filter, "All")}
-                          className={`block w-full px-4 py-3 text-left text-sm transition ${
-                            filter.value === "All"
-                              ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                              : "text-[#344054] hover:bg-[#F8FAFC]"
+                          onClick={() =>
+                            selectDropdownValue(filter, optionValue)
+                          }
+                          className={`block w-full px-4 py-2.5 text-left text-xs transition ${
+                            checked
+                              ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                              : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                           }`}
                         >
                           <span className="block truncate">
-                            {filter.allLabel || "All"}
+                            {optionLabel}
                           </span>
                         </button>
-                      )}
-
-                      {options.length > 0 ? (
-                        options.map((option, index) => {
-                          const optionValue = getOptionValue(option);
-                          const optionLabel = getOptionLabel(option);
-                          const checked = filter.value === optionValue;
-
-                          return (
-                            <button
-                              key={`${filter.key}-${optionValue}-${index}`}
-                              type="button"
-                              onClick={() =>
-                                selectDropdownValue(filter, optionValue)
-                              }
-                              className={`block w-full px-4 py-3 text-left text-sm transition ${
-                                checked
-                                  ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                                  : "text-[#344054] hover:bg-[#F8FAFC]"
-                              }`}
-                            >
-                              <span className="block truncate">
-                                {optionLabel}
-                              </span>
-                            </button>
-                          );
-                        })
-                      ) : (
-                        <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-                          No options found.
-                        </div>
-                      )}
+                      );
+                    })
+                  ) : (
+                    <div className="px-4 py-4 text-xs font-semibold text-[#667085]">
+                      No options found.
                     </div>
-                  </AnimatedDropdown>
+                  )}
                 </div>
-              );
-            })}
+              </AnimatedDropdown>
+            </div>
+          );
+        })}
 
-            {rightContent && (
-              <div
-                className={
-                  rightContentClassName ||
-                  "flex w-full items-end lg:w-auto"
-                }
-              >
-                {rightContent}
-              </div>
-            )}
+        {visibleDateFilters.map((filter, index) => (
+          <DateFilterField
+            key={filter.key || `date-filter-${index}`}
+            filter={filter}
+          />
+        ))}
+
+        {rightContent ? (
+          <div
+            className={
+              rightContentClassName ||
+              "flex w-full items-end xl:w-auto"
+            }
+          >
+            {rightContent}
           </div>
-        </div>
-      )}
+        ) : null}
+      </div>
+    );
+  }
 
-      {showPagination && (
-        <div className="mt-5 flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-stretch">
+  return (
+    <div className={`relative overflow-visible font-jakarta ${className}`}>
+      {hasTopControls ? (
+        <div className="relative z-[50] overflow-visible">
+          {title || subtitle ? (
+            <div className="mb-4 min-w-0">
+              {title ? (
+                <h2 className="text-base font-extrabold text-[#042C51]">
+                  {title}
+                </h2>
+              ) : null}
+
+              {subtitle ? (
+                <p className="mt-1 text-sm font-medium text-[#667085]">
+                  {subtitle}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {shouldShowFilterPanel ? (
+            <div
+              className={`relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5 ${filtersPanelClassName}`}
+            >
+              {shouldShowFilterHeader ? (
+                <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#F1F5F9] pb-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <SlidersHorizontal
+                      size={16}
+                      className="shrink-0 text-[#042C51]"
+                    />
+                    <span className="truncate text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                      {filterTitle}
+                    </span>
+                  </div>
+
+                  {onReset ? (
+                    <button
+                      type="button"
+                      onClick={handleReset}
+                      disabled={loading}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-extrabold text-[#FF5C28] transition hover:bg-[#FFF0EB] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RefreshCw size={13} />
+                      {resetLabel}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {renderControls()}
+            </div>
+          ) : (
+            renderControls()
+          )}
+        </div>
+      ) : null}
+
+      {showPagination ? (
+        <div className="mt-5 flex flex-col gap-3 border-t border-[#F1F5F9] pt-4 sm:flex-row sm:items-center sm:justify-between">
           {showCount ? (
-            <p className="m-0 text-sm font-semibold text-sibs-tertiary-5">
-              Showing {loadedCount} loaded {recordLabel}
-              {Number(totalRecords || 0) > 0 ? ` out of ${totalRecords}` : ""}
+            <p className="m-0 text-center text-xs font-semibold text-[#667085] sm:text-left sm:text-sm">
+              Showing{" "}
+              <span className="font-extrabold text-[#042C51]">
+                {loadedCount}
+              </span>{" "}
+              loaded {recordLabel}
+              {Number(totalRecords || 0) > 0 ? (
+                <>
+                  {" "}
+                  out of{" "}
+                  <span className="font-extrabold text-[#042C51]">
+                    {totalRecords}
+                  </span>
+                </>
+              ) : null}
             </p>
           ) : (
             <span />
           )}
 
-          <div className="flex items-center gap-2 max-sm:justify-center">
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:w-auto">
             <button
               type="button"
               disabled={loading || !hasPreviousPage}
               onClick={handlePrevious}
-              className={`inline-flex h-10 items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4 sm:text-sm`}
             >
               <ChevronLeft size={16} />
-              Previous
+              <span className="truncate">Previous</span>
             </button>
 
             <span
-              className={`inline-flex h-10 items-center justify-center ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-4 text-sm font-bold text-[#344054]`}
+              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 text-xs font-extrabold text-white shadow-sm sm:px-4 sm:text-sm`}
             >
               Page {safeCurrentPage}
+              {safeTotalPages > 1 ? ` of ${safeTotalPages}` : ""}
             </span>
 
             <button
               type="button"
               disabled={loading || !hasNextPage}
               onClick={handleNext}
-              className={`inline-flex h-10 items-center justify-center gap-2 ${EDGE} border border-[#D6DEE8] bg-white px-4 text-sm font-bold text-sibs-primary-1 transition hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50`}
+              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4 sm:text-sm`}
             >
-              Next
+              <span className="truncate">Next</span>
               <ChevronRight size={16} />
             </button>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

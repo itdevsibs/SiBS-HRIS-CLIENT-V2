@@ -5,9 +5,9 @@ import NotFound from "@/pages/NotFound";
 import LoginPage from "./pages/login/LoginPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
-import AdminDashboardPage from "./pages/dashboard/AdminDashboardPage";
+import AdminDashboardPage from "./pages/dashboard/HrAdmin/AdminDashboardPage";
 import EmployeeDashboardPage from "./pages/dashboard/EmployeeDashboardPage";
-import OMDashboardPage from "./pages/dashboard/OMDashboardPage";
+import OMDashboardPage from "./pages/dashboard/OMDashboard/OMDashboardPage";
 
 import EmployeeDataPage from "./pages/employee/EmployeeDataPage";
 import EmployeesPage from "./pages/employee/EmployeesPage";
@@ -20,7 +20,7 @@ import RequisitionsPage from "./pages/requisitions/RequisitionPage";
 import SchedulePage from "./pages/schedule/SchedulePage";
 import ProfileUserPage from "./pages/profile/UserProfilePage";
 
-import TADashboardPage from "./pages/recruitment/TADashboardPage";
+import TADashboardPage from "./pages/dashboard/TADashboard/TADashboardPage";
 import HiringNeedsPage from "./pages/recruitment/HiringNeedsPage";
 import JobDescriptionPage from "./pages/recruitment/JobDescriptionPage";
 import JobDescriptionViewPage from "./pages/recruitment/JobDescriptionViewPage";

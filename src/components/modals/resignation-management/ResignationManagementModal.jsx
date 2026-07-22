@@ -18,6 +18,7 @@ import {
   Paperclip,
   Search,
   UserRound,
+  UserX,
   X,
   XCircle,
 } from "lucide-react";
@@ -1352,12 +1353,12 @@ function ChecklistItem({ done = false, title, subtitle }) {
 
 function FieldCompleteBadge({ completed = false }) {
   return completed ? (
-    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700">
       <CheckCircle2 size={12} />
       Complete
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+    <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-amber-700">
       <Clock3 size={12} />
       Missing
     </span>
@@ -1373,7 +1374,7 @@ function CompletionStatusBadge({ completed = 0, total = 6 }) {
 
   return (
     <span
-      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold uppercase tracking-wide whitespace-nowrap ${
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold uppercase whitespace-nowrap ${
         isComplete
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : "border-amber-200 bg-amber-50 text-amber-700"
@@ -1413,7 +1414,7 @@ function FilingInfoInput({ label, value, displayValue }) {
 
   return (
     <div className="min-w-0 rounded-lg bg-[#F8FAFC] px-4 py-3 selection:bg-[#FFF3B8] selection:text-[#101828]">
-      <p className="truncate text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
+      <p className="truncate text-[10px] font-extrabold uppercase text-sibs-primary-1/70">
         {label}
       </p>
 
@@ -1778,7 +1779,7 @@ const requiredFieldChecks = [
                     <ProfileAvatar item={selectedEmployee} size="lg" />
 
                     <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
+                      <p className="text-xs font-bold uppercase text-sibs-tertiary-5">
                         Selected Employee
                       </p>
 
@@ -2026,286 +2027,859 @@ const requiredFieldChecks = [
     document.body,
   );
 }
+function getFirstValue(source, keys, fallback = "") {
+  for (const key of keys) {
+    const value = source?.[key];
+
+    if (
+      value !== null &&
+      value !== undefined &&
+      String(value).trim() !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return fallback;
+}
+
+function getEmployeeAccount(item) {
+  return getFirstValue(
+    item,
+    [
+      "accountName",
+      "account_name",
+      "account",
+      "clientAccount",
+      "client_account",
+      "campaign",
+      "program",
+    ],
+    "--",
+  );
+}
+
+function getCaseId(item) {
+  return getFirstValue(
+    item,
+    [
+      "id",
+      "resignationId",
+      "resignation_id",
+      "requestId",
+      "request_id",
+    ],
+    "--",
+  );
+}
+
+function getCaseStatusLabel(status) {
+  if (status === "In Notice Period") return "Notice Period";
+  return status || "For Approval";
+}
+
+function getCaseStatusClass(status) {
+  switch (status) {
+    case "Completed":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Declined":
+    case "Rejected":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "In Notice Period":
+      return "border-indigo-200 bg-indigo-50 text-indigo-700";
+    case "For Approval":
+    default:
+      return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+}
+
+function getNoticeCycleLabel(resignationType) {
+  const normalizedType = String(resignationType || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalizedType === "immediate") return "Immediate Waiver";
+  if (normalizedType === "formal") return "30-Day SLA Period";
+
+  return "Standard Notice Cycle";
+}
+
+function normalizeApprovalStageStatus(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    ["approved", "approve", "completed", "complete", "cleared"].includes(
+      normalized,
+    )
+  ) {
+    return "Approved";
+  }
+
+  if (
+    ["declined", "decline", "rejected", "reject"].includes(normalized)
+  ) {
+    return "Declined";
+  }
+
+  if (
+    ["cancelled", "canceled", "void", "skipped"].includes(normalized)
+  ) {
+    return "Cancelled";
+  }
+
+  return "Pending";
+}
+
+function getApprovalStatusClass(status) {
+  switch (status) {
+    case "Approved":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "Declined":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "Cancelled":
+      return "border-slate-200 bg-slate-100 text-slate-500";
+    case "Pending":
+    default:
+      return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+}
+
+function formatProcessedTime(value, status) {
+  if (!value) {
+    return status === "Pending" ? "Pending decision" : "--";
+  }
+
+  const formatted = formatDate(value);
+
+  if (formatted && formatted !== "Invalid Date") {
+    return formatted;
+  }
+
+  return String(value);
+}
+
+function getStageDecision(item, stageKey, finalStatus) {
+  const statusAliases = {
+    tl: [
+      "tlStatus",
+      "tl_status",
+      "teamLeaderStatus",
+      "team_leader_status",
+    ],
+    om: [
+      "omStatus",
+      "om_status",
+      "operationsManagerStatus",
+      "operations_manager_status",
+    ],
+    som: [
+      "somStatus",
+      "som_status",
+      "seniorOperationsManagerStatus",
+      "senior_operations_manager_status",
+    ],
+    hr: [
+      "hrStatus",
+      "hr_status",
+      "hrPartnerStatus",
+      "hr_partner_status",
+    ],
+  };
+
+  const approvedAliases = {
+    tl: ["tlIsApproved", "tl_is_approved", "teamLeaderIsApproved"],
+    om: ["omIsApproved", "om_is_approved", "operationsManagerIsApproved"],
+    som: [
+      "somIsApproved",
+      "som_is_approved",
+      "seniorOperationsManagerIsApproved",
+    ],
+    hr: ["hrIsApproved", "hr_is_approved", "hrPartnerIsApproved"],
+  };
+
+  const declinedAliases = {
+    tl: ["tlIsDeclined", "tl_is_declined", "teamLeaderIsDeclined"],
+    om: ["omIsDeclined", "om_is_declined", "operationsManagerIsDeclined"],
+    som: [
+      "somIsDeclined",
+      "som_is_declined",
+      "seniorOperationsManagerIsDeclined",
+    ],
+    hr: ["hrIsDeclined", "hr_is_declined", "hrPartnerIsDeclined"],
+  };
+
+  const explicitStatus = getFirstValue(
+    item,
+    statusAliases[stageKey] || [],
+  );
+
+  if (explicitStatus) {
+    return normalizeApprovalStageStatus(explicitStatus);
+  }
+
+  const isDeclined = (declinedAliases[stageKey] || []).some(
+    (key) => Number(item?.[key] || 0) === 1,
+  );
+
+  if (isDeclined) return "Declined";
+
+  const isApproved = (approvedAliases[stageKey] || []).some(
+    (key) => Number(item?.[key] || 0) === 1,
+  );
+
+  if (isApproved) return "Approved";
+
+  if (
+    stageKey === "hr" &&
+    (finalStatus === "Completed" || Number(item?.isCompleted || 0) === 1)
+  ) {
+    return "Approved";
+  }
+
+  return "Pending";
+}
+
+function buildApprovalStageRows(item) {
+  const suppliedStages = Array.isArray(item?.approvalStages)
+    ? item.approvalStages
+    : Array.isArray(item?.approval_stages)
+      ? item.approval_stages
+      : [];
+
+  if (suppliedStages.length > 0) {
+    return suppliedStages.map((stage, index) => {
+      const status = normalizeApprovalStageStatus(
+        stage?.status ||
+          stage?.approvalStatus ||
+          stage?.approval_status,
+      );
+
+      return {
+        id: String(
+          stage?.id ||
+            stage?.stageName ||
+            stage?.stage ||
+            `stage-${index}`,
+        ),
+        stage:
+          stage?.stageName ||
+          stage?.stage ||
+          stage?.role ||
+          `Approval Stage ${index + 1}`,
+        approver:
+          stage?.approver ||
+          stage?.approverName ||
+          stage?.approver_name ||
+          stage?.fullName ||
+          stage?.name ||
+          "Pending assignment",
+        status,
+        processedTime: formatProcessedTime(
+          stage?.updatedAt ||
+            stage?.updated_at ||
+            stage?.processedAt ||
+            stage?.processed_at ||
+            stage?.approvedAt ||
+            stage?.approved_at,
+          status,
+        ),
+      };
+    });
+  }
+
+  const finalStatus = getResignationStatus(item);
+
+  const stageDefinitions = [
+    {
+      key: "tl",
+      stage: "Team Leader",
+      approverKeys: [
+        "tlFullName",
+        "tl_full_name",
+        "tlName",
+        "tl_name",
+        "tlApproverName",
+        "tl_approver_name",
+        "teamLeaderName",
+        "team_leader_name",
+        "supervisorName",
+        "supervisor_name",
+        "filedByName",
+      ],
+      dateKeys: [
+        "tlProcessedAt",
+        "tl_processed_at",
+        "tlApprovedAt",
+        "tl_approved_at",
+        "tlUpdatedAt",
+        "tl_updated_at",
+        "tlApprovalDate",
+        "tl_approval_date",
+      ],
+    },
+    {
+      key: "om",
+      stage: "Operations Manager",
+      approverKeys: [
+        "omFullName",
+        "om_full_name",
+        "omName",
+        "om_name",
+        "omApproverName",
+        "om_approver_name",
+        "operationsManagerName",
+        "operations_manager_name",
+        "managerName",
+        "manager_name",
+      ],
+      dateKeys: [
+        "omProcessedAt",
+        "om_processed_at",
+        "omApprovedAt",
+        "om_approved_at",
+        "omUpdatedAt",
+        "om_updated_at",
+        "omApprovalDate",
+        "om_approval_date",
+      ],
+    },
+    {
+      key: "som",
+      stage: "Senior Ops Manager",
+      approverKeys: [
+        "somFullName",
+        "som_full_name",
+        "somName",
+        "som_name",
+        "somApproverName",
+        "som_approver_name",
+        "seniorOperationsManagerName",
+        "senior_operations_manager_name",
+      ],
+      dateKeys: [
+        "somProcessedAt",
+        "som_processed_at",
+        "somApprovedAt",
+        "som_approved_at",
+        "somUpdatedAt",
+        "som_updated_at",
+        "somApprovalDate",
+        "som_approval_date",
+      ],
+    },
+    {
+      key: "hr",
+      stage: "HR Partner",
+      approverKeys: [
+        "hrFullName",
+        "hr_full_name",
+        "hrName",
+        "hr_name",
+        "hrApproverName",
+        "hr_approver_name",
+        "hrPartnerName",
+        "hr_partner_name",
+        "completedByName",
+        "completed_by_name",
+      ],
+      dateKeys: [
+        "hrProcessedAt",
+        "hr_processed_at",
+        "hrApprovedAt",
+        "hr_approved_at",
+        "hrUpdatedAt",
+        "hr_updated_at",
+        "completedAt",
+        "completed_at",
+      ],
+    },
+  ];
+
+  let priorStageDeclined = false;
+
+  return stageDefinitions.map((definition) => {
+    let status = getStageDecision(item, definition.key, finalStatus);
+
+    if (priorStageDeclined && status === "Pending") {
+      status = "Cancelled";
+    }
+
+    if (status === "Declined") {
+      priorStageDeclined = true;
+    }
+
+    const fallbackApprover =
+      definition.key === "tl"
+        ? getFirstValue(
+            item,
+            [
+              "supervisorName",
+              "supervisor_name",
+              "filedByName",
+              "filed_by_name",
+            ],
+            "Pending assignment",
+          )
+        : "Pending assignment";
+
+    return {
+      id: definition.key,
+      stage: definition.stage,
+      approver: getFirstValue(
+        item,
+        definition.approverKeys,
+        fallbackApprover,
+      ),
+      status,
+      processedTime: formatProcessedTime(
+        getFirstValue(item, definition.dateKeys),
+        status,
+      ),
+    };
+  });
+}
+
+function getAttachmentEntries(item) {
+  const sibsId = getEmployeeSibsId(item);
+
+  const source = Array.isArray(item?.attachments)
+    ? item.attachments
+    : Array.isArray(item?.attachmentFiles)
+      ? item.attachmentFiles
+      : Array.isArray(item?.attachment_files)
+        ? item.attachment_files
+        : getUploadedFileDisplayName(item)
+          ? [
+              {
+                name: getUploadedFileDisplayName(item),
+                url: getUploadedFileUrl(item),
+              },
+            ]
+          : [];
+
+  const entries = source
+    .map((attachment, index) => {
+      const normalized =
+        typeof attachment === "string"
+          ? { name: attachment }
+          : attachment && typeof attachment === "object"
+            ? attachment
+            : null;
+
+      if (!normalized) return null;
+
+      const name = String(
+        normalized.name ||
+          normalized.filename ||
+          normalized.fileName ||
+          normalized.file_name ||
+          normalized.uploadedFile ||
+          "",
+      ).trim();
+
+      if (!name) return null;
+
+      const directUrl =
+        normalized.url ||
+        normalized.fileUrl ||
+        normalized.file_url ||
+        normalized.uploadedFileUrl ||
+        normalized.uploaded_file_url ||
+        "";
+
+      let url = directUrl
+        ? normalizeUploadedFileUrl(directUrl)
+        : "";
+
+      if (!url && sibsId && sibsId !== "--") {
+        url = `${String(API_URL || "").replace(
+          /\/$/,
+          "",
+        )}/api/resignation/file/${encodeURIComponent(
+          sibsId,
+        )}/${encodeURIComponent(name)}`;
+      }
+
+      return {
+        id: String(
+          normalized.id ||
+            normalized.attachmentId ||
+            `${index}-${name}-${url}`,
+        ),
+        name,
+        url,
+      };
+    })
+    .filter(Boolean);
+
+  const seen = new Set();
+
+  return entries.filter((attachment) => {
+    const key = `${attachment.name.toLowerCase()}::${attachment.url}`;
+
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export function ViewResignationModal({ open, item, onClose }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [open, onClose]);
+
   if (!open || !item) return null;
 
   const status = getResignationStatus(item);
-  const StatusIcon = getStatusIcon(status);
+  const statusLabel = getCaseStatusLabel(status);
 
   const employeeName = getFullName(item);
   const employeeSibsId = getEmployeeSibsId(item);
   const employeeDepartment = getEmployeeDepartment(item);
-  const employeePosition = getEmployeePosition(item);
+  const employeeAccount = getEmployeeAccount(item);
 
   const resignationType = item?.resignationType || item?.type || "";
-
   const rawResignationDate = item?.resignationDate || getItemDate(item);
-  const rawLastWorkingDate = item?.lastWorkingDate || item?.last_working_date;
+  const rawLastWorkingDate =
+    item?.lastWorkingDate || item?.last_working_date;
 
   const resignationDate = formatDate(rawResignationDate);
   const lastWorkingDate = formatDate(rawLastWorkingDate);
 
-  const reason = item?.reason || "";
-  const remarks = item?.remarks || item?.comment_retain || item?.commentRetain;
+  const reason = safeText(item?.reason, "No reason provided");
+  const narrative =
+    item?.details ||
+    item?.specifyOthers ||
+    item?.specify_others ||
+    item?.remarks ||
+    item?.comment_retain ||
+    item?.commentRetain ||
+    "No narrative details were added with the submission.";
 
-  const filedBy =
+  const filedByObject =
+    item?.filedBy && typeof item.filedBy === "object"
+      ? item.filedBy
+      : null;
+
+  const filedByName =
+    filedByObject?.name ||
     item?.filedByName ||
+    item?.filed_by_name ||
     item?.encodedByName ||
     item?.createdByName ||
     item?.supervisorName ||
     "TL / OM";
 
-  const hasEmployeeSibsId = Boolean(employeeSibsId && employeeSibsId !== "--");
-const hasEmployeeName = Boolean(employeeName && employeeName !== "Employee");
-const hasResignationType = Boolean(resignationType);
+  const filedByRole =
+    filedByObject?.role ||
+    item?.filedByRole ||
+    item?.filed_by_role ||
+    item?.encodedByRole ||
+    item?.supervisorRole ||
+    "";
 
-const hasResignationDate = Boolean(rawResignationDate);
-const hasLastWorkingDate = Boolean(rawLastWorkingDate);
+  const approvalStages = buildApprovalStageRows(item);
+  const attachments = getAttachmentEntries(item);
 
-const completedDateFields = [
-  hasResignationDate,
-  hasLastWorkingDate,
-].filter(Boolean).length;
+  const employeeMeta = [
+    employeeSibsId !== "--" ? employeeSibsId : "",
+    employeeDepartment !== "--" ? employeeDepartment : "",
+    employeeAccount !== "--" ? employeeAccount : "",
+  ].filter(Boolean);
 
-const hasDatesCompleted = completedDateFields === 2;
-
-const hasUploadedFile = Boolean(getUploadedFileDisplayName(item));
-const hasReason = Boolean(String(reason || "").trim());
-const hasRemarks = Boolean(String(remarks || "").trim());
-
-const requiredFieldChecks = [
-  {
-    label: "Employee SIBS ID",
-    complete: hasEmployeeSibsId,
-    
-  },
-  {
-    label: "Employee Name",
-    complete: hasEmployeeName,
-    
-  },
-  {
-    label: "Type of Resignation",
-    complete: hasResignationType,
-    
-  },
-  {
-    label: "Dates Completed",
-    complete: hasDatesCompleted,
-    
-  },
-  {
-    label: "Email Attachment",
-    complete: hasUploadedFile,
-  },
-  {
-    label: "Reason / Summary",
-    complete: hasReason,
-    
-  },
-  {
-    label: "TL / OM Remarks",
-    complete: hasRemarks,
-  },
-];
-
-const completedRequiredFields = requiredFieldChecks.filter(
-  (field) => field.complete,
-).length;
-
-const totalRequiredFields = requiredFieldChecks.length;
-
-
+  const employeeInitial =
+    String(employeeName || "E").trim().charAt(0).toUpperCase() || "E";
 
   return createPortal(
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-2 sm:p-4">
-      <div
-        className={`flex max-h-[96vh] w-full max-w-6xl flex-col overflow-hidden ${PANEL_EDGE} border border-[#D9E2EC] bg-white shadow-2xl sm:max-h-[94vh]`}
+    <div
+      className="fixed inset-0 z-[1100] flex h-dvh items-center justify-center bg-[#042C51]/70 p-3 backdrop-blur-sm sm:p-5"
+      onClick={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="view-resignation-title"
+        onClick={(event) => event.stopPropagation()}
+        className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[18px] border border-white/70 bg-white font-jakarta shadow-[0_24px_70px_rgba(4,44,81,0.32)] sm:max-h-[92vh]"
       >
-        <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <div
-                className={`flex h-11 w-11 shrink-0 items-center justify-center ${EDGE} bg-[#DDE5EF] text-sibs-primary-1`}
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-[#042C51] px-4 py-4 text-white sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28] text-white shadow-sm">
+              <UserX size={18} strokeWidth={2.25} />
+            </span>
+
+            <div className="min-w-0">
+              <h2
+                id="view-resignation-title"
+                className="truncate text-sm font-extrabold leading-tight text-white sm:text-base"
               >
-                <FileText size={22} />
+                Resignation Case Details
+              </h2>
+
+              <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-300 sm:text-xs">
+                Offboarding workflow dossier
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-300 transition hover:bg-white/20 hover:text-white active:scale-[0.97]"
+            aria-label="Close resignation case details"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-white px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
+          <div className="space-y-5">
+            <section className="flex flex-col gap-4 rounded-xl border border-[#D9E2EC] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#042C51] text-sm font-extrabold text-white">
+                  {employeeInitial}
+                </span>
+
+                <div className="min-w-0">
+                  <h3 className="truncate text-base font-extrabold text-[#042C51] sm:text-lg">
+                    {employeeName}
+                  </h3>
+
+                  <p className="mt-1 line-clamp-2 text-xs font-semibold text-[#667085]">
+                    {employeeMeta.length > 0
+                      ? employeeMeta.join("  •  ")
+                      : "Employee information unavailable"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 flex-col items-start sm:items-end">
+                <span className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                  Current Status
+                </span>
+
+                <span
+                  className={`mt-1 inline-flex rounded border px-2 py-1 text-[9px] font-extrabold uppercase leading-none ${getCaseStatusClass(
+                    status,
+                  )}`}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-2 gap-x-5 gap-y-4 rounded-xl border border-[#E7ECF2] bg-[#FBFCFE] p-4 md:grid-cols-4">
+              <div className="min-w-0">
+                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                  Case ID
+                </p>
+                <p className="mt-1 truncate text-xs font-extrabold text-[#042C51]">
+                  {safeText(getCaseId(item))}
+                </p>
               </div>
 
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-extrabold text-sibs-primary-1">
-                  View Resignation
-                </h2>
-
-                <p className="mt-1 text-sm font-medium text-[#2F6CA5]">
-                  Review the filed resignation details and attachment.
+                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                  Filed Date
                 </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className={`inline-flex h-10 w-10 shrink-0 items-center justify-center ${EDGE} text-sibs-primary-1 transition hover:bg-[#F2F6FA] active:scale-[0.98]`}
-              aria-label="Close"
-            >
-              <X size={22} />
-            </button>
-          </div>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 sibs-scrollbar sm:px-6 sm:py-6">
-          <div className="space-y-5">
-            <div
-              className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-3">
-                  <ProfileAvatar item={item} size="lg" />
-
-                  <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-sibs-tertiary-5">
-                      Employee
-                    </p>
-
-                    <h3 className="mt-1 truncate text-lg font-extrabold text-[#101828]">
-                      {employeeName}
-                    </h3>
-
-                    <p className="mt-1 truncate text-sm font-bold text-[#2F6CA5]">
-                      {employeeSibsId} · {employeeDepartment}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  
-
-                  <span
-                    className={`inline-flex w-fit shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold ${getStatusClass(
-                      status,
-                    )}`}
-                  >
-                    <StatusIcon size={14} />
-                    {status}
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
-                <ViewDetailField
-                  label="Employee SIBS ID"
-                  value={employeeSibsId}
-                  completed={hasEmployeeSibsId}
-                />
-
-                <ViewDetailField
-                  label="Employee Name"
-                  value={employeeName}
-                  completed={hasEmployeeName}
-                />
-
-                <div className="md:col-span-2">
-                  <ViewDetailField
-                    label="Type of Resignation"
-                    value={resignationType}
-                    completed={hasResignationType}
-                  />
-                </div>
-
-                <ViewDetailField
-                  label="Resignation Date"
-                  value={resignationDate}
-                  completed={hasResignationDate}
-                />
-
-                <ViewDetailField
-                  label="Last Working Date"
-                  value={lastWorkingDate}
-                  completed={hasLastWorkingDate}
-                />
-
-                <div className="md:col-span-2">
-                  <ViewUploadedFileField item={item} />
-                </div>
-
-                <div className="md:col-span-2">
-                  <ViewDetailTextarea
-                    label="Reason / Summary"
-                    value={reason}
-                    rows="min-h-[126px]"
-                    completed={hasReason}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <ViewDetailTextarea
-                    label="TL / OM Remarks"
-                    value={remarks}
-                    rows="min-h-[96px]"
-                    completed={hasRemarks}
-                    showCompletion={false}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-              <div
-                className={`${PANEL_EDGE} border border-blue-100 bg-blue-50 p-4 sm:p-5`}
-              >
-                <h3 className="text-base font-extrabold text-sibs-primary-1">
-                  Process Rule
-                </h3>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-[#344054]">
-                  Approval and decline actions for this resignation should be
-                  handled in the Approval Request module. This modal is for
-                  viewing the filed resignation details only.
+                <p className="mt-1 truncate text-xs font-bold text-[#344054]">
+                  {safeText(resignationDate)}
                 </p>
               </div>
 
-              <div
-                className={`${PANEL_EDGE} border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5`}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="text-base font-extrabold text-sibs-primary-1">
-                      Filing Details
-                    </h3>
+              <div className="min-w-0">
+                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                  Last Working Day
+                </p>
+                <p className="mt-1 truncate text-xs font-extrabold text-rose-600">
+                  {safeText(lastWorkingDate)}
+                </p>
+              </div>
 
-                    <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                      Filing ownership and department details.
-                    </p>
-                  </div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-extrabold uppercase text-[#98A2B3]">
+                  Notice Cycle
+                </p>
+                <p className="mt-1 truncate text-xs font-extrabold text-indigo-600">
+                  {getNoticeCycleLabel(resignationType)}
+                </p>
+              </div>
+            </section>
 
-                  
-                </div>
+            <section>
+              <h4 className="text-[11px] font-extrabold uppercase text-[#042C51] sm:text-xs">
+                Statement / Reason Details
+              </h4>
 
-                <div className="mt-5 grid grid-cols-1 gap-3">
-                  <FilingInfoInput label="Filed By" value={safeText(filedBy)} />
+              <div className="mt-2 rounded-xl border border-[#CFE0F4] bg-[#F7FAFE] p-4">
+                <span className="inline-flex max-w-full rounded border border-[#FFD7C8] bg-[#FFF0EB] px-2 py-1 text-[10px] font-extrabold text-[#FF5C28]">
+                  <span className="truncate">Reason: {reason}</span>
+                </span>
 
-                  <FilingInfoInput
-                    label="Department / Position"
-                    value={safeText(employeePosition || employeeDepartment)}
-                  />
+                <p className="mt-2 whitespace-pre-wrap break-words text-xs font-medium italic leading-5 text-[#344054]">
+                  “{safeText(narrative)}”
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <h4 className="text-[11px] font-extrabold uppercase text-[#042C51] sm:text-xs">
+                  Clearance & Approval Routing Stages
+                </h4>
+
+                <span className="text-[9px] font-extrabold uppercase text-[#7E8DA8]">
+                  SOP Alignment Routing: TL → OM → SOM → HR
+                </span>
+              </div>
+
+              <div className="mt-2 overflow-hidden rounded-xl border border-[#D9E2EC]">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[620px] border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-[#D9E2EC] bg-[#F8FAFC]">
+                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                          Approval Stage
+                        </th>
+                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                          Designated Approver
+                        </th>
+                        <th className="px-3 py-3 text-center text-[10px] font-extrabold text-[#8A98B8]">
+                          Status
+                        </th>
+                        <th className="px-3 py-3 text-[10px] font-extrabold text-[#8A98B8]">
+                          Processed Time
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {approvalStages.map((stage) => (
+                        <tr
+                          key={stage.id}
+                          className="border-b border-[#EEF2F6] last:border-b-0 hover:bg-[#FFF8F5]"
+                        >
+                          <td className="px-3 py-3 text-xs font-extrabold text-[#042C51]">
+                            {stage.stage}
+                          </td>
+
+                          <td className="px-3 py-3 text-xs font-semibold text-[#475467]">
+                            {safeText(
+                              stage.approver,
+                              "Pending assignment",
+                            )}
+                          </td>
+
+                          <td className="px-3 py-3 text-center">
+                            <span
+                              className={`inline-flex rounded border px-2 py-1 text-[8px] font-extrabold uppercase leading-none ${getApprovalStatusClass(
+                                stage.status,
+                              )}`}
+                            >
+                              {stage.status}
+                            </span>
+                          </td>
+
+                          <td className="px-3 py-3 text-[10px] font-semibold tabular-nums text-[#8A98B8]">
+                            {stage.processedTime}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            </div>
+            </section>
+
+            <section>
+              <p className="text-[10px] font-extrabold uppercase text-[#98A2B3]">
+                Attached Files ({attachments.length})
+              </p>
+
+              {attachments.length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {attachments.map((attachment) =>
+                    attachment.url ? (
+                      <a
+                        key={attachment.id}
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Open ${attachment.name}`}
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-3 py-2 text-left text-xs font-extrabold text-[#042C51] no-underline transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                      >
+                        <FileText
+                          size={14}
+                          className="shrink-0 text-[#7E8DA8]"
+                        />
+                        <span className="max-w-[240px] truncate">
+                          {attachment.name}
+                        </span>
+                      </a>
+                    ) : (
+                      <span
+                        key={attachment.id}
+                        title={attachment.name}
+                        className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#D9E2EC] bg-[#F2F6FA] px-3 py-2 text-left text-xs font-extrabold text-[#042C51]"
+                      >
+                        <FileText
+                          size={14}
+                          className="shrink-0 text-[#7E8DA8]"
+                        />
+                        <span className="max-w-[240px] truncate">
+                          {attachment.name}
+                        </span>
+                      </span>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs font-semibold text-[#98A2B3]">
+                  No files were attached to this resignation.
+                </p>
+              )}
+            </section>
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className={`${EDGE} ${FIELD_BORDER} px-5 py-2.5 text-sm font-bold text-sibs-tertiary-5 transition hover:bg-[var(--sibs-tertiary-9)] active:scale-[0.98]`}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
+        <footer className="flex shrink-0 flex-col gap-3 border-t border-[#EEF2F6] bg-[#F8FAFC] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <p className="min-w-0 truncate text-[10px] font-semibold text-[#7E8DA8]">
+            <span className="font-extrabold text-[#667085]">
+              Filed By:
+            </span>{" "}
+            {filedByName}
+            {filedByRole ? ` (${filedByRole})` : ""}
+          </p>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-[#E4EAF1] px-4 text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA] active:scale-[0.98]"
+          >
+            Close dossier
+          </button>
+        </footer>
+      </section>
     </div>,
     document.body,
   );
