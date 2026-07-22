@@ -1,4 +1,3 @@
-LeavesPage
 import React, {
   useEffect,
   useLayoutEffect,
@@ -18,6 +17,7 @@ import {
 
 import { getLeaves } from "@/lib/axios/getLeaves";
 import { useUser } from "../../services/context/UserContext";
+import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { usePagination } from "@/services/context/PaginationContext";
 import LeavesTable from "@/components/tables/Leaves/LeavesTable";
 
@@ -117,54 +117,90 @@ function normalizeStatus(status) {
   return value;
 }
 
-function Badge({ children, className = "" }) {
-  return (
-    <span
-      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
-
 function StatCard({
   title,
   value,
-  icon: Icon,
-  valueClassName = "text-sibs-primary-1",
-  iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
+  description,
+  icon,
+  tone = "navy",
   delay = 0,
 }) {
+  const toneMap = {
+    navy: {
+      label: "text-[#042C51]",
+      value: "text-[#042C51]",
+      iconWrap: "bg-[#EAF2FB]",
+      icon: "text-[#042C51]",
+    },
+    emerald: {
+      label: "text-[#047857]",
+      value: "text-[#047857]",
+      iconWrap: "bg-[#ECFDF3]",
+      icon: "text-[#059669]",
+    },
+    amber: {
+      label: "text-[#B45309]",
+      value: "text-[#F59E0B]",
+      iconWrap: "bg-[#FFFBEB]",
+      icon: "text-[#F59E0B]",
+    },
+    red: {
+      label: "text-[#BE123C]",
+      value: "text-[#E11D48]",
+      iconWrap: "bg-[#FFF1F2]",
+      icon: "text-[#E11D48]",
+    },
+    orange: {
+      label: "text-[#C2410C]",
+      value: "text-[#FF5C28]",
+      iconWrap: "bg-[#FFF3ED]",
+      icon: "text-[#FF5C28]",
+    },
+  };
+
+  const currentTone = toneMap[tone] || toneMap.navy;
+  const IconComponent = icon;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
-      style={{ animationDelay: `${delay}ms` }}
+    <article
+      className="sibs-metric-card"
+      style={{
+        animationDelay: `${delay}ms`,
+        animationFillMode: "both",
+      }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+      <div className="flex h-full items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p
+            className={`m-0 truncate text-xs font-extrabold uppercase ${currentTone.label}`}
+          >
             {title}
           </p>
 
           <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName}`}
+            className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${currentTone.value}`}
           >
             {value}
           </p>
+
+          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+            {description}
+          </p>
         </div>
 
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${currentTone.iconWrap} ${currentTone.icon}`}
         >
-          <Icon size={22} />
-        </div>
+          <IconComponent size={17} strokeWidth={2} />
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
 export default function LeavesPage() {
   const { user } = useUser();
+  const { markNotificationSeen } = useSidebarNotifications() || {};
   const mainScrollRef = useRef(null);
   const restoredRef = useRef(false);
 
@@ -199,6 +235,12 @@ export default function LeavesPage() {
     String(user?.role || "").toLowerCase() === "employee";
 
   const showAccountFilter = canViewAccountFilter(user);
+
+  useEffect(() => {
+    if (!user) return;
+
+    markNotificationSeen?.("leaves");
+  }, [user, markNotificationSeen]);
 
   function scrollPageToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -467,132 +509,109 @@ export default function LeavesPage() {
   }, [accountOptions]);
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main
-        ref={mainScrollRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
-      >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <section className="sibs-page-header-in">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-3">
-                <CalendarDays
-                  size={34}
-                  strokeWidth={2.2}
-                  className="shrink-0 text-sibs-primary-1"
-                />
-
-                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
-                  Leaves
-                </h1>
-              </div>
-
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                {isPersonalView
-                  ? "View your personal leave requests, leave credits, plotted leaves, and remaining leave balance."
-                  : "View employee leave requests, leave credits, plotted leaves, and remaining leave balance."}
-              </p>
-            </div>
-          </section>
-
+      <main ref={mainScrollRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "60ms" }}
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
           >
-            <div className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-[#101828]">
-                    {isPersonalView
-                      ? "My Current Page Summary"
-                      : "Current Page Summary"}
-                  </h2>
+            <span className="sibs-top-accent" aria-hidden="true" />
 
-                  <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                    These totals are based only on the current 15 records loaded
-                    for this page.
-                  </p>
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Leave Management View
+                  </span>
+
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                    Module: Core HR
+                  </span>
                 </div>
 
-                {isPersonalView && (
-                  <Badge className="border-blue-200 bg-blue-50 text-sibs-primary-1">
-                    Personal View
-                  </Badge>
-                )}
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  {isPersonalView ? "My Leaves" : "Leaves"}
+                </h1>
+
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  {isPersonalView
+                    ? "View your leave requests, credits, plotted leaves, and remaining balance."
+                    : "Review employee leave requests, credits, plotted leaves, and remaining balances."}
+                </p>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                <StatCard
-                  title="Loaded Leaves"
-                  value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
-                  icon={FileText}
-                  delay={0}
-                />
-
-                <StatCard
-                  title="Approved"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.approvedLeaves)
-                  }
-                  icon={CheckCircle2}
-                  valueClassName="text-emerald-600"
-                  iconClassName="bg-emerald-50 text-emerald-600"
-                  delay={60}
-                />
-
-                <StatCard
-                  title="Pending"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.pendingLeaves)
-                  }
-                  icon={Clock}
-                  valueClassName="text-amber-500"
-                  iconClassName="bg-amber-50 text-amber-600"
-                  delay={120}
-                />
-
-                <StatCard
-                  title="Rejected"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.rejectedLeaves)
-                  }
-                  icon={XCircle}
-                  valueClassName="text-red-600"
-                  iconClassName="bg-red-50 text-red-600"
-                  delay={180}
-                />
-
-                <StatCard
-                  title="Page Leave Days"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.totalLeaveDays)
-                  }
-                  icon={CalendarDays}
-                  delay={240}
-                />
-
-                <StatCard
-                  title="Page Remaining"
-                  value={
-                    loading ? "..." : formatNumber(pageStats.totalRemaining)
-                  }
-                  icon={UserRound}
-                  valueClassName="text-emerald-600"
-                  iconClassName="bg-emerald-50 text-emerald-600"
-                  delay={300}
-                />
-              </div>
+              <span className="inline-flex h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51]">
+                <UserRound size={14} />
+                {isPersonalView ? "Personal View" : "Administrative View"}
+              </span>
             </div>
           </section>
 
           <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "120ms" }}
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+            style={{ animationDelay: "60ms", animationFillMode: "both" }}
           >
+            <StatCard
+              title="Loaded Leaves"
+              value={loading ? "..." : formatNumber(pageStats.totalLeaves)}
+              description="Records loaded on this page"
+              icon={FileText}
+              tone="navy"
+            />
+
+            <StatCard
+              title="Approved"
+              value={loading ? "..." : formatNumber(pageStats.approvedLeaves)}
+              description="Approved leave requests"
+              icon={CheckCircle2}
+              tone="emerald"
+              delay={60}
+            />
+
+            <StatCard
+              title="Pending"
+              value={loading ? "..." : formatNumber(pageStats.pendingLeaves)}
+              description="Awaiting review"
+              icon={Clock}
+              tone="amber"
+              delay={120}
+            />
+
+            <StatCard
+              title="Rejected"
+              value={loading ? "..." : formatNumber(pageStats.rejectedLeaves)}
+              description="Rejected leave requests"
+              icon={XCircle}
+              tone="red"
+              delay={180}
+            />
+
+            <StatCard
+              title="Page Leave Days"
+              value={loading ? "..." : formatNumber(pageStats.totalLeaveDays)}
+              description="Leave days on this page"
+              icon={CalendarDays}
+              tone="orange"
+              delay={240}
+            />
+
+            <StatCard
+              title="Page Remaining"
+              value={loading ? "..." : formatNumber(pageStats.totalRemaining)}
+              description="Remaining leave balance"
+              icon={UserRound}
+              tone="emerald"
+              delay={300}
+            />
+          </section>
+
+          <section className="min-w-0">
             <LeavesTable
               leaves={paginatedLeaves}
               loading={loading}

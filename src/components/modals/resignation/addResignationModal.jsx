@@ -14,7 +14,6 @@ import {
   updateResignation,
 } from "../../../lib/axios/getResignation";
 import { useResignationList } from "@/services/context/ResignationListContext";
-import StatusModal from "../attrition/StatusModal";
 
 const resignationReasons = [
   "Career Change / Advancement",

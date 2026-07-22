@@ -535,7 +535,7 @@ function AnimatedCalendarDropdown({ open, children }) {
       }`}
     >
       <div className="sibs-animated-dropdown-inner">
-        <div className="max-h-[min(430px,calc(100dvh-180px))] overflow-y-auto rounded-2xl border border-[#D7E3F0] bg-white shadow-2xl sibs-scrollbar">
+        <div className="max-h-[min(430px,calc(100dvh-180px))] overflow-y-auto rounded-xl border border-[#D7E3F0] bg-white shadow-[0_16px_34px_rgba(4,44,81,0.14)] sibs-scrollbar">
           {children}
         </div>
       </div>
@@ -715,18 +715,21 @@ function DateRangeInput({ label, value, min, onChange }) {
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className="relative h-11 w-full min-w-0">
+    <div ref={wrapperRef} className="relative h-10 w-full min-w-0">
       <button
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        data-state={open ? "open" : "closed"}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-11 w-full items-center justify-between gap-3 rounded-full border bg-white px-4 text-left text-sm font-bold text-sibs-primary-1 outline-none transition-all duration-200 hover:shadow-sm active:scale-[0.99] ${
+        className={`flex h-10 w-full items-center justify-between gap-2 rounded-lg border bg-[#F8FAFC] px-3 text-left text-xs font-extrabold text-[#042C51] outline-none transition-all duration-200 active:scale-[0.99] ${
           open
-            ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-            : "border-[#9BB7D3] hover:border-sibs-primary-1/50"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#E6ECF2] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
-          <CalendarDays size={17} className="shrink-0 text-sibs-primary-1" />
+          <CalendarDays size={16} className="shrink-0 text-[#FF5C28]" />
 
           <span className="shrink-0">{label}</span>
 
@@ -741,7 +744,7 @@ function DateRangeInput({ label, value, min, onChange }) {
 
         <ChevronDown
           size={16}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-200 ${
+          className={`shrink-0 text-[#6B88A8] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -789,7 +792,7 @@ export function PaginationDateRangeFilter({
 
   return (
     <div className={`flex w-full justify-end ${className}`}>
-      <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2 lg:max-w-[680px]">
+      <div className="grid w-full grid-cols-1 gap-2 md:grid-cols-2 lg:max-w-[430px]">
         <DateRangeInput
           label="From"
           value={dateFrom}

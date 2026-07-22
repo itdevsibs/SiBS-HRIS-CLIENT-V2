@@ -6,18 +6,24 @@ import { useUser } from "../../services/context/UserContext";
 import AttendanceTable from "../../components/tables/AttendanceTable";
 import { usePagination } from "../../services/context/PaginationContext";
 
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
 export default function AttendancePage() {
   const { user } = useUser();
   const mainRef = useRef(null);
   const didResetPageOnMountRef = useRef(false);
-
   const [tableReady, setTableReady] = useState(false);
 
   const { page, search, setPage, setCurrentPage, handlePageChange } =
     usePagination("attendance");
 
-  const isEmployee = user?.role === "employee";
-  const pageTitle = isEmployee ? "My Attendance" : "Attendance";
+  const isEmployee = String(user?.role || "").toLowerCase() === "employee";
+  const pageTitle = isEmployee ? "My Attendance" : "Time & Attendance";
 
   function goToPage(nextPage) {
     const cleanPage = Math.max(Number(nextPage) || 1, 1);
@@ -39,13 +45,11 @@ export default function AttendancePage() {
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
-      if (mainRef.current) {
-        mainRef.current.scrollTo({
-          top: 0,
-          left: 0,
-          behavior,
-        });
-      }
+      mainRef.current?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior,
+      });
     });
   }
 
@@ -60,9 +64,7 @@ export default function AttendancePage() {
       scrollToTop("auto");
     }, 0);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -76,6 +78,7 @@ export default function AttendancePage() {
     }
 
     setTableReady(true);
+    // Intentionally runs once to reset stale attendance pagination.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -92,35 +95,47 @@ export default function AttendancePage() {
   }, [search]);
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main
-        ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
-      >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <section className="sibs-page-header-in">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-3">
-                <Clock
-                  size={34}
-                  strokeWidth={2.2}
-                  className="shrink-0 text-sibs-primary-1"
-                />
+      <main ref={mainRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            style={getAnimationStyle(0)}
+          >
+            <span className="sibs-top-accent" aria-hidden="true" />
 
-                <h1 className="m-0 break-words text-[28px] font-bold leading-tight tracking-[-0.9px] text-sibs-primary-1 sm:text-[32px] xl:text-[38px]">
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#042C51]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
+                    Time & Attendance View
+                  </span>
+
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase text-[#FF5C28]">
+                    Module: Core HR
+                  </span>
+                </div>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
                   {pageTitle}
                 </h1>
+
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  {isEmployee
+                    ? "Review your attendance records, clock-in and clock-out activity, breaks, and approved hours."
+                    : "Monitor employee clock-in and clock-out activity, breaks, work hours, and attendance approvals."}
+                </p>
               </div>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                {isEmployee
-                  ? "View your attendance records and details"
-                  : "View attendance records of all employees"}
-              </p>
+              <span className="inline-flex h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51]">
+                <Clock size={15} className="text-[#FF5C28]" />
+                Attendance Records
+              </span>
             </div>
           </section>
 
@@ -128,11 +143,11 @@ export default function AttendancePage() {
             <AttendanceTable />
           ) : (
             <section
-              className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white p-5 shadow-sm"
-              style={{ animationDelay: "80ms" }}
+              className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+              style={getAnimationStyle(80)}
             >
-              <div className="rounded-xl border border-[#E6ECF2] bg-white p-6 text-center text-sm font-bold text-sibs-tertiary-5">
-                Loading...
+              <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-8 text-center text-xs font-extrabold text-[#667085]">
+                Loading attendance records...
               </div>
             </section>
           )}

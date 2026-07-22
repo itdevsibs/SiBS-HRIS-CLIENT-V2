@@ -1452,7 +1452,7 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
                   >
                     <div className="overflow-hidden">
                       <div
-                        className={`mt-1 space-y-1 pl-8 pr-1 transition-all duration-300 ease-out ${
+                        className={`mt-1 space-y-1 pr-1 transition-all duration-300 ease-out ${
                           isOpen
                             ? "translate-y-0 opacity-100"
                             : "-translate-y-2 opacity-0"
@@ -1462,28 +1462,24 @@ function ProfileSideNav({ tabs, activeTab, onTabChange }) {
                           const childActive = activeTab === child.key;
 
                           return (
-                            <button
-                              key={child.key}
-                              type="button"
-                              onClick={() => onTabChange(child.key)}
-                              aria-current={childActive ? "page" : undefined}
-                              className={`group/sub flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-300 ${
-                                childActive
-                                  ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
-                                  : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
+                          <button
+                            key={child.key}
+                            type="button"
+                            onClick={() => onTabChange(child.key)}
+                            aria-current={childActive ? "page" : undefined}
+                            className={`sibs-profile-subtopic group/sub ${
+                              childActive ? "is-active" : ""
+                            }`}
+                          >
+                            <span
+                              className={`sibs-profile-subtopic-dot ${
+                                childActive ? "is-active" : ""
                               }`}
-                            >
-                              <span
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-300 ${
-                                  childActive
-                                    ? "scale-125 bg-sibs-primary-1"
-                                    : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
-                                }`}
-                              />
+                            />
 
-                              <span className="truncate">{child.label}</span>
-                            </button>
-                          );
+                            <span className="truncate">{child.label}</span>
+                          </button>
+                        );
                         })}
                       </div>
                     </div>

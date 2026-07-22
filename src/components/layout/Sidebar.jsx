@@ -9,6 +9,8 @@ import {
   Building2,
   Calendar,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CircleUser,
   ClipboardCheck,
   ClipboardList,
@@ -29,10 +31,12 @@ import {
 } from "lucide-react";
 
 import { useUser } from "../../services/context/UserContext";
+import { useSidebarNotifications } from "../../services/context/SidebarNotificationContext";
 import { getApprovalRequestsByModule } from "../../lib/axios/getApprovalRequest";
 import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptionApprovalSettings";
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
+import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
 
 const APPROVAL_MODULES = [
   "Attrition",
@@ -46,6 +50,13 @@ const APPROVAL_NOTIFICATION_TYPES_BY_MODULE = {
   "Job Description": ["Job Description"],
   "Hiring Needs": ["Hiring Needs"],
   "Available Positions": ["Available Position"],
+};
+
+const sidebarBadgeToneClass = {
+  info: "bg-[#063560] text-slate-200",
+  action: "bg-sibs-primary-2 text-white",
+  urgent: "bg-red-500 text-white",
+  warning: "bg-amber-500 text-white",
 };
 
 const APPROVAL_MODULE_ACCESS = {
@@ -62,6 +73,24 @@ function normalizeSibsId(value = "") {
   return String(value ?? "")
     .trim()
     .replace(/^SIBS[-_ ]?/i, "");
+}
+
+function normalizeRole(value = "") {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function getAdminAccess(user = {}) {
+  return Number(
+    user?.adminAccess ??
+      user?.admin_access ??
+      user?.access ??
+      user?.gy_user_access ??
+      user?.gyUserAccess ??
+      0,
+  );
 }
 
 function getLocalStorageValue(keys = []) {
@@ -141,7 +170,7 @@ async function canCountApprovalModuleForUser(moduleName, user) {
 
   if (moduleName === "Attrition") {
     const allowedUsers = APPROVAL_MODULE_ACCESS.Attrition || [];
-    return allowedUsers.includes(Number(user.adminAccess));
+    return allowedUsers.includes(getAdminAccess(user));
   }
 
   const getApprovalUsers = APPROVAL_SETTINGS_API_BY_MODULE[moduleName];
@@ -286,16 +315,16 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
       <motion.div
         whileHover={{ rotate: -3, scale: 1.05 }}
         transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[17px] bg-[#042C51] shadow-[0_10px_24px_rgba(4,44,81,0.20)]"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-sibs-primary-2 shadow-[0_10px_24px_rgba(255,92,40,0.22)]"
       >
         <motion.div
-          className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-tertiary-10"
+          className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-sibs-primary-1"
           animate={{
-            backgroundColor: ["#FF5C28", "#042C51", "#FF5C28"],
+            backgroundColor: ["#FFFFFF", "#FFB29A", "#FFFFFF"],
             boxShadow: [
-              "0 0 0px rgba(255,92,40,0)",
-              "0 0 14px rgba(255,92,40,0.40)",
-              "0 0 0px rgba(255,92,40,0)",
+              "0 0 0px rgba(255,255,255,0)",
+              "0 0 14px rgba(255,255,255,0.45)",
+              "0 0 0px rgba(255,255,255,0)",
             ],
           }}
           transition={{
@@ -305,14 +334,12 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
           }}
         />
 
-        <div className="absolute inset-[5px] rounded-[13px] border border-white/10" />
-
         <motion.span
           className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white"
           animate={{
             textShadow: [
               "0 0 0px rgba(255,255,255,0)",
-              "0 0 10px rgba(255,255,255,0.32)",
+              "0 0 10px rgba(255,255,255,0.38)",
               "0 0 0px rgba(255,255,255,0)",
             ],
           }}
@@ -329,46 +356,15 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
       {showText && (
         <div className="min-w-0 leading-none">
           <div className="flex min-w-0 items-baseline whitespace-nowrap">
-            <motion.span
-              className="text-[22px] font-semibold tracking-[-0.035em]"
-              animate={{
-                color: ["#042C51", "#FF5C28", "#042C51"],
-                textShadow: [
-                  "0 0 0px rgba(255,255,255,0)",
-                  "0 0 6px rgba(255,255,255,0.35)",
-                  "0 0 0px rgba(255,255,255,0)",
-                ],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
+            <span className="text-[22px] font-semibold tracking-[-0.035em] text-white">
               SiBS&nbsp;
-            </motion.span>
-
-            <motion.span
-              className="text-[22px] font-semibold tracking-[-0.035em]"
-              animate={{
-                color: ["#FF5C28", "#042C51", "#FF5C28"],
-                textShadow: [
-                  "0 0 0px rgba(255,255,255,0)",
-                  "0 0 6px rgba(255,255,255,0.35)",
-                  "0 0 0px rgba(255,255,255,0)",
-                ],
-              }}
-              transition={{
-                duration: 5,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            >
+            </span>
+            <span className="text-[22px] font-semibold tracking-[-0.035em] text-sibs-primary-2">
               HRIS
-            </motion.span>
+            </span>
           </div>
 
-          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-sibs-tertiary-5">
+          <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-300/80">
             Human Resource System
           </p>
         </div>
@@ -379,6 +375,9 @@ function SibsLogo({ collapsed = false, isMobile = false }) {
 
 export default function Sidebar() {
   const { user, loading } = useUser();
+  const sidebarNotifications = useSidebarNotifications();
+  const getNotification = sidebarNotifications?.getNotification;
+  const setSidebarNotification = sidebarNotifications?.setSidebarNotification;
 
   const location = useLocation();
   const pathname = location.pathname;
@@ -386,13 +385,17 @@ export default function Sidebar() {
 
   const ADMIN_ROLES = useMemo(
     () => [
+      "admin",
       "ta",
       "hr",
       "hr_admin",
+      "hradmin",
       "finance",
       "manager",
       "executive",
       "super_admin",
+      "superadmin",
+      "super_administrator",
     ],
     [],
   );
@@ -426,6 +429,7 @@ export default function Sidebar() {
 
       if (accessibleApprovalModules.length === 0) {
         setApprovalRequestNotificationCount(0);
+        setSidebarNotification?.("approvalRequests", null);
         return;
       }
 
@@ -441,11 +445,24 @@ export default function Sidebar() {
       );
 
       setApprovalRequestNotificationCount(totalPending);
+      setSidebarNotification?.(
+        "approvalRequests",
+        totalPending > 0
+          ? {
+              name: "Approval Requests",
+              count: totalPending,
+              label: "PENDING",
+              tone: "urgent",
+              title: `${totalPending > 99 ? "99+" : totalPending} pending approval requests`,
+            }
+          : null,
+      );
     } catch (error) {
       console.error("Sidebar approval request notification error:", error);
       setApprovalRequestNotificationCount(0);
+      setSidebarNotification?.("approvalRequests", null);
     }
-  }, [user]);
+  }, [setSidebarNotification, user]);
 
   useEffect(() => {
     setMounted(true);
@@ -471,7 +488,7 @@ export default function Sidebar() {
   useEffect(() => {
     if (!mounted || loading || !user) return;
 
-    if (user.role === "employee") {
+    if (normalizeRole(user.role) === "employee") {
       const allowed = [
         "/dashboard/employee",
         "/attendance",
@@ -494,7 +511,7 @@ export default function Sidebar() {
     }
 
     if (
-      ADMIN_ROLES.includes(user.role) &&
+      ADMIN_ROLES.includes(normalizeRole(user.role)) &&
       pathname.startsWith("/dashboard/employee")
     ) {
       navigate("/dashboard/admin", { replace: true });
@@ -545,17 +562,17 @@ export default function Sidebar() {
 
   const employeeCoreMenu = [
     {
-      name: "Dashboard",
+      name: "My Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/employee",
     },
     {
-      name: "Profile",
+      name: "My Profile",
       icon: CircleUser,
       path: "/profile/user",
     },
     {
-      name: "Attendance",
+      name: "My Attendance",
       icon: Clock,
       path: "/attendance",
     },
@@ -565,18 +582,20 @@ export default function Sidebar() {
       path: "/schedule",
     },
     {
-      name: "Leaves",
+      name: "My Leaves",
       icon: Calendar,
       path: "/leaves",
+      notificationKey: "leaves",
     },
   ];
 
   const adminCoreMenu = [
     {
-      name: "Dashboard",
+      name: "HR Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/admin",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      notificationKey: "hrDashboard",
     },
     {
       name: "TA Dashboard",
@@ -591,13 +610,13 @@ export default function Sidebar() {
       allowedUsers: [1, 2, 3, 7],
     },
     {
-      name: "Employees",
+      name: "Employee Directory",
       icon: Users,
       path: "/employee",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
     },
     {
-      name: "Attendance",
+      name: "Time & Attendance",
       icon: Clock,
       path: "/attendance",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
@@ -607,6 +626,7 @@ export default function Sidebar() {
       icon: Calendar,
       path: "/leaves",
       allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      notificationKey: "leaves",
     },
     {
       name: "Resignation Management",
@@ -622,6 +642,7 @@ export default function Sidebar() {
       icon: CalendarDays,
       path: "/recruitment/workforce-hiring-overview",
       allowedUsers: [1, 2, 3, 5, 6, 7],
+      notificationKey: "workforceHiringOverview",
     },
     {
       name: "Workforce & Hiring Plan",
@@ -718,6 +739,7 @@ export default function Sidebar() {
       icon: ClipboardCheck,
       path: "/approval-request",
       allowedUsers: [3, 4, 5, 6, 7],
+      notificationKey: "approvalRequests",
       notificationCount: approvalRequestNotificationCount,
     },
     {
@@ -770,14 +792,14 @@ export default function Sidebar() {
     },
   ];
 
-  const isAdminSide = ADMIN_ROLES.includes(user?.role);
+  const isAdminSide = ADMIN_ROLES.includes(normalizeRole(user?.role));
   const coreMenu = isAdminSide ? adminCoreMenu : employeeCoreMenu;
   const coreSectionTitle = isAdminSide ? "CORE HR" : "EMPLOYEE ACCESS";
   const coreSectionShort = isAdminSide ? "HR" : "EMP";
 
   const getVisibleItems = (items) =>
     items.filter((item) =>
-      item.allowedUsers ? item.allowedUsers.includes(user?.adminAccess) : true,
+      item.allowedUsers ? item.allowedUsers.includes(getAdminAccess(user)) : true,
     );
 
   const handleLinkClick = () => {
@@ -793,8 +815,28 @@ export default function Sidebar() {
       const isActive =
         pathname === item.path || pathname.startsWith(`${item.path}/`);
 
+      const sidebarNotification =
+        item.notificationKey && typeof getNotification === "function"
+          ? getNotification(item.notificationKey)
+          : null;
       const notificationCount = Number(item.notificationCount || 0);
       const hasNotification = notificationCount > 0;
+      const staticBadge = String(item.badge || "").trim();
+      const badgeText =
+        staticBadge ||
+        buildSidebarBadgeText(sidebarNotification) ||
+        (hasNotification
+          ? notificationCount > 99
+            ? "99+"
+            : String(notificationCount)
+          : "");
+      const badgeTone = sidebarNotification?.tone || "info";
+      const badgeClass = isActive
+        ? "bg-white text-sibs-primary-2"
+        : staticBadge
+          ? sidebarBadgeToneClass.info
+          : sidebarBadgeToneClass[badgeTone] || sidebarBadgeToneClass.info;
+      const badgeTitle = sidebarNotification?.title || badgeText;
 
       return (
         <Link
@@ -803,47 +845,55 @@ export default function Sidebar() {
           draggable={false}
           onDragStart={(event) => event.preventDefault()}
           onClick={handleLinkClick}
-          title={!isMobile && collapsed ? item.name : ""}
+          title={!isMobile && collapsed ? badgeTitle || item.name : badgeTitle}
+          aria-label={badgeTitle ? `${item.name}, ${badgeTitle}` : item.name}
           className={[
-            "group relative flex min-w-0 select-none items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-normal transition",
-            "text-sibs-tertiary-5 hover:bg-sibs-tertiary-9 hover:text-sibs-primary-1",
-            isActive ? "bg-sibs-tertiary-9 text-sibs-primary-1" : "",
+            "group relative flex min-w-0 select-none items-center justify-between gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-semibold leading-4 transition-all duration-150",
+            isActive
+              ? "bg-sibs-primary-2 text-white font-bold shadow-md shadow-sibs-primary-2/15 cursor-default hover:bg-sibs-primary-2 hover:text-white"
+              : "text-slate-300 hover:bg-[#063560] hover:text-white",
             !isMobile && collapsed ? "justify-center px-2" : "",
           ].join(" ")}
         >
-          <div className="relative shrink-0">
-            <Icon
-              size={18}
-              strokeWidth={1.9}
-              draggable={false}
-              className={[
-                "pointer-events-none shrink-0 transition",
-                isActive
-                  ? "text-sibs-primary-1"
-                  : "text-sibs-tertiary-5 group-hover:text-sibs-primary-1",
-              ].join(" ")}
-            />
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <div className="relative shrink-0">
+              <Icon
+                size={16}
+                strokeWidth={1.9}
+                draggable={false}
+                className={[
+                  "pointer-events-none shrink-0 transition",
+                  isActive
+                    ? "text-white"
+                    : "text-slate-400 group-hover:text-white",
+                ].join(" ")}
+              />
 
-            {hasNotification && collapsed && !isMobile && (
-              <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-sibs-tertiary-10" />
-            )}
-          </div>
+              {badgeText && collapsed && !isMobile && (
+                <span
+                  className={`absolute -right-2 -top-2 inline-flex h-4 min-w-4 items-center justify-center rounded px-1 text-[7px] font-extrabold uppercase leading-none ring-2 ring-sibs-primary-1 ${badgeClass}`}
+                >
+                  {badgeText.length > 2 ? "•" : badgeText}
+                </span>
+              )}
+            </div>
 
-          {(!collapsed || isMobile) && (
-            <>
+            {(!collapsed || isMobile) && (
               <span
                 draggable={false}
-                className="pointer-events-none min-w-0 flex-1 truncate"
+                className="pointer-events-none min-w-0 flex-1 whitespace-normal break-words"
               >
                 {item.name}
               </span>
+            )}
+          </div>
 
-              {hasNotification && (
-                <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-none text-white shadow-sm">
-                  {notificationCount > 99 ? "99+" : notificationCount}
-                </span>
-              )}
-            </>
+          {badgeText && (!collapsed || isMobile) && (
+            <span
+              className={`ml-auto inline-flex h-5 shrink-0 items-center justify-center rounded px-2 text-[10px] font-bold uppercase leading-none tracking-wide ${badgeClass}`}
+            >
+              {badgeText}
+            </span>
           )}
         </Link>
       );
@@ -866,10 +916,10 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed left-4 top-4 z-[1001] rounded-xl border border-sibs-tertiary-9 bg-white p-2 shadow-sm lg:hidden"
+          className="fixed left-4 top-4 z-[1001] rounded-xl border border-[#083A69] bg-sibs-primary-1 p-2 shadow-lg lg:hidden"
           aria-label="Open sidebar"
         >
-          <Menu size={20} className="text-sibs-primary-1" />
+          <Menu size={20} className="text-white" />
         </button>
       )}
 
@@ -877,7 +927,7 @@ export default function Sidebar() {
         draggable={false}
         onDragStart={(event) => event.preventDefault()}
         className={[
-          "fixed left-0 top-0 z-[1000] flex h-dvh shrink-0 select-none flex-col border-r border-[#C9D6E4] bg-sibs-tertiary-10 transition-all duration-300",
+          "fixed left-0 top-0 z-[1000] flex h-dvh shrink-0 select-none flex-col border-r border-[#083A69] bg-sibs-primary-1 font-jakarta text-white shadow-xl transition-all duration-300",
           !isMobile && collapsed ? "w-20" : "w-[260px]",
           isMobile
             ? mobileOpen
@@ -889,50 +939,57 @@ export default function Sidebar() {
       >
         <div
           className={[
-            "flex h-[73px] shrink-0 items-center gap-2 px-4",
+            "relative flex min-h-[86px] shrink-0 items-center gap-2 border-b border-[#083A69] px-5 py-5",
             !isMobile && collapsed ? "justify-center" : "justify-between",
           ].join(" ")}
         >
           <SibsLogo collapsed={!isMobile && collapsed} isMobile={isMobile} />
 
-          {(!collapsed || isMobile) && (
+          {isMobile && (
             <button
-              onClick={() => {
-                if (isMobile) {
-                  setMobileOpen(false);
-                } else {
-                  setCollapsed((prev) => !prev);
-                }
-              }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-sibs-tertiary-9 active:scale-[0.98]"
+              onClick={() => setMobileOpen(false)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
               type="button"
-              aria-label={isMobile ? "Close sidebar" : "Toggle sidebar"}
+              aria-label="Close sidebar"
             >
-              {isMobile ? <X size={18} /> : <Menu size={18} />}
+              <X size={18} />
+            </button>
+          )}
+
+          {!isMobile && !collapsed && (
+            <button
+              onClick={() => setCollapsed(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-300 transition hover:bg-[#063560] hover:text-white active:scale-[0.98]"
+              type="button"
+              aria-label="Collapse sidebar"
+              title="Collapse sidebar"
+            >
+              <ChevronLeft size={18} strokeWidth={2.1} />
             </button>
           )}
 
           {!isMobile && collapsed && (
             <button
-              onClick={() => setCollapsed((prev) => !prev)}
-              className="absolute right-3 top-[20px] flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sibs-primary-1 transition hover:bg-sibs-tertiary-9 active:scale-[0.98]"
+              onClick={() => setCollapsed(false)}
+              className="absolute -right-3 top-1/2 z-20 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-[#0A477F] bg-[#063560] text-white shadow-[0_6px_18px_rgba(0,0,0,0.28)] transition-all duration-150 hover:border-sibs-primary-2 hover:bg-sibs-primary-2 active:scale-95"
               type="button"
               aria-label="Expand sidebar"
+              title="Expand sidebar"
             >
-              <Menu size={17} />
+              <ChevronRight size={15} strokeWidth={2.4} />
             </button>
           )}
         </div>
 
         {!showMenu ? (
           <div className="space-y-3 px-4 pt-4">
-            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-9" />
-            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-9" />
-            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-9" />
-            <div className="h-8 animate-pulse rounded-lg bg-sibs-tertiary-9" />
+            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
+            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
+            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
+            <div className="h-8 animate-pulse rounded-lg bg-[#063560]" />
           </div>
         ) : (
-          <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-5 pt-2">
+          <div className="no-scrollbar min-h-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-3 pb-5 pt-4">
             <Section
               title={coreSectionTitle}
               short={coreSectionShort}
@@ -1003,17 +1060,17 @@ export default function Sidebar() {
 
 function Section({ title, short, collapsed, children }) {
   return (
-    <section className="mb-4 select-none">
+    <section className="select-none">
       <p
         className={[
-          "mb-2 text-[12px] font-semibold uppercase text-sibs-tertiary-6",
-          collapsed ? "text-center text-[10px]" : "",
+          "mb-2 px-3 text-[10px] font-black uppercase leading-none tracking-widest text-slate-400",
+          collapsed ? "px-0 text-center text-[9px]" : "",
         ].join(" ")}
       >
         {collapsed ? short : title}
       </p>
 
-      <nav className="space-y-1">{children}</nav>
+      <nav className="space-y-0.5">{children}</nav>
     </section>
   );
 }
