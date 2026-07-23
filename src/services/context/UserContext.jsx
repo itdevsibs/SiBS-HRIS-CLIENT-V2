@@ -1,27 +1,29 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
-  useState,
-  useCallback,
   useRef,
+  useState,
 } from "react";
 import { useLocation } from "react-router-dom";
 import api, {
   AUTH_LOGOUT_START_EVENT,
   handleLogout,
 } from "../../lib/axios/api-template";
+import {
+  SESSION_DURATION_MS,
+  clearCachedAuthSession,
+  normalizeExpiry,
+  readCachedAuthSession,
+  readStoredExpiry,
+  shouldEndSessionAfterUserFetchError,
+  writeCachedUser,
+  writeStoredExpiry,
+} from "../auth/auth-session-cache";
 
 const UserContext = createContext(null);
-
-/*
- * The previous 3-second gap created repeated refresh calls during clicks,
- * focus, scrolling and page visibility changes. One minute is frequent
- * enough for session extension without flooding the authentication routes.
- */
-const REFRESH_GAP = 60_000;
-const USER_REQUEST_TIMEOUT = 10_000;
-const REFRESH_REQUEST_TIMEOUT = 8_000;
+const USER_REQUEST_TIMEOUT = 15_000;
 
 const PUBLIC_PATHS = [
   "/",
@@ -49,42 +51,49 @@ function isCanceledRequest(error) {
 
 export function UserProvider({ children }) {
   const location = useLocation();
-  const pathname = location.pathname;
-  const publicRoute = isPublicPath(pathname);
+  const publicRoute = isPublicPath(location.pathname);
 
-  const [user, setUserState] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initialSessionRef = useRef(undefined);
+
+  if (initialSessionRef.current === undefined) {
+    initialSessionRef.current = publicRoute
+      ? null
+      : readCachedAuthSession();
+  }
+
+  const initialSession = initialSessionRef.current;
+
+  const [user, setUserState] = useState(initialSession?.user || null);
+  const [loading, setLoading] = useState(!initialSession?.user);
 
   const mountedRef = useRef(true);
-  const userRef = useRef(null);
+  const userRef = useRef(initialSession?.user || null);
   const logoutTimerRef = useRef(null);
   const fetchControllerRef = useRef(null);
-  const refreshInProgressRef = useRef(false);
-  const lastRefreshRef = useRef(0);
   const authEpochRef = useRef(0);
+  const logoutInProgressRef = useRef(false);
 
-  const replaceUser = useCallback((nextUser) => {
+  const replaceUser = useCallback((nextUser, { cache = true } = {}) => {
     userRef.current = nextUser;
+
+    if (cache) {
+      writeCachedUser(nextUser);
+    }
 
     if (mountedRef.current) {
       setUserState(nextUser);
     }
   }, []);
 
-  const clearStoredSession = useCallback(() => {
-    sessionStorage.removeItem("accessTokenExpiresAt");
-  }, []);
-
   const clearLogoutTimer = useCallback(() => {
     if (logoutTimerRef.current) {
-      clearTimeout(logoutTimerRef.current);
+      window.clearTimeout(logoutTimerRef.current);
       logoutTimerRef.current = null;
     }
   }, []);
 
   const invalidateAuthRequests = useCallback(() => {
     authEpochRef.current += 1;
-    refreshInProgressRef.current = false;
 
     fetchControllerRef.current?.abort();
     fetchControllerRef.current = null;
@@ -93,177 +102,192 @@ export function UserProvider({ children }) {
   const clearLocalAuthState = useCallback(() => {
     invalidateAuthRequests();
     clearLogoutTimer();
-    clearStoredSession();
-    replaceUser(null);
+    clearCachedAuthSession();
+    replaceUser(null, { cache: false });
 
     if (mountedRef.current) {
       setLoading(false);
     }
-  }, [
-    clearLogoutTimer,
-    clearStoredSession,
-    invalidateAuthRequests,
-    replaceUser,
-  ]);
+  }, [clearLogoutTimer, invalidateAuthRequests, replaceUser]);
 
-  const forceLogout = useCallback(() => {
+  const createFixedExpiry = useCallback(
+    (serverExpiresAt = null, { reset = false } = {}) => {
+      const currentExpiry = readStoredExpiry();
+
+      if (!reset && currentExpiry > Date.now()) {
+        return currentExpiry;
+      }
+
+      const maximumExpiry = Date.now() + SESSION_DURATION_MS;
+      const normalizedServerExpiry = normalizeExpiry(serverExpiresAt);
+
+      const expiresAt =
+        normalizedServerExpiry > Date.now()
+          ? Math.min(normalizedServerExpiry, maximumExpiry)
+          : maximumExpiry;
+
+      return writeStoredExpiry(expiresAt);
+    },
+    [],
+  );
+
+  const forceLogout = useCallback(async () => {
+    if (logoutInProgressRef.current) return;
+
+    logoutInProgressRef.current = true;
     clearLocalAuthState();
-    void handleLogout(true);
+
+    if (isPublicPath(window.location.pathname)) {
+      logoutInProgressRef.current = false;
+      return;
+    }
+
+    try {
+      await handleLogout(true);
+    } finally {
+      logoutInProgressRef.current = false;
+    }
   }, [clearLocalAuthState]);
 
   const startLogoutTimer = useCallback(() => {
     clearLogoutTimer();
 
-    if (isPublicPath(window.location.pathname)) return;
+    if (isPublicPath(window.location.pathname)) return false;
 
-    const expiresAtRaw = sessionStorage.getItem("accessTokenExpiresAt");
-    if (!expiresAtRaw) return;
+    const expiresAt = readStoredExpiry();
 
-    const expiresAt = Number(expiresAtRaw);
-    if (!expiresAt || Number.isNaN(expiresAt)) return;
+    if (!expiresAt) {
+      void forceLogout();
+      return false;
+    }
 
     const remaining = expiresAt - Date.now();
 
     if (remaining <= 0) {
-      forceLogout();
-      return;
+      void forceLogout();
+      return false;
     }
 
-    logoutTimerRef.current = setTimeout(() => {
-      forceLogout();
+    logoutTimerRef.current = window.setTimeout(() => {
+      void forceLogout();
     }, remaining);
+
+    return true;
   }, [clearLogoutTimer, forceLogout]);
 
-  const fetchUser = useCallback(async () => {
-    if (isPublicPath(window.location.pathname)) {
-      clearLocalAuthState();
-      return null;
-    }
+  const validateFixedExpiry = useCallback(() => {
+    if (isPublicPath(window.location.pathname)) return true;
 
-    fetchControllerRef.current?.abort();
+    const expiresAt = readStoredExpiry();
 
-    const controller = new AbortController();
-    const requestEpoch = authEpochRef.current;
-
-    fetchControllerRef.current = controller;
-
-    if (!userRef.current && mountedRef.current) {
-      setLoading(true);
-    }
-
-    try {
-      const res = await api.get("/api/users/me", {
-        withCredentials: true,
-        signal: controller.signal,
-        timeout: USER_REQUEST_TIMEOUT,
-        skipAuthRedirect: true,
-      });
-
-      if (
-        controller.signal.aborted ||
-        requestEpoch !== authEpochRef.current ||
-        !mountedRef.current
-      ) {
-        return null;
-      }
-
-      if (!res.data?.success || !res.data?.user) {
-        replaceUser(null);
-        return null;
-      }
-
-      replaceUser(res.data.user);
-      startLogoutTimer();
-      return res.data.user;
-    } catch (error) {
-      if (
-        isCanceledRequest(error) ||
-        requestEpoch !== authEpochRef.current ||
-        !mountedRef.current
-      ) {
-        return null;
-      }
-
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        clearLocalAuthState();
-        return null;
-      }
-
-      console.error("User fetch error:", error);
-      return null;
-    } finally {
-      if (fetchControllerRef.current === controller) {
-        fetchControllerRef.current = null;
-      }
-
-      if (
-        requestEpoch === authEpochRef.current &&
-        mountedRef.current
-      ) {
-        setLoading(false);
-      }
-    }
-  }, [clearLocalAuthState, replaceUser, startLogoutTimer]);
-
-  const refreshSession = useCallback(async () => {
-    const now = Date.now();
-
-    if (isPublicPath(window.location.pathname)) return false;
-    if (!userRef.current) return false;
-    if (refreshInProgressRef.current) return false;
-    if (now - lastRefreshRef.current < REFRESH_GAP) return false;
-
-    const requestEpoch = authEpochRef.current;
-
-    try {
-      refreshInProgressRef.current = true;
-      lastRefreshRef.current = now;
-
-      const res = await api.post(
-        "/api/users/refresh",
-        {},
-        {
-          withCredentials: true,
-          timeout: REFRESH_REQUEST_TIMEOUT,
-          skipAuthRedirect: true,
-        },
-      );
-
-      if (
-        requestEpoch !== authEpochRef.current ||
-        !mountedRef.current
-      ) {
-        return false;
-      }
-
-      if (res.data?.expiresAt) {
-        sessionStorage.setItem(
-          "accessTokenExpiresAt",
-          String(res.data.expiresAt),
-        );
-      }
-
-      startLogoutTimer();
-      return true;
-    } catch (error) {
-      if (
-        requestEpoch !== authEpochRef.current ||
-        !mountedRef.current
-      ) {
-        return false;
-      }
-
-      if (error?.response?.status === 401 || error?.response?.status === 403) {
-        clearLocalAuthState();
-      } else if (!isCanceledRequest(error)) {
-        console.error("Session refresh error:", error);
-      }
-
+    if (!expiresAt || expiresAt <= Date.now()) {
+      void forceLogout();
       return false;
-    } finally {
-      refreshInProgressRef.current = false;
     }
-  }, [clearLocalAuthState, startLogoutTimer]);
+
+    startLogoutTimer();
+    return true;
+  }, [forceLogout, startLogoutTimer]);
+
+  const fetchUser = useCallback(
+    async ({ background = false } = {}) => {
+      if (isPublicPath(window.location.pathname)) {
+        clearLogoutTimer();
+        replaceUser(null);
+        setLoading(false);
+        return null;
+      }
+
+      if (!validateFixedExpiry()) {
+        return null;
+      }
+
+      const cachedUser = userRef.current || readCachedAuthSession()?.user;
+
+      if (cachedUser && !userRef.current) {
+        replaceUser(cachedUser);
+      }
+
+      invalidateAuthRequests();
+
+      const requestEpoch = authEpochRef.current;
+      const controller = new AbortController();
+      fetchControllerRef.current = controller;
+
+      // A reload with a valid cached user must render immediately.
+      if (mountedRef.current) {
+        setLoading(!cachedUser && !background);
+      }
+
+      try {
+        const response = await api.get("/api/users/me", {
+          withCredentials: true,
+          timeout: USER_REQUEST_TIMEOUT,
+          signal: controller.signal,
+          skipAuthRedirect: true,
+        });
+
+        if (
+          requestEpoch !== authEpochRef.current ||
+          !mountedRef.current
+        ) {
+          return null;
+        }
+
+        if (response.data?.success && response.data?.user) {
+          replaceUser(response.data.user);
+          startLogoutTimer();
+          return response.data.user;
+        }
+
+        // A malformed or temporarily incomplete response is not proof that
+        // the fixed session expired. Keep the cached user until a real 401/403.
+        console.warn("Current-user response did not contain a user.", response.data);
+        return cachedUser || null;
+      } catch (error) {
+        if (
+          requestEpoch !== authEpochRef.current ||
+          !mountedRef.current ||
+          isCanceledRequest(error)
+        ) {
+          return cachedUser || null;
+        }
+
+        if (shouldEndSessionAfterUserFetchError(error)) {
+          await forceLogout();
+          return null;
+        }
+
+        // Timeout, network failure, 404, or 5xx must not turn a valid
+        // one-hour client session into an automatic logout on page refresh.
+        console.warn(
+          "Current-user validation was unavailable; keeping cached session:",
+          error?.response?.data || error?.message,
+        );
+
+        return cachedUser || null;
+      } finally {
+        if (fetchControllerRef.current === controller) {
+          fetchControllerRef.current = null;
+        }
+
+        if (
+          requestEpoch === authEpochRef.current &&
+          mountedRef.current
+        ) {
+          setLoading(false);
+        }
+      }
+    },
+    [
+      clearLogoutTimer,
+      forceLogout,
+      invalidateAuthRequests,
+      replaceUser,
+      startLogoutTimer,
+      validateFixedExpiry,
+    ],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
@@ -276,11 +300,6 @@ export function UserProvider({ children }) {
     };
   }, [clearLogoutTimer]);
 
-  /*
-   * handleLogout can be called from UserDropdown or the Axios interceptor.
-   * This event immediately stops old /me requests before the server logout
-   * request completes, so they cannot overwrite a later login.
-   */
   useEffect(() => {
     const handleLogoutStart = () => {
       clearLocalAuthState();
@@ -289,82 +308,94 @@ export function UserProvider({ children }) {
     window.addEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
 
     return () => {
-      window.removeEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
+      window.removeEventListener(
+        AUTH_LOGOUT_START_EVENT,
+        handleLogoutStart,
+      );
     };
   }, [clearLocalAuthState]);
 
   useEffect(() => {
     if (publicRoute) {
       clearLocalAuthState();
-      return;
+      return undefined;
     }
 
-    /*
-     * LoginPage already supplies the authenticated user through setUser.
-     * Do not immediately duplicate that work with /me and /refresh calls.
-     */
-    if (userRef.current) {
+    const cachedSession = readCachedAuthSession();
+
+    if (cachedSession?.user) {
+      replaceUser(cachedSession.user);
       setLoading(false);
       startLogoutTimer();
-      return;
-    }
 
-    void fetchUser();
+      // Validate silently. Slow /me queries no longer block page rendering.
+      void fetchUser({ background: true });
+    } else {
+      void fetchUser({ background: false });
+    }
 
     return () => {
       fetchControllerRef.current?.abort();
     };
-  }, [pathname, publicRoute, clearLocalAuthState, fetchUser, startLogoutTimer]);
+  }, [
+    publicRoute,
+    clearLocalAuthState,
+    fetchUser,
+    replaceUser,
+    startLogoutTimer,
+  ]);
 
   useEffect(() => {
-    if (publicRoute || !user) return;
+    if (user) {
+      writeCachedUser(user);
+    }
+  }, [user]);
 
-    const handleActivity = () => {
-      void refreshSession();
+  useEffect(() => {
+    if (publicRoute || !user) return undefined;
+
+    const handleFocus = () => {
+      validateFixedExpiry();
     };
 
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        void refreshSession();
-        startLogoutTimer();
+        validateFixedExpiry();
       }
     };
 
-    const handleFocus = () => {
-      void refreshSession();
-      startLogoutTimer();
-    };
-
-    window.addEventListener("click", handleActivity, { passive: true });
-    window.addEventListener("scroll", handleActivity, { passive: true });
-    window.addEventListener("wheel", handleActivity, { passive: true });
-    window.addEventListener("keydown", handleActivity);
     window.addEventListener("focus", handleFocus);
     document.addEventListener("visibilitychange", handleVisibility);
 
+    startLogoutTimer();
+
     return () => {
-      window.removeEventListener("click", handleActivity);
-      window.removeEventListener("scroll", handleActivity);
-      window.removeEventListener("wheel", handleActivity);
-      window.removeEventListener("keydown", handleActivity);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [user, publicRoute, refreshSession, startLogoutTimer]);
+  }, [publicRoute, user, startLogoutTimer, validateFixedExpiry]);
 
   const updateUser = useCallback(
-    (newUser) => {
+    (newUser, serverExpiresAt = null) => {
       invalidateAuthRequests();
-      replaceUser(newUser || null);
-      setLoading(false);
 
-      if (newUser) {
-        startLogoutTimer();
-      } else {
-        clearLogoutTimer();
+      if (!newUser) {
+        clearLocalAuthState();
+        return;
       }
-    }, [
-      clearLogoutTimer,
+
+      // Supplying an expiry means this is a new login and starts a new hour.
+      createFixedExpiry(serverExpiresAt, {
+        reset: serverExpiresAt !== null && serverExpiresAt !== undefined,
+      });
+
+      replaceUser(newUser);
+      setLoading(false);
+      startLogoutTimer();
+    },
+    [
+      clearLocalAuthState,
+      createFixedExpiry,
       invalidateAuthRequests,
       replaceUser,
       startLogoutTimer,
@@ -378,7 +409,6 @@ export function UserProvider({ children }) {
         loading,
         setUser: updateUser,
         refetchUser: fetchUser,
-        refreshSession,
         logout: forceLogout,
       }}
     >

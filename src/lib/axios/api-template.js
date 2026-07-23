@@ -13,6 +13,9 @@ function getBaseURL() {
 }
 
 const BASE_URL = getBaseURL();
+const LOGOUT_TIMEOUT_MS = 5000;
+
+export const AUTH_LOGOUT_START_EVENT = "sibs-auth-logout-start";
 
 const PUBLIC_PATHS = [
   "/",
@@ -42,8 +45,6 @@ const IGNORE_AUTH_REDIRECT_ROUTES = [
   "/api/talent-pool/open-positions",
   "/api/talent-pool/public-applications",
 ];
-
-export const AUTH_LOGOUT_START_EVENT = "sibs-auth-logout-start";
 
 function getCurrentPathname() {
   if (typeof window === "undefined") return "";
@@ -95,15 +96,16 @@ const api = axios.create({
 const logoutApi = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
+  timeout: LOGOUT_TIMEOUT_MS,
 });
 
+let isRedirecting = false;
 let logoutPromise = null;
-let redirectAfterLogout = false;
-let logoutEventSent = false;
 
 function clearClientSession() {
   sessionStorage.removeItem("accessTokenExpiresAt");
   sessionStorage.removeItem("selectedEmployeeId");
+  sessionStorage.removeItem("sibsAuthenticatedUser");
 
   localStorage.removeItem("token_expires_at");
   localStorage.removeItem("selectedEmployeeId");
@@ -111,66 +113,64 @@ function clearClientSession() {
 }
 
 function dispatchLogoutStart() {
-  if (logoutEventSent || typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-  logoutEventSent = true;
   window.dispatchEvent(new CustomEvent(AUTH_LOGOUT_START_EVENT));
 }
 
-export function handleLogout(redirect = true) {
-  redirectAfterLogout = redirectAfterLogout || redirect;
-
-  clearClientSession();
-  dispatchLogoutStart();
-
+export async function handleLogout(redirect = true) {
   const pathname = getCurrentPathname();
 
   if (redirect && isPublicPath(pathname)) {
-    redirectAfterLogout = false;
-    logoutEventSent = false;
-    return Promise.resolve();
+    clearClientSession();
+    return;
+  }
+
+  if (redirect && isRedirecting && logoutPromise) {
+    return logoutPromise;
   }
 
   if (logoutPromise) {
     return logoutPromise;
   }
 
-  logoutPromise = logoutApi
-    .post(
-      "/api/users/logout",
-      {},
-      {
-        timeout: 5000,
-      },
-    )
-    .catch((err) => {
-      console.error("Logout error:", err?.response?.data || err?.message);
-    })
-    .finally(() => {
-      const shouldRedirect = redirectAfterLogout;
+  if (redirect) {
+    isRedirecting = true;
+  }
 
+  dispatchLogoutStart();
+
+  logoutPromise = (async () => {
+    try {
+      await logoutApi.post("/api/users/logout", {});
+    } catch (error) {
+      if (error?.code !== "ECONNABORTED") {
+        console.error(
+          "Logout error:",
+          error?.response?.data || error?.message,
+        );
+      }
+    } finally {
       clearClientSession();
 
-      logoutPromise = null;
-      redirectAfterLogout = false;
-      logoutEventSent = false;
-
-      if (
-        shouldRedirect &&
-        typeof window !== "undefined" &&
-        !isPublicPath(getCurrentPathname())
-      ) {
+      if (redirect) {
         window.location.replace("/login");
+      } else {
+        isRedirecting = false;
       }
-    });
+    }
+  })();
 
-  return logoutPromise;
+  try {
+    await logoutPromise;
+  } finally {
+    logoutPromise = null;
+  }
 }
 
 api.interceptors.request.use(
   (config) => {
     config.url = normalizeApiUrl(config.url);
-    config.headers = config.headers || {};
 
     if (config.method?.toLowerCase() === "get") {
       config.params = {
@@ -178,6 +178,7 @@ api.interceptors.request.use(
         _t: Date.now(),
       };
 
+      config.headers = config.headers || {};
       config.headers["Cache-Control"] = "no-cache";
       config.headers.Pragma = "no-cache";
     }
@@ -200,11 +201,7 @@ api.interceptors.response.use(
       isPublicPath(pathname) ||
       shouldIgnoreAuthRedirect(requestUrl);
 
-    /*
-     * A 403 response can mean the logged-in user lacks permission for one
-     * module. It must not destroy the entire authenticated session.
-     * Only a real 401 authentication failure starts global logout.
-     */
+    // A normal 403 can mean missing module permission; do not log out for it.
     if (status === 401 && !ignoreRedirect) {
       void handleLogout(true);
     }
