@@ -244,10 +244,10 @@ export function TAMetricCard({ item, delay = 0 }) {
           {item.label}
         </span>
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${tone.icon}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tone.icon}`}
         >
           {item.icon
-            ? createElement(item.icon, { size: 14, strokeWidth: 2.2 })
+            ? createElement(item.icon, { size: 17, strokeWidth: 2 })
             : null}
         </span>
       </div>

@@ -531,110 +531,127 @@ export default function ViewHiringNeedsModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-3 py-3 sm:px-4 sm:py-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4"
       onClick={() => {
         if (!decisionLoading) onClose();
       }}
     >
       <div
-        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="view-hiring-needs-title"
+        className="sibs-modal-pop-in flex max-h-[94dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-6 sm:py-5">
-          <div className="min-w-0">
-            <h2 className="mt-3 break-words text-xl font-extrabold tracking-tight text-sibs-primary-1 sm:text-2xl">
-              {isDownsize
-                ? "Downsize Request"
-                : "Personnel Requisition"}
-            </h2>
+        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText size={20} />
+              </span>
 
-            <p className="mt-1 text-sm font-semibold text-sibs-tertiary-5">
-              Review all request information and recorded approval
-              details.
-            </p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2
+                    id="view-hiring-needs-title"
+                    className="text-base font-extrabold text-white"
+                  >
+                    Personnel Requisition Details
+                  </h2>
+
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getRequestTypeClass(
+                      requestType,
+                    )}`}
+                  >
+                    {requestType}
+                  </span>
+
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getStatusClass(
+                      status,
+                    )}`}
+                  >
+                    {getApprovalIcon(status)}
+                    {status}
+                  </span>
+                </div>
+
+                <p className="mt-1 text-[10px] font-semibold text-blue-100">
+                  Request ID: {safeItem.id || "—"}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={decisionLoading}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Close Personnel Requisition dossier"
+            >
+              <X size={18} />
+            </button>
           </div>
+        </header>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={decisionLoading}
-            className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Close modal"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 sm:p-6">
-          <div className="space-y-5">
-            <section className="sibs-page-card-in overflow-hidden rounded-3xl border border-[#E6ECF2] bg-white shadow-sm">
-              <div className="bg-gradient-to-br from-white via-white to-[#F3F8FF] p-5 sm:p-6">
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5">
+          <div className="space-y-4">
+            <section className="overflow-hidden rounded-2xl border border-[#DCE6F1] bg-white shadow-[0_8px_24px_rgba(4,44,81,0.04)]">
+              <div className="bg-gradient-to-br from-white via-white to-[#F3F8FF] p-4 sm:p-5">
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
                   <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wide text-[#215789]">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#215789]">
                       {isDownsize
-                        ? "Account"
-                        : "Position Title"}
+                        ? "Account / Downsize Requirement"
+                        : "Position / Personnel Requirement"}
                     </p>
 
-                    <h3 className="mt-2 break-words text-2xl font-extrabold leading-tight text-[#101828] sm:text-3xl">
+                    <h3 className="mt-2 break-words text-xl font-extrabold leading-tight text-[#101828] sm:text-2xl">
                       {titleDisplay}
                     </h3>
 
-                    <p className="mt-2 break-words text-sm font-bold leading-6 text-sibs-tertiary-5">
+                    <p className="mt-1 break-words text-xs font-bold leading-5 text-[#667085]">
                       {subtitleDisplay}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-extrabold ${getRequestTypeClass(
-                          requestType,
-                        )}`}
-                      >
-                        {requestType}
-                      </span>
-
-                      <span
-                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-extrabold ${getStatusClass(
-                          status,
-                        )}`}
-                      >
-                        {getApprovalIcon(status)}
-                        {status}
-                      </span>
-
-                      <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-sibs-primary-1">
-                        <MapPin size={14} />
-                        {item.locationSite ||
-                          item.location_site ||
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
+                        <MapPin size={12} />
+                        {safeItem.locationSite ||
+                          safeItem.location_site ||
                           "—"}
+                      </span>
+
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[#D7DEE8] bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-extrabold text-[#475467]">
+                        {getDepartmentAccount(safeItem)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
                     <SummaryMetric
                       label={
                         isDownsize
                           ? "Headcount to Downsize"
-                          : "Headcount"
+                          : "Required Headcount"
                       }
-                      value={getHeadcount(item)}
+                      value={getHeadcount(safeItem)}
                       icon={Users}
                     />
 
                     <SummaryMetric
                       label={
                         isDownsize
-                          ? "Week Range"
+                          ? "Selected Week"
                           : "Date Needed"
                       }
                       value={
                         isDownsize
                           ? weekRange
                           : formatDate(
-                              item.dateNeeded ||
-                                item.date_needed,
+                              safeItem.dateNeeded ||
+                                safeItem.date_needed,
                             )
                       }
                       icon={CalendarDays}
@@ -648,16 +665,16 @@ export default function ViewHiringNeedsModal({
             {isDownsize ? (
               <DetailSection
                 title="Downsize Details"
-                subtitle="Selected weekly hiring plan account, previous required headcount, and downsize reason."
+                subtitle="Selected Weekly Hiring Plan account, previous required headcount, adjustment, and business reason."
               >
                 <InfoItem
                   label="Account"
-                  value={getAccountName(item)}
+                  value={getAccountName(safeItem)}
                 />
 
                 <InfoItem
                   label="Department / Account"
-                  value={getDepartmentAccount(item)}
+                  value={getDepartmentAccount(safeItem)}
                 />
 
                 <InfoItem
@@ -669,47 +686,47 @@ export default function ViewHiringNeedsModal({
 
                 <InfoItem
                   label="Previous Required Headcount"
-                  value={getPreviousRequiredHeadcount(item)}
+                  value={getPreviousRequiredHeadcount(
+                    safeItem,
+                  )}
                   icon={Users}
                 />
 
                 <InfoItem
                   label="Headcount to Downsize"
-                  value={getHeadcount(item)}
+                  value={getHeadcount(safeItem)}
                   icon={Users}
                 />
 
                 <InfoItem
                   label="Reason"
-                  value={getDownsizeReason(item)}
+                  value={getDownsizeReason(safeItem)}
                   className="md:col-span-2"
                 />
               </DetailSection>
             ) : (
               <DetailSection
                 title="Position Details"
-                subtitle="Position, role alignment, job description, site, and reason for hiring."
+                subtitle="Position, account alignment, linked Job Description, assignment, site, and hiring reason."
               >
                 <InfoItem
                   label="Position Title"
                   value={
-                    item.positionTitle ||
-                    item.position_title
+                    safeItem.positionTitle ||
+                    safeItem.position_title
                   }
                 />
 
                 <InfoItem
                   label="Department / Account"
-                  value={
-                    item.departmentAccount ||
-                    item.department_account
-                  }
+                  value={getDepartmentAccount(safeItem)}
                 />
 
                 <InfoItem
                   label="Job Description"
                   value={
-                    jobDescriptionDisplay || "Not selected"
+                    jobDescriptionDisplay ||
+                    "Not selected"
                   }
                   icon={FileText}
                   className="md:col-span-2"
@@ -718,51 +735,51 @@ export default function ViewHiringNeedsModal({
                 <InfoItem
                   label="Reason for Hiring"
                   value={
-                    item.reasonForHiring ||
-                    item.reason_for_hiring ||
-                    item.reason
+                    safeItem.reasonForHiring ||
+                    safeItem.reason_for_hiring ||
+                    safeItem.reason
                   }
                 />
 
                 <InfoItem
                   label="Assignment"
                   value={
-                    item.assignment === "Other"
-                      ? item.assignmentOther ||
-                        item.assignment_other ||
+                    safeItem.assignment === "Other"
+                      ? safeItem.assignmentOther ||
+                        safeItem.assignment_other ||
                         "Other"
-                      : item.assignment
+                      : safeItem.assignment
                   }
                 />
 
                 <InfoItem
                   label="Location / Site"
                   value={
-                    item.locationSite ||
-                    item.location_site
+                    safeItem.locationSite ||
+                    safeItem.location_site
                   }
                 />
               </DetailSection>
             )}
 
-            {isDownsize && supportingFileUrl && (
+            {isDownsize && supportingFileUrl ? (
               <DetailSection
                 title="Supporting File"
-                subtitle="Uploaded supporting image or document for this downsize request."
+                subtitle="Uploaded supporting image or document for this Downsize request."
               >
                 <div className="md:col-span-2">
                   <SupportingFilePreview
                     url={supportingFileUrl}
                     fileName={supportingFileName}
-                    image={isImageFile(item)}
+                    image={isImageFile(safeItem)}
                   />
                 </div>
               </DetailSection>
-            )}
+            ) : null}
 
             <DetailSection
               title="Request Details"
-              subtitle="Submitted request information and staffing requirement."
+              subtitle="Submitted ownership and staffing information."
             >
               <InfoItem
                 label={
@@ -770,7 +787,7 @@ export default function ViewHiringNeedsModal({
                     ? "Headcount to Downsize"
                     : "Headcount"
                 }
-                value={getHeadcount(item)}
+                value={getHeadcount(safeItem)}
                 icon={Users}
               />
 
@@ -784,7 +801,8 @@ export default function ViewHiringNeedsModal({
                   isDownsize
                     ? weekRange
                     : formatDate(
-                        item.dateNeeded || item.date_needed,
+                        safeItem.dateNeeded ||
+                          safeItem.date_needed,
                       )
                 }
                 icon={CalendarDays}
@@ -793,32 +811,33 @@ export default function ViewHiringNeedsModal({
               <InfoItem
                 label="SIBS ID Manager"
                 value={
-                  item.sibsIdManager ||
-                  item.sibs_id_manager ||
-                  item.preparedById
+                  safeItem.sibsIdManager ||
+                  safeItem.sibs_id_manager ||
+                  safeItem.preparedById
                 }
               />
 
               <InfoItem
                 label="Hiring Manager"
                 value={
-                  item.hiringManager ||
-                  item.hiring_manager ||
-                  item.preparedBy
+                  safeItem.hiringManager ||
+                  safeItem.hiring_manager ||
+                  safeItem.preparedBy
                 }
               />
 
               <InfoItem
                 label="Submitted Date"
                 value={formatDate(
-                  item.createdAt || item.created_at,
+                  safeItem.createdAt ||
+                    safeItem.created_at,
                 )}
               />
             </DetailSection>
 
             <DetailSection
               title="Approval Details"
-              subtitle="Current approval information and recorded decision details."
+              subtitle="Current approval status and recorded decision information."
             >
               <InfoItem
                 label="Approval Status"
@@ -828,16 +847,16 @@ export default function ViewHiringNeedsModal({
               <InfoItem
                 label="Approval Date"
                 value={formatDate(
-                  item.approvalDate ||
-                    item.approval_date,
+                  safeItem.approvalDate ||
+                    safeItem.approval_date,
                 )}
               />
 
               <InfoItem
                 label="Approved By"
                 value={
-                  item.approvedBy ||
-                  item.approved_by
+                  safeItem.approvedBy ||
+                  safeItem.approved_by
                 }
               />
 
@@ -848,25 +867,31 @@ export default function ViewHiringNeedsModal({
               />
             </DetailSection>
 
-            <section className="rounded-3xl border border-[#D9E2EC] bg-white p-4 shadow-sm sm:p-5">
-              <div className="flex flex-col gap-1">
-                <h3 className="text-base font-extrabold text-[#101828]">
-                  Approval Action
-                </h3>
+            <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#EAF2FB] text-[#042C51]">
+                  <Clock size={15} />
+                </span>
 
-                <p className="text-sm font-semibold leading-6 text-sibs-tertiary-5">
-                  {decisionDescription}
-                </p>
+                <div>
+                  <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                    Approval Action
+                  </h3>
+
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                    {decisionDescription}
+                  </p>
+                </div>
               </div>
 
-              {canShowDecisionControls && (
+              {canShowDecisionControls ? (
                 <div className="mt-4">
                   <label
                     htmlFor="hiring-needs-approval-remarks"
-                    className="mb-2 block text-xs font-extrabold uppercase tracking-wide text-[#215789]"
+                    className="mb-1.5 block text-xs font-extrabold text-[#042C51]"
                   >
-                    Decision Remarks
-                    <span className="ml-1 font-semibold normal-case text-sibs-tertiary-5">
+                    Decision Remarks{" "}
+                    <span className="font-semibold text-[#98A2B3]">
                       (Optional)
                     </span>
                   </label>
@@ -880,18 +905,19 @@ export default function ViewHiringNeedsModal({
                     disabled={decisionLoading}
                     rows={4}
                     placeholder="Add remarks for this approval decision..."
-                    className="w-full resize-none rounded-2xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
+                    className="w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#344054] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7]"
                   />
                 </div>
-              )}
+              ) : null}
             </section>
           </div>
         </div>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
+        <footer className="shrink-0 border-t border-[#E6ECF2] bg-white px-4 py-3 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs font-bold text-sibs-tertiary-5">
-              Request status: {status}
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+              Request status:{" "}
+              <span className="text-[#042C51]">{status}</span>
             </p>
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
@@ -899,12 +925,12 @@ export default function ViewHiringNeedsModal({
                 type="button"
                 onClick={onClose}
                 disabled={decisionLoading}
-                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[#D0D5DD] bg-white px-6 text-sm font-extrabold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                className="inline-flex h-10 w-full items-center justify-center rounded-[10px] border border-[#D7DEE8] bg-white px-5 text-xs font-extrabold text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 Close
               </button>
 
-              {canShowDecisionControls && (
+              {canShowDecisionControls ? (
                 <>
                   <button
                     type="button"
@@ -912,16 +938,16 @@ export default function ViewHiringNeedsModal({
                       handleDecision("reject")
                     }
                     disabled={decisionLoading}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-6 text-sm font-extrabold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-5 text-xs font-extrabold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {decisionLoading &&
                     decisionAction === "reject" ? (
                       <Loader2
-                        size={17}
+                        size={15}
                         className="animate-spin"
                       />
                     ) : (
-                      <XCircle size={17} />
+                      <XCircle size={15} />
                     )}
                     Reject Request
                   </button>
@@ -932,24 +958,24 @@ export default function ViewHiringNeedsModal({
                       handleDecision("approve")
                     }
                     disabled={decisionLoading}
-                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-emerald-600 px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                   >
                     {decisionLoading &&
                     decisionAction === "approve" ? (
                       <Loader2
-                        size={17}
+                        size={15}
                         className="animate-spin"
                       />
                     ) : (
-                      <CheckCircle2 size={17} />
+                      <CheckCircle2 size={15} />
                     )}
                     Approve Request
                   </button>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );

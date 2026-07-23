@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from "react";
 import {
   Activity,
@@ -310,7 +311,7 @@ export function SuperAdminMetricGrid({ metrics, state }) {
 
   return (
     <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
-      {METRIC_ITEMS.map(({ key, label, description, icon: Icon, iconClass }) => (
+      {METRIC_ITEMS.map(({ key, label, description, icon, iconClass }) => (
         <article
           key={key}
           className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#042C51]/20 hover:shadow-md"
@@ -320,9 +321,9 @@ export function SuperAdminMetricGrid({ metrics, state }) {
               {label}
             </p>
             <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${iconClass}`}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconClass}`}
             >
-              <Icon size={16} />
+              {React.createElement(icon, { size: 17, strokeWidth: 2 })}
             </span>
           </div>
           <p className="mt-3 text-2xl font-extrabold leading-none text-[#042C51]">
@@ -349,7 +350,7 @@ export function SuperAdminQuickActions({ onNavigate }) {
         </span>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
-        {QUICK_ACTIONS.map(({ label, path, icon: Icon }) => (
+        {QUICK_ACTIONS.map(({ label, path, icon }) => (
           <button
             key={path}
             type="button"
@@ -357,7 +358,7 @@ export function SuperAdminQuickActions({ onNavigate }) {
             className="group flex min-h-24 flex-col items-start justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:shadow-sm"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#042C51] text-white transition group-hover:bg-[#FF5C28]">
-              <Icon size={15} />
+              {React.createElement(icon, { size: 15 })}
             </span>
             <span className="mt-3 text-xs font-extrabold leading-4 text-[#042C51]">
               {label}
@@ -465,7 +466,7 @@ export function SuperAdminTabs({ activeTab, onChange, counts }) {
       aria-label="Super Admin dashboard sections"
       className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4"
     >
-      {SUPER_ADMIN_TABS.map(({ id, label, icon: Icon }) => {
+      {SUPER_ADMIN_TABS.map(({ id, label, icon }) => {
         const active = activeTab === id;
         const count = counts?.[id];
 
@@ -482,7 +483,10 @@ export function SuperAdminTabs({ activeTab, onChange, counts }) {
                 : "border-transparent text-[#667085] hover:text-[#042C51]"
             }`}
           >
-            <Icon size={15} className={active ? "text-[#FF5C28]" : ""} />
+            {React.createElement(icon, {
+              size: 15,
+              className: active ? "text-[#FF5C28]" : "",
+            })}
             {label}
             {Number.isFinite(Number(count)) && (
               <span

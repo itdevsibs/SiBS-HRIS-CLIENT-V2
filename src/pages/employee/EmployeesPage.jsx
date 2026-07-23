@@ -1,12 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   FileCheck2,
-  ShieldCheck,
   UserRoundCheck,
 } from "lucide-react";
 
 import Header from "../../components/layout/Header";
-import AccessRequestTable from "../../components/tables/employees/AccessRequestTable";
 import ChwcpTable from "../../components/tables/employees/ChwcpTable";
 import EmployeeTable from "../../components/tables/employees/EmployeeTable";
 import { usePagination } from "@/services/context/PaginationContext";
@@ -28,13 +26,6 @@ const employeeTabs = [
     icon: UserRoundCheck,
     description: "Employee master records",
     tone: "navy",
-  },
-  {
-    label: "Access Requests",
-    count: 5,
-    icon: ShieldCheck,
-    description: "System and permission requests",
-    tone: "orange",
   },
   {
     label: "CHWCP",
@@ -98,13 +89,13 @@ function SummaryCard({
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
           <p
-            className={`m-0 truncate text-xs font-extrabold uppercase tracking-wide ${metricTone.label}`}
+            className={`m-0 truncate text-[10px] font-extrabold uppercase tracking-normal ${metricTone.label}`}
           >
             {label}
           </p>
 
           <p
-            className={`mt-3 text-3xl font-extrabold leading-none tabular-nums ${metricTone.value}`}
+            className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${metricTone.value}`}
           >
             {value}
           </p>
@@ -140,13 +131,9 @@ export default function EmployeesPage() {
       : tab,
   );
 
-  const activeTabIndex = Math.max(
-    0,
-    directoryTabs.findIndex((tab) => tab.label === activeEmployeeTab),
-  );
-
-  const activeTab = directoryTabs[activeTabIndex] || directoryTabs[0];
-  const ActiveTabIcon = activeTab.icon;
+  const activeTab =
+    directoryTabs.find((tab) => tab.label === activeEmployeeTab) ||
+    directoryTabs[0];
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
@@ -194,6 +181,8 @@ export default function EmployeesPage() {
           directoryTabs.some((tab) => tab.label === parsed.activeTab)
         ) {
           setActiveEmployeeTab(parsed.activeTab);
+        } else if (parsed?.activeTab) {
+          setActiveEmployeeTab("Employees");
         }
       }
 
@@ -235,17 +224,69 @@ export default function EmployeesPage() {
     }
   }
 
+  function renderDirectoryTabs() {
+    return (
+      <div className="overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+        <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+          {directoryTabs.map((tab) => {
+            const { label, count } = tab;
+            const TabIcon = tab.icon;
+            const isActive = activeEmployeeTab === label;
+
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => handleTabChange(label)}
+                className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition ${
+                  isActive
+                    ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
+                    : "border-transparent text-[#667085] hover:text-[#042C51]"
+                }`}
+              >
+                <TabIcon size={15} className="shrink-0" />
+                <span className="truncate">{label}</span>
+
+                {count > 0 ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
+                      isActive
+                        ? "bg-[#042C51] text-white"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   function renderActiveTable() {
     if (activeEmployeeTab === "Employees") {
-      return <EmployeeTable />;
+      return (
+        <EmployeeTable
+          tabs={directoryTabs}
+          activeTab={activeEmployeeTab}
+          onTabChange={handleTabChange}
+        />
+      );
     }
 
-    if (activeEmployeeTab === "Access Requests") {
-      return <AccessRequestTable />;
-    }
 
     if (activeEmployeeTab === "CHWCP") {
-      return <ChwcpTable />;
+      return (
+        <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
+          <div className="p-4 sm:p-5">
+            {renderDirectoryTabs()}
+            <ChwcpTable />
+          </div>
+        </div>
+      );
     }
 
     return null;
@@ -263,7 +304,7 @@ export default function EmployeesPage() {
       >
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
-            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6"
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
             style={getAnimationStyle(animationTiming.header)}
           >
             <span className="sibs-top-accent" aria-hidden="true" />
@@ -271,12 +312,12 @@ export default function EmployeesPage() {
             <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0 space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
                     Employee Directory View
                   </span>
 
-                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#FF5C28]">
+                  <span className="inline-flex max-w-full rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
                     Module: Core HR
                   </span>
                 </div>
@@ -286,19 +327,14 @@ export default function EmployeesPage() {
                 </h1>
 
                 <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
-                  Manage employee records, access requests, and CHWCP compliance information.
+                  Manage employee records and CHWCP compliance information.
                 </p>
               </div>
-
-              <span className="inline-flex h-10 w-max shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51]">
-                <ActiveTabIcon size={14} />
-                <span>Active Section: {activeEmployeeTab}</span>
-              </span>
             </div>
           </section>
 
           <section
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
             style={getAnimationStyle(animationTiming.summary)}
           >
             {directoryTabs.map((tab, index) => (
@@ -333,57 +369,6 @@ export default function EmployeesPage() {
                   <p className="sibs-section-subtitle">
                     {activeTab.description}
                   </p>
-                </div>
-
-                <div className="min-w-0 overflow-x-auto no-scrollbar">
-                  <div
-                    className="relative grid w-max min-w-full overflow-hidden rounded-xl border border-[#E6ECF2] bg-[#F2F4F7] p-1 shadow-sm sm:min-w-[500px] xl:w-[560px]"
-                    style={{
-                      gridTemplateColumns: `repeat(${directoryTabs.length}, minmax(145px, 1fr))`,
-                    }}
-                  >
-                    <div
-                      className="absolute bottom-1 top-1 rounded-lg bg-[#042C51] shadow-sm transition-all duration-300 ease-out"
-                      style={{
-                        width: `calc((100% - 8px) / ${directoryTabs.length})`,
-                        left: `calc(4px + ${activeTabIndex} * ((100% - 8px) / ${directoryTabs.length}))`,
-                      }}
-                    />
-
-                    {directoryTabs.map((tab) => {
-                      const { label, count } = tab;
-                      const TabIcon = tab.icon;
-                      const isActive = activeEmployeeTab === label;
-
-                      return (
-                        <button
-                          key={label}
-                          type="button"
-                          onClick={() => handleTabChange(label)}
-                          className={`relative z-[1] inline-flex min-h-10 min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 text-xs font-extrabold transition-all duration-300 ease-out active:scale-[0.97] sm:text-sm ${
-                            isActive
-                              ? "text-white"
-                              : "text-[#344054] hover:bg-white/80 hover:text-[#042C51]"
-                          }`}
-                        >
-                          <TabIcon size={15} className="shrink-0" />
-                          <span className="truncate">{label}</span>
-
-                          {count > 0 ? (
-                            <span
-                              className={`inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full px-1 text-[9px] font-extrabold leading-none ${
-                                isActive
-                                  ? "bg-white text-[#042C51]"
-                                  : "bg-[#042C51] text-white"
-                              }`}
-                            >
-                              {count}
-                            </span>
-                          ) : null}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             </div>

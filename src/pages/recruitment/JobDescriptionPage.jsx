@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ClipboardList,
+  RefreshCw,
 } from "lucide-react";
 import JobDescriptionTable from "../../components/tables/jobDescription/JobDescriptionTable";
 import AddDescriptionModal from "../../components/modals/jobDescription/AddJobDescription";
@@ -94,8 +95,23 @@ const emptyRevisionForm = {
 };
 
 function normalizeJdStatus(status) {
-  if (status === "New JD") return "New Job Description";
-  return status || "New Job Description";
+  const value = String(status || "").trim();
+
+  if (value === "New JD") return "New Job Description";
+  if (value === "Archived JD") return "Archived";
+
+  return value || "New Job Description";
+}
+
+function getJobDescriptionStatus(item = {}) {
+  return normalizeJdStatus(
+    item.jdStatus ||
+      item.jd_status ||
+      item.raw?.jdStatus ||
+      item.raw?.jd_status ||
+      item.status ||
+      item.raw?.status,
+  );
 }
 
 function splitPersonalityTypes(value = "") {
@@ -207,45 +223,49 @@ function formatLoggedInOwner(user) {
 function StatCard({
   title,
   value,
-  icon: Icon,
+  icon,
   description,
-  valueClassName,
-  iconClassName,
+  badgeText,
+  badgeClassName = "bg-slate-100 text-slate-600",
+  valueClassName = "text-[#042C51]",
+  iconClassName = "bg-blue-50 text-[#042C51]",
   delay = 0,
 }) {
+  const MetricIcon = icon;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+    <article
+      className="sibs-metric-card font-jakarta"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-[#174A7C]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
             {title}
           </p>
-
-          <p
-            className={`mt-3 truncate text-3xl font-extrabold leading-none ${valueClassName || "text-sibs-primary-1"
-              }`}
-          >
-            {value}
-          </p>
-
-          {description && (
-            <p className="mt-2 truncate text-xs font-semibold text-sibs-primary-1">
-              {description}
+          <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+            <p className={`text-3xl font-extrabold leading-none ${valueClassName}`}>
+              {value}
             </p>
-          )}
+            {badgeText && (
+              <span
+                className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${badgeClassName}`}
+              >
+                {badgeText}
+              </span>
+            )}
+          </div>
+          <p className="mt-2 text-xs font-bold leading-4 text-[#667085]">
+            {description}
+          </p>
         </div>
-
-        <div
-          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName || "bg-[#F2F6FA] text-sibs-primary-1"
-            }`}
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
         >
-          <Icon size={22} />
-        </div>
+          <MetricIcon size={17} />
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -732,25 +752,19 @@ export default function JobDescriptionPage() {
   }
 
   const stats = useMemo(() => {
-    const total = jobDescriptionList.length;
-
-    const existing = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "Existing",
-    ).length;
-
-    const revision = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "For Revision",
-    ).length;
-
-    const newJd = jobDescriptionList.filter(
-      (item) => normalizeJdStatus(item.jdStatus) === "New Job Description",
-    ).length;
+    const statuses = jobDescriptionList.map(getJobDescriptionStatus);
 
     return {
-      total,
-      existing,
-      revision,
-      newJd,
+      total: jobDescriptionList.length,
+      existing: statuses.filter((status) =>
+        ["Existing", "Active", "Approved"].includes(status),
+      ).length,
+      revision: statuses.filter((status) =>
+        ["For Revision", "Returned for Revision"].includes(status),
+      ).length,
+      newJd: statuses.filter((status) =>
+        ["New Job Description", "Draft", "For Approval"].includes(status),
+      ).length,
     };
   }, [jobDescriptionList]);
 
@@ -763,96 +777,115 @@ export default function JobDescriptionPage() {
         className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
         <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <ClipboardList size={14} />
-                Recruitment
+          <section
+            className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
+            style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          >
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Job Description View
+                  </span>
+
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                    Module: Recruitment
+                  </span>
+                </div>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Job Description
+                </h1>
+
+                <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage JD readiness for Existing, For Revision, and New Job Description requirements.
+                </p>
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Job Description
-              </h1>
+              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+                <button
+                  type="button"
+                  onClick={loadJobDescriptionRecords}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] active:scale-95"
+                  title="Refresh Job Descriptions"
+                  aria-label="Refresh Job Descriptions"
+                >
+                  <RefreshCw size={16} />
+                </button>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Manage JD readiness for Existing, For Revision, and New Job
-                Description requirements.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleOpenCreateModal}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-            >
-              <Plus size={18} />
-              Add Job Description
-            </button>
-          </div>
-
-          <section
-            className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5"
-            style={{ animationDelay: "60ms" }}
-          >
-            <h2 className="text-base font-bold text-[#101828]">
-              Job Description Summary
-            </h2>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                title="Total JD"
-                value={stats.total}
-                icon={ClipboardList}
-                description="All job descriptions"
-                delay={0}
-              />
-
-              <StatCard
-                title="Existing"
-                value={stats.existing}
-                icon={CheckCircle2}
-                description="Ready or already available"
-                valueClassName="text-emerald-600"
-                iconClassName="bg-emerald-50 text-emerald-600"
-                delay={60}
-              />
-
-              <StatCard
-                title="For Revision"
-                value={stats.revision}
-                icon={AlertTriangle}
-                description="Needs update"
-                valueClassName="text-amber-600"
-                iconClassName="bg-amber-50 text-amber-500"
-                delay={120}
-              />
-
-              <StatCard
-                title="New Job Description"
-                value={stats.newJd}
-                icon={FileText}
-                description="New or unlinked JD"
-                valueClassName="text-sibs-primary-1"
-                iconClassName="bg-[#F2F6FA] text-sibs-primary-1"
-                delay={180}
-              />
+                <button
+                  type="button"
+                  onClick={handleOpenCreateModal}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                >
+                  <Plus size={15} />
+                  New Job Description
+                </button>
+              </div>
             </div>
           </section>
 
-          <section
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              title="Total JD"
+              value={stats.total}
+              icon={ClipboardList}
+              description="All job descriptions in database"
+              badgeText="All Master JDs"
+              delay={0}
+            />
+            <StatCard
+              title="Existing"
+              value={stats.existing}
+              icon={CheckCircle2}
+              description="Ready or already available"
+              badgeText="Ready / Approved"
+              badgeClassName="bg-emerald-100 text-emerald-800"
+              valueClassName="text-emerald-600"
+              iconClassName="bg-emerald-50 text-emerald-700"
+              delay={60}
+            />
+            <StatCard
+              title="For Revision"
+              value={stats.revision}
+              icon={AlertTriangle}
+              description="Needs specification update or remarks"
+              badgeText="Action Required"
+              badgeClassName="bg-amber-100 text-amber-800"
+              valueClassName="text-amber-600"
+              iconClassName="bg-amber-50 text-amber-700"
+              delay={120}
+            />
+            <StatCard
+              title="New Job Description"
+              value={stats.newJd}
+              icon={FileText}
+              description="New or unlinked JD intake"
+              badgeText="In Draft / Approval"
+              badgeClassName="bg-blue-100 text-blue-800"
+              iconClassName="bg-indigo-50 text-indigo-700"
+              delay={180}
+            />
+          </section>
+
+          <div
             key={jobDescriptionList.length}
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            className="sibs-profile-tab-panel"
             style={{ animationDelay: "120ms" }}
             onClickCapture={handleTableClickCapture}
           >
             <JobDescriptionTable
               jobDescriptionList={jobDescriptionList}
               onView={handleViewJobDescription}
+              onRevise={handleOpenRevision}
               onPageChange={forceScrollToTop}
               scrollToTop={forceScrollToTop}
               onRefresh={loadJobDescriptionRecords}
             />
-          </section>
+          </div>
         </div>
       </main>
 

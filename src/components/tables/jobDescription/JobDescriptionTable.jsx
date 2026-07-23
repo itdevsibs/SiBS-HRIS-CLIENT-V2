@@ -1,63 +1,242 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Eye, RotateCcw, Search } from "lucide-react";
-import { usePagination } from "../../../services/context/PaginationContext";
-import TableFooter from "../footer/TableFooter";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Edit3,
+  Eye,
+  FileText,
+  RotateCcw,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 
 const JOB_DESCRIPTION_ENTITY = "job-descriptions";
+const PAGE_LIMIT = 15;
 
-const JD_VIEW_OPTIONS = [
-  { label: "All JD", value: "All JD" },
-  { label: "For Approval", value: "For Approval" },
-  { label: "Active JD", value: "Active JD" },
-  { label: "Archived JD", value: "Archived JD" },
+const STATUS_TABS = [
+  { key: "all", label: "All JDs" },
+  { key: "existing", label: "Existing / Ready" },
+  { key: "revision", label: "For Revision" },
+  { key: "new", label: "New Job Description" },
+  { key: "approval", label: "For Approval" },
+  { key: "rejected", label: "Rejected" },
 ];
 
-const JD_STATUS_OPTIONS = [
-  { label: "All Status", value: "All Status" },
-  { label: "Existing", value: "Existing" },
-  { label: "Approved", value: "Approved" },
-  { label: "For Revision", value: "For Revision" },
-  { label: "For Approval", value: "For Approval" },
-  { label: "New Job Description", value: "New Job Description" },
-  { label: "Archived", value: "Archived" },
-];
-
-function formatDate(date) {
-  if (!date) return "—";
-
-  const parsedDate = new Date(date);
-
-  if (Number.isNaN(parsedDate.getTime())) return "—";
-
-  return parsedDate.toLocaleDateString("en-PH", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function getFirstValue(...values) {
+  return values.find((value) => String(value ?? "").trim()) ?? "";
 }
 
 function safeText(value) {
-  return String(value || "").toLowerCase();
+  return String(value || "").trim().toLowerCase();
 }
 
 function normalizeJdStatus(status) {
   const value = String(status || "").trim();
 
   if (value === "New JD") return "New Job Description";
+  if (value === "Archived JD") return "Archived";
 
   return value || "New Job Description";
 }
 
 function getRealJdStatus(item = {}) {
   return normalizeJdStatus(
-    item.jdStatus ||
-      item.jd_status ||
-      item.raw?.jdStatus ||
-      item.raw?.jd_status ||
+    getFirstValue(
+      item.jdStatus,
+      item.jd_status,
+      item.raw?.jdStatus,
+      item.raw?.jd_status,
       item.status,
+      item.raw?.status,
+    ),
   );
+}
+
+function getRecordId(item = {}) {
+  return getFirstValue(item.rawId, item.raw_id, item.raw?.id, item.id);
+}
+
+function getRoleTitle(item = {}) {
+  return getFirstValue(
+    item.roleTitle,
+    item.role_title,
+    item.title,
+    item.raw?.roleTitle,
+    item.raw?.role_title,
+    item.raw?.title,
+  );
+}
+
+function getDocumentTitle(item = {}) {
+  return getFirstValue(
+    item.documentTitle,
+    item.document_title,
+    item.fileName,
+    item.file_name,
+    item.raw?.documentTitle,
+    item.raw?.document_title,
+    item.raw?.fileName,
+    item.raw?.file_name,
+  );
+}
+
+function getJdCode(item = {}) {
+  return getFirstValue(item.jdCode, item.jd_code, item.raw?.jdCode, item.raw?.jd_code);
+}
+
+function getDepartment(item = {}) {
+  return getFirstValue(
+    item.department,
+    item.departmentName,
+    item.department_name,
+    item.raw?.department,
+    item.raw?.departmentName,
+    item.raw?.department_name,
+  );
+}
+
+function getAccount(item = {}) {
+  return getFirstValue(
+    item.account,
+    item.accountName,
+    item.account_name,
+    item.preparedFor,
+    item.prepared_for,
+    item.raw?.account,
+    item.raw?.accountName,
+    item.raw?.account_name,
+    item.raw?.preparedFor,
+    item.raw?.prepared_for,
+  );
+}
+
+function getLinkedHiringNeed(item = {}) {
+  return getFirstValue(
+    item.linkedHiringRequirement,
+    item.linked_hiring_requirement,
+    item.linkedHiringNeed,
+    item.linked_hiring_need,
+    item.existingJdId,
+    item.existing_jd_id,
+    item.raw?.linkedHiringRequirement,
+    item.raw?.linked_hiring_requirement,
+    item.raw?.linkedHiringNeed,
+    item.raw?.linked_hiring_need,
+    item.raw?.existingJdId,
+    item.raw?.existing_jd_id,
+  );
+}
+
+function getSupervisoryLevel(item = {}) {
+  const explicitLevel = getFirstValue(
+    item.supervisoryLevel,
+    item.supervisory_level,
+    item.level,
+    item.raw?.supervisoryLevel,
+    item.raw?.supervisory_level,
+    item.raw?.level,
+  );
+
+  if (explicitLevel) return String(explicitLevel).trim();
+
+  const supervisory = getFirstValue(item.supervisory, item.raw?.supervisory);
+  const normalized = safeText(supervisory);
+
+  if (["yes", "true", "1"].includes(normalized)) return "Supervisory";
+  if (["no", "false", "0"].includes(normalized)) return "Individual Contributor";
+
+  return String(supervisory || "").trim();
+}
+
+function getVersion(item = {}) {
+  return getFirstValue(
+    item.version,
+    item.jdVersion,
+    item.jd_version,
+    item.currentVersion,
+    item.current_version,
+    item.revisionNo,
+    item.revision_no,
+    item.raw?.version,
+    item.raw?.jdVersion,
+    item.raw?.jd_version,
+    item.raw?.currentVersion,
+    item.raw?.current_version,
+    item.raw?.revisionNo,
+    item.raw?.revision_no,
+  );
+}
+
+function getDateValue(item = {}) {
+  return getFirstValue(
+    item.lastApproved,
+    item.lastApprovedDate,
+    item.last_approved_date,
+    item.approvedDate,
+    item.approved_date,
+    item.effectiveDate,
+    item.effective_date,
+    item.dateRequested,
+    item.date_requested,
+    item.updatedAt,
+    item.updated_at,
+    item.raw?.lastApproved,
+    item.raw?.approvedDate,
+    item.raw?.effectiveDate,
+    item.raw?.dateRequested,
+    item.raw?.updatedAt,
+  );
+}
+
+function formatDate(value) {
+  if (!value) return "--";
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) return String(value);
+
+  return parsed.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function isExistingStatus(status) {
+  return ["Existing", "Active", "Approved"].includes(status);
+}
+
+function isRevisionStatus(status) {
+  return ["For Revision", "Returned for Revision"].includes(status);
+}
+
+function isNewStatus(status) {
+  return ["New Job Description", "Draft", "For Approval"].includes(status);
+}
+
+function isRejectedStatus(status) {
+  return ["Rejected", "Declined"].includes(status);
+}
+
+function matchesStatusTab(status, tabKey) {
+  switch (tabKey) {
+    case "existing":
+      return isExistingStatus(status);
+    case "revision":
+      return isRevisionStatus(status);
+    case "new":
+      return isNewStatus(status);
+    case "approval":
+      return status === "For Approval";
+    case "rejected":
+      return isRejectedStatus(status);
+    default:
+      return true;
+  }
 }
 
 function getJdStatusClass(status) {
@@ -66,576 +245,547 @@ function getJdStatusClass(status) {
     case "Active":
     case "Approved":
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
-
-    case "For Approval":
-      return "border-[#FFBFA8] bg-[#FFF3ED] text-sibs-primary-2";
-
-    case "New Job Description":
-    case "New JD":
-    case "Draft":
-      return "border-[#B7D4FF] bg-[#EEF6FF] text-[#1454D9]";
-
     case "For Revision":
-      return "border-[#F6C84C] bg-[#FFF8E6] text-[#9A6400]";
-
     case "Returned for Revision":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "For Approval":
+      return "border-orange-200 bg-orange-50 text-[#D9480F]";
+    case "New Job Description":
+    case "Draft":
+      return "border-blue-200 bg-blue-50 text-blue-700";
     case "Rejected":
     case "Declined":
       return "border-red-200 bg-red-50 text-red-700";
-
     case "Archived":
-    case "Archived JD":
-      return "border-[#D6DEE8] bg-[#F8FAFC] text-[#475467]";
-
+      return "border-slate-200 bg-slate-50 text-slate-600";
     default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
+      return "border-slate-200 bg-slate-50 text-slate-600";
   }
 }
 
-function getJdStatusLabel(status) {
-  const normalizedStatus = normalizeJdStatus(status);
-
-  switch (normalizedStatus) {
-    case "Existing":
-      return "Existing";
-
-    case "Active":
-      return "Active";
-
-    case "Approved":
-      return "Approved";
-
-    case "For Revision":
-      return "For Revision";
-
-    case "For Approval":
-      return "For Approval";
-
-    case "New Job Description":
-      return "New Job Description";
-
-    case "Archived":
-    case "Archived JD":
-      return "Archived";
-
-    default:
-      return normalizedStatus || "—";
-  }
-}
-
-function getJdViewStatus(item) {
-  const status = getRealJdStatus(item);
-
-  if (status === "Existing" || status === "Active" || status === "Approved") {
-    return "Active JD";
-  }
-
-  if (status === "For Approval") {
-    return "For Approval";
-  }
-
-  if (status === "Archived" || status === "Archived JD") {
-    return "Archived JD";
-  }
-
-  return "All JD";
+function StatusIcon({ status }) {
+  if (isExistingStatus(status)) return <CheckCircle2 size={13} />;
+  if (isRevisionStatus(status)) return <AlertTriangle size={13} />;
+  if (isRejectedStatus(status)) return <AlertCircle size={13} />;
+  return <Clock3 size={13} />;
 }
 
 function JdStatusBadge({ status }) {
-  const realStatus = normalizeJdStatus(status);
+  const normalized = normalizeJdStatus(status);
 
   return (
     <span
-      className={`inline-flex w-fit min-w-[92px] items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-xs font-extrabold leading-none ${getJdStatusClass(
-        realStatus,
+      className={`inline-flex w-fit items-center justify-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-extrabold ${getJdStatusClass(
+        normalized,
       )}`}
     >
-      {getJdStatusLabel(realStatus)}
+      <StatusIcon status={normalized} />
+      {normalized}
     </span>
   );
 }
 
-function getLatestRevision(item) {
-  const revisionHistory = Array.isArray(item.revisionHistory)
-    ? item.revisionHistory
-    : [];
+function uniqueOptions(items, getter, allLabel) {
+  const values = [
+    ...new Set(
+      items
+        .map((item) => String(getter(item) || "").trim())
+        .filter(Boolean),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
 
-  return revisionHistory[0];
+  return [allLabel, ...values];
 }
 
-function getVersion(item) {
-  return item.version || item.jdVersion || item.currentVersion || "—";
+function toDropdownOptions(options, allLabel) {
+  return options
+    .filter((option) => option !== allLabel)
+    .map((option) => ({
+      label: option,
+      value: option,
+    }));
 }
 
-function getLastApproved(item) {
-  return (
-    item.lastApproved ||
-    item.lastApprovedDate ||
-    item.approvedDate ||
-    getLatestRevision(item)?.revisedDate ||
-    ""
-  );
-}
-
-function AnimatedDropdown({ open, children, className = "", maxHeight = "" }) {
-  return (
-    <div
-      className={`sibs-animated-dropdown absolute left-0 right-0 top-full z-50 mt-2 ${
-        open ? "open" : "closed"
-      } ${className}`}
-    >
-      <div className="sibs-animated-dropdown-inner">
-        <div className="sibs-animated-dropdown-box">
-          <div className={`${maxHeight} overflow-y-auto py-2 sibs-scrollbar`}>
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function JobDescriptionMobileCard({ item, onView }) {
-  const latestRevision = getLatestRevision(item);
-  const realStatus = getRealJdStatus(item);
+function JobDescriptionMobileCard({ item, onView, onRevise }) {
+  const status = getRealJdStatus(item);
+  const roleTitle = getRoleTitle(item) || "Untitled Job Description";
+  const documentTitle = getDocumentTitle(item) || getJdCode(item) || "--";
+  const department = getDepartment(item) || "--";
+  const account = getAccount(item) || "--";
+  const linkedHiringNeed = getLinkedHiringNeed(item) || "--";
+  const supervisoryLevel = getSupervisoryLevel(item) || "--";
+  const version = getVersion(item) || "--";
 
   return (
-    <button
-      type="button"
-      onClick={onView}
-      className="w-full rounded-xl border border-[#E6ECF2] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.99]"
-    >
+    <article className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm transition hover:border-[#FF5C28]/35 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold text-sibs-primary-1">
-            {item.jdCode || "—"}
-          </p>
-
-          <h3 className="mt-1 text-sm font-bold text-[#101828]">
-            {item.roleTitle || "—"}
-          </h3>
-
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            {item.account || "—"} / {item.department || "—"}
-          </p>
+          <div className="flex items-start gap-2">
+            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+            <div className="min-w-0">
+              <h3 className="text-sm font-extrabold leading-5 text-[#042C51]">
+                {roleTitle}
+              </h3>
+              <p className="mt-0.5 break-all font-mono text-[10px] font-semibold text-[#98A2B3]">
+                {documentTitle}
+              </p>
+            </div>
+          </div>
         </div>
-
-        <JdStatusBadge status={realStatus} />
+        <JdStatusBadge status={status} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Owner
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
+          <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+            Department / Account
           </p>
-
-          <p className="mt-1 text-xs font-bold text-[#344054]">
-            {item.owner || "—"}
+          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+            {department}
+          </p>
+          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+            {account}
           </p>
         </div>
-
-        <div className="rounded-lg bg-[#F8FAFC] p-3">
-          <p className="text-[10px] font-bold uppercase text-sibs-tertiary-5">
-            Linked Req.
+        <div className="rounded-xl bg-[#F8FAFC] p-3">
+          <p className="text-[9px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+            Date / Version
           </p>
-
-          <p className="mt-1 text-xs font-bold text-[#344054]">
-            {item.linkedHiringRequirement || "—"}
+          <p className="mt-1 text-xs font-extrabold text-[#042C51]">
+            {version}
+          </p>
+          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+            {formatDate(getDateValue(item))}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 text-xs font-semibold text-sibs-tertiary-5">
-        Latest Revision:{" "}
-        <span className="font-bold text-[#344054]">
-          {latestRevision
-            ? `${formatDate(latestRevision.revisedDate)} by ${
-                latestRevision.revisedBy || "—"
-              }`
-            : "—"}
-        </span>
+      <dl className="mt-3 space-y-2 text-[10px] font-semibold text-[#667085]">
+        <div>
+          <dt className="inline font-extrabold text-[#042C51]">
+            Linked Hiring Need:
+          </dt>{" "}
+          <dd className="inline">{linkedHiringNeed}</dd>
+        </div>
+        <div>
+          <dt className="inline font-extrabold text-[#042C51]">
+            Supervisory Level:
+          </dt>{" "}
+          <dd className="inline">{supervisoryLevel}</dd>
+        </div>
+      </dl>
+
+      <div className="mt-4 flex justify-end gap-2 border-t border-[#EEF2F6] pt-3">
+        <button
+          type="button"
+          onClick={() => onView(item)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-[#F2F6FA] px-3 text-xs font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
+        >
+          <Eye size={14} />
+          View
+        </button>
+        <button
+          type="button"
+          onClick={() => onRevise(item)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-amber-50 px-3 text-xs font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
+        >
+          <Edit3 size={14} />
+          Revise
+        </button>
       </div>
-    </button>
+    </article>
   );
 }
 
-function FilterDropdown({
-  label,
-  value,
-  search,
-  setSearch,
-  show,
-  setShow,
-  options = [],
-  selectedValue,
-  onSelect,
-  placeholder = "Search...",
-  dropdownRef,
-  zIndex = "z-40",
+export default function JobDescriptionTable({
+  jobDescriptionList = [],
+  onRevise,
 }) {
-  const filteredOptions = useMemo(() => {
-    const keyword = String(search || "")
-      .trim()
-      .toLowerCase();
-
-    if (!keyword) return options;
-
-    return options.filter((option) =>
-      String(option.label || option.value || "")
-        .toLowerCase()
-        .includes(keyword),
-    );
-  }, [options, search]);
-
-  return (
-    <div ref={dropdownRef} className={`relative ${zIndex}`}>
-      <label className="mb-1 block text-sm font-bold text-[#101828]">
-        {label}
-      </label>
-
-      <div className="relative">
-        <input
-          type="text"
-          value={show ? search : value}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setShow(true);
-          }}
-          onFocus={() => {
-            setSearch("");
-            setShow(true);
-          }}
-          placeholder={placeholder}
-          autoComplete="off"
-          className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        />
-
-        <ChevronDown
-          size={18}
-          onClick={() => {
-            setSearch("");
-            setShow((prev) => !prev);
-          }}
-          className={`absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-sibs-tertiary-5 transition-transform duration-300 ${
-            show ? "rotate-180" : ""
-          }`}
-        />
-
-        <AnimatedDropdown open={show} maxHeight="max-h-64">
-          {filteredOptions.length > 0 ? (
-            filteredOptions.map((option) => {
-              const selected = selectedValue === option.value;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onSelect(option.value);
-                    setSearch("");
-                    setShow(false);
-                  }}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                    selected
-                      ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
-                      : "text-[#344054] hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  <span className="block truncate">{option.label}</span>
-                </button>
-              );
-            })
-          ) : (
-            <div className="px-4 py-4 text-sm font-semibold text-sibs-tertiary-5">
-              No option found.
-            </div>
-          )}
-        </AnimatedDropdown>
-      </div>
-    </div>
-  );
-}
-
-const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
+  const navigate = useNavigate();
   const { setPagination } = usePagination(JOB_DESCRIPTION_ENTITY);
 
-  const jdViewDropdownRef = useRef(null);
-  const statusDropdownRef = useRef(null);
-  const navigate = useNavigate();
-  const [searchInput, setSearchInput] = useState("");
+  const [selectedStatusTab, setSelectedStatusTab] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("All Departments");
+  const [accountFilter, setAccountFilter] = useState("All Accounts");
+  const [supervisoryFilter, setSupervisoryFilter] = useState("All Levels");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const [jdViewFilter, setJdViewFilter] = useState("All JD");
-  const [jdViewSearch, setJdViewSearch] = useState("");
-  const [showJdViewDropdown, setShowJdViewDropdown] = useState(false);
+  const departmentOptions = useMemo(
+    () => uniqueOptions(jobDescriptionList, getDepartment, "All Departments"),
+    [jobDescriptionList],
+  );
+  const accountOptions = useMemo(
+    () => uniqueOptions(jobDescriptionList, getAccount, "All Accounts"),
+    [jobDescriptionList],
+  );
+  const supervisoryOptions = useMemo(
+    () => uniqueOptions(jobDescriptionList, getSupervisoryLevel, "All Levels"),
+    [jobDescriptionList],
+  );
 
-  const [statusFilter, setStatusFilter] = useState("All Status");
-  const [statusSearch, setStatusSearch] = useState("");
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const statusCounts = useMemo(() => {
+    const counts = Object.fromEntries(STATUS_TABS.map((tab) => [tab.key, 0]));
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (
-        jdViewDropdownRef.current &&
-        !jdViewDropdownRef.current.contains(e.target)
-      ) {
-        setShowJdViewDropdown(false);
-      }
-
-      if (
-        statusDropdownRef.current &&
-        !statusDropdownRef.current.contains(e.target)
-      ) {
-        setShowStatusDropdown(false);
-      }
+    for (const item of jobDescriptionList) {
+      const status = getRealJdStatus(item);
+      counts.all += 1;
+      if (isExistingStatus(status)) counts.existing += 1;
+      if (isRevisionStatus(status)) counts.revision += 1;
+      if (isNewStatus(status)) counts.new += 1;
+      if (status === "For Approval") counts.approval += 1;
+      if (isRejectedStatus(status)) counts.rejected += 1;
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
+    return counts;
+  }, [jobDescriptionList]);
 
   const filteredList = useMemo(() => {
-    const keyword = String(searchInput || "")
-      .trim()
-      .toLowerCase();
+    const keyword = safeText(searchTerm);
 
     return jobDescriptionList.filter((item) => {
-      const realStatus = getRealJdStatus(item);
-      const jdViewStatus = getJdViewStatus(item);
+      const status = getRealJdStatus(item);
+      const department = getDepartment(item);
+      const account = getAccount(item);
+      const supervisoryLevel = getSupervisoryLevel(item);
+
+      const searchableValues = [
+        getRoleTitle(item),
+        getDocumentTitle(item),
+        getJdCode(item),
+        department,
+        account,
+        getLinkedHiringNeed(item),
+        supervisoryLevel,
+        status,
+      ];
 
       const matchesSearch =
         !keyword ||
-        safeText(item.jdCode).includes(keyword) ||
-        safeText(item.roleTitle).includes(keyword) ||
-        safeText(item.account).includes(keyword) ||
-        safeText(item.department).includes(keyword) ||
-        safeText(item.owner).includes(keyword) ||
-        safeText(item.linkedHiringRequirement).includes(keyword) ||
-        safeText(getVersion(item)).includes(keyword) ||
-        safeText(getJdStatusLabel(realStatus)).includes(keyword);
+        searchableValues.some((value) => safeText(value).includes(keyword));
+      const matchesDepartment =
+        departmentFilter === "All Departments" || department === departmentFilter;
+      const matchesAccount =
+        accountFilter === "All Accounts" || account === accountFilter;
+      const matchesSupervisory =
+        supervisoryFilter === "All Levels" ||
+        supervisoryLevel === supervisoryFilter;
+      const matchesTab = matchesStatusTab(status, selectedStatusTab);
 
-      const matchesJdView =
-        jdViewFilter === "All JD" || jdViewStatus === jdViewFilter;
-
-      const matchesJdStatus =
-        statusFilter === "All Status" || realStatus === statusFilter;
-
-      return matchesSearch && matchesJdView && matchesJdStatus;
+      return (
+        matchesSearch &&
+        matchesDepartment &&
+        matchesAccount &&
+        matchesSupervisory &&
+        matchesTab
+      );
     });
-  }, [jobDescriptionList, searchInput, jdViewFilter, statusFilter]);
+  }, [
+    accountFilter,
+    departmentFilter,
+    jobDescriptionList,
+    searchTerm,
+    selectedStatusTab,
+    supervisoryFilter,
+  ]);
+
+  const totalPages = Math.max(Math.ceil(filteredList.length / PAGE_LIMIT), 1);
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+
+  const paginatedList = useMemo(() => {
+    const start = (safeCurrentPage - 1) * PAGE_LIMIT;
+
+    return filteredList.slice(start, start + PAGE_LIMIT);
+  }, [filteredList, safeCurrentPage]);
 
   useEffect(() => {
     setPagination({
-      totalPages: 1,
-      currentPage: 1,
+      totalPages,
+      currentPage: safeCurrentPage,
       total: filteredList.length,
-      limit: filteredList.length || 15,
+      limit: PAGE_LIMIT,
     });
-  }, [filteredList.length, setPagination]);
+  }, [filteredList.length, safeCurrentPage, setPagination, totalPages]);
 
   const hasActiveFilters =
-    searchInput.trim() ||
-    jdViewFilter !== "All JD" ||
-    statusFilter !== "All Status";
+    searchTerm.trim() ||
+    departmentFilter !== "All Departments" ||
+    accountFilter !== "All Accounts" ||
+    supervisoryFilter !== "All Levels" ||
+    selectedStatusTab !== "all";
 
-  function handleClearFilters() {
-    setSearchInput("");
-    setJdViewFilter("All JD");
-    setJdViewSearch("");
-    setShowJdViewDropdown(false);
-    setStatusFilter("All Status");
-    setStatusSearch("");
-    setShowStatusDropdown(false);
+  function handleResetFilters() {
+    setSearchTerm("");
+    setDepartmentFilter("All Departments");
+    setAccountFilter("All Accounts");
+    setSupervisoryFilter("All Levels");
+    setSelectedStatusTab("all");
+    setCurrentPage(1);
+  }
+
+  function updateFilter(setter, value) {
+    setter(value);
+    setCurrentPage(1);
   }
 
   function handleOpenFullPageView(item) {
-    const jdId = item?.rawId || item?.raw?.id || item?.id;
+    const jdId = getRecordId(item);
 
     if (!jdId) return;
 
-    navigate(`/recruitment/job-description/view/${jdId}`, {
+    navigate(`/recruitment/job-description/view/${encodeURIComponent(jdId)}`, {
       state: {
         jobDescription: item,
       },
     });
   }
 
+  function handleOpenRevision(item) {
+    if (typeof onRevise === "function") {
+      onRevise(item);
+    }
+  }
+
   return (
-    <div className="flex h-[calc(100dvh-220px)] flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-      <div className="shrink-0 border-b border-[#E6ECF2]">
-        <section className="overflow-visible rounded-t-2xl bg-white">
-          <div className="p-4 sm:p-5">
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[1.4fr_0.5fr_0.5fr_auto] xl:items-end">
-              <div>
-                <label className="mb-1 block text-sm font-bold text-[#101828]">
-                  Search
-                </label>
-
-                <div className="relative">
-                  <Search
-                    size={18}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                  />
-
-                  <input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search JD, role, account, owner..."
-                    className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                  />
-                </div>
-              </div>
-
-              <FilterDropdown
-                label="JD View"
-                value={jdViewFilter}
-                search={jdViewSearch}
-                setSearch={setJdViewSearch}
-                show={showJdViewDropdown}
-                setShow={(value) => {
-                  setShowJdViewDropdown(value);
-                  if (value) setShowStatusDropdown(false);
-                }}
-                options={JD_VIEW_OPTIONS}
-                selectedValue={jdViewFilter}
-                onSelect={setJdViewFilter}
-                placeholder="Search JD view..."
-                dropdownRef={jdViewDropdownRef}
-                zIndex="z-50"
-              />
-
-              <FilterDropdown
-                label="Status"
-                value={statusFilter}
-                search={statusSearch}
-                setSearch={setStatusSearch}
-                show={showStatusDropdown}
-                setShow={(value) => {
-                  setShowStatusDropdown(value);
-                  if (value) setShowJdViewDropdown(false);
-                }}
-                options={JD_STATUS_OPTIONS}
-                selectedValue={statusFilter}
-                onSelect={setStatusFilter}
-                placeholder="Search status..."
-                dropdownRef={statusDropdownRef}
-                zIndex="z-40"
-              />
-
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                disabled={!hasActiveFilters}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RotateCcw size={17} />
-                Clear
-              </button>
-            </div>
-          </div>
-        </section>
+    <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
+      <div className="border-b border-[#E6ECF2] px-4 py-5 sm:px-5">
+        <h2 className="sibs-section-title">Job Description Records</h2>
+        <p className="sibs-section-subtitle">
+          Search and filter JD records by role, department, account, and supervisory level.
+        </p>
       </div>
 
-      <div
-        key={`${jdViewFilter}-${statusFilter}-${searchInput}`}
-        className="min-h-0 flex-1 p-4 sibs-profile-tab-panel sm:p-6"
-      >
-        <div className="h-full lg:hidden">
-          <div className="thin-scroll h-full overflow-y-auto">
-            {filteredList.length > 0 ? (
+      <div className="relative overflow-visible p-4 sm:p-5">
+        <PaginationTable
+          filterLayout="ta-inline"
+          showFilterPanel={false}
+          showFilterHeader={false}
+          showPagination={false}
+          searchValue={searchTerm}
+          searchPlaceholder="Search role title, document, department, account, or hiring need..."
+          onSearchChange={(value) => updateFilter(setSearchTerm, value)}
+          searchClassName="relative min-w-0 flex-1"
+          dropdownFilters={[
+            {
+              key: "department",
+              value: departmentFilter,
+              options: toDropdownOptions(departmentOptions, "All Departments"),
+              onChange: (value) => updateFilter(setDepartmentFilter, value),
+              includeAll: true,
+              allLabel: "All Departments",
+              placeholder: "Search departments...",
+              searchable: true,
+              className: "w-full sm:w-[200px] xl:w-[220px]",
+            },
+            {
+              key: "account",
+              value: accountFilter,
+              options: toDropdownOptions(accountOptions, "All Accounts"),
+              onChange: (value) => updateFilter(setAccountFilter, value),
+              includeAll: true,
+              allLabel: "All Accounts",
+              placeholder: "Search accounts...",
+              searchable: true,
+              className: "w-full sm:w-[190px] xl:w-[210px]",
+            },
+            {
+              key: "supervisory",
+              value: supervisoryFilter,
+              options: toDropdownOptions(supervisoryOptions, "All Levels"),
+              onChange: (value) => updateFilter(setSupervisoryFilter, value),
+              includeAll: true,
+              allLabel: "All Levels",
+              placeholder: "Search levels...",
+              searchable: true,
+              className: "w-full sm:w-[180px] xl:w-[200px]",
+            },
+          ]}
+          rightContent={
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              disabled={!hasActiveFilters}
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] sm:w-auto"
+            >
+              <RotateCcw size={14} />
+              Clear
+            </button>
+          }
+          rightContentClassName="flex w-full items-end sm:w-auto"
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
+
+        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+          <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+            {STATUS_TABS.map((tab) => {
+              const active = selectedStatusTab === tab.key;
+
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => updateFilter(setSelectedStatusTab, tab.key)}
+                  className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-normal transition ${
+                    active
+                      ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
+                      : "border-transparent text-[#667085] hover:text-[#042C51]"
+                  }`}
+                >
+                  {tab.label}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
+                      active
+                        ? "bg-[#042C51] text-white"
+                        : "bg-slate-200 text-slate-600"
+                    }`}
+                  >
+                    {statusCounts[tab.key] || 0}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="p-4 lg:hidden">
+            {paginatedList.length > 0 ? (
               <div className="space-y-3">
-                {filteredList.map((item) => (
+                {paginatedList.map((item) => (
                   <JobDescriptionMobileCard
-                    key={item.id}
+                    key={getRecordId(item) || getRoleTitle(item)}
                     item={item}
-                    onView={() => handleOpenFullPageView(item)}
+                    onView={handleOpenFullPageView}
+                    onRevise={handleOpenRevision}
                   />
                 ))}
               </div>
             ) : (
-              <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-                No job description records found.
+              <div className="rounded-2xl border border-dashed border-[#D6DEE8] bg-[#F8FAFC] px-5 py-10 text-center">
+                <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                  No Job Descriptions Found
+                </p>
+                <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                  No records matched the active search, filters, and status tab.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="mt-4 rounded-[10px] bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                >
+                  Reset Search & Filters
+                </button>
               </div>
             )}
           </div>
-        </div>
 
-        <div className="hidden h-full overflow-hidden rounded-2xl bg-white lg:block">
-          <div className="thin-scroll h-full overflow-auto">
-            <table className="w-full min-w-[980px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left text-sm">
-              <thead>
-                <tr className="bg-[#F5F7FA] text-[12px] font-extrabold uppercase tracking-wide text-[#174A7C]">
-                  <th className="px-5 py-4 first:rounded-tl-2xl">
-                    Job Title
-                  </th>
-                  <th className="px-5 py-4">JD Code</th>
-                  <th className="px-5 py-4">Department</th>
-                  <th className="px-5 py-4 text-center">Status</th>
-                  <th className="px-5 py-4 text-center">Version</th>
-                  <th className="px-5 py-4">Last Approved</th>
-                  <th className="px-5 py-4 text-center last:rounded-tr-2xl">
-                    Action
-                  </th>
+          <div className="hidden overflow-x-auto lg:block">
+            <table className="w-full min-w-[1280px] border-collapse text-left text-xs">
+              <thead className="sibs-data-table-head">
+                <tr className="sibs-data-table-head-row">
+                  <th className="sibs-data-table-th text-left">Role & Document Title</th>
+                  <th className="sibs-data-table-th text-left">Department / Account</th>
+                  <th className="sibs-data-table-th text-left">Linked Hiring Need</th>
+                  <th className="sibs-data-table-th text-left">Supervisory Level</th>
+                  <th className="sibs-data-table-th text-left">Status</th>
+                  <th className="sibs-data-table-th text-left">Date & Version</th>
+                  <th className="sibs-data-table-th text-right">Actions</th>
                 </tr>
               </thead>
 
-              <tbody className="bg-white">
-                {filteredList.length > 0 ? (
-                  filteredList.map((item) => {
-                    const realStatus = getRealJdStatus(item);
+              <tbody className="divide-y divide-[#E6ECF2]">
+                {paginatedList.length > 0 ? (
+                  paginatedList.map((item) => {
+                    const status = getRealJdStatus(item);
+                    const roleTitle =
+                      getRoleTitle(item) || "Untitled Job Description";
+                    const documentTitle =
+                      getDocumentTitle(item) || getJdCode(item) || "--";
 
                     return (
                       <tr
-                        key={item.id}
-                        className="transition hover:bg-[#F8FAFC]"
+                        key={getRecordId(item) || `${roleTitle}-${documentTitle}`}
+                        className="sibs-data-table-row"
                       >
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                          {item.roleTitle || "—"}
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-start gap-2">
+                            <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
+                            <div className="min-w-0">
+                              <p className="max-w-[340px] text-xs font-extrabold leading-5 text-[#042C51]">
+                                {roleTitle}
+                              </p>
+                              <p className="mt-0.5 max-w-[340px] truncate font-mono text-[10px] font-semibold text-[#98A2B3]">
+                                {documentTitle}
+                              </p>
+                            </div>
+                          </div>
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                          {item.jdCode || "—"}
+                        <td className="px-4 py-3.5">
+                          <p className="text-xs font-extrabold text-[#042C51]">
+                            {getDepartment(item) || "--"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-[#667085]">
+                            {getAccount(item) || "--"}
+                          </p>
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                          {item.department || "—"}
+                        <td className="px-4 py-3.5">
+                          <span className="inline-flex max-w-[280px] rounded-lg bg-[#F2F6FA] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-[#475467]">
+                            {getLinkedHiringNeed(item) || "--"}
+                          </span>
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
-                          <JdStatusBadge status={realStatus} />
+                        <td className="px-4 py-3.5 text-xs font-semibold text-[#475467]">
+                          {getSupervisoryLevel(item) || "--"}
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center text-[13px] font-semibold text-[#344054]">
-                          {getVersion(item)}
+                        <td className="px-4 py-3.5">
+                          <JdStatusBadge status={status} />
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-[13px] font-semibold text-[#344054]">
-                          {formatDate(getLastApproved(item))}
+                        <td className="px-4 py-3.5">
+                          <p className="text-xs font-extrabold text-[#042C51]">
+                            {getVersion(item) || "--"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
+                            {formatDate(getDateValue(item))}
+                          </p>
                         </td>
-
-                        <td className="border-b border-[#E6ECF2] px-5 py-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenFullPageView(item)}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6ECF2] bg-white px-4 py-2 text-xs font-bold text-sibs-primary-1 transition hover:cursor-pointer hover:border-sibs-primary-1 hover:bg-sibs-primary-1/5 hover:shadow-sm active:scale-[0.98]"
-                          >
-                            <Eye size={15} />
-                            Preview
-                          </button>
+                        <td className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenFullPageView(item)}
+                              className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#F2F6FA] px-2.5 text-[10px] font-extrabold text-[#042C51] transition hover:bg-[#042C51] hover:text-white"
+                            >
+                              <Eye size={13} />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRevision(item)}
+                              className="inline-flex h-8 items-center gap-1 rounded-lg bg-amber-50 px-2.5 text-[10px] font-extrabold text-amber-700 transition hover:bg-amber-600 hover:text-white"
+                            >
+                              <Edit3 size={13} />
+                              Revise
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td
-                      colSpan={7}
-                      className="border-b border-[#E6ECF2] px-5 py-12 text-center text-sm font-bold text-gray-500"
-                    >
-                      No job description records found.
+                    <td colSpan={7} className="px-5 py-14 text-center">
+                      <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+                      <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                        No Job Descriptions Found
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                        No records matched the active search, filters, and status tab.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleResetFilters}
+                        className="mt-4 rounded-[10px] bg-[#042C51] px-4 py-2 text-xs font-extrabold text-white"
+                      >
+                        Reset Search & Filters
+                      </button>
                     </td>
                   </tr>
                 )}
@@ -643,16 +793,21 @@ const JobDescriptionTable = ({ jobDescriptionList = [], onView }) => {
             </table>
           </div>
         </div>
-      </div>
 
-      <div className="shrink-0">
-        <TableFooter
-          tableEntity={JOB_DESCRIPTION_ENTITY}
-          totalLabel="Total Job Descriptions"
+        <PaginationTable
+          loading={false}
+          showSearch={false}
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          loadedCount={paginatedList.length}
+          totalRecords={filteredList.length}
+          recordLabel="job descriptions"
+          onPrevious={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+          onNext={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+          showCount
+          className="border-0 bg-transparent p-0 shadow-none"
         />
       </div>
-    </div>
+    </section>
   );
-};
-
-export default JobDescriptionTable;
+}

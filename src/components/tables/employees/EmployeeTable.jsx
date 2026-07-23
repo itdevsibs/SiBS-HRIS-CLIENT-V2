@@ -28,6 +28,15 @@ const columns = [
   "HR METADATA",
 ];
 
+const defaultDirectoryTabs = [
+  {
+    label: "Employees",
+    count: 0,
+    icon: UserRoundCheck,
+    description: "Employee master records",
+  },
+];
+
 const AVATAR_TONES = [
   "border-orange-100 bg-orange-50 text-[#FF5C28]",
   "border-emerald-100 bg-emerald-50 text-emerald-700",
@@ -476,7 +485,11 @@ function MobileEmployeeCard({ employee, onOpen }) {
   );
 }
 
-export default function EmployeeTable() {
+export default function EmployeeTable({
+  tabs = defaultDirectoryTabs,
+  activeTab = "Employees",
+  onTabChange,
+}) {
   const { user } = useUser();
   const navigate = useNavigate();
   const showEmployeeFilters = canViewEmployeeFilters(user);
@@ -747,7 +760,7 @@ export default function EmployeeTable() {
 
   return (
     <div className="flex h-full min-h-[520px] min-w-0 flex-col bg-white font-jakarta">
-      <div className="border-b border-[#F1F5F9] p-4 sm:p-5">
+      <div className="relative overflow-visible p-4 sm:p-5">
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -791,7 +804,46 @@ export default function EmployeeTable() {
         />
       </div>
 
-      <div className="min-h-0 flex-1 p-4 sm:p-5">
+      <div className="min-h-0 flex-1 px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
+        {tabs.length > 1 ? (
+          <div className="mb-0 overflow-hidden rounded-t-xl border border-b-0 border-[#E6ECF2] bg-white">
+            <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
+              {tabs.map((tab) => {
+                const TabIcon = tab.icon || UserRoundCheck;
+                const isActive = activeTab === tab.label;
+
+                return (
+                  <button
+                    key={tab.label}
+                    type="button"
+                    onClick={() => onTabChange?.(tab.label)}
+                    className={`inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-4 text-[10px] font-extrabold uppercase tracking-wide transition ${
+                      isActive
+                        ? "rounded-t-xl border-[#FF5C28] bg-white text-[#042C51]"
+                        : "border-transparent text-[#667085] hover:text-[#042C51]"
+                    }`}
+                  >
+                    <TabIcon size={15} className="shrink-0" />
+                    <span className="truncate">{tab.label}</span>
+
+                    {Number(tab.count || 0) > 0 ? (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-extrabold tabular-nums ${
+                          isActive
+                            ? "bg-[#042C51] text-white"
+                            : "bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
         <div ref={mobileScrollRef} className="lg:hidden">
           {loading ? (
             <EmptyState loading />
@@ -810,7 +862,11 @@ export default function EmployeeTable() {
           )}
         </div>
 
-        <div className="hidden overflow-hidden rounded-xl border border-[#E6ECF2] bg-white lg:block">
+        <div
+          className={`hidden overflow-hidden border border-[#E6ECF2] bg-white lg:block ${
+            tabs.length > 1 ? "rounded-b-xl border-t-0" : "rounded-xl"
+          }`}
+        >
           <div ref={tableScrollRef} className="max-h-[670px] overflow-auto">
             <table className="w-full min-w-[1180px] border-collapse text-left">
               <thead className="sticky top-0 z-10 bg-[#F8FAFC]">

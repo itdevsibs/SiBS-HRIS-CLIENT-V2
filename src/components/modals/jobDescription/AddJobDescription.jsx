@@ -1,16 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Plus, RotateCcw } from "lucide-react";
+import {
+  Award,
+  BriefcaseBusiness,
+  FileText,
+  Info,
+  RotateCcw,
+  Save,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 import { useUser } from "../../../services/context/UserContext";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
 import {
   createJobDescription,
   getApprovedJobDescriptions,
+  getJobDescriptionDropdowns,
 } from "../../../lib/axios/getJobDescription";
 import useAddJobDescriptionModal from "../../../hooks/jobDescription/useAddJobDescription";
-import AddJobDescriptionHeader from "./AddJobDescriptionHeader";
-import AddJobDescriptionInfoBanner from "./AddJobDescriptionInfoBanner";
 import HiringRequirementSection from "./HiringRequirementsSection";
 import DesiredCompetenciesTable from "../../tables/jobDescription/DesiredCompetenciesTable";
 import JobDescriptionContentSection from "./JobDescriptionContentSection";
@@ -367,6 +375,69 @@ function normalizeCompetencyItem(item = {}) {
   };
 }
 
+
+function CompactSection({
+  title,
+  subtitle,
+  meta,
+  metaNode,
+  icon,
+  contentClassName = "",
+  children,
+}) {
+  return (
+    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
+      <div className="mb-4 flex flex-col gap-2 border-b border-[#EEF2F6] pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {React.createElement(icon, {
+            size: 17,
+            className: "mt-0.5 shrink-0 text-[#FF5C28]",
+            "aria-hidden": "true",
+          })}
+          <div className="min-w-0">
+            <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51] sm:text-xs">
+              {title}
+            </h3>
+            {subtitle ? (
+              <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085]">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {metaNode || meta ? (
+          <div className="shrink-0 text-[10px] font-extrabold text-[#98A2B3]">
+            {metaNode || meta}
+          </div>
+        ) : null}
+      </div>
+
+      <div className={contentClassName}>{children}</div>
+    </section>
+  );
+}
+
+function JobDescriptionStatusPill({ status }) {
+  const cleanStatus = String(status || "New Job Description");
+  const normalized = cleanStatus.toLowerCase();
+  const statusClass = normalized.includes("approval")
+    ? "border-[#FFB088] bg-[#FFF3ED] text-[#FF5C28]"
+    : normalized.includes("approved")
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : normalized.includes("revision")
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-blue-200 bg-blue-50 text-blue-700";
+
+  return (
+    <span
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3 py-1 text-[10px] font-extrabold ${statusClass}`}
+    >
+      {cleanStatus}
+    </span>
+  );
+}
+
 export default function AddJobDescription({
   open,
   onClose,
@@ -378,10 +449,18 @@ export default function AddJobDescription({
   const {
     form,
     setForm,
+    accounts,
+    departments,
+    setAccounts,
+    setDepartments,
+    setRequestedByUsers,
+    setDropdownLoading,
+    setDropdownError,
     competencies,
     setCompetencies,
     resetJobDescriptionForm,
     handleRequirementChange: resetRequirementFromProvider,
+    selectedJdStatus,
   } = useJobDescription();
 
   const [approvedJdOptions, setApprovedJdOptions] = useState([
@@ -466,6 +545,64 @@ export default function AddJobDescription({
       cancelled = true;
     };
   }, [open]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadGlobalDropdowns() {
+      if (!open) return;
+      if ((accounts || []).length > 0 && (departments || []).length > 0) {
+        return;
+      }
+
+      setDropdownLoading(true);
+      setDropdownError("");
+
+      try {
+        const result = await getJobDescriptionDropdowns();
+
+        if (cancelled) return;
+
+        if (result?.success) {
+          setAccounts(result.accounts || []);
+          setDepartments(result.departments || []);
+          setRequestedByUsers(result.requestedByUsers || []);
+          return;
+        }
+
+        setAccounts([]);
+        setDepartments([]);
+        setRequestedByUsers([]);
+        setDropdownError(result?.message || "Failed to load dropdowns.");
+      } catch (error) {
+        if (cancelled) return;
+
+        setAccounts([]);
+        setDepartments([]);
+        setRequestedByUsers([]);
+        setDropdownError(error?.message || "Failed to load dropdowns.");
+      } finally {
+        if (!cancelled) {
+          setDropdownLoading(false);
+        }
+      }
+    }
+
+    loadGlobalDropdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    accounts,
+    departments,
+    setAccounts,
+    setDepartments,
+    setRequestedByUsers,
+    setDropdownLoading,
+    setDropdownError,
+  ]);
 
   function handleApprovedJdChange(value) {
     const cleanValue = normalizeDatabaseJdId(value);
@@ -695,72 +832,276 @@ export default function AddJobDescription({
     onClose?.();
   }
 
+  const linkedExistingJdId = normalizeDatabaseJdId(
+    form.existingJdId ||
+      form.existing_jd_id ||
+      form.linkedHiringRequirement,
+  );
+
+  const isExistingTemplateMode = Boolean(linkedExistingJdId);
+
   if (!open) return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 px-4 py-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4"
       onClick={handleClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-job-description-modal-title"
-        className="relative flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-sibs-tertiary-9 bg-white shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
+        aria-describedby="add-job-description-modal-description"
+        className="sibs-modal-pop-in relative flex max-h-[92dvh] w-full max-w-[980px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
+        onClick={(event) => event.stopPropagation()}
       >
-        <AddJobDescriptionHeader onClose={handleClose} />
+        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText size={20} />
+              </span>
 
-        <form
-          onSubmit={handleCreateJobDescription}
-          className="flex min-h-0 flex-1 flex-col"
-        >
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-8 sm:p-6 sm:pb-8">
-            <AddJobDescriptionInfoBanner />
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2
+                    id="add-job-description-modal-title"
+                    className="text-base font-extrabold text-white"
+                  >
+                    Add Job Description
+                  </h2>
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                    Specification
+                  </span>
+                </div>
 
-            <HiringRequirementSection
-              refs={refs}
-              dropdownState={dropdownState}
-              searchState={searchState}
-              approvedJdOptions={approvedJdOptions}
-              approvedJdLoading={approvedJdLoading}
-              handleLinkedRequirementChange={handleApprovedJdChange}
-            />
+                <p
+                  id="add-job-description-modal-description"
+                  className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100"
+                >
+                  Create or update job description specifications for hiring
+                  requirements.
+                </p>
+              </div>
+            </div>
 
-            <JobDescriptionContentSection />
-
-            <DesiredCompetenciesTable
-              competencies={competencies}
-              setCompetencies={setCompetencies}
-            />
-          </div>
-
-          <div className="shrink-0 border-t border-sibs-tertiary-9 bg-white px-5 py-4 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <div className="flex shrink-0 items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={handleResetForm}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-sibs-tertiary-8 bg-white px-5 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 active:scale-[0.98]"
               >
-                <RotateCcw size={17} />
+                <RotateCcw size={14} />
                 Reset
+              </button>
+
+              <button
+                type="submit"
+                form="add-job-description-form"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md active:scale-[0.98]"
+              >
+                <Save size={14} />
+                Save Job Description
               </button>
 
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-sibs-tertiary-8 bg-white px-5 text-sm font-semibold text-sibs-tertiary-5 transition hover:bg-sibs-tertiary-10"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white active:scale-[0.96]"
+                aria-label="Close Add Job Description modal"
+                title="Close"
               >
-                Cancel
+                <X size={18} />
               </button>
+            </div>
+          </div>
+        </header>
 
-              <button
-                type="submit"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-semibold text-white transition hover:opacity-90"
+        <form
+          id="add-job-description-form"
+          onSubmit={handleCreateJobDescription}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-5">
+            <div className="space-y-4">
+              <style>{`
+                /*
+                 * Sections 2 and 3 inherit the compact input language used by
+                 * Section 1 without replacing their existing components or
+                 * state handlers.
+                 */
+                .jd-compact-input-theme label {
+                  display: block;
+                  margin-bottom: 0.375rem;
+                  color: #042c51;
+                  font-size: 0.75rem;
+                  font-weight: 800;
+                  line-height: 1rem;
+                }
+
+                .jd-compact-input-theme input:not([type="checkbox"]):not([type="radio"]),
+                .jd-compact-input-theme textarea,
+                .jd-compact-input-theme select {
+                  width: 100%;
+                  min-height: 2.5rem;
+                  border: 1px solid #d7dee8;
+                  border-radius: 10px;
+                  background: #f8fafc;
+                  padding: 0.625rem 0.75rem;
+                  color: #042c51;
+                  font-size: 0.75rem;
+                  font-weight: 600;
+                  line-height: 1.25rem;
+                  outline: none;
+                  transition:
+                    border-color 160ms ease,
+                    background-color 160ms ease,
+                    box-shadow 160ms ease;
+                }
+
+                .jd-compact-input-theme input::placeholder,
+                .jd-compact-input-theme textarea::placeholder {
+                  color: #98a2b3;
+                }
+
+                .jd-compact-input-theme input:not([type="checkbox"]):not([type="radio"]):hover,
+                .jd-compact-input-theme textarea:hover,
+                .jd-compact-input-theme select:hover {
+                  border-color: rgba(255, 92, 40, 0.4);
+                  background: #ffffff;
+                }
+
+                .jd-compact-input-theme input:not([type="checkbox"]):not([type="radio"]):focus,
+                .jd-compact-input-theme textarea:focus,
+                .jd-compact-input-theme select:focus {
+                  border-color: #ff5c28;
+                  background: #ffffff;
+                  box-shadow: 0 0 0 4px rgba(255, 92, 40, 0.1);
+                }
+
+                .jd-compact-input-theme button[aria-haspopup="listbox"],
+                .jd-compact-input-theme button[aria-expanded] {
+                  min-height: 2.5rem;
+                  border-color: #d7dee8;
+                  border-radius: 10px;
+                  background: #f8fafc;
+                  color: #042c51;
+                  font-size: 0.75rem;
+                  font-weight: 600;
+                }
+
+                .jd-compact-input-theme button[aria-haspopup="listbox"]:hover,
+                .jd-compact-input-theme button[aria-expanded]:hover {
+                  border-color: rgba(255, 92, 40, 0.4);
+                  background: #ffffff;
+                }
+
+                .jd-compact-input-theme table {
+                  border-color: #d7dee8;
+                }
+
+                .jd-compact-input-theme thead {
+                  background: #f8fafc;
+                }
+
+                .jd-compact-input-theme th {
+                  color: #042c51;
+                  font-size: 0.625rem;
+                  font-weight: 800;
+                  letter-spacing: 0.04em;
+                  text-transform: uppercase;
+                }
+
+                .jd-compact-input-theme td {
+                  border-color: #e6ecf2;
+                }
+              `}</style>
+
+              <section className="rounded-xl border border-blue-200 bg-[#EEF5FF] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
+                      <Info size={16} />
+                    </span>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-xs font-extrabold text-[#042C51]">
+                          Contextual Specification Guide
+                        </h3>
+                        <span className="rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-indigo-700">
+                          {isExistingTemplateMode
+                            ? "Existing Template Mode"
+                            : "New Spec Mode"}
+                        </span>
+                      </div>
+
+                      <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085]">
+                        {isExistingTemplateMode
+                          ? "You are linking this record to an approved job description template. Review the inherited details and complete the remaining specification inputs."
+                          : "You are creating a new Job Description specification. Define competency standards, supervisory level, and core responsibilities for the recruitment intake."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded bg-[#07365F] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                    <Sparkles size={12} className="text-[#FF5C28]" />
+                    {isExistingTemplateMode
+                      ? "Linked Job Description"
+                      : "New Job Description"}
+                  </span>
+                </div>
+              </section>
+
+              <CompactSection
+                title="Section 1: Hiring Requirement & Template Link"
+                subtitle="Select an approved template or create a new record, then complete all existing ownership and position fields."
+                metaNode={
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase text-sibs-primary-1/70">
+                      Status
+                    </span>
+                    <JobDescriptionStatusPill
+                      status={selectedJdStatus || form.jdStatus}
+                    />
+                  </div>
+                }
+                icon={BriefcaseBusiness}
               >
-                <Plus size={17} />
-                Save Job Description
-              </button>
+                <HiringRequirementSection
+                  refs={refs}
+                  dropdownState={dropdownState}
+                  searchState={searchState}
+                  approvedJdOptions={approvedJdOptions}
+                  approvedJdLoading={approvedJdLoading}
+                  handleLinkedRequirementChange={handleApprovedJdChange}
+                />
+              </CompactSection>
+
+              
+
+              <CompactSection
+                title="Section 2: Job Description Content"
+                subtitle="Retains all original reporting, personality, description, responsibilities, qualifications, and remarks inputs."
+                meta="Role Specification"
+                icon={FileText}
+                contentClassName="jd-compact-input-theme"
+              >
+                <JobDescriptionContentSection />
+              </CompactSection>
+
+              <CompactSection
+                title="Section 3: Desired Competencies & Capability Matrix"
+                subtitle="Retains the original competency rows, descriptions, proficiency selections, and row actions."
+                meta="Capability Standards"
+                icon={Award}
+                contentClassName="jd-compact-input-theme"
+              >
+                <DesiredCompetenciesTable
+                  competencies={competencies}
+                  setCompetencies={setCompetencies}
+                />
+              </CompactSection>
             </div>
           </div>
         </form>

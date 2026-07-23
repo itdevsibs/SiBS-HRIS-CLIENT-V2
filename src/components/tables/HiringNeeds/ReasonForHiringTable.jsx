@@ -1,64 +1,143 @@
-import React from "react";
+import React, { useMemo } from "react";
 
-function DonutChart({ data = [] }) {
-   const total = data.reduce((sum, item) => sum + Number(item.value || 0), 0);
-   let current = 0;
-
-   const gradient = total > 0
-       ? data.map((item) => {
-             const start = current;
-             const size = (Number(item.value || 0) / total) * 100;
-             current += size;
-             return `${item.color} ${start}% ${current}%`;
-           }).join(", ")
-       : "#E6ECF2 0% 100%";
-
-   return (
-     // Changed: Better gap and alignment for responsive stacking
-     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center lg:flex-col xl:flex-row xl:items-center">
-       <div
-         className="relative h-28 w-28 shrink-0 rounded-full lg:h-32 lg:w-32"
-         style={{ background: `conic-gradient(${gradient})` }}
-       >
-         <div className="absolute inset-6 rounded-full bg-white lg:inset-7" />
-       </div>
-
-       <div className="w-full space-y-2.5">
-         {data.length > 0 ? (
-           data.map((item) => {
-             const percent = total > 0 ? Math.round((Number(item.value || 0) / total) * 100) : 0;
-             return (
-               <div key={item.label} className="flex items-start justify-between gap-3 text-sm">
-                 <div className="flex min-w-0 items-start gap-2">
-                   <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
-                   {/* Changed: Removed truncate, added leading-tight for long names */}
-                   <span className="font-semibold leading-tight text-[#344054]">
-                     {item.label}
-                   </span>
-                 </div>
-                 <span className="shrink-0 font-bold text-[#101828]">
-                   {item.value} <span className="text-[10px] text-gray-400">({percent}%)</span>
-                 </span>
-               </div>
-             );
-           })
-         ) : (
-           <p className="text-center text-sm font-bold text-gray-500 italic">No data available.</p>
-         )}
-       </div>
-     </div>
-   );
+function cleanText(value) {
+  return String(value ?? "").trim();
 }
 
-export default function ReasonForHiringTable({ data = [] , delay = 0}) {
-  return (
-    <section className="sibs-page-card-in rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5" style={{animationDelay: `${delay}ms`}}>
-      <h2 className="text-base font-bold text-[#101828]">
-        Requisition by Reason for Hiring
-      </h2>
+function getNumericValue(item = {}) {
+  const value =
+    item.value ??
+    item.count ??
+    item.headcount ??
+    item.total ??
+    item.totalHeadcount ??
+    item.total_headcount ??
+    0;
 
-      <div className="mt-5">
-        <DonutChart data={data} />
+  const numericValue = Number(value);
+
+  return Number.isFinite(numericValue) ? numericValue : 0;
+}
+
+function normalizeReasonRows(data) {
+  if (Array.isArray(data)) {
+    return data
+      .map((item, index) => {
+        if (typeof item === "string") {
+          return {
+            id: `${item}-${index}`,
+            label: item,
+            value: 0,
+          };
+        }
+
+        const label =
+          cleanText(
+            item.label ||
+              item.reason ||
+              item.name ||
+              item.reasonForHiring ||
+              item.reason_for_hiring,
+          ) || `Reason ${index + 1}`;
+
+        return {
+          id: item.id || `${label}-${index}`,
+          label,
+          value: getNumericValue(item),
+        };
+      })
+      .filter((item) => item.label);
+  }
+
+  if (data && typeof data === "object") {
+    return Object.entries(data).map(([label, value], index) => ({
+      id: `${label}-${index}`,
+      label,
+      value: Number.isFinite(Number(value)) ? Number(value) : 0,
+    }));
+  }
+
+  return [];
+}
+
+export default function ReasonForHiringTable({
+  data = [],
+  delay = 0,
+}) {
+  const rows = useMemo(() => normalizeReasonRows(data), [data]);
+
+  const maximumValue = useMemo(() => {
+    return Math.max(
+      ...rows.map((item) => Number(item.value || 0)),
+      1,
+    );
+  }, [rows]);
+
+  return (
+    <section
+      className="sibs-page-card-in sibs-card flex min-h-full flex-col rounded-2xl border border-[#E6ECF2] bg-white p-4 font-jakarta shadow-sm"
+      style={{
+        animationDelay: `${delay}ms`,
+      }}
+    >
+      <div>
+        <h2 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          Headcount Requested by Reason
+        </h2>
+
+        <p className="mt-1 text-xs font-semibold text-[#667085]">
+          Accumulated target slots needed
+        </p>
+      </div>
+
+      <div className="mt-4 flex-1 space-y-3">
+        {rows.length > 0 ? (
+          rows.map((item) => {
+            const percentage =
+              item.value > 0
+                ? Math.max(
+                    5,
+                    Math.min(
+                      (item.value / maximumValue) * 100,
+                      100,
+                    ),
+                  )
+                : 0;
+
+            return (
+              <div key={item.id}>
+                <div className="mb-1.5 flex items-center justify-between gap-4">
+                  <p
+                    className="min-w-0 truncate text-xs font-extrabold text-[#344054]"
+                    title={item.label}
+                  >
+                    {item.label}
+                  </p>
+
+                  <p className="shrink-0 text-xs font-extrabold tabular-nums text-[#042C51]">
+                    {item.value.toLocaleString("en-PH")}{" "}
+                    {item.value === 1 ? "slot" : "slots"}
+                  </p>
+                </div>
+
+                <div className="h-2 overflow-hidden rounded-full bg-[#EEF2F6]">
+                  <div
+                    className="h-full rounded-full bg-[#FF5C28] transition-[width] duration-500 ease-out"
+                    style={{
+                      width: `${percentage}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="flex min-h-36 items-center justify-center rounded-[10px] border border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-4 text-center">
+            <p className="text-xs font-semibold text-[#98A2B3]">
+              No hiring-reason data available.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -7,15 +7,23 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  BriefcaseBusiness,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock,
   FileText,
+  Info,
   Plus,
+  RotateCcw,
+  Save,
   Search,
+  ShieldCheck,
+  SlidersHorizontal,
   Upload,
+  UploadCloud,
+  Users,
   X,
 } from "lucide-react";
 
@@ -32,7 +40,7 @@ const VALID_LOCATION_SITES = ["Davao Site", "Tagum Site", "Mabini Site"];
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
       {children}
       {required && <span className="text-red-500"> *</span>}
     </label>
@@ -43,7 +51,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      className={`h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
     />
   );
 }
@@ -52,8 +60,40 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-32 w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:border-[#D0D5DD] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
+      className={`min-h-28 w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${className}`}
     />
+  );
+}
+
+
+function FormSection({
+  title,
+  subtitle,
+  icon: SectionIcon,
+  children,
+}) {
+  return (
+    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
+      <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
+        {React.createElement(SectionIcon, {
+          size: 17,
+          className: "mt-0.5 shrink-0 text-[#FF5C28]",
+          "aria-hidden": "true",
+        })}
+
+        <div className="min-w-0">
+          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+            {title}
+          </h3>
+
+          <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      {children}
+    </section>
   );
 }
 
@@ -153,13 +193,13 @@ function normalizeStatusValue(value, fallback = "") {
 function getWeeklyRecruitmentSettingsStatus(record = {}) {
   return normalizeStatusValue(
     record.recruitmentSettingsStatus ||
-      record.recruitment_settings_status ||
-      record.recruitmentStatus ||
-      record.recruitment_status ||
-      record.baseHeadcountStatus ||
-      record.base_headcount_status ||
-      record.status ||
-      "Kronos",
+    record.recruitment_settings_status ||
+    record.recruitmentStatus ||
+    record.recruitment_status ||
+    record.baseHeadcountStatus ||
+    record.base_headcount_status ||
+    record.status ||
+    "Kronos",
     "Kronos",
   );
 }
@@ -210,10 +250,10 @@ function getWeeklyTableRequiredHeadcount(record = {}) {
 function getWeeklyAccountName(record = {}) {
   return cleanText(
     record.account ||
-      record.accountName ||
-      record.account_name ||
-      record.gy_acc_name ||
-      "",
+    record.accountName ||
+    record.account_name ||
+    record.gy_acc_name ||
+    "",
   );
 }
 
@@ -289,22 +329,22 @@ function getWeeklyWeekDisplayLabel(row = {}, weekStart = "", weekEnd = "") {
 function normalizeWeeklyWeek(row = {}, index = 0) {
   const weekStart = normalizeWeekDate(
     row.startDate ||
-      row.start_date ||
-      row.weekStart ||
-      row.week_start ||
-      row.fromDate ||
-      row.from_date ||
-      "",
+    row.start_date ||
+    row.weekStart ||
+    row.week_start ||
+    row.fromDate ||
+    row.from_date ||
+    "",
   );
 
   const weekEnd = normalizeWeekDate(
     row.endDate ||
-      row.end_date ||
-      row.weekEnd ||
-      row.week_end ||
-      row.toDate ||
-      row.to_date ||
-      "",
+    row.end_date ||
+    row.weekEnd ||
+    row.week_end ||
+    row.toDate ||
+    row.to_date ||
+    "",
   );
 
   const weekKey = getWeeklyWeekKey(weekStart, weekEnd);
@@ -328,11 +368,11 @@ function normalizeWeeklyWeek(row = {}, index = 0) {
     locked: Boolean(row.locked),
     lockedByDatabase: Boolean(
       row.lockedByDatabase ||
-        row.locked_by_database ||
-        row.isHiringPlanLocked ||
-        row.is_hiring_plan_locked ||
-        row.hasSavedSnapshot ||
-        row.has_saved_snapshot,
+      row.locked_by_database ||
+      row.isHiringPlanLocked ||
+      row.is_hiring_plan_locked ||
+      row.hasSavedSnapshot ||
+      row.has_saved_snapshot,
     ),
   };
 }
@@ -340,20 +380,20 @@ function normalizeWeeklyWeek(row = {}, index = 0) {
 function normalizeWeeklyAccount(row = {}, index = 0, selectedWeek = {}) {
   const accountId = cleanText(
     row.backendAccountId ||
-      row.backend_account_id ||
-      row.accountId ||
-      row.account_id ||
-      row.gy_acc_id ||
-      "",
+    row.backend_account_id ||
+    row.accountId ||
+    row.account_id ||
+    row.gy_acc_id ||
+    "",
   );
 
   const weeklyHiringPlanHeadcountId = cleanText(
     row.weeklyHiringPlanHeadcountId ||
-      row.weekly_hiring_plan_headcount_id ||
-      row.headcountId ||
-      row.headcount_id ||
-      row.id ||
-      "",
+    row.weekly_hiring_plan_headcount_id ||
+    row.headcountId ||
+    row.headcount_id ||
+    row.id ||
+    "",
   );
 
   const accountName = getWeeklyAccountName(row);
@@ -369,22 +409,22 @@ function normalizeWeeklyAccount(row = {}, index = 0, selectedWeek = {}) {
 
   const weekStart = normalizeWeekDate(
     row.weekStart ||
-      row.week_start ||
-      row.startDate ||
-      row.start_date ||
-      selectedWeek.weekStart ||
-      selectedWeek.startDate ||
-      "",
+    row.week_start ||
+    row.startDate ||
+    row.start_date ||
+    selectedWeek.weekStart ||
+    selectedWeek.startDate ||
+    "",
   );
 
   const weekEnd = normalizeWeekDate(
     row.weekEnd ||
-      row.week_end ||
-      row.endDate ||
-      row.end_date ||
-      selectedWeek.weekEnd ||
-      selectedWeek.endDate ||
-      "",
+    row.week_end ||
+    row.endDate ||
+    row.end_date ||
+    selectedWeek.weekEnd ||
+    selectedWeek.endDate ||
+    "",
   );
 
   const weekKey = getWeeklyWeekKey(weekStart, weekEnd);
@@ -437,138 +477,137 @@ function normalizeWeeklyAccount(row = {}, index = 0, selectedWeek = {}) {
 function getPositionRequiredHeadcount(row = {}) {
   return normalizeHeadcountValue(
     row.previousRequiredHeadcount ||
-      row.previous_required_headcount ||
-      row.requiredHeadcount ||
-      row.required_headcount ||
-      row.approvedRequirement ||
-      row.approved_requirement ||
-      row.headcount ||
-      row.requiredCount ||
-      row.required_count ||
-      row.currentHeadcount ||
-      row.current_headcount ||
-      row.totalHeadcount ||
-      row.total_headcount ||
-      0,
+    row.previous_required_headcount ||
+    row.requiredHeadcount ||
+    row.required_headcount ||
+    row.approvedRequirement ||
+    row.approved_requirement ||
+    row.headcount ||
+    row.requiredCount ||
+    row.required_count ||
+    row.currentHeadcount ||
+    row.current_headcount ||
+    row.totalHeadcount ||
+    row.total_headcount ||
+    0,
   );
 }
 
 function getJobDescriptionDbId(row = {}) {
   return normalizeDbId(
     row.jobDescriptionDbId ||
-      row.job_description_db_id ||
-      row.jobDescriptionId ||
-      row.job_description_id ||
-      row.jdId ||
-      row.jd_id ||
-      row.jdDbId ||
-      row.jd_db_id ||
-      row.jdID ||
-      row.job_description?.id ||
-      row.jobDescription?.id ||
-      "",
+    row.job_description_db_id ||
+    row.jobDescriptionId ||
+    row.job_description_id ||
+    row.jdId ||
+    row.jd_id ||
+    row.jdDbId ||
+    row.jd_db_id ||
+    row.jdID ||
+    row.job_description?.id ||
+    row.jobDescription?.id ||
+    "",
   );
 }
 
 function getJobDescriptionCode(row = {}) {
   return cleanText(
     row.jobDescriptionCode ||
-      row.job_description_code ||
-      row.jdCode ||
-      row.jd_code ||
-      row.job_description?.jdCode ||
-      row.job_description?.jd_code ||
-      row.jobDescription?.jdCode ||
-      row.jobDescription?.jd_code ||
-      row.code ||
-      row.positionCode ||
-      row.position_code ||
-      row.positionId ||
-      row.position_id ||
-      "",
+    row.job_description_code ||
+    row.jdCode ||
+    row.jd_code ||
+    row.job_description?.jdCode ||
+    row.job_description?.jd_code ||
+    row.jobDescription?.jdCode ||
+    row.jobDescription?.jd_code ||
+    row.code ||
+    row.positionCode ||
+    row.position_code ||
+    row.positionId ||
+    row.position_id ||
+    "",
   );
 }
 
 function getJobDescriptionTitle(row = {}) {
   return cleanText(
     row.jobDescriptionTitle ||
-      row.job_description_title ||
-      row.jdRoleTitle ||
-      row.jd_role_title ||
-      row.jdTitle ||
-      row.jd_title ||
-      row.job_description?.roleTitle ||
-      row.job_description?.document_title ||
-      row.jobDescription?.roleTitle ||
-      row.jobDescription?.document_title ||
-      row.positionTitle ||
-      row.position_title ||
-      row.title ||
-      row.name ||
-      "",
+    row.job_description_title ||
+    row.jdRoleTitle ||
+    row.jd_role_title ||
+    row.jdTitle ||
+    row.jd_title ||
+    row.job_description?.roleTitle ||
+    row.job_description?.document_title ||
+    row.jobDescription?.roleTitle ||
+    row.jobDescription?.document_title ||
+    row.positionTitle ||
+    row.position_title ||
+    row.title ||
+    row.name ||
+    "",
   );
 }
 
 function getUserSibsId(user = {}) {
   return cleanText(
     user.sibsId ||
-      user.sibs_id ||
-      user.userCode ||
-      user.user_code ||
-      user.employeeId ||
-      user.employee_id ||
-      user.empCode ||
-      user.emp_code ||
-      user.gyEmpCode ||
-      user.gy_emp_code ||
-      user.sibs_id_creator ||
-      user.username ||
-      "",
+    user.sibs_id ||
+    user.userCode ||
+    user.user_code ||
+    user.employeeId ||
+    user.employee_id ||
+    user.empCode ||
+    user.emp_code ||
+    user.gyEmpCode ||
+    user.gy_emp_code ||
+    user.sibs_id_creator ||
+    user.username ||
+    "",
   );
 }
 
 function getUserDisplayName(user = {}) {
   const lastName = cleanText(
     user.lastName ||
-      user.last_name ||
-      user.lastname ||
-      user.surname ||
-      "",
+    user.last_name ||
+    user.lastname ||
+    user.surname ||
+    "",
   );
 
   const firstName = cleanText(
     user.firstName ||
-      user.first_name ||
-      user.firstname ||
-      user.givenName ||
-      user.given_name ||
-      "",
+    user.first_name ||
+    user.firstname ||
+    user.givenName ||
+    user.given_name ||
+    "",
   );
 
   const middleName = cleanText(
     user.middleName ||
-      user.middle_name ||
-      user.middlename ||
-      user.middleInitial ||
-      user.middle_initial ||
-      "",
+    user.middle_name ||
+    user.middlename ||
+    user.middleInitial ||
+    user.middle_initial ||
+    "",
   );
 
   if (lastName || firstName || middleName) {
     return upperText(
-      `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
-        middleName ? ` ${middleName}` : ""
+      `${lastName}${lastName && firstName ? ", " : ""}${firstName}${middleName ? ` ${middleName}` : ""
       }`,
     );
   }
 
   const fullName = stripLeadingSibsId(
     user.fullName ||
-      user.full_name ||
-      user.employeeName ||
-      user.employee_name ||
-      user.name ||
-      "",
+    user.full_name ||
+    user.employeeName ||
+    user.employee_name ||
+    user.name ||
+    "",
   );
 
   if (fullName.includes(",")) {
@@ -583,8 +622,7 @@ function getUserDisplayName(user = {}) {
     const fallbackMiddleName = nameParts.slice(1, -1).join(" ");
 
     return upperText(
-      `${fallbackLastName}, ${fallbackFirstName}${
-        fallbackMiddleName ? ` ${fallbackMiddleName}` : ""
+      `${fallbackLastName}, ${fallbackFirstName}${fallbackMiddleName ? ` ${fallbackMiddleName}` : ""
       }`,
     );
   }
@@ -951,13 +989,12 @@ function CustomSelect({
       <div ref={anchorRef} className="relative">
         <div
           onClick={handleOpen}
-          className={`flex h-12 w-full items-center gap-2 rounded-xl border px-4 transition-all duration-200 ${
-            disabled
+          className={`flex h-10 w-full items-center gap-2 rounded-[10px] border px-3 transition-all duration-200 ${disabled
               ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
               : open
-                ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-                : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
-          }`}
+                ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
+                : "border-[#D0D5DD] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white"
+            }`}
         >
           <Search size={17} className="shrink-0 text-sibs-tertiary-5" />
 
@@ -993,9 +1030,8 @@ function CustomSelect({
 
           <ChevronDown
             size={18}
-            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-              open ? "rotate-180" : ""
-            }`}
+            className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+              }`}
           />
         </div>
 
@@ -1026,11 +1062,10 @@ function CustomSelect({
                     onChange(currentValue, option);
                     handleClose();
                   }}
-                  className={`block w-full px-4 py-3 text-left text-sm transition ${
-                    selected
+                  className={`block w-full px-4 py-3 text-left text-sm transition ${selected
                       ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                       : "text-[#344054] hover:bg-[#F8FAFC]"
-                  }`}
+                    }`}
                 >
                   <span className="block truncate">{currentLabel}</span>
 
@@ -1059,27 +1094,24 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 ${
-          disabled
+        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-sm font-bold outline-none transition-all duration-200 ${disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
-              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        }`}
+              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+          }`}
       >
         <span
-          className={`truncate ${
-            selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
-          }`}
+          className={`truncate ${selectedOption ? "text-[#344054]" : "text-sibs-tertiary-5"
+            }`}
         >
           {selectedLabel || placeholder}
         </span>
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            }`}
         />
       </button>
 
@@ -1108,13 +1140,12 @@ function CustomSelect({
                   onChange(currentValue, option);
                   setOpen(false);
                 }}
-                className={`block w-full px-4 py-3 text-left text-sm transition ${
-                  option.disabled
+                className={`block w-full px-4 py-3 text-left text-sm transition ${option.disabled
                     ? "cursor-not-allowed text-sibs-tertiary-5"
                     : selected
                       ? "bg-[#EAF2FB] font-bold text-sibs-primary-1"
                       : "text-[#344054] hover:bg-[#F8FAFC]"
-                }`}
+                  }`}
               >
                 <span className="block truncate">{currentLabel}</span>
 
@@ -1164,6 +1195,8 @@ function DateDropdown({
 
   useEffect(() => {
     if (selectedDate) {
+      // Keep the calendar viewport aligned when an existing value is edited.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setViewDate(selectedDate);
     }
   }, [selectedDate]);
@@ -1218,21 +1251,19 @@ function DateDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition-all duration-200 ${
-          disabled
+        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-sm font-bold outline-none transition-all duration-200 ${disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
-              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-              : "border-[#E6ECF2] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-        }`}
+              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
+              : "border-[#E6ECF2] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
+          }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <CalendarDays size={17} className="shrink-0 text-sibs-tertiary-5" />
 
           <span
-            className={`truncate ${
-              value ? "text-[#344054]" : "text-sibs-tertiary-5"
-            }`}
+            className={`truncate ${value ? "text-[#344054]" : "text-sibs-tertiary-5"
+              }`}
           >
             {displayValue}
           </span>
@@ -1240,26 +1271,23 @@ function DateDropdown({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`shrink-0 text-sibs-tertiary-5 transition-transform duration-300 ${open ? "rotate-180" : ""
+            }`}
         />
       </button>
 
       <div
-        className={`grid transition-all duration-300 ease-out ${
-          open && !disabled
+        className={`grid transition-all duration-300 ease-out ${open && !disabled
             ? "mt-2 grid-rows-[1fr] opacity-100"
             : "grid-rows-[0fr] opacity-0"
-        }`}
+          }`}
       >
         <div className="min-h-0 overflow-hidden">
           <div
-            className={`rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-xl transition-all duration-300 ease-out ${
-              open && !disabled
+            className={`rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-xl transition-all duration-300 ease-out ${open && !disabled
                 ? "translate-y-0 scale-100"
                 : "-translate-y-2 scale-[0.98]"
-            }`}
+              }`}
           >
             <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
               <button
@@ -1303,15 +1331,14 @@ function DateDropdown({
                     key={toDateInputValue(date)}
                     type="button"
                     onClick={() => handleSelectDate(date)}
-                    className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${
-                      active
+                    className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${active
                         ? "bg-sibs-primary-1 text-white shadow-sm"
                         : isToday
                           ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
                           : currentMonth
                             ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
                             : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {date.getDate()}
                   </button>
@@ -1545,7 +1572,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       weeklyWeekStart: firstWeek.weekStart || "",
       weeklyWeekEnd: firstWeek.weekEnd || "",
     }));
-   }, [open, form.requestType, form.weeklyWeekKey, weeklyWeeks]);
+  }, [open, form.requestType, form.weeklyWeekKey, weeklyWeeks]);
 
   useEffect(() => {
     let isActive = true;
@@ -1609,7 +1636,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     return () => {
       isActive = false;
     };
-    }, [
+  }, [
     open,
     form.requestType,
     form.weeklyWeekKey,
@@ -2072,9 +2099,8 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
     },
     ...openPositions.map((item) => ({
       value: item.id,
-      label: `${item.positionTitle}${
-        item.positionId ? ` (${item.positionId})` : ""
-      }`,
+      label: `${item.positionTitle}${item.positionId ? ` (${item.positionId})` : ""
+        }`,
       description:
         item.departmentAccount ||
         item.locationSite ||
@@ -2119,15 +2145,13 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       return {
         ...account,
         label: account.accountName || account.accountId,
-        description: `${account.cluster || "Weekly Hiring"} • ${
-          account.weekDateRange ||
+        description: `${account.cluster || "Weekly Hiring"} • ${account.weekDateRange ||
           account.dateRange ||
           getWeeklyWeekDateRange(account.weekStart, account.weekEnd) ||
           form.weeklyWeekDateRange ||
           "Selected Week"
-        } • Required Headcount: ${formatNumber(account.previousRequiredHeadcount)}${
-          status ? ` • ${status}` : ""
-        }`,
+          } • Required Headcount: ${formatNumber(account.previousRequiredHeadcount)}${status ? ` • ${status}` : ""
+          }`,
       };
     }),
   ];
@@ -2172,509 +2196,410 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
       label: "Mabini Site",
     },
     ...(currentLocationSite &&
-    !VALID_LOCATION_SITES.includes(currentLocationSite)
+      !VALID_LOCATION_SITES.includes(currentLocationSite)
       ? [
-          {
-            value: currentLocationSite,
-            label: currentLocationSite,
-          },
-        ]
+        {
+          value: currentLocationSite,
+          label: currentLocationSite,
+        },
+      ]
       : []),
   ];
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
-      onClick={onClose}
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4"
+      onClick={() => {
+        if (!isSubmitting) onClose?.();
+      }}
     >
       <form
+        id="add-hiring-needs-form"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-hiring-needs-title"
         onSubmit={handleSubmit}
-        onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
       >
-        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <FileText size={14} />
-                New Personnel Request
+        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
+                <FileText size={20} />
+              </span>
+
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2
+                    id="add-hiring-needs-title"
+                    className="text-base font-extrabold text-white"
+                  >
+                    New Personnel Requisition
+                  </h2>
+
+                  <span className="inline-flex rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                    {form.requestType === "downsize"
+                      ? "Downsize"
+                      : form.requestType === "requisition"
+                        ? "Requisition"
+                        : "New Request"}
+                  </span>
+                </div>
+
+                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
+                  Create a backend-connected Requisition or Downsize
+                  request and route it for approval.
+                </p>
               </div>
-
-              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
-                {form.requestType === "downsize"
-                  ? "DOWNSIZE REQUEST"
-                  : "PERSONNEL REQUISITION"}
-              </h2>
-
-              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                {form.requestType === "downsize"
-                  ? "Select a week and account, review the previous required headcount, enter the new required headcount, upload the required supporting image or file, and provide the reason."
-                  : "Select request type first. For requisition, select a Talent Pool Open Position so department, account, site, and position reference auto-populate."}
-              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
-              aria-label="Close modal"
-              disabled={isSubmitting}
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6 flex flex-col gap-1">
-              <h3 className="text-base font-extrabold text-[#101828]">
-                Request Details
-              </h3>
-
-              <p className="text-sm font-medium text-sibs-tertiary-5">
-                Fields marked with an asterisk are required.
-              </p>
-            </div>
-
-            <div className="mb-6">
-              <FieldLabel required>Request Type</FieldLabel>
-              <CustomSelect
-                value={form.requestType || ""}
-                options={requestTypeOptions}
-                onChange={handleRequestTypeChange}
-                placeholder="Select Request Type"
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
                 disabled={isSubmitting}
-                optionValue={(option) => option.value}
-                optionLabel={(option) => option.label}
-              />
-            </div>
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={14} />
+                Reset
+              </button>
 
-            {!form.requestType && (
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4 text-sm font-semibold text-sibs-primary-1">
-                Please select whether this request is for a requisition or downsize.
-              </div>
-            )}
-
-            {form.requestType === "requisition" && (
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <div className="lg:col-span-2">
-                <FieldLabel required>Position Title</FieldLabel>
-                <CustomSelect
-                  value={form.openPositionDbId || ""}
-                  options={positionOptions}
-                  onChange={(value, option) =>
-                    handlePositionChange(value, option?.raw)
-                  }
-                  disabled={positionLoading || isSubmitting}
-                  placeholder={
-                    positionLoading
-                      ? "Loading positions..."
-                      : "Search position title..."
-                  }
-                  optionValue={(option) => option.value}
-                  optionLabel={(option) => option.label}
-                  optionDescription={(option) => option.description}
-                  searchable
-                  searchPlaceholder="Search position title..."
-                  loading={positionLoading}
-                  loadingMessage="Loading positions..."
-                  emptyMessage="No matching position found."
-                />
-
-                {!positionLoading && openPositions.length === 0 && (
-                  <p className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
-                    No active positions found from talent_pool_open_positions.
-                    Please add or activate a position first.
-                  </p>
+              <button
+                type="submit"
+                form="add-hiring-needs-form"
+                disabled={isSubmitting}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <Save size={14} />
                 )}
-              </div>
+                {isSubmitting ? "Submitting..." : "Submit for Approval"}
+              </button>
 
-              <div>
-                <FieldLabel>Position ID</FieldLabel>
-                <TextInput
-                  value={form.positionId || ""}
-                  readOnly
-                  disabled
-                  placeholder="Auto-generated from selected position"
-                />
-              </div>
-
-              <div>
-                <FieldLabel required>Department / Account</FieldLabel>
-                <TextInput
-                  value={form.departmentAccount || ""}
-                  readOnly
-                  disabled
-                  placeholder="Auto-populated after selecting position"
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Department ID</FieldLabel>
-                <TextInput
-                  value={form.departmentId || ""}
-                  readOnly
-                  disabled
-                  placeholder="Auto-populated"
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Account ID</FieldLabel>
-                <TextInput
-                  value={form.accountId || ""}
-                  readOnly
-                  disabled
-                  placeholder="Auto-populated"
-                />
-              </div>
-
-              <div className="lg:col-span-2">
-                <FieldLabel>Position Reference</FieldLabel>
-                <TextInput
-                  value={
-                    form.jobDescriptionCode
-                      ? `${form.jobDescriptionCode} — ${form.jobDescriptionTitle}`
-                      : form.jobDescriptionTitle || ""
-                  }
-                  readOnly
-                  disabled
-                  placeholder="Auto-populated after selecting position"
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Job Description ID</FieldLabel>
-                <TextInput
-                  value={form.jobDescriptionDbId || ""}
-                  readOnly
-                  disabled
-                  placeholder="Auto-populated if position has linked JD"
-                />
-              </div>
-
-              <div>
-                <FieldLabel required>Headcount</FieldLabel>
-                <TextInput
-                  type="number"
-                  min="1"
-                  value={form.headcount || ""}
-                  onChange={(e) => updateField("headcount", e.target.value)}
-                  placeholder="Enter requested headcount"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div>
-                <FieldLabel required>Reason for Hiring</FieldLabel>
-                <CustomSelect
-                  value={form.reasonForHiring || ""}
-                  options={reasonOptions}
-                  onChange={(value) => updateField("reasonForHiring", value)}
-                  placeholder="Select Reason"
-                  disabled={isSubmitting}
-                  optionValue={(option) => option.value}
-                  optionLabel={(option) => option.label}
-                />
-              </div>
-
-              <div>
-                <FieldLabel required>Assignment</FieldLabel>
-                <CustomSelect
-                  value={form.assignment || "Probationary"}
-                  options={assignmentOptions}
-                  onChange={handleAssignmentChange}
-                  placeholder="Select Assignment"
-                  disabled={isSubmitting}
-                  optionValue={(option) => option.value}
-                  optionLabel={(option) => option.label}
-                />
-              </div>
-
-              <div>
-                <FieldLabel required>Location / Site</FieldLabel>
-                <CustomSelect
-                  value={currentLocationSite}
-                  options={locationOptions}
-                  onChange={(value) => updateField("locationSite", value)}
-                  placeholder="Select Location"
-                  disabled={isSubmitting}
-                  optionValue={(option) => option.value}
-                  optionLabel={(option) => option.label}
-                />
-              </div>
-
-              {form.assignment === "Other" && (
-                <div className="lg:col-span-2">
-                  <FieldLabel required>Other Assignment Information</FieldLabel>
-                  <TextInput
-                    value={form.assignmentOther || ""}
-                    onChange={(e) =>
-                      updateField("assignmentOther", e.target.value)
-                    }
-                    placeholder="Enter other assignment information"
-                    disabled={isSubmitting}
-                  />
-                </div>
-              )}
-
-              <div className="lg:col-span-2">
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                  <div>
-                    <FieldLabel required>Date Needed</FieldLabel>
-                    <DateDropdown
-                      value={form.dateNeeded || ""}
-                      onChange={(value) => updateField("dateNeeded", value)}
-                      placeholder="Select Date Needed"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel required>SIBS ID Manager</FieldLabel>
-                    <TextInput
-                      value={form.sibsIdManager || form.preparedById || ""}
-                      readOnly
-                      disabled
-                      placeholder="Logged-in SIBS ID"
-                    />
-                  </div>
-
-                  <div>
-                    <FieldLabel required>Hiring Manager</FieldLabel>
-                    <TextInput
-                      value={form.hiringManager || ""}
-                      readOnly
-                      disabled
-                      placeholder="Logged-in manager name"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="lg:col-span-2">
-                <FieldLabel>Approval Status</FieldLabel>
-                <div className="flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-extrabold text-amber-700">
-                      {form.approvalStatus || "For Approval"}
-                    </p>
-
-                    <p className="mt-0.5 text-xs font-semibold text-amber-600">
-                      This request will be routed for approval after submission.
-                    </p>
-                  </div>
-
-                  <Clock size={20} className="shrink-0 text-amber-500" />
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close Personnel Requisition modal"
+                title="Close"
+              >
+                <X size={18} />
+              </button>
             </div>
-            )}
+          </div>
+        </header>
 
-            {form.requestType === "downsize" && (
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                <div className="lg:col-span-2">
-                  <FieldLabel required>Week</FieldLabel>
-                  <CustomSelect
-                    value={form.weeklyWeekKey || ""}
-                    options={weeklyWeekOptions}
-                    onChange={(value, option) => handleWeeklyWeekChange(value, option)}
-                    disabled={isSubmitting}
-                    placeholder="Select Week"
-                    optionValue={(option) => option.value}
-                    optionLabel={(option) => option.label}
-                    optionDescription={(option) => option.description}
-                    loading={weeklyWeeksLoading}
-                    loadingMessage="Loading weeks..."
-                  />
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-5">
+          <div className="space-y-4">
+            <section className="rounded-xl border border-blue-200 bg-[#EEF5FF] p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
+                    <Info size={16} />
+                  </span>
 
-                  {!weeklyWeeksLoading && weeklyWeekOptions.length <= 1 && (
-                    <p className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
-                      No weekly hiring plan weeks found. Please check the Weekly Hiring Plan.
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-xs font-extrabold text-[#042C51]">
+                        Personnel Request Guide
+                      </h3>
+
+                      <span className="rounded border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] font-extrabold uppercase text-indigo-700">
+                        {!form.requestType
+                          ? "Select Request Type"
+                          : form.requestType === "downsize"
+                            ? "Downsize Mode"
+                            : "Requisition Mode"}
+                      </span>
+                    </div>
+
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085]">
+                      {!form.requestType
+                        ? "Select whether this request adds or reduces required headcount."
+                        : form.requestType === "downsize"
+                          ? "Select a Weekly Hiring Plan week and account, review the previous required headcount, then provide the adjustment and supporting evidence."
+                          : "Select an active Talent Pool position, then complete the personnel requirement and ownership details."}
                     </p>
-                  )}
-                </div>
-
-                <div className="lg:col-span-2">
-                  <FieldLabel required>Account</FieldLabel>
-                  <CustomSelect
-                    value={form.downsizeAccountKey || ""}
-                    options={accountOptions}
-                    onChange={(value, option) =>
-                      handleDownsizeAccountChange(value, option)
-                    }
-                    disabled={!form.weeklyWeekKey || isSubmitting}
-                    placeholder={
-                      form.weeklyWeekKey ? "Search accounts..." : "Select week first"
-                    }
-                    optionValue={(option) => option.value}
-                    optionLabel={(option) => option.label}
-                    optionDescription={(option) => option.description}
-                    searchable
-                    searchPlaceholder="Search accounts..."
-                    loading={weeklyAccountsLoading}
-                    loadingMessage="Loading accounts..."
-                    emptyMessage="No matching account found."
-                  />
-
-                  {!weeklyAccountsLoading && !form.weeklyWeekKey && (
-                    <p className="mt-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-sibs-primary-1">
-                      Select a week first to view accounts.
-                    </p>
-                  )}
-
-                  {!weeklyAccountsLoading && form.weeklyWeekKey && accountOptions.length <= 1 && (
-                    <p className="mt-2 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
-                      No accounts found for the selected week.
-                    </p>
-                  )}
-                </div>
-
-                <div className="lg:col-span-2">
-                  <FieldLabel>Previous Required Headcount</FieldLabel>
-
-                  <div className="overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-                    <table className="w-full table-fixed border-separate border-spacing-0 text-left">
-                      <colgroup>
-                        <col style={{ width: "65%" }} />
-                        <col style={{ width: "35%" }} />
-                      </colgroup>
-
-                      <thead>
-                        <tr className="bg-[#F5F7FA] text-xs font-bold uppercase tracking-wide text-[#174A7C]">
-                          <th className="px-5 py-4 text-left align-top">
-                            Account
-                          </th>
-
-                          <th className="px-5 py-4 text-center align-top">
-                            Required Headcount
-                          </th>
-
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        <tr className="bg-white">
-                          <td className="border-t border-[#E6ECF2] px-5 py-5">
-                            <p className="truncate text-sm font-extrabold text-[#101828]">
-                              {form.accountName || "--"}
-                            </p>
-
-                            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                              {form.downsizeCluster || "Weekly Hiring Account"}
-                            </p>
-
-                            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-                              {form.weeklyWeekDateRange ||
-                                getWeeklyWeekDateRange(
-                                  form.weeklyWeekStart,
-                                  form.weeklyWeekEnd,
-                                ) ||
-                                "--"}
-                            </p>
-                          </td>
-
-                          <td className="border-t border-[#E6ECF2] px-5 py-5 text-center text-sm font-bold text-[#344054]">
-                            {formatNumber(form.previousRequiredHeadcount || 0)}
-                          </td>
-                          
-                        </tr>
-                      </tbody>
-                    </table>
                   </div>
-
-                  <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-                    This uses the same Required Headcount value shown in the
-                    Weekly Hiring Accounts table.
-                  </p>
                 </div>
 
-                <div>
-                  <FieldLabel required>Required Headcount to Downsize</FieldLabel>
-                  <TextInput
-                    type="number"
-                    min="1"
-                    value={form.headcount || ""}
-                    onChange={(e) => updateField("headcount", e.target.value)}
-                    placeholder="Enter number of headcount to downsize"
+                <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded bg-[#07365F] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
+                  <ShieldCheck size={12} className="text-[#FF5C28]" />
+                  For Approval
+                </span>
+              </div>
+            </section>
+
+            {!form.requestType ? (
+              <FormSection
+                title="Request Type & Position"
+                subtitle="Choose the personnel request workflow before completing its required fields."
+                icon={SlidersHorizontal}
+              >
+                <div className="max-w-md">
+                  <FieldLabel required>Request Type</FieldLabel>
+                  <CustomSelect
+                    value={form.requestType || ""}
+                    options={requestTypeOptions}
+                    onChange={handleRequestTypeChange}
+                    placeholder="Select Request Type"
                     disabled={isSubmitting}
+                    optionValue={(option) => option.value}
+                    optionLabel={(option) => option.label}
                   />
                 </div>
+              </FormSection>
+            ) : null}
 
-                <div className="lg:col-span-2">
-                  <FieldLabel required>Reason</FieldLabel>
-                  <TextArea
-                    value={form.downsizeReason || ""}
-                    onChange={(e) => updateField("downsizeReason", e.target.value)}
-                    placeholder="Enter reason for downsize"
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="lg:col-span-2">
-                  <FieldLabel required>Upload Image or File</FieldLabel>
-
-                  <label className="flex min-h-44 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D0D5DD] bg-[#F8FAFC] px-4 py-6 text-center transition hover:border-sibs-primary-1/40 hover:bg-blue-50">
-                    {downsizeFile ? (
-                      <div className="flex w-full flex-col items-center gap-3">
-                        {downsizeFileIsImage && downsizeFilePreviewUrl ? (
-                          <img
-                            src={downsizeFilePreviewUrl}
-                            alt={downsizeFile.name}
-                            className="max-h-56 w-auto max-w-full rounded-xl border border-[#E6ECF2] bg-white object-contain shadow-sm"
-                          />
-                        ) : (
-                          <div className="flex h-24 w-24 items-center justify-center rounded-2xl border border-[#D0D5DD] bg-white shadow-sm">
-                            <FileText size={36} className="text-sibs-primary-1" />
-                          </div>
-                        )}
-
-                        <div>
-                          <p className="break-all text-sm font-extrabold text-sibs-primary-1">
-                            {downsizeFile.name}
-                          </p>
-
-                          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                            {(downsizeFile.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-
-                          <p className="mt-1 text-xs font-bold text-sibs-primary-1">
-                            Click here to change file
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload size={26} className="mb-2 text-sibs-primary-1" />
-
-                        <span className="text-sm font-extrabold text-sibs-primary-1">
-                          Click to upload supporting file
-                        </span>
-
-                        <span className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          Images, PDF, Word, or Excel files are allowed.
-                        </span>
-                      </>
-                    )}
-
-                    <input
-                      type="file"
-                      className="hidden"
-                      required
-                      accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
-                      disabled={isSubmitting}
-                      onChange={(e) => setDownsizeFile(e.target.files?.[0] || null)}
-                    />
-                  </label>
-                </div>
-
-                <div className="lg:col-span-2">
-                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {form.requestType === "requisition" ? (
+              <>
+                <FormSection
+                  title="Request Type & Position"
+                  subtitle="Link the request to an active Talent Pool position and retain its current JD, department, account, and site references."
+                  icon={BriefcaseBusiness}
+                >
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                     <div>
-                      <FieldLabel required>SIBS ID Manager</FieldLabel>
+                      <FieldLabel required>Request Type</FieldLabel>
+                      <CustomSelect
+                        value={form.requestType || ""}
+                        options={requestTypeOptions}
+                        onChange={handleRequestTypeChange}
+                        placeholder="Select Request Type"
+                        disabled={isSubmitting}
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <FieldLabel required>Position Title</FieldLabel>
+                      <CustomSelect
+                        value={form.openPositionDbId || ""}
+                        options={positionOptions}
+                        onChange={(value, option) =>
+                          handlePositionChange(value, option?.raw)
+                        }
+                        disabled={positionLoading || isSubmitting}
+                        placeholder={
+                          positionLoading
+                            ? "Loading positions..."
+                            : "Search position title..."
+                        }
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                        optionDescription={(option) =>
+                          option.description
+                        }
+                        searchable
+                        searchPlaceholder="Search position title..."
+                        loading={positionLoading}
+                        loadingMessage="Loading positions..."
+                        emptyMessage="No matching position found."
+                      />
+
+                      {!positionLoading &&
+                        openPositions.length === 0 ? (
+                        <p className="mt-2 rounded-[10px] border border-amber-100 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
+                          No active positions were returned from
+                          talent_pool_open_positions.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <FieldLabel>Position ID</FieldLabel>
                       <TextInput
-                        value={form.sibsIdManager || form.preparedById || ""}
+                        value={form.positionId || ""}
+                        readOnly
+                        disabled
+                        placeholder="Auto-populated"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <FieldLabel required>
+                        Department / Account
+                      </FieldLabel>
+                      <TextInput
+                        value={form.departmentAccount || ""}
+                        readOnly
+                        disabled
+                        placeholder="Auto-populated after selecting position"
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Department ID</FieldLabel>
+                      <TextInput
+                        value={form.departmentId || ""}
+                        readOnly
+                        disabled
+                        placeholder="Auto-populated"
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Account ID</FieldLabel>
+                      <TextInput
+                        value={form.accountId || ""}
+                        readOnly
+                        disabled
+                        placeholder="Auto-populated"
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Job Description ID</FieldLabel>
+                      <TextInput
+                        value={form.jobDescriptionDbId || ""}
+                        readOnly
+                        disabled
+                        placeholder="Linked JD database ID"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-3">
+                      <FieldLabel>Position Reference</FieldLabel>
+                      <TextInput
+                        value={
+                          form.jobDescriptionCode
+                            ? `${form.jobDescriptionCode} — ${form.jobDescriptionTitle}`
+                            : form.jobDescriptionTitle || ""
+                        }
+                        readOnly
+                        disabled
+                        placeholder="Auto-populated after selecting position"
+                      />
+                    </div>
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  title="Personnel Requirement"
+                  subtitle="Define the requested slots, business reason, assignment, site, and target date."
+                  icon={Users}
+                >
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <FieldLabel required>Headcount</FieldLabel>
+                      <TextInput
+                        type="number"
+                        min="1"
+                        value={form.headcount || ""}
+                        onChange={(event) =>
+                          updateField(
+                            "headcount",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Enter requested headcount"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>
+                        Reason for Hiring
+                      </FieldLabel>
+                      <CustomSelect
+                        value={form.reasonForHiring || ""}
+                        options={reasonOptions}
+                        onChange={(value) =>
+                          updateField("reasonForHiring", value)
+                        }
+                        placeholder="Select Reason"
+                        disabled={isSubmitting}
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Assignment</FieldLabel>
+                      <CustomSelect
+                        value={
+                          form.assignment || "Probationary"
+                        }
+                        options={assignmentOptions}
+                        onChange={handleAssignmentChange}
+                        placeholder="Select Assignment"
+                        disabled={isSubmitting}
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>
+                        Location / Site
+                      </FieldLabel>
+                      <CustomSelect
+                        value={currentLocationSite}
+                        options={locationOptions}
+                        onChange={(value) =>
+                          updateField("locationSite", value)
+                        }
+                        placeholder="Select Location"
+                        disabled={isSubmitting}
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Date Needed</FieldLabel>
+                      <DateDropdown
+                        value={form.dateNeeded || ""}
+                        onChange={(value) =>
+                          updateField("dateNeeded", value)
+                        }
+                        placeholder="Select Date Needed"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+
+                    {form.assignment === "Other" ? (
+                      <div>
+                        <FieldLabel required>
+                          Other Assignment Information
+                        </FieldLabel>
+                        <TextInput
+                          value={form.assignmentOther || ""}
+                          onChange={(event) =>
+                            updateField(
+                              "assignmentOther",
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Enter assignment information"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </FormSection>
+
+                <FormSection
+                  title="Request Ownership & Approval"
+                  subtitle="The request owner is derived from the logged-in user and the record will be routed for approval."
+                  icon={ShieldCheck}
+                >
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                      <FieldLabel required>
+                        SIBS ID Manager
+                      </FieldLabel>
+                      <TextInput
+                        value={
+                          form.sibsIdManager ||
+                          form.preparedById ||
+                          ""
+                        }
                         readOnly
                         disabled
                         placeholder="Logged-in SIBS ID"
@@ -2682,7 +2607,9 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                     </div>
 
                     <div>
-                      <FieldLabel required>Hiring Manager</FieldLabel>
+                      <FieldLabel required>
+                        Hiring Manager
+                      </FieldLabel>
                       <TextInput
                         value={form.hiringManager || ""}
                         readOnly
@@ -2690,75 +2617,324 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
                         placeholder="Logged-in manager name"
                       />
                     </div>
+
+                    <div className="md:col-span-2">
+                      <FieldLabel>Approval Status</FieldLabel>
+                      <div className="flex items-center justify-between rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-xs font-extrabold text-amber-700">
+                            {form.approvalStatus ||
+                              "For Approval"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-amber-600">
+                            Submission routes this request through
+                            the configured approval workflow.
+                          </p>
+                        </div>
+                        <Clock
+                          size={17}
+                          className="shrink-0 text-amber-500"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </FormSection>
+              </>
+            ) : null}
 
-                <div className="lg:col-span-2">
-                  <FieldLabel>Approval Status</FieldLabel>
-                  <div className="flex items-center justify-between rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            {form.requestType === "downsize" ? (
+              <>
+                <FormSection
+                  title="Week & Account"
+                  subtitle="Select the Weekly Hiring Plan period and account that will receive the required-headcount reduction."
+                  icon={CalendarDays}
+                >
+                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
                     <div>
-                      <p className="text-sm font-extrabold text-amber-700">
-                        {form.approvalStatus || "For Approval"}
-                      </p>
-
-                      <p className="mt-0.5 text-xs font-semibold text-amber-600">
-                        This downsize request will be routed for approval after submission.
-                      </p>
+                      <FieldLabel required>Request Type</FieldLabel>
+                      <CustomSelect
+                        value={form.requestType || ""}
+                        options={requestTypeOptions}
+                        onChange={handleRequestTypeChange}
+                        placeholder="Select Request Type"
+                        disabled={isSubmitting}
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                      />
                     </div>
 
-                    <Clock size={20} className="shrink-0 text-amber-500" />
+                    <div>
+                      <FieldLabel required>Week</FieldLabel>
+                      <CustomSelect
+                        value={form.weeklyWeekKey || ""}
+                        options={weeklyWeekOptions}
+                        onChange={(value, option) =>
+                          handleWeeklyWeekChange(value, option)
+                        }
+                        disabled={isSubmitting}
+                        placeholder="Select Week"
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                        optionDescription={(option) =>
+                          option.description
+                        }
+                        loading={weeklyWeeksLoading}
+                        loadingMessage="Loading weeks..."
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel required>Account</FieldLabel>
+                      <CustomSelect
+                        value={form.downsizeAccountKey || ""}
+                        options={accountOptions}
+                        onChange={(value, option) =>
+                          handleDownsizeAccountChange(
+                            value,
+                            option,
+                          )
+                        }
+                        disabled={
+                          !form.weeklyWeekKey || isSubmitting
+                        }
+                        placeholder={
+                          form.weeklyWeekKey
+                            ? "Search accounts..."
+                            : "Select week first"
+                        }
+                        optionValue={(option) => option.value}
+                        optionLabel={(option) => option.label}
+                        optionDescription={(option) =>
+                          option.description
+                        }
+                        searchable
+                        searchPlaceholder="Search accounts..."
+                        loading={weeklyAccountsLoading}
+                        loadingMessage="Loading accounts..."
+                        emptyMessage="No matching account found."
+                      />
+                    </div>
+
+                    <div className="lg:col-span-3">
+                      <FieldLabel>
+                        Previous Required Headcount
+                      </FieldLabel>
+
+                      <div className="overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white">
+                        <table className="w-full table-fixed border-separate border-spacing-0 text-left">
+                          <thead>
+                            <tr className="bg-[#F5F7FA] text-[10px] font-extrabold uppercase tracking-wide text-[#174A7C]">
+                              <th className="px-4 py-3">
+                                Account / Week
+                              </th>
+                              <th className="px-4 py-3 text-center">
+                                Required Headcount
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="border-t border-[#E6ECF2] px-4 py-4">
+                                <p className="text-xs font-extrabold text-[#101828]">
+                                  {form.accountName || "—"}
+                                </p>
+                                <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                                  {form.downsizeCluster ||
+                                    "Weekly Hiring Account"}
+                                </p>
+                                <p className="mt-1 text-[10px] font-semibold text-[#98A2B3]">
+                                  {form.weeklyWeekDateRange ||
+                                    getWeeklyWeekDateRange(
+                                      form.weeklyWeekStart,
+                                      form.weeklyWeekEnd,
+                                    ) ||
+                                    "—"}
+                                </p>
+                              </td>
+                              <td className="border-t border-[#E6ECF2] px-4 py-4 text-center text-sm font-extrabold tabular-nums text-[#042C51]">
+                                {formatNumber(
+                                  form.previousRequiredHeadcount ||
+                                  0,
+                                )}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
+                </FormSection>
 
-          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-bold text-sibs-primary-1">
-              Approval Notice
-            </p>
+                <FormSection
+                  title="Headcount Adjustment"
+                  subtitle="Enter the number of slots to reduce and provide the business reason for the Downsize request."
+                  icon={SlidersHorizontal}
+                >
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[240px_minmax(0,1fr)]">
+                    <div>
+                      <FieldLabel required>
+                        Required Headcount to Downsize
+                      </FieldLabel>
+                      <TextInput
+                        type="number"
+                        min="1"
+                        value={form.headcount || ""}
+                        onChange={(event) =>
+                          updateField(
+                            "headcount",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Enter headcount"
+                        disabled={isSubmitting}
+                      />
+                    </div>
 
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
-              After submission, this request will be marked as
-              <span className="font-extrabold"> For Approval</span>. The request
-              list will show whether it is Approved or Not Approved with the
-              approval date.
-            </p>
-          </div>
-        </div>
+                    <div>
+                      <FieldLabel required>Reason</FieldLabel>
+                      <TextArea
+                        value={form.downsizeReason || ""}
+                        onChange={(event) =>
+                          updateField(
+                            "downsizeReason",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Explain the downsize requirement."
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </FormSection>
 
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Reset
-            </button>
+                <FormSection
+                  title="Supporting Evidence & Approval"
+                  subtitle="Attach the required supporting file and verify the auto-assigned request owner before submission."
+                  icon={UploadCloud}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <FieldLabel required>
+                        Upload Image or File
+                      </FieldLabel>
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Cancel
-            </button>
+                      <label className="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-[10px] border-2 border-dashed border-[#D7DEE8] bg-[#F8FAFC] px-4 py-5 text-center transition hover:border-[#FF5C28]/40 hover:bg-white">
+                        {downsizeFile ? (
+                          <div className="flex w-full flex-col items-center gap-3">
+                            {downsizeFileIsImage &&
+                              downsizeFilePreviewUrl ? (
+                              <img
+                                src={downsizeFilePreviewUrl}
+                                alt={downsizeFile.name}
+                                className="max-h-52 w-auto max-w-full rounded-[10px] border border-[#E6ECF2] bg-white object-contain shadow-sm"
+                              />
+                            ) : (
+                              <span className="flex h-16 w-16 items-center justify-center rounded-xl border border-[#D7DEE8] bg-white text-[#042C51] shadow-sm">
+                                <FileText size={27} />
+                              </span>
+                            )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSubmitting ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              ) : (
-                <Plus size={17} />
-              )}
-              {isSubmitting ? "Submitting..." : "Submit for Approval"}
-            </button>
+                            <div>
+                              <p className="break-all text-xs font-extrabold text-[#042C51]">
+                                {downsizeFile.name}
+                              </p>
+                              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                                {(
+                                  downsizeFile.size /
+                                  1024 /
+                                  1024
+                                ).toFixed(2)}{" "}
+                                MB
+                              </p>
+                              <p className="mt-1 text-[10px] font-extrabold text-[#FF5C28]">
+                                Click to change file
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload
+                              size={24}
+                              className="mb-2 text-[#FF5C28]"
+                            />
+                            <span className="text-xs font-extrabold text-[#042C51]">
+                              Click to upload supporting file
+                            </span>
+                            <span className="mt-1 text-[10px] font-semibold text-[#667085]">
+                              Images, PDF, Word, and Excel files
+                              are supported.
+                            </span>
+                          </>
+                        )}
+
+                        <input
+                          type="file"
+                          className="hidden"
+                          required
+                          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                          disabled={isSubmitting}
+                          onChange={(event) =>
+                            setDownsizeFile(
+                              event.target.files?.[0] || null,
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div>
+                        <FieldLabel required>
+                          SIBS ID Manager
+                        </FieldLabel>
+                        <TextInput
+                          value={
+                            form.sibsIdManager ||
+                            form.preparedById ||
+                            ""
+                          }
+                          readOnly
+                          disabled
+                          placeholder="Logged-in SIBS ID"
+                        />
+                      </div>
+
+                      <div>
+                        <FieldLabel required>
+                          Hiring Manager
+                        </FieldLabel>
+                        <TextInput
+                          value={form.hiringManager || ""}
+                          readOnly
+                          disabled
+                          placeholder="Logged-in manager name"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Approval Status</FieldLabel>
+                      <div className="flex items-center justify-between rounded-[10px] border border-amber-200 bg-amber-50 px-3 py-2.5">
+                        <div>
+                          <p className="text-xs font-extrabold text-amber-700">
+                            {form.approvalStatus ||
+                              "For Approval"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-semibold text-amber-600">
+                            This Downsize request will be routed
+                            through the configured approval workflow.
+                          </p>
+                        </div>
+                        <Clock
+                          size={17}
+                          className="shrink-0 text-amber-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </FormSection>
+              </>
+            ) : null}
           </div>
         </div>
       </form>

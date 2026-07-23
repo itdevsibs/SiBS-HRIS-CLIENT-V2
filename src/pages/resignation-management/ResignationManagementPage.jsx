@@ -990,12 +990,25 @@ function ResignationTableCard({
     return data.slice(start, start + PAGE_LIMIT);
   }, [data, currentPage, totalPages]);
 
-  const startRecord = pageData.length
-    ? (currentPage - 1) * PAGE_LIMIT + 1
-    : 0;
-  const endRecord = pageData.length
-    ? startRecord + pageData.length - 1
-    : 0;
+  function handlePreviousPage() {
+    setPageState((current) => ({
+      data,
+      page: Math.max(
+        (current.data === data ? current.page : currentPage) - 1,
+        1,
+      ),
+    }));
+  }
+
+  function handleNextPage() {
+    setPageState((current) => ({
+      data,
+      page: Math.min(
+        (current.data === data ? current.page : currentPage) + 1,
+        totalPages,
+      ),
+    }));
+  }
 
   return (
     <section className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white shadow-sm">
@@ -1084,55 +1097,20 @@ function ResignationTableCard({
           )}
         </div>
 
-        <div className="mt-5 flex flex-col justify-between gap-4 border-t border-[#EEF2F6] pt-4 sm:flex-row sm:items-center">
-          <p className="text-xs font-bold text-[#667085]">
-            Showing {startRecord} to {endRecord} of {data.length} filtered records
-          </p>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setPageState((current) => ({
-                  data,
-                  page: Math.max(
-                    (current.data === data ? current.page : currentPage) - 1,
-                    1,
-                  ),
-                }))
-              }
-              disabled={loading || currentPage <= 1}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-[#C5CED8] disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            <span className="flex h-9 min-w-9 items-center justify-center rounded-lg bg-[#FF5C28] px-3 text-xs font-extrabold text-white">
-              {currentPage}
-            </span>
-
-            <span className="text-xs font-bold text-[#98A2B3]">of {totalPages}</span>
-
-            <button
-              type="button"
-              onClick={() =>
-                setPageState((current) => ({
-                  data,
-                  page: Math.min(
-                    (current.data === data ? current.page : currentPage) + 1,
-                    totalPages,
-                  ),
-                }))
-              }
-              disabled={loading || currentPage >= totalPages}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-[#C5CED8] disabled:hover:border-[#E6ECF2] disabled:hover:bg-white"
-              aria-label="Next page"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
+        <PaginationTable
+          loading={loading}
+          showSearch={false}
+          showPagination
+          showCount
+          currentPage={currentPage}
+          totalPages={totalPages}
+          loadedCount={pageData.length}
+          totalRecords={data.length}
+          recordLabel="resignation records"
+          onPrevious={handlePreviousPage}
+          onNext={handleNextPage}
+          className="border-0 bg-transparent p-0 shadow-none"
+        />
       </div>
     </section>
   );
