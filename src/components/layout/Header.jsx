@@ -86,6 +86,16 @@ const SEARCHABLE_MODULES = [
     keywords: ["schedule", "shift", "roster"],
   },
   {
+    label: "Super Admin Dashboard",
+    group: "Core HR",
+    description: "System-wide control and governance dashboard",
+    path: "/dashboard/super-admin",
+    scope: "admin",
+    allowedUsers: [7],
+    icon: LayoutDashboard,
+    keywords: ["super admin", "system dashboard", "governance", "command center"],
+  },
+  {
     label: "Dashboard",
     group: "Core HR",
     description: "HRIS administrative dashboard",
@@ -674,6 +684,11 @@ export default function Header() {
   const [employeeLoading, setEmployeeLoading] = useState(false);
   const [employeeError, setEmployeeError] = useState("");
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [compactSearch, setCompactSearch] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : window.matchMedia("(max-width: 430px)").matches,
+  );
 
   const searchRootRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -681,6 +696,18 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 430px)");
+
+    const handleChange = (event) => {
+      setCompactSearch(event.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   useEffect(() => {
@@ -922,18 +949,18 @@ export default function Header() {
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="relative z-[999] flex h-[86px] shrink-0 items-center border-b border-[#D7E0E9] bg-white px-3 font-jakarta shadow-sm sm:px-6">
-      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-2 pl-12 sm:gap-4 sm:pl-0">
+    <header className="relative z-[999] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-white px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
+      <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:gap-4 sm:pl-0">
         <div
           ref={searchRootRef}
-          className="relative z-[10000] min-w-0 flex-1 sm:max-w-[560px]"
+          className="relative z-[10000] min-w-[118px] flex-[1_1_auto] sm:max-w-[560px]"
         >
           <div
             className={[
-              "relative flex h-10 min-w-0 items-center rounded-lg border bg-[#F1F5F9] transition-all duration-150",
+              "relative flex h-9 min-w-0 items-center rounded-lg border bg-[#F1F5F9] transition-all duration-150 sm:h-10",
               showSearchPanel
-                ? "border-sibs-primary-1 bg-white ring-2 ring-sibs-primary-1/10"
-                : "border-transparent hover:border-[#D6E0EA] focus-within:border-sibs-primary-1 focus-within:bg-white focus-within:ring-2 focus-within:ring-sibs-primary-1/10",
+                ? "border-[#FF5C28] bg-white ring-2 ring-[#FF5C28]/10"
+                : "border-transparent hover:border-[#FF5C28]/40 focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#FF5C28]/10",
             ].join(" ")}
           >
             <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#98A2B3]" />
@@ -950,7 +977,9 @@ export default function Header() {
                 if (query.trim()) setSearchOpen(true);
               }}
               onKeyDown={handleSearchKeyDown}
-              placeholder="Search modules or employees..."
+              placeholder={
+                compactSearch ? "Search..." : "Search modules or employees..."
+              }
               autoComplete="off"
               role="combobox"
               aria-expanded={showSearchPanel}
@@ -960,7 +989,7 @@ export default function Header() {
                   ? `header-search-result-${activeIndex}`
                   : undefined
               }
-              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-9 text-xs font-semibold text-[#101828] outline-none placeholder:font-medium placeholder:text-[#98A2B3]"
+              className="h-full min-w-0 flex-1 bg-transparent pl-9 pr-8 text-xs font-semibold text-[#101828] outline-none placeholder:font-medium placeholder:text-[#98A2B3] sm:pr-9"
             />
 
             {query ? (
@@ -1089,7 +1118,7 @@ export default function Header() {
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <div className="hidden items-center gap-2 border-r border-[#E0E6ED] pr-3 text-[10px] font-semibold text-[#667085] xl:flex">
             <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3]" />
             <span className="whitespace-nowrap">{timeStr}</span>
@@ -1097,11 +1126,11 @@ export default function Header() {
 
           <button
             type="button"
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F1F5F9] hover:text-sibs-primary-1"
+            className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#667085] transition hover:bg-[#F1F5F9] hover:text-sibs-primary-1 sm:h-9 sm:w-9"
             aria-label="Notifications"
           >
-            <Bell className="h-[18px] w-[18px]" strokeWidth={1.8} />
-            <span className="absolute right-[7px] top-[6px] h-2 w-2 rounded-full bg-sibs-primary-2 ring-2 ring-white" />
+            <Bell className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={1.8} />
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sibs-primary-2 ring-2 ring-white sm:right-[7px] sm:top-[6px]" />
           </button>
 
           <div className="hidden h-6 w-px bg-[#E0E6ED] sm:block" />

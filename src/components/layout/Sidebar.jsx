@@ -37,6 +37,7 @@ import { getJobDescriptionApprovalUsers } from "../../lib/axios/getJobDescriptio
 import { getHiringNeedsApprovalUsers } from "../../lib/axios/getHiringNeedsApprovalSettings";
 import { getAvailablePositionApprovalUsers } from "../../lib/axios/getAvailablePositionApprovalSettings";
 import { buildSidebarBadgeText } from "../../lib/utils/sidebarNotifications";
+import { DASHBOARD_ACCESS, getDefaultDashboardPath } from "../../config/accessControl";
 
 const APPROVAL_MODULES = [
   "Attrition",
@@ -514,7 +515,7 @@ export default function Sidebar() {
       ADMIN_ROLES.includes(normalizeRole(user.role)) &&
       pathname.startsWith("/dashboard/employee")
     ) {
-      navigate("/dashboard/admin", { replace: true });
+      navigate(getDefaultDashboardPath(user), { replace: true });
     }
   }, [mounted, user, loading, pathname, navigate, ADMIN_ROLES]);
 
@@ -591,23 +592,29 @@ export default function Sidebar() {
 
   const adminCoreMenu = [
     {
+      name: "Super Admin Dashboard",
+      icon: LayoutDashboard,
+      path: "/dashboard/super-admin",
+      allowedUsers: DASHBOARD_ACCESS.SUPER_ADMIN,
+    },
+    {
       name: "HR Dashboard",
       icon: LayoutDashboard,
       path: "/dashboard/admin",
-      allowedUsers: [1, 2, 3, 4, 5, 6, 7],
+      allowedUsers: DASHBOARD_ACCESS.HR,
       notificationKey: "hrDashboard",
     },
     {
       name: "TA Dashboard",
       icon: LayoutDashboard,
       path: "/recruitment/ta-dashboard",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: DASHBOARD_ACCESS.TA,
     },
     {
       name: "OM Dashboard",
       icon: LayoutDashboard,
       path: "/recruitment/om-dashboard",
-      allowedUsers: [1, 2, 3, 7],
+      allowedUsers: DASHBOARD_ACCESS.OM,
     },
     {
       name: "Employee Directory",
@@ -916,10 +923,10 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
-          className="fixed left-4 top-4 z-[1001] rounded-xl border border-[#083A69] bg-sibs-primary-1 p-2 shadow-lg lg:hidden"
+          className="fixed left-4 top-[19px] z-[1001] flex h-9 w-9 items-center justify-center rounded-xl border border-[#083A69] bg-sibs-primary-1 shadow-[0_6px_16px_rgba(0,48,142,0.24)] lg:hidden max-[360px]:h-8 max-[360px]:w-8 max-[360px]:rounded-lg"
           aria-label="Open sidebar"
         >
-          <Menu size={20} className="text-white" />
+          <Menu size={18} className="text-white max-[360px]:h-4 max-[360px]:w-4" />
         </button>
       )}
 

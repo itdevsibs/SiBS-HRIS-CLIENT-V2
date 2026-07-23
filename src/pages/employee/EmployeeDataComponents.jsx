@@ -73,7 +73,7 @@ export const PROFILE_TABS = [
     ],
   },
   { key: "documents", label: "Documents", icon: FileText },
-  { key: "notes", label: "Dossier Notes", icon: Lock },
+  { key: "notes", label: "Profile Notes", icon: Lock },
 ];
 
 export function cleanText(value) {
@@ -160,6 +160,7 @@ export function formatDisplayDate(value) {
   if (Number.isNaN(parsed.getTime())) return String(value);
 
   return parsed.toLocaleDateString("en-US", {
+    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -511,14 +512,14 @@ export function ContextPanel({ employee, onNavigate, onAction }) {
 
   const quickActions = [
     ["Request COE (Certificate of Employment)", "sync"],
-    ["Export Sealed Dossier", "print"],
+    ["Export Profile", "print"],
     ["Synchronize Employee Record", "sync"],
     ["Generate Performance Snapshot", "print"],
   ];
 
   return (
     <aside className="space-y-5 xl:sticky xl:top-4">
-      <ContextCard title="Dossier Health Check">
+      <ContextCard title="Profile Health Check">
         <div className="space-y-4 text-center">
           <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 112 112">
@@ -567,7 +568,7 @@ export function ContextPanel({ employee, onNavigate, onAction }) {
         </div>
       </ContextCard>
 
-      <ContextCard title="Dossier Quick Actions">
+      <ContextCard title="Profile Quick Actions">
         <div className="space-y-1.5">
           {quickActions.map(([label, action]) => (
             <button
@@ -606,7 +607,7 @@ export function ContextPanel({ employee, onNavigate, onAction }) {
           <div className="flex items-start gap-2">
             <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
             <div>
-              <p className="font-bold text-slate-800">Official dossier available</p>
+              <p className="font-bold text-slate-800">Official profile available</p>
               <p className="text-slate-400">
                 Access is controlled by the existing HRIS permissions.
               </p>

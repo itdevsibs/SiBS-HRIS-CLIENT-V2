@@ -82,6 +82,7 @@ export function formatDate(value) {
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
