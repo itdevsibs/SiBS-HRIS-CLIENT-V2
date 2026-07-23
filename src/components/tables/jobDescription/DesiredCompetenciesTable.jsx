@@ -38,7 +38,7 @@ function AutoGrowTextarea({ value, onChange, placeholder = "" }) {
       }}
       onInput={resizeTextarea}
       placeholder={placeholder}
-      className="min-h-[90px] w-full resize-none rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm leading-7 text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
+      className="min-h-[76px] w-full resize-none rounded-[10px] border border-sibs-tertiary-8 bg-white px-3 py-2.5 text-xs font-semibold leading-relaxed text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-sibs-primary-1/10"
     />
   );
 }
@@ -66,28 +66,17 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
   };
 
   return (
-    <div className="mt-4 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-[#101828]">
-          Desired Competencies
-        </h3>
-
-        <p className="mt-1 text-sm text-sibs-tertiary-5">
-          Define the competencies required for this position and assign the
-          expected proficiency level.
-        </p>
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-[#D7DEE8]">
-        <div className="hidden grid-cols-[minmax(0,1fr)_120px_120px_120px_56px] border-b border-[#D7DEE8] bg-[#F8FAFC] md:grid">
-          <div className="px-4 py-3 text-sm font-bold uppercase tracking-wide text-sibs-primary-1">
+    <div>
+      <div className="overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white">
+        <div className="hidden grid-cols-[minmax(0,1fr)_120px_120px_120px_56px] border-b border-[#E6ECF2] bg-[#F8FAFC] md:grid">
+          <div className="px-3 py-3 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1">
             Competency for this Position
           </div>
 
           {proficiencyOptions.map((option) => (
             <div
               key={option}
-              className="flex items-center justify-center px-3 py-3 text-sm font-bold uppercase tracking-wide text-sibs-primary-1"
+              className="flex items-center justify-center px-3 py-3 text-[10px] font-extrabold uppercase tracking-normal text-sibs-primary-1"
             >
               {option}
             </div>
@@ -97,17 +86,17 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
         </div>
 
         {competencies.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm font-medium text-sibs-tertiary-5">
+          <div className="px-4 py-8 text-center text-xs font-semibold text-sibs-tertiary-5">
             No competencies added yet.
           </div>
         ) : (
           <div className="divide-y divide-[#E6ECF2]">
-            {competencies.map((item, index) => (
+            {competencies.map((item) => (
               <div
                 key={item.id}
                 className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_120px_120px_120px_56px]"
               >
-                <div className="border-b border-[#E6ECF2] p-4 md:border-b-0 md:border-r">
+                <div className="border-b border-[#E6ECF2] p-3 md:border-b-0 md:border-r">
                   <AutoGrowTextarea
                     value={item.description || ""}
                     onChange={(value) =>
@@ -120,10 +109,10 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
                 {proficiencyOptions.map((option) => (
                   <div
                     key={option}
-                    className="flex items-center justify-center border-b border-[#E6ECF2] px-3 py-4 md:border-b-0 md:border-r"
+                    className="flex items-center justify-center border-b border-[#E6ECF2] px-3 py-3 md:border-b-0 md:border-r"
                   >
                     <label className="flex cursor-pointer flex-col items-center gap-2">
-                      <span className="text-sm font-semibold text-[#344054] md:hidden">
+                      <span className="text-xs font-semibold text-[#344054] md:hidden">
                         {option}
                       </span>
 
@@ -145,7 +134,7 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
                   <button
                     type="button"
                     onClick={() => handleRemoveRow(item.id)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100"
                     aria-label="Remove competency"
                     title="Remove competency"
                   >
@@ -162,7 +151,7 @@ const DesiredCompetenciesTable = ({ competencies = [], setCompetencies }) => {
         <button
           type="button"
           onClick={handleAddRow}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-100"
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-sibs-tertiary-8 bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition hover:border-[var(--sibs-tertiary-10)] hover:text-[var(--sibs-tertiary-10)] focus:outline-none focus:ring-4 focus:ring-sibs-tertiary-10/15"
         >
           <Plus size={18} />
           Add Competency

@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, RefreshCw } from "lucide-react";
 
 import Header from "../../components/layout/Header";
 import HiringNeedsStats from "../../components/recruitment/HiringNeeds/HiringNeedsStats";
@@ -48,29 +48,29 @@ function getLocalStorageValue(keys = []) {
 function getCurrentUserSibsId(user = {}) {
   return normalizeSibsId(
     user?.sibsId ||
-      user?.sibs_id ||
-      user?.employeeSibsId ||
-      user?.employee_sibs_id ||
-      user?.gy_emp_code ||
-      user?.gy_user_code ||
-      user?.userCode ||
-      user?.user_code ||
-      user?.employeeCode ||
-      user?.employee_code ||
-      user?.username ||
-      getLocalStorageValue([
-        "sibsId",
-        "sibs_id",
-        "employeeSibsId",
-        "employee_sibs_id",
-        "gy_emp_code",
-        "gy_user_code",
-        "userCode",
-        "user_code",
-        "employeeCode",
-        "employee_code",
-        "username",
-      ]),
+    user?.sibs_id ||
+    user?.employeeSibsId ||
+    user?.employee_sibs_id ||
+    user?.gy_emp_code ||
+    user?.gy_user_code ||
+    user?.userCode ||
+    user?.user_code ||
+    user?.employeeCode ||
+    user?.employee_code ||
+    user?.username ||
+    getLocalStorageValue([
+      "sibsId",
+      "sibs_id",
+      "employeeSibsId",
+      "employee_sibs_id",
+      "gy_emp_code",
+      "gy_user_code",
+      "userCode",
+      "user_code",
+      "employeeCode",
+      "employee_code",
+      "username",
+    ]),
   );
 }
 
@@ -90,14 +90,14 @@ function getApprovalSettingsRows(responseData) {
 function getApprovalSettingsSibsId(row = {}) {
   return normalizeSibsId(
     row?.sibsId ||
-      row?.sibs_id ||
-      row?.employeeSibsId ||
-      row?.employee_sibs_id ||
-      row?.gy_emp_code ||
-      row?.gy_user_code ||
-      row?.userCode ||
-      row?.user_code ||
-      row?.username,
+    row?.sibs_id ||
+    row?.employeeSibsId ||
+    row?.employee_sibs_id ||
+    row?.gy_emp_code ||
+    row?.gy_user_code ||
+    row?.userCode ||
+    row?.user_code ||
+    row?.username,
   );
 }
 
@@ -125,6 +125,7 @@ export default function HiringNeedsPage() {
 
   const [selectedItem, setSelectedItem] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [approvalAccessLoading, setApprovalAccessLoading] =
     useState(true);
   const [canApproveHiringNeeds, setCanApproveHiringNeeds] =
@@ -253,22 +254,21 @@ export default function HiringNeedsPage() {
         const result =
           action === "approve"
             ? await approveRequestByModule(
-                "Hiring Needs",
-                requestId,
-                payload,
-              )
+              "Hiring Needs",
+              requestId,
+              payload,
+            )
             : await rejectRequestByModule(
-                "Hiring Needs",
-                requestId,
-                payload,
-              );
+              "Hiring Needs",
+              requestId,
+              payload,
+            );
 
         if (!result?.success) {
           throw new Error(
             result?.message ||
-              `Failed to ${
-                action === "approve" ? "approve" : "reject"
-              } the request.`,
+            `Failed to ${action === "approve" ? "approve" : "reject"
+            } the request.`,
           );
         }
 
@@ -284,8 +284,7 @@ export default function HiringNeedsPage() {
               : "Request Rejected",
           message:
             result?.message ||
-            `The Hiring Needs request was ${
-              action === "approve" ? "approved" : "rejected"
+            `The Hiring Needs request was ${action === "approve" ? "approved" : "rejected"
             } successfully.`,
         });
 
@@ -313,48 +312,95 @@ export default function HiringNeedsPage() {
     ],
   );
 
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+
+      await Promise.all([
+        fetchList(),
+        fetchJobDescriptions(),
+      ]);
+    } catch (error) {
+      showStatusModal({
+        type: "error",
+        title: "Refresh Failed",
+        message:
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.message ||
+          "Unable to refresh Hiring Needs records.",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [
+    fetchJobDescriptions,
+    fetchList,
+    showStatusModal,
+  ]);
+
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <ClipboardList size={14} />
-                Recruitment
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  Recruitment View
+                </span>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Hiring Needs Intake
+                </h1>
+
+                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Create, review, approve, and manage Personnel Requisition Forms across SIBS operational hubs.
+                </p>
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Hiring Needs Intake
-              </h1>
+              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  aria-label="Refresh Hiring Needs"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Refresh Hiring Needs"
+                >
+                  <RefreshCw
+                    size={15}
+                    className={refreshing ? "animate-spin" : ""}
+                  />
+                </button>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Create, review, approve, and manage Personnel
-                Requisition Forms.
-              </p>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                >
+                  <Plus size={15} />
+                  New Personnel Requisition
+                </button>
+              </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5"
-            >
-              <Plus size={18} />
-              New Personnel Requisition
-            </button>
-          </div>
+          </section>
 
           <HiringNeedsStats />
 
           <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "180ms" }}
           >
             <HiringNeedsFilters />
@@ -362,19 +408,28 @@ export default function HiringNeedsPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5"
+            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-4"
             style={{ animationDelay: "480ms" }}
           >
-            <h3 className="text-sm font-bold text-sibs-primary-1">
-              Hiring Needs Process Note
-            </h3>
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#042C51] shadow-sm">
+                <ClipboardList size={15} />
+              </span>
 
-            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              This module tracks Personnel Requisition Forms. Once a PRF
-              is approved by HR Admin, it becomes an active hiring need
-              that can be linked to Job Descriptions, Workforce Hiring
-              Planning, and Candidates.
-            </p>
+              <div>
+                <h3 className="text-xs font-extrabold text-[#042C51]">
+                  Hiring Needs Process Note
+                </h3>
+
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+                  Submitted Personnel Requisition Forms are routed
+                  for approval. Once approved, the PRF becomes an
+                  active hiring need that can be linked to Job
+                  Descriptions, Workforce Hiring Planning, and
+                  Candidates.
+                </p>
+              </div>
+            </div>
           </section>
         </div>
       </main>

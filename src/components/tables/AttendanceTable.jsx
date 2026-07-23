@@ -484,9 +484,9 @@ function StatCard({
         </span>
 
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${selectedTone.icon}`}
         >
-          <IconComponent size={14} strokeWidth={2.2} />
+          <IconComponent size={17} strokeWidth={2} />
         </span>
       </div>
 
@@ -1164,7 +1164,7 @@ export default function AttendanceTable() {
         className="sibs-profile-tab-panel sibs-page-card-in sibs-card overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white shadow-sm"
         style={getAnimationStyle(120)}
       >
-        <div className="border-b border-[#E6ECF2] bg-white p-4 sm:p-5">
+        <div className="border-b border-[#E6ECF2] bg-white px-4 py-4 sm:px-5">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
               <h2 className="sibs-section-title">Attendance Records</h2>
@@ -1179,8 +1179,10 @@ export default function AttendanceTable() {
               Page {currentPage}
             </span>
           </div>
+        </div>
 
-          <div className="mt-4">
+        <div className="relative overflow-visible p-4 sm:p-5">
+          <div>
             <PaginationTable
               filterLayout="ta-inline"
               showFilterPanel={false}
@@ -1243,10 +1245,8 @@ export default function AttendanceTable() {
               Apply Search
             </button>
           </div>
-        </div>
 
-        <div className="p-4 sm:p-5">
-          <div className="sibs-data-table-shell">
+          <div className="mt-5 sibs-data-table-shell">
             <div className="overflow-hidden">
               <div
                 ref={tableScrollRef}

@@ -456,10 +456,10 @@ function ToolbarButton({
           onClick?.();
         }
       }}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition ${
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
         active
           ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-          : "border-transparent text-[#315F8C] hover:border-[#C9D8E8] hover:bg-white"
+          : "border-transparent text-[#667085] hover:border-[#D7DEE8] hover:bg-white hover:text-[#FF5C28]"
       } disabled:cursor-not-allowed disabled:opacity-40`}
     >
       {children}
@@ -596,7 +596,8 @@ export default function RichTextEditor({
         .jd-rich-text-editor .ProseMirror {
           min-height: inherit;
           color: var(--sibs-primary-1);
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
+          font-weight: 600;
           line-height: 1.5;
           outline: none;
           overflow-wrap: anywhere;
@@ -708,9 +709,9 @@ export default function RichTextEditor({
 
       <div
         onFocusCapture={onFocus}
-        className="overflow-hidden rounded-xl border border-sibs-tertiary-8 bg-white transition focus-within:border-[var(--sibs-primary-1)] focus-within:ring-2 focus-within:ring-[var(--sibs-primary-1)]/10"
+        className="overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] transition hover:border-[#FF5C28]/40 hover:bg-white focus-within:border-[#FF5C28] focus-within:bg-white focus-within:ring-4 focus-within:ring-[#FF5C28]/10"
       >
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-[#E6ECF2] bg-[#F8FAFC] px-2 py-1.5">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-[#D7DEE8] bg-[#F2F4F7] px-2.5 py-1.5">
         <ToolbarButton
           title="Bold"
           active={editor?.isActive("bold")}
@@ -920,7 +921,7 @@ export default function RichTextEditor({
 
       <div
         style={{ minHeight }}
-        className="jd-rich-text-editor px-4 py-3"
+        className="jd-rich-text-editor bg-[#F8FAFC] px-3 py-2.5 focus-within:bg-white"
       >
         <EditorContent editor={editor} />
       </div>

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
-import SingleSelectDropdown from "../../layout/dropdown/SingleSelectDropdown";
-import MultiSelectDropdown from "../../layout/dropdown/MultiSelectDropdown";
+import ThemedDropdown from "../../layout/dropdown/ThemedDropdown";
 import RichTextEditor from "./RichTextEditor";
 
 const reportToOptions = [
@@ -39,26 +39,140 @@ const personalityTypeOptions = [
   { value: "ESFP", label: "ESFP (Entertainer)" },
 ];
 
+const fieldLabelClass =
+  "mb-1.5 block text-xs font-extrabold text-sibs-primary-1";
+
+const fieldButtonClass =
+  "flex h-10 w-full items-center justify-between gap-3 rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-left text-xs font-semibold text-sibs-primary-1 outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-60";
+
+function CompactMultiSelect({
+  refBox,
+  label,
+  required = false,
+  values = [],
+  placeholder,
+  open,
+  setOpen,
+  options,
+  onChange,
+  onBeforeOpen,
+  zIndex = "z-20",
+}) {
+  const selectedOptions = options.filter((option) =>
+    values.includes(option.value),
+  );
+
+  function toggleOption(optionValue) {
+    if (values.includes(optionValue)) {
+      onChange(values.filter((value) => value !== optionValue));
+      return;
+    }
+
+    onChange([...values, optionValue]);
+  }
+
+  function removeOption(optionValue, event) {
+    event.stopPropagation();
+    onChange(values.filter((value) => value !== optionValue));
+  }
+
+  return (
+    <div
+      ref={refBox}
+      className={`relative self-start ${open ? "z-[9999]" : zIndex}`}
+    >
+      <label className={fieldLabelClass}>
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => {
+          if (!open) {
+            onBeforeOpen?.();
+          }
+
+          setOpen((previous) => !previous);
+        }}
+        className={`${fieldButtonClass} min-h-10 h-auto py-1.5`}
+      >
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          {selectedOptions.length > 0 ? (
+            selectedOptions.map((option) => (
+              <span
+                key={option.value}
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[#D7DEE8] bg-white px-2.5 py-1 text-[10px] font-extrabold text-sibs-primary-1"
+              >
+                <span className="truncate">{option.label}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(event) => removeOption(option.value, event)}
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-sibs-primary-1/70 transition hover:bg-sibs-primary-1 hover:text-white"
+                >
+                  <X size={11} />
+                </span>
+              </span>
+            ))
+          ) : (
+            <span className="truncate text-sibs-tertiary-5">{placeholder}</span>
+          )}
+        </div>
+
+        <ChevronDown
+          size={16}
+          className={`shrink-0 text-sibs-primary-1 transition-transform ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-72 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white shadow-lg">
+          <div className="max-h-72 overflow-y-auto py-1.5">
+            {options.map((option) => {
+              const active = values.includes(option.value);
+
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => toggleOption(option.value)}
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
+                    active
+                      ? "bg-[#EAF2FB] text-sibs-primary-1"
+                      : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  <span
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-extrabold ${
+                      active
+                        ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                        : "border-sibs-tertiary-8 bg-white text-transparent"
+                    }`}
+                  >
+                    <Check size={11} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function JobDescriptionContentSection() {
   const { form, setForm } = useJobDescription();
 
-  const reportsToRef = useRef(null);
   const personalityTypeRef = useRef(null);
 
   const [personalityTypeOpen, setPersonalityTypeOpen] =
     useState(false);
 
-  const [reportsToOpen, setReportsToOpen] =
-    useState(false);
-
-  const selectedReportsTo =
-    reportToOptions.find(
-      (option) =>
-        option.value === String(form.reportsTo || ""),
-    )?.label || "";
-
   function closeDropdowns() {
-    setReportsToOpen(false);
     setPersonalityTypeOpen(false);
   }
 
@@ -94,12 +208,12 @@ export default function JobDescriptionContentSection() {
   }
 
   return (
-    <div className="relative z-[1] mt-5 overflow-visible rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+    <div className="relative z-[1] overflow-visible">
       <style>{`
         .jd-rich-text-editor .ProseMirror {
           min-height: inherit;
           color: var(--sibs-primary-1);
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           line-height: 1.5;
           outline: none;
           overflow-wrap: anywhere;
@@ -168,48 +282,38 @@ export default function JobDescriptionContentSection() {
         }
       `}</style>
 
-      <h3 className="mb-4 text-sm font-bold text-[#101828]">
-        Job Description Content
-      </h3>
-
       <div className="space-y-4 overflow-visible">
         <div className="grid grid-cols-1 gap-4 overflow-visible md:grid-cols-2 md:items-start">
           <div className="relative z-[40] min-w-0 overflow-visible">
-            <SingleSelectDropdown
-              refBox={reportsToRef}
+            <ThemedDropdown
               required
               label="Reports to"
-              value={selectedReportsTo}
+              value={form.reportsTo || ""}
               placeholder="Select reporting line"
-              open={reportsToOpen}
-              setOpen={setReportsToOpen}
-              disabled={false}
               options={reportToOptions}
-              selectedValue={form.reportsTo}
+              searchable={false}
               zIndex="z-[40]"
               onBeforeOpen={() => {
                 setPersonalityTypeOpen(false);
               }}
-              onSelect={(value) => {
+              onChange={(value) => {
                 setForm((previous) => ({
                   ...previous,
                   reportsTo: value,
                 }));
-
-                setReportsToOpen(false);
               }}
             />
           </div>
 
           <div className="relative z-[10] min-w-0">
-            <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+            <label className={fieldLabelClass}>
               Supervisory{" "}
               <span className="text-red-500">*</span>
             </label>
 
-            <div className="relative grid h-12 w-full grid-cols-2 overflow-hidden rounded-xl border border-[#D7DEE8] bg-[#F8FAFC] shadow-sm">
+            <div className="relative grid h-10 w-full grid-cols-2 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] transition focus-within:border-[#FF5C28] focus-within:ring-4 focus-within:ring-[#FF5C28]/10">
               <div
-                className={`absolute inset-y-0 left-0 w-1/2 rounded-xl bg-sibs-primary-1 shadow-2xs transition-transform duration-300 ease-in-out ${
+                className={`absolute inset-y-0 left-0 w-1/2 rounded-[9px] bg-sibs-primary-1 transition-transform duration-300 ease-in-out ${
                   form.supervisory === "No"
                     ? "translate-x-full"
                     : "translate-x-0"
@@ -230,7 +334,7 @@ export default function JobDescriptionContentSection() {
                         supervisory: option,
                       }))
                     }
-                    className={`relative z-10 inline-flex h-full items-center justify-center rounded-lg text-sm font-extrabold transition-colors duration-300 ${
+                    className={`relative z-10 inline-flex h-full items-center justify-center rounded-lg text-xs font-extrabold transition-colors duration-300 ${
                       isActive
                         ? "text-white"
                         : "text-sibs-primary-1 hover:text-sibs-primary-1"
@@ -251,7 +355,7 @@ export default function JobDescriptionContentSection() {
         </div>
 
         <div className="relative z-[1]">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+          <label className="mb-1.5 block text-xs font-extrabold text-sibs-primary-1">
             Position Overview{" "}
             <span className="text-red-500">*</span>
           </label>
@@ -273,7 +377,7 @@ export default function JobDescriptionContentSection() {
         </div>
 
         <div className="relative z-[1]">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+          <label className="mb-1.5 block text-xs font-extrabold text-sibs-primary-1">
             Duties & Responsibilities{" "}
             <span className="text-red-500">*</span>
           </label>
@@ -300,7 +404,7 @@ export default function JobDescriptionContentSection() {
         </div>
 
         <div className="relative z-[1]">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
+          <label className="mb-1.5 block text-xs font-extrabold text-sibs-primary-1">
             Qualifications & Characteristics{" "}
             <span className="text-red-500">*</span>
           </label>
@@ -328,10 +432,9 @@ export default function JobDescriptionContentSection() {
         </div>
 
         <div className="relative z-[30] overflow-visible">
-          <MultiSelectDropdown
+          <CompactMultiSelect
             refBox={personalityTypeRef}
             label="Preferred Personality Type"
-            value={form.personalityTypes || []}
             values={form.personalityTypes || []}
             placeholder="Select personality types"
             open={personalityTypeOpen}
@@ -340,9 +443,6 @@ export default function JobDescriptionContentSection() {
             options={personalityTypeOptions}
             zIndex="z-[30]"
             required
-            onBeforeOpen={() => {
-              setReportsToOpen(false);
-            }}
             onChange={(values) => {
               setForm((previous) => ({
                 ...previous,

@@ -1,410 +1,464 @@
-import React, { useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import React, {
+  useEffect,
+  useMemo,
+} from "react";
+import { FileText } from "lucide-react";
+
 import { useHiringNeeds } from "../../../services/context/HiringNeedsContext";
 import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import HiringNeedsMobileCard from "./HiringNeedsMobileCard";
+import {
+  getHiringNeedsDateOrWeek,
+  getHiringNeedsDepartmentAccount,
+  getHiringNeedsHeadcount,
+  getHiringNeedsReason,
+  getHiringNeedsRequestType,
+  getHiringNeedsRequestTypeClass,
+  getHiringNeedsSearchText,
+  getHiringNeedsSite,
+  getHiringNeedsStatusClass,
+  getHiringNeedsSubtitle,
+  getHiringNeedsTitle,
+  normalizeHiringNeedsStatus,
+} from "./hiringNeedsPresentation";
 
-function cleanText(value) {
-  return String(value ?? "").trim();
-}
-
-function formatDate(date) {
-  if (!date) return "—";
-
-  const parsed = new Date(date);
-
-  return Number.isNaN(parsed.getTime())
-    ? "—"
-    : parsed.toLocaleDateString("en-PH", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-}
-
-function formatDateRange(startDate, endDate) {
-  const start = formatDate(startDate);
-  const end = formatDate(endDate);
-
-  if (start !== "—" && end !== "—") return `${start} - ${end}`;
-  if (start !== "—") return start;
-  if (end !== "—") return end;
-
-  return "—";
-}
-
-function getStatusClass(status) {
-  switch (status) {
-    case "Approved":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "Not Approved":
-    case "Rejected":
-      return "border-red-200 bg-red-50 text-red-700";
-    case "For Approval":
-    case "Pending":
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
-  }
-}
-
-function getRequestType(item = {}) {
-  const type = cleanText(item.requestType || item.request_type).toLowerCase();
-
-  if (type === "downsize") return "Downsize";
-  if (type === "requisition") return "Requisition";
-
-  return "Requisition";
-}
-
-function getRequestTypeClass(type) {
-  if (type === "Downsize") {
-    return "border-red-200 bg-red-50 text-red-700";
-  }
-
-  return "border-blue-100 bg-blue-50 text-sibs-primary-1";
-}
-
-function getApprovalStatus(item = {}) {
-  return cleanText(item.approvalStatus || item.approval_status || "For Approval");
-}
-
-function getDepartmentAccount(item = {}) {
-  return (
-    cleanText(item.departmentAccount || item.department_account) ||
-    [item.departmentName || item.department_name || item.department, item.accountName || item.account_name || item.account]
-      .map(cleanText)
-      .filter(Boolean)
-      .join(" / ") ||
-    "—"
-  );
-}
-
-function getJobTitle(item = {}) {
-  const requestType = getRequestType(item);
-
-  if (requestType === "Downsize") {
-    return (
-      cleanText(item.positionTitle || item.position_title) ||
-      cleanText(item.roleTitle || item.role_title) ||
-      "Downsize Request"
-    );
-  }
-
-  return (
-    cleanText(item.jobDescriptionTitle || item.job_description_title) ||
-    cleanText(item.positionTitle || item.position_title) ||
-    cleanText(item.roleTitle || item.role_title) ||
-    "—"
-  );
-}
-
-function getJobSubtitle(item = {}) {
-  const requestType = getRequestType(item);
-
-  if (requestType === "Downsize") {
-    return (
-      cleanText(item.weeklyWeekDateRange || item.weekly_week_date_range) ||
-      formatDateRange(
-        item.weeklyWeekStart || item.weekly_week_start,
-        item.weeklyWeekEnd || item.weekly_week_end,
-      )
-    );
-  }
-
-  return cleanText(item.jdCode || item.jd_code || item.jobDescriptionCode || item.job_description_code) || "—";
-}
-
-function getHeadcount(item = {}) {
-  return (
-    item.headcount ??
-    item.requiredHeadcount ??
-    item.required_headcount ??
-    item.approvedRequirement ??
-    item.approved_requirement ??
-    "—"
-  );
-}
-
-function getReason(item = {}) {
-  const requestType = getRequestType(item);
-
-  if (requestType === "Downsize") {
-    return (
-      cleanText(item.downsizeReason || item.downsize_reason) ||
-      cleanText(item.reasonForHiring || item.reason_for_hiring) ||
-      cleanText(item.reason) ||
-      "—"
-    );
-  }
-
-  return (
-    cleanText(item.reasonForHiring || item.reason_for_hiring) ||
-    cleanText(item.reason) ||
-    "—"
-  );
-}
-
-function getLocationSite(item = {}) {
-  return cleanText(item.locationSite || item.location_site) || "—";
-}
-
-function getDateNeeded(item = {}) {
-  const requestType = getRequestType(item);
-
-  if (requestType === "Downsize") {
-    return (
-      cleanText(item.weeklyWeekDateRange || item.weekly_week_date_range) ||
-      formatDateRange(
-        item.weeklyWeekStart || item.weekly_week_start,
-        item.weeklyWeekEnd || item.weekly_week_end,
-      )
-    );
-  }
-
-  return formatDate(item.dateNeeded || item.date_needed || item.dueDate || item.due_date);
-}
+const HIRING_NEEDS_ENTITY = "hiring-needs";
+const DEFAULT_PAGE_LIMIT = 15;
 
 export default function HiringNeedsTable({ onView }) {
-  const { list, loading } = useHiringNeeds();
-  const { page, setPage, setPagination, pagination, search, filterValues } =
-    usePagination("hiring-needs");
+  const {
+    list,
+    loading,
+  } = useHiringNeeds();
 
-  const limit = pagination?.limit || 15;
+  const {
+    page,
+    setPage,
+    setPagination,
+    pagination,
+    search,
+    filterValues,
+  } = usePagination(HIRING_NEEDS_ENTITY);
+
+  const limit =
+    Number(pagination?.limit) || DEFAULT_PAGE_LIMIT;
 
   const filteredList = useMemo(() => {
-    const keyword = cleanText(search).toLowerCase();
-    const statusF = filterValues?.status || "All";
-    const siteF = filterValues?.site || "All";
-    const reasonF = filterValues?.reason || "All";
+    const keyword = String(search || "")
+      .trim()
+      .toLowerCase();
 
-    return list.filter((item) => {
-      const requestType = getRequestType(item);
-      const approvalStatus = getApprovalStatus(item);
-      const locationSite = getLocationSite(item);
-      const reason = getReason(item);
+    const statusValue =
+      filterValues?.status || "All";
 
-      const searchableText = [
-        item.id,
-        requestType,
-        item.positionTitle,
-        item.position_title,
-        item.roleTitle,
-        item.role_title,
-        item.jobDescriptionTitle,
-        item.job_description_title,
-        item.jdCode,
-        item.jd_code,
-        item.departmentAccount,
-        item.department_account,
-        item.department,
-        item.departmentName,
-        item.department_name,
-        item.account,
-        item.accountName,
-        item.account_name,
-        item.downsizeReason,
-        item.downsize_reason,
-        item.reasonForHiring,
-        item.reason_for_hiring,
-        item.reason,
-        item.weeklyWeekDateRange,
-        item.weekly_week_date_range,
-      ]
-        .map(cleanText)
-        .join(" ")
-        .toLowerCase();
+    const siteValue =
+      filterValues?.site || "All";
 
-      const matchesSearch = !keyword || searchableText.includes(keyword);
-      const matchesStatus = statusF === "All" || approvalStatus === statusF;
-      const matchesSite = siteF === "All" || locationSite === siteF;
-      const matchesReason = reasonF === "All" || reason === reasonF;
+    const reasonValue =
+      filterValues?.reason || "All";
 
-      return matchesSearch && matchesStatus && matchesSite && matchesReason;
-    });
-  }, [list, search, filterValues]);
+    return (Array.isArray(list) ? list : []).filter(
+      (item) => {
+        const status =
+          normalizeHiringNeedsStatus(
+            item.approvalStatus ||
+              item.approval_status,
+          );
+
+        const site =
+          getHiringNeedsSite(item);
+
+        const reason =
+          getHiringNeedsReason(item);
+
+        const matchesSearch =
+          !keyword ||
+          getHiringNeedsSearchText(item).includes(
+            keyword,
+          );
+
+        const matchesStatus =
+          statusValue === "All" ||
+          status === statusValue;
+
+        const matchesSite =
+          siteValue === "All" ||
+          site === siteValue;
+
+        const matchesReason =
+          reasonValue === "All" ||
+          reason === reasonValue;
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesSite &&
+          matchesReason
+        );
+      },
+    );
+  }, [
+    filterValues,
+    list,
+    search,
+  ]);
+
+  const totalPages = Math.max(
+    Math.ceil(filteredList.length / limit),
+    1,
+  );
+
+  const safeCurrentPage = Math.min(
+    Math.max(Number(page) || 1, 1),
+    totalPages,
+  );
 
   const paginatedData = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredList.slice(start, start + limit);
-  }, [filteredList, page, limit]);
+    const start =
+      (safeCurrentPage - 1) * limit;
+
+    return filteredList.slice(
+      start,
+      start + limit,
+    );
+  }, [
+    filteredList,
+    limit,
+    safeCurrentPage,
+  ]);
 
   useEffect(() => {
     setPagination({
       total: filteredList.length,
-      totalPages: Math.ceil(filteredList.length / limit) || 1,
+      totalPages,
+      currentPage: safeCurrentPage,
+      limit,
     });
-  }, [filteredList.length, limit, setPagination]);
+  }, [
+    filteredList.length,
+    limit,
+    safeCurrentPage,
+    setPagination,
+    totalPages,
+  ]);
 
-  const totalPages = Math.ceil(filteredList.length / limit) || 1;
+  useEffect(() => {
+    if (Number(page) !== safeCurrentPage) {
+      setPage(safeCurrentPage);
+    }
+  }, [
+    page,
+    safeCurrentPage,
+    setPage,
+  ]);
+
+  function handlePreviousPage() {
+    if (
+      loading ||
+      safeCurrentPage <= 1
+    ) {
+      return;
+    }
+
+    setPage(
+      Math.max(
+        safeCurrentPage - 1,
+        1,
+      ),
+    );
+  }
+
+  function handleNextPage() {
+    if (
+      loading ||
+      safeCurrentPage >= totalPages
+    ) {
+      return;
+    }
+
+    setPage(
+      Math.min(
+        safeCurrentPage + 1,
+        totalPages,
+      ),
+    );
+  }
+
+  function handleRowKeyDown(event, item) {
+    if (
+      event.key !== "Enter" &&
+      event.key !== " "
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    onView?.(item);
+  }
 
   return (
-    <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
-      <div className="space-y-3 lg:hidden">
-        {loading ? (
-          <div className="py-12 text-center text-sm font-bold text-gray-500">
-            Loading...
-          </div>
-        ) : paginatedData.length > 0 ? (
-          paginatedData.map((item) => (
-            <HiringNeedsMobileCard key={item.id} item={item} onView={onView} />
-          ))
-        ) : (
-          <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-            No records found.
-          </div>
-        )}
-      </div>
+    <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
+      <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        {/* Mobile cards */}
+        <div className="p-4 lg:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] py-12 text-center text-sm font-bold text-[#667085]">
+              Loading Hiring Needs records...
+            </div>
+          ) : paginatedData.length > 0 ? (
+            <div className="space-y-3">
+              {paginatedData.map(
+                (item, index) => (
+                  <HiringNeedsMobileCard
+                    key={
+                      item.id ||
+                      `${getHiringNeedsTitle(
+                        item,
+                      )}-${index}`
+                    }
+                    item={item}
+                    onView={onView}
+                  />
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="sibs-empty-panel">
+              <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
 
-      <div className="hidden lg:block">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1550px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-            <thead>
-              <tr className="whitespace-nowrap bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-                <th className="px-5 py-4 first:rounded-tl-2xl">ID</th>
-                <th className="px-5 py-4">Request Type</th>
-                <th className="px-5 py-4">Department / Account</th>
-                <th className="px-5 py-4">Job Description / Request</th>
-                <th className="px-5 py-4 text-center">Headcount</th>
-                <th className="px-5 py-4">Reason</th>
-                <th className="px-5 py-4">Location / Site</th>
-                <th className="px-5 py-4">Date Needed / Week</th>
-                <th className="px-5 py-4 text-center">Approval</th>
-                <th className="px-5 py-4 text-right last:rounded-tr-2xl">
-                  Actions
+              <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                No Personnel Requisitions Found
+              </p>
+
+              <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                No records matched the active search
+                and filters.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[1180px] border-collapse bg-white text-left text-xs">
+            <thead className="sibs-data-table-head">
+              <tr className="sibs-data-table-head-row">
+                <th className="sibs-data-table-th text-left">
+                  ID / Request Type
+                </th>
+
+                <th className="sibs-data-table-th text-left">
+                  Department / Account
+                </th>
+
+                <th className="sibs-data-table-th text-left">
+                  Job Description / Request
+                </th>
+
+                <th className="sibs-data-table-th text-center">
+                  Headcount
+                </th>
+
+                <th className="sibs-data-table-th text-left">
+                  Reason
+                </th>
+
+                <th className="sibs-data-table-th text-left">
+                  Location / Site
+                </th>
+
+                <th className="sibs-data-table-th text-left">
+                  Date Needed / Week
+                </th>
+
+                <th className="sibs-data-table-th text-center">
+                  Approval Status
                 </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-[#E6ECF2]">
               {loading ? (
                 <tr>
                   <td
-                    colSpan={10}
-                    className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                    colSpan={8}
+                    className="px-5 py-14 text-center"
                   >
-                    Loading...
+                    <FileText className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
+
+                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                      Loading Personnel Requisitions
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                      Fetching the current Hiring Needs
+                      records.
+                    </p>
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((item) => {
-                  const requestType = getRequestType(item);
-                  const approvalStatus = getApprovalStatus(item);
+                paginatedData.map(
+                  (item, index) => {
+                    const requestType =
+                      getHiringNeedsRequestType(
+                        item,
+                      );
 
-                  return (
-                    <tr key={item.id} className="transition hover:bg-[#FAFBFC]">
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-sibs-primary-1">
-                        {item.id}
-                      </td>
+                    const status =
+                      normalizeHiringNeedsStatus(
+                        item.approvalStatus ||
+                          item.approval_status,
+                      );
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <span
-                          className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-bold ${getRequestTypeClass(
-                            requestType,
-                          )}`}
-                        >
-                          {requestType}
-                        </span>
-                      </td>
+                    const title =
+                      getHiringNeedsTitle(item);
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-bold text-[#101828]">
-                        {getDepartmentAccount(item)}
-                      </td>
+                    return (
+                      <tr
+                        key={
+                          item.id ||
+                          `${title}-${index}`
+                        }
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          onView?.(item)
+                        }
+                        onKeyDown={(event) =>
+                          handleRowKeyDown(
+                            event,
+                            item,
+                          )
+                        }
+                        className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40"
+                        style={{
+                          animationDelay:
+                            `${index * 30}ms`,
+                        }}
+                        aria-label={`View Hiring Needs request ${
+                          item.id || ""
+                        }`}
+                      >
+                        <td className="px-4 py-2.5 align-middle">
+                          <div className="flex items-center gap-2 whitespace-nowrap">
+                            <p className="text-xs font-extrabold leading-none text-[#042C51]">
+                              {item.id || "--"}
+                            </p>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5">
-                        <p className="text-sm font-bold text-[#101828]">
-                          {getJobTitle(item)}
-                        </p>
+                            <span
+                              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getHiringNeedsRequestTypeClass(
+                                requestType,
+                              )}`}
+                            >
+                              {requestType}
+                            </span>
+                          </div>
+                        </td>
 
-                        <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-                          {getJobSubtitle(item)}
-                        </p>
-                      </td>
+                        <td className="px-4 py-2.5 align-middle">
+                          <p
+                            className="max-w-[260px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
+                            title={getHiringNeedsDepartmentAccount(
+                              item,
+                            )}
+                          >
+                            {getHiringNeedsDepartmentAccount(
+                              item,
+                            )}
+                          </p>
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center text-sm font-extrabold text-sibs-primary-1">
-                        {getHeadcount(item)}
-                      </td>
+                        <td className="px-4 py-2.5 align-middle">
+                          <p className="max-w-[320px] text-xs font-extrabold leading-5 text-[#042C51]">
+                            {title}
+                          </p>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                        {getReason(item)}
-                      </td>
+                          <p className="mt-0.5 max-w-[320px] truncate font-mono text-[10px] font-semibold leading-4 text-[#98A2B3]">
+                            {getHiringNeedsSubtitle(
+                              item,
+                            )}
+                          </p>
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                        {getLocationSite(item)}
-                      </td>
+                        <td className="px-4 py-2.5 text-center align-middle">
+                          <span className="inline-flex min-w-8 items-center justify-center rounded-lg bg-[#F2F6FA] px-2.5 py-1 text-xs font-extrabold leading-none tabular-nums text-[#042C51]">
+                            {getHiringNeedsHeadcount(
+                              item,
+                            )}
+                          </span>
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-sm font-semibold text-[#344054]">
-                        {getDateNeeded(item)}
-                      </td>
+                        <td className="px-4 py-2.5 align-middle">
+                          <p className="max-w-[220px] text-xs font-semibold leading-5 text-[#475467]">
+                            {getHiringNeedsReason(
+                              item,
+                            )}
+                          </p>
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-center">
-                        <span
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-bold ${getStatusClass(
-                            approvalStatus,
-                          )}`}
-                        >
-                          {approvalStatus}
-                        </span>
-                      </td>
+                        <td className="px-4 py-2.5 text-xs font-semibold text-[#475467] align-middle">
+                          {getHiringNeedsSite(item)}
+                        </td>
 
-                      <td className="border-b border-[#E6ECF2] px-5 py-5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => onView(item)}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-4 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
-                        >
-                          <Eye size={15} />
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
+                        <td className="px-4 py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                          {getHiringNeedsDateOrWeek(
+                            item,
+                          )}
+                        </td>
+
+                        <td className="px-4 py-2.5 text-center align-middle">
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[9px] font-extrabold leading-none ${getHiringNeedsStatusClass(
+                              status,
+                            )}`}
+                          >
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  },
+                )
               ) : (
                 <tr>
                   <td
-                    colSpan={10}
-                    className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                    colSpan={8}
+                    className="px-5 py-14 text-center"
                   >
-                    No results found.
+                    <FileText className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
+                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                      No Personnel Requisitions Found
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                      No records matched the active
+                      search and filters.
+                    </p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
 
-      <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <p className="text-sm font-semibold text-sibs-tertiary-5">
-          Showing {paginatedData.length} of {filteredList.length} records
-        </p>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:opacity-30"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <button
-            type="button"
-            className="flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-sibs-primary-1 px-3 text-sm font-bold text-white shadow-sm"
-          >
-            {page}
-          </button>
-
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => setPage(page + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:opacity-30"
-          >
-            <ChevronRight size={16} />
-          </button>
+        {/* Pagination footer */}
+        <div className="border-t border-[#E6ECF2] px-4 pb-4">
+          <PaginationTable
+            showSearch={false}
+            showPagination
+            showCount
+            loading={loading}
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            loadedCount={paginatedData.length}
+            totalRecords={filteredList.length}
+            recordLabel="personnel requisitions"
+            onPrevious={handlePreviousPage}
+            onNext={handleNextPage}
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
         </div>
       </div>
     </div>

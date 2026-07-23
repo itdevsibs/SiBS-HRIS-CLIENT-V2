@@ -45,7 +45,7 @@ function getOptionLabel(option) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wider text-[#667085]">
+    <label className="mb-1.5 block font-jakarta text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
       {children}
     </label>
   );
@@ -69,7 +69,7 @@ function DateFilterField({ filter }) {
           min={filter.min}
           max={filter.max}
           disabled={filter.disabled}
-          className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50`}
+          className={`h-11 w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50`}
         />
       </div>
     </div>
@@ -339,7 +339,7 @@ export default function PaginationTable({
                 }
                 onKeyDown={onSearchKeyDown}
                 placeholder={searchPlaceholder}
-                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
+                className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pl-9 font-jakarta text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#8A98B8] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 ${
                   isTaInlineLayout ? "h-10" : "h-11"
                 }`}
               />
@@ -397,7 +397,7 @@ export default function PaginationTable({
                     placeholder={filter.placeholder || "Search..."}
                     autoComplete="off"
                     disabled={filter.disabled}
-                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                    className={`w-full ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 pr-10 font-jakarta text-xs font-bold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
                       isTaInlineLayout ? "h-10" : "h-11"
                     }`}
                   />
@@ -422,7 +422,7 @@ export default function PaginationTable({
                   type="button"
                   onClick={() => toggleDropdown(filter.key)}
                   disabled={filter.disabled}
-                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex w-full items-center justify-between ${EDGE} border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-left font-jakarta text-xs font-bold text-[#042C51] outline-none transition hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:opacity-50 ${
                     isTaInlineLayout ? "h-10" : "h-11"
                   }`}
                   aria-expanded={isOpen}
@@ -451,7 +451,7 @@ export default function PaginationTable({
                       className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                         filter.value === "All"
                           ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                          : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                          : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                       }`}
                     >
                       <span className="block truncate">
@@ -476,7 +476,7 @@ export default function PaginationTable({
                           className={`block w-full px-4 py-2.5 text-left text-xs transition ${
                             checked
                               ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
-                              : "font-semibold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                              : "font-bold text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                           }`}
                         >
                           <span className="block truncate">
@@ -518,19 +518,19 @@ export default function PaginationTable({
   }
 
   return (
-    <div className={`relative overflow-visible font-jakarta ${className}`}>
+    <div className={`relative overflow-visible font-jakarta text-[#042C51] ${className}`}>
       {hasTopControls ? (
         <div className="relative z-[50] overflow-visible">
           {title || subtitle ? (
             <div className="mb-4 min-w-0">
               {title ? (
-                <h2 className="text-base font-extrabold text-[#042C51]">
+                <h2 className="sibs-section-title">
                   {title}
                 </h2>
               ) : null}
 
               {subtitle ? (
-                <p className="mt-1 text-sm font-medium text-[#667085]">
+                <p className="sibs-section-subtitle">
                   {subtitle}
                 </p>
               ) : null}
@@ -548,7 +548,7 @@ export default function PaginationTable({
                       size={16}
                       className="shrink-0 text-[#042C51]"
                     />
-                    <span className="truncate text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+              <span className="truncate font-jakarta text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
                       {filterTitle}
                     </span>
                   </div>
@@ -578,7 +578,7 @@ export default function PaginationTable({
       {showPagination ? (
         <div className="mt-5 flex flex-col gap-3 border-t border-[#F1F5F9] pt-4 sm:flex-row sm:items-center sm:justify-between">
           {showCount ? (
-            <p className="m-0 text-center text-xs font-semibold text-[#667085] sm:text-left sm:text-sm">
+            <p className="m-0 text-center font-jakarta text-xs font-semibold leading-relaxed text-[#667085] sm:text-left">
               Showing{" "}
               <span className="font-extrabold text-[#042C51]">
                 {loadedCount}
@@ -603,14 +603,14 @@ export default function PaginationTable({
               type="button"
               disabled={loading || !hasPreviousPage}
               onClick={handlePrevious}
-              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4 sm:text-sm`}
+              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4`}
             >
               <ChevronLeft size={16} />
               <span className="truncate">Previous</span>
             </button>
 
             <span
-              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 text-xs font-extrabold text-white shadow-sm sm:px-4 sm:text-sm`}
+              className={`inline-flex h-10 items-center justify-center whitespace-nowrap ${EDGE} border border-[#FF5C28] bg-[#FF5C28] px-3 font-jakarta text-xs font-extrabold text-white shadow-sm sm:px-4`}
             >
               Page {safeCurrentPage}
               {safeTotalPages > 1 ? ` of ${safeTotalPages}` : ""}
@@ -620,7 +620,7 @@ export default function PaginationTable({
               type="button"
               disabled={loading || !hasNextPage}
               onClick={handleNext}
-              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4 sm:text-sm`}
+              className={`inline-flex h-10 min-w-0 items-center justify-center gap-1.5 ${EDGE} border border-[#D6DEE8] bg-white px-3 font-jakarta text-xs font-extrabold text-[#042C51] transition hover:-translate-y-0.5 hover:border-[#FF5C28]/50 hover:bg-[#FFF0EB] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:hover:border-[#D6DEE8] disabled:hover:bg-white disabled:hover:text-[#042C51] sm:px-4`}
             >
               <span className="truncate">Next</span>
               <ChevronRight size={16} />

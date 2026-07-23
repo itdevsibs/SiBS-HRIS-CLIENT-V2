@@ -370,9 +370,9 @@ function MetricCard({ label, value, accent, note, description, icon, delay = 0 }
           {label}
         </span>
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${accent}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${accent}`}
         >
-          {React.createElement(icon, { size: 15 })}
+          {React.createElement(icon, { size: 17, strokeWidth: 2 })}
         </span>
       </div>
       <div className="mt-3 flex items-end justify-between gap-3">

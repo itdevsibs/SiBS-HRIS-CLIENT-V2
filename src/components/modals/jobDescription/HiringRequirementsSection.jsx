@@ -1,320 +1,197 @@
-import StatusGuide from "../../../lib/utils/react-utils/StatusGuide";
-import SearchDropdown from "../../layout/dropdown/SearchDropdown";
-import SingleSelectDropdown from "../../layout/dropdown/SingleSelectDropdown";
 import { useJobDescription } from "../../../services/context/JobDescriptionContext";
+import ThemedDropdown from "../../layout/dropdown/ThemedDropdown";
+import {
+  getThemedDropdownOptionLabel,
+  getThemedDropdownOptionValue,
+} from "../../layout/dropdown/themedDropdownUtils";
+
+const fieldLabelClass =
+  "mb-1.5 flex items-center justify-between gap-3 text-xs font-extrabold text-sibs-primary-1";
+
+const inputClass =
+  "h-10 w-full rounded-[10px] border border-sibs-tertiary-8 bg-[#F8FAFC] px-3 text-xs font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#EEF2F6] disabled:text-sibs-primary-1";
+
+function CompactInput({
+  label,
+  required = false,
+  value,
+  placeholder,
+  type = "text",
+  disabled = false,
+  onChange,
+}) {
+  return (
+    <label className="block min-w-0">
+      <span className={fieldLabelClass}>
+        <span>
+          {label} {required && <span className="text-red-500">*</span>}
+        </span>
+      </span>
+
+      <input
+        type={type}
+        value={value || ""}
+        disabled={disabled}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={inputClass}
+      />
+    </label>
+  );
+}
 
 export default function HiringRequirementSection({
-  refs,
-  dropdownState,
-  searchState,
-  handleLinkedRequirementChange,
   approvedJdOptions = [],
   approvedJdLoading = false,
+  handleLinkedRequirementChange,
 }) {
   const {
     form,
     setForm,
-    accounts,
-    departments,
-    requestedByUsers,
-    dropdownLoading,
-    dropdownError,
-    jdStatusOptions,
-    linkedRequirementOptions,
-    hasLinkedHiringRequirement,
-    selectedLinkedRequirement,
-    selectedJdStatus,
+    accounts = [],
+    departments = [],
   } = useJobDescription();
 
-  const {
-    linkedRequirementRef,
-    accountSearchRef,
-    departmentSearchRef,
-    jdStatusRef,
-    preparedByRef,
-  } = refs;
+  const selectedExistingJd =
+    form.existingJdId || form.existing_jd_id || form.linkedHiringRequirement || "";
 
-  const {
-    linkedRequirementOpen,
-    setLinkedRequirementOpen,
-    accountOpen,
-    setAccountOpen,
-    departmentOpen,
-    setDepartmentOpen,
-    jdStatusOpen,
-    setJdStatusOpen,
-    requestedByOpen,
-    setRequestedByOpen,
-  } = dropdownState;
+  const selectedAccount =
+    form.accountId || form.account_id || form.preparedForId || "";
 
-  const {
-    accountSearch,
-    setAccountSearch,
-    departmentSearch,
-    setDepartmentSearch,
-    requestedBySearch,
-    setRequestedBySearch,
-  } = searchState;
+  const selectedDepartment =
+    form.departmentId || form.department_id || "";
 
-  function closeAllDropdowns() {
-    setLinkedRequirementOpen(false);
-    setAccountOpen(false);
-    setDepartmentOpen(false);
-    setJdStatusOpen(false);
-    setRequestedByOpen(false);
+  function updateField(field, value, aliases = []) {
+    setForm((previous) => {
+      const nextForm = {
+        ...previous,
+        [field]: value,
+      };
+
+      aliases.forEach((alias) => {
+        nextForm[alias] = value;
+      });
+
+      return nextForm;
+    });
   }
 
-  const finalLinkedRequirementOptions =
-    Array.isArray(approvedJdOptions) && approvedJdOptions.length > 0
-      ? approvedJdOptions
-      : linkedRequirementOptions;
+  function handleAccountChange(value) {
+    const selectedOption = accounts.find(
+      (option) => String(getThemedDropdownOptionValue(option)) === String(value),
+    );
+    const label = getThemedDropdownOptionLabel(selectedOption);
 
-  const finalSelectedLinkedRequirement =
-    finalLinkedRequirementOptions.find(
-      (option) =>
-        String(option.value || "") ===
-        String(form.existingJdId || form.linkedHiringRequirement || ""),
-    )?.label ||
-    selectedLinkedRequirement ||
-    "";
+    setForm((previous) => ({
+      ...previous,
+      accountId: value,
+      account_id: value,
+      preparedForId: value,
+      prepared_for_id: value,
+      account: label,
+      preparedFor: label,
+      prepared_for: label,
+    }));
+  }
+
+  function handleDepartmentChange(value) {
+    const selectedOption = departments.find(
+      (option) => String(getThemedDropdownOptionValue(option)) === String(value),
+    );
+    const label = getThemedDropdownOptionLabel(selectedOption);
+
+    setForm((previous) => ({
+      ...previous,
+      departmentId: value,
+      department_id: value,
+      department: label,
+      departmentName: label,
+      department_name: label,
+    }));
+  }
 
   return (
-    <div className="relative z-50 rounded-xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
-      <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-sm font-extrabold text-[#101828]">
-            Hiring Requirement Link
-          </h3>
+    <div className="space-y-3.5">
+      <ThemedDropdown
+        label="Existing Job Description Template"
+        helper="Select template or create new"
+        value={selectedExistingJd}
+        options={approvedJdOptions}
+        disabled={approvedJdLoading}
+        showPlaceholderOption
+        placeholder={
+          approvedJdLoading
+            ? "Loading approved templates..."
+            : "No Existing Job Description - New Job Description"
+        }
+        searchable
+        onChange={(value) => {
+          handleLinkedRequirementChange?.(value);
+        }}
+      />
 
-          <p className="mt-1 text-xs font-semibold text-sibs-tertiary-5">
-            Link this JD to an existing record or create a new job description.
-          </p>
-        </div>
+      <div className="grid grid-cols-1 gap-3.5 md:grid-cols-3">
+        <CompactInput
+          label="Document Title"
+          required
+          value={form.documentTitle || form.document_title || ""}
+          placeholder="e.g. JD_Senior_Support_v1.0.pdf"
+          onChange={(value) =>
+            updateField("documentTitle", value, ["document_title"])
+          }
+        />
 
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1/70">
-            Status
-          </span>
+        <CompactInput
+          label="Role Title"
+          required
+          value={form.roleTitle || form.role_title || ""}
+          placeholder="e.g. Senior Customer Support Representative"
+          onChange={(value) => updateField("roleTitle", value, ["role_title"])}
+        />
 
-          <span
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-extrabold ${
-              String(selectedJdStatus || form.jdStatus || "")
-                .toLowerCase()
-                .includes("approval")
-                ? "border-[#FFB088] bg-[#FFF3ED] text-[#FF5C28]"
-                : String(selectedJdStatus || form.jdStatus || "")
-                      .toLowerCase()
-                      .includes("approved")
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                  : String(selectedJdStatus || form.jdStatus || "")
-                        .toLowerCase()
-                        .includes("revision")
-                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : "border-blue-200 bg-blue-50 text-blue-700"
-            }`}
-          >
-            {selectedJdStatus || form.jdStatus || "New Job Description"}
-          </span>
-        </div>
-      </div>
+        <ThemedDropdown
+          label="Account / Client"
+          required
+          value={selectedAccount}
+          options={accounts}
+          placeholder="Search account"
+          searchable
+          onChange={handleAccountChange}
+        />
 
-      {dropdownError && (
-        <div className="relative z-[90] mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {dropdownError}
-        </div>
-      )}
+        <ThemedDropdown
+          label="Department"
+          required
+          value={selectedDepartment}
+          options={departments}
+          placeholder="Search department"
+          searchable
+          onChange={handleDepartmentChange}
+        />
 
-      <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <div className="relative z-[100] md:col-span-2">
-          <div className="grid grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_max-content] xl:items-end">
-            <div className="relative z-[100] min-w-0">
-              <SingleSelectDropdown
-                refBox={linkedRequirementRef}
-                label="Existing Job Description"
-                value={finalSelectedLinkedRequirement}
-                placeholder="Select existing job description"
-                open={linkedRequirementOpen}
-                setOpen={setLinkedRequirementOpen}
-                disabled={false}
-                options={finalLinkedRequirementOptions}
-                selectedValue={
-                  form.existingJdId || form.linkedHiringRequirement
-                }
-                loading={approvedJdLoading}
-                loadingText="Loading approved job descriptions..."
-                zIndex="z-[120]"
-                onBeforeOpen={() => {
-                  setAccountOpen(false);
-                  setDepartmentOpen(false);
-                  setJdStatusOpen(false);
-                  setRequestedByOpen(false);
-                }}
-                onSelect={(value, option) => {
-                  handleLinkedRequirementChange(value, option);
-                  setLinkedRequirementOpen(false);
-                }}
-              />
-            </div>
+        <CompactInput
+          label="Date Requested"
+          required
+          type="date"
+          value={form.dateRequested || form.date_requested || ""}
+          onChange={(value) =>
+            updateField("dateRequested", value, ["date_requested"])
+          }
+        />
 
-            {!hasLinkedHiringRequirement && (
-              <p className="relative z-[10] text-xs font-semibold leading-5 text-blue-700 xl:col-span-2">
-                No existing JD is linked, so this will be created as a new job
-                description.
-              </p>
-            )}
-          </div>
-
-          <div className="relative z-[20] mt-2 self-start">
-            <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-              Document Title <span className="text-red-500">*</span>
-            </label>
-
-            <input
-              required
-              value={form.documentTitle}
-              onFocus={closeAllDropdowns}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  documentTitle: e.target.value,
-                }))
-              }
-              placeholder="New Document Title"
-              className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-            />
-          </div>
-        </div>
-
-        <div className="relative z-[80] self-start">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Position <span className="text-red-500">*</span>
-          </label>
-
-          <input
-            required
-            value={form.roleTitle}
-            onFocus={closeAllDropdowns}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                roleTitle: e.target.value,
-              }))
-            }
-            placeholder="New Position"
-            className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-          />
-        </div>
-
-        <div className="relative z-[80]">
-          <SearchDropdown
-            refBox={accountSearchRef}
-            label="Prepared For"
-            required
-            value={form.account}
-            searchValue={accountSearch}
-            setSearchValue={setAccountSearch}
-            placeholder="Search account"
-            open={accountOpen}
-            setOpen={setAccountOpen}
-            disabled={false}
-            loading={dropdownLoading}
-            loadingText="Loading accounts..."
-            options={accounts}
-            selectedValue={form.accountId}
-            getOptionValue={(item) => item.gy_acc_id}
-            getOptionLabel={(item) => item.gy_acc_name}
-            onBeforeOpen={() => {
-              setLinkedRequirementOpen(false);
-              setDepartmentOpen(false);
-              setJdStatusOpen(false);
-              setRequestedByOpen(false);
-            }}
-            onSelect={(selectedAccount) => {
-              setForm((prev) => ({
-                ...prev,
-                accountId: selectedAccount ? selectedAccount.gy_acc_id : "",
-                account: selectedAccount ? selectedAccount.gy_acc_name : "",
-              }));
-            }}
-            zIndex="z-[110]"
-          />
-        </div>
-
-        <div className="relative z-[70]">
-          <SearchDropdown
-            refBox={departmentSearchRef}
-            label="Department"
-            required
-            value={form.department}
-            searchValue={departmentSearch}
-            setSearchValue={setDepartmentSearch}
-            placeholder="Search department"
-            open={departmentOpen}
-            setOpen={setDepartmentOpen}
-            disabled={false}
-            loading={dropdownLoading}
-            loadingText="Loading departments..."
-            options={departments}
-            selectedValue={form.departmentId}
-            getOptionValue={(item) => item.id_department}
-            getOptionLabel={(item) => item.name_department}
-            onBeforeOpen={() => {
-              setLinkedRequirementOpen(false);
-              setAccountOpen(false);
-              setJdStatusOpen(false);
-              setRequestedByOpen(false);
-            }}
-            onSelect={(selectedDepartment) => {
-              setForm((prev) => ({
-                ...prev,
-                departmentId: selectedDepartment
-                  ? selectedDepartment.id_department
-                  : "",
-                department: selectedDepartment
-                  ? selectedDepartment.name_department
-                  : "",
-              }));
-            }}
-            zIndex="z-[100]"
-          />
-        </div>
-
-        <div className="relative z-[20] self-start">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Effective Date <span className="text-red-500">*</span>
-          </label>
-
-          <input
-            required
-            type="date"
-            value={form.effectiveDate || ""}
-            onFocus={closeAllDropdowns}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                effectiveDate: e.target.value,
-              }))
-            }
-            className="w-full rounded-xl border border-sibs-tertiary-8 bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none focus:border-[var(--sibs-primary-1)]"
-          />
-        </div>
-
-        <div className="relative z-[10] self-start">
-          <label className="mb-1 block text-sm font-medium text-sibs-primary-1">
-            Created by <span className="text-red-500">*</span>
-          </label>
-
-          <input
-            readOnly
-            value={form.owner || ""}
-            placeholder="Logged-in user account"
-            className="w-full cursor-not-allowed rounded-xl border border-sibs-tertiary-8 bg-gray-50 px-4 py-3 text-sm font-semibold uppercase text-sibs-primary-1 outline-none"
-          />
-
-          <p className="mt-2 text-xs font-semibold text-sibs-tertiary-5">
-            Owner is automatically set based on the logged-in user account.
-          </p>
-        </div>
+        <CompactInput
+          label="Prepared By / Requested By"
+          required
+          value={
+            form.requestedBy ||
+            form.requested_by ||
+            form.owner ||
+            form.preparedBy ||
+            ""
+          }
+          disabled
+          onChange={() => {}}
+        />
       </div>
     </div>
   );

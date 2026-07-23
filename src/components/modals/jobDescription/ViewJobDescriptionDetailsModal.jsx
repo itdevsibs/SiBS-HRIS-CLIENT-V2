@@ -114,7 +114,6 @@ export default function ViewJobDescriptionDetailsModal({
       case "Approved":
       case "Existing":
       case "Active":
-      case "Approved":
         return "border-emerald-200 bg-emerald-50 text-emerald-700";
 
       case "For Approval":
@@ -383,11 +382,7 @@ export default function ViewJobDescriptionDetailsModal({
       return;
     }
 
-    onStatus?.({
-      type: "info",
-      title: "Not Yet Connected",
-      message: "Approve action is not connected yet.",
-    });
+    await handleApproveJobDescription();
   }
 
   function handleOpenRevisionFromDetails(targetItem) {
@@ -413,7 +408,7 @@ export default function ViewJobDescriptionDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-2 py-2 sm:px-4 sm:py-4"
+      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-2 py-2 font-jakarta sm:px-4 sm:py-4"
       onClick={saving ? undefined : onClose}
     >
       <div
