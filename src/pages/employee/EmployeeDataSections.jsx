@@ -72,20 +72,43 @@ function hasValue(value) {
 
 function toInputDate(value) {
   if (!value) return "";
+
+  const rawValue = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    return rawValue;
+  }
+
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toISOString().slice(0, 10);
+  if (Number.isNaN(date.getTime())) return rawValue.slice(0, 10);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function getCurrentDateKey() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
@@ -555,7 +578,9 @@ export function PersonalSection({
 
 function calculateAge(value) {
   if (!value) return "—";
-  const birth = new Date(value);
+  const dateKey = toInputDate(value);
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const birth = new Date(year, month - 1, day);
   if (Number.isNaN(birth.getTime())) return "—";
   const today = new Date();
   let age = today.getFullYear() - birth.getFullYear();
@@ -1271,7 +1296,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   function addDocument(event) {
     event.preventDefault();
     if (!text(newName)) return;
-    const next = { id: `doc_${Date.now()}`, name: newName, category: newCategory, fileSize: "1.4 MB", uploadedAt: new Date().toISOString().slice(0, 10), uploadedBy: "Current HR User" };
+    const next = { id: `doc_${Date.now()}`, name: newName, category: newCategory, fileSize: "1.4 MB", uploadedAt: getCurrentDateKey(), uploadedBy: "Current HR User" };
     onDocumentsChange([next, ...documents]);
     setUploadOpen(false);
     setNewName("");

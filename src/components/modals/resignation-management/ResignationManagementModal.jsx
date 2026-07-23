@@ -137,7 +137,8 @@ function formatModalDateLabel(value) {
 
   if (!parsed) return "Select date";
 
-  return parsed.toLocaleDateString("en-US", {
+  return parsed.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -145,7 +146,8 @@ function formatModalDateLabel(value) {
 }
 
 function formatMonthYear(date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "long",
     year: "numeric",
   });
@@ -2637,7 +2639,7 @@ export function ViewResignationModal({ open, item, onClose }) {
               </h2>
 
               <p className="mt-0.5 truncate text-[10px] font-semibold text-slate-300 sm:text-xs">
-                Offboarding workflow dossier
+                Offboarding workflow profile
               </p>
             </div>
           </div>
@@ -2876,7 +2878,7 @@ export function ViewResignationModal({ open, item, onClose }) {
             onClick={onClose}
             className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-[#E4EAF1] px-4 text-xs font-extrabold text-[#23364D] transition hover:bg-[#D7E0EA] active:scale-[0.98]"
           >
-            Close dossier
+            Close profile
           </button>
         </footer>
       </section>

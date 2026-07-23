@@ -5,7 +5,6 @@ import {
   Bell,
   CheckCircle2,
   ChevronRight,
-  LayoutDashboard,
   RefreshCw,
   Sparkles,
   Users,
@@ -143,28 +142,22 @@ export function DashboardWelcome({ title, fullName, onOpenEmployees }) {
     <section className={`sibs-page-header-in relative overflow-hidden ${DASHBOARD_SURFACE_CLASS} p-5 sm:p-6`}>
       <span className="sibs-top-accent" aria-hidden="true" />
 
-      <div className="mt-1 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-        <div className="flex min-w-0 items-start gap-3.5">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E9F0FC] text-[#042C51]">
-            <LayoutDashboard size={24} strokeWidth={2.2} />
+      <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" />
+              HR Admin View
+            </span>
           </div>
 
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
-                <Users className="h-3 w-3" />
-                Admin View
-              </span>
-            </div>
-
-            <h1 className="break-words text-xl font-extrabold leading-tight text-[#042C51] sm:text-2xl">
-              {title}
-            </h1>
-            <p className="mt-1.5 text-xs font-semibold text-[#667085] sm:text-sm">
-              Welcome back, <span className="font-extrabold text-[#042C51]">{fullName}</span>.
-              You have administrative permissions.
-            </p>
-          </div>
+          <h1 className="break-words text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">
+            {title}
+          </h1>
+          <p className="text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+            Welcome back, <span className="font-extrabold text-[#042C51]">{fullName}</span>.
+            You have administrative permissions.
+          </p>
         </div>
 
         <button

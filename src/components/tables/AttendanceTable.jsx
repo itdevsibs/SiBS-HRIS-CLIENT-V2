@@ -1070,7 +1070,7 @@ export default function AttendanceTable() {
 
     if (Number.isNaN(parsed.getTime())) return "—";
 
-    return parsed.toLocaleTimeString("en-US", {
+    return parsed.toLocaleTimeString("en-PH", {
       timeZone: "Asia/Manila",
       hour: "2-digit",
       minute: "2-digit",

@@ -25,6 +25,7 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -39,6 +40,7 @@ function formatDateTime(value) {
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
     year: "numeric",

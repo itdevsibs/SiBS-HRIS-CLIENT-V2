@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useUser } from "../../services/context/UserContext";
-import { canAccessPath, cleanRole } from "../../config/accessControl";
+import { canAccessPath, getDefaultDashboardPath } from "../../config/accessControl";
 
 const PUBLIC_PATHS = [
   "/",
@@ -43,11 +43,9 @@ export default function ProtectedRoute({ children }) {
   const allowed = canAccessPath(user, location.pathname);
 
   if (!allowed) {
-    const role = cleanRole(user?.role);
-
     return (
       <Navigate
-        to={role === "employee" ? "/dashboard/employee" : "/dashboard/admin"}
+        to={getDefaultDashboardPath(user)}
         replace
       />
     );

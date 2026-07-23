@@ -641,7 +641,7 @@ function ResignationAnalytics({ data = [], loading = false }) {
       const date = new Date(rawDate);
       if (Number.isNaN(date.getTime())) return;
 
-      const label = date.toLocaleDateString("en-US", {
+      const label = date.toLocaleDateString("en-PH", {
         month: "short",
         timeZone: "Asia/Manila",
       });
