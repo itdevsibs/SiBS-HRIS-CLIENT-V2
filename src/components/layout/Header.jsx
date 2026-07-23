@@ -717,7 +717,7 @@ export default function Header() {
   }, [mounted, loading, user, pathname, navigate]);
 
   useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-US", {
+    const formatter = new Intl.DateTimeFormat("en-PH", {
       timeZone: "Asia/Manila",
       year: "numeric",
       month: "short",

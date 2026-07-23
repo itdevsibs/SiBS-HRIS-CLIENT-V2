@@ -159,7 +159,7 @@ export function formatDisplayDate(value) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return String(value);
 
-  return parsed.toLocaleDateString("en-US", {
+  return parsed.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",

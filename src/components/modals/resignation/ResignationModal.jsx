@@ -83,7 +83,7 @@ function formatDisplayDate(value) {
 
   if (!date) return "Select date";
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",

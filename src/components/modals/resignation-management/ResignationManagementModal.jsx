@@ -137,7 +137,7 @@ function formatModalDateLabel(value) {
 
   if (!parsed) return "Select date";
 
-  return parsed.toLocaleDateString("en-US", {
+  return parsed.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
@@ -146,7 +146,7 @@ function formatModalDateLabel(value) {
 }
 
 function formatMonthYear(date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     month: "long",
     year: "numeric",

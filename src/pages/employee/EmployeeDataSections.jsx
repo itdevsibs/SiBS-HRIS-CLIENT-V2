@@ -94,7 +94,7 @@ function formatDate(value) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
