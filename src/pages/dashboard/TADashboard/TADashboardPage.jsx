@@ -1,10 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
   AlertCircle,
   Briefcase,
   Clock,
+  LoaderCircle,
+  RefreshCw,
   Target,
   TrendingDown,
   UsersRound,
@@ -12,6 +20,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import useClientPagination from "../../../hooks/useClientPagination";
+import { getTaDashboardBootstrap } from "../../../lib/axios/getTaDashboard";
 import {
   RecruiterLoadPanel,
   RequirementProgressPanel,
@@ -26,199 +35,64 @@ import { RoleKpiDetailsModal } from "../../../components/modals/dashboard/TADash
 const HIRING_PLAN_ROUTE = "/recruitment/workforce-hiring-overview";
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
 const MAIN_SHELL_CLASS = "sibs-dashboard-main";
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
+const TA_DASHBOARD_CACHE_KEY = "sibs.ta-dashboard.bootstrap.v2";
+const TA_DASHBOARD_CACHE_TTL_MS = 10 * 60_000;
 
-// Retained from the original TA dashboard data source.
-const TA_ROLE_SOURCE = [
-  {
-    id: 1,
-    roleAccount: "CSR - SIBS Operations",
-    account: "SIBS Operations",
-    roleTitle: "Customer Service Representative",
-    approvedRequirement: 20,
-    currentFilled: 12,
-    openSlots: 8,
-    dueDate: "2026-05-15",
-    status: "At Risk",
-    taOwner: "Maria Reyes",
-    riskFlag: "High",
-    agingDays: 18,
-    sourced: 80,
-    screened: 46,
-    interviewed: 22,
-    offered: 10,
-    accepted: 7,
-    hired: 12,
-    dropOffs: 15,
-    actionItem: "Increase sourcing and speed up interview scheduling.",
-  },
-  {
-    id: 2,
-    roleAccount: "QA - SIBS Operations",
-    account: "SIBS Operations",
-    roleTitle: "QA Specialist",
-    approvedRequirement: 5,
-    currentFilled: 2,
-    openSlots: 3,
-    dueDate: "2026-05-10",
-    status: "Delayed",
-    taOwner: "John Dela Cruz",
-    riskFlag: "High",
-    agingDays: 24,
-    sourced: 28,
-    screened: 16,
-    interviewed: 7,
-    offered: 3,
-    accepted: 2,
-    hired: 2,
-    dropOffs: 6,
-    actionItem: "Review QA sourcing pool and add backup candidates.",
-  },
-  {
-    id: 3,
-    roleAccount: "RCM Analyst - SIBS RCM",
-    account: "SIBS RCM",
-    roleTitle: "RCM Analyst",
-    approvedRequirement: 5,
-    currentFilled: 3,
-    openSlots: 2,
-    dueDate: "2026-05-20",
-    status: "On Track",
-    taOwner: "Kim Domingo",
-    riskFlag: "None",
-    agingDays: 10,
-    sourced: 35,
-    screened: 20,
-    interviewed: 10,
-    offered: 5,
-    accepted: 3,
-    hired: 3,
-    dropOffs: 4,
-    actionItem: "Maintain current pipeline movement.",
-  },
-  {
-    id: 4,
-    roleAccount: "System Developer - SIBS IT",
-    account: "SIBS IT",
-    roleTitle: "System Developer",
-    approvedRequirement: 3,
-    currentFilled: 1,
-    openSlots: 2,
-    dueDate: "2026-04-30",
-    status: "Delayed",
-    taOwner: "Maria Reyes",
-    riskFlag: "Medium",
-    agingDays: 31,
-    sourced: 18,
-    screened: 9,
-    interviewed: 4,
-    offered: 1,
-    accepted: 1,
-    hired: 1,
-    dropOffs: 5,
-    actionItem: "Reopen sourcing and review compensation range.",
-  },
-  {
-    id: 5,
-    roleAccount: "HR Assistant - SIBS HR",
-    account: "SIBS HR",
-    roleTitle: "HR Assistant",
-    approvedRequirement: 2,
-    currentFilled: 2,
-    openSlots: 0,
-    dueDate: "2026-05-18",
-    status: "On Track",
-    taOwner: "Paul Garcia",
-    riskFlag: "None",
-    agingDays: 7,
-    sourced: 20,
-    screened: 12,
-    interviewed: 6,
-    offered: 2,
-    accepted: 2,
-    hired: 2,
-    dropOffs: 2,
-    actionItem: "No immediate risk.",
-  },
-];
+function readCachedDashboard() {
+  try {
+    const raw = window.sessionStorage.getItem(TA_DASHBOARD_CACHE_KEY);
+    if (!raw) return null;
 
-// Retained from the original TA dashboard recruiter-load data source.
-const TA_RECRUITER_SOURCE = [
-  {
-    recruiter: "Maria Reyes",
-    activeRoles: 2,
-    sourced: 98,
-    interviewed: 26,
-    hired: 13,
-    loadStatus: "High",
-  },
-  {
-    recruiter: "John Dela Cruz",
-    activeRoles: 1,
-    sourced: 28,
-    interviewed: 7,
-    hired: 2,
-    loadStatus: "Medium",
-  },
-  {
-    recruiter: "Kim Domingo",
-    activeRoles: 1,
-    sourced: 35,
-    interviewed: 10,
-    hired: 3,
-    loadStatus: "Normal",
-  },
-  {
-    recruiter: "Paul Garcia",
-    activeRoles: 1,
-    sourced: 20,
-    interviewed: 6,
-    hired: 2,
-    loadStatus: "Normal",
-  },
-];
+    const parsed = JSON.parse(raw);
+    const cachedAt = Number(parsed?.cachedAt || 0);
 
-function normalizeRole(role) {
-  return {
-    id: role.id,
-    role: role.roleTitle,
-    roleTitle: role.roleTitle,
-    roleAccount: role.roleAccount,
-    account: role.account,
-    department: role.account,
-    req: role.approvedRequirement,
-    filled: role.currentFilled,
-    open: role.openSlots,
-    dueDate: role.dueDate,
-    status: role.status,
-    taOwner: role.taOwner,
-    riskFlag: role.riskFlag,
-    aging: role.agingDays,
-    dropOffs: role.dropOffs,
-    actionItem: role.actionItem,
-    movement: {
-      sourced: role.sourced,
-      screened: role.screened,
-      interviewed: role.interviewed,
-      offered: role.offered,
-      accepted: role.accepted,
-      hired: role.hired,
-    },
-  };
+    if (!cachedAt || Date.now() - cachedAt > TA_DASHBOARD_CACHE_TTL_MS) {
+      window.sessionStorage.removeItem(TA_DASHBOARD_CACHE_KEY);
+      return null;
+    }
+
+    return parsed?.payload && typeof parsed.payload === "object"
+      ? parsed.payload
+      : null;
+  } catch {
+    return null;
+  }
 }
 
-function normalizeRecruiter(recruiter) {
-  return {
-    name: recruiter.recruiter,
-    activeRoles: recruiter.activeRoles,
-    hiredCount: recruiter.hired,
-    loadStatus: recruiter.loadStatus,
-    output: {
-      sourced: recruiter.sourced,
-      interviewed: recruiter.interviewed,
-      hired: recruiter.hired,
-    },
-  };
+function writeCachedDashboard(payload) {
+  try {
+    window.sessionStorage.setItem(
+      TA_DASHBOARD_CACHE_KEY,
+      JSON.stringify({ cachedAt: Date.now(), payload }),
+    );
+  } catch {
+    // The dashboard remains functional when session storage is unavailable.
+  }
 }
+
+const EMPTY_FUNNEL = {
+  sourced: 0,
+  screened: 0,
+  interviewed: 0,
+  offered: 0,
+  accepted: 0,
+  hired: 0,
+};
+
+const EMPTY_METRICS = {
+  totalOpenRoles: 0,
+  totalRequirement: 0,
+  totalFilled: 0,
+  filledPercentage: 0,
+  atRiskRoles: 0,
+  delayedRoles: 0,
+  weeklyHired: 0,
+  dropOffs: 0,
+  recruiterLoad: 0,
+  agingRoles: 0,
+  funnel: EMPTY_FUNNEL,
+};
 
 function formatNumber(value) {
   return Number(value || 0).toLocaleString("en-PH", {
@@ -226,16 +100,284 @@ function formatNumber(value) {
   });
 }
 
+function getErrorMessage(error, fallback) {
+  return (
+    error?.response?.data?.message ||
+    error?.response?.data?.error ||
+    error?.message ||
+    fallback
+  );
+}
+
+function safeText(value) {
+  return String(value || "");
+}
+
+function normalizeRoleRow(role = {}) {
+  return {
+    id: role.id,
+    role: safeText(role.role || role.roleTitle) || "Unassigned Role",
+    roleTitle: safeText(role.roleTitle || role.role) || "Unassigned Role",
+    roleAccount:
+      safeText(role.roleAccount) ||
+      [role.roleTitle || role.role, role.account].filter(Boolean).join(" - "),
+    account: safeText(role.account),
+    department: safeText(role.department || role.account) || "Unassigned",
+    req: Number(role.req || 0),
+    filled: Number(role.filled || 0),
+    open: Number(role.open || 0),
+    dueDate: role.dueDate || null,
+    status: safeText(role.status) || "On Track",
+    taOwner: safeText(role.taOwner) || "Unassigned",
+    riskFlag: safeText(role.riskFlag) || "None",
+    aging: Number(role.aging || 0),
+    dropOffs: Number(role.dropOffs || 0),
+    weeklyHired: Number(role.weeklyHired || 0),
+    actionItem:
+      safeText(role.actionItem) ||
+      "Maintain current pipeline movement and recruiter follow-up.",
+    movement: {
+      sourced: Number(role.movement?.sourced || 0),
+      screened: Number(role.movement?.screened || 0),
+      interviewed: Number(role.movement?.interviewed || 0),
+      offered: Number(role.movement?.offered || 0),
+      accepted: Number(role.movement?.accepted || 0),
+      hired: Number(role.movement?.hired || 0),
+    },
+  };
+}
+
+function normalizeRecruiterRow(recruiter = {}) {
+  return {
+    name: safeText(recruiter.name) || "Unassigned",
+    activeRoles: Number(recruiter.activeRoles || 0),
+    hiredCount: Number(recruiter.hiredCount || 0),
+    loadStatus: safeText(recruiter.loadStatus) || "Normal",
+    output: {
+      sourced: Number(recruiter.output?.sourced || 0),
+      interviewed: Number(recruiter.output?.interviewed || 0),
+      hired: Number(recruiter.output?.hired || 0),
+    },
+  };
+}
+
+function normalizeMetrics(payload = {}) {
+  const metrics = payload?.metrics || {};
+  const funnel = metrics.funnel || payload?.funnel || {};
+
+  return {
+    totalOpenRoles: Number(metrics.totalOpenRoles || 0),
+    totalRequirement: Number(metrics.totalRequirement || 0),
+    totalFilled: Number(metrics.totalFilled || 0),
+    filledPercentage: Number(metrics.filledPercentage || 0),
+    atRiskRoles: Number(metrics.atRiskRoles || 0),
+    delayedRoles: Number(metrics.delayedRoles || 0),
+    weeklyHired: Number(metrics.weeklyHired || 0),
+    dropOffs: Number(metrics.dropOffs || 0),
+    recruiterLoad: Number(metrics.recruiterLoad || 0),
+    agingRoles: Number(metrics.agingRoles || 0),
+    funnel: {
+      sourced: Number(funnel.sourced || 0),
+      screened: Number(funnel.screened || 0),
+      interviewed: Number(funnel.interviewed || 0),
+      offered: Number(funnel.offered || 0),
+      accepted: Number(funnel.accepted || 0),
+      hired: Number(funnel.hired || 0),
+    },
+  };
+}
+
+function TADashboardLoadingState() {
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#e9eef4] px-6">
+      <div
+        className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading TA dashboard"
+      >
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
+          <LoaderCircle
+            className="h-8 w-8 animate-spin text-[#ff5c28]"
+            aria-hidden="true"
+          />
+        </div>
+
+        <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
+          Loading TA Dashboard
+        </h2>
+
+        <p className="mt-2 text-sm font-medium leading-5 text-[#667085]">
+          Loading current hiring requirements and candidate movement...
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TADashboardErrorState({ message, onRetry }) {
+  return (
+    <div className={PAGE_SHELL_CLASS}>
+      <Header />
+
+      <main className={MAIN_SHELL_CLASS}>
+        <div className="mx-auto flex min-h-[calc(100vh-9rem)] w-full max-w-[1700px] items-center justify-center">
+          <div className="w-full max-w-md rounded-2xl border border-rose-200 bg-white px-7 py-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+
+            <h2 className="mt-4 text-lg font-extrabold text-[#042c51]">
+              Unable to load TA Dashboard
+            </h2>
+            <p className="mt-2 text-sm font-medium leading-6 text-[#667085]">
+              {message}
+            </p>
+
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#042c51] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function TADashboardPage() {
   const navigate = useNavigate();
-  const [rolesData] = useState(() => TA_ROLE_SOURCE.map(normalizeRole));
-  const [recruiters] = useState(() =>
-    TA_RECRUITER_SOURCE.map(normalizeRecruiter),
+  const cachedDashboardRef = useRef(readCachedDashboard());
+  const cachedDashboard = cachedDashboardRef.current;
+
+  const [rolesData, setRolesData] = useState(() =>
+    Array.isArray(cachedDashboard?.roles)
+      ? cachedDashboard.roles.map(normalizeRoleRow)
+      : [],
   );
+  const [recruiters, setRecruiters] = useState(() =>
+    Array.isArray(cachedDashboard?.recruiters)
+      ? cachedDashboard.recruiters.map(normalizeRecruiterRow)
+      : [],
+  );
+  const [overviewMetrics, setOverviewMetrics] = useState(() =>
+    cachedDashboard ? normalizeMetrics(cachedDashboard) : EMPTY_METRICS,
+  );
+  const [generatedAt, setGeneratedAt] = useState(
+    cachedDashboard?.generatedAt || null,
+  );
+  const [warnings, setWarnings] = useState(() =>
+    Array.isArray(cachedDashboard?.warnings)
+      ? cachedDashboard.warnings.filter(Boolean)
+      : [],
+  );
+  const [initialLoading, setInitialLoading] = useState(!cachedDashboard);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [selectedRole, setSelectedRole] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const loadingRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const hasLoadedDataRef = useRef(Boolean(cachedDashboard));
+
+  const loadDashboard = useCallback(
+    async ({ forceRefresh = false, background = false } = {}) => {
+      if (loadingRef.current) return false;
+
+      loadingRef.current = true;
+      const requestId = ++requestIdRef.current;
+
+      if (background) {
+        setRefreshing(true);
+      } else {
+        setInitialLoading(true);
+      }
+
+      try {
+        const payload = await getTaDashboardBootstrap({ forceRefresh });
+
+        if (requestId !== requestIdRef.current) return false;
+
+        const nextRoles = Array.isArray(payload?.roles)
+          ? payload.roles.map(normalizeRoleRow)
+          : [];
+        const nextRecruiters = Array.isArray(payload?.recruiters)
+          ? payload.recruiters.map(normalizeRecruiterRow)
+          : [];
+
+        setOverviewMetrics(normalizeMetrics(payload));
+        setRolesData(nextRoles);
+        setRecruiters(nextRecruiters);
+        setGeneratedAt(payload?.generatedAt || null);
+        setWarnings(
+          Array.isArray(payload?.warnings)
+            ? [...new Set(payload.warnings.filter(Boolean))]
+            : [],
+        );
+        writeCachedDashboard(payload);
+        setLoadError("");
+        hasLoadedDataRef.current = true;
+        return true;
+      } catch (error) {
+        if (requestId !== requestIdRef.current) return false;
+
+        const message = getErrorMessage(
+          error,
+          "Unable to load current recruitment dashboard data.",
+        );
+        setLoadError(message);
+
+        if (background && hasLoadedDataRef.current) {
+          setToast({
+            title: "Refresh Failed",
+            message: "The last successful TA dashboard values remain visible.",
+          });
+        }
+
+        return false;
+      } finally {
+        if (requestId === requestIdRef.current) {
+          setInitialLoading(false);
+          setRefreshing(false);
+        }
+        loadingRef.current = false;
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    loadDashboard({ background: hasLoadedDataRef.current });
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    const refreshVisibleDashboard = () => {
+      if (document.visibilityState !== "visible") return;
+      loadDashboard({ background: true });
+    };
+
+    const interval = window.setInterval(
+      refreshVisibleDashboard,
+      AUTO_REFRESH_INTERVAL_MS,
+    );
+
+    document.addEventListener("visibilitychange", refreshVisibleDashboard);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshVisibleDashboard,
+      );
+    };
+  }, [loadDashboard]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -245,28 +387,7 @@ export default function TADashboardPage() {
   }, [toast]);
 
   const summaryMetrics = useMemo(() => {
-    const totalOpenRoles = rolesData.filter(
-      (role) => Number(role.open || 0) > 0,
-    ).length;
-    const totalReq = rolesData.reduce(
-      (sum, role) => sum + Number(role.req || 0),
-      0,
-    );
-    const totalFilled = rolesData.reduce(
-      (sum, role) => sum + Number(role.filled || 0),
-      0,
-    );
-    const atRisk = rolesData.filter((role) => role.status === "At Risk").length;
-    const delayed = rolesData.filter((role) => role.status === "Delayed").length;
-    const dropOffs = rolesData.reduce(
-      (sum, role) => sum + Number(role.dropOffs || 0),
-      0,
-    );
-    const agingRoles = rolesData.filter(
-      (role) => Number(role.aging || 0) >= 15,
-    ).length;
-
-    const funnel = rolesData.reduce(
+    const fallbackFunnel = rolesData.reduce(
       (totals, role) => ({
         sourced: totals.sourced + Number(role.movement?.sourced || 0),
         screened: totals.screened + Number(role.movement?.screened || 0),
@@ -276,32 +397,62 @@ export default function TADashboardPage() {
         accepted: totals.accepted + Number(role.movement?.accepted || 0),
         hired: totals.hired + Number(role.movement?.hired || 0),
       }),
-      {
-        sourced: 0,
-        screened: 0,
-        interviewed: 0,
-        offered: 0,
-        accepted: 0,
-        hired: 0,
-      },
+      { ...EMPTY_FUNNEL },
     );
 
-    const filledPercentage =
-      totalReq > 0 ? Math.round((totalFilled / totalReq) * 100) : 0;
+    const totalRequirement = rolesData.reduce(
+      (sum, role) => sum + Number(role.req || 0),
+      0,
+    );
+    const totalFilled = rolesData.reduce(
+      (sum, role) => sum + Number(role.filled || 0),
+      0,
+    );
+
+    const hasBackendMetrics = Boolean(generatedAt);
 
     return {
-      totalOpenRoles,
-      totalReq,
-      totalFilled,
-      filledPercentage,
-      atRisk,
-      delayed,
-      dropOffs,
-      recruiterLoad: recruiters.length,
-      agingRoles,
-      funnel,
+      totalOpenRoles: hasBackendMetrics
+        ? overviewMetrics.totalOpenRoles
+        : rolesData.filter((role) => Number(role.open || 0) > 0).length,
+      totalReq: hasBackendMetrics
+        ? overviewMetrics.totalRequirement
+        : totalRequirement,
+      totalFilled: hasBackendMetrics
+        ? overviewMetrics.totalFilled
+        : totalFilled,
+      filledPercentage: hasBackendMetrics
+        ? Math.round(overviewMetrics.filledPercentage)
+        : totalRequirement > 0
+          ? Math.round((totalFilled / totalRequirement) * 100)
+          : 0,
+      atRisk: hasBackendMetrics
+        ? overviewMetrics.atRiskRoles
+        : rolesData.filter((role) => role.status === "At Risk").length,
+      delayed: hasBackendMetrics
+        ? overviewMetrics.delayedRoles
+        : rolesData.filter((role) => role.status === "Delayed").length,
+      weeklyHired: hasBackendMetrics
+        ? overviewMetrics.weeklyHired
+        : rolesData.reduce(
+            (sum, role) => sum + Number(role.weeklyHired || 0),
+            0,
+          ),
+      dropOffs: hasBackendMetrics
+        ? overviewMetrics.dropOffs
+        : rolesData.reduce(
+            (sum, role) => sum + Number(role.dropOffs || 0),
+            0,
+          ),
+      recruiterLoad: hasBackendMetrics
+        ? overviewMetrics.recruiterLoad
+        : recruiters.length,
+      agingRoles: hasBackendMetrics
+        ? overviewMetrics.agingRoles
+        : rolesData.filter((role) => Number(role.aging || 0) >= 15).length,
+      funnel: hasBackendMetrics ? overviewMetrics.funnel : fallbackFunnel,
     };
-  }, [recruiters.length, rolesData]);
+  }, [generatedAt, overviewMetrics, recruiters.length, rolesData]);
 
   const filteredRoles = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -309,12 +460,12 @@ export default function TADashboardPage() {
     return rolesData.filter((role) => {
       const matchesSearch =
         !query ||
-        role.role.toLowerCase().includes(query) ||
-        role.roleAccount.toLowerCase().includes(query) ||
-        role.account.toLowerCase().includes(query) ||
-        role.taOwner.toLowerCase().includes(query) ||
-        role.status.toLowerCase().includes(query) ||
-        role.riskFlag.toLowerCase().includes(query);
+        safeText(role.role).toLowerCase().includes(query) ||
+        safeText(role.roleAccount).toLowerCase().includes(query) ||
+        safeText(role.account).toLowerCase().includes(query) ||
+        safeText(role.taOwner).toLowerCase().includes(query) ||
+        safeText(role.status).toLowerCase().includes(query) ||
+        safeText(role.riskFlag).toLowerCase().includes(query);
       const matchesStatus =
         statusFilter === "All" || role.status === statusFilter;
 
@@ -362,7 +513,7 @@ export default function TADashboardPage() {
     {
       id: "weekly-movement",
       label: "Weekly Movement",
-      value: `+${formatNumber(summaryMetrics.funnel.hired)}`,
+      value: `+${formatNumber(summaryMetrics.weeklyHired)}`,
       description: "Total hired this week",
       icon: Activity,
       tone: "indigo",
@@ -393,6 +544,19 @@ export default function TADashboardPage() {
     },
   ];
 
+  if (initialLoading && rolesData.length === 0) {
+    return <TADashboardLoadingState />;
+  }
+
+  if (loadError && rolesData.length === 0) {
+    return (
+      <TADashboardErrorState
+        message={loadError}
+        onRetry={() => loadDashboard({ forceRefresh: true })}
+      />
+    );
+  }
+
   return (
     <div className={PAGE_SHELL_CLASS}>
       <Header />
@@ -402,6 +566,38 @@ export default function TADashboardPage() {
           <TAWelcomeCard
             onOpenHiringPlan={() => navigate(HIRING_PLAN_ROUTE)}
           />
+
+          {loadError ? (
+            <section className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+              <span>
+                Dashboard refresh warning: {loadError}. The last successful
+                values remain visible.
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  loadDashboard({ forceRefresh: true, background: true })
+                }
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-bold text-amber-900"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Retry
+              </button>
+            </section>
+          ) : null}
+
+          {!loadError && warnings.length > 0 ? (
+            <section className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold text-blue-900">
+              {warnings[0]}
+            </section>
+          ) : null}
+
+          {refreshing ? (
+            <div className="flex items-center justify-end gap-2 text-xs font-bold text-[#667085]">
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin text-[#ff5c28]" />
+              Refreshing live recruitment data...
+            </div>
+          ) : null}
 
           <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-8">
             {metricCards.map((item, index) => (

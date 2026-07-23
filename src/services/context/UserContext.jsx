@@ -7,10 +7,21 @@ import {
   useRef,
 } from "react";
 import { useLocation } from "react-router-dom";
-import api, { handleLogout } from "../../lib/axios/api-template";
+import api, {
+  AUTH_LOGOUT_START_EVENT,
+  handleLogout,
+} from "../../lib/axios/api-template";
 
 const UserContext = createContext(null);
-const REFRESH_GAP = 3000; // testing only
+
+/*
+ * The previous 3-second gap created repeated refresh calls during clicks,
+ * focus, scrolling and page visibility changes. One minute is frequent
+ * enough for session extension without flooding the authentication routes.
+ */
+const REFRESH_GAP = 60_000;
+const USER_REQUEST_TIMEOUT = 10_000;
+const REFRESH_REQUEST_TIMEOUT = 8_000;
 
 const PUBLIC_PATHS = [
   "/",
@@ -28,17 +39,37 @@ function isPublicPath(pathname = "") {
   });
 }
 
+function isCanceledRequest(error) {
+  return (
+    error?.code === "ERR_CANCELED" ||
+    error?.name === "CanceledError" ||
+    error?.name === "AbortError"
+  );
+}
+
 export function UserProvider({ children }) {
   const location = useLocation();
   const pathname = location.pathname;
   const publicRoute = isPublicPath(pathname);
 
-  const [user, setUser] = useState(null);
+  const [user, setUserState] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const mountedRef = useRef(true);
+  const userRef = useRef(null);
   const logoutTimerRef = useRef(null);
+  const fetchControllerRef = useRef(null);
   const refreshInProgressRef = useRef(false);
   const lastRefreshRef = useRef(0);
+  const authEpochRef = useRef(0);
+
+  const replaceUser = useCallback((nextUser) => {
+    userRef.current = nextUser;
+
+    if (mountedRef.current) {
+      setUserState(nextUser);
+    }
+  }, []);
 
   const clearStoredSession = useCallback(() => {
     sessionStorage.removeItem("accessTokenExpiresAt");
@@ -51,18 +82,34 @@ export function UserProvider({ children }) {
     }
   }, []);
 
-  const forceLogout = useCallback(() => {
+  const invalidateAuthRequests = useCallback(() => {
+    authEpochRef.current += 1;
+    refreshInProgressRef.current = false;
+
+    fetchControllerRef.current?.abort();
+    fetchControllerRef.current = null;
+  }, []);
+
+  const clearLocalAuthState = useCallback(() => {
+    invalidateAuthRequests();
     clearLogoutTimer();
     clearStoredSession();
-    setUser(null);
+    replaceUser(null);
 
-    if (isPublicPath(window.location.pathname)) {
+    if (mountedRef.current) {
       setLoading(false);
-      return;
     }
+  }, [
+    clearLogoutTimer,
+    clearStoredSession,
+    invalidateAuthRequests,
+    replaceUser,
+  ]);
 
-    handleLogout();
-  }, [clearLogoutTimer, clearStoredSession]);
+  const forceLogout = useCallback(() => {
+    clearLocalAuthState();
+    void handleLogout(true);
+  }, [clearLocalAuthState]);
 
   const startLogoutTimer = useCallback(() => {
     clearLogoutTimer();
@@ -89,47 +136,84 @@ export function UserProvider({ children }) {
 
   const fetchUser = useCallback(async () => {
     if (isPublicPath(window.location.pathname)) {
-      clearLogoutTimer();
-      setUser(null);
-      setLoading(false);
+      clearLocalAuthState();
       return null;
+    }
+
+    fetchControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    const requestEpoch = authEpochRef.current;
+
+    fetchControllerRef.current = controller;
+
+    if (!userRef.current && mountedRef.current) {
+      setLoading(true);
     }
 
     try {
       const res = await api.get("/api/users/me", {
         withCredentials: true,
+        signal: controller.signal,
+        timeout: USER_REQUEST_TIMEOUT,
+        skipAuthRedirect: true,
       });
 
-      if (!res.data?.success || !res.data?.user) {
-        setUser(null);
+      if (
+        controller.signal.aborted ||
+        requestEpoch !== authEpochRef.current ||
+        !mountedRef.current
+      ) {
         return null;
       }
 
-      setUser(res.data.user);
+      if (!res.data?.success || !res.data?.user) {
+        replaceUser(null);
+        return null;
+      }
+
+      replaceUser(res.data.user);
       startLogoutTimer();
       return res.data.user;
-    } catch (err) {
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        clearStoredSession();
-        setUser(null);
+    } catch (error) {
+      if (
+        isCanceledRequest(error) ||
+        requestEpoch !== authEpochRef.current ||
+        !mountedRef.current
+      ) {
         return null;
       }
 
-      console.error("User fetch error:", err);
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        clearLocalAuthState();
+        return null;
+      }
+
+      console.error("User fetch error:", error);
       return null;
     } finally {
-      setLoading(false);
+      if (fetchControllerRef.current === controller) {
+        fetchControllerRef.current = null;
+      }
+
+      if (
+        requestEpoch === authEpochRef.current &&
+        mountedRef.current
+      ) {
+        setLoading(false);
+      }
     }
-  }, [startLogoutTimer, clearStoredSession, clearLogoutTimer]);
+  }, [clearLocalAuthState, replaceUser, startLogoutTimer]);
 
   const refreshSession = useCallback(async () => {
     const now = Date.now();
 
     if (isPublicPath(window.location.pathname)) return false;
-    if (pathname === "/login") return false;
-    if (!user) return false;
+    if (!userRef.current) return false;
     if (refreshInProgressRef.current) return false;
     if (now - lastRefreshRef.current < REFRESH_GAP) return false;
+
+    const requestEpoch = authEpochRef.current;
 
     try {
       refreshInProgressRef.current = true;
@@ -140,8 +224,17 @@ export function UserProvider({ children }) {
         {},
         {
           withCredentials: true,
+          timeout: REFRESH_REQUEST_TIMEOUT,
+          skipAuthRedirect: true,
         },
       );
+
+      if (
+        requestEpoch !== authEpochRef.current ||
+        !mountedRef.current
+      ) {
+        return false;
+      }
 
       if (res.data?.expiresAt) {
         sessionStorage.setItem(
@@ -153,59 +246,92 @@ export function UserProvider({ children }) {
       startLogoutTimer();
       return true;
     } catch (error) {
+      if (
+        requestEpoch !== authEpochRef.current ||
+        !mountedRef.current
+      ) {
+        return false;
+      }
+
       if (error?.response?.status === 401 || error?.response?.status === 403) {
-        clearStoredSession();
-        setUser(null);
+        clearLocalAuthState();
+      } else if (!isCanceledRequest(error)) {
+        console.error("Session refresh error:", error);
       }
 
       return false;
     } finally {
       refreshInProgressRef.current = false;
     }
-  }, [pathname, user, startLogoutTimer, clearStoredSession]);
+  }, [clearLocalAuthState, startLogoutTimer]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      clearLogoutTimer();
+      fetchControllerRef.current?.abort();
+      fetchControllerRef.current = null;
+    };
+  }, [clearLogoutTimer]);
+
+  /*
+   * handleLogout can be called from UserDropdown or the Axios interceptor.
+   * This event immediately stops old /me requests before the server logout
+   * request completes, so they cannot overwrite a later login.
+   */
+  useEffect(() => {
+    const handleLogoutStart = () => {
+      clearLocalAuthState();
+    };
+
+    window.addEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
+
+    return () => {
+      window.removeEventListener(AUTH_LOGOUT_START_EVENT, handleLogoutStart);
+    };
+  }, [clearLocalAuthState]);
 
   useEffect(() => {
     if (publicRoute) {
-      clearLogoutTimer();
-      clearStoredSession();
-      setUser(null);
-      setLoading(false);
+      clearLocalAuthState();
       return;
     }
 
-    fetchUser();
-    startLogoutTimer();
+    /*
+     * LoginPage already supplies the authenticated user through setUser.
+     * Do not immediately duplicate that work with /me and /refresh calls.
+     */
+    if (userRef.current) {
+      setLoading(false);
+      startLogoutTimer();
+      return;
+    }
+
+    void fetchUser();
 
     return () => {
-      clearLogoutTimer();
+      fetchControllerRef.current?.abort();
     };
-  }, [
-    pathname,
-    publicRoute,
-    fetchUser,
-    startLogoutTimer,
-    clearLogoutTimer,
-    clearStoredSession,
-  ]);
+  }, [pathname, publicRoute, clearLocalAuthState, fetchUser, startLogoutTimer]);
 
   useEffect(() => {
     if (publicRoute || !user) return;
 
     const handleActivity = () => {
-      refreshSession();
+      void refreshSession();
     };
 
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        fetchUser();
-        refreshSession();
+        void refreshSession();
         startLogoutTimer();
       }
     };
 
     const handleFocus = () => {
-      fetchUser();
-      refreshSession();
+      void refreshSession();
       startLogoutTimer();
     };
 
@@ -224,18 +350,26 @@ export function UserProvider({ children }) {
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [user, publicRoute, fetchUser, refreshSession, startLogoutTimer]);
+  }, [user, publicRoute, refreshSession, startLogoutTimer]);
 
-  useEffect(() => {
-    if (publicRoute || !user) return;
+  const updateUser = useCallback(
+    (newUser) => {
+      invalidateAuthRequests();
+      replaceUser(newUser || null);
+      setLoading(false);
 
-    refreshSession();
-    startLogoutTimer();
-  }, [pathname, publicRoute, user, refreshSession, startLogoutTimer]);
-
-  const updateUser = useCallback((newUser) => {
-    setUser(newUser);
-  }, []);
+      if (newUser) {
+        startLogoutTimer();
+      } else {
+        clearLogoutTimer();
+      }
+    }, [
+      clearLogoutTimer,
+      invalidateAuthRequests,
+      replaceUser,
+      startLogoutTimer,
+    ],
+  );
 
   return (
     <UserContext.Provider
@@ -244,6 +378,8 @@ export function UserProvider({ children }) {
         loading,
         setUser: updateUser,
         refetchUser: fetchUser,
+        refreshSession,
+        logout: forceLogout,
       }}
     >
       {children}
