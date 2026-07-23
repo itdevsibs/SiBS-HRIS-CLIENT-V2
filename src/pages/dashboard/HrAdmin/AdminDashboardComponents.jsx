@@ -223,7 +223,7 @@ export function DashboardMetricCard({ item, onClick, delay = 0 }) {
   );
 }
 
-export function RecentActivityPanel({ activities, onSync, onViewAll, delay = 0 }) {
+export function RecentActivityPanel({ activities, onSync, onViewAll, isSyncing = false, delay = 0 }) {
   return (
     <section className={`${DASHBOARD_SURFACE_CLASS} p-5 sm:p-6`} style={getAnimationStyle(delay)}>
       <div className="flex items-start justify-between gap-4 border-b border-[#F1F5F9] pb-4">
@@ -237,10 +237,11 @@ export function RecentActivityPanel({ activities, onSync, onViewAll, delay = 0 }
         <button
           type="button"
           onClick={onSync}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#F1F5F9] px-2.5 text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+          disabled={isSyncing}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#F1F5F9] px-2.5 text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-wait disabled:opacity-60"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Sync Activity
+          <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "Refreshing" : "Refresh"}
         </button>
       </div>
 
@@ -347,14 +348,16 @@ export function NotificationsPanel({ notifications, onDismiss, onAction, onViewA
                   ) : null}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onDismiss(notification.id)}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#667085] transition hover:bg-white/70 hover:text-[#FF5C28]"
-                  aria-label={`Dismiss ${notification.title}`}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                {onDismiss ? (
+                  <button
+                    type="button"
+                    onClick={() => onDismiss(notification.id)}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#667085] transition hover:bg-white/70 hover:text-[#FF5C28]"
+                    aria-label={`Dismiss ${notification.title}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
               </article>
             );
           })
@@ -426,7 +429,7 @@ export function WorkforceKpiCard({ utilization, absenteeismBuffer, delay = 0 }) 
     >
       <div className="flex items-center justify-between">
         <span className="rounded bg-white/10 px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-200">
-          Frontend Preview KPI
+          Live Workforce KPI
         </span>
         <Sparkles className="h-4 w-4 text-[#FF5C28]" />
       </div>
@@ -446,13 +449,13 @@ export function WorkforceKpiCard({ utilization, absenteeismBuffer, delay = 0 }) 
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-slate-300/90">
-        Active manpower allocation is aligned with the frontend planning scenario.
+        Active manpower allocation is calculated from today's schedule and attendance records.
         Absenteeism buffer is currently{" "}
         <span className="font-extrabold text-[#FF5C28]">{absenteeismBuffer}%</span>.
       </p>
 
       <p className="mt-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[10px] leading-relaxed text-slate-300">
-        Frontend-only demonstration data. Values and changes reset when the page refreshes.
+        Read-only values refresh automatically every 60 seconds while this tab is active.
       </p>
     </section>
   );
