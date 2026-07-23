@@ -178,12 +178,13 @@ export default function UserDropdown({
         aria-haspopup="menu"
         className={[
           "group flex max-w-[360px] cursor-pointer items-center gap-2.5 rounded-xl border px-2 py-1.5 text-left transition-all duration-150",
+          mobileCompact ? "max-[430px]:gap-0 max-[430px]:px-0 max-[430px]:py-0" : "",
           open
             ? "border-sibs-primary-1/25 bg-white shadow-sm ring-2 ring-sibs-primary-1/10"
             : "border-transparent bg-transparent hover:border-sibs-tertiary-9 hover:bg-white",
         ].join(" ")}
       >
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-xs font-extrabold uppercase text-white shadow-[0_6px_16px_rgba(0,48,142,0.24)] max-[360px]:h-8 max-[360px]:w-8">
           {avatar || "U"}
         </div>
 
@@ -281,13 +282,15 @@ export default function UserDropdown({
 }
 
 function DropdownItem({
-  icon: Icon,
+  icon,
   title,
   subtitle,
   onClick,
   loading = false,
   disabled = false,
 }) {
+  const MenuIcon = icon;
+
   return (
     <button
       type="button"
@@ -300,7 +303,7 @@ function DropdownItem({
         {loading ? (
           <Loader2 size={17} className="animate-spin" />
         ) : (
-          <Icon size={17} />
+          <MenuIcon size={17} />
         )}
       </span>
 

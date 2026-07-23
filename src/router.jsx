@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminDashboardPage from "./pages/dashboard/HrAdmin/AdminDashboardPage";
 import EmployeeDashboardPage from "./pages/dashboard/EmployeeDashboardPage";
 import OMDashboardPage from "./pages/dashboard/OMDashboard/OMDashboardPage";
+import SuperAdminDashboardPage from "./pages/dashboard/SuperAdmin/SuperAdminDashboardPage";
 
 import EmployeeDataPage from "./pages/employee/EmployeeDataPage";
 import EmployeesPage from "./pages/employee/EmployeesPage";
@@ -102,6 +103,15 @@ export default function Router() {
       />
 
       {/* DASHBOARDS */}
+      <Route
+        path="/dashboard/super-admin"
+        element={
+          <PrivateRoute>
+            <SuperAdminDashboardPage />
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/dashboard/admin"
         element={

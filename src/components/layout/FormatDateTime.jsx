@@ -20,7 +20,7 @@ export function formatDate(dateString) {
     return "N/A";
   }
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",
@@ -37,7 +37,7 @@ export function formatDateTime(dateString) {
     return "N/A";
   }
 
-  return date.toLocaleString("en-US", {
+  return date.toLocaleString("en-PH", {
     timeZone: "Asia/Manila",
     year: "numeric",
     month: "short",

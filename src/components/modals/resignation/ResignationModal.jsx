@@ -83,7 +83,8 @@ function formatDisplayDate(value) {
 
   if (!date) return "Select date";
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -144,18 +145,20 @@ function FileTypeIcon({ filename }) {
 }
 
 function getTodayDate() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 function addDays(dateString, days) {
-  const date = new Date(dateString);
+  const date = parseDateKey(dateString) || parseDateKey(getTodayDate());
+  if (!date) return "";
+
   date.setDate(date.getDate() + days);
-  return date.toISOString().split("T")[0];
+  return toDateKey(date);
 }
 
 function getImmediateMinDate(resignationDate) {

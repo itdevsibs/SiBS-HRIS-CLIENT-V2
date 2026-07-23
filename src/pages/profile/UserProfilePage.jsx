@@ -243,13 +243,24 @@ function getProfileSibsId(user) {
 function toInputDate(value) {
   if (!value) return "";
 
+  const rawValue = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawValue)) {
+    return rawValue;
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return String(value).slice(0, 10);
+    return rawValue.slice(0, 10);
   }
 
-  return date.toISOString().slice(0, 10);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
 function displayDate(value) {
@@ -260,6 +271,7 @@ function displayDate(value) {
   if (Number.isNaN(date.getTime())) return "N/A";
 
   return date.toLocaleDateString("en-US", {
+    timeZone: "Asia/Manila",
     year: "numeric",
     month: "long",
     day: "numeric",

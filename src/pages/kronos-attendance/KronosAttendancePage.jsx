@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -92,7 +92,7 @@ function formatDateDisplay(value, fallback = "Select date") {
 }
 
 function getMonthLabel(date) {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString("en-PH", {
     month: "long",
     year: "numeric",
   });
@@ -150,7 +150,7 @@ function formatTime(value) {
       0,
     );
 
-    return date.toLocaleTimeString("en-US", {
+    return date.toLocaleTimeString("en-PH", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
@@ -161,7 +161,7 @@ function formatTime(value) {
 
   if (Number.isNaN(parsed.getTime())) return "—";
 
-  return parsed.toLocaleTimeString("en-US", {
+  return parsed.toLocaleTimeString("en-PH", {
     timeZone: "Asia/Manila",
     hour: "2-digit",
     minute: "2-digit",
@@ -292,7 +292,7 @@ function TimeBadge({ value, className = "" }) {
 function StatCard({
   title,
   value,
-  icon: Icon,
+  icon,
   valueClassName = "text-sibs-primary-1",
   iconClassName = "bg-[#F2F6FA] text-sibs-primary-1",
   delay = 0,
@@ -318,7 +318,7 @@ function StatCard({
         <div
           className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClassName}`}
         >
-          <Icon size={22} />
+          {React.createElement(icon, { size: 22 })}
         </div>
       </div>
     </div>
@@ -1026,15 +1026,13 @@ export default function KronosAttendancePage() {
         });
       }
     } finally {
-      if (!isMountedRef.current || latestRequestIdRef.current !== requestId) {
-        return;
-      }
+      if (isMountedRef.current && latestRequestIdRef.current === requestId) {
+        if (!silent) {
+          setLoading(false);
+        }
 
-      if (!silent) {
-        setLoading(false);
+        setLiveSyncing(false);
       }
-
-      setLiveSyncing(false);
     }
   }
 
@@ -1387,7 +1385,7 @@ export default function KronosAttendancePage() {
                   {lastUpdatedAt ? (
                     <span className="text-xs font-bold text-sibs-tertiary-5">
                       Updated{" "}
-                      {lastUpdatedAt.toLocaleTimeString("en-US", {
+                      {lastUpdatedAt.toLocaleTimeString("en-PH", {
                         hour: "2-digit",
                         minute: "2-digit",
                         second: "2-digit",

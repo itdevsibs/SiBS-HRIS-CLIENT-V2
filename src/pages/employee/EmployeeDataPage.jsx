@@ -822,7 +822,7 @@ export default function EmployeeDataPage() {
                         }`}
                       />
                       <span className="text-[10px] font-bold uppercase text-slate-500">
-                        {isEditing ? "Modified Draft" : "Official Dossier Record"}
+                        {isEditing ? "Modified Draft" : "Official Profile Record"}
                       </span>
                     </div>
                   </div>
