@@ -1043,27 +1043,34 @@ export function CandidatePipelineProvider({ children }) {
     normalizedActiveStage === "Online Assessment";
 
   function openStatusModal(type, title, message, options = {}) {
+    const isSuccess = type === "success";
+    const shouldClosePipelineModals =
+      isSuccess || Boolean(options.closePipelineModals);
+
+    /*
+     * A success result must be the only modal visible. Clear Candidate
+     * Pipeline Details and every action modal before opening StatusModal.
+     * Error modals keep the current form open so the user can correct it.
+     */
+    if (shouldClosePipelineModals) {
+      closeAllPipelineModals();
+    }
+
     setStatusModal({
       open: true,
       type,
       title,
       message,
-      closePipelineModals: Boolean(options.closePipelineModals),
+      closePipelineModals: false,
     });
   }
 
   function closeStatusModal() {
-    const shouldClosePipelineModals = Boolean(statusModal.closePipelineModals);
-
     setStatusModal((prev) => ({
       ...prev,
       open: false,
       closePipelineModals: false,
     }));
-
-    if (shouldClosePipelineModals) {
-      closeAllPipelineModals();
-    }
   }
 
   function showError(
@@ -1089,10 +1096,10 @@ export function CandidatePipelineProvider({ children }) {
     openStatusModal("success", title, message, {
       ...options,
       /*
-       * Every successful Candidate Pipeline write closes all pipeline
-       * modals only after the user clicks OK on the Success modal.
+       * Success always closes all underlying Candidate Pipeline modals
+       * immediately. StatusModal remains mounted by this provider.
        */
-      closePipelineModals: true,
+      closePipelineModals: false,
     });
   }
 
@@ -1625,12 +1632,6 @@ export function CandidatePipelineProvider({ children }) {
         );
       }
 
-      /*
-       * Do not close an action form here.
-       * The current forms remain open behind the Success modal.
-       * closeStatusModal() closes them only after the user clicks OK.
-       */
-
       if (successEvent) {
         window.dispatchEvent(
           new CustomEvent(
@@ -1706,7 +1707,7 @@ export function CandidatePipelineProvider({ children }) {
 
     /*
      * Keep the Candidate Pipeline route mounted and return to its
-     * primary board view after a successful process is acknowledged.
+     * primary board view before displaying the success result.
      */
     setPageView("pipeline");
   }
