@@ -86,6 +86,13 @@ function getErrorMessage(error, fallback) {
   );
 }
 
+function getAnimationStyle(delay = 0) {
+  return {
+    animationDelay: `${delay}ms`,
+    animationFillMode: "both",
+  };
+}
+
 function readCachedDashboard() {
   try {
     const raw = window.sessionStorage.getItem(CACHE_KEY);
@@ -191,22 +198,49 @@ function normalizeMetrics(payload = {}) {
 
 function OMDashboardLoadingState() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#e9eef4] px-6">
-      <div
-        className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
-        role="status"
-        aria-live="polite"
+    <div className={PAGE_SHELL_CLASS}>
+      <main
+        className={`${MAIN_SHELL_CLASS} flex min-h-screen items-center justify-center`}
       >
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-          <LoaderCircle className="h-8 w-8 animate-spin text-[#ff5c28]" />
+        <div
+          className="flex w-full max-w-sm flex-col items-center justify-center px-6 py-10 text-center"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading OM dashboard"
+        >
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <span
+              className="absolute inset-0 animate-ping rounded-full border-2 border-orange-400/25"
+              aria-hidden="true"
+            />
+            <span
+              className="absolute inset-1 rounded-full border border-orange-400/30"
+              aria-hidden="true"
+            />
+            <LoaderCircle
+              className="relative h-9 w-9 animate-spin text-orange-500"
+              aria-hidden="true"
+            />
+          </div>
+
+          <h1 className="mt-6 text-xl font-black tracking-tight text-slate-900 dark:text-white">
+            Loading OM Dashboard
+          </h1>
+
+          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+            Loading your assigned departments, accounts, and hiring movement...
+          </p>
+
+          <div
+            className="mt-6 flex items-center justify-center gap-2"
+            aria-hidden="true"
+          >
+            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-400 [animation-delay:150ms]" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-300 [animation-delay:300ms]" />
+          </div>
         </div>
-        <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
-          Loading OM Dashboard
-        </h2>
-        <p className="mt-2 text-sm font-medium leading-5 text-[#667085]">
-          Loading your assigned departments, accounts, and hiring movement...
-        </p>
-      </div>
+      </main>
     </div>
   );
 }
@@ -237,10 +271,13 @@ function OMDashboardErrorState({ message, onRetry }) {
   );
 }
 
-function MetricCard({ item }) {
+function MetricCard({ item, delay = 0 }) {
   const Icon = item.icon;
   return (
-    <article className="flex min-h-[112px] flex-col justify-between rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm">
+    <article
+      className="sibs-metric-card flex min-h-[112px] flex-col justify-between rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm"
+      style={getAnimationStyle(delay)}
+    >
       <div className="flex items-start justify-between gap-3">
         <span className="text-[10px] font-black uppercase tracking-wide text-[#174A7C]">
           {item.label}
@@ -479,7 +516,7 @@ export default function OMDashboardPage() {
       <Header />
       <main className={MAIN_SHELL_CLASS}>
         <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
-          <section className="rounded-2xl border border-[#E1E8F0] border-t-[4px] border-t-[#042C51] bg-white px-5 py-5 shadow-sm sm:px-6">
+          <section className="sibs-page-header-in rounded-2xl border border-[#E1E8F0] border-t-[4px] border-t-[#042C51] bg-white px-5 py-5 shadow-sm sm:px-6">
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -505,11 +542,20 @@ export default function OMDashboardPage() {
           {refreshing ? <div className="flex justify-end gap-2 text-xs font-bold text-[#667085]"><LoaderCircle className="h-4 w-4 animate-spin text-[#FF5C28]" /> Refreshing manager-scoped data...</div> : null}
 
           <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            {metricCards.map((item) => <MetricCard key={item.label} item={item} />)}
+            {metricCards.map((item, index) => (
+              <MetricCard
+                key={item.label}
+                item={item}
+                delay={80 + index * 55}
+              />
+            ))}
           </section>
 
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-            <article className="rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm">
+            <article
+              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm"
+              style={getAnimationStyle(210)}
+            >
               <h2 className="text-base font-black text-[#042C51]">Approved Requirement vs Filled Progress</h2>
               <p className="mt-1 text-sm text-[#667085]">Current hiring progress for manager-accessible roles</p>
               <div className="mt-5 space-y-4">
@@ -524,7 +570,10 @@ export default function OMDashboardPage() {
               </div>
             </article>
 
-            <article className="rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm">
+            <article
+              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm"
+              style={getAnimationStyle(260)}
+            >
               <h2 className="text-base font-black text-[#042C51]">Weekly Movement Pipeline</h2>
               <p className="mt-1 text-sm text-[#667085]">Candidate progression for the manager’s accessible hiring scope</p>
               <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -535,7 +584,10 @@ export default function OMDashboardPage() {
           </section>
 
           <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-12">
-            <article className="rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-8">
+            <article
+              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-8"
+              style={getAnimationStyle(310)}
+            >
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div><h2 className="text-base font-black text-[#042C51]">Role Hiring Status</h2><p className="mt-1 text-sm text-[#667085]">Role-level delivery, risk status, aging, and ownership</p></div>
                 <span className="w-fit rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-[9px] font-black uppercase text-amber-800">Manager Restricted View</span>
@@ -556,7 +608,10 @@ export default function OMDashboardPage() {
               <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-[#667085]"><span>{filteredRoles.length} accessible role{filteredRoles.length === 1 ? "" : "s"}</span><div className="flex items-center gap-2"><button type="button" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button><span>Page {safeCurrentPage} of {totalPages}</span><button type="button" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button></div></div>
             </article>
 
-            <aside className="rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-4">
+            <aside
+              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-4"
+              style={getAnimationStyle(360)}
+            >
               <h2 className="text-base font-black text-[#042C51]">Recruiter Load</h2><p className="mt-1 text-sm text-[#667085]">Active accessible roles versus recruiter output</p>
               <div className="mt-4 space-y-3">
                 {recruiters.length === 0 ? <p className="py-8 text-center text-sm font-semibold text-[#667085]">No recruiter ownership data is available.</p> : recruiters.map((row) => <div key={row.name} className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"><div className="flex items-start justify-between gap-3"><div><strong className="text-sm text-[#042C51]">{row.name}</strong><p className="mt-1 text-[11px] text-[#667085]">{row.activeRoles} active roles handled</p></div><span className={`rounded border px-2 py-1 text-[9px] font-black uppercase ${row.loadStatus === "High" ? "border-rose-200 bg-rose-50 text-rose-700" : row.loadStatus === "Medium" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{row.loadStatus} Load</span></div><div className="mt-3 grid grid-cols-3 border-t border-[#E6ECF2] pt-3 text-center"><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Sourced</span><p className="text-sm font-black text-[#042C51]">{row.output.sourced}</p></div><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Interviewed</span><p className="text-sm font-black text-[#042C51]">{row.output.interviewed}</p></div><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Hired</span><p className="text-sm font-black text-emerald-600">{row.output.hired}</p></div></div></div>)}
