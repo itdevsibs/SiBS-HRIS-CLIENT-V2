@@ -5,6 +5,7 @@ import {
 } from "../../../lib/utils/workforceHiringOverview/workforceHiringOverviewHelpers";
 import { getWorkforceHiringPlanForecast } from "../../../lib/axios/getWorkforceHiringPlan";
 import { useWorkforceHiring } from "../../../services/context/WorkforceHiringContext";
+import ForecastWeekAccountDetailsModal from "./ForecastWeekAccountDetailsModal";
 
 function safeNumber(value) {
   const numberValue = Number(value || 0);
@@ -193,6 +194,25 @@ function getValueColor(value) {
 
 function getHiringNeededColor(value) {
   return safeNumber(value) > 0 ? "text-red-600" : "text-emerald-600";
+}
+
+function ForecastMetricWithPercent({
+  value,
+  percent,
+  percentClassName = "text-slate-500",
+}) {
+  return (
+    <div className="leading-tight">
+      <div>{formatOverviewNumber(value)}</div>
+      <div
+        className={["mt-0.5 text-[10px] font-extrabold", percentClassName].join(
+          " ",
+        )}
+      >
+        {formatOverviewPercent(percent)}
+      </div>
+    </div>
+  );
 }
 
 function normalizeForecastRow(row = {}) {
@@ -444,6 +464,12 @@ function buildSixWeekForecastAverageSummary(rows = []) {
       ? ((netActualHc - requiredHeadcount) / requiredHeadcount) * 100
       : 0;
 
+  const absenteeismPercentage =
+    actualHeadcount > 0 ? (absenteeism / actualHeadcount) * 100 : 0;
+
+  const attritionPercentage =
+    actualHeadcount > 0 ? (attrition / actualHeadcount) * 100 : 0;
+
   const hiringNeeded = Math.max(0, requiredHeadcount - netActualHc);
 
   /*
@@ -465,7 +491,9 @@ function buildSixWeekForecastAverageSummary(rows = []) {
     requiredHeadcount,
     actualHeadcount,
     absenteeism,
+    absenteeismPercentage,
     attrition,
+    attritionPercentage,
     bufferPercentage,
     netActualHc,
     hiringNeeded,
@@ -497,6 +525,54 @@ function getForecastRowsFromResponse(response) {
   }
 
   return [];
+}
+
+function getForecastAccountRowsByWeekFromResponse(response) {
+  if (!response || Array.isArray(response)) return [];
+
+  const candidates = [
+    response?.accountForecastRowsByWeek,
+    response?.account_forecast_rows_by_week,
+    response?.data?.accountForecastRowsByWeek,
+    response?.data?.account_forecast_rows_by_week,
+  ];
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate;
+  }
+
+  return [];
+}
+
+function getForecastWeekAccountGroup(groups = [], row = {}, index = 0) {
+  const safeGroups = Array.isArray(groups) ? groups : [];
+  const weekStart = getWeekStart(row);
+  const weekEnd = getWeekEnd(row);
+  const weekNumber = row?.weekNumber || row?.week_number || "";
+
+  const matchedByDate = safeGroups.find((group) => {
+    const groupWeekStart = getWeekStart(group);
+    const groupWeekEnd = getWeekEnd(group);
+
+    return (
+      groupWeekStart &&
+      groupWeekEnd &&
+      groupWeekStart === weekStart &&
+      groupWeekEnd === weekEnd
+    );
+  });
+
+  if (matchedByDate) return matchedByDate;
+
+  const matchedByWeekNumber = safeGroups.find((group) => {
+    const groupWeekNumber = group?.weekNumber || group?.week_number || "";
+
+    return weekNumber && String(groupWeekNumber) === String(weekNumber);
+  });
+
+  if (matchedByWeekNumber) return matchedByWeekNumber;
+
+  return safeGroups[index] || {};
 }
 
 function getForecastSummaryFromResponse(response) {
@@ -566,9 +642,12 @@ export default function ForecastHeadcountPlanTable({
   const [forecastData, setForecastData] = useState({
     rows: [],
     summary: {},
+    accountRowsByWeek: [],
     loading: false,
     error: "",
   });
+
+  const [selectedForecastWeek, setSelectedForecastWeek] = useState(null);
 
   const weekStart = getWeekStart(activeWeek);
   const weekEnd = getWeekEnd(activeWeek);
@@ -581,6 +660,7 @@ export default function ForecastHeadcountPlanTable({
         setForecastData({
           rows: [],
           summary: {},
+          accountRowsByWeek: [],
           loading: false,
           error: "Missing selected week date range for forecast.",
         });
@@ -612,6 +692,7 @@ export default function ForecastHeadcountPlanTable({
           setForecastData({
             rows: [],
             summary: {},
+            accountRowsByWeek: [],
             loading: false,
             error: response?.message || "Failed to load forecast.",
           });
@@ -622,6 +703,7 @@ export default function ForecastHeadcountPlanTable({
         setForecastData({
           rows: getForecastRowsFromResponse(response),
           summary: getForecastSummaryFromResponse(response),
+          accountRowsByWeek: getForecastAccountRowsByWeekFromResponse(response),
           loading: false,
           error: "",
         });
@@ -631,6 +713,7 @@ export default function ForecastHeadcountPlanTable({
         setForecastData({
           rows: [],
           summary: {},
+          accountRowsByWeek: [],
           loading: false,
           error:
             error?.response?.data?.message ||
@@ -670,216 +753,313 @@ export default function ForecastHeadcountPlanTable({
 
   const hasRows = forecastRows.length > 0;
 
-  return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-extrabold uppercase tracking-tight text-sibs-primary-90">
-              6-Week Forecast Headcount Plan
-            </h2>
+  function openForecastWeekDetails(row, index) {
+    const accountGroup = getForecastWeekAccountGroup(
+      forecastData.accountRowsByWeek,
+      row,
+      index,
+    );
 
-            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold uppercase text-purple-700">
-              Projection
-            </span>
+    setSelectedForecastWeek({
+      ...row,
+      label: formatForecastWeekLabel(row),
+      weekStart: getWeekStart(row),
+      weekEnd: getWeekEnd(row),
+      accountRows: Array.isArray(accountGroup?.rows) ? accountGroup.rows : [],
+      rowCount:
+        accountGroup?.rowCount ||
+        accountGroup?.row_count ||
+        (Array.isArray(accountGroup?.rows) ? accountGroup.rows.length : 0),
+      forecastBasisStart:
+        accountGroup?.forecastBasisStart || accountGroup?.forecast_basis_start,
+      forecastBasisEnd:
+        accountGroup?.forecastBasisEnd || accountGroup?.forecast_basis_end,
+    });
+  }
+
+  function closeForecastWeekDetails() {
+    setSelectedForecastWeek(null);
+  }
+
+  return (
+    <>
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-extrabold uppercase tracking-tight text-sibs-primary-90">
+                6-Week Forecast Headcount Plan
+              </h2>
+
+              <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold uppercase text-purple-700">
+                Projection
+              </span>
+            </div>
+
+            <p className="mt-1 text-sm font-semibold text-sibs-primary-70">
+              Projected next 6 weeks from the past 6 actual workforce weeks.
+            </p>
           </div>
 
-          <p className="mt-1 text-sm font-semibold text-sibs-primary-70">
-            Projected next 6 weeks from the past 6 actual workforce weeks.
-          </p>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-500">
+            {forecastData.loading
+              ? "Loading forecast..."
+              : hasRows
+                ? `${forecastRows.length} forecast weeks`
+                : "No forecast"}
+          </span>
         </div>
 
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-extrabold text-slate-500">
-          {forecastData.loading
-            ? "Loading forecast..."
-            : hasRows
-              ? `${forecastRows.length} forecast weeks`
-              : "No forecast"}
-        </span>
-      </div>
+        {forecastData.error ? (
+          <div className="mx-5 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+            {forecastData.error}
+          </div>
+        ) : null}
 
-      {forecastData.error ? (
-        <div className="mx-5 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
-          {forecastData.error}
-        </div>
-      ) : null}
+        <div className="overflow-hidden rounded-b-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1520px] border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <HeaderTh className="text-left">
+                    Week
+                    <br />
+                    (Start of Week)
+                  </HeaderTh>
+                  <HeaderTh>
+                    Required
+                    <br />
+                    Headcount
+                  </HeaderTh>
+                  <HeaderTh>
+                    Actual
+                    <br />
+                    Headcount
+                  </HeaderTh>
+                  <HeaderTh>
+                    Buffer
+                    <br />
+                    Percentage
+                  </HeaderTh>
+                  <HeaderTh>
+                    Absenteeism
+                    <br />
+                    Count / %
+                  </HeaderTh>
+                  <HeaderTh>
+                    Attrition
+                    <br />
+                    Count / %
+                  </HeaderTh>
+                  <HeaderTh>
+                    Net Actual
+                    <br />
+                    HC
+                  </HeaderTh>
+                  <HeaderTh>
+                    Hiring
+                    <br />
+                    Needed
+                  </HeaderTh>
+                  <HeaderTh>
+                    Accepted
+                    <br />
+                    Job Offer
+                  </HeaderTh>
+                  <HeaderTh>
+                    NHO
+                    <br />
+                    Count
+                  </HeaderTh>
+                  <HeaderTh>
+                    FST
+                    <br />
+                    Count
+                  </HeaderTh>
+                  <HeaderTh>
+                    PST
+                    <br />
+                    Count
+                  </HeaderTh>
+                  <HeaderTh>Go Live</HeaderTh>
+                  <HeaderTh>
+                    Hired
+                    <br />
+                    Count
+                  </HeaderTh>
+                  <HeaderTh>
+                    Hiring Rate
+                    <br />
+                    (Leads to JO)
+                  </HeaderTh>
+                  <HeaderTh>
+                    Leads to Interview
+                    <br />
+                    (To Generate)
+                  </HeaderTh>
+                </tr>
+              </thead>
 
-      <div className="overflow-hidden rounded-b-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1320px] border-separate border-spacing-0">
-            <thead>
-              <tr>
-                <HeaderTh className="text-left">
-                  Week
-                  <br />
-                  (Start of Week)
-                </HeaderTh>
-                <HeaderTh>
-                  Required
-                  <br />
-                  Headcount
-                </HeaderTh>
-                <HeaderTh>
-                  Actual
-                  <br />
-                  Headcount
-                </HeaderTh>
-                <HeaderTh>
-                  Buffer
-                  <br />
-                  Percentage
-                </HeaderTh>
-                <HeaderTh>
-                  Net Actual
-                  <br />
-                  HC
-                </HeaderTh>
-                <HeaderTh>
-                  Hiring
-                  <br />
-                  Needed
-                </HeaderTh>
-                <HeaderTh>
-                  Accepted
-                  <br />
-                  Job Offer
-                </HeaderTh>
-                <HeaderTh>
-                  NHO
-                  <br />
-                  Count
-                </HeaderTh>
-                <HeaderTh>
-                  FST
-                  <br />
-                  Count
-                </HeaderTh>
-                <HeaderTh>
-                  PST
-                  <br />
-                  Count
-                </HeaderTh>
-                <HeaderTh>Go Live</HeaderTh>
-                <HeaderTh>
-                  Hired
-                  <br />
-                  Count
-                </HeaderTh>
-                <HeaderTh>
-                  Hiring Rate
-                  <br />
-                  (Leads to JO)
-                </HeaderTh>
-                <HeaderTh>
-                  Leads to Interview
-                  <br />
-                  (To Generate)
-                </HeaderTh>
-              </tr>
-            </thead>
-
-            <tbody>
-              {hasRows ? (
-                forecastRows.map((row, index) => (
-                  <tr
-                    key={`${row.weekStart || "forecast"}-${index}`}
-                    className="transition hover:bg-blue-50/40"
-                  >
-                    <BodyTd className="text-left whitespace-nowrap">
-                      {formatForecastWeekLabel(row)}
-                    </BodyTd>
-                    <BodyTd>
-                      {formatOverviewNumber(row.requiredHeadcount)}
-                    </BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.actualHeadcount)}</BodyTd>
-                    <BodyTd className={getValueColor(row.bufferPercentage)}>
-                      {formatOverviewPercent(row.bufferPercentage)}
-                    </BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.netActualHc)}</BodyTd>
-                    <BodyTd className={getHiringNeededColor(row.hiringNeeded)}>
-                      {formatOverviewNumber(row.hiringNeeded)}
-                    </BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.acceptedJo)}</BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.nho)}</BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.fst)}</BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.pst)}</BodyTd>
-                    <BodyTd className="text-emerald-700">
-                      {formatOverviewNumber(row.goLive)}
-                    </BodyTd>
-                    <BodyTd>{formatOverviewNumber(row.hiredCount)}</BodyTd>
-                    <BodyTd>{formatOverviewPercent(row.hiringRate)}</BodyTd>
-                    <BodyTd className="text-purple-700">
-                      {formatOverviewNumber(row.leadsToInterview)}
+              <tbody>
+                {hasRows ? (
+                  forecastRows.map((row, index) => (
+                    <tr
+                      key={`${row.weekStart || "forecast"}-${index}`}
+                      role="button"
+                      tabIndex={0}
+                      title="View account-level forecast details"
+                      onClick={() => openForecastWeekDetails(row, index)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openForecastWeekDetails(row, index);
+                        }
+                      }}
+                      className="cursor-pointer transition hover:bg-blue-50/40 focus:bg-blue-50/60 focus:outline-none"
+                    >
+                      <BodyTd className="text-left whitespace-nowrap">
+                        {formatForecastWeekLabel(row)}
+                      </BodyTd>
+                      <BodyTd>
+                        {formatOverviewNumber(row.requiredHeadcount)}
+                      </BodyTd>
+                      <BodyTd>
+                        {formatOverviewNumber(row.actualHeadcount)}
+                      </BodyTd>
+                      <BodyTd className={getValueColor(row.bufferPercentage)}>
+                        {formatOverviewPercent(row.bufferPercentage)}
+                      </BodyTd>
+                      <BodyTd className="text-orange-600">
+                        <ForecastMetricWithPercent
+                          value={row.absenteeism}
+                          percent={row.absenteeismPercentage}
+                          percentClassName="text-orange-500"
+                        />
+                      </BodyTd>
+                      <BodyTd className="text-red-600">
+                        <ForecastMetricWithPercent
+                          value={row.attrition}
+                          percent={row.attritionPercentage}
+                          percentClassName="text-red-500"
+                        />
+                      </BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.netActualHc)}</BodyTd>
+                      <BodyTd
+                        className={getHiringNeededColor(row.hiringNeeded)}
+                      >
+                        {formatOverviewNumber(row.hiringNeeded)}
+                      </BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.acceptedJo)}</BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.nho)}</BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.fst)}</BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.pst)}</BodyTd>
+                      <BodyTd className="text-emerald-700">
+                        {formatOverviewNumber(row.goLive)}
+                      </BodyTd>
+                      <BodyTd>{formatOverviewNumber(row.hiredCount)}</BodyTd>
+                      <BodyTd>{formatOverviewPercent(row.hiringRate)}</BodyTd>
+                      <BodyTd className="text-purple-700">
+                        {formatOverviewNumber(row.leadsToInterview)}
+                      </BodyTd>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <BodyTd colSpan={16}>
+                      {forecastData.loading
+                        ? "Loading forecast..."
+                        : "No forecast data available."}
                     </BodyTd>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <BodyTd colSpan={14}>
-                    {forecastData.loading
-                      ? "Loading forecast..."
-                      : "No forecast data available."}
-                  </BodyTd>
-                </tr>
-              )}
-            </tbody>
+                )}
+              </tbody>
 
-            {hasRows ? (
-              <tfoot>
-                <tr>
-                  <FooterTd className="rounded-bl-2xl text-left">
-                    TOTAL / AVG.
-                  </FooterTd>
+              {hasRows ? (
+                <tfoot>
+                  <tr>
+                    <FooterTd className="rounded-bl-2xl text-left">
+                      TOTAL / AVG.
+                    </FooterTd>
 
-                  <FooterTd>
-                    {formatOverviewNumber(totals.requiredHeadcount)}
-                  </FooterTd>
+                    <FooterTd>
+                      {formatOverviewNumber(totals.requiredHeadcount)}
+                    </FooterTd>
 
-                  <FooterTd>
-                    {formatOverviewNumber(totals.actualHeadcount)}
-                  </FooterTd>
+                    <FooterTd>
+                      {formatOverviewNumber(totals.actualHeadcount)}
+                    </FooterTd>
 
-                  <FooterTd className={getValueColor(totals.bufferPercentage)}>
-                    {formatOverviewPercent(totals.bufferPercentage)}
-                  </FooterTd>
+                    <FooterTd
+                      className={getValueColor(totals.bufferPercentage)}
+                    >
+                      {formatOverviewPercent(totals.bufferPercentage)}
+                    </FooterTd>
 
-                  <FooterTd>
-                    {formatOverviewNumber(totals.netActualHc)}
-                  </FooterTd>
+                    <FooterTd className="text-orange-600">
+                      <ForecastMetricWithPercent
+                        value={totals.absenteeism}
+                        percent={totals.absenteeismPercentage}
+                        percentClassName="text-orange-500"
+                      />
+                    </FooterTd>
 
-                  <FooterTd
-                    className={getHiringNeededColor(totals.hiringNeeded)}
-                  >
-                    {formatOverviewNumber(totals.hiringNeeded)}
-                  </FooterTd>
+                    <FooterTd className="text-red-600">
+                      <ForecastMetricWithPercent
+                        value={totals.attrition}
+                        percent={totals.attritionPercentage}
+                        percentClassName="text-red-500"
+                      />
+                    </FooterTd>
 
-                  <FooterTd>{formatOverviewNumber(totals.acceptedJo)}</FooterTd>
+                    <FooterTd>
+                      {formatOverviewNumber(totals.netActualHc)}
+                    </FooterTd>
 
-                  <FooterTd>{formatOverviewNumber(totals.nho)}</FooterTd>
+                    <FooterTd
+                      className={getHiringNeededColor(totals.hiringNeeded)}
+                    >
+                      {formatOverviewNumber(totals.hiringNeeded)}
+                    </FooterTd>
 
-                  <FooterTd>{formatOverviewNumber(totals.fst)}</FooterTd>
+                    <FooterTd>
+                      {formatOverviewNumber(totals.acceptedJo)}
+                    </FooterTd>
 
-                  <FooterTd>{formatOverviewNumber(totals.pst)}</FooterTd>
+                    <FooterTd>{formatOverviewNumber(totals.nho)}</FooterTd>
 
-                  <FooterTd className="text-emerald-700">
-                    {formatOverviewNumber(totals.goLive)}
-                  </FooterTd>
+                    <FooterTd>{formatOverviewNumber(totals.fst)}</FooterTd>
 
-                  <FooterTd>{formatOverviewNumber(totals.hiredCount)}</FooterTd>
+                    <FooterTd>{formatOverviewNumber(totals.pst)}</FooterTd>
 
-                  <FooterTd>
-                    {formatOverviewPercent(totals.hiringRate)}
-                  </FooterTd>
+                    <FooterTd className="text-emerald-700">
+                      {formatOverviewNumber(totals.goLive)}
+                    </FooterTd>
 
-                  <FooterTd className="rounded-br-2xl text-purple-700">
-                    {formatOverviewNumber(totals.leadsToInterview)}
-                  </FooterTd>
-                </tr>
-              </tfoot>
-            ) : null}
-          </table>
+                    <FooterTd>
+                      {formatOverviewNumber(totals.hiredCount)}
+                    </FooterTd>
+
+                    <FooterTd>
+                      {formatOverviewPercent(totals.hiringRate)}
+                    </FooterTd>
+
+                    <FooterTd className="rounded-br-2xl text-purple-700">
+                      {formatOverviewNumber(totals.leadsToInterview)}
+                    </FooterTd>
+                  </tr>
+                </tfoot>
+              ) : null}
+            </table>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <ForecastWeekAccountDetailsModal
+        open={Boolean(selectedForecastWeek)}
+        forecastWeek={selectedForecastWeek}
+        rows={selectedForecastWeek?.accountRows || []}
+        onClose={closeForecastWeekDetails}
+      />
+    </>
   );
 }
