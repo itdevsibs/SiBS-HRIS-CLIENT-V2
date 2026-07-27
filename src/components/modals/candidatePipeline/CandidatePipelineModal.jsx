@@ -4409,17 +4409,20 @@ const CandidatePipelineModal = ({
     }));
 
     if (shouldCloseParent) {
-      setTimeout(() => {
-        onClose?.();
-        afterClose?.();
-      }, 150);
-
+      /*
+       * Close Candidate Pipeline Details in the same render cycle as the
+       * success modal. The previous 150 ms delay briefly rendered the parent
+       * details modal again after the user pressed OK.
+       */
+      onClose?.();
+      afterClose?.();
       return;
     }
 
     /*
      * Errors close only the Failed modal. Candidate details and all
-     * write forms remain open so the user can correct and retry.
+     * write forms remain available and reappear so the user can correct
+     * the issue and retry.
      */
     afterClose?.();
   }
@@ -6920,8 +6923,10 @@ const CandidatePipelineModal = ({
 
   return (
     <>
-      <div
-        className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      {!statusModal.open && (
+        <>
+          <div
+            className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
         onClick={onClose}
       >
         <div
@@ -7842,19 +7847,21 @@ const CandidatePipelineModal = ({
         onSaved={handleAssessmentSaved}
       />
 
-      <AssessmentEmailFormatModal
-        open={showAssessmentEmailModal}
-        candidate={activeCandidate}
-        form={assessmentEmailForm}
-        isSending={isSendingAssessmentEmail}
-        onChange={setAssessmentEmailForm}
-        onClose={() => {
-          if (!isSendingAssessmentEmail) {
-            setShowAssessmentEmailModal(false);
-          }
-        }}
-        onSend={handleConfirmSendAssessmentEmail}
-      />
+          <AssessmentEmailFormatModal
+            open={showAssessmentEmailModal}
+            candidate={activeCandidate}
+            form={assessmentEmailForm}
+            isSending={isSendingAssessmentEmail}
+            onChange={setAssessmentEmailForm}
+            onClose={() => {
+              if (!isSendingAssessmentEmail) {
+                setShowAssessmentEmailModal(false);
+              }
+            }}
+            onSend={handleConfirmSendAssessmentEmail}
+          />
+        </>
+      )}
 
       <StatusModal
         open={statusModal.open}

@@ -13,6 +13,16 @@ function getResponseUser(result) {
   );
 }
 
+function getResponseExpiry(result) {
+  return (
+    result?.expiresAt ||
+    result?.data?.expiresAt ||
+    result?.accessTokenExpiresAt ||
+    result?.data?.accessTokenExpiresAt ||
+    null
+  );
+}
+
 function getUserRole(user) {
   return String(
     user?.role ||
@@ -35,6 +45,29 @@ function getDashboardPath(user) {
   return "/dashboard/admin";
 }
 
+function getLoginFailureMessage(result = {}) {
+  if (result.message) {
+    return result.message;
+  }
+
+  switch (result.code) {
+    case "USER_NOT_FOUND_OR_INACTIVE":
+      return "SIBS ID was not found or the account is inactive.";
+
+    case "PASSWORD_MISMATCH":
+      return "Password does not match. Check the backend encryption values.";
+
+    case "MISSING_CREDENTIALS":
+      return "Please enter your SIBS ID and password.";
+
+    case "LOGIN_SERVER_ERROR":
+      return "The login server encountered an error. Check the backend terminal.";
+
+    default:
+      return "Login failed. Please check your credentials.";
+  }
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setUser } = useUser();
@@ -48,7 +81,7 @@ export default function LoginPage() {
   const showPopup = (message) => {
     setErrorMessage(message);
     setShowError(true);
-    setTimeout(() => setShowError(false), 3000);
+    window.setTimeout(() => setShowError(false), 3000);
   };
 
   const clearError = () => {
@@ -56,28 +89,11 @@ export default function LoginPage() {
     setShowError(false);
   };
 
-  const saveExpiry = (result) => {
-    const expiresAt =
-      result?.expiresAt ||
-      result?.data?.expiresAt ||
-      result?.accessTokenExpiresAt ||
-      result?.data?.accessTokenExpiresAt;
-
-    if (expiresAt) {
-      sessionStorage.setItem("accessTokenExpiresAt", String(expiresAt));
-      localStorage.setItem("token_expires_at", String(expiresAt));
-      return;
-    }
-
-    sessionStorage.removeItem("accessTokenExpiresAt");
-    localStorage.removeItem("token_expires_at");
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
 
     const finalSibsId = sibsId.trim();
-    const finalPassword = password.trim();
+    const finalPassword = password;
 
     if (!finalSibsId || !finalPassword) {
       showPopup("Please enter your SIBS ID and password.");
@@ -93,7 +109,7 @@ export default function LoginPage() {
 
       if (!result?.success) {
         setPassword("");
-        showPopup(result?.message || "Invalid SIBS ID or password.");
+        showPopup(getLoginFailureMessage(result));
         return;
       }
 
@@ -106,22 +122,25 @@ export default function LoginPage() {
         return;
       }
 
-      saveExpiry(result);
-      setUser(user);
+      const expiresAt = getResponseExpiry(result);
 
-      const dashboardPath = getDashboardPath(user);
+      // This starts one fixed hour. Reloading the page does not replace it.
+      setUser(user, expiresAt);
 
-      navigate(dashboardPath, { replace: true });
-    } catch (err) {
-      console.error("Login error:", err?.response?.data || err?.message);
+      navigate(getDashboardPath(user), { replace: true });
+    } catch (error) {
+      console.error(
+        "Login error:",
+        error?.response?.data || error?.message,
+      );
 
       sessionStorage.removeItem("accessTokenExpiresAt");
       localStorage.removeItem("token_expires_at");
 
       setPassword("");
       showPopup(
-        err?.response?.data?.message ||
-          err?.response?.data?.error ||
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
           "Invalid SIBS ID or password.",
       );
     } finally {
@@ -154,10 +173,12 @@ export default function LoginPage() {
             SIBS ID
             <input
               type="text"
+              name="sibsId"
+              autoComplete="username"
               value={sibsId}
               disabled={loading}
-              onChange={(e) => {
-                setSibsId(e.target.value);
+              onChange={(event) => {
+                setSibsId(event.target.value);
                 if (showError) clearError();
               }}
               style={styles.input}
@@ -168,10 +189,12 @@ export default function LoginPage() {
             Password
             <input
               type="password"
+              name="password"
+              autoComplete="current-password"
               value={password}
               disabled={loading}
-              onChange={(e) => {
-                setPassword(e.target.value);
+              onChange={(event) => {
+                setPassword(event.target.value);
                 if (showError) clearError();
               }}
               style={styles.input}
