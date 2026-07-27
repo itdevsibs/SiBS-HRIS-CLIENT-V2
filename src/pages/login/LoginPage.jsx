@@ -23,6 +23,14 @@ function getResponseExpiry(result) {
   );
 }
 
+function getResponseExpiresInMs(result) {
+  return (
+    result?.expiresInMs ||
+    result?.data?.expiresInMs ||
+    null
+  );
+}
+
 function getUserRole(user) {
   return String(
     user?.role ||
@@ -123,9 +131,9 @@ export default function LoginPage() {
       }
 
       const expiresAt = getResponseExpiry(result);
+      const expiresInMs = getResponseExpiresInMs(result);
 
-      // This starts one fixed hour. Reloading the page does not replace it.
-      setUser(user, expiresAt);
+      setUser(user, expiresAt, expiresInMs);
 
       navigate(getDashboardPath(user), { replace: true });
     } catch (error) {

@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
 import { useUser } from "./UserContext";
 import {
   createTalentPoolCandidate,
@@ -115,6 +116,26 @@ const defaultFormOptions = {
   audioQuestions: [],
   statuses: [],
 };
+
+const LOGIN_PAGE_PATHS = ["/", "/login"];
+
+function isLoginPage(pathname = "") {
+  return LOGIN_PAGE_PATHS.some((path) => {
+    if (path === "/") return pathname === "/";
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+}
+
+function isPublicTalentPoolApplicationPage(pathname = "") {
+  return (
+    pathname === "/recruitment/talent-pool/apply" ||
+    pathname.startsWith("/recruitment/talent-pool/apply/") ||
+    pathname === "/public/talent-pool/apply" ||
+    pathname.startsWith("/public/talent-pool/apply/") ||
+    pathname === "/apply" ||
+    pathname.startsWith("/apply/")
+  );
+}
 
 function cleanText(value) {
   return String(value ?? "").trim();
@@ -726,8 +747,16 @@ export function useTalentPool() {
 }
 
 export function TalentPoolProvider({ children }) {
-  const { user } = useUser();
+  const location = useLocation();
+  const { user, loading: userLoading } = useUser();
   const uploadInputRef = useRef(null);
+
+  const pathname = location.pathname;
+  const loginPage = isLoginPage(pathname);
+  const publicApplicationPage =
+    isPublicTalentPoolApplicationPage(pathname);
+  const canLoadPrivateTalentPool = Boolean(user) && !userLoading && !loginPage;
+  const canLoadPublicApplicationData = publicApplicationPage;
 
   const currentTaOwner = getLoggedInUserName(user);
 
@@ -756,7 +785,7 @@ export function TalentPoolProvider({ children }) {
     emptyMoveToPipelineForm,
   );
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState("");
 
@@ -784,6 +813,27 @@ export function TalentPoolProvider({ children }) {
 
   const refreshTalentPool = useCallback(async (options = {}) => {
     const silent = Boolean(options?.silent);
+    const publicOnly =
+      options?.publicOnly === undefined
+        ? publicApplicationPage
+        : Boolean(options.publicOnly);
+
+    const allowed = publicOnly
+      ? canLoadPublicApplicationData
+      : canLoadPrivateTalentPool;
+
+    if (!allowed) {
+      if (!silent) {
+        setIsLoading(false);
+        setLoadError("");
+      }
+
+      return {
+        success: false,
+        skipped: true,
+        message: "Talent Pool loading skipped for this route.",
+      };
+    }
 
     if (!silent) {
       setIsLoading(true);
@@ -791,17 +841,10 @@ export function TalentPoolProvider({ children }) {
     }
 
     try {
-      const [optionsResponse, positionsResponse, applicationsResponse] =
-        await Promise.all([
-          getTalentPoolFormOptions(),
-          getTalentPoolOpenPositions(),
-          getTalentPoolApplications({
-            page: 1,
-            limit: 500,
-            search: "",
-            status: "All",
-          }),
-        ]);
+      const [optionsResponse, positionsResponse] = await Promise.all([
+        getTalentPoolFormOptions(),
+        getTalentPoolOpenPositions(),
+      ]);
 
       if (!optionsResponse?.success) {
         throw new Error(
@@ -815,13 +858,6 @@ export function TalentPoolProvider({ children }) {
         );
       }
 
-      if (!applicationsResponse?.success) {
-        throw new Error(
-          applicationsResponse?.message ||
-            "Failed to load talent pool candidates.",
-        );
-      }
-
       setFormOptions(normalizeOptionsPayload(optionsResponse.data));
 
       setActivePositionOptions(
@@ -830,9 +866,29 @@ export function TalentPoolProvider({ children }) {
           .filter((position) => position.positionTitle),
       );
 
-      setCandidateList(
-        normalizeArray(applicationsResponse.data).map(normalizeCandidateRecord),
-      );
+      if (publicOnly) {
+        setCandidateList([]);
+      } else {
+        const applicationsResponse = await getTalentPoolApplications({
+          page: 1,
+          limit: 500,
+          search: "",
+          status: "All",
+        });
+
+        if (!applicationsResponse?.success) {
+          throw new Error(
+            applicationsResponse?.message ||
+              "Failed to load talent pool candidates.",
+          );
+        }
+
+        setCandidateList(
+          normalizeArray(applicationsResponse.data).map(
+            normalizeCandidateRecord,
+          ),
+        );
+      }
 
       if (!silent) {
         setLoadError("");
@@ -860,13 +916,50 @@ export function TalentPoolProvider({ children }) {
         setIsLoading(false);
       }
     }
-  }, []);
+  }, [
+    canLoadPrivateTalentPool,
+    canLoadPublicApplicationData,
+    publicApplicationPage,
+  ]);
 
   useEffect(() => {
-    refreshTalentPool();
-  }, [refreshTalentPool]);
+    if (loginPage || userLoading) {
+      setIsLoading(false);
+      setLoadError("");
+      setCandidateList([]);
+      setActivePositionOptions([]);
+      setFormOptions(defaultFormOptions);
+      return;
+    }
+
+    if (publicApplicationPage) {
+      void refreshTalentPool({ publicOnly: true });
+      return;
+    }
+
+    if (!user) {
+      setIsLoading(false);
+      setLoadError("");
+      setCandidateList([]);
+      setActivePositionOptions([]);
+      setFormOptions(defaultFormOptions);
+      return;
+    }
+
+    void refreshTalentPool({ publicOnly: false });
+  }, [
+    loginPage,
+    publicApplicationPage,
+    refreshTalentPool,
+    user,
+    userLoading,
+  ]);
 
   useEffect(() => {
+    if (!canLoadPrivateTalentPool || publicApplicationPage) {
+      return undefined;
+    }
+
     let syncTimeout = null;
 
     function queueSilentSync() {
@@ -926,7 +1019,12 @@ export function TalentPoolProvider({ children }) {
       );
       window.removeEventListener("focus", handleFocusSync);
     };
-  }, [applyTalentPoolCandidateUpdate, refreshTalentPool]);
+  }, [
+    applyTalentPoolCandidateUpdate,
+    canLoadPrivateTalentPool,
+    publicApplicationPage,
+    refreshTalentPool,
+  ]);
 
   const statusOptions = useMemo(() => {
     const dbStatuses = optionValues(formOptions.statuses);

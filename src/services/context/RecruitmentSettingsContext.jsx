@@ -7,6 +7,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
+import { useUser } from "./UserContext";
 
 import {
   AVAILABLE_POSITIONS_STORAGE_KEY,
@@ -32,6 +34,22 @@ import {
   mergeFormsForActivePositions,
   normalizeActiveAvailablePositions,
 } from "../../lib/utils/recruitmentSettings/activeAvailablePositions";
+
+const PUBLIC_RECRUITMENT_PATHS = [
+  "/",
+  "/login",
+  "/online-assessment",
+  "/apply",
+  "/public/talent-pool/apply",
+  "/recruitment/talent-pool/apply",
+];
+
+function isPublicRecruitmentPath(pathname = "") {
+  return PUBLIC_RECRUITMENT_PATHS.some((path) => {
+    if (path === "/") return pathname === "/";
+    return pathname === path || pathname.startsWith(`${path}/`);
+  });
+}
 
 const FORM_DETAILS_AUTOSAVE_MS = 500;
 
@@ -516,6 +534,13 @@ async function migrateStoredFormsToDatabase({
 export function RecruitmentSettingsProvider({
   children,
 }) {
+  const location = useLocation();
+  const { user, loading: userLoading } = useUser();
+
+  const publicRoute = isPublicRecruitmentPath(location.pathname);
+  const canLoadRecruitmentSettings =
+    Boolean(user) && !userLoading && !publicRoute;
+
   const detailsTimerRef =
     useRef(null);
 
@@ -542,7 +567,7 @@ export function RecruitmentSettingsProvider({
   const [
     positionsLoading,
     setPositionsLoading,
-  ] = useState(true);
+  ] = useState(false);
 
   const [
     positionsError,
@@ -752,6 +777,16 @@ export function RecruitmentSettingsProvider({
       async ({
         silent = false,
       } = {}) => {
+        if (!canLoadRecruitmentSettings) {
+          if (!silent) {
+            setPositionsLoading(false);
+            setPositionsError("");
+            setHasLoadedData(true);
+          }
+
+          return [];
+        }
+
         if (!silent) {
           setPositionsLoading(true);
         }
@@ -887,14 +922,21 @@ export function RecruitmentSettingsProvider({
           setHasLoadedData(true);
         }
       },
-      [],
+      [canLoadRecruitmentSettings],
     );
 
   useEffect(() => {
-    refreshAvailablePositions();
+    if (!canLoadRecruitmentSettings) {
+      setPositionsLoading(false);
+      setPositionsError("");
+      setHasLoadedData(true);
+      return undefined;
+    }
+
+    void refreshAvailablePositions();
 
     function handleAvailablePositionsChanged() {
-      refreshAvailablePositions({
+      void refreshAvailablePositions({
         silent: true,
       });
     }
@@ -920,10 +962,10 @@ export function RecruitmentSettingsProvider({
         handleAvailablePositionsChanged,
       );
     };
-  }, [refreshAvailablePositions]);
+  }, [canLoadRecruitmentSettings, refreshAvailablePositions]);
 
   useEffect(() => {
-    if (!hasLoadedData) return;
+    if (!hasLoadedData || !canLoadRecruitmentSettings) return;
 
     safeWriteStorage(
       AVAILABLE_POSITIONS_STORAGE_KEY,
@@ -938,6 +980,7 @@ export function RecruitmentSettingsProvider({
     availablePositions,
     settings,
     hasLoadedData,
+    canLoadRecruitmentSettings,
   ]);
 
   useEffect(() => {
