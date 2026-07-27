@@ -154,25 +154,7 @@ function clearStoredServerTokenExpiry() {
 }
 
 function readStoredIdleDuration() {
-  const sessionDuration = normalizeDuration(
-    getSessionStorage()?.getItem(
-      SESSION_IDLE_DURATION_SESSION_KEY,
-    ),
-  );
-
-  const localDuration = normalizeDuration(
-    getLocalStorage()?.getItem(
-      SESSION_IDLE_DURATION_LOCAL_KEY,
-    ),
-  );
-
-  const values = [sessionDuration, localDuration].filter(
-    (value) => value > 0,
-  );
-
-  if (!values.length) return SESSION_DURATION_MS;
-
-  const duration = Math.min(...values);
+  const duration = SESSION_DURATION_MS;
 
   getSessionStorage()?.setItem(
     SESSION_IDLE_DURATION_SESSION_KEY,
@@ -187,11 +169,8 @@ function readStoredIdleDuration() {
   return duration;
 }
 
-function writeStoredIdleDuration(value) {
-  const duration = normalizeDuration(
-    value,
-    SESSION_DURATION_MS,
-  );
+function writeStoredIdleDuration() {
+  const duration = SESSION_DURATION_MS;
 
   getSessionStorage()?.setItem(
     SESSION_IDLE_DURATION_SESSION_KEY,
@@ -274,6 +253,7 @@ export function UserProvider({ children }) {
   const logoutInProgressRef = useRef(false);
   const refreshPromiseRef = useRef(null);
   const refreshSessionRef = useRef(null);
+  const justLoggedInRef = useRef(false);
 
   const lastHandledActivityRef = useRef(0);
   const idleDurationRef = useRef(
@@ -335,6 +315,7 @@ export function UserProvider({ children }) {
     clearStoredIdleDuration();
 
     idleDurationRef.current = SESSION_DURATION_MS;
+    justLoggedInRef.current = false;
     replaceUser(null, { cache: false });
 
     if (mountedRef.current) {
@@ -848,6 +829,21 @@ export function UserProvider({ children }) {
     idleDurationRef.current =
       readStoredIdleDuration();
 
+    if (justLoggedInRef.current && userRef.current) {
+      justLoggedInRef.current = false;
+      setLoading(false);
+      startLogoutTimer();
+
+      const serverExpiresAt =
+        readStoredServerTokenExpiry();
+
+      if (serverExpiresAt > Date.now()) {
+        scheduleServerRefresh(serverExpiresAt);
+      }
+
+      return undefined;
+    }
+
     const cachedSession = readCachedAuthSession();
 
     if (cachedSession?.user) {
@@ -989,19 +985,16 @@ export function UserProvider({ children }) {
         serverExpiresAt,
       );
 
-      const derivedDuration = normalizeDuration(
-        serverExpiresInMs,
-        normalizedServerExpiry > now
-          ? normalizedServerExpiry - now
-          : SESSION_DURATION_MS,
-      );
-
+      /*
+       * The inactivity window is always one hour. The JWT may be much shorter
+       * during testing (for example 10 seconds), but it is refreshed
+       * independently and must never shorten the user's inactivity session.
+       */
       idleDurationRef.current =
-        writeStoredIdleDuration(derivedDuration);
+        writeStoredIdleDuration(SESSION_DURATION_MS);
 
-      /* New login: inactivity countdown starts now. */
       writeStoredExpiry(
-        now + idleDurationRef.current,
+        now + SESSION_DURATION_MS,
       );
 
       if (normalizedServerExpiry > now) {
@@ -1013,6 +1006,7 @@ export function UserProvider({ children }) {
       }
 
       lastHandledActivityRef.current = now;
+      justLoggedInRef.current = true;
 
       replaceUser(newUser);
       setLoading(false);

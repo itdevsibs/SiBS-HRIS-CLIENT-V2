@@ -6,7 +6,7 @@ export async function getLogin(sibsId, password) {
       "/api/users/login",
       {
         sibsId: sibsId.trim(),
-        password: password.trim(),
+        password,
       },
       {
         withCredentials: true,
@@ -21,6 +21,8 @@ export async function getLogin(sibsId, password) {
       message: data?.message || "",
       user: data?.user || null,
       expiresAt: data?.expiresAt || null,
+      expiresInMs: data?.expiresInMs || null,
+      code: data?.code || "",
     };
   } catch (err) {
     console.error(
@@ -35,6 +37,8 @@ export async function getLogin(sibsId, password) {
       message: err?.response?.data?.message || err?.message || "An error occurred",
       user: null,
       expiresAt: null,
+      expiresInMs: null,
+      code: err?.response?.data?.code || "",
     };
   }
 }
