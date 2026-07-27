@@ -306,6 +306,42 @@ function getRowMetrics(item = {}) {
       "attrition_past_count",
     ]) ?? getSixWeekSeriesTotal(item, "attrition");
 
+  const directAbsenteeismRate = getDirectForecastNumber(item, [
+    "absenteeismRate",
+    "absenteeism_rate",
+    "absenteeismPercentage",
+    "absenteeism_percentage",
+    "absenteeismPercent",
+    "absenteeism_percent",
+    "averageAbsenteeismPercent",
+    "average_absenteeism_percent",
+  ]);
+
+  const absenteeismRate =
+    directAbsenteeismRate !== null
+      ? normalizeRate(directAbsenteeismRate)
+      : actualHeadcount > 0
+        ? absenteeismSixWeeks / actualHeadcount
+        : 0;
+
+  const directAttritionRate = getDirectForecastNumber(item, [
+    "attritionRate",
+    "attrition_rate",
+    "attritionPercentage",
+    "attrition_percentage",
+    "attritionPercent",
+    "attrition_percent",
+    "attritionPastPercent",
+    "attrition_past_percent",
+  ]);
+
+  const attritionRate =
+    directAttritionRate !== null
+      ? normalizeRate(directAttritionRate)
+      : actualHeadcount > 0
+        ? attritionSixWeeks / actualHeadcount
+        : 0;
+
   const directNetActualHeadcount = getDirectForecastNumber(item, [
     "netActualHc",
     "net_actual_hc",
@@ -427,7 +463,9 @@ function getRowMetrics(item = {}) {
     requiredHeadcount,
     actualHeadcount,
     absenteeismSixWeeks,
+    absenteeismRate,
     attritionSixWeeks,
+    attritionRate,
     netActualHeadcount,
     bufferPercentage,
     hiringNeeded,
@@ -450,6 +488,10 @@ function ColumnGroup() {
       <col style={{ width: "92px" }} />
       <col style={{ width: "92px" }} />
       <col style={{ width: "96px" }} />
+      <col style={{ width: "96px" }} />
+      <col style={{ width: "88px" }} />
+      <col style={{ width: "96px" }} />
+      <col style={{ width: "88px" }} />
       <col style={{ width: "92px" }} />
       <col style={{ width: "92px" }} />
       <col style={{ width: "88px" }} />
@@ -916,6 +958,12 @@ function buildTotalsFromRows(rows = []) {
         100
       : 0;
 
+  const absenteeismRate =
+    sum.actualHeadcount > 0 ? sum.absenteeismSixWeeks / sum.actualHeadcount : 0;
+
+  const attritionRate =
+    sum.actualHeadcount > 0 ? sum.attritionSixWeeks / sum.actualHeadcount : 0;
+
   const hiringNeeded = Math.max(0, sum.requiredHeadcount - netActualHeadcount);
 
   const hiringRate =
@@ -933,6 +981,8 @@ function buildTotalsFromRows(rows = []) {
     netActualHeadcount,
     hiringNeeded,
     bufferPercentage,
+    absenteeismRate,
+    attritionRate,
     hiringRate,
     leadsToInterviewToGenerate,
   };
@@ -1081,6 +1131,10 @@ export default function WorkforceHiringAccountsTable({
             metrics.requiredHeadcount,
             metrics.actualHeadcount,
             formatSignedPercentWhole(metrics.bufferPercentage),
+            metrics.absenteeismSixWeeks,
+            formatPercent(metrics.absenteeismRate),
+            metrics.attritionSixWeeks,
+            formatPercent(metrics.attritionRate),
             metrics.netActualHeadcount,
             metrics.hiringNeeded,
             metrics.acceptedJobOffer,
@@ -1281,6 +1335,18 @@ export default function WorkforceHiringAccountsTable({
           {formatSignedPercentWhole(metrics.bufferPercentage)}
         </BodyTd>
 
+        <BodyTd>{formatNumber(metrics.absenteeismSixWeeks)}</BodyTd>
+
+        <BodyTd className="text-blue-600">
+          {formatPercent(metrics.absenteeismRate)}
+        </BodyTd>
+
+        <BodyTd>{formatNumber(metrics.attritionSixWeeks)}</BodyTd>
+
+        <BodyTd className="text-red-600">
+          {formatPercent(metrics.attritionRate)}
+        </BodyTd>
+
         <BodyTd>{formatNumber(metrics.netActualHeadcount)}</BodyTd>
 
         <BodyTd
@@ -1389,7 +1455,7 @@ export default function WorkforceHiringAccountsTable({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleDragEnd}
         >
-          <table className="w-full min-w-[1460px] border-collapse">
+          <table className="w-full min-w-[1760px] border-collapse">
             <ColumnGroup />
 
             <thead>
@@ -1428,6 +1494,28 @@ export default function WorkforceHiringAccountsTable({
                   Buffer
                   <br />
                   Percentage
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Absenteeism
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Absenteeism
+                  <br />%
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Attrition
+                  <br />
+                  Count
+                </HeaderTh>
+
+                <HeaderTh rowSpan={2}>
+                  Attrition
+                  <br />%
                 </HeaderTh>
 
                 <HeaderTh rowSpan={2}>
@@ -1502,7 +1590,7 @@ export default function WorkforceHiringAccountsTable({
               {combinedLoading ? (
                 Array.from({ length: 10 }).map((_, index) => (
                   <tr key={index}>
-                    <BodyTd className="py-2" colSpan={15}>
+                    <BodyTd className="py-2" colSpan={19}>
                       <div className="h-5 w-full animate-sibs-pulse rounded bg-slate-200" />
                     </BodyTd>
                   </tr>
@@ -1511,7 +1599,7 @@ export default function WorkforceHiringAccountsTable({
                 <tr>
                   <BodyTd
                     className="py-12 text-center text-sm font-bold text-slate-500"
-                    colSpan={15}
+                    colSpan={19}
                   >
                     No workforce hiring plan records found.
                   </BodyTd>
@@ -1537,6 +1625,14 @@ export default function WorkforceHiringAccountsTable({
                     className={getSignedNumberClass(totals.bufferPercentage)}
                   >
                     {formatSignedPercentWhole(totals.bufferPercentage)}
+                  </BodyTd>
+                  <BodyTd>{formatNumber(totals.absenteeismSixWeeks)}</BodyTd>
+                  <BodyTd className="text-blue-600">
+                    {formatPercent(totals.absenteeismRate)}
+                  </BodyTd>
+                  <BodyTd>{formatNumber(totals.attritionSixWeeks)}</BodyTd>
+                  <BodyTd className="text-red-600">
+                    {formatPercent(totals.attritionRate)}
                   </BodyTd>
                   <BodyTd>{formatNumber(totals.netActualHeadcount)}</BodyTd>
                   <BodyTd
@@ -1621,6 +1717,24 @@ export default function WorkforceHiringAccountsTable({
                     valueClassName={getSignedNumberClass(
                       metrics.bufferPercentage,
                     )}
+                  />
+                  <MobileMetric
+                    label="Absenteeism Count"
+                    value={formatNumber(metrics.absenteeismSixWeeks)}
+                  />
+                  <MobileMetric
+                    label="Absenteeism %"
+                    value={formatPercent(metrics.absenteeismRate)}
+                    valueClassName="text-blue-600"
+                  />
+                  <MobileMetric
+                    label="Attrition Count"
+                    value={formatNumber(metrics.attritionSixWeeks)}
+                  />
+                  <MobileMetric
+                    label="Attrition %"
+                    value={formatPercent(metrics.attritionRate)}
+                    valueClassName="text-red-600"
                   />
                   <MobileMetric
                     label="Net Actual HC"
