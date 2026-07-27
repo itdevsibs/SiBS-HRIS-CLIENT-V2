@@ -1,6 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CalendarDays, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  Loader2,
+  Paperclip,
+  Search,
+  X,
+  XCircle,
+} from "lucide-react";
 
 import PaginationTable from "@/services/pagination/PaginationTable";
 import { PaginationDateRangeFilter } from "@/services/context/PaginationContext";
@@ -160,40 +169,121 @@ function Badge({ children, className = "" }) {
   );
 }
 
-function DetailRow({ label, value }) {
+function SectionHeading({ children }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[#f3f4f6] py-3 last:border-b-0">
-      <p className="m-0 text-[11px] font-bold uppercase text-sibs-tertiary-5">
-        {label}
-      </p>
+    <div className="mb-3 flex items-center gap-3">
+      <h3 className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#8A98B8]">
+        {children}
+      </h3>
 
-      <strong className="max-w-[60%] break-words text-right text-sm font-bold text-[#344054] max-sm:max-w-full max-sm:text-left">
-        {value || "—"}
-      </strong>
+      <span className="h-px flex-1 bg-[#9FB3C8]" />
     </div>
   );
 }
 
-function ApproverRow({ item }) {
-  const approver = getApproverDisplay(item);
-
+function CompactField({
+  label,
+  value,
+  mono = false,
+  accent = false,
+  children,
+  className = "",
+}) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[#f3f4f6] py-3 last:border-b-0">
-      <p className="m-0 text-[11px] font-bold uppercase text-sibs-tertiary-5">
-        Approver
+    <div className={`min-w-0 ${className}`}>
+      <p className="text-[9px] font-extrabold uppercase leading-4 tracking-wide text-[#8A98B8]">
+        {label}
       </p>
 
-      <div className="max-w-[60%] text-right max-sm:max-w-full max-sm:text-left">
-        <p className="m-0 text-sm font-extrabold text-[#344054]">
-          SiBS ID: {approver.sibsId}
+      {children || (
+        <p
+          className={`mt-0.5 break-words text-xs font-extrabold leading-5 ${
+            accent ? "text-[#FF5C28]" : "text-[#042C51]"
+          }`}
+        >
+          {value || "—"}
         </p>
-
-        <p className="mt-1 text-sm font-bold leading-snug text-[#344054]">
-          {approver.name}
-        </p>
-      </div>
+      )}
     </div>
   );
+}
+
+function LedgerMetric({
+  label,
+  value,
+  accent = false,
+  className = "",
+}) {
+  return (
+    <div
+      className={`rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-center ${className}`}
+    >
+      <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+        {label}
+      </p>
+
+      <p
+        className={`mt-1 break-words text-sm font-extrabold tabular-nums ${
+          accent ? "text-[#FF5C28]" : "text-[#52637A]"
+        }`}
+      >
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+function getPaidLeaveLabel(value) {
+  if (value === true) return "Paid Leave";
+  if (value === false) return "Unpaid Leave";
+
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (["paid", "paid leave", "yes", "true"].includes(normalized)) {
+    return "Paid Leave";
+  }
+
+  if (["unpaid", "unpaid leave", "no", "false"].includes(normalized)) {
+    return "Unpaid Leave";
+  }
+
+  const numericValue = Number(value);
+
+  if (Number.isFinite(numericValue)) {
+    return numericValue > 0 ? "Paid Leave" : "Unpaid Leave";
+  }
+
+  return normalized ? String(value) : "—";
+}
+
+function getEmployeeInitials(item) {
+  const source = String(
+    item?.gy_full_name || item?.gy_username || "User",
+  ).trim();
+
+  const parts = source
+    .replace(/,/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) return "U";
+
+  const first = parts[0]?.[0] || "";
+  const second = parts[1]?.[0] || parts[0]?.[1] || "";
+
+  return `${first}${second}`.toUpperCase();
+}
+
+function getApprovalResultFailed(result) {
+  if (result === false) return true;
+
+  if (result && typeof result === "object") {
+    return result?.success === false || result?.ok === false;
+  }
+
+  return false;
 }
 
 function InlineDateRangeFilter({ visible }) {
@@ -206,12 +296,26 @@ function InlineDateRangeFilter({ visible }) {
   );
 }
 
-function LeaveDetailsModal({ open, item, onClose }) {
+function LeaveDetailsModal({
+  open,
+  item,
+  onClose,
+  canApproveLeave = false,
+  approvalLoading = false,
+  onApproveLeave,
+  onRejectLeave,
+}) {
   const [isClosing, setIsClosing] = useState(false);
+  const [decisionAction, setDecisionAction] = useState("");
   const portalTarget = typeof document !== "undefined" ? document.body : null;
 
+  const normalizedStatus = normalizeStatus(item?.gy_leave_status);
+  const isPending = normalizedStatus === "Pending";
+  const approver = getApproverDisplay(item);
+  const busy = Boolean(approvalLoading || decisionAction);
+
   const handleAnimatedClose = useCallback(() => {
-    if (isClosing) return;
+    if (isClosing || busy) return;
 
     setIsClosing(true);
 
@@ -219,16 +323,18 @@ function LeaveDetailsModal({ open, item, onClose }) {
       setIsClosing(false);
       onClose?.();
     }, 220);
-  }, [isClosing, onClose]);
+  }, [busy, isClosing, onClose]);
 
   useEffect(() => {
     if (!open) return undefined;
+
+    setDecisionAction("");
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     function handleEscape(event) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !busy) {
         handleAnimatedClose();
       }
     }
@@ -239,194 +345,393 @@ function LeaveDetailsModal({ open, item, onClose }) {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [handleAnimatedClose, open]);
+  }, [busy, handleAnimatedClose, open]);
 
   if (!open || !item || !portalTarget) return null;
 
+  const leaveType = getLeaveTypeLabel(
+    item.gy_leave_type,
+    item.leaveTypeLabel || item.leave_type_label,
+  );
+
+  const attachmentName =
+    item.gy_leave_attachment ||
+    item.leave_attachment ||
+    item.attachment_name ||
+    "";
+
+  const availableFrom = formatDate(item.gy_leave_avail_date);
+  const availableTo = formatDate(item.gy_leave_avail_dateto);
+  const validityWindow =
+    availableFrom !== "—" || availableTo !== "—"
+      ? `${availableFrom} — ${availableTo}`
+      : "—";
+
+  const canRunApproval =
+    isPending &&
+    canApproveLeave &&
+    typeof onApproveLeave === "function" &&
+    typeof onRejectLeave === "function";
+
+  async function handleDecision(action) {
+    if (!canRunApproval || busy) return;
+
+    const callback =
+      action === "approve" ? onApproveLeave : onRejectLeave;
+
+    try {
+      setDecisionAction(action);
+
+      const result = await callback(item);
+
+      if (getApprovalResultFailed(result)) {
+        return;
+      }
+
+      setIsClosing(true);
+
+      window.setTimeout(() => {
+        setIsClosing(false);
+        setDecisionAction("");
+        onClose?.();
+      }, 220);
+    } catch (error) {
+      console.error(
+        `Unable to ${action} leave request:`,
+        error,
+      );
+    } finally {
+      setDecisionAction("");
+    }
+  }
+
   return createPortal(
     <div
-      className={`fixed inset-0 z-[999999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 backdrop-blur-sm sm:p-5 ${
+      className={`fixed inset-0 z-[999999] flex h-dvh items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4 ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) handleAnimatedClose();
+        if (event.target === event.currentTarget) {
+          handleAnimatedClose();
+        }
       }}
     >
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="leave-details-title"
-        className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-[#042C51] font-jakarta shadow-2xl sm:max-h-[90vh] sm:rounded-2xl ${
+        className={`flex max-h-[calc(100dvh-1rem)] w-full max-w-[760px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-white font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)] sm:max-h-[92dvh] ${
           isClosing ? "sibs-modal-pop-out" : "sibs-modal-pop-in"
         }`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#042C51] px-4 py-3.5 text-white sm:px-5">
+        <header className="flex shrink-0 items-center justify-between gap-3 bg-[#07365F] px-5 py-4 text-white sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FF5C28]">
-              <CalendarDays size={18} />
-            </span>
+            <CalendarDays
+              size={19}
+              className="shrink-0 text-amber-400"
+            />
 
-            <div className="min-w-0">
-              <h2
-                id="leave-details-title"
-                className="truncate text-base font-extrabold"
-              >
-                Leave Details
-              </h2>
-              <p className="mt-0.5 truncate text-xs text-slate-300">
-                Leave request, balance, and approval information
-              </p>
-            </div>
+            <h2
+              id="leave-details-title"
+              className="truncate text-sm font-extrabold uppercase tracking-wide sm:text-base"
+            >
+              Leave Request &amp; Ledger Audit
+            </h2>
           </div>
 
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+            disabled={busy}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close leave details"
           >
-            <X size={17} />
+            <X size={18} />
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-white p-3 text-[#101828] sm:p-6">
-          <div className="space-y-5">
-            <section className="flex flex-col gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0">
-                <h3 className="break-words text-base font-extrabold text-[#042C51] sm:text-lg">
-                  {item.gy_full_name || item.gy_username || "Unknown User"}
-                </h3>
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-white p-4 text-[#101828] sm:p-6">
+          <div className="space-y-6">
+            <section className="flex flex-col gap-4 rounded-2xl border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#07365F] text-xs font-extrabold text-white">
+                  {getEmployeeInitials(item)}
+                </div>
 
-                <p className="mt-1 text-xs font-semibold text-[#667085]">
-                  SiBS ID: {item.gy_user_code || "—"}
-                </p>
+                <div className="min-w-0">
+                  <h3 className="break-words text-sm font-extrabold text-[#042C51] sm:text-base">
+                    {item.gy_full_name ||
+                      item.gy_username ||
+                      "Unknown User"}
+                  </h3>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge className={getStatusClass(item.gy_leave_status)}>
-                    {normalizeStatus(item.gy_leave_status)}
-                  </Badge>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                      User Code (SiBS ID):
+                    </span>
 
-                  <Badge className="border-orange-200 bg-[#FFF0EB] text-[#FF5C28]">
-                    {getLeaveTypeLabel(
-                      item.gy_leave_type,
-                      item.leave_type_label,
-                    )}
-                  </Badge>
+                    <span className="rounded bg-[#E6ECF2] px-2 py-0.5 text-[10px] font-extrabold text-[#52637A]">
+                      {item.gy_user_code || "—"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="shrink-0 rounded-xl border border-orange-200 bg-[#FFF0EB] px-5 py-4 text-left sm:min-w-[150px] sm:text-center">
-                <p className="m-0 text-[10px] font-extrabold uppercase text-[#C2410C]">
-                  Remaining
-                </p>
-                <strong className="mt-1 block text-3xl font-extrabold tabular-nums text-[#FF5C28]">
-                  {formatNumber(item.leave_remaining)}
-                </strong>
+              <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
+                <div className="text-right">
+                  <p className="text-[8px] font-extrabold uppercase tracking-wide text-[#8A98B8]">
+                    Remaining Balance
+                  </p>
+
+                  <p className="mt-0.5 text-xl font-extrabold tabular-nums text-[#FF5C28]">
+                    {formatNumber(item.leave_remaining)} Days
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="inline-flex justify-center rounded border border-blue-200 bg-blue-50 px-2.5 py-1 text-[9px] font-extrabold uppercase text-blue-700">
+                    {leaveType}
+                  </span>
+
+                  <span
+                    className={`inline-flex justify-center rounded border px-2.5 py-1 text-[9px] font-extrabold uppercase ${getStatusClass(
+                      normalizedStatus,
+                    )}`}
+                  >
+                    {normalizedStatus}
+                  </span>
+                </div>
               </div>
             </section>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-              <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-                <h3 className="mb-2 text-sm font-extrabold text-[#042C51]">
-                  Leave Request Information
-                </h3>
+            <section>
+              <SectionHeading>
+                Leave Request Information
+              </SectionHeading>
 
-                <DetailRow label="Leave ID" value={item.gy_leave_id} />
-                <DetailRow
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
+                <CompactField
+                  label="Leave ID"
+                  value={item.gy_leave_id}
+                  mono
+                />
+
+                <CompactField
                   label="Filed Date"
                   value={formatDateTime(item.gy_leave_filed)}
                 />
-                <DetailRow
-                  label="Leave Type"
-                  value={getLeaveTypeLabel(
-                    item.gy_leave_type,
-                    item.leave_type_label,
-                  )}
+
+                <CompactField label="Paid Status">
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs font-extrabold text-[#042C51]">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        getPaidLeaveLabel(item.gy_leave_paid) ===
+                        "Paid Leave"
+                          ? "bg-emerald-500"
+                          : "bg-slate-400"
+                      }`}
+                    />
+
+                    {getPaidLeaveLabel(item.gy_leave_paid)}
+                  </p>
+                </CompactField>
+
+                <CompactField
+                  label="Total Days"
+                  value={`${formatNumber(item.gy_leave_day)} ${
+                    Number(item.gy_leave_day) === 1 ? "Day" : "Days"
+                  }`}
                 />
-                <DetailRow
-                  label="Paid Leave"
-                  value={formatNumber(item.gy_leave_paid)}
-                />
-                <DetailRow
-                  label="Leave Day"
-                  value={formatNumber(item.gy_leave_day)}
-                />
-                <DetailRow
+
+                <CompactField
                   label="Date From"
                   value={formatDate(item.gy_leave_date_from)}
                 />
-                <DetailRow
+
+                <CompactField
                   label="Date To"
                   value={formatDate(item.gy_leave_date_to)}
                 />
-                <DetailRow label="Reason" value={item.gy_leave_reason} />
-                <DetailRow label="Remarks" value={item.gy_leave_remarks} />
-              </section>
-
-              <div className="space-y-5">
-                <section className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 sm:p-5">
-                  <h3 className="mb-2 text-sm font-extrabold text-[#042C51]">
-                    Leave Balance
-                  </h3>
-
-                  <DetailRow
-                    label="Available From"
-                    value={formatDate(item.gy_leave_avail_date)}
-                  />
-                  <DetailRow
-                    label="Available To"
-                    value={formatDate(item.gy_leave_avail_dateto)}
-                  />
-                  <DetailRow
-                    label="Approved Credits"
-                    value={formatNumber(item.leave_credit)}
-                  />
-                  <DetailRow
-                    label="Plotted Leaves"
-                    value={formatNumber(item.leave_plotted)}
-                  />
-                  <DetailRow
-                    label="Remaining Leaves"
-                    value={formatNumber(item.leave_remaining)}
-                  />
-                  <DetailRow
-                    label="Justification"
-                    value={item.gy_leave_avail_justify}
-                  />
-                </section>
-
-                <section className="rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-                  <h3 className="mb-2 text-sm font-extrabold text-[#042C51]">
-                    Approval Information
-                  </h3>
-
-                  <DetailRow
-                    label="Status"
-                    value={normalizeStatus(item.gy_leave_status)}
-                  />
-                  <ApproverRow item={item} />
-                  <DetailRow
-                    label="Date Approved"
-                    value={formatDateTime(item.gy_leave_date_approved)}
-                  />
-                  <DetailRow
-                    label="Attachment"
-                    value={item.gy_leave_attachment}
-                  />
-                </section>
               </div>
-            </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <CompactField label="Reason">
+                  <div className="mt-1 min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-[#52637A]">
+                    {item.gy_leave_reason ||
+                      "No specification provided."}
+                  </div>
+                </CompactField>
+
+                <CompactField label="Supervisor Remarks">
+                  <div className="mt-1 min-h-[46px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold leading-5 text-[#52637A]">
+                    {item.gy_leave_remarks ||
+                      "No comments filed."}
+                  </div>
+                </CompactField>
+              </div>
+            </section>
+
+            <section>
+              <SectionHeading>Leave Balance Ledger</SectionHeading>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <LedgerMetric
+                  label="Approved Credits"
+                  value={formatNumber(item.leave_credit)}
+                />
+
+                <LedgerMetric
+                  label="Plotted Leaves"
+                  value={formatNumber(item.leave_plotted)}
+                />
+
+                <LedgerMetric
+                  label="Remaining Leaves"
+                  value={formatNumber(item.leave_remaining)}
+                  accent
+                />
+
+                <LedgerMetric
+                  label="Validity Window"
+                  value={validityWindow}
+                  className="col-span-2"
+                />
+              </div>
+
+              <div className="mt-4">
+                <CompactField label="Balance Justification">
+                  <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-medium italic leading-5 text-[#667085]">
+                    “
+                    {item.gy_leave_avail_justify ||
+                      "No balance justification recorded."}
+                    ”
+                  </div>
+                </CompactField>
+              </div>
+            </section>
+
+            <section>
+              <SectionHeading>
+                Approval Context &amp; Security
+              </SectionHeading>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <CompactField
+                    label="Approver Name"
+                    value={approver.name}
+                  />
+
+                  <CompactField
+                    label="Approver SiBS ID"
+                    value={approver.sibsId}
+                    mono
+                  />
+
+                  <CompactField
+                    label="Date Approved / Processed"
+                    value={formatDateTime(
+                      item.gy_leave_date_approved,
+                    )}
+                  />
+                </div>
+
+                <CompactField label="Attachment File">
+                  {attachmentName ? (
+                    <div className="mt-1 flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/50 px-3 py-2.5 text-[10px] font-extrabold text-blue-700">
+                      <Paperclip size={14} className="shrink-0" />
+
+                      <span className="min-w-0 flex-1 truncate">
+                        {attachmentName}
+                      </span>
+
+                      <span className="shrink-0 text-[9px] text-blue-500">
+                        Download
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="mt-1 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#8A98B8]">
+                      No attachments provided.
+                    </div>
+                  )}
+                </CompactField>
+              </div>
+            </section>
+
+            {isPending ? (
+              <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <AlertCircle
+                      size={19}
+                      className="mt-0.5 shrink-0 text-amber-500"
+                    />
+
+                    <div className="min-w-0">
+                      <h3 className="text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                        Pending Approval Action
+                      </h3>
+
+                      <p className="mt-1 text-[9px] font-semibold leading-4 text-[#667085]">
+                        {canRunApproval
+                          ? "Sign off or reject this request with your configured administrative access."
+                          : "This request is pending approval from an authorized leave approver."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {canRunApproval ? (
+                    <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => handleDecision("approve")}
+                        disabled={busy}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {decisionAction === "approve" ? (
+                          <Loader2
+                            size={14}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <Check size={14} />
+                        )}
+                        Approve Request
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDecision("reject")}
+                        disabled={busy}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {decisionAction === "reject" ? (
+                          <Loader2
+                            size={14}
+                            className="animate-spin"
+                          />
+                        ) : (
+                          <XCircle size={14} />
+                        )}
+                        Reject Request
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
           </div>
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-3 sm:px-6">
+        <footer className="flex shrink-0 justify-end border-t border-[#E6ECF2] bg-[#F8FAFC] px-4 py-4 sm:px-6">
           <button
             type="button"
             onClick={handleAnimatedClose}
-            className="inline-flex h-9 items-center justify-center rounded-lg bg-[#042C51] px-4 text-xs font-extrabold text-white transition hover:bg-[#FF5C28]"
+            disabled={busy}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-[#042C51] px-5 text-[10px] font-extrabold uppercase tracking-widest text-white transition hover:bg-[#021F3A] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Close Details
+            Close Panel
           </button>
         </footer>
       </section>
@@ -459,6 +764,10 @@ export default function LeavesTable({
   accountDropdownOptions = [],
   isPersonalView = false,
   filterValues = {},
+  canApproveLeave = false,
+  approvalLoading = false,
+  onApproveLeave,
+  onRejectLeave,
 }) {
   const tableScrollRef = useRef(null);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -763,6 +1072,10 @@ export default function LeavesTable({
         open={Boolean(selectedLeave)}
         item={selectedLeave}
         onClose={() => setSelectedLeave(null)}
+        canApproveLeave={canApproveLeave}
+        approvalLoading={approvalLoading}
+        onApproveLeave={onApproveLeave}
+        onRejectLeave={onRejectLeave}
       />
     </>
   );

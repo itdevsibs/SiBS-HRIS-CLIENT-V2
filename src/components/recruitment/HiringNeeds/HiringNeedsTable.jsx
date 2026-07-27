@@ -374,7 +374,7 @@ export default function HiringNeedsTable({ onView }) {
                             {title}
                           </p>
 
-                          <p className="mt-0.5 max-w-[320px] truncate font-mono text-[10px] font-semibold leading-4 text-[#98A2B3]">
+                          <p className="mt-0.5 max-w-[320px] truncate text-[10px] font-semibold leading-4 text-[#98A2B3]">
                             {getHiringNeedsSubtitle(
                               item,
                             )}

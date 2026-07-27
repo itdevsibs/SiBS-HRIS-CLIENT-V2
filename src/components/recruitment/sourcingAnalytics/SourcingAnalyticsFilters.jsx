@@ -1,9 +1,13 @@
-import React from "react";
-import { Filter, Search } from "lucide-react";
+import { useMemo } from "react";
+import { RotateCcw } from "lucide-react";
+
 import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 
-const sourcingOptions = [
+const SOURCING_ENTITY = "sourcing-analytics";
+
+const FALLBACK_SOURCING_OPTIONS = [
   "Employee Referral Program",
   "Print Ads (Billboards, Brochures, Flyers, Posters)",
   "Social Media Pages",
@@ -18,37 +22,44 @@ const sourcingOptions = [
   "Others",
 ];
 
-function SearchFilterSelect({
-  label,
-  entityKey,
-  filterKey,
-  options,
-  allLabel,
-}) {
-  const { filterValues, setFilter } = usePagination(entityKey);
-  const currentValue = filterValues?.[filterKey] || "All";
+const COST_STATUS_OPTIONS = [
+  { label: "All Cost Status", value: "All" },
+  { label: "With Cost", value: "With Cost" },
+  { label: "No Cost", value: "No Cost" },
+];
 
-  return (
-    <div className="w-full">
-      <label className="mb-1.5 block text-sm font-bold text-[#101828]">
-        {label}
-      </label>
+const PERFORMANCE_OPTIONS = [
+  { label: "All Performance", value: "All" },
+  {
+    label: "With Applicants",
+    value: "With Applicants",
+  },
+  {
+    label: "No Applicants",
+    value: "No Applicants",
+  },
+  { label: "With Hires", value: "With Hires" },
+  { label: "No Hires", value: "No Hires" },
+];
 
-      <select
-        value={currentValue}
-        onChange={(event) => setFilter(filterKey, event.target.value)}
-        className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-bold text-[#344054] outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-      >
-        <option value="All">{allLabel}</option>
+function normalizeSourcingOption(option) {
+  if (
+    typeof option === "string" ||
+    typeof option === "number"
+  ) {
+    return String(option).trim();
+  }
 
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  return String(
+    option?.value ||
+      option?.optionValue ||
+      option?.option_value ||
+      option?.label ||
+      option?.optionLabel ||
+      option?.option_label ||
+      option?.name ||
+      "",
+  ).trim();
 }
 
 export default function SourcingAnalyticsFilters() {
@@ -59,92 +70,154 @@ export default function SourcingAnalyticsFilters() {
     resetFilters,
     filterValues,
     setFilter,
-  } = usePagination("sourcing-analytics");
+  } = usePagination(SOURCING_ENTITY);
 
-  const { clearFilters } = useSourcingAnalytics();
+  const {
+    sourcingOptions = [],
+    clearFilters,
+  } = useSourcingAnalytics();
+
+  const sourceOptions = useMemo(() => {
+    const normalized = [
+      ...new Set(
+        (Array.isArray(sourcingOptions)
+          ? sourcingOptions
+          : []
+        )
+          .map(normalizeSourcingOption)
+          .filter(Boolean),
+      ),
+    ].sort((left, right) =>
+      left.localeCompare(right),
+    );
+
+    const values =
+      normalized.length > 0
+        ? normalized
+        : FALLBACK_SOURCING_OPTIONS;
+
+    return [
+      { label: "All Sources", value: "All" },
+      ...values.map((value) => ({
+        label: value,
+        value,
+      })),
+    ];
+  }, [sourcingOptions]);
+
+  const source = filterValues?.source || "All";
+  const costStatus =
+    filterValues?.costStatus || "All";
+  const performance =
+    filterValues?.performance || "All";
 
   const hasActiveFilters =
-    Boolean(searchInput?.trim()) ||
-    (filterValues?.source && filterValues.source !== "All") ||
-    (filterValues?.costStatus && filterValues.costStatus !== "All") ||
-    (filterValues?.performance && filterValues.performance !== "All");
+    Boolean(String(searchInput || "").trim()) ||
+    source !== "All" ||
+    costStatus !== "All" ||
+    performance !== "All";
+
+  function handleSearchKeyDown(event) {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    commitSearch();
+  }
 
   function handleClearAll() {
     setSearchInput("");
     resetFilters();
-
     setFilter("source", "All");
     setFilter("costStatus", "All");
     setFilter("performance", "All");
-
     clearFilters?.();
   }
 
   return (
-    <div className="border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5 lg:px-6">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[1fr_280px_220px_220px_110px] xl:items-end">
-        <div>
-          <label className="mb-1.5 block text-sm font-bold text-[#101828]">
-            Search
-          </label>
+    <>
+      <div className="rounded-t-2xl border-b border-[#E6ECF2] bg-white px-4 py-5 font-jakarta sm:px-5">
+        <h2 className="sibs-section-title">
+          Sourcing Channel Performance Directory
+        </h2>
 
-          <div className="relative">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-            />
-
-            <input
-              value={searchInput || ""}
-              onChange={(event) => setSearchInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") commitSearch();
-              }}
-              placeholder="Search source or latest applicant then press Enter..."
-              className="h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-            />
-          </div>
-        </div>
-
-        <SearchFilterSelect
-          label="Sourcing Option"
-          entityKey="sourcing-analytics"
-          filterKey="source"
-          allLabel="All Sources"
-          options={sourcingOptions}
-        />
-
-        <SearchFilterSelect
-          label="Cost Status"
-          entityKey="sourcing-analytics"
-          filterKey="costStatus"
-          allLabel="All Cost Status"
-          options={["With Cost", "No Cost"]}
-        />
-
-        <SearchFilterSelect
-          label="Performance"
-          entityKey="sourcing-analytics"
-          filterKey="performance"
-          allLabel="All Performance"
-          options={[
-            "With Applicants",
-            "No Applicants",
-            "With Hires",
-            "No Hires",
-          ]}
-        />
-
-        <button
-          type="button"
-          onClick={handleClearAll}
-          disabled={!hasActiveFilters}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Filter size={17} />
-          Clear
-        </button>
+        <p className="sibs-section-subtitle">
+          Search and filter sourcing channels by source,
+          applicant activity, cost status, and hiring
+          performance.
+        </p>
       </div>
-    </div>
+
+      <div className="relative overflow-visible p-4 font-jakarta sm:p-5">
+        <PaginationTable
+          filterLayout="ta-inline"
+          showFilterPanel={false}
+          showFilterHeader={false}
+          showPagination={false}
+          searchValue={searchInput}
+          searchPlaceholder="Search by source or latest applicant..."
+          onSearchChange={setSearchInput}
+          onSearchKeyDown={handleSearchKeyDown}
+          controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
+          searchClassName="relative min-w-0 flex-1"
+          className="border-0 bg-transparent p-0 shadow-none"
+          filters={[
+            {
+              key: "source",
+              value: source,
+              options: sourceOptions,
+              onChange: (value) =>
+                setFilter("source", value),
+              searchable: true,
+              includeAll: false,
+              allLabel: "All Sources",
+              placeholder: "Search sources...",
+              className:
+                "w-full sm:w-[210px] xl:w-[245px]",
+            },
+            {
+              key: "costStatus",
+              value: costStatus,
+              options: COST_STATUS_OPTIONS,
+              onChange: (value) =>
+                setFilter("costStatus", value),
+              searchable: false,
+              includeAll: false,
+              allLabel: "All Cost Status",
+              placeholder: "All Cost Status",
+              className:
+                "w-full sm:w-[165px] xl:w-[185px]",
+            },
+            {
+              key: "performance",
+              value: performance,
+              options: PERFORMANCE_OPTIONS,
+              onChange: (value) =>
+                setFilter("performance", value),
+              searchable: false,
+              includeAll: false,
+              allLabel: "All Performance",
+              placeholder: "All Performance",
+              className:
+                "w-full sm:w-[175px] xl:w-[195px]",
+            },
+          ]}
+          onReset={handleClearAll}
+          resetLabel={
+            hasActiveFilters ? "Reset filters" : "Clear"
+          }
+          rightContent={
+            <button
+              type="button"
+              onClick={handleClearAll}
+              disabled={!hasActiveFilters}
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] sm:w-auto"
+            >
+              <RotateCcw size={14} />
+              Clear
+            </button>
+          }
+        />
+      </div>
+    </>
   );
 }

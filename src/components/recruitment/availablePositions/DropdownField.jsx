@@ -1,6 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
+
 import {
   cleanText,
   normalizeDropdownOptions,
@@ -28,13 +35,16 @@ export default function DropdownField({
   const inputRef = useRef(null);
 
   const [open, setOpen] = useState(false);
-  const [dropdownSearch, setDropdownSearch] = useState("");
+  const [dropdownSearch, setDropdownSearch] =
+    useState("");
   const [menuStyle, setMenuStyle] = useState({
     left: 0,
     top: 0,
     width: 0,
     maxHeight: 224,
   });
+  const [menuPlacement, setMenuPlacement] =
+    useState("down");
 
   const normalizedOptions = useMemo(
     () => normalizeDropdownOptions(options),
@@ -42,14 +52,21 @@ export default function DropdownField({
   );
 
   const selectedOption = normalizedOptions.find(
-    (option) => String(option.value) === String(value ?? ""),
+    (option) =>
+      String(option.value) ===
+      String(value ?? ""),
   );
 
   const displayLabel =
-    selectedOption?.label || cleanText(displayValue) || cleanText(value) || "";
+    selectedOption?.label ||
+    cleanText(displayValue) ||
+    cleanText(value) ||
+    "";
 
   const filteredOptions = useMemo(() => {
-    const keyword = cleanText(dropdownSearch).toLowerCase();
+    const keyword = cleanText(
+      dropdownSearch,
+    ).toLowerCase();
 
     if (!keyword) return normalizedOptions;
 
@@ -66,31 +83,52 @@ export default function DropdownField({
         .toLowerCase()
         .includes(keyword),
     );
-  }, [normalizedOptions, dropdownSearch]);
+  }, [
+    normalizedOptions,
+    dropdownSearch,
+  ]);
 
-  const inputDisplayValue = open && searchable ? dropdownSearch : displayLabel;
-  const hasDisplayValue = Boolean(displayLabel);
+  const inputDisplayValue =
+    open && searchable
+      ? dropdownSearch
+      : displayLabel;
 
-  function updateMenuPosition() {
+  const hasDisplayValue =
+    Boolean(displayLabel);
+
+  const updateMenuPosition = useCallback(() => {
     if (!dropdownRef.current) return;
 
-    const rect = dropdownRef.current.getBoundingClientRect();
-    const gap = 8;
+    const triggerElement =
+      dropdownRef.current.querySelector("[data-dropdown-trigger]") ||
+      dropdownRef.current;
+    const rect = triggerElement.getBoundingClientRect();
+    const gap = 6;
     const viewportHeight =
       window.innerHeight || document.documentElement.clientHeight;
     const viewportWidth =
       window.innerWidth || document.documentElement.clientWidth;
 
-    const availableBelow = viewportHeight - rect.bottom - gap - 16;
-    const availableAbove = rect.top - gap - 16;
+    const optionCount = filteredOptions.length || 1;
+    const estimatedMenuHeight = Math.min(
+      220,
+      optionCount * 38 + 8,
+    );
 
-    const preferredHeight = 224;
+    const spaceBelow = viewportHeight - rect.bottom - gap - 12;
+    const spaceAbove = rect.top - gap - 12;
+
     const shouldOpenUp =
-      availableBelow < 160 && availableAbove > availableBelow;
+      spaceBelow < estimatedMenuHeight &&
+      spaceAbove > spaceBelow;
 
-    const maxHeight = Math.max(
-      120,
-      Math.min(preferredHeight, shouldOpenUp ? availableAbove : availableBelow),
+    const maxHeight = Math.min(
+      220,
+      shouldOpenUp ? Math.max(120, spaceAbove) : Math.max(120, spaceBelow),
+    );
+    const renderedHeight = Math.min(
+      estimatedMenuHeight,
+      maxHeight,
     );
 
     const left = Math.min(
@@ -98,9 +136,15 @@ export default function DropdownField({
       Math.max(viewportWidth - rect.width - 12, 12),
     );
 
-    const top = shouldOpenUp
-      ? Math.max(rect.top - gap - maxHeight, 12)
-      : Math.min(rect.bottom + gap, viewportHeight - maxHeight - 12);
+    let top = 0;
+    if (shouldOpenUp) {
+      top = Math.max(12, rect.top - gap - renderedHeight);
+    } else {
+      top = Math.min(
+        rect.bottom + gap,
+        viewportHeight - renderedHeight - 12,
+      );
+    }
 
     setMenuStyle({
       left,
@@ -108,12 +152,15 @@ export default function DropdownField({
       width: rect.width,
       maxHeight,
     });
-  }
+    setMenuPlacement(shouldOpenUp ? "up" : "down");
+  }, [filteredOptions.length]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) return undefined;
 
-    updateMenuPosition();
+    const frameId = window.requestAnimationFrame(
+      updateMenuPosition,
+    );
 
     function handleScrollOrResize() {
       updateMenuPosition();
@@ -123,17 +170,20 @@ export default function DropdownField({
     window.addEventListener("scroll", handleScrollOrResize, true);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleScrollOrResize);
       window.removeEventListener("scroll", handleScrollOrResize, true);
     };
-  }, [open, filteredOptions.length]);
+  }, [open, updateMenuPosition]);
 
   useEffect(() => {
     function handleClickOutside(event) {
       const target = event.target;
 
-      const clickedInput = dropdownRef.current?.contains(target);
-      const clickedMenu = menuRef.current?.contains(target);
+      const clickedInput =
+        dropdownRef.current?.contains(target);
+      const clickedMenu =
+        menuRef.current?.contains(target);
 
       if (!clickedInput && !clickedMenu) {
         setOpen(false);
@@ -148,12 +198,24 @@ export default function DropdownField({
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside,
+    );
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside,
+      );
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
     };
   }, []);
 
@@ -181,7 +243,10 @@ export default function DropdownField({
         setDropdownSearch("");
       }
 
-      window.setTimeout(updateMenuPosition, 0);
+      window.setTimeout(
+        updateMenuPosition,
+        0,
+      );
 
       return nextOpen;
     });
@@ -205,13 +270,15 @@ export default function DropdownField({
       event.preventDefault();
 
       if (filteredOptions.length > 0) {
-        handleSelect(filteredOptions[0]);
+        handleSelect(
+          filteredOptions[0],
+        );
       }
     }
   }
 
   const menu =
-    open && !disabled
+    typeof document !== "undefined"
       ? createPortal(
           <div
             ref={menuRef}
@@ -222,75 +289,99 @@ export default function DropdownField({
               width: `${menuStyle.width}px`,
               zIndex: 20000,
             }}
-            className={`overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+            className={`sibs-animated-dropdown ${
+              open ? "open" : "closed"
+            } ${
+              menuPlacement === "up"
+                ? "sibs-animated-dropdown-up"
+                : ""
+            } font-jakarta ${menuClassName}`}
           >
-            <div
-              className="overflow-y-auto"
-              style={{ maxHeight: `${menuStyle.maxHeight}px` }}
-            >
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
-                  const active = String(option.value) === String(value ?? "");
+            <div className="sibs-animated-dropdown-inner">
+              <div
+                className="sibs-animated-dropdown-box rounded-[10px] border-[#D7DEE8] shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
+              >
+                <div
+                  className="sibs-scrollbar overflow-y-auto py-1"
+                  style={{
+                    maxHeight: `${menuStyle.maxHeight}px`,
+                  }}
+                >
+                  {filteredOptions.length > 0 ? (
+                    filteredOptions.map((option) => {
+                      const active =
+                        String(option.value) === String(value ?? "");
 
-                  return (
-                    <button
-                      key={option.id || option.value}
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => handleSelect(option)}
-                      className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
-                        active
-                          ? "bg-[#EAF4FF] text-sibs-primary-1"
-                          : "bg-white text-[#344054] hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
-                      }`}
-                    >
-                      <span className="block min-w-0 truncate">
-                        {option.label}
-                      </span>
-
-                      {option.description && (
-                        <span
-                          className={`mt-0.5 block min-w-0 truncate text-xs font-bold ${
+                      return (
+                        <button
+                          key={option.id || option.value}
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => handleSelect(option)}
+                          className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
                             active
-                              ? "text-sibs-primary-1/70"
-                              : "text-sibs-tertiary-5"
+                              ? "bg-[#FFF0EB] text-[#FF5C28]"
+                              : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                           }`}
                         >
-                          {option.description}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="px-4 py-3.5 text-sm font-semibold text-sibs-tertiary-5">
-                  {emptyMessage}
+                          <span className="block min-w-0 truncate">
+                            {option.label}
+                          </span>
+
+                          {option.description ? (
+                            <span
+                              className={`mt-0.5 block min-w-0 truncate text-[10px] font-bold ${
+                                active
+                                  ? "text-[#FF5C28]/80"
+                                  : "text-[#98A2B3]"
+                              }`}
+                            >
+                              {option.description}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="px-3 py-3 text-xs font-semibold text-[#98A2B3]">
+                      {emptyMessage}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>,
           document.body,
         )
       : null;
 
+  const sharedControlClass = `flex h-10 w-full min-w-0 items-center rounded-[10px] border px-3 text-left text-xs font-semibold outline-none transition ${
+    open
+      ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+      : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
+  } ${
+    disabled
+      ? "cursor-not-allowed bg-[#F2F4F7] text-[#98A2B3] opacity-70"
+      : "text-[#344054]"
+  }`;
+
   return (
     <div
       ref={dropdownRef}
-      className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
+      className={`relative min-w-0 ${
+        open ? zIndex : "z-[1]"
+      }`}
     >
-      {label && <FieldLabel required={required}>{label}</FieldLabel>}
+      {label ? (
+        <FieldLabel required={required}>
+          {label}
+        </FieldLabel>
+      ) : null}
 
       {searchable ? (
         <div
-          className={`flex h-11 w-full min-w-0 items-center rounded-xl border bg-white px-4 shadow-sm transition ${
-            open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1"
-          } ${
-            disabled
-              ? "cursor-not-allowed bg-gray-50 opacity-70"
-              : "cursor-text"
-          }`}
+          data-dropdown-trigger
+          className={`${sharedControlClass} cursor-text`}
           onClick={openDropdown}
         >
           <input
@@ -300,52 +391,54 @@ export default function DropdownField({
             disabled={disabled}
             onFocus={openDropdown}
             onChange={(event) => {
-              setDropdownSearch(event.target.value);
+              setDropdownSearch(
+                event.target.value,
+              );
               setOpen(true);
-              window.setTimeout(updateMenuPosition, 0);
+              window.setTimeout(
+                updateMenuPosition,
+                0,
+              );
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder={searchPlaceholder || placeholder}
-            className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-bold outline-none placeholder:text-sibs-tertiary-5 ${
+            placeholder={
+              searchPlaceholder || placeholder
+            }
+            className={`h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs font-semibold outline-none placeholder:text-[#98A2B3] ${
               hasDisplayValue || open
                 ? "text-[#344054]"
-                : "text-sibs-tertiary-5"
-            } disabled:cursor-not-allowed disabled:text-gray-400`}
+                : "text-[#98A2B3]"
+            } disabled:cursor-not-allowed disabled:text-[#98A2B3]`}
           />
 
           <ChevronDown
-            size={18}
-            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            size={16}
+            className={`shrink-0 text-[#042C51] transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />
         </div>
       ) : (
         <button
+          data-dropdown-trigger
           type="button"
           disabled={disabled}
           onClick={toggleDropdown}
-          className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
-            open
-              ? "border-sibs-primary-1 ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] hover:border-sibs-primary-1"
-          } ${
-            disabled
-              ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-              : "text-[#344054]"
-          }`}
+          className={`${sharedControlClass} justify-between gap-3`}
         >
           <span
             className={`min-w-0 flex-1 truncate ${
-              hasDisplayValue ? "text-[#344054]" : "text-sibs-tertiary-5"
+              hasDisplayValue
+                ? "text-[#344054]"
+                : "text-[#98A2B3]"
             }`}
           >
             {displayLabel || placeholder}
           </span>
 
           <ChevronDown
-            size={18}
-            className={`shrink-0 text-sibs-primary-1 transition-transform duration-200 ${
+            size={16}
+            className={`shrink-0 text-[#042C51] transition-transform ${
               open ? "rotate-180" : ""
             }`}
           />

@@ -2208,7 +2208,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
       onClick={() => {
         if (!isSubmitting) onClose?.();
       }}

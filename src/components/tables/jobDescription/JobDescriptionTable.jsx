@@ -326,7 +326,7 @@ function JobDescriptionMobileCard({ item, onView, onRevise }) {
               <h3 className="text-sm font-extrabold leading-5 text-[#042C51]">
                 {roleTitle}
               </h3>
-              <p className="mt-0.5 break-all font-mono text-[10px] font-semibold text-[#98A2B3]">
+              <p className="mt-0.5 break-all text-[10px] font-semibold text-[#98A2B3]">
                 {documentTitle}
               </p>
             </div>
@@ -713,7 +713,7 @@ export default function JobDescriptionTable({
                               <p className="max-w-[340px] text-xs font-extrabold leading-5 text-[#042C51]">
                                 {roleTitle}
                               </p>
-                              <p className="mt-0.5 max-w-[340px] truncate font-mono text-[10px] font-semibold text-[#98A2B3]">
+                              <p className="mt-0.5 max-w-[340px] truncate text-[10px] font-semibold text-[#98A2B3]">
                                 {documentTitle}
                               </p>
                             </div>

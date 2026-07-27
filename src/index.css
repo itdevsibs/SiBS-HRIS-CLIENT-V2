@@ -73,6 +73,7 @@
    BASE
 ========================= */
 @layer base {
+
   *,
   *::before,
   *::after {
@@ -121,6 +122,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -130,6 +132,7 @@
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
@@ -140,6 +143,7 @@
     opacity: 0;
     transform: translateY(18px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -151,6 +155,7 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateY(14px) scale(0.96);
@@ -244,6 +249,7 @@
 }
 
 @keyframes sibs-pulse {
+
   0%,
   100% {
     opacity: 0.65;
@@ -301,6 +307,7 @@
     border-radius: 9999px;
     background: #94a9c1;
   }
+
   .sibs-profile-tab-panel {
     animation: sibsProfileTabPanelIn 240ms ease-out both;
     will-change: opacity, transform;
@@ -316,6 +323,7 @@
     transform-origin: top right;
     will-change: opacity, transform;
   }
+
   .sibs-modal-backdrop-in {
     animation: sibsModalBackdropIn 180ms ease-out both;
   }
@@ -339,49 +347,44 @@
       opacity 200ms ease-out;
   }
 
-@layer components {
-  .sibs-profile-subtopic {
-  @apply flex h-9 w-full min-w-0 items-center gap-2 rounded-xl
-    border-0 bg-transparent pl-12 pr-4 text-left text-xs font-bold
-    text-sibs-primary-1/80 outline-none
-    transition-all duration-300 ease-out;
+  @layer components {
+    .sibs-profile-subtopic {
+      @apply flex h-9 w-full min-w-0 items-center gap-2 rounded-xl border-0 bg-transparent pl-12 pr-4 text-left text-xs font-bold text-sibs-primary-1/80 outline-none transition-all duration-300 ease-out;
 
-  box-shadow: none;
-}
+      box-shadow: none;
+    }
 
-.sibs-profile-subtopic:hover {
-  background-color: #f8fafc;
-}
+    .sibs-profile-subtopic:hover {
+      background-color: #f8fafc;
+    }
 
-.sibs-profile-subtopic.is-active {
-  background-color: #e9f0fc;
-  color: var(--sibs-primary-1);
-  border: 0;
-  outline: none;
-  box-shadow: none;
-}
+    .sibs-profile-subtopic.is-active {
+      background-color: #e9f0fc;
+      color: var(--sibs-primary-1);
+      border: 0;
+      outline: none;
+      box-shadow: none;
+    }
 
-.sibs-profile-subtopic-dot {
-  @apply h-1.5 w-1.5 shrink-0 rounded-full
-    bg-sibs-primary-1/40
-    transition-all duration-300;
-}
+    .sibs-profile-subtopic-dot {
+      @apply h-1.5 w-1.5 shrink-0 rounded-full bg-sibs-primary-1/40 transition-all duration-300;
+    }
 
-.sibs-profile-subtopic:hover .sibs-profile-subtopic-dot {
-  @apply bg-sibs-primary-1;
-}
+    .sibs-profile-subtopic:hover .sibs-profile-subtopic-dot {
+      @apply bg-sibs-primary-1;
+    }
 
-.sibs-profile-subtopic-dot.is-active {
-  @apply scale-125 bg-sibs-primary-1;
-}
+    .sibs-profile-subtopic-dot.is-active {
+      @apply scale-125 bg-sibs-primary-1;
+    }
 
-.sibs-profile-subtopic:focus,
-.sibs-profile-subtopic:active {
-  border: 0;
-  outline: none;
-  box-shadow: none;
-}
-}
+    .sibs-profile-subtopic:focus,
+    .sibs-profile-subtopic:active {
+      border: 0;
+      outline: none;
+      box-shadow: none;
+    }
+  }
 
   .sibs-animated-dropdown.open {
     grid-template-rows: 1fr;
@@ -422,6 +425,15 @@
     transform: translateY(-8px) scale(0.98);
     opacity: 0;
   }
+
+  .sibs-animated-dropdown-up .sibs-animated-dropdown-box {
+    transform-origin: bottom;
+  }
+
+  .sibs-animated-dropdown-up.closed .sibs-animated-dropdown-box {
+    transform: translateY(8px) scale(0.98);
+  }
+
   .sibs-inner-modal-backdrop-in {
     animation: sibsModalBackdropIn 180ms ease-out both;
   }
@@ -437,6 +449,7 @@
   .sibs-inner-modal-pop-out {
     animation: sibsInnerModalPopOut 180ms ease-in both;
   }
+
   .sibs-action-backdrop-in {
     animation: sibsModalBackdropIn 180ms ease-out both;
   }
@@ -476,6 +489,7 @@
   .sibs-action-drawer-out {
     animation: sibsActionDrawerOut 220ms ease-in both;
   }
+
   .sibs-page-header-in {
     animation: sibsProfileTabPanelIn 220ms ease-out both;
     will-change: opacity, transform;
@@ -488,6 +502,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .sibs-page-header-in,
   .sibs-page-card-in,
   .sibs-toast-in {
@@ -714,6 +729,7 @@
   }
 
   @media (max-width: 640px) {
+
     .user-dropdown-info,
     .user-dropdown-info.mobile-compact {
       @apply hidden;
@@ -1018,6 +1034,7 @@
    JOB DESCRIPTION PRINT
 ========================= */
 @media print {
+
   /* 1. Un-fix the page shell so full content can flow across pages */
   .jd-view-page-shell {
     position: static !important;
@@ -1086,4 +1103,3 @@
     display: none !important;
   }
 }
-

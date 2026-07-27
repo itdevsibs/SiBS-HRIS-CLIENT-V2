@@ -408,7 +408,7 @@ export default function ViewJobDescriptionDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-2 py-2 font-jakarta sm:px-4 sm:py-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 px-2 py-2 font-jakarta backdrop-blur-sm sm:px-4 sm:py-4"
       onClick={saving ? undefined : onClose}
     >
       <div
@@ -559,7 +559,7 @@ export default function ViewJobDescriptionDetailsModal({
       </div>
 
       {showEditedChanges && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/40 px-4">
+        <div className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center bg-[#042C51]/80 px-4 backdrop-blur-sm">
           <div
             className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}

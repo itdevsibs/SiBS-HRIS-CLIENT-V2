@@ -844,7 +844,7 @@ export default function AddJobDescription({
 
   return createPortal(
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[99999] flex items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
       onClick={handleClose}
     >
       <div
@@ -1019,7 +1019,7 @@ export default function AddJobDescription({
 
               <section className="rounded-xl border border-blue-200 bg-[#EEF5FF] p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">
                       <Info size={16} />
                     </span>
@@ -1044,12 +1044,6 @@ export default function AddJobDescription({
                     </div>
                   </div>
 
-                  <span className="inline-flex w-fit shrink-0 items-center gap-1.5 rounded bg-[#07365F] px-2.5 py-1 text-[9px] font-extrabold uppercase text-white">
-                    <Sparkles size={12} className="text-[#FF5C28]" />
-                    {isExistingTemplateMode
-                      ? "Linked Job Description"
-                      : "New Job Description"}
-                  </span>
                 </div>
               </section>
 

@@ -477,7 +477,7 @@ function MobileEmployeeCard({ employee, onOpen }) {
           <div className="mt-1 space-y-1 text-[11px] font-semibold text-[#667085]">
             <p>Gender: {getGender(employee)}</p>
             <p>Civil: {getCivilStatus(employee)}</p>
-            <p className="font-mono">Hired: {formatCompactDate(getHireDate(employee))}</p>
+            <p>Hired: {formatCompactDate(getHireDate(employee))}</p>
           </div>
         </div>
       </div>
@@ -972,7 +972,7 @@ export default function EmployeeTable({
                             <p>Civil: {getCivilStatus(employee)}</p>
                             <p>
                               Hired:{" "}
-                              <span className="font-mono font-bold text-[#536887]">
+                              <span className="font-extrabold text-[#536887]">
                                 {formatCompactDate(getHireDate(employee))}
                               </span>
                             </p>
