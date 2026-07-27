@@ -879,7 +879,7 @@ export function SystemActivity({
             <tbody className="divide-y divide-[#EEF2F6]">
               {items.map((item) => (
                 <tr key={item.id} className="hover:bg-[#F8FAFC]">
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] font-semibold text-[#7E8DA8]">
+                  <td className="whitespace-nowrap px-4 py-3 text-[10px] font-semibold text-[#7E8DA8]">
                     {formatDashboardTimestamp(item.timestamp)}
                   </td>
                   <td className="px-4 py-3 font-extrabold text-[#042C51]">
@@ -891,7 +891,7 @@ export function SystemActivity({
                   <td className="px-4 py-3 font-bold text-[#344054]">
                     {item.module}
                   </td>
-                  <td className="px-4 py-3 font-mono text-[10px] font-extrabold text-[#FF5C28]">
+                  <td className="px-4 py-3 text-[10px] font-extrabold text-[#FF5C28]">
                     {item.action}
                   </td>
                   <td className="max-w-[360px] px-4 py-3 text-[#667085]">

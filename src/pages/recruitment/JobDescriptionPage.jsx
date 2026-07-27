@@ -834,7 +834,6 @@ export default function JobDescriptionPage() {
               value={stats.total}
               icon={ClipboardList}
               description="All job descriptions in database"
-              badgeText="All Master JDs"
               delay={0}
             />
             <StatCard
@@ -842,8 +841,6 @@ export default function JobDescriptionPage() {
               value={stats.existing}
               icon={CheckCircle2}
               description="Ready or already available"
-              badgeText="Ready / Approved"
-              badgeClassName="bg-emerald-100 text-emerald-800"
               valueClassName="text-emerald-600"
               iconClassName="bg-emerald-50 text-emerald-700"
               delay={60}
@@ -853,8 +850,6 @@ export default function JobDescriptionPage() {
               value={stats.revision}
               icon={AlertTriangle}
               description="Needs specification update or remarks"
-              badgeText="Action Required"
-              badgeClassName="bg-amber-100 text-amber-800"
               valueClassName="text-amber-600"
               iconClassName="bg-amber-50 text-amber-700"
               delay={120}
@@ -864,8 +859,6 @@ export default function JobDescriptionPage() {
               value={stats.newJd}
               icon={FileText}
               description="New or unlinked JD intake"
-              badgeText="In Draft / Approval"
-              badgeClassName="bg-blue-100 text-blue-800"
               iconClassName="bg-indigo-50 text-indigo-700"
               delay={180}
             />

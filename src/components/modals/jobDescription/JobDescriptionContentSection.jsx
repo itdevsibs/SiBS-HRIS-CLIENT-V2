@@ -127,39 +127,51 @@ function CompactMultiSelect({
         />
       </button>
 
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-[9999] mt-2 max-h-72 overflow-hidden rounded-[10px] border border-sibs-tertiary-8 bg-white shadow-lg">
-          <div className="max-h-72 overflow-y-auto py-1.5">
-            {options.map((option) => {
-              const active = values.includes(option.value);
+      <div
+        className={`absolute left-0 right-0 top-full z-[9999] mt-2 grid transition-all duration-200 ease-out ${
+          open
+            ? "grid-rows-[1fr] opacity-100"
+            : "pointer-events-none grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className={`max-h-72 overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+              open ? "translate-y-0 scale-100" : "-translate-y-1 scale-[0.99]"
+            }`}
+          >
+            <div className="max-h-72 overflow-y-auto py-1.5">
+              {options.map((option) => {
+                const active = values.includes(option.value);
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => toggleOption(option.value)}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
-                    active
-                      ? "bg-[#EAF2FB] text-sibs-primary-1"
-                      : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
-                  }`}
-                >
-                  <span>{option.label}</span>
-                  <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-extrabold ${
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => toggleOption(option.value)}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
-                        : "border-sibs-tertiary-8 bg-white text-transparent"
+                        ? "bg-[#EAF2FB] text-sibs-primary-1"
+                        : "text-sibs-primary-1 hover:bg-[#F8FAFC]"
                     }`}
                   >
-                    <Check size={11} />
-                  </span>
-                </button>
-              );
-            })}
+                    <span>{option.label}</span>
+                    <span
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-extrabold ${
+                        active
+                          ? "border-sibs-primary-1 bg-sibs-primary-1 text-white"
+                          : "border-sibs-tertiary-8 bg-white text-transparent"
+                      }`}
+                    >
+                      <Check size={11} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
