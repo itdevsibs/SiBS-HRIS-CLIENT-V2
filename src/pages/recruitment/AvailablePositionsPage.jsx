@@ -10,14 +10,12 @@ import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
 import {
-  Plus,
-  Search,
-  Filter,
-  Pencil,
-  RotateCcw,
   BriefcaseBusiness,
-  ChevronLeft,
-  ChevronRight,
+  Database,
+  Plus,
+  RefreshCw,
+  RotateCcw,
+  Search,
 } from "lucide-react";
 import {
   createAvailablePosition,
@@ -29,7 +27,6 @@ import {
 import { getApprovedJobDescriptions } from "../../lib/axios/getJobDescription";
 import {
   cleanText,
-  formatPersonName,
   getUserDisplayName,
   sameText,
 } from "../../lib/utils/availablePositions/availablePositionsHelpers";
@@ -40,17 +37,17 @@ import {
   STATUS_FILTER_OPTIONS,
   STATUS_OPTIONS,
 } from "../../lib/utils/availablePositions/availablePositionsConstants";
-import { formatDate } from "../../components/layout/FormatDateTime";
 import PositionFormModal from "../../components/modals/availablePositions/PositionFormModal";
 import ConfirmationModal from "../../components/modals/availablePositions/ConfirmationModal";
 import DropdownField from "../../components/recruitment/availablePositions/DropdownField";
-import PositionMobileCard from "../../components/recruitment/availablePositions/PositionMobileCard";
-import { StatusBadge } from "../../lib/utils/availablePositions/reactComponents/reactHelpers";
 import AvailablePositionsTable from "../../components/tables/availablePositions/AvailablePositionsTable";
 import {
   normalizeAvailablePositionRecord,
   normalizeAvailablePositionRecords,
 } from "../../lib/utils/availablePositions/availablePositionId";
+import {
+  getAvailablePositionSearchText,
+} from "../../lib/utils/availablePositions/availablePositionsPresentation";
 
 // main function
 export default function AvailablePositionsPage() {
@@ -69,6 +66,7 @@ export default function AvailablePositionsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadError, setLoadError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -326,6 +324,24 @@ export default function AvailablePositionsPage() {
   useEffect(() => {
     refreshPositions();
   }, [refreshPositions]);
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing || isSaving) return;
+
+    try {
+      setIsRefreshing(true);
+
+      await refreshPositions({
+        showPageLoading: false,
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    isRefreshing,
+    isSaving,
+    refreshPositions,
+  ]);
 
   function requestConfirm({ title, message, confirmLabel, onConfirm }) {
     setConfirmState({ title, message, confirmLabel, onConfirm });
@@ -757,28 +773,8 @@ export default function AvailablePositionsPage() {
     const normalizedStatusFilter = String(statusFilter || "").toLowerCase();
 
     return positionList.filter((position) => {
-      const text = [
-        position.positionId,
-        position.sourcePositionId,
-        position.source_position_id,
-        position.positionTitle,
-        position.jdCode,
-        position.jd_code,
-        position.documentTitle,
-        position.document_title,
-        position.department,
-        position.accountName,
-        position.accountGhlName,
-        position.description,
-        position.preferredSkills,
-        position.locationSite,
-        position.status,
-        position.createdBy,
-        position.remarks,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      const text =
+        getAvailablePositionSearchText(position);
 
       const normalizedPositionStatus = String(
         position.status || "",
@@ -886,105 +882,134 @@ export default function AvailablePositionsPage() {
     locationFilter !== "All";
 
   return (
-    <div className="flex h-screen flex-1 flex-col bg-sibs-tertiary-10 font-jakarta">
-      <Header />
+    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+      <div className="shrink-0">
+        <Header />
+      </div>
 
       <main
         ref={mainRef}
-        className="min-w-0 flex-1 overflow-y-scroll overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
       >
-        <div className="mx-auto max-w-[1600px] space-y-6">
-          <div className="sibs-page-header-in min-w-0 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <BriefcaseBusiness size={14} />
-                Recruitment Setup
+        <div className="mx-auto max-w-[1600px] space-y-5">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+            <span className="sibs-top-accent" aria-hidden="true" />
+
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                  <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                  Recruitment View
+                </span>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Available Positions
+                </h1>
+
+                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Manage canonical roles, organizational mapping, linked Job Descriptions, and applicant visibility.
+                </p>
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Available Positions
-              </h1>
+              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing || isSaving}
+                  aria-label="Refresh available positions"
+                  title="Refresh available positions"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RefreshCw
+                    size={16}
+                    className={
+                      isRefreshing ? "animate-spin" : ""
+                    }
+                  />
+                </button>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Departments and accounts are loaded from the database. Accounts
-                are filtered based on the selected department.
-              </p>
+                <button
+                  type="button"
+                  onClick={openAddModal}
+                  disabled={
+                    isSaving ||
+                    !databaseStatusOptions.length ||
+                    !departmentOptions.length ||
+                    !accountOptions.length
+                  }
+                  className="sibs-button-primary inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E04F20] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Plus size={16} />
+                  Add New Position
+                </button>
+              </div>
             </div>
+          </section>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={openAddModal}
-                disabled={
-                  isSaving ||
-                  !databaseStatusOptions.length ||
-                  !departmentOptions.length ||
-                  !accountOptions.length
-                }
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Plus size={18} />
-                Add Position
-              </button>
-            </div>
-          </div>
-
-          {loadError && (
-            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-700">
+          {loadError ? (
+            <section className="rounded-xl border border-red-100 bg-red-50 p-4 text-xs font-bold text-red-700">
               {loadError}
             </section>
-          )}
+          ) : null}
 
-          {!isLoading && !loadError && !departmentOptions.length && (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
-              No departments found.
+          {!isLoading &&
+          !loadError &&
+          !departmentOptions.length ? (
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs font-bold text-amber-700">
+              No departments were returned by the
+              Available Positions metadata API.
             </section>
-          )}
+          ) : null}
 
-          {!isLoading && !loadError && !accountOptions.length && (
-            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm font-bold text-amber-700">
-              No available accounts found.
+          {!isLoading &&
+          !loadError &&
+          !accountOptions.length ? (
+            <section className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-xs font-bold text-amber-700">
+              No accounts were returned by the Available
+              Positions metadata API.
             </section>
-          )}
+          ) : null}
 
-          <section className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-sm">
-            <div className="relative z-[90] border-b border-[#E6ECF2] p-4 sm:p-5">
-              <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div className="min-w-0">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                    <Filter size={14} />
-                    Position Filters
-                  </div>
+          <section className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
+            <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="sibs-section-title">
+                    Available Position Records
+                  </h2>
+
+                  <p className="sibs-section-subtitle">
+                    Search and filter positions by title,
+                    department, account, status, and site.
+                  </p>
                 </div>
 
-                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-sibs-primary-1">
+                <span className="inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
                   {filteredPositions.length} Records
                 </span>
               </div>
+            </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 xl:grid-cols-[1fr_170px_210px_210px_210px_auto] xl:items-end">
-                <div>
-                  <label className="mb-1 block text-sm font-bold text-[#101828]">
-                    Search
-                  </label>
+            <div className="relative z-[90] p-4 sm:p-5">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_165px_205px_205px_190px_auto] xl:items-end">
+                <div className="relative min-w-0 md:col-span-2 xl:col-span-1">
+                  <Search
+                    size={15}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
+                  />
 
-                  <div className="relative">
-                    <Search
-                      size={18}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-sibs-tertiary-5"
-                    />
-
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search position, department, account, skills..."
-                      className="h-11 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 pl-11 text-sm font-semibold text-sibs-primary-1 shadow-sm outline-none transition placeholder:text-sibs-tertiary-5 hover:border-sibs-primary-1 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
-                    />
-                  </div>
+                  <input
+                    value={search}
+                    onChange={(event) =>
+                      setSearch(event.target.value)
+                    }
+                    placeholder="Search position, JD, department, account, or skills..."
+                    aria-label="Search available positions"
+                    className="h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
+                  />
                 </div>
 
                 <DropdownField
-                  label="Status"
                   value={statusFilter}
                   onChange={setStatusFilter}
                   options={statusFilterOptions}
@@ -994,17 +1019,17 @@ export default function AvailablePositionsPage() {
                 />
 
                 <DropdownField
-                  label="Department"
                   value={departmentFilter}
                   onChange={handleDepartmentFilterChange}
                   options={departmentFilterOptions}
                   placeholder="All Departments"
                   disabled={isLoading}
                   zIndex="z-[130]"
+                  searchable
+                  searchPlaceholder="Search departments..."
                 />
 
                 <DropdownField
-                  label="Account"
                   value={accountFilter}
                   onChange={setAccountFilter}
                   options={accountFilterOptions}
@@ -1016,27 +1041,30 @@ export default function AvailablePositionsPage() {
                   }
                   zIndex="z-[120]"
                   searchable
-                  searchPlaceholder="Search account..."
+                  searchPlaceholder="Search accounts..."
                   emptyMessage="No matching account found."
                 />
 
                 <DropdownField
-                  label="Location / Site"
                   value={locationFilter}
                   onChange={setLocationFilter}
                   options={locationFilterOptions}
                   placeholder="All Locations"
                   disabled={isLoading}
                   zIndex="z-[110]"
+                  searchable
+                  searchPlaceholder="Search locations..."
                 />
 
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  disabled={!hasActiveFilters || isLoading}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-sibs-primary-1 hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={
+                    !hasActiveFilters || isLoading
+                  }
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <RotateCcw size={17} />
+                  <RotateCcw size={14} />
                   Clear
                 </button>
               </div>
@@ -1045,7 +1073,9 @@ export default function AvailablePositionsPage() {
             <AvailablePositionsTable
               isLoading={isLoading}
               paginatedPositions={paginatedPositions}
-              filteredPositionsCount={filteredPositions.length}
+              filteredPositionsCount={
+                filteredPositions.length
+              }
               showingFrom={showingFrom}
               showingTo={showingTo}
               currentPage={currentPage}
@@ -1059,16 +1089,17 @@ export default function AvailablePositionsPage() {
             />
           </section>
 
-          <section className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-5">
-            <h3 className="text-sm font-bold text-sibs-primary-1">
-              Database Rule
+          <section className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <h3 className="text-xs font-extrabold text-[#042C51]">
+              Database Mapping Rule
             </h3>
 
-            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              This page does not use localStorage. Departments and accounts are
-              loaded from the database, and accounts are filtered based on the
-              selected department. Location / Site is limited to Davao Site, Tagum Site,
-              Mabini Site, or Both Davao and Tagum Site.
+            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+              Departments and accounts are loaded from the
+              database. Account choices depend on the selected
+              department. Active positions appear in
+              applicant-facing forms, while Inactive and Archived
+              positions remain unavailable.
             </p>
           </section>
         </div>
@@ -1088,14 +1119,16 @@ export default function AvailablePositionsPage() {
       />
 
       <ConfirmationModal
-        open={!!confirmState}
+        open={Boolean(confirmState)}
         title={confirmState?.title}
         message={confirmState?.message}
         confirmLabel={confirmState?.confirmLabel}
         isSaving={isSaving}
         onCancel={closeConfirm}
         onConfirm={() => {
-          const action = confirmState?.onConfirm;
+          const action =
+            confirmState?.onConfirm;
+
           setConfirmState(null);
 
           if (typeof action === "function") {

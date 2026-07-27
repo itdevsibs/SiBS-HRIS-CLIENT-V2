@@ -85,7 +85,7 @@ function ModalShell({ activeModal, onClose, generatedAt, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#042C51]/80 p-3 backdrop-blur-sm sm:p-5"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[1100] flex items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

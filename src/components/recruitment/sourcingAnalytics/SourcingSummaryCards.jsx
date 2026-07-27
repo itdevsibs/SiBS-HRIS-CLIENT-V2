@@ -1,8 +1,8 @@
 import React from "react";
 import {
-  MousePointerClick,
+  Compass,
+  ReceiptText,
   Target,
-  TrendingUp,
   UserCheck,
   UsersRound,
 } from "lucide-react";
@@ -18,96 +18,119 @@ function formatCurrency(value) {
   });
 }
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  description,
-  valueClassName = "text-sibs-primary-1",
+const metricConfig = [
+  {
+    key: "totalSources",
+    title: "Tracked Channels",
+    icon: Compass,
+    valueClassName: "text-[#042C51]",
+    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    description: (totals) =>
+      `${Number(totals?.activeSources || 0).toLocaleString(
+        "en-PH",
+      )} channels with applicants`,
+    format: (value) =>
+      Number(value || 0).toLocaleString("en-PH"),
+  },
+  {
+    key: "totalVolume",
+    title: "Public Applicants",
+    icon: UsersRound,
+    valueClassName: "text-[#042C51]",
+    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    description: () => "Based on current records",
+    format: (value) =>
+      Number(value || 0).toLocaleString("en-PH"),
+  },
+  {
+    key: "totalHired",
+    title: "Total Hires",
+    icon: UserCheck,
+    valueClassName: "text-emerald-600",
+    iconClassName: "bg-emerald-50 text-[#042C51]",
+    description: () => "Current hired candidate count",
+    format: (value) =>
+      Number(value || 0).toLocaleString("en-PH"),
+  },
+  {
+    key: "totalSourceCost",
+    title: "Total Source Cost",
+    icon: ReceiptText,
+    valueClassName: "text-[#042C51]",
+    iconClassName: "bg-amber-50 text-[#042C51]",
+    description: (totals) =>
+      `${Number(
+        totals?.totalCostEntries || 0,
+      ).toLocaleString("en-PH")} recorded cost entries`,
+    format: formatCurrency,
+  },
+  {
+    key: "overallCostPerHire",
+    title: "Overall Cost / Hire",
+    icon: Target,
+    valueClassName: "text-[#FF5C28]",
+    iconClassName: "bg-[#FFF0EB] text-[#042C51]",
+    description: () => "Total cost / total hires",
+    format: formatCurrency,
+  },
+];
+
+function MetricCard({
+  item,
+  totals,
   delay = 0,
 }) {
+  const value = totals?.[item.key] ?? 0;
+
   return (
-    <div
-      className="sibs-page-card-in rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-sibs-primary-1/20 hover:shadow-md"
+    <article
+      className="sibs-metric-card"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-            {title}
+      <div className="flex h-full items-start justify-between gap-4">
+        <div className="min-w-0 flex-1 self-stretch">
+          <p className="sibs-kicker">
+            {item.title}
           </p>
 
           <p
-            className={`mt-3 truncate text-3xl font-extrabold ${valueClassName}`}
+            className={`mt-2 truncate text-2xl font-extrabold leading-none tabular-nums tracking-normal sm:text-3xl ${item.valueClassName}`}
+            title={item.format(value)}
           >
-            {value}
+            {item.format(value)}
           </p>
 
-          {description && (
-            <p className="mt-1 truncate text-xs font-semibold text-sibs-tertiary-5">
-              {description}
-            </p>
-          )}
+          <p className="mt-1.5 line-clamp-2 text-xs font-bold leading-4 text-[#667085]">
+            {item.description(totals)}
+          </p>
         </div>
 
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#F2F6FA] text-sibs-primary-1">
-          <Icon size={22} />
-        </div>
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.iconClassName}`}
+        >
+          {React.createElement(item.icon, {
+            size: 17,
+            strokeWidth: 2,
+          })}
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
-export default function SourcingSummaryCards({ totals }) {
+export default function SourcingSummaryCards({
+  totals,
+}) {
   return (
-    <section className="sibs-profile-tab-panel rounded-xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-      <h2 className="text-base font-bold text-[#101828]">
-        Sourcing Performance Summary
-      </h2>
-
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <StatCard
-          title="Tracked Sources"
-          value={totals?.totalSources || 0}
-          icon={MousePointerClick}
-          description={`${totals?.activeSources || 0} with applicants`}
-          delay={0}
+    <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {metricConfig.map((item, index) => (
+        <MetricCard
+          key={item.key}
+          item={item}
+          totals={totals}
+          delay={index * 60}
         />
-
-        <StatCard
-          title="Public Applicants"
-          value={totals?.totalVolume || 0}
-          icon={UsersRound}
-          description="From public form"
-          delay={60}
-        />
-
-        <StatCard
-          title="Hired From Sources"
-          value={totals?.totalHired || 0}
-          valueClassName="text-emerald-600"
-          icon={UserCheck}
-          description="Based on candidate status"
-          delay={120}
-        />
-
-        <StatCard
-          title="Total Source Cost"
-          value={formatCurrency(totals?.totalSourceCost)}
-          valueClassName="text-blue-600"
-          icon={TrendingUp}
-          description={`${totals?.totalCostEntries || 0} cost entries`}
-          delay={180}
-        />
-
-        <StatCard
-          title="Overall Cost / Hire"
-          value={formatCurrency(totals?.overallCostPerHire)}
-          icon={Target}
-          description="Total cost / hired"
-          delay={240}
-        />
-      </div>
+      ))}
     </section>
   );
 }

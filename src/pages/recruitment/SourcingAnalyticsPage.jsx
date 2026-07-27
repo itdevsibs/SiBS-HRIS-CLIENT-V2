@@ -4,13 +4,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import Header from "../../components/layout/Header";
 import {
-  Activity,
   BarChart3,
   Plus,
+  RefreshCw,
+  Target,
 } from "lucide-react";
 
+import Header from "../../components/layout/Header";
 import { useSourcingAnalytics } from "../../services/context/SourcingContext";
 
 import SourcingAnalyticsFilters from "../../components/recruitment/sourcingAnalytics/SourcingAnalyticsFilters";
@@ -33,8 +34,9 @@ export default function SourcingAnalyticsPage() {
 
   const [selectedSource, setSelectedSource] =
     useState(null);
-
   const [showAddCostModal, setShowAddCostModal] =
+    useState(false);
+  const [refreshing, setRefreshing] =
     useState(false);
 
   const [statusModal, setStatusModal] = useState({
@@ -79,8 +81,11 @@ export default function SourcingAnalyticsPage() {
     };
   }, [fetchList, showStatusModal]);
 
-  async function handleRefreshData() {
+  const handleRefreshData = useCallback(async () => {
+    if (refreshing) return;
+
     try {
+      setRefreshing(true);
       await fetchList?.();
 
       showStatusModal({
@@ -97,67 +102,87 @@ export default function SourcingAnalyticsPage() {
           error?.message ||
           "Unable to refresh sourcing analytics data.",
       });
+    } finally {
+      setRefreshing(false);
     }
-  }
+  }, [fetchList, refreshing, showStatusModal]);
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
-                <BarChart3 size={14} />
-                Recruitment
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+          <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
+            <span
+              className="sibs-top-accent"
+              aria-hidden="true"
+            />
+
+            <div className="mt-1 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                    <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
+                    Recruitment Intelligence
+                  </span>
+
+                  <span className="inline-flex items-center rounded border border-orange-100 bg-[#FFF0EB] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
+                    ROI & Conversion Analytics
+                  </span>
+                </div>
+
+                <h1 className="break-words text-xl font-extrabold text-[#042C51] sm:text-2xl">
+                  Sourcing Analytics
+                </h1>
+
+                <p className="max-w-3xl text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">
+                  Analyze applicant channels, conversion
+                  performance, sourcing cost, and recruitment
+                  channel viability.
+                </p>
               </div>
 
-              <h1 className="mt-3 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-                Sourcing Analytics
-              </h1>
+              <div className="flex shrink-0 items-center gap-2 self-end md:self-auto">
+                <button
+                  type="button"
+                  onClick={handleRefreshData}
+                  disabled={refreshing}
+                  aria-label="Refresh Sourcing Analytics"
+                  title="Refresh Sourcing Analytics"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#D6DEE8] bg-white text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF8F5] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RefreshCw
+                    size={15}
+                    className={
+                      refreshing ? "animate-spin" : ""
+                    }
+                  />
+                </button>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Track candidate source volume, conversion,
-                source cost, and cost per hire from public
-                application form submissions.
-              </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCostModal(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#E94F1F] focus:outline-none focus:ring-4 focus:ring-[#FF5C28]/20"
+                >
+                  <Plus size={15} />
+                  Add Source Cost Entry
+                </button>
+              </div>
             </div>
-
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={handleRefreshData}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#F8FAFC] hover:shadow-md active:scale-[0.98]"
-              >
-                <Activity size={18} />
-                Refresh Data
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowAddCostModal(true)
-                }
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-              >
-                <Plus size={18} />
-                Add Source Cost
-              </button>
-            </div>
-          </div>
+          </section>
 
           <SourcingSummaryCards totals={totals} />
 
           <SourcingAnalyticsCharts data={sourceRows} />
 
           <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm"
+            className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm"
             style={{ animationDelay: "180ms" }}
           >
             <SourcingAnalyticsFilters />
@@ -168,33 +193,36 @@ export default function SourcingAnalyticsPage() {
           </section>
 
           <section
-            className="sibs-profile-tab-panel rounded-2xl border border-blue-100 bg-blue-50 p-5"
-            style={{ animationDelay: "420ms" }}
+            className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-4"
+            style={{ animationDelay: "480ms" }}
           >
-            <h3 className="text-sm font-bold text-sibs-primary-1">
-              Cost per Hire Rule
-            </h3>
-
-            <p className="mt-2 text-sm leading-6 text-sibs-primary-1/80">
-              Candidate volume is counted from the public
-              application form source selection. Source cost
-              is saved in the database and tagged to the same
-              sourcing option. Cost per Hire is calculated as{" "}
-              <span className="font-extrabold">
-                Total Cost Tagged to Source / Hired Candidates
-                From That Source
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white text-[#042C51] shadow-sm">
+                <Target size={15} />
               </span>
-              .
-            </p>
+
+              <div>
+                <h3 className="text-xs font-extrabold text-[#042C51]">
+                  Cost per Hire Process Note
+                </h3>
+
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+                  Applicant volume is counted from public
+                  application source selections. Recorded
+                  sourcing expenses are grouped by the same
+                  sourcing option. Cost per Hire is calculated
+                  as total source cost divided by hired
+                  candidates from that source.
+                </p>
+              </div>
+            </div>
           </section>
         </div>
       </main>
 
       <AddSourceCostModal
         open={showAddCostModal}
-        onClose={() =>
-          setShowAddCostModal(false)
-        }
+        onClose={() => setShowAddCostModal(false)}
         onStatus={showStatusModal}
       />
 

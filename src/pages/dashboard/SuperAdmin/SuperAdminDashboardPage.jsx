@@ -1269,7 +1269,7 @@ export default function SuperAdminDashboardPage() {
                               <p className="font-extrabold text-[#042C51]">
                                 {item.name}
                               </p>
-                              <p className="mt-0.5 font-mono text-[10px] text-[#98A2B3]">
+                              <p className="mt-0.5 text-[10px] font-semibold text-[#98A2B3]">
                                 {item.email}
                               </p>
                             </td>
@@ -1444,7 +1444,7 @@ export default function SuperAdminDashboardPage() {
                       <tbody className="divide-y divide-[#EEF2F6]">
                         {filteredLogs.map((item) => (
                           <tr key={item.id} className="hover:bg-[#F8FAFC]">
-                            <td className="whitespace-nowrap px-4 py-3 font-mono text-[10px] text-[#98A2B3]">
+                            <td className="whitespace-nowrap px-4 py-3 text-[10px] font-semibold text-[#98A2B3]">
                               {item.timestamp}
                             </td>
                             <td className="px-4 py-3 font-extrabold text-[#042C51]">
@@ -1458,7 +1458,7 @@ export default function SuperAdminDashboardPage() {
                             <td className="px-4 py-3 font-semibold text-[#344054]">
                               {item.module}
                             </td>
-                            <td className="px-4 py-3 font-mono text-[10px] font-extrabold text-[#FF5C28]">
+                            <td className="px-4 py-3 text-[10px] font-extrabold text-[#FF5C28]">
                               {item.action}
                             </td>
                             <td className="px-4 py-3 text-[#667085]">

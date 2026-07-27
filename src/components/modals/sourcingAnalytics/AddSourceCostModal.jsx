@@ -11,8 +11,11 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Loader2,
   Plus,
   ReceiptText,
+  RotateCcw,
+  Save,
   X,
 } from "lucide-react";
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
@@ -32,7 +35,7 @@ function getTodayISO() {
 
 function FieldLabel({ children, required = false }) {
   return (
-    <label className="mb-1 block text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
+    <label className="mb-1.5 block text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
       {children}
       {required && <span className="text-red-500"> *</span>}
     </label>
@@ -43,7 +46,7 @@ function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className={`h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
+      className={`h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
     />
   );
 }
@@ -52,7 +55,7 @@ function TextArea({ className = "", ...props }) {
   return (
     <textarea
       {...props}
-      className={`min-h-[110px] w-full resize-none rounded-xl border border-[#D0D5DD] bg-white px-4 py-3 text-sm font-semibold text-sibs-primary-1 outline-none transition placeholder:text-sibs-tertiary-5 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
+      className={`min-h-[96px] w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:bg-[#F2F4F7] ${className}`}
     />
   );
 }
@@ -180,7 +183,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      className="fixed z-[999999] overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-2xl"
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -217,12 +220,12 @@ function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition ${
+        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
-              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-              : "border-[#D0D5DD] bg-white text-[#344054] hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC] focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
+              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
         }`}
       >
         <span
@@ -354,12 +357,12 @@ function DateDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex h-12 w-full items-center justify-between rounded-xl border px-4 text-left text-sm font-bold outline-none transition ${
+        className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
             : open
-              ? "border-sibs-primary-1 bg-white text-[#344054] ring-4 ring-sibs-primary-1/10"
-              : "border-[#E6ECF2] bg-white text-[#344054] hover:border-sibs-primary-1/30 hover:bg-slate-50 focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10"
+              ? "border-[#FF5C28] bg-white text-[#344054] ring-4 ring-[#FF5C28]/10"
+              : "border-[#D7DEE8] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:ring-4 focus:ring-[#FF5C28]/10"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -688,70 +691,111 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
+      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 backdrop-blur-sm sm:p-4"
       onClick={isSubmitting ? undefined : onClose}
     >
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="source-cost-modal-title"
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
       >
-        <div className="border-b border-[#E6ECF2] bg-gradient-to-r from-[#F8FAFC] via-white to-white px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                <ReceiptText size={14} />
-                New Source Cost
+        <header className="shrink-0 bg-[#07365F] px-4 py-4 text-white sm:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-[#FF5C28]">
+                <ReceiptText size={19} />
+              </span>
+
+              <div className="min-w-0">
+                <span className="inline-flex rounded bg-[#FF5C28] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  Sourcing Cost
+                </span>
+
+                <h2
+                  id="source-cost-modal-title"
+                  className="mt-1 text-base font-extrabold text-white"
+                >
+                  Register Source Cost Entry
+                </h2>
+
+                <p className="mt-0.5 text-xs font-semibold text-blue-100">
+                  Record a sourcing expense and the recruiting
+                  period covered.
+                </p>
               </div>
-
-              <h2 className="mt-3 text-2xl font-extrabold text-sibs-primary-1">
-                Add Source Cost
-              </h2>
-
-              <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-sibs-tertiary-5">
-                Tag a cost entry to one sourcing option and define the period
-                covered by the expense.
-              </p>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label="Close modal"
-            >
-              <X size={20} />
-            </button>
-          </div>
-        </div>
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleReset}
+                disabled={isSubmitting}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={14} />
+                Reset
+              </button>
 
-        <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-5 sm:p-6">
-          <div className="rounded-3xl border border-[#E6ECF2] bg-white p-5 shadow-sm sm:p-6">
-            <div className="mb-6">
-              <h3 className="text-base font-extrabold text-[#101828]">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Save size={14} />
+                )}
+
+                {isSubmitting ? "Saving..." : "Save Cost Entry"}
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close source cost modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="thin-scroll min-h-0 flex-1 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5">
+          <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
+            <div className="mb-4 border-b border-[#EEF2F6] pb-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
                 Cost Information
               </h3>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
+              <p className="mt-1 text-xs font-semibold text-[#667085]">
                 Fields marked with an asterisk are required.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5">
+            <div className="grid grid-cols-1 gap-4">
               <div>
                 <FieldLabel required>Sourcing Option</FieldLabel>
 
                 <CustomSelect
                   value={form.source}
                   options={sourceOptionValues}
-                  onChange={(value) => updateField("source", value)}
+                  onChange={(value) =>
+                    updateField("source", value)
+                  }
                   placeholder={
                     isLoadingOptions
                       ? "Loading sourcing options..."
                       : "Select sourcing option"
                   }
-                  disabled={isSubmitting || isLoadingOptions}
+                  disabled={
+                    isSubmitting || isLoadingOptions
+                  }
                 />
               </div>
 
@@ -761,28 +805,36 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
                 <TextArea
                   value={form.description}
                   onChange={(event) =>
-                    updateField("description", event.target.value)
+                    updateField(
+                      "description",
+                      event.target.value,
+                    )
                   }
                   disabled={isSubmitting}
                   placeholder="Example: Facebook Ads - CSR Hiring Campaign"
                 />
               </div>
 
-              <div>
-                <FieldLabel required>Amount</FieldLabel>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <FieldLabel required>Amount</FieldLabel>
 
-                <TextInput
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.amount}
-                  onChange={(event) => updateField("amount", event.target.value)}
-                  disabled={isSubmitting}
-                  placeholder="Example: 10000"
-                />
-              </div>
+                  <TextInput
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(event) =>
+                      updateField(
+                        "amount",
+                        event.target.value,
+                      )
+                    }
+                    disabled={isSubmitting}
+                    placeholder="Example: 10000"
+                  />
+                </div>
 
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                   <FieldLabel required>Date From</FieldLabel>
 
@@ -809,57 +861,29 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
 
                   <DateDropdown
                     value={form.dateTo}
-                    onChange={(value) => updateField("dateTo", value)}
+                    onChange={(value) =>
+                      updateField("dateTo", value)
+                    }
                     disabled={isSubmitting}
                     placeholder="Select date to"
                   />
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <p className="text-sm font-bold text-sibs-primary-1">
+          <section className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <p className="text-xs font-extrabold text-[#042C51]">
               Cost per Hire Formula
             </p>
 
-            <p className="mt-1 text-sm font-semibold leading-6 text-sibs-primary-1/80">
-              Cost per Hire = Total Source Cost / Hires from candidates who
-              selected that source. The entry becomes completed automatically
-              after Date To.
+            <p className="mt-1 text-xs font-semibold leading-5 text-[#042C51]/75">
+              Cost per Hire equals Total Source Cost divided by
+              hires from candidates who selected the same source.
+              The entry becomes completed automatically after
+              Date To.
             </p>
-          </div>
-        </div>
-
-        <div className="border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Reset
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Plus size={17} />
-              {isSubmitting ? "Saving..." : "Add Source Cost"}
-            </button>
-          </div>
+          </section>
         </div>
       </form>
     </div>

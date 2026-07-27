@@ -643,11 +643,11 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
                 onClick={() => handleSelect(date)}
                 className={`flex h-9 items-center justify-center rounded-xl text-sm font-bold transition active:scale-[0.96] ${
                   isSelected
-                    ? "bg-sibs-primary-1 text-white shadow-sm"
+                    ? "bg-[#FF5C28] text-white shadow-sm hover:bg-[#E94F1F]"
                     : isToday
-                      ? "bg-[#EAF2FB] text-sibs-primary-1"
+                      ? "bg-[#FFF0EB] text-[#FF5C28] font-extrabold"
                       : isCurrentMonth
-                        ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
+                        ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
                         : "text-slate-400 hover:bg-slate-50"
                 } ${
                   disabled
@@ -665,7 +665,7 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
           <button
             type="button"
             onClick={handleClear}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-tertiary-5 transition hover:bg-slate-50 hover:text-sibs-primary-1"
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
           >
             Clear
           </button>
@@ -674,7 +674,7 @@ function MiniCalendar({ value, min, onSelect, onClose }) {
             type="button"
             onClick={handleToday}
             disabled={min && toDateKey(today) < min}
-            className="rounded-full px-3 py-2 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#EAF2FB] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+            className="rounded-full px-3 py-2 text-xs font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
           >
             Today
           </button>

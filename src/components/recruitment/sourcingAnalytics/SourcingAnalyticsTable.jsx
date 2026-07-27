@@ -1,8 +1,16 @@
-import React, { useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import React, {
+  useEffect,
+  useMemo,
+} from "react";
+import { Compass } from "lucide-react";
+
 import { useSourcingAnalytics } from "../../../services/context/SourcingContext";
 import { usePagination } from "../../../services/context/PaginationContext";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 import SourcingAnalyticsMobileCard from "./SourcingAnalyticsMobileCard";
+
+const SOURCING_ENTITY = "sourcing-analytics";
+const DEFAULT_PAGE_LIMIT = 8;
 
 function formatDate(date) {
   if (!date) return "—";
@@ -29,64 +37,89 @@ function formatCurrency(value) {
   });
 }
 
+function formatCostPerHire(source) {
+  if (Number(source?.hired || 0) <= 0) {
+    return "—";
+  }
+
+  return formatCurrency(source?.costPerHire);
+}
+
 function getSourceStatus(source) {
-  if (Number(source?.hired || 0) > 0) return "With Hires";
-  if (Number(source?.volume || 0) > 0) return "With Applicants";
+  if (Number(source?.hired || 0) > 0) {
+    return "With Hires";
+  }
+
+  if (Number(source?.volume || 0) > 0) {
+    return "With Applicants";
+  }
+
   return "No Applicants";
 }
 
 function getSourceStatusClass(source) {
   const status = getSourceStatus(source);
 
-  switch (status) {
-    case "With Hires":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "With Applicants":
-      return "border-blue-200 bg-blue-50 text-sibs-primary-1";
-    default:
-      return "border-gray-200 bg-gray-50 text-gray-600";
+  if (status === "With Hires") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
+
+  if (status === "With Applicants") {
+    return "border-blue-200 bg-blue-50 text-[#042C51]";
+  }
+
+  return "border-gray-200 bg-gray-50 text-gray-600";
 }
 
-function HeaderCell({ children, className = "" }) {
-  return (
-    <th className={`px-3 py-4 ${className}`}>
-      <span className="block truncate whitespace-nowrap">{children}</span>
-    </th>
-  );
-}
+export default function SourcingAnalyticsTable({
+  onView,
+}) {
+  const {
+    sourceRows = [],
+    loading,
+  } = useSourcingAnalytics();
 
-function TextCell({ children, className = "" }) {
-  return (
-    <td className={`border-b border-[#E6ECF2] px-3 py-5 ${className}`}>
-      <span className="block truncate whitespace-nowrap">{children}</span>
-    </td>
-  );
-}
+  const {
+    page,
+    setPage,
+    setPagination,
+    pagination,
+    search,
+    filterValues,
+  } = usePagination(SOURCING_ENTITY);
 
-export default function SourcingAnalyticsTable({ onView }) {
-  const { sourceRows = [], loading } = useSourcingAnalytics();
-
-  const { page, setPage, setPagination, pagination, search, filterValues } =
-    usePagination("sourcing-analytics");
-
-  const limit = pagination?.limit || 8;
+  const limit =
+    Number(pagination?.limit) ||
+    DEFAULT_PAGE_LIMIT;
 
   const filteredList = useMemo(() => {
-    const keyword = String(search || "").trim().toLowerCase();
+    const keyword = String(search || "")
+      .trim()
+      .toLowerCase();
 
-    const sourceFilter = filterValues?.source || "All";
-    const costStatusFilter = filterValues?.costStatus || "All";
-    const performanceFilter = filterValues?.performance || "All";
+    const sourceFilter =
+      filterValues?.source || "All";
+    const costStatusFilter =
+      filterValues?.costStatus || "All";
+    const performanceFilter =
+      filterValues?.performance || "All";
 
-    return sourceRows.filter((source) => {
+    return (Array.isArray(sourceRows)
+      ? sourceRows
+      : []
+    ).filter((source) => {
       const matchesSearch =
         !keyword ||
-        String(source?.source || "").toLowerCase().includes(keyword) ||
-        String(source?.latestCandidate || "").toLowerCase().includes(keyword);
+        String(source?.source || "")
+          .toLowerCase()
+          .includes(keyword) ||
+        String(source?.latestCandidate || "")
+          .toLowerCase()
+          .includes(keyword);
 
       const matchesSource =
-        sourceFilter === "All" || source?.source === sourceFilter;
+        sourceFilter === "All" ||
+        source?.source === sourceFilter;
 
       const matchesCostStatus =
         costStatusFilter === "All" ||
@@ -115,239 +148,337 @@ export default function SourcingAnalyticsTable({ onView }) {
     });
   }, [sourceRows, search, filterValues]);
 
-  const totalPages = Math.ceil(filteredList.length / limit) || 1;
-  const safePage = Math.min(Math.max(Number(page || 1), 1), totalPages);
+  const totalPages = Math.max(
+    Math.ceil(filteredList.length / limit),
+    1,
+  );
+
+  const safeCurrentPage = Math.min(
+    Math.max(Number(page) || 1, 1),
+    totalPages,
+  );
 
   const paginatedData = useMemo(() => {
-    const start = (safePage - 1) * limit;
-    return filteredList.slice(start, start + limit);
-  }, [filteredList, safePage, limit]);
+    const start =
+      (safeCurrentPage - 1) * limit;
+
+    return filteredList.slice(
+      start,
+      start + limit,
+    );
+  }, [filteredList, limit, safeCurrentPage]);
 
   useEffect(() => {
     setPagination({
       total: filteredList.length,
       totalPages,
+      currentPage: safeCurrentPage,
+      limit,
     });
-  }, [filteredList.length, totalPages, setPagination]);
+  }, [
+    filteredList.length,
+    limit,
+    safeCurrentPage,
+    setPagination,
+    totalPages,
+  ]);
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
+    if (Number(page) !== safeCurrentPage) {
+      setPage(safeCurrentPage);
     }
-  }, [page, totalPages, setPage]);
+  }, [page, safeCurrentPage, setPage]);
+
+  function handlePreviousPage() {
+    if (loading || safeCurrentPage <= 1) return;
+
+    setPage(
+      Math.max(safeCurrentPage - 1, 1),
+    );
+  }
+
+  function handleNextPage() {
+    if (
+      loading ||
+      safeCurrentPage >= totalPages
+    ) {
+      return;
+    }
+
+    setPage(
+      Math.min(
+        safeCurrentPage + 1,
+        totalPages,
+      ),
+    );
+  }
+
+  function handleRowKeyDown(event, source) {
+    if (
+      event.key !== "Enter" &&
+      event.key !== " "
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    onView?.(source);
+  }
 
   return (
-    <div className="px-4 pb-5 pt-6 sm:px-6 sm:pb-6 sm:pt-7">
-      <div className="space-y-3 lg:hidden">
-        {loading ? (
-          <div className="py-12 text-center text-sm font-bold text-gray-500">
-            Loading...
-          </div>
-        ) : paginatedData.length > 0 ? (
-          paginatedData.map((source) => (
-            <SourcingAnalyticsMobileCard
-              key={source?.id || source?.source}
-              source={source}
-              onView={onView}
-            />
-          ))
-        ) : (
-          <div className="rounded-xl border border-[#E6ECF2] bg-white px-5 py-10 text-center text-sm font-bold text-gray-500">
-            No records found.
-          </div>
-        )}
-      </div>
+    <div className="px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
+      <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="p-4 lg:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] py-12 text-center text-sm font-bold text-[#667085]">
+              Loading sourcing channels...
+            </div>
+          ) : paginatedData.length > 0 ? (
+            <div className="space-y-3">
+              {paginatedData.map(
+                (source, index) => (
+                  <SourcingAnalyticsMobileCard
+                    key={
+                      source?.id ||
+                      `${source?.source}-${index}`
+                    }
+                    source={source}
+                    onView={onView}
+                  />
+                ),
+              )}
+            </div>
+          ) : (
+            <div className="sibs-empty-panel">
+              <Compass className="mx-auto h-9 w-9 text-[#CBD5E1]" />
 
-      <div className="hidden lg:block">
-        <div className="w-full overflow-hidden">
-          <table className="w-full table-fixed border-separate border-spacing-0 overflow-hidden rounded-2xl border border-[#D9E2EC] text-left">
-            <thead>
-              <tr className="bg-[#F5F7FA] text-xs font-extrabold uppercase tracking-wide text-[#174A7C]">
-                <HeaderCell className="w-[15%] first:rounded-tl-2xl">
-                  Source
-                </HeaderCell>
+              <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                No Sourcing Channels Found
+              </p>
 
-                <HeaderCell className="w-[8%] text-center">
+              <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                No records matched the active search
+                and filters.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="w-full min-w-[1450px] border-collapse bg-white text-left text-xs">
+            <thead className="sibs-data-table-head">
+              <tr className="sibs-data-table-head-row">
+                <th className="sibs-data-table-th text-left">
+                  Source Channel
+                </th>
+
+                <th className="sibs-data-table-th text-center">
                   Source Cost
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[7%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Cost Entries
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[7%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Applicants
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[7%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Screened
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[8%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Interviewed
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[7%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Offered
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[6%] text-center">Hired</HeaderCell>
+                <th className="sibs-data-table-th text-center">
+                  Hired
+                </th>
 
-                <HeaderCell className="w-[8%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Conversion
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[8%] text-center">
+                <th className="sibs-data-table-th text-center">
                   Cost / Hire
-                </HeaderCell>
+                </th>
 
-                <HeaderCell className="w-[10%]">Latest Applicant</HeaderCell>
+                <th className="sibs-data-table-th text-left">
+                  Latest Applicant
+                </th>
 
-                <HeaderCell className="w-[8%]">Last Activity</HeaderCell>
-
-                <HeaderCell className="w-[7%] text-right last:rounded-tr-2xl">
-                  Actions
-                </HeaderCell>
+                <th className="sibs-data-table-th text-left">
+                  Last Activity
+                </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-[#E6ECF2]">
               {loading ? (
                 <tr>
                   <td
-                    colSpan={13}
-                    className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                    colSpan={12}
+                    className="px-5 py-14 text-center"
                   >
-                    Loading...
+                    <Compass className="mx-auto h-9 w-9 animate-pulse text-[#CBD5E1]" />
+
+                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                      Loading Sourcing Channels
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                      Fetching the current sourcing
+                      performance records.
+                    </p>
                   </td>
                 </tr>
               ) : paginatedData.length > 0 ? (
-                paginatedData.map((source) => (
-                  <tr
-                    key={source?.id || source?.source}
-                    className="transition hover:bg-[#FAFBFC]"
-                  >
-                    <td className="border-b border-[#E6ECF2] px-3 py-5">
-                      <p className="truncate whitespace-nowrap text-sm font-bold text-[#101828]">
-                        {source?.source || "—"}
-                      </p>
+                paginatedData.map(
+                  (source, index) => (
+                    <tr
+                      key={
+                        source?.id ||
+                        `${source?.source}-${index}`
+                      }
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onView?.(source)}
+                      onKeyDown={(event) =>
+                        handleRowKeyDown(
+                          event,
+                          source,
+                        )
+                      }
+                      className="sibs-data-table-row sibs-page-card-in cursor-pointer outline-none transition hover:bg-[#F8FAFC] focus-visible:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/40"
+                      style={{
+                        animationDelay:
+                          `${index * 30}ms`,
+                      }}
+                      aria-label={`View sourcing channel ${
+                        source?.source || ""
+                      }`}
+                    >
+                      <td className="px-4 py-2.5 align-middle">
+                        <p
+                          className="max-w-[280px] truncate text-xs font-extrabold leading-5 text-[#042C51]"
+                          title={source?.source || ""}
+                        >
+                          {source?.source || "—"}
+                        </p>
 
-                      <div className="mt-2">
                         <span
-                          className={`inline-flex max-w-full items-center rounded-full border px-3 py-1 text-[10px] font-bold leading-none ${getSourceStatusClass(
+                          className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-extrabold leading-none ${getSourceStatusClass(
                             source,
                           )}`}
                         >
-                          <span className="truncate whitespace-nowrap">
-                            {getSourceStatus(source)}
-                          </span>
+                          {getSourceStatus(source)}
                         </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    <TextCell className="text-center text-sm font-bold text-[#344054]">
-                      {formatCurrency(source?.sourceCost)}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                        {formatCurrency(
+                          source?.sourceCost,
+                        )}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-bold text-[#344054]">
-                      {source?.costEntries?.length || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-bold tabular-nums text-[#475467] align-middle">
+                        {source?.costEntries?.length || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-extrabold text-sibs-primary-1">
-                      {source?.volume || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#042C51] align-middle">
+                        {source?.volume || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-bold text-[#344054]">
-                      {source?.screened || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                        {source?.screened || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-bold text-[#344054]">
-                      {source?.interviewed || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                        {source?.interviewed || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-bold text-[#344054]">
-                      {source?.offered || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                        {source?.offered || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-extrabold text-emerald-600">
-                      {source?.hired || 0}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-emerald-600 align-middle">
+                        {source?.hired || 0}
+                      </td>
 
-                    <TextCell className="text-center text-sm font-extrabold text-sibs-primary-1">
-                      {Number(source?.conversionRate || 0).toFixed(1)}%
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center align-middle">
+                        <span className="inline-flex rounded-lg bg-[#F2F6FA] px-2.5 py-1 text-[10px] font-extrabold tabular-nums text-[#042C51]">
+                          {Number(
+                            source?.conversionRate || 0,
+                          ).toFixed(1)}%
+                        </span>
+                      </td>
 
-                    <TextCell className="text-center text-sm font-extrabold text-sibs-primary-1">
-                      {formatCurrency(source?.costPerHire)}
-                    </TextCell>
+                      <td className="px-3 py-2.5 text-center text-xs font-extrabold tabular-nums text-[#FF5C28] align-middle">
+                        {formatCostPerHire(source)}
+                      </td>
 
-                    <TextCell className="text-sm font-semibold text-[#344054]">
-                      {source?.latestCandidate || "—"}
-                    </TextCell>
+                      <td className="px-4 py-2.5 align-middle">
+                        <p
+                          className="max-w-[190px] truncate text-xs font-semibold text-[#475467]"
+                          title={
+                            source?.latestCandidate || ""
+                          }
+                        >
+                          {source?.latestCandidate || "—"}
+                        </p>
+                      </td>
 
-                    <TextCell className="text-sm font-semibold text-[#344054]">
-                      {formatDate(source?.lastActivity)}
-                    </TextCell>
-
-                    <td className="border-b border-[#E6ECF2] px-3 py-5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => onView(source)}
-                        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-3 text-xs font-bold text-sibs-primary-1 transition hover:bg-[#F8FAFC] hover:shadow-sm"
-                      >
-                        <Eye size={15} />
-                        <span className="hidden xl:inline">View</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      <td className="px-4 py-2.5 text-xs font-semibold tabular-nums text-[#475467] align-middle">
+                        {formatDate(
+                          source?.lastActivity,
+                        )}
+                      </td>
+                    </tr>
+                  ),
+                )
               ) : (
                 <tr>
                   <td
-                    colSpan={13}
-                    className="px-5 py-12 text-center text-sm font-bold text-gray-500"
+                    colSpan={12}
+                    className="px-5 py-14 text-center"
                   >
-                    No results found.
+                    <Compass className="mx-auto h-9 w-9 text-[#CBD5E1]" />
+
+                    <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                      No Sourcing Channels Found
+                    </p>
+
+                    <p className="mt-1 text-xs font-semibold text-[#98A2B3]">
+                      No records matched the active
+                      search and filters.
+                    </p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      </div>
 
-      <div className="mt-5 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-        <p className="text-sm font-semibold text-sibs-tertiary-5">
-          Showing {filteredList.length > 0 ? (safePage - 1) * limit + 1 : 0} to{" "}
-          {Math.min(safePage * limit, filteredList.length)} of{" "}
-          {filteredList.length} source records
-        </p>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={safePage === 1}
-            onClick={() => setPage(safePage - 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            <ChevronLeft size={16} />
-          </button>
-
-          <button
-            type="button"
-            className="flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-sibs-primary-1 px-3 text-sm font-bold text-white shadow-sm"
-          >
-            {safePage}
-          </button>
-
-          <button
-            type="button"
-            disabled={safePage >= totalPages}
-            onClick={() => setPage(safePage + 1)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div className="border-t border-[#E6ECF2] px-4 pb-4">
+          <PaginationTable
+            showSearch={false}
+            showPagination
+            showCount
+            loading={loading}
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            loadedCount={paginatedData.length}
+            totalRecords={filteredList.length}
+            recordLabel="sourcing channels"
+            onPrevious={handlePreviousPage}
+            onNext={handleNextPage}
+            className="border-0 bg-transparent p-0 shadow-none"
+          />
         </div>
       </div>
     </div>
