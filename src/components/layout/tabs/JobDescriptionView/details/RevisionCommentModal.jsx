@@ -20,7 +20,7 @@ export default function RevisionCommentModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[999999] flex h-dvh items-end justify-center bg-black/45 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-6">
+    <div className="sibs-modal-blur fixed inset-0 z-[999999] flex h-dvh items-end justify-center px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-6">
       <div
         role="dialog"
         aria-modal="true"

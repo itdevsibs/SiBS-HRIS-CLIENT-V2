@@ -129,11 +129,7 @@ export default function SourcingAnalyticsPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Recruitment Intelligence
-                  </span>
-
-                  <span className="inline-flex items-center rounded border border-orange-100 bg-[#FFF0EB] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
-                    ROI & Conversion Analytics
+                    Recruitment View
                   </span>
                 </div>
 

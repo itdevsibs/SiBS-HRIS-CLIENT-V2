@@ -443,8 +443,7 @@ export default function HiringNeedsTable({ onView }) {
           </table>
         </div>
 
-        {/* Pagination footer */}
-        <div className="border-t border-[#E6ECF2] px-4 pb-4">
+        <div className="px-4 pb-4">
           <PaginationTable
             showSearch={false}
             showPagination

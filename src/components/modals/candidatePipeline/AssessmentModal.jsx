@@ -265,7 +265,7 @@ export default function AssessmentModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/45 px-4 py-6">
+    <div className="sibs-modal-blur fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6">
       <form
         onSubmit={handleSubmit}
         className="flex max-h-[92vh] w-full max-w-[580px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"

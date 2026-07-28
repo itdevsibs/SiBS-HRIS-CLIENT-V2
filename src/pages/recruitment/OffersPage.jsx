@@ -1,6 +1,15 @@
-import React, { useLayoutEffect, useRef } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import Header from "../../components/layout/Header";
 import { useOffers } from "../../services/context/OffersContext";
+
 import OfferHeader from "../../components/recruitment/offers/OfferHeader";
 import OfferSummaryCards from "../../components/recruitment/offers/OfferSummaryCards";
 import OfferFilters from "../../components/recruitment/offers/OfferFilters";
@@ -8,21 +17,212 @@ import OfferRecordsTable from "../../components/recruitment/offers/OfferRecordsT
 import OfferMobileCards from "../../components/recruitment/offers/OfferMobileCards";
 import OfferProcessRule from "../../components/recruitment/offers/OfferProcessRule";
 import OfferDetailsModal from "../../components/modals/offers/OfferDetailsModal";
-import DeclineResponseModal from "../../components/modals/offers/DeclineResponseModel";
+import StatusModal from "../../components/modals/StatusModal";
 
-export default function OffersPageContent() {
+function cleanText(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeValue(value) {
+  return cleanText(value).toLowerCase();
+}
+
+function firstText(...values) {
+  return values.map(cleanText).find(Boolean) || "";
+}
+
+function getRouteCandidate(location) {
+  const state = location?.state || {};
+  const candidate =
+    state.candidate || state.selectedCandidate || state.offerCandidate || {};
+  const params = new URLSearchParams(location?.search || "");
+
+  const routeCandidate = {
+    candidateApplicationId: firstText(
+      candidate.candidateApplicationId,
+      candidate.candidate_application_id,
+      state.candidateApplicationId,
+      state.candidate_application_id,
+      params.get("candidateApplicationId"),
+      params.get("candidate_application_id"),
+    ),
+    candidateId: firstText(
+      candidate.candidateId,
+      candidate.candidate_id,
+      state.candidateId,
+      state.candidate_id,
+      params.get("candidateId"),
+      params.get("candidate_id"),
+    ),
+    candidateEmail: firstText(
+      candidate.candidateEmail,
+      candidate.email,
+      state.candidateEmail,
+      state.email,
+      params.get("candidateEmail"),
+      params.get("email"),
+    ),
+    candidateName: firstText(
+      candidate.candidateName,
+      candidate.name,
+      state.candidateName,
+      state.name,
+      params.get("candidateName"),
+      params.get("name"),
+    ),
+    offerId: firstText(
+      candidate.offerId,
+      candidate.offer_id,
+      state.offerId,
+      state.offer_id,
+      params.get("offerId"),
+      params.get("offer_id"),
+    ),
+  };
+
+  return Object.values(routeCandidate).some(Boolean) ? routeCandidate : null;
+}
+
+function offerMatchesRouteCandidate(offer, routeCandidate) {
+  if (!routeCandidate) return true;
+
+  const checks = [
+    [
+      routeCandidate.candidateApplicationId,
+      firstText(
+        offer?.candidateApplicationId,
+        offer?.candidate_application_id,
+        offer?.applicationId,
+      ),
+    ],
+    [
+      routeCandidate.candidateId,
+      firstText(offer?.candidateId, offer?.candidate_id),
+    ],
+    [
+      routeCandidate.candidateEmail,
+      firstText(offer?.candidateEmail, offer?.email),
+    ],
+    [
+      routeCandidate.offerId,
+      firstText(offer?.offerId, offer?.offer_id),
+    ],
+  ].filter(([routeValue]) => Boolean(routeValue));
+
+  if (checks.some(([routeValue, offerValue]) => {
+    return normalizeValue(routeValue) === normalizeValue(offerValue);
+  })) {
+    return true;
+  }
+
+  if (routeCandidate.candidateName) {
+    return (
+      normalizeValue(routeCandidate.candidateName) ===
+      normalizeValue(firstText(offer?.candidateName, offer?.name))
+    );
+  }
+
+  return false;
+}
+
+function getRouteCandidateLabel(routeCandidate) {
+  if (!routeCandidate) return "";
+
+  return firstText(
+    routeCandidate.candidateName,
+    routeCandidate.candidateEmail,
+    routeCandidate.candidateId,
+    routeCandidate.candidateApplicationId,
+    routeCandidate.offerId,
+  );
+}
+
+const ROUTE_FILTER_KEYS = [
+  "candidateApplicationId",
+  "candidate_application_id",
+  "candidateId",
+  "candidate_id",
+  "candidateEmail",
+  "email",
+  "candidateName",
+  "name",
+  "offerId",
+  "offer_id",
+];
+
+export default function OffersPage() {
   const mainRef = useRef(null);
+  const hasShownApprovalWarningRef = useRef(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const { selectedOffer, setSelectedOffer, ConfirmationDialog } = useOffers();
+  const {
+    selectedOffer,
+    setSelectedOffer,
+    ConfirmationDialog,
+    approvalUsers = [],
+    approvalUsersLoading = false,
+    filteredOffers = [],
+  } = useOffers();
+
+  const [statusModal, setStatusModal] = useState({
+    open: false,
+    type: "error",
+    title: "",
+    message: "",
+  });
+
+  const routeCandidate = useMemo(
+    () => getRouteCandidate(location),
+    [location],
+  );
+
+  const routeCandidateLabel = useMemo(
+    () => getRouteCandidateLabel(routeCandidate),
+    [routeCandidate],
+  );
+
+  const routeCandidateKey = useMemo(
+    () => JSON.stringify(routeCandidate || {}),
+    [routeCandidate],
+  );
+
+  const visibleOffers = useMemo(() => {
+    const offers = Array.isArray(filteredOffers) ? filteredOffers : [];
+
+    if (!routeCandidate) return offers;
+
+    return offers.filter((offer) =>
+      offerMatchesRouteCandidate(offer, routeCandidate),
+    );
+  }, [filteredOffers, routeCandidate]);
+
+  function closeStatusModal() {
+    setStatusModal((previous) => ({
+      ...previous,
+      open: false,
+    }));
+  }
 
   function scrollToTop(behavior = "auto") {
     requestAnimationFrame(() => {
-      if (mainRef.current) {
-        mainRef.current.scrollTo({
+      mainRef.current?.scrollTo({
+        top: 0,
+        left: 0,
+        behavior,
+      });
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({
           top: 0,
           left: 0,
           behavior,
         });
+      }
+
+      if (typeof document !== "undefined") {
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
       }
     });
   }
@@ -41,75 +241,127 @@ export default function OffersPageContent() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [routeCandidateKey]);
+
+  useEffect(() => {
+    if (approvalUsersLoading) return;
+    if (hasShownApprovalWarningRef.current) return;
+
+    if (!Array.isArray(approvalUsers) || approvalUsers.length === 0) {
+      hasShownApprovalWarningRef.current = true;
+
+      const timer = window.setTimeout(() => {
+        setStatusModal({
+          open: true,
+          type: "error",
+          title: "No Approval Users Found",
+          message:
+            "No offer approval users are configured yet. Please add approval users in Recruitment Settings > Approval Rules before approving or rejecting offers.",
+        });
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+
+    return undefined;
+  }, [approvalUsers, approvalUsersLoading]);
 
   function handleCloseDetailsModal() {
     setSelectedOffer(null);
   }
 
+  function handleClearRouteCandidate() {
+    const params = new URLSearchParams(location.search || "");
+    ROUTE_FILTER_KEYS.forEach((key) => params.delete(key));
+
+    const nextState = { ...(location.state || {}) };
+    ROUTE_FILTER_KEYS.forEach((key) => delete nextState[key]);
+    delete nextState.candidate;
+    delete nextState.selectedCandidate;
+    delete nextState.offerCandidate;
+
+    const nextSearch = params.toString();
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: nextSearch ? `?${nextSearch}` : "",
+      },
+      {
+        replace: true,
+        state: Object.keys(nextState).length > 0 ? nextState : null,
+      },
+    );
+  }
+
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main
-        ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
-      >
-        <div className="mx-auto max-w-[1600px] space-y-5">
-          <div className="sibs-page-header-in">
-            <OfferHeader />
-          </div>
+      <main ref={mainRef} className="sibs-dashboard-main-wide">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
+          <OfferHeader
+            routeFilterActive={Boolean(routeCandidate)}
+            routeCandidateLabel={routeCandidateLabel}
+            onClearRouteFilter={handleClearRouteCandidate}
+          />
+
+          <OfferSummaryCards />
 
           <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "60ms" }}
-          >
-            <OfferSummaryCards />
-          </section>
-
-          <section
-            className="sibs-profile-tab-panel overflow-hidden rounded-2xl border border-[#D9E2EC] bg-white shadow-sm transition-all duration-200 hover:border-sibs-primary-1/20 hover:shadow-md"
+            className="sibs-profile-tab-panel sibs-page-card-in sibs-card relative overflow-visible font-jakarta"
             style={{ animationDelay: "120ms" }}
           >
-            <div className="border-b border-[#E6ECF2]">
-              <OfferFilters />
-            </div>
+            <OfferFilters />
 
-            <div className="p-4 sm:p-6">
-              <div
-                className="sibs-page-card-in hidden lg:block"
-                style={{ animationDelay: "180ms" }}
-              >
-                <OfferRecordsTable />
-              </div>
+            <div className="space-y-5 p-4 sm:p-5">
+              <OfferRecordsTable
+                offersOverride={visibleOffers}
+                routeFilterActive={Boolean(routeCandidate)}
+                emptyMessage={
+                  routeCandidate
+                    ? "No offer record was found for the selected candidate."
+                    : "No offered candidates found from Candidate Pipeline."
+                }
+              />
 
-              <div
-                className="sibs-page-card-in lg:hidden"
-                style={{ animationDelay: "180ms" }}
-              >
-                <OfferMobileCards />
-              </div>
+              <OfferMobileCards
+                offersOverride={visibleOffers}
+                routeFilterActive={Boolean(routeCandidate)}
+                emptyMessage={
+                  routeCandidate
+                    ? "No offer record was found for the selected candidate."
+                    : "No offered candidates found from Candidate Pipeline."
+                }
+              />
             </div>
           </section>
 
-          <section
-            className="sibs-profile-tab-panel"
-            style={{ animationDelay: "240ms" }}
-          >
-            <OfferProcessRule />
-          </section>
+          <OfferProcessRule />
         </div>
       </main>
 
       <OfferDetailsModal
-        open={!!selectedOffer}
+        open={Boolean(selectedOffer)}
         offer={selectedOffer}
         onClose={handleCloseDetailsModal}
       />
 
-      <ConfirmationDialog />
+      {typeof ConfirmationDialog === "function" ? <ConfirmationDialog /> : null}
+
+      <StatusModal
+        open={statusModal.open}
+        type={statusModal.type}
+        title={statusModal.title}
+        message={statusModal.message}
+        variant="center"
+        onClose={closeStatusModal}
+        lockScroll
+      />
     </div>
   );
 }

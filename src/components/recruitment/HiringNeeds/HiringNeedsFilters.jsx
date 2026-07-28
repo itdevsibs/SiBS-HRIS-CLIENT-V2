@@ -120,8 +120,6 @@ export default function HiringNeedsFilters() {
           searchPlaceholder="Search by ID, department, account, job title, reason, or week..."
           onSearchChange={setSearchInput}
           onSearchKeyDown={handleSearchKeyDown}
-          controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
-          searchClassName="relative min-w-0 flex-1"
           className="border-0 bg-transparent p-0 shadow-none"
           filters={[
             {
@@ -133,9 +131,8 @@ export default function HiringNeedsFilters() {
               searchable: false,
               includeAll: false,
               allLabel: "All Statuses",
+              label: "Approval Status",
               placeholder: "All Statuses",
-              className:
-                "w-full sm:w-[175px] xl:w-[190px]",
             },
             {
               key: "site",
@@ -146,9 +143,8 @@ export default function HiringNeedsFilters() {
               searchable: true,
               includeAll: false,
               allLabel: "All Sites",
+              label: "Location / Site",
               placeholder: "Search sites...",
-              className:
-                "w-full sm:w-[165px] xl:w-[185px]",
             },
             {
               key: "reason",
@@ -159,9 +155,8 @@ export default function HiringNeedsFilters() {
               searchable: true,
               includeAll: false,
               allLabel: "All Reasons",
+              label: "Reason",
               placeholder: "Search reasons...",
-              className:
-                "w-full sm:w-[185px] xl:w-[210px]",
             },
           ]}
           onReset={handleClearAll}
@@ -173,7 +168,7 @@ export default function HiringNeedsFilters() {
               type="button"
               onClick={handleClearAll}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear

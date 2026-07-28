@@ -22,6 +22,7 @@ const metricConfig = [
     title: "Total PRF",
     description: "Total requests",
     icon: FileText,
+    labelClassName: "text-[#667085]",
     valueClassName: "text-[#042C51]",
     iconClassName: "bg-[#EAF2FB] text-[#042C51]",
   },
@@ -30,32 +31,36 @@ const metricConfig = [
     title: "Headcount",
     description: "Total personnel",
     icon: CalendarDays,
+    labelClassName: "text-blue-600",
     valueClassName: "text-[#042C51]",
-    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    iconClassName: "bg-blue-50 text-blue-700",
   },
   {
     key: "forApproval",
     title: "For Approval",
     description: "Pending review",
     icon: Clock3,
-    valueClassName: "text-[#F59E0B]",
-    iconClassName: "bg-amber-50 text-[#042C51]",
+    labelClassName: "text-amber-600",
+    valueClassName: "text-amber-700",
+    iconClassName: "bg-amber-50 text-amber-700",
   },
   {
     key: "approved",
     title: "Approved",
     description: "Ready for hiring",
     icon: CheckCircle2,
-    valueClassName: "text-emerald-600",
-    iconClassName: "bg-emerald-50 text-[#042C51]",
+    labelClassName: "text-emerald-600",
+    valueClassName: "text-emerald-700",
+    iconClassName: "bg-emerald-50 text-emerald-700",
   },
   {
     key: "notApproved",
     title: "Not Approved",
     description: "Rejected/closed",
     icon: XCircle,
-    valueClassName: "text-red-600",
-    iconClassName: "bg-red-50 text-[#042C51]",
+    labelClassName: "text-red-600",
+    valueClassName: "text-red-700",
+    iconClassName: "bg-red-50 text-red-700",
   },
 ];
 
@@ -67,7 +72,13 @@ function MetricCard({ item, value, delay = 0 }) {
     >
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
-          <p className="sibs-kicker">{item.title}</p>
+          <p
+            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${
+              item.labelClassName || "text-[#667085]"
+            }`}
+          >
+            {item.title}
+          </p>
 
           <p
             className={`mt-2 text-3xl font-extrabold leading-none tabular-nums tracking-normal ${item.valueClassName}`}

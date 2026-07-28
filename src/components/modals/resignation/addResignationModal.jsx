@@ -504,7 +504,7 @@ export default function AddResignationModal({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 px-4 py-8">
+      <div className="sibs-modal-blur fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-4 py-8">
         <div className="my-auto flex max-h-[calc(100dvh-4rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-[#E6ECF2] px-6 py-5">
             <div>
@@ -916,7 +916,7 @@ export default function AddResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6">
+        <div className="sibs-modal-blur fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl">
             <div className="flex items-start justify-end px-5 pt-4">
               <button

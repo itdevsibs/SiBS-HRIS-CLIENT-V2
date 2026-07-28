@@ -1111,7 +1111,7 @@ function ModalShell({ open, title, description, onClose, children, footer }) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] overflow-y-auto bg-slate-950/45 backdrop-blur-[2px]"
+      className="sibs-modal-blur fixed inset-0 z-[99999] overflow-y-auto"
       role="presentation"
     >
       <div className="flex min-h-full items-center justify-center p-3 sm:p-5">

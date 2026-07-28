@@ -227,6 +227,7 @@ function StatCard({
   description,
   badgeText,
   badgeClassName = "bg-slate-100 text-slate-600",
+  labelClassName = "text-[#667085]",
   valueClassName = "text-[#042C51]",
   iconClassName = "bg-blue-50 text-[#042C51]",
   delay = 0,
@@ -240,7 +241,9 @@ function StatCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]">
+          <p
+            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${labelClassName}`}
+          >
             {title}
           </p>
           <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -769,14 +772,14 @@ export default function JobDescriptionPage() {
   }, [jobDescriptionList]);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <Header />
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section
             className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6"
             style={{ animationDelay: "0ms", animationFillMode: "both" }}
@@ -788,11 +791,7 @@ export default function JobDescriptionPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
                     <span className="h-1.5 w-1.5 animate-sibs-pulse rounded-full bg-[#FF5C28]" />
-                    Job Description View
-                  </span>
-
-                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">
-                    Module: Recruitment
+                    Recruitment View
                   </span>
                 </div>
 
@@ -834,6 +833,8 @@ export default function JobDescriptionPage() {
               value={stats.total}
               icon={ClipboardList}
               description="All job descriptions in database"
+              labelClassName="text-[#667085]"
+              iconClassName="bg-[#EAF2FB] text-[#042C51]"
               delay={0}
             />
             <StatCard
@@ -841,7 +842,8 @@ export default function JobDescriptionPage() {
               value={stats.existing}
               icon={CheckCircle2}
               description="Ready or already available"
-              valueClassName="text-emerald-600"
+              labelClassName="text-emerald-600"
+              valueClassName="text-emerald-700"
               iconClassName="bg-emerald-50 text-emerald-700"
               delay={60}
             />
@@ -850,7 +852,8 @@ export default function JobDescriptionPage() {
               value={stats.revision}
               icon={AlertTriangle}
               description="Needs specification update or remarks"
-              valueClassName="text-amber-600"
+              labelClassName="text-amber-600"
+              valueClassName="text-amber-700"
               iconClassName="bg-amber-50 text-amber-700"
               delay={120}
             />
@@ -859,6 +862,8 @@ export default function JobDescriptionPage() {
               value={stats.newJd}
               icon={FileText}
               description="New or unlinked JD intake"
+              labelClassName="text-indigo-600"
+              valueClassName="text-indigo-700"
               iconClassName="bg-indigo-50 text-indigo-700"
               delay={180}
             />

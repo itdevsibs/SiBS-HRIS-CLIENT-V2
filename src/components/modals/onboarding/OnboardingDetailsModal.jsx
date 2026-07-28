@@ -17,7 +17,7 @@ export default function OnboardingDetailsModal({
    const isFinal = ["True Hire", "No Show", "Pre-start Withdrawal"].includes(normalizedRecord.finalOutcome);
 
    return (
-     <div className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4" onClick={onClose}>
+     <div className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4" onClick={onClose}>
        <div className="sibs-profile-tab-panel flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
          {/* HEADER */}

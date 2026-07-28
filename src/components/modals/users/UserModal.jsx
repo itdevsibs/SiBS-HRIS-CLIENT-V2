@@ -854,7 +854,7 @@ export default function UserModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 px-4 py-4 backdrop-blur-sm"
+      className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
       onClick={handleAnimatedClose}
       style={{
         animation: isClosing

@@ -1197,7 +1197,6 @@ export default function AttendanceTable() {
               }
               onSearchChange={(value) => setSearchInput?.(value)}
               onSearchKeyDown={handleAttendanceSearchKeyDown}
-              searchClassName="relative min-w-0 flex-1"
               dropdownFilters={
                 attendanceFiltersView
                   ? [
@@ -1207,8 +1206,8 @@ export default function AttendanceTable() {
                         onChange: handleDepartmentSelect,
                         options: departmentDropdownOptions,
                         allLabel: "All Departments",
+                        label: "Department",
                         placeholder: "Search departments...",
-                        className: "w-full sm:w-[190px] xl:w-[210px]",
                         searchable: true,
                         includeAll: true,
                       },
@@ -1218,8 +1217,8 @@ export default function AttendanceTable() {
                         onChange: handleAccountSelect,
                         options: accountDropdownOptions,
                         allLabel: "All Accounts",
+                        label: "Account",
                         placeholder: "Search accounts...",
-                        className: "w-full sm:w-[180px] xl:w-[200px]",
                         searchable: true,
                         includeAll: true,
                       },
@@ -1229,7 +1228,6 @@ export default function AttendanceTable() {
               rightContent={
                 <InlineDateRangeFilter visible={attendanceDateRangeView} />
               }
-              rightContentClassName="flex w-full items-center sm:w-auto"
               className="border-0 bg-transparent p-0 shadow-none"
             />
           </div>

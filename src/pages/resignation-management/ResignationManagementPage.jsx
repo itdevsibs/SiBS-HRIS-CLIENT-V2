@@ -923,8 +923,6 @@ function ResignationFilters({
         searchValue={search}
         searchPlaceholder="Search employee, SIBS ID, department, type, status, reason..."
         onSearchChange={(value) => setSearch(value)}
-        controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
-        searchClassName="relative min-w-0 flex-1"
         filters={[
           {
             key: "status",
@@ -935,7 +933,7 @@ function ResignationFilters({
               value: option,
             })),
             allLabel: "All Statuses",
-            className: "w-full sm:w-[190px] xl:w-[210px]",
+            label: "Status",
             searchable: false,
             includeAll: false,
           },
@@ -948,7 +946,7 @@ function ResignationFilters({
               value: option,
             })),
             allLabel: "All Types",
-            className: "w-full sm:w-[170px] xl:w-[190px]",
+            label: "Type",
             searchable: false,
             includeAll: false,
           },
@@ -958,13 +956,12 @@ function ResignationFilters({
             <button
               type="button"
               onClick={onClearFilters}
-              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-4 text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[#FFD9CC] bg-[#FFF8F5] px-4 text-xs font-extrabold text-[#FF5C28] transition hover:border-[#FF5C28] hover:bg-[#FFF0EB] xl:w-auto"
             >
               Clear
             </button>
           ) : null
         }
-        rightContentClassName="flex w-full items-center sm:w-auto"
         className="border-0 bg-transparent p-0 shadow-none"
       />
     </section>
