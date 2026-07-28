@@ -198,49 +198,28 @@ function normalizeMetrics(payload = {}) {
 
 function OMDashboardLoadingState() {
   return (
-    <div className={PAGE_SHELL_CLASS}>
-      <main
-        className={`${MAIN_SHELL_CLASS} flex min-h-screen items-center justify-center`}
+    <div className="flex min-h-screen w-full items-center justify-center bg-[#e8eef5] px-6 py-10">
+      <div
+        className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
+        role="status"
+        aria-live="polite"
+        aria-label="Loading OM dashboard"
       >
-        <div
-          className="flex w-full max-w-sm flex-col items-center justify-center px-6 py-10 text-center"
-          role="status"
-          aria-live="polite"
-          aria-label="Loading OM dashboard"
-        >
-          <div className="relative flex h-16 w-16 items-center justify-center">
-            <span
-              className="absolute inset-0 animate-ping rounded-full border-2 border-orange-400/25"
-              aria-hidden="true"
-            />
-            <span
-              className="absolute inset-1 rounded-full border border-orange-400/30"
-              aria-hidden="true"
-            />
-            <LoaderCircle
-              className="relative h-9 w-9 animate-spin text-orange-500"
-              aria-hidden="true"
-            />
-          </div>
-
-          <h1 className="mt-6 text-xl font-black tracking-tight text-slate-900 dark:text-white">
-            Loading OM Dashboard
-          </h1>
-
-          <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-            Loading your assigned departments, accounts, and hiring movement...
-          </p>
-
-          <div
-            className="mt-6 flex items-center justify-center gap-2"
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
+          <LoaderCircle
+            className="h-8 w-8 animate-spin text-[#ff5c28]"
             aria-hidden="true"
-          >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-500" />
-            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-400 [animation-delay:150ms]" />
-            <span className="h-2 w-2 animate-pulse rounded-full bg-orange-300 [animation-delay:300ms]" />
-          </div>
+          />
         </div>
-      </main>
+
+        <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
+          Loading OM Dashboard
+        </h2>
+
+        <p className="mt-2 max-w-[300px] text-sm font-medium leading-6 text-[#667085]">
+          Loading your assigned departments, accounts, and hiring movement...
+        </p>
+      </div>
     </div>
   );
 }

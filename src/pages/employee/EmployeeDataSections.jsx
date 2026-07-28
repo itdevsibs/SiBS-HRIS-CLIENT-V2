@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Award,
@@ -42,13 +42,28 @@ import {
   X,
 } from "lucide-react";
 
-const EDUCATION_LEVEL_OPTIONS = [
-  "Elementary",
-  "Secondary",
-  "Vocational",
-  "College",
-  "Graduate Studies",
-];
+import {
+  buildEmployeeDropdownOptions,
+  filterEmployeeDropdownOptions,
+} from "./employeeDataDropdownOptions";
+import {
+  createEmptyEducationRecord,
+  getEducationRecordFields,
+  normalizeEducationRecordForLevel,
+} from "./educationRecordFields.js";
+import {
+  deleteEmployeeProfileDocument,
+  fetchEmployeeDocumentFile,
+  getEmployeeProfileDocuments,
+  uploadEmployeeProfileDocument,
+} from "../../lib/axios/getEmployee.js";
+import {
+  PROFILE_DOCUMENT_ACCEPT,
+  PROFILE_DOCUMENT_TYPES,
+  formatProfileDocumentSize,
+  isInlinePreviewSupported,
+  validateProfileDocumentFile,
+} from "./profileDocumentValidation.js";
 
 const PIPELINE_STAGES = [
   "Sourcing",
@@ -102,14 +117,6 @@ function formatDate(value) {
   });
 }
 
-function getCurrentDateKey() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
 
 function SectionHeader({ title, subtitle, icon: Icon, isEditing, onEdit }) {
   return (
@@ -183,6 +190,308 @@ function ReadField({ label, value, mono = false, className = "" }) {
   );
 }
 
+function AnimatedEmployeeDropdown({ open, children }) {
+  return (
+    <div
+      className={`absolute left-0 right-0 top-[calc(100%+8px)] z-[9999] grid origin-top transition-all duration-200 ease-out ${
+        open
+          ? "grid-rows-[1fr] opacity-100"
+          : "pointer-events-none grid-rows-[0fr] opacity-0"
+      }`}
+    >
+      <div className="min-h-0 overflow-hidden">
+        <div
+          className={`origin-top overflow-hidden rounded-[10px] border border-[#D7DEE8] bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)] transition-all duration-200 ease-out ${
+            open
+              ? "translate-y-0 scale-100 opacity-100"
+              : "-translate-y-2 scale-[0.98] opacity-0"
+          }`}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmployeeDataDropdown({
+  id,
+  value,
+  onChange,
+  options = [],
+  placeholder = "Search options...",
+  emptyLabel = "Choose option",
+  includeEmptyOption = true,
+  required = false,
+}) {
+  const rootRef = useRef(null);
+  const inputRef = useRef(null);
+  const optionRefs = useRef([]);
+
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const normalizedValue = text(value);
+
+  const normalizedOptions = useMemo(
+    () =>
+      buildEmployeeDropdownOptions(
+        options,
+        normalizedValue,
+        emptyLabel,
+        includeEmptyOption,
+      ),
+    [options, normalizedValue, emptyLabel, includeEmptyOption],
+  );
+
+  const filteredOptions = useMemo(
+    () => filterEmployeeDropdownOptions(normalizedOptions, search),
+    [normalizedOptions, search],
+  );
+
+  const selectedOption = normalizedOptions.find(
+    (option) => option.value === normalizedValue,
+  );
+
+  const selectedLabel =
+    selectedOption?.label ||
+    (includeEmptyOption ? emptyLabel : normalizedValue || placeholder);
+
+  const listboxId = `${id}-listbox`;
+  const activeOptionId = filteredOptions[activeIndex]
+    ? `${id}-option-${activeIndex}`
+    : undefined;
+
+  function closeDropdown() {
+    setOpen(false);
+    setSearch("");
+    setActiveIndex(0);
+  }
+
+  function openDropdown() {
+    setOpen(true);
+    setSearch("");
+  }
+
+  function selectOption(option) {
+    onChange?.(option?.value ?? "");
+    closeDropdown();
+  }
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleOutsidePointer(event) {
+      if (!rootRef.current?.contains(event.target)) {
+        closeDropdown();
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsidePointer);
+    document.addEventListener("touchstart", handleOutsidePointer, {
+      passive: true,
+    });
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsidePointer);
+      document.removeEventListener("touchstart", handleOutsidePointer);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const selectedIndex = filteredOptions.findIndex(
+      (option) => option.value === normalizedValue,
+    );
+
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+  }, [open, search, filteredOptions, normalizedValue]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    optionRefs.current[activeIndex]?.scrollIntoView({
+      block: "nearest",
+    });
+  }, [activeIndex, open]);
+
+  function handleKeyDown(event) {
+    if (event.key === "Escape") {
+      if (open) {
+        event.preventDefault();
+        closeDropdown();
+      }
+      return;
+    }
+
+    if (event.key === "Tab") {
+      if (open) closeDropdown();
+      return;
+    }
+
+    if (!open) {
+      if (["ArrowDown", "ArrowUp", "Enter"].includes(event.key)) {
+        event.preventDefault();
+        openDropdown();
+      }
+      return;
+    }
+
+    if (filteredOptions.length === 0) return;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current >= filteredOptions.length - 1 ? 0 : current + 1,
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((current) =>
+        current <= 0 ? filteredOptions.length - 1 : current - 1,
+      );
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(filteredOptions.length - 1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      selectOption(filteredOptions[activeIndex]);
+    }
+  }
+
+  const hasMatchingValueOptions = filteredOptions.some(
+    (option) => !option.isEmpty,
+  );
+
+  return (
+    <div
+      ref={rootRef}
+      className={`relative w-full overflow-visible ${open ? "z-[90]" : "z-0"}`}
+    >
+      <div className="relative overflow-visible">
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls={listboxId}
+          aria-activedescendant={open ? activeOptionId : undefined}
+          aria-autocomplete="list"
+          aria-required={required || undefined}
+          autoComplete="off"
+          value={open ? search : selectedLabel}
+          onChange={(event) => {
+            setSearch(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => {
+            if (!open) openDropdown();
+          }}
+          onClick={() => {
+            if (!open) openDropdown();
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          className={`h-11 w-full rounded-[10px] border bg-white px-4 pr-11 text-sm font-bold text-[#344054] outline-none transition placeholder:text-[#98A2B3] hover:bg-[#FFFDFC] ${
+            open
+              ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+              : "border-[#D0D5DD] hover:border-[#FF5C28]/40"
+          }`}
+        />
+
+        <button
+          type="button"
+          tabIndex={-1}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => (open ? closeDropdown() : openDropdown())}
+          className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-[#667085] transition hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+          aria-label={open ? "Close options" : "Open options"}
+        >
+          <ChevronDown
+            size={18}
+            className={`transition-transform duration-300 ease-out ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      <AnimatedEmployeeDropdown open={open}>
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Available options"
+          className="max-h-64 overflow-y-auto py-1 sibs-scrollbar"
+        >
+          {filteredOptions.map((option, index) => {
+            const selected = option.value === normalizedValue;
+            const active = index === activeIndex;
+
+            return (
+              <button
+                key={`${id}-${option.value || "empty"}-${index}`}
+                ref={(node) => {
+                  optionRefs.current[index] = node;
+                }}
+                id={`${id}-option-${index}`}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectOption(option)}
+                className={`flex min-h-[44px] w-full items-center px-4 text-left text-sm transition-colors duration-150 ${
+                  selected
+                    ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
+                    : active
+                      ? "bg-[#FFF7F3] font-bold text-[#FF5C28]"
+                      : "bg-white font-semibold text-[#475467] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                }`}
+              >
+                <span className="block min-w-0 flex-1 truncate">
+                  {option.label}
+                </span>
+              </button>
+            );
+          })}
+
+          {!hasMatchingValueOptions && text(search) && (
+            <div className="px-4 py-4 text-sm font-semibold text-[#98A2B3]">
+              No options found.
+            </div>
+          )}
+        </div>
+      </AnimatedEmployeeDropdown>
+    </div>
+  );
+}
+
 function FieldControl({
   label,
   value,
@@ -194,46 +503,54 @@ function FieldControl({
   placeholder = "",
   className = "",
 }) {
+  const generatedId = useId();
+  const controlId = `employee-field-${generatedId.replace(/:/g, "")}`;
+
   const common =
     "w-full rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 text-xs font-semibold text-[#101828] outline-none transition-all duration-150 placeholder:text-[#98A2B3] hover:border-[#C9D6E4] focus:border-[#042C51] focus:bg-white focus:ring-2 focus:ring-[#042C51]/10";
 
   return (
-    <label className={`block min-w-0 ${className}`}>
-      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
+    <div className={`block min-w-0 overflow-visible ${className}`}>
+      <label
+        htmlFor={controlId}
+        className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]"
+      >
         {label} {required ? "*" : ""}
-      </span>
+      </label>
 
       {type === "textarea" ? (
         <textarea
+          id={controlId}
           rows={rows}
           value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
+          required={required}
           className={`${common} min-h-[80px] resize-y px-3 py-2.5`}
         />
       ) : type === "select" ? (
-        <select
-          value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
-          className={`${common} h-10 cursor-pointer`}
-        >
-          <option value="">Choose option</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+        <EmployeeDataDropdown
+          id={controlId}
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={placeholder || "Search options..."}
+          emptyLabel="Choose option"
+          includeEmptyOption
+          required={required}
+        />
       ) : (
         <input
+          id={controlId}
           type={type}
           value={value || ""}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => onChange?.(event.target.value)}
           placeholder={placeholder}
+          required={required}
           className={`${common} h-10`}
         />
       )}
-    </label>
+    </div>
   );
 }
 
@@ -254,30 +571,32 @@ function EmptyState({ message, actionLabel, onAction }) {
   );
 }
 
-function SaveBar({ label, onCancel, onSave }) {
+function SaveBar({ label, onCancel, onSave, isSaving = false }) {
   return (
     <div className="sticky bottom-3 z-40 mt-6 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white/95 px-4 py-3 shadow-xl backdrop-blur sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
         <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
         <span className="text-[11px] font-black text-[#042C51]">
-          Modified draft: {label}
+          {isSaving ? `Saving: ${label}` : `Modified draft: ${label}`}
         </span>
       </div>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="h-8 flex-1 rounded-lg bg-slate-100 px-3 text-[11px] font-black text-[#667085] transition hover:bg-slate-200 sm:flex-none"
+          disabled={isSaving}
+          className="h-8 flex-1 rounded-lg bg-slate-100 px-3 text-[11px] font-black text-[#667085] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={onSave}
-          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-4 text-[11px] font-black text-white transition hover:bg-[#063560] sm:flex-none"
+          disabled={isSaving}
+          className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-4 text-[11px] font-black text-white transition hover:bg-[#063560] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
         >
           <Save size={13} className="text-[#FF5C28]" />
-          Save Changes
+          {isSaving ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>
@@ -306,6 +625,7 @@ export function PersonalSection({
   employee,
   selectedSubTab,
   isEditing,
+  isSaving,
   onEdit,
   onChange,
   onSave,
@@ -348,22 +668,17 @@ export function PersonalSection({
       {selectedSubTab === "basic" && (
         isEditing ? (
           <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FieldControl
-              label="First Name"
+            <ReadField
+              label="First Name (Kronos - Read Only)"
               value={employee?.firstName}
-              onChange={(value) => onChange("firstName", value)}
-              required
             />
-            <FieldControl
-              label="Middle Name"
+            <ReadField
+              label="Middle Name (Kronos - Read Only)"
               value={employee?.middleName}
-              onChange={(value) => onChange("middleName", value)}
             />
-            <FieldControl
-              label="Last Name"
+            <ReadField
+              label="Last Name (Kronos - Read Only)"
               value={employee?.lastName}
-              onChange={(value) => onChange("lastName", value)}
-              required
             />
             <FieldControl
               label="Name Extension (Jr/III)"
@@ -571,7 +886,7 @@ export function PersonalSection({
         )
       )}
 
-      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} />}
+      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} isSaving={isSaving} />}
     </div>
   );
 }
@@ -593,6 +908,7 @@ export function FamilySection({
   employee,
   selectedSubTab,
   isEditing,
+  isSaving,
   onEdit,
   onChange,
   onListChange,
@@ -770,7 +1086,7 @@ export function FamilySection({
         )
       )}
 
-      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} />}
+      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} isSaving={isSaving} />}
     </div>
   );
 }
@@ -783,17 +1099,10 @@ const RECORD_SCHEMAS = {
     listKey: "education",
     addLabel: "Add Education Record",
     empty: "No education records found.",
-    newRecord: { level: "College", school: "", degree: "", from: "", to: "", highestLevel: "", yearGraduated: "", honors: "" },
-    fields: [
-      ["level", "Level", "select", EDUCATION_LEVEL_OPTIONS],
-      ["school", "Name of School"],
-      ["degree", "Degree / Course"],
-      ["from", "From"],
-      ["to", "To"],
-      ["highestLevel", "Highest Level / Units Earned"],
-      ["yearGraduated", "Year Graduated"],
-      ["honors", "Honors Received"],
-    ],
+    newRecord: createEmptyEducationRecord(),
+    fields: getEducationRecordFields("Elementary"),
+    getFields: getEducationRecordFields,
+    normalizeRecord: normalizeEducationRecordForLevel,
   },
   eligibility: {
     title: "Eligibility Chronological Records",
@@ -890,7 +1199,16 @@ function GenericRecordEditor({ schema, records, onChange }) {
   }
 
   function updateRecord(index, field, value) {
-    onChange(records.map((record, recordIndex) => recordIndex === index ? { ...record, [field]: value } : record));
+    onChange(
+      records.map((record, recordIndex) => {
+        if (recordIndex !== index) return record;
+
+        const nextRecord = { ...record, [field]: value };
+        return schema.normalizeRecord
+          ? schema.normalizeRecord(nextRecord)
+          : nextRecord;
+      }),
+    );
   }
 
   function removeRecord(index) {
@@ -911,7 +1229,7 @@ function GenericRecordEditor({ schema, records, onChange }) {
         records.map((record, index) => (
           <Panel key={record?.id || index} title={`${schema.title.replace(" Chronological Records", "")} #${index + 1}`} accent={index % 2 ? "navy" : "orange"}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {schema.fields.map(([field, label, type = "text", options = []]) => (
+              {(schema.getFields ? schema.getFields(record?.level) : schema.fields).map(([field, label, type = "text", options = []]) => (
                 <FieldControl
                   key={field}
                   label={label}
@@ -939,6 +1257,7 @@ export function TimelineSection({
   employee,
   activeSection,
   isEditing,
+  isSaving,
   onEdit,
   onListChange,
   onSave,
@@ -957,27 +1276,36 @@ export function TimelineSection({
       ) : activeSection === "education" ? (
         <div className="relative ml-3 space-y-5 border-l-2 border-slate-200 pl-6">
           {records.length === 0 ? <EmptyState message={schema.empty} actionLabel={schema.addLabel} onAction={onEdit} /> : records.map((record, index) => {
-            const level = normalizeRecordValue(record, ["level"]);
-            const school = normalizeRecordValue(record, ["school", "schoolName"]);
-            const degree = normalizeRecordValue(record, ["degree", "degreeCourse"]);
-            const honors = normalizeRecordValue(record, ["honors", "honorsReceived"]);
+            const normalizedRecord = normalizeEducationRecordForLevel(record);
+            const level = normalizedRecord.level;
+            const displayFields = getEducationRecordFields(level).filter(
+              ([field]) => field !== "level",
+            );
+            const heading =
+              normalizedRecord.degree ||
+              normalizedRecord.school ||
+              "Education Record";
+
             return (
               <article key={record?.id || index} className="relative rounded-2xl border border-[#D6E0EA] bg-white p-5 shadow-sm">
                 <span className="absolute -left-[33px] top-6 h-4 w-4 rounded-full border-4 border-white bg-[#042C51] shadow" />
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">{level || "Education"}</span>
-                      {honors && <span className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold text-[#FF5C28]"><Award size={12} />{honors}</span>}
-                    </div>
-                    <h3 className="mt-3 text-sm font-extrabold text-[#042C51]">{degree || "Academic Program"}</h3>
-                    <p className="mt-1 text-xs font-bold text-[#52637A]">{school || "—"}</p>
-                  </div>
-                  <div className="rounded-xl bg-[#F3F6FA] px-3 py-2 text-[11px] font-extrabold text-[#344054]">{record?.from || "—"} — {record?.to || "Present"}</div>
+                <div>
+                  <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#042C51]">
+                    {level || "Education"}
+                  </span>
+                  <h3 className="mt-3 text-sm font-extrabold text-[#042C51]">
+                    {heading}
+                  </h3>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <ReadField label="Highest Level / Units Earned" value={normalizeRecordValue(record, ["highestLevel", "highestLevelUnits"])} />
-                  <ReadField label="Year Graduated" value={record?.yearGraduated} />
+                  {displayFields.map(([field, label]) => (
+                    <ReadField
+                      key={field}
+                      label={label}
+                      value={normalizedRecord?.[field]}
+                      className={field === "address" ? "sm:col-span-2" : ""}
+                    />
+                  ))}
                 </div>
               </article>
             );
@@ -1070,7 +1398,7 @@ export function TimelineSection({
         </div>
       )}
 
-      {isEditing && <SaveBar label={schema.title} onCancel={onCancel} onSave={onSave} />}
+      {isEditing && <SaveBar label={schema.title} onCancel={onCancel} onSave={onSave} isSaving={isSaving} />}
     </div>
   );
 }
@@ -1108,6 +1436,7 @@ export function SkillsSection({
   employee,
   selectedSubTab,
   isEditing,
+  isSaving,
   onEdit,
   onListChange,
   onSave,
@@ -1149,7 +1478,7 @@ export function SkillsSection({
         </Panel>
       )}
 
-      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} />}
+      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} isSaving={isSaving} />}
     </div>
   );
 }
@@ -1169,6 +1498,7 @@ export function ApplicationSection({
   employee,
   selectedSubTab,
   isEditing,
+  isSaving,
   onEdit,
   onChange,
   onListChange,
@@ -1263,7 +1593,7 @@ export function ApplicationSection({
         </div>
       )}
 
-      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} />}
+      {isEditing && <SaveBar label={title} onCancel={onCancel} onSave={onSave} isSaving={isSaving} />}
     </div>
   );
 }
@@ -1271,67 +1601,944 @@ export function ApplicationSection({
 function fileIcon(name) {
   const lower = text(name).toLowerCase();
   if (lower.endsWith(".pdf")) return "PDF";
-  if (lower.endsWith(".xlsx") || lower.endsWith(".csv")) return "XLS";
+  if (
+    lower.endsWith(".xlsx") ||
+    lower.endsWith(".xls") ||
+    lower.endsWith(".csv")
+  ) {
+    return "XLS";
+  }
   if (lower.endsWith(".doc") || lower.endsWith(".docx")) return "DOC";
+  if (
+    lower.endsWith(".jpg") ||
+    lower.endsWith(".jpeg") ||
+    lower.endsWith(".png")
+  ) {
+    return "IMG";
+  }
   return "FILE";
 }
 
+function getEmployeeDocumentSibsId(employee) {
+  return text(
+    employee?.sibsId ||
+      employee?.sibs_id ||
+      employee?.employeeCode ||
+      employee?.gy_emp_code ||
+      employee?.username,
+  );
+}
+
+function getEmployeeDocumentSource(document) {
+  return text(document?.source) || "Employee Profile";
+}
+
+function getEmployeeDocumentKey(document) {
+  return [
+    document?.sourceKey || "employee-profile",
+    document?.sourceRecordId || document?.id || "document",
+    document?.externalKey || "profile",
+  ]
+    .map(text)
+    .join(":");
+}
+
+function canDeleteEmployeeDocument(document) {
+  const sourceKey = text(document?.sourceKey || "employee-profile");
+  return (
+    sourceKey === "employee-profile" &&
+    document?.readOnly !== true &&
+    document?.canDelete !== false
+  );
+}
+
+function getEmployeeDocumentGroup(document) {
+  const explicitGroup = text(document?.documentGroup || document?.document_group)
+    .toLowerCase();
+  if (explicitGroup === "pre-employment") return "pre-employment";
+  if (explicitGroup === "uploaded") return "uploaded";
+
+  const sourceKey = text(document?.sourceKey || document?.source_key).toLowerCase();
+  return sourceKey === "candidate-pipeline" ? "pre-employment" : "uploaded";
+}
+
+function getEmployeeDocumentSourceClass(document) {
+  const source = getEmployeeDocumentSource(document);
+
+  if (source === "Talent Pool") {
+    return "border-orange-100 bg-[#FFF3ED] text-[#C2410C]";
+  }
+
+  if (source === "Candidate Pipeline") {
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  }
+
+  return "border-blue-100 bg-[#E9F0FC] text-[#042C51]";
+}
+
 export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
-  const documents = Array.isArray(employee?.documents) ? employee.documents : [];
+  const fileInputRef = useRef(null);
+  const previewUrlRef = useRef("");
+
+  const sibsId = getEmployeeDocumentSibsId(employee);
+  const [documents, setDocuments] = useState(
+    Array.isArray(employee?.documents) ? employee.documents : [],
+  );
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [layout, setLayout] = useState("table");
+  const [activeDocumentGroup, setActiveDocumentGroup] = useState("uploaded");
+  const [dragActive, setDragActive] = useState(false);
+
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [newName, setNewName] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
   const [newCategory, setNewCategory] = useState("Certificate");
+  const [uploading, setUploading] = useState(false);
+
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  function syncDocuments(nextDocuments) {
+    const normalized = Array.isArray(nextDocuments) ? nextDocuments : [];
+    setDocuments(normalized);
+    onDocumentsChange?.(normalized);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDocuments() {
+      if (!sibsId) {
+        syncDocuments([]);
+        return;
+      }
+
+      setLoadingDocuments(true);
+
+      try {
+        const result = await getEmployeeProfileDocuments(sibsId);
+
+        if (cancelled) return;
+
+        if (!result?.success) {
+          onFeedback?.(
+            result?.message || "Failed to load employee documents.",
+            "error",
+          );
+          return;
+        }
+
+        syncDocuments(result.data || []);
+
+        if (result?.folderStatus?.warning) {
+          onFeedback?.(result.folderStatus.warning, "warning");
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load employee documents:", error);
+        onFeedback?.("Failed to load employee documents.", "error");
+      } finally {
+        if (!cancelled) setLoadingDocuments(false);
+      }
+    }
+
+    loadDocuments();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sibsId]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = "";
+      }
+    };
+  }, []);
+
+  const categoryOptions = useMemo(() => {
+    const values = documents
+      .map((document) => text(document?.category))
+      .filter(Boolean);
+
+    return [
+      "All",
+      ...new Set([...PROFILE_DOCUMENT_TYPES, ...values]),
+    ];
+  }, [documents]);
 
   const filtered = documents.filter((document) => {
     const query = search.toLowerCase();
-    const searchMatch = text(document?.name).toLowerCase().includes(query) || text(document?.uploadedBy).toLowerCase().includes(query);
+    const searchMatch =
+      text(document?.name).toLowerCase().includes(query) ||
+      text(document?.uploadedBy).toLowerCase().includes(query) ||
+      text(document?.category).toLowerCase().includes(query) ||
+      getEmployeeDocumentSource(document).toLowerCase().includes(query);
     const categoryMatch = category === "All" || document?.category === category;
     return searchMatch && categoryMatch;
   });
 
-  function addDocument(event) {
-    event.preventDefault();
-    if (!text(newName)) return;
-    const next = { id: `doc_${Date.now()}`, name: newName, category: newCategory, fileSize: "1.4 MB", uploadedAt: getCurrentDateKey(), uploadedBy: "Current HR User" };
-    onDocumentsChange([next, ...documents]);
-    setUploadOpen(false);
-    setNewName("");
-    onFeedback?.("Document added locally.", "success");
+  const uploadedDocuments = filtered.filter(
+    (document) => getEmployeeDocumentGroup(document) === "uploaded",
+  );
+  const preEmploymentDocuments = filtered.filter(
+    (document) => getEmployeeDocumentGroup(document) === "pre-employment",
+  );
+  const visibleDocuments =
+    activeDocumentGroup === "pre-employment"
+      ? preEmploymentDocuments
+      : uploadedDocuments;
+
+  function openFilePicker() {
+    if (uploading) return;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
+    }
   }
 
-  function removeDocument(document) {
-    if (!window.confirm(`Delete ${document.name}?`)) return;
-    onDocumentsChange(documents.filter((item) => item?.id !== document?.id));
-    onFeedback?.("Document deleted locally.", "success");
+  function prepareSelectedFile(file) {
+    const validation = validateProfileDocumentFile(file);
+
+    if (!validation.valid) {
+      onFeedback?.(validation.message, "error");
+      return;
+    }
+
+    setSelectedFile(file);
+    setNewCategory("Certificate");
+    setUploadOpen(true);
   }
+
+  function handleFileInputChange(event) {
+    const file = event.target.files?.[0];
+    if (file) prepareSelectedFile(file);
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(true);
+  }
+
+  function handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    setDragActive(false);
+
+    const file = event.dataTransfer?.files?.[0];
+    if (file) prepareSelectedFile(file);
+  }
+
+  function closeUploadModal() {
+    if (uploading) return;
+    setUploadOpen(false);
+    setSelectedFile(null);
+  }
+
+  async function uploadDocument(event) {
+    event.preventDefault();
+
+    if (!sibsId || !selectedFile || uploading) return;
+
+    const validation = validateProfileDocumentFile(selectedFile);
+    if (!validation.valid) {
+      onFeedback?.(validation.message, "error");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const result = await uploadEmployeeProfileDocument(
+        sibsId,
+        selectedFile,
+        newCategory,
+      );
+
+      if (!result?.success || !result?.data) {
+        onFeedback?.(
+          result?.message || "Failed to upload employee document.",
+          "error",
+        );
+        return;
+      }
+
+      syncDocuments([result.data, ...documents]);
+      setUploadOpen(false);
+      setSelectedFile(null);
+      onFeedback?.(
+        result.message || "Employee document uploaded successfully.",
+        "success",
+      );
+    } catch (error) {
+      console.error("Failed to upload employee document:", error);
+      onFeedback?.("Failed to upload employee document.", "error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function closePreview() {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = "";
+    }
+    setPreview(null);
+    setPreviewLoading(false);
+  }
+
+  async function openDocumentPreview(document) {
+    if (!sibsId || !document?.id || previewLoading) return;
+
+    closePreview();
+    setPreview({ document, url: "" });
+    setPreviewLoading(true);
+
+    try {
+      const result = await fetchEmployeeDocumentFile(
+        sibsId,
+        document,
+      );
+
+      if (!result?.success || !result?.blob) {
+        closePreview();
+        onFeedback?.(
+          result?.message || "Failed to open employee document.",
+          "error",
+        );
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(result.blob);
+      previewUrlRef.current = objectUrl;
+      setPreview({
+        document: {
+          ...document,
+          mimeType: document?.mimeType || result.contentType,
+        },
+        url: objectUrl,
+      });
+    } catch (error) {
+      closePreview();
+      console.error("Failed to preview employee document:", error);
+      onFeedback?.("Failed to open employee document.", "error");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function downloadDocument(document) {
+    if (!sibsId || !document?.id) return;
+
+    try {
+      const result = await fetchEmployeeDocumentFile(
+        sibsId,
+        document,
+        { download: true },
+      );
+
+      if (!result?.success || !result?.blob) {
+        onFeedback?.(
+          result?.message || "Failed to download employee document.",
+          "error",
+        );
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(result.blob);
+      const anchor = window.document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = document?.name || "employee-document";
+      window.document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    } catch (error) {
+      console.error("Failed to download employee document:", error);
+      onFeedback?.("Failed to download employee document.", "error");
+    }
+  }
+
+  async function permanentlyDeleteDocument() {
+    if (
+      !sibsId ||
+      !deleteTarget?.id ||
+      deleting ||
+      !canDeleteEmployeeDocument(deleteTarget)
+    ) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      const result = await deleteEmployeeProfileDocument(
+        sibsId,
+        deleteTarget.id,
+      );
+
+      if (!result?.success) {
+        onFeedback?.(
+          result?.message || "Failed to permanently delete the document.",
+          "error",
+        );
+        return;
+      }
+
+      syncDocuments(
+        documents.filter((document) => document?.id !== deleteTarget.id),
+      );
+      setDeleteTarget(null);
+      onFeedback?.(
+        result.message || "Employee document permanently deleted.",
+        "success",
+      );
+    } catch (error) {
+      console.error("Failed to delete employee document:", error);
+      onFeedback?.("Failed to permanently delete the document.", "error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  const previewDocument = preview?.document;
+  const previewIsImage = text(previewDocument?.mimeType).startsWith("image/");
+  const previewSupported = isInlinePreviewSupported(previewDocument);
 
   return (
     <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={PROFILE_DOCUMENT_ACCEPT}
+        onChange={handleFileInputChange}
+        className="hidden"
+      />
+
       <div className="mb-5 flex flex-col gap-3 border-b border-[#E6ECF2] pb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E9F0FC] text-[#042C51]"><FolderLock size={18} /></span><h2 className="text-base font-extrabold text-[#042C51]">Document Vault Manager</h2></div><p className="mt-1 text-xs font-medium text-[#667085]">Store, filter, preview, and audit employee documents.</p></div>
-        <button type="button" onClick={() => setUploadOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"><Upload size={15} className="text-[#FF5C28]" />Upload Document</button>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#E9F0FC] text-[#042C51]">
+              <FolderLock size={18} />
+            </span>
+            <h2 className="text-base font-extrabold text-[#042C51]">
+              Document Vault Manager
+            </h2>
+          </div>
+          <p className="mt-1 text-xs font-medium text-[#667085]">
+            Files are stored in the secured HRIS profile-documents folder.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={openFilePicker}
+          disabled={uploading}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <Upload size={15} className="text-[#FF5C28]" />
+          Upload Document
+        </button>
       </div>
 
-      <button type="button" onClick={() => setUploadOpen(true)} className="flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#C8D3DF] bg-[#F8FAFC] px-5 py-8 text-center hover:border-[#042C51]/40 hover:bg-white"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E9F0FC] text-[#042C51]"><Upload size={22} /></span><span className="mt-3 text-sm font-extrabold text-[#042C51]">Drag and drop files here or click to upload</span><span className="mt-1 text-xs font-medium text-[#667085]">PDF, XLSX, DOCX, JPG up to 10 MB</span></button>
+      <button
+        type="button"
+        onClick={openFilePicker}
+        onDragEnter={handleDragOver}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition ${
+          dragActive
+            ? "border-[#FF5C28] bg-[#FFF7F3]"
+            : "border-[#C8D3DF] bg-[#F8FAFC] hover:border-[#042C51]/40 hover:bg-white"
+        }`}
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E9F0FC] text-[#042C51]">
+          <Upload size={22} />
+        </span>
+        <span className="mt-3 text-sm font-extrabold text-[#042C51]">
+          Drag and drop files here or click to upload
+        </span>
+        <span className="mt-1 text-xs font-medium text-[#667085]">
+          PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, or PNG — maximum 10 MB
+        </span>
+      </button>
+
+      <div className="my-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => setActiveDocumentGroup("uploaded")}
+          className={`rounded-2xl border p-4 text-left transition ${
+            activeDocumentGroup === "uploaded"
+              ? "border-[#042C51] bg-[#E9F0FC] shadow-sm"
+              : "border-[#D6E0EA] bg-white hover:border-[#8EA3BF]"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-extrabold text-[#042C51]">Uploaded Files</p>
+              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                Employee Profile uploads and Talent Pool audio or attachments.
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
+              {documents.filter((document) => getEmployeeDocumentGroup(document) === "uploaded").length}
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveDocumentGroup("pre-employment")}
+          className={`rounded-2xl border p-4 text-left transition ${
+            activeDocumentGroup === "pre-employment"
+              ? "border-emerald-600 bg-emerald-50 shadow-sm"
+              : "border-[#D6E0EA] bg-white hover:border-emerald-300"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-extrabold text-[#042C51]">Pre-Employment Files</p>
+              <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                Candidate Pipeline requirements grouped the same way as Candidate Profile.
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-700">
+              {documents.filter((document) => getEmployeeDocumentGroup(document) === "pre-employment").length}
+            </span>
+          </div>
+        </button>
+      </div>
 
       <div className="my-5 flex flex-col gap-3 rounded-2xl border border-[#D6E0EA] bg-white p-4 md:flex-row md:items-center md:justify-between">
-        <div className="relative w-full md:max-w-sm"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search documents..." className="h-10 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold outline-none focus:bg-white" /></div>
-        <div className="flex flex-wrap items-center gap-2"><Filter size={14} className="text-[#667085]" /><select value={category} onChange={(event) => setCategory(event.target.value)} className="h-9 rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] px-3 text-xs font-bold text-[#344054] outline-none"><option>All</option><option>Resume</option><option>Government ID</option><option>Contract</option><option>Certificate</option><option>Training Record</option><option>Other</option></select><span className="mx-1 h-6 w-px bg-[#D6E0EA]" /><button type="button" onClick={() => setLayout("table")} className={`rounded-lg p-2 ${layout === "table" ? "bg-[#E9F0FC] text-[#042C51]" : "text-[#98A2B3]"}`}><List size={16} /></button><button type="button" onClick={() => setLayout("grid")} className={`rounded-lg p-2 ${layout === "grid" ? "bg-[#E9F0FC] text-[#042C51]" : "text-[#98A2B3]"}`}><Grid size={16} /></button></div>
+        <div className="relative w-full md:max-w-sm">
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]"
+          />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search documents..."
+            className="h-10 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold outline-none focus:bg-white"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter size={14} className="text-[#667085]" />
+          <div className="w-full min-w-[180px] sm:w-[210px]">
+            <EmployeeDataDropdown
+              id="employee-document-category-filter"
+              value={category}
+              onChange={setCategory}
+              options={categoryOptions}
+              placeholder="Search categories..."
+              includeEmptyOption={false}
+              compact
+            />
+          </div>
+          <span className="mx-1 h-6 w-px bg-[#D6E0EA]" />
+          <button
+            type="button"
+            onClick={() => setLayout("table")}
+            className={`rounded-lg p-2 ${
+              layout === "table"
+                ? "bg-[#E9F0FC] text-[#042C51]"
+                : "text-[#98A2B3]"
+            }`}
+          >
+            <List size={16} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setLayout("grid")}
+            className={`rounded-lg p-2 ${
+              layout === "grid"
+                ? "bg-[#E9F0FC] text-[#042C51]"
+                : "text-[#98A2B3]"
+            }`}
+          >
+            <Grid size={16} />
+          </button>
+        </div>
       </div>
 
-      {filtered.length === 0 ? <EmptyState message="No matching documents found." /> : layout === "table" ? (
-        <div className="overflow-hidden rounded-2xl border border-[#D6E0EA]"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs"><thead><tr className="border-b border-[#D6E0EA] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]"><th className="px-4 py-3">Document</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Size</th><th className="px-4 py-3">Uploaded By</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-[#E6ECF2]">{filtered.map((document, index) => <tr key={document?.id || index} className="hover:bg-[#F8FAFC]"><td className="px-4 py-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">{fileIcon(document?.name)}</span><div><p className="max-w-xs truncate font-extrabold text-[#344054]">{document?.name}</p><p className="mt-0.5 text-[9px] text-[#667085]">Uploaded {formatDate(document?.uploadedAt)}</p></div></div></td><td className="px-4 py-4"><span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">{document?.category || "Other"}</span></td><td className="px-4 py-4 font-mono text-[#667085]">{document?.fileSize || "—"}</td><td className="px-4 py-4 font-semibold text-[#52637A]">{document?.uploadedBy || "—"}</td><td className="px-4 py-4"><div className="flex justify-end gap-1"><button type="button" onClick={() => setPreview(document)} className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"><Eye size={15} /></button><button type="button" onClick={() => onFeedback?.(`Downloading ${document?.name}...`, "success")} className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"><Download size={15} /></button><button type="button" onClick={() => removeDocument(document)} className="rounded-lg p-2 text-red-500 hover:bg-red-50"><Trash2 size={15} /></button></div></td></tr>)}</tbody></table></div></div>
+      {loadingDocuments ? (
+        <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">
+          Loading employee documents...
+        </div>
+      ) : visibleDocuments.length === 0 ? (
+        <EmptyState
+          message={
+            activeDocumentGroup === "pre-employment"
+              ? "No matching Candidate Pipeline pre-employment files found."
+              : "No matching Employee Profile or Talent Pool files found."
+          }
+        />
+      ) : layout === "table" ? (
+        <div className="overflow-hidden rounded-2xl border border-[#D6E0EA]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-[#D6E0EA] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                  <th className="px-4 py-3">Document</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Source</th>
+                  <th className="px-4 py-3">Size</th>
+                  <th className="px-4 py-3">Uploaded By</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#E6ECF2]">
+                {visibleDocuments.map((document) => (
+                  <tr key={getEmployeeDocumentKey(document)} className="hover:bg-[#F8FAFC]">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
+                          {fileIcon(document?.name)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="max-w-xs truncate font-extrabold text-[#344054]">
+                            {document?.name}
+                          </p>
+                          <p className="mt-0.5 text-[9px] text-[#667085]">
+                            Uploaded {formatDate(document?.uploadedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+                        {document?.category || "Other"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
+                          document,
+                        )}`}
+                      >
+                        {document?.source || "Employee Profile"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 font-mono text-[#667085]">
+                      {document?.fileSize || "—"}
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-[#52637A]">
+                      {document?.uploadedBy || "—"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openDocumentPreview(document)}
+                          className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
+                          title="Preview"
+                        >
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => downloadDocument(document)}
+                          className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
+                          title="Download"
+                        >
+                          <Download size={15} />
+                        </button>
+                        {canDeleteEmployeeDocument(document) ? (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(document)}
+                            className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                            title="Permanently delete"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((document, index) => <article key={document?.id || index} className="rounded-2xl border border-[#D6E0EA] bg-white p-4"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">{fileIcon(document?.name)}</span><div className="min-w-0 flex-1"><h3 className="truncate text-xs font-extrabold text-[#344054]">{document?.name}</h3><p className="mt-1 text-[9px] text-[#667085]">Uploaded {formatDate(document?.uploadedAt)}</p><span className="mt-2 inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">{document?.category || "Other"}</span></div></div><div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3"><span className="font-mono text-[10px] text-[#667085]">{document?.fileSize || "—"}</span><div className="flex gap-1"><button type="button" onClick={() => setPreview(document)} className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"><Eye size={14} /></button><button type="button" onClick={() => removeDocument(document)} className="rounded-lg p-1.5 text-red-500 hover:bg-red-50"><Trash2 size={14} /></button></div></div></article>)}</div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleDocuments.map((document) => (
+            <article
+              key={getEmployeeDocumentKey(document)}
+              className="rounded-2xl border border-[#D6E0EA] bg-white p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
+                  {fileIcon(document?.name)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-xs font-extrabold text-[#344054]">
+                    {document?.name}
+                  </h3>
+                  <p className="mt-1 text-[9px] text-[#667085]">
+                    Uploaded {formatDate(document?.uploadedAt)}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+                      {document?.category || "Other"}
+                    </span>
+                    <span
+                      className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
+                        document,
+                      )}`}
+                    >
+                      {document?.source || "Employee Profile"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+                <span className="font-mono text-[10px] text-[#667085]">
+                  {document?.fileSize || "—"}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openDocumentPreview(document)}
+                    className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
+                    title="Preview"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadDocument(document)}
+                    className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
+                    title="Download"
+                  >
+                    <Download size={14} />
+                  </button>
+                  {canDeleteEmployeeDocument(document) ? (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(document)}
+                      className="rounded-lg p-1.5 text-red-500 hover:bg-red-50"
+                      title="Permanently delete"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
 
-      {uploadOpen && <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4" onClick={() => setUploadOpen(false)}><div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex items-center justify-between border-b border-[#E6ECF2] pb-3"><h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">Configure Upload</h3><button type="button" onClick={() => setUploadOpen(false)} className="rounded-lg p-1 text-[#98A2B3] hover:bg-[#F8FAFC]"><X size={17} /></button></div><form onSubmit={addDocument} className="mt-4 space-y-4"><FieldControl label="File Name" value={newName} onChange={setNewName} required placeholder="employee-document.pdf" /><FieldControl label="Category" type="select" options={["Resume", "Government ID", "Contract", "Certificate", "Training Record", "Other"]} value={newCategory} onChange={setNewCategory} /><div className="flex justify-end gap-2 pt-2"><button type="button" onClick={() => setUploadOpen(false)} className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085]">Cancel</button><button type="submit" className="h-9 rounded-xl bg-[#042C51] px-5 text-xs font-extrabold text-white">Add Document</button></div></form></div></div>}
+      {uploadOpen && selectedFile && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
+          onClick={closeUploadModal}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-3">
+              <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+                Configure Upload
+              </h3>
+              <button
+                type="button"
+                onClick={closeUploadModal}
+                disabled={uploading}
+                className="rounded-lg p-1 text-[#98A2B3] hover:bg-[#F8FAFC] disabled:opacity-50"
+              >
+                <X size={17} />
+              </button>
+            </div>
 
-      {preview && <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 p-4" onClick={() => setPreview(null)}><div className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex items-center justify-between bg-[#042C51] px-5 py-4 text-white"><div className="flex items-center gap-2"><FolderLock size={17} className="text-[#FF5C28]" /><h3 className="text-xs font-extrabold uppercase tracking-wide">Secure Document Preview</h3></div><button type="button" onClick={() => setPreview(null)} className="rounded-lg p-1 hover:bg-white/10"><X size={17} /></button></div><div className="space-y-4 p-6"><div className="flex items-start gap-4 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-xs font-extrabold text-red-600">{fileIcon(preview?.name)}</span><div className="min-w-0"><h4 className="truncate text-sm font-extrabold text-[#042C51]">{preview?.name}</h4><span className="mt-2 inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">{preview?.category}</span></div></div><div className="divide-y divide-[#E6ECF2] text-xs">{[["File Size", preview?.fileSize], ["Uploaded Date", formatDate(preview?.uploadedAt)], ["Uploaded By", preview?.uploadedBy]].map(([label, value]) => <div key={label} className="flex justify-between gap-4 py-3"><span className="font-semibold text-[#667085]">{label}</span><span className="text-right font-extrabold text-[#344054]">{value || "—"}</span></div>)}</div><div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] font-semibold leading-5 text-amber-800"><ShieldCheck size={16} className="mt-0.5 shrink-0" />Downloads should be recorded by the backend audit trail when connected.</div></div></div></div>}
+            <form onSubmit={uploadDocument} className="mt-4 space-y-4">
+              <div className="rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-4">
+                <p className="break-all text-xs font-extrabold text-[#042C51]">
+                  {selectedFile.name}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                  {formatProfileDocumentSize(selectedFile.size)} · The server will
+                  rename this file using SIBS ID, document type, and upload time.
+                </p>
+              </div>
+
+              <FieldControl
+                label="Document Type"
+                type="select"
+                options={PROFILE_DOCUMENT_TYPES}
+                value={newCategory}
+                onChange={setNewCategory}
+                required
+              />
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeUploadModal}
+                  disabled={uploading}
+                  className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="h-9 rounded-xl bg-[#042C51] px-5 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {uploading ? "Uploading..." : "Upload Document"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {preview && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/70 p-4"
+          onClick={closePreview}
+        >
+          <div
+            className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between bg-[#042C51] px-5 py-4 text-white">
+              <div className="flex min-w-0 items-center gap-2">
+                <FolderLock size={17} className="shrink-0 text-[#FF5C28]" />
+                <h3 className="truncate text-xs font-extrabold uppercase tracking-wide">
+                  {previewDocument?.name || "Secure Document Preview"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={closePreview}
+                className="rounded-lg p-1 hover:bg-white/10"
+              >
+                <X size={17} />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-auto p-5">
+              {previewLoading ? (
+                <div className="flex min-h-[420px] items-center justify-center text-xs font-bold text-[#667085]">
+                  Loading secure preview...
+                </div>
+              ) : previewSupported && preview?.url ? (
+                previewIsImage ? (
+                  <div className="flex min-h-[420px] items-center justify-center rounded-xl bg-[#F8FAFC] p-4">
+                    <img
+                      src={preview.url}
+                      alt={previewDocument?.name || "Employee document"}
+                      className="max-h-[70vh] max-w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={preview.url}
+                    title={previewDocument?.name || "Employee document"}
+                    className="h-[68vh] w-full rounded-xl border border-[#D6E0EA]"
+                  />
+                )
+              ) : (
+                <div className="rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] p-8 text-center">
+                  <FileText size={34} className="mx-auto text-[#042C51]" />
+                  <p className="mt-3 text-sm font-extrabold text-[#042C51]">
+                    This document type cannot be previewed in the browser.
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#667085]">
+                    Download the document to open it using the appropriate desktop
+                    application.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[#E6ECF2] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-extrabold text-[#344054]">
+                    {previewDocument?.name}
+                  </p>
+                  <p className="mt-1 text-[10px] font-semibold text-[#667085]">
+                    {previewDocument?.category} · {previewDocument?.source || "Employee Profile"} · {previewDocument?.fileSize}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => downloadDocument(previewDocument)}
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white"
+                >
+                  <Download size={14} className="text-[#FF5C28]" />
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
+          onClick={() => !deleting && setDeleteTarget(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <Trash2 size={18} />
+              </span>
+              <div>
+                <h3 className="text-sm font-extrabold text-[#042C51]">
+                  Permanently delete document?
+                </h3>
+                <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  This permanently deletes both the HRIS database record and the
+                  physical file for <strong>{deleteTarget.name}</strong>. This action
+                  cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={permanentlyDeleteDocument}
+                disabled={deleting}
+                className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

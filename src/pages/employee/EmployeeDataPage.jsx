@@ -7,7 +7,18 @@ import StatusModal from "../../components/modals/StatusModal";
 import ResignationModal from "../../components/modals/resignation/ResignationModal";
 import ProfileDropdown from "../../components/layout/profile/ProfileDropdown";
 import { useUser } from "../../services/context/UserContext";
-import { getEmployeeById } from "../../lib/axios/getEmployee";
+import {
+  getEmployeeById,
+  getEmployeeProfileSections,
+  updateEmployeeProfile,
+  updateEmployeeProfileSection,
+} from "../../lib/axios/getEmployee";
+import { buildChangedProfilePayload } from "./employeeProfilePayload";
+import {
+  buildEmployeeProfileSectionPayload,
+  getStructuredProfileSection,
+  mergeEmployeeProfileSections,
+} from "./employeeProfileSectionsPayload";
 
 import {
   ContextPanel,
@@ -292,11 +303,20 @@ function normalizeEmployeeData(employee) {
       employee?.gy_emp_hiredate,
     ),
 
-    status: firstValue(
-      employee?.status,
+    employmentStatus: firstValue(
       employee?.employmentStatus,
+      employee?.employment_status,
+      employee?.gy_emp_status,
+      employee?.status,
+      "Active",
+    ),
+
+    status: firstValue(
       employee?.candidateStatus,
       employee?.candidate_status,
+      employee?.applicationStatus,
+      employee?.application_status,
+      employee?.status,
       "Active",
     ),
 
@@ -465,6 +485,7 @@ function buildEditableEmployee(employee) {
   return normalizeEmployeeData(employee);
 }
 
+
 export default function EmployeeDataPage() {
   const navigate = useNavigate();
   const { user: currentUser } = useUser();
@@ -474,6 +495,7 @@ export default function EmployeeDataPage() {
   const [activeTab, setActiveTab] = useState("personal.basic");
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [openProfilePictureModal, setOpenProfilePictureModal] = useState(false);
   const [openProfileDropdown, setOpenProfileDropdown] = useState(false);
   const [openAddResignation, setOpenAddResignation] = useState(false);
@@ -506,14 +528,33 @@ export default function EmployeeDataPage() {
           return;
         }
 
-        const result = await getEmployeeById(sibsId);
+        const [employeeResult, sectionsResult] = await Promise.all([
+          getEmployeeById(sibsId),
+          getEmployeeProfileSections(sibsId),
+        ]);
 
-        if (!result?.success || !result?.data) {
+        if (!employeeResult?.success || !employeeResult?.data) {
           navigate("/employee", { replace: true });
           return;
         }
 
-        setEmployee(buildEditableEmployee(result.data));
+        const baseEmployee = buildEditableEmployee(employeeResult.data);
+        const mergedEmployee = sectionsResult?.success && sectionsResult?.data
+          ? mergeEmployeeProfileSections(baseEmployee, sectionsResult.data)
+          : baseEmployee;
+
+        setEmployee(buildEditableEmployee(mergedEmployee));
+
+        if (!sectionsResult?.success) {
+          setStatusModal({
+            open: true,
+            type: "error",
+            title: "Structured Profile Not Loaded",
+            message:
+              sectionsResult?.message ||
+              "The employee record loaded, but the structured HRIS sections could not be loaded.",
+          });
+        }
       } catch (error) {
         console.error("Failed to fetch profile:", error);
         navigate("/employee", { replace: true });
@@ -540,43 +581,196 @@ export default function EmployeeDataPage() {
   }
 
   function startEditing() {
+    if (!employee || isSaving) return;
+
     setOpenProfileDropdown(false);
     setDraftEmployee(buildEditableEmployee(employee));
     setIsEditing(true);
   }
 
   function cancelEditing() {
+    if (isSaving) return;
+
     setDraftEmployee(null);
     setIsEditing(false);
   }
 
   function saveLocalChanges() {
-    if (!draftEmployee) return;
+    if (!draftEmployee || isSaving) return;
 
     setEmployee(buildEditableEmployee(draftEmployee));
     setDraftEmployee(null);
     setIsEditing(false);
 
     showFeedback(
-      "Profile changes were updated locally. Connect the employee update endpoint to persist them to the database.",
+      "This section is not included in the structured profile backend.",
       "success",
-      "Profile Updated",
+      "Section Updated Locally",
     );
   }
 
-  function handleTabChange(nextTab) {
-    if (nextTab === activeTab) return;
+  async function saveProfileChanges() {
+    if (!draftEmployee || !employee || isSaving) return;
 
-    if (
-      isEditing &&
-      !window.confirm(
-        "You have unsaved changes. Discard them and open another profile section?",
-      )
-    ) {
+    const sibsId = getProfileSibsId(employee);
+
+    if (!sibsId) {
+      showFeedback(
+        "The employee SIBS ID is missing. The profile could not be saved.",
+        "error",
+        "Profile Update Failed",
+      );
       return;
     }
 
-    if (isEditing) cancelEditing();
+    const payload = buildChangedProfilePayload(draftEmployee, employee);
+
+    if (Object.keys(payload).length === 0) {
+      setDraftEmployee(null);
+      setIsEditing(false);
+      showFeedback(
+        "No changes were detected in the employee profile.",
+        "success",
+        "No Changes",
+      );
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const result = await updateEmployeeProfile(sibsId, payload);
+
+      if (!result?.success || !result?.data) {
+        showFeedback(
+          result?.message || "Failed to update the employee profile.",
+          "error",
+          "Profile Update Failed",
+        );
+        return;
+      }
+
+      const updatedEmployee = buildEditableEmployee(
+        mergeEmployeeProfileSections(result.data, employee),
+      );
+
+      setEmployee(updatedEmployee);
+      setDraftEmployee(null);
+      setIsEditing(false);
+
+      showFeedback(
+        result.message || "Employee profile updated successfully.",
+        "success",
+        "Profile Updated",
+      );
+    } catch (error) {
+      console.error("Failed to update employee profile:", error);
+      showFeedback(
+        error?.message || "Failed to update the employee profile.",
+        "error",
+        "Profile Update Failed",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function saveStructuredProfileChanges(section) {
+    if (!draftEmployee || !employee || isSaving) return;
+
+    const sibsId = getProfileSibsId(employee);
+
+    if (!sibsId) {
+      showFeedback(
+        "The employee SIBS ID is missing. The section could not be saved.",
+        "error",
+        "Section Update Failed",
+      );
+      return;
+    }
+
+    const payload = buildEmployeeProfileSectionPayload(section, draftEmployee);
+
+    if (!payload) {
+      showFeedback(
+        "The selected profile section is not supported by this endpoint.",
+        "error",
+        "Section Update Failed",
+      );
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const result = await updateEmployeeProfileSection(
+        sibsId,
+        section,
+        payload,
+      );
+
+      if (!result?.success || !result?.data) {
+        showFeedback(
+          result?.message || "Failed to update the employee section.",
+          "error",
+          "Section Update Failed",
+        );
+        return;
+      }
+
+      const updatedEmployee = buildEditableEmployee(
+        mergeEmployeeProfileSections(employee, result.data),
+      );
+
+      setEmployee(updatedEmployee);
+      setDraftEmployee(null);
+      setIsEditing(false);
+
+      showFeedback(
+        result.message || "Employee section saved successfully.",
+        "success",
+        "Section Updated",
+      );
+    } catch (error) {
+      console.error("Failed to update employee profile section:", error);
+      showFeedback(
+        error?.message || "Failed to update the employee section.",
+        "error",
+        "Section Update Failed",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function saveChanges() {
+    if (activePrimary === "personal") {
+      return saveProfileChanges();
+    }
+
+    const structuredSection = getStructuredProfileSection(activePrimary);
+
+    if (structuredSection) {
+      return saveStructuredProfileChanges(structuredSection);
+    }
+
+    return saveLocalChanges();
+  }
+
+  function handleTabChange(nextTab) {
+    if (isSaving || nextTab === activeTab) return;
+
+    if (isEditing) {
+      setStatusModal({
+        open: true,
+        type: "error",
+        title: "Unsaved Changes",
+        message:
+          "Save or cancel your changes before opening another profile section.",
+      });
+      return;
+    }
+
     setActiveTab(nextTab);
   }
 
@@ -617,8 +811,9 @@ export default function EmployeeDataPage() {
     const commonEditProps = {
       employee: displayEmployee,
       isEditing,
+      isSaving,
       onEdit: canEditDetails ? startEditing : undefined,
-      onSave: saveLocalChanges,
+      onSave: saveChanges,
       onCancel: cancelEditing,
     };
 
@@ -756,9 +951,10 @@ export default function EmployeeDataPage() {
                 apiUrl={API_URL}
                 canEdit={canEditDetails}
                 isEditing={isEditing}
+                isSaving={isSaving}
                 onEdit={startEditing}
                 onCancel={cancelEditing}
-                onSave={saveLocalChanges}
+                onSave={saveChanges}
                 onRequestChange={openResignationModal}
                 onToggleMore={(event) => {
                   event?.stopPropagation?.();
