@@ -117,6 +117,8 @@ function DropdownPortal({
   children,
   onClose,
   maxHeight = 256,
+  minWidth = 0,
+  placement = "bottom",
 }) {
   const dropdownRef = useRef(null);
   const [style, setStyle] = useState({
@@ -130,11 +132,24 @@ function DropdownPortal({
 
     function updatePosition() {
       const rect = anchorRef.current.getBoundingClientRect();
+      const dropdownWidth = Math.max(rect.width, minWidth);
+      const viewportPadding = 12;
+      const maxLeft = window.innerWidth - dropdownWidth - viewportPadding;
+      const estimatedHeight = Math.min(maxHeight, window.innerHeight - viewportPadding * 2);
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const spaceAbove = rect.top - viewportPadding;
+      const shouldOpenAbove =
+        placement === "top" ||
+        (placement === "auto" &&
+          spaceBelow < estimatedHeight &&
+          spaceAbove > spaceBelow);
 
       setStyle({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
+        top: shouldOpenAbove
+          ? Math.max(viewportPadding, rect.top - estimatedHeight - 8)
+          : Math.min(rect.bottom + 8, window.innerHeight - estimatedHeight - viewportPadding),
+        left: Math.max(viewportPadding, Math.min(rect.left, maxLeft)),
+        width: dropdownWidth,
       });
     }
 
@@ -147,7 +162,7 @@ function DropdownPortal({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, anchorRef]);
+  }, [open, anchorRef, maxHeight, minWidth, placement]);
 
   useEffect(() => {
     if (!open) return;
@@ -282,7 +297,7 @@ function DateDropdown({
   disabled = false,
 }) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const anchorRef = useRef(null);
 
   const selectedDate = useMemo(() => {
     if (!value) return null;
@@ -300,28 +315,6 @@ function DateDropdown({
 
   const calendarDays = useMemo(() => getCalendarDays(viewDate), [viewDate]);
   const today = new Date();
-
-  useEffect(() => {
-    if (selectedDate) {
-      setViewDate(selectedDate);
-    }
-  }, [selectedDate]);
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, []);
 
   function goToPreviousMonth() {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -352,11 +345,18 @@ function DateDropdown({
   const displayValue = value ? formatShortDate(value) : placeholder;
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div className="relative">
       <button
+        ref={anchorRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (!open) {
+            setViewDate(selectedDate || new Date());
+          }
+
+          setOpen((prev) => !prev);
+        }}
         className={`flex h-10 w-full items-center justify-between rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           disabled
             ? "cursor-not-allowed border-[#D0D5DD] bg-[#F2F4F7] text-[#667085]"
@@ -385,48 +385,42 @@ function DateDropdown({
         />
       </button>
 
-      <div
-        className={`grid transition-all duration-300 ease-out ${
-          open && !disabled
-            ? "mt-2 grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-        }`}
+      <DropdownPortal
+        open={open && !disabled}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+        maxHeight={390}
+        minWidth={280}
+        placement="auto"
       >
-        <div className="min-h-0 overflow-hidden">
-          <div
-            className={`rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-xl transition-all duration-300 ease-out ${
-              open && !disabled
-                ? "translate-y-0 scale-100"
-                : "-translate-y-2 scale-[0.98]"
-            }`}
-          >
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
+          <div className="p-3.5">
+            <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2">
               <button
                 type="button"
                 onClick={goToPreviousMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition hover:bg-slate-50"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={15} />
               </button>
 
-              <p className="text-sm font-extrabold text-sibs-primary-1">
+              <p className="text-xs font-extrabold text-[#042C51]">
                 {monthTitle}
               </p>
 
               <button
                 type="button"
                 onClick={goToNextMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition hover:bg-slate-50"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={15} />
               </button>
             </div>
 
             <div className="grid grid-cols-7 gap-1">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+              {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((day) => (
                 <div
                   key={day}
-                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
+                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]"
                 >
                   {day}
                 </div>
@@ -442,14 +436,14 @@ function DateDropdown({
                     key={toDateInputValue(date)}
                     type="button"
                     onClick={() => handleSelectDate(date)}
-                    className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition hover:bg-slate-50 ${
+                    className={`flex h-8 w-full items-center justify-center rounded-lg text-xs font-bold transition ${
                       active
-                        ? "bg-sibs-primary-1 text-white shadow-sm"
+                        ? "bg-[#FF5C28] text-white shadow-sm"
                         : isToday
-                          ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
+                          ? "bg-[#FFF0EB] font-extrabold text-[#FF5C28]"
                           : currentMonth
-                            ? "border border-transparent bg-white text-[#344054]"
-                            : "border border-transparent bg-white text-sibs-tertiary-5/50"
+                            ? "text-[#042C51] hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
+                            : "text-slate-300 hover:bg-slate-50"
                     }`}
                   >
                     {date.getDate()}
@@ -458,14 +452,14 @@ function DateDropdown({
               })}
             </div>
 
-            <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+            <div className="mt-3 flex items-center justify-between border-t border-[#E6ECF2] pt-2.5">
               <button
                 type="button"
                 onClick={() => {
                   onChange("");
                   setOpen(false);
                 }}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition hover:bg-slate-50"
+                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#667085] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
               >
                 Clear
               </button>
@@ -473,14 +467,13 @@ function DateDropdown({
               <button
                 type="button"
                 onClick={handleTodayClick}
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition hover:opacity-90"
+                className="rounded-full px-2.5 py-1 text-[11px] font-extrabold text-[#042C51] transition hover:bg-[#FFF0EB] hover:text-[#FF5C28]"
               >
                 Today
               </button>
             </div>
           </div>
-        </div>
-      </div>
+      </DropdownPortal>
     </div>
   );
 }
@@ -691,7 +684,7 @@ export default function AddSourceCostModal({ open, onClose, onStatus }) {
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 backdrop-blur-sm sm:p-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={isSubmitting ? undefined : onClose}
     >
       <form

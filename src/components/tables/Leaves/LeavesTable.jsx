@@ -184,7 +184,6 @@ function SectionHeading({ children }) {
 function CompactField({
   label,
   value,
-  mono = false,
   accent = false,
   children,
   className = "",
@@ -407,7 +406,7 @@ function LeaveDetailsModal({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[999999] flex h-dvh items-center justify-center bg-black/65 p-2 font-jakarta backdrop-blur-[2px] sm:p-4 ${
+      className={`sibs-modal-blur fixed inset-0 z-[999999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4 ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
       onMouseDown={(event) => {
@@ -867,8 +866,6 @@ export default function LeavesTable({
             searchPlaceholder="Search by employee, SiBS ID, leave type, or status..."
             onSearchChange={(value) => setSearchInput(value)}
             onSearchKeyDown={handleSearchKeyDown}
-            controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
-            searchClassName="relative min-w-0 flex-1"
             dropdownFilters={[]}
             filters={[
               {
@@ -881,7 +878,7 @@ export default function LeavesTable({
                   { label: "Pending", value: "Pending" },
                   { label: "Rejected", value: "Rejected" },
                 ],
-                className: "w-full sm:w-[165px] xl:w-[180px]",
+                label: "Status",
                 searchable: false,
                 includeAll: false,
               },
@@ -893,8 +890,8 @@ export default function LeavesTable({
                       onChange: onAccountSelect,
                       options: accountDropdownOptions,
                       allLabel: "All Accounts",
+                      label: "Account",
                       placeholder: "Search accounts...",
-                      className: "w-full sm:w-[190px] xl:w-[210px]",
                       searchable: true,
                       includeAll: true,
                     },
@@ -902,7 +899,6 @@ export default function LeavesTable({
                 : []),
             ]}
             rightContent={<InlineDateRangeFilter visible />}
-            rightContentClassName="flex min-w-0 w-full items-end sm:w-auto"
             className="border-0 bg-transparent p-0 shadow-none"
           />
 

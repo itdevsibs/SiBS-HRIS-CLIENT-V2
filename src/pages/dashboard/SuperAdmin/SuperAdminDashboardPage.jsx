@@ -477,7 +477,7 @@ function AddAdminModal({ open, onClose, onSave }) {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[1px]"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}

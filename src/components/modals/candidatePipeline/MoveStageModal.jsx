@@ -22,7 +22,7 @@ const MoveStageModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-4"
       onClick={onClose}
     >
       <div

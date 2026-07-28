@@ -136,7 +136,7 @@ function getLoadClass(status) {
 function StatusBadge({ status }) {
   return (
     <span
-      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getStatusClass(
+      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 font-jakarta text-[10px] font-extrabold uppercase tracking-normal ${getStatusClass(
         status,
       )}`}
     >
@@ -148,7 +148,7 @@ function StatusBadge({ status }) {
 function RiskBadge({ riskFlag }) {
   return (
     <span
-      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${getRiskClass(
+      className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 font-jakarta text-[10px] font-extrabold uppercase tracking-normal ${getRiskClass(
         riskFlag,
       )}`}
     >
@@ -509,9 +509,9 @@ export function RoleHiringStatusPanel({
           )}
         </div>
 
-        <div className="hidden overflow-x-auto rounded-xl border border-[#E6ECF2] lg:block">
-          <table className="w-full min-w-[920px] border-collapse text-left text-sm">
-            <thead className="bg-[#F8FAFC] text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+        <div className="hidden overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white lg:block">
+          <table className="w-full min-w-[920px] border-collapse text-left font-jakarta text-xs">
+            <thead className="bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
               <tr>
                 <th className="px-4 py-3">Role / Account</th>
                 <th className="px-4 py-3 text-center">Req.</th>
@@ -547,26 +547,26 @@ export function RoleHiringStatusPanel({
                       }
                     }}
                     aria-label={`Open details for ${role.role || "this role"}`}
-                    className="cursor-pointer transition hover:bg-[#FFF7F3] focus:bg-[#FFF7F3] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF5C28]/30"
+                    className="cursor-pointer text-[#344054] outline-none transition hover:bg-[#FFF8F5] focus-visible:bg-[#FFF8F5] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"
                   >
                     <td className="px-4 py-3">
-                      <span className="block font-extrabold text-[#042C51]">
+                      <span className="block text-xs font-extrabold leading-snug text-[#042C51]">
                         {role.role || "Untitled Role"}
                       </span>
-                      <span className="mt-0.5 block text-xs font-semibold text-[#667085]">
+                      <span className="mt-0.5 block text-[11px] font-semibold leading-snug text-[#667085]">
                         {role.account || "Unassigned Account"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center font-bold text-slate-600">
+                    <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#042C51]">
                       {Number(role.req || 0)}
                     </td>
-                    <td className="px-4 py-3 text-center font-extrabold text-emerald-600">
+                    <td className="px-4 py-3 text-center font-extrabold tabular-nums text-emerald-600">
                       {Number(role.filled || 0)}
                     </td>
-                    <td className="px-4 py-3 text-center font-extrabold text-[#FF5C28]">
+                    <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#FF5C28]">
                       {Number(role.open || 0)}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#667085]">
+                    <td className="whitespace-nowrap px-4 py-3 font-bold text-[#344054]">
                       {formatDate(role.dueDate)}
                     </td>
                     <td className="px-4 py-3">
@@ -575,10 +575,10 @@ export function RoleHiringStatusPanel({
                         <RiskBadge riskFlag={role.riskFlag} />
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-slate-600">
+                    <td className="px-4 py-3 font-bold text-[#344054]">
                       {role.taOwner || "—"}
                     </td>
-                    <td className="px-4 py-3 text-center font-bold tabular-nums text-[#667085]">
+                    <td className="px-4 py-3 text-center font-extrabold tabular-nums text-[#344054]">
                       {Number(role.aging || 0)}d
                     </td>
                   </tr>

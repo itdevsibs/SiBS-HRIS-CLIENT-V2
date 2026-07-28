@@ -73,7 +73,7 @@ function FormSection({
   children,
 }) {
   return (
-    <section className="rounded-2xl border border-[#DCE6F1] bg-white p-4 shadow-[0_8px_24px_rgba(4,44,81,0.04)] sm:p-5">
+    <section className="rounded-2xl border border-[#D6E0EA] bg-white p-4 sm:p-5">
       <div className="mb-4 flex items-start gap-2.5 border-b border-[#EEF2F6] pb-3">
         {React.createElement(SectionIcon, {
           size: 17,
@@ -82,7 +82,7 @@ function FormSection({
         })}
 
         <div className="min-w-0">
-          <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
+          <h3 className="text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
             {title}
           </h3>
 
@@ -781,12 +781,18 @@ function DropdownPortal({
   children,
   onClose,
   maxHeight = 256,
+  matchAnchorWidth = true,
+  width,
+  offset = 8,
+  className = "",
+  innerClassName = "overflow-y-auto py-2 sibs-scrollbar",
 }) {
   const dropdownRef = useRef(null);
   const [style, setStyle] = useState({
     top: 0,
     left: 0,
     width: 0,
+    maxHeight,
   });
 
   useLayoutEffect(() => {
@@ -794,11 +800,33 @@ function DropdownPortal({
 
     function updatePosition() {
       const rect = anchorRef.current.getBoundingClientRect();
+      const viewportPadding = 12;
+      const availableWidth = window.innerWidth - viewportPadding * 2;
+      const panelWidth = Math.min(
+        width || (matchAnchorWidth ? rect.width : Math.max(rect.width, 280)),
+        availableWidth,
+      );
+      const panelMaxHeight = Math.min(
+        maxHeight,
+        window.innerHeight - viewportPadding * 2,
+      );
+      const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+      const spaceAbove = rect.top - viewportPadding;
+      const shouldOpenUp =
+        spaceBelow < panelMaxHeight && spaceAbove > spaceBelow;
+      const top = shouldOpenUp
+        ? Math.max(viewportPadding, rect.top - panelMaxHeight - offset)
+        : Math.min(rect.bottom + offset, window.innerHeight - viewportPadding);
+      const left = Math.min(
+        Math.max(viewportPadding, rect.left),
+        window.innerWidth - panelWidth - viewportPadding,
+      );
 
       setStyle({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
+        top,
+        left,
+        width: panelWidth,
+        maxHeight: panelMaxHeight,
       });
     }
 
@@ -811,7 +839,7 @@ function DropdownPortal({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [open, anchorRef]);
+  }, [open, anchorRef, matchAnchorWidth, maxHeight, offset, width]);
 
   useEffect(() => {
     if (!open) return;
@@ -847,7 +875,7 @@ function DropdownPortal({
   return createPortal(
     <div
       ref={dropdownRef}
-      className="fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl"
+      className={`fixed z-[999999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${className}`}
       style={{
         top: `${style.top}px`,
         left: `${style.left}px`,
@@ -855,8 +883,8 @@ function DropdownPortal({
       }}
     >
       <div
-        className="overflow-y-auto py-2 sibs-scrollbar"
-        style={{ maxHeight }}
+        className={innerClassName}
+        style={{ maxHeight: style.maxHeight }}
       >
         {children}
       </div>
@@ -1174,7 +1202,7 @@ function DateDropdown({
   disabled = false,
 }) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const anchorRef = useRef(null);
 
   const selectedDate = useMemo(() => {
     if (!value) return null;
@@ -1200,22 +1228,6 @@ function DateDropdown({
       setViewDate(selectedDate);
     }
   }, [selectedDate]);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, []);
 
   function goToPreviousMonth() {
     setViewDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -1246,7 +1258,7 @@ function DateDropdown({
   const displayValue = value ? formatShortDate(value) : placeholder;
 
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={anchorRef} className="relative">
       <button
         type="button"
         disabled={disabled}
@@ -1276,99 +1288,96 @@ function DateDropdown({
         />
       </button>
 
-      <div
-        className={`grid transition-all duration-300 ease-out ${open && !disabled
-            ? "mt-2 grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0"
-          }`}
+      <DropdownPortal
+        open={open && !disabled}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+        maxHeight={420}
+        matchAnchorWidth={false}
+        width={280}
+        className="rounded-2xl border-[#D7DEE8]"
+        innerClassName="p-3"
       >
-        <div className="min-h-0 overflow-hidden">
-          <div
-            className={`rounded-xl border border-[#D7DEE8] bg-white p-3 shadow-xl transition-all duration-300 ease-out ${open && !disabled
-                ? "translate-y-0 scale-100"
-                : "-translate-y-2 scale-[0.98]"
-              }`}
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2">
+          <button
+            type="button"
+            onClick={goToPreviousMonth}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+            aria-label="Previous month"
           >
-            <div className="mb-3 flex items-center justify-between rounded-xl border border-[#E6ECF2] bg-slate-50 px-3 py-2">
-              <button
-                type="button"
-                onClick={goToPreviousMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
-              >
-                <ChevronLeft size={16} />
-              </button>
+            <ChevronLeft size={16} />
+          </button>
 
-              <p className="text-sm font-extrabold text-sibs-primary-1">
-                {monthTitle}
-              </p>
+          <p className="text-xs font-extrabold text-sibs-primary-1">
+            {monthTitle}
+          </p>
 
-              <button
-                type="button"
-                onClick={goToNextMonth}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <div
-                  key={day}
-                  className="py-1 text-center text-[10px] font-extrabold uppercase tracking-wide text-sibs-tertiary-5"
-                >
-                  {day}
-                </div>
-              ))}
-
-              {calendarDays.map((date) => {
-                const currentMonth = date.getMonth() === viewDate.getMonth();
-                const active = selectedDate && isSameDate(date, selectedDate);
-                const isToday = isSameDate(date, today);
-
-                return (
-                  <button
-                    key={toDateInputValue(date)}
-                    type="button"
-                    onClick={() => handleSelectDate(date)}
-                    className={`flex h-9 items-center justify-center rounded-lg text-xs font-bold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${active
-                        ? "bg-sibs-primary-1 text-white shadow-sm"
-                        : isToday
-                          ? "border border-blue-200 bg-blue-50 text-sibs-primary-1"
-                          : currentMonth
-                            ? "border border-transparent bg-white text-[#344054] hover:bg-slate-50"
-                            : "border border-transparent bg-white text-sibs-tertiary-5/50 hover:bg-slate-50"
-                      }`}
-                  >
-                    {date.getDate()}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
-              <button
-                type="button"
-                onClick={() => {
-                  onChange("");
-                  setOpen(false);
-                }}
-                className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-bold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50 hover:text-sibs-primary-1 hover:shadow-sm active:scale-[0.98]"
-              >
-                Clear
-              </button>
-
-              <button
-                type="button"
-                onClick={handleTodayClick}
-                className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-bold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md active:scale-[0.98]"
-              >
-                Today
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={goToNextMonth}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+            aria-label="Next month"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
-      </div>
+
+        <div className="grid grid-cols-7 gap-1">
+          {["SU", "MO", "TU", "WE", "TH", "FR", "SA"].map((day) => (
+            <div
+              key={day}
+              className="py-1.5 text-center text-[10px] font-extrabold uppercase tracking-normal text-[#98A2B3]"
+            >
+              {day}
+            </div>
+          ))}
+
+          {calendarDays.map((date) => {
+            const currentMonth = date.getMonth() === viewDate.getMonth();
+            const active = selectedDate && isSameDate(date, selectedDate);
+            const isToday = isSameDate(date, today);
+
+            return (
+              <button
+                key={toDateInputValue(date)}
+                type="button"
+                onClick={() => handleSelectDate(date)}
+                className={`flex h-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm active:scale-[0.98] ${active
+                    ? "bg-[#FF5C28] text-white shadow-sm"
+                    : isToday
+                      ? "border border-[#B9D7FF] bg-[#EFF6FF] text-[#042C51]"
+                      : currentMonth
+                        ? "border border-transparent bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                        : "border border-transparent bg-white text-[#C7D2E0] hover:bg-[#F8FAFC]"
+                  }`}
+              >
+                {date.getDate()}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#E6ECF2] pt-3">
+          <button
+            type="button"
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+            className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
+          >
+            Clear
+          </button>
+
+          <button
+            type="button"
+            onClick={handleTodayClick}
+            className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0D4676] hover:shadow-md active:scale-[0.98]"
+          >
+            Today
+          </button>
+        </div>
+      </DropdownPortal>
     </div>
   );
 }
@@ -2208,7 +2217,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={() => {
         if (!isSubmitting) onClose?.();
       }}
@@ -2295,7 +2304,7 @@ export default function AddHiringNeedsModal({ open, onClose, onStatus }) {
 
         <div className="thin-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#F7F9FC] p-3 sm:p-5">
           <div className="space-y-4">
-            <section className="rounded-xl border border-blue-200 bg-[#EEF5FF] p-4">
+            <section className="rounded-2xl border border-blue-200 bg-[#EEF5FF] p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#245BFF] text-white">

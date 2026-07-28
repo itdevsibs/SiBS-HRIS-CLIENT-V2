@@ -652,7 +652,7 @@ export function ProfilePictureViewModal({
 
   return (
     <div
-      className="fixed inset-0 z-[99999] flex h-dvh items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center p-4"
       onClick={onClose}
     >
       <div

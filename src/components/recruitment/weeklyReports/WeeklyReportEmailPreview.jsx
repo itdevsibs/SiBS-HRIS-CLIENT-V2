@@ -50,7 +50,7 @@ export default function WeeklyReportEmailPreview({
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/45 p-3 sm:p-5"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-3 sm:p-5"
       onMouseDown={onClose}
       role="presentation"
     >

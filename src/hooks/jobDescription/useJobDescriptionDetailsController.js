@@ -68,6 +68,34 @@ export default function useJobDescriptionDetailsController({
     );
   }
 
+  function getItemDocumentTitle(source = {}) {
+    source = source || {};
+
+    return (
+      source.documentTitle ||
+      source.document_title ||
+      source.raw?.documentTitle ||
+      source.raw?.document_title ||
+      ""
+    );
+  }
+
+  function getItemRoleTitle(source = {}) {
+    source = source || {};
+
+    return (
+      source.roleTitle ||
+      source.role_title ||
+      source.raw?.roleTitle ||
+      source.raw?.role_title ||
+      source.documentTitle ||
+      source.document_title ||
+      source.raw?.documentTitle ||
+      source.raw?.document_title ||
+      ""
+    );
+  }
+
 
   function getOptionLabel(options = [], value = "") {
     const cleanValue = String(value || "").trim();
@@ -205,14 +233,10 @@ export default function useJobDescriptionDetailsController({
     nextChangeDetails = editedChangeDetails,
   } = {}) {
     const documentTitle =
-      nextRecordInfoDraft.roleTitle ||
-      item.documentTitle ||
-      item.document_title ||
-      item.raw?.documentTitle ||
-      item.raw?.document_title ||
-      "";
+      nextRecordInfoDraft.documentTitle || getItemDocumentTitle(item);
 
-    const roleTitle = nextRecordInfoDraft.roleTitle || documentTitle;
+    const roleTitle =
+      nextRecordInfoDraft.roleTitle || getItemRoleTitle(item) || documentTitle;
     const accountId =
       nextRecordInfoDraft.accountId ||
       nextRecordInfoDraft.preparedForId ||
@@ -294,11 +318,12 @@ export default function useJobDescriptionDetailsController({
   const [editingRecordInfo, setEditingRecordInfo] = useState(false);
 
   const [recordInfoDraft, setRecordInfoDraft] = useState({
+    documentTitle: getItemDocumentTitle(item),
     roleTitle:
       item.roleTitle ||
       item.role_title ||
-      item.documentTitle ||
-      item.document_title ||
+      item.raw?.roleTitle ||
+      item.raw?.role_title ||
       "",
     department: item.department || "",
     departmentId: getRevisionDepartmentId(item),
@@ -411,11 +436,12 @@ export default function useJobDescriptionDetailsController({
     setEditingDraft("");
 
     setRecordInfoDraft({
+      documentTitle: getItemDocumentTitle(item),
       roleTitle:
         item.roleTitle ||
         item.role_title ||
-        item.documentTitle ||
-        item.document_title ||
+        item.raw?.roleTitle ||
+        item.raw?.role_title ||
         "",
       department: item.department || "",
       departmentId: getRevisionDepartmentId(item),
@@ -666,7 +692,8 @@ export default function useJobDescriptionDetailsController({
   }
 
   const fieldLabels = {
-    roleTitle: "Document Title / Position",
+    documentTitle: "Document Title",
+    roleTitle: "Role Title",
     department: "Department",
     dateRequested: "Date Requested",
     linkedHiringRequirement: "Linked Hiring Requirement",
@@ -795,11 +822,12 @@ export default function useJobDescriptionDetailsController({
 
   function cancelRecordInfoEdit() {
     setRecordInfoDraft({
+      documentTitle: getItemDocumentTitle(item),
       roleTitle:
         item.roleTitle ||
         item.role_title ||
-        item.documentTitle ||
-        item.document_title ||
+        item.raw?.roleTitle ||
+        item.raw?.role_title ||
         "",
       department: item.department || "",
       departmentId: getRevisionDepartmentId(item),
@@ -839,11 +867,12 @@ export default function useJobDescriptionDetailsController({
 
   function saveRecordInfoEdit() {
     const originalRecordInfo = {
+      documentTitle: getItemDocumentTitle(item),
       roleTitle:
         item.roleTitle ||
         item.role_title ||
-        item.documentTitle ||
-        item.document_title ||
+        item.raw?.roleTitle ||
+        item.raw?.role_title ||
         "",
       department: item.department || "",
       departmentId: getRevisionDepartmentId(item),

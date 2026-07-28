@@ -1703,7 +1703,7 @@ const requiredFieldChecks = [
     <div
       role="dialog"
       aria-modal="true"
-      className="sibs-modal-backdrop-in fixed inset-0 z-[1100] flex items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-2 font-jakarta sm:p-4"
     >
       <form
         onSubmit={onSubmit}
@@ -2614,7 +2614,7 @@ export function ViewResignationModal({ open, item, onClose }) {
 
   return createPortal(
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[1100] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 font-jakarta backdrop-blur-sm sm:p-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[1100] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
       onClick={onClose}
     >
       <section

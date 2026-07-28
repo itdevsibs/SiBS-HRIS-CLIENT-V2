@@ -157,8 +157,6 @@ export default function SourcingAnalyticsFilters() {
           searchPlaceholder="Search by source or latest applicant..."
           onSearchChange={setSearchInput}
           onSearchKeyDown={handleSearchKeyDown}
-          controlsClassName="flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
-          searchClassName="relative min-w-0 flex-1"
           className="border-0 bg-transparent p-0 shadow-none"
           filters={[
             {
@@ -170,9 +168,8 @@ export default function SourcingAnalyticsFilters() {
               searchable: true,
               includeAll: false,
               allLabel: "All Sources",
+              label: "Source",
               placeholder: "Search sources...",
-              className:
-                "w-full sm:w-[210px] xl:w-[245px]",
             },
             {
               key: "costStatus",
@@ -183,9 +180,8 @@ export default function SourcingAnalyticsFilters() {
               searchable: false,
               includeAll: false,
               allLabel: "All Cost Status",
+              label: "Cost Status",
               placeholder: "All Cost Status",
-              className:
-                "w-full sm:w-[165px] xl:w-[185px]",
             },
             {
               key: "performance",
@@ -196,9 +192,8 @@ export default function SourcingAnalyticsFilters() {
               searchable: false,
               includeAll: false,
               allLabel: "All Performance",
+              label: "Performance",
               placeholder: "All Performance",
-              className:
-                "w-full sm:w-[175px] xl:w-[195px]",
             },
           ]}
           onReset={handleClearAll}
@@ -210,7 +205,7 @@ export default function SourcingAnalyticsFilters() {
               type="button"
               onClick={handleClearAll}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear

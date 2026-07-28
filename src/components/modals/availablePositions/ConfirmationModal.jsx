@@ -19,7 +19,7 @@ function ConfirmationModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-black/65 p-4 font-jakarta backdrop-blur-[2px]"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center p-4 font-jakarta"
       onClick={() => {
         if (!isSaving) onCancel?.();
       }}

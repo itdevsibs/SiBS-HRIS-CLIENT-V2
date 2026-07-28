@@ -12,10 +12,8 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   Clock3,
-  Eye,
   LoaderCircle,
   RefreshCw,
-  Search,
   Target,
   TrendingDown,
   UserRoundCheck,
@@ -25,6 +23,7 @@ import {
 
 import Header from "../../../components/layout/Header";
 import { getOmDashboardBootstrap } from "../../../lib/axios/getOmDashboard";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 
 const PAGE_SHELL_CLASS = "sibs-dashboard-shell";
 const MAIN_SHELL_CLASS = "sibs-dashboard-main";
@@ -275,22 +274,22 @@ function MetricCard({ item, delay = 0 }) {
   const Icon = item.icon;
   return (
     <article
-      className="sibs-metric-card flex min-h-[112px] flex-col justify-between rounded-2xl border border-[#E1E8F0] bg-white p-4 shadow-sm"
+      className="sibs-metric-card flex flex-col justify-between overflow-hidden p-3.5"
       style={getAnimationStyle(delay)}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="text-[10px] font-black uppercase tracking-wide text-[#174A7C]">
+        <span className={`text-[10px] font-extrabold uppercase tracking-normal ${item.labelClass || "text-[#042C51]"}`}>
           {item.label}
         </span>
-        <span className={`flex h-8 w-8 items-center justify-center rounded-full ${item.iconClass}`}>
-          <Icon className="h-4 w-4" />
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.iconClass}`}>
+          <Icon size={17} strokeWidth={2} />
         </span>
       </div>
-      <div>
-        <p className={`text-[28px] font-black leading-none ${item.valueClass}`}>
+      <div className="mt-2">
+        <p className={`text-3xl font-extrabold leading-none tabular-nums tracking-tight ${item.valueClass}`}>
           {item.value}
         </p>
-        <p className="mt-2 text-[11px] font-semibold text-[#667085]">
+        <p className="mt-1.5 text-xs font-bold leading-4 text-[#667085]">
           {item.description}
         </p>
       </div>
@@ -306,7 +305,7 @@ function StatusBadge({ status }) {
         ? "border-amber-200 bg-amber-50 text-amber-700"
         : "border-emerald-200 bg-emerald-50 text-emerald-700";
   return (
-    <span className={`inline-flex rounded border px-2 py-1 text-[9px] font-black uppercase ${className}`}>
+    <span className={`inline-flex whitespace-nowrap rounded border px-2 py-0.5 font-jakarta text-[10px] font-extrabold uppercase tracking-normal ${className}`}>
       {status}
     </span>
   );
@@ -317,7 +316,7 @@ function RoleDetailsModal({ role, onClose }) {
   const progress = role.req > 0 ? Math.round((role.filled / role.req) * 100) : 0;
   return (
     <div
-      className="fixed inset-0 z-[1200] flex items-center justify-center bg-[#042C51]/80 p-4 backdrop-blur-sm"
+      className="sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -488,13 +487,13 @@ export default function OMDashboardPage() {
     .join(" · ");
 
   const metricCards = [
-    { label: "Total Open Roles", value: formatNumber(metrics.totalOpenRoles), description: "Accessible roles needing staff", icon: BriefcaseBusiness, valueClass: "text-[#042C51]", iconClass: "bg-[#EEF4FA] text-[#042C51]" },
-    { label: "Requirement vs Filled", value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`, description: `${Math.round(metrics.filledPercentage)}% filled`, icon: Target, valueClass: "text-[#042C51]", iconClass: "bg-[#EEF4FA] text-[#042C51]" },
-    { label: "At-Risk Roles", value: formatNumber(metrics.atRiskRoles), description: "Require intervention", icon: AlertCircle, valueClass: "text-amber-600", iconClass: "bg-amber-50 text-amber-600" },
-    { label: "Delayed Roles", value: formatNumber(metrics.delayedRoles), description: "Due dates missed", icon: Clock3, valueClass: "text-rose-600", iconClass: "bg-rose-50 text-rose-600" },
-    { label: "Weekly Movement", value: `+${formatNumber(metrics.weeklyHired)}`, description: "Hired this cycle", icon: Activity, valueClass: "text-indigo-600", iconClass: "bg-indigo-50 text-indigo-600" },
-    { label: "Drop-Offs", value: formatNumber(metrics.dropOffs), description: "Candidate attrition", icon: TrendingDown, valueClass: "text-[#FF5C28]", iconClass: "bg-orange-50 text-[#FF5C28]" },
-    { label: "Aging Roles", value: formatNumber(metrics.agingRoles), description: "15 days or older", icon: Clock3, valueClass: "text-slate-700", iconClass: "bg-slate-100 text-slate-700" },
+    { label: "Total Open Roles", value: formatNumber(metrics.totalOpenRoles), description: "Accessible roles needing staff", icon: BriefcaseBusiness, labelClass: "text-[#042C51]", valueClass: "text-[#042C51]", iconClass: "bg-[#E9F0FC] text-[#042C51]" },
+    { label: "Requirement vs Filled", value: `${formatNumber(metrics.totalFilled)} / ${formatNumber(metrics.totalRequirement)}`, description: `${Math.round(metrics.filledPercentage)}% filled`, icon: Target, labelClass: "text-[#042C51]", valueClass: "text-[#042C51]", iconClass: "bg-[#E9F0FC] text-[#042C51]" },
+    { label: "At-Risk Roles", value: formatNumber(metrics.atRiskRoles), description: "Require intervention", icon: AlertCircle, labelClass: "text-amber-800", valueClass: "text-amber-600", iconClass: "bg-amber-50 text-amber-600" },
+    { label: "Delayed Roles", value: formatNumber(metrics.delayedRoles), description: "Due dates missed", icon: Clock3, labelClass: "text-rose-800", valueClass: "text-rose-600", iconClass: "bg-rose-50 text-rose-600" },
+    { label: "Weekly Movement", value: `+${formatNumber(metrics.weeklyHired)}`, description: "Hired this cycle", icon: Activity, labelClass: "text-indigo-800", valueClass: "text-indigo-600", iconClass: "bg-indigo-50 text-indigo-600" },
+    { label: "Drop-Offs", value: formatNumber(metrics.dropOffs), description: "Candidate attrition", icon: TrendingDown, labelClass: "text-[#FF5C28]", valueClass: "text-[#FF5C28]", iconClass: "bg-orange-50 text-[#FF5C28]" },
+    { label: "Aging Roles", value: formatNumber(metrics.agingRoles), description: "15 days or older", icon: Clock3, labelClass: "text-slate-700", valueClass: "text-slate-700", iconClass: "bg-slate-100 text-slate-700" },
   ];
 
   if (initialLoading && roles.length === 0) return <OMDashboardLoadingState />;
@@ -516,17 +515,18 @@ export default function OMDashboardPage() {
       <Header />
       <main className={MAIN_SHELL_CLASS}>
         <div className="mx-auto w-full max-w-[1700px] space-y-5 sm:space-y-6">
-          <section className="sibs-page-header-in rounded-2xl border border-[#E1E8F0] border-t-[4px] border-t-[#042C51] bg-white px-5 py-5 shadow-sm sm:px-6">
+          <section className="sibs-page-header-in sibs-card relative overflow-hidden p-5 sm:p-6">
+            <span className="sibs-top-accent" aria-hidden="true" />
             <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-black uppercase text-[#042C51]">● Operations Manager View</span>
-                  <span className="rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-black uppercase text-[#FF5C28]">Dept: {departmentBadge}</span>
+                  <span className="inline-flex items-center gap-1.5 rounded border border-blue-100 bg-[#E9F0FC] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]"><span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28] animate-sibs-pulse" /> Operations Manager View</span>
+                  <span className="inline-flex rounded border border-orange-200 bg-orange-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-normal text-[#FF5C28]">Dept: {departmentBadge}</span>
                 </div>
-                <h1 className="mt-3 text-2xl font-black tracking-tight text-[#042C51]">Operations Dashboard</h1>
-                <p className="mt-1 text-sm font-medium text-[#667085]">Hiring overview filtered by your department and assigned accounts: <strong className="text-[#042C51]">{scopeText || "No scope label available"}</strong>.</p>
+                <h1 className="mt-3 text-xl font-extrabold tracking-tight text-[#042C51] sm:text-2xl">Operations Dashboard</h1>
+                <p className="mt-1 text-xs font-semibold leading-relaxed text-[#667085] sm:text-sm">Hiring overview filtered by your department and assigned accounts: <strong className="text-[#042C51]">{scopeText || "No scope label available"}</strong>.</p>
               </div>
-              <button type="button" onClick={() => navigate(HIRING_PLAN_ROUTE)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#DCE5EE] bg-[#F8FAFC] px-4 py-2.5 text-xs font-black text-[#042C51] transition hover:border-[#FF5C28] hover:text-[#FF5C28]">
+              <button type="button" onClick={() => navigate(HIRING_PLAN_ROUTE)} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-[#E6ECF2] bg-[#F8FAFC] px-3.5 text-xs font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF0EB] hover:text-[#FF5C28]">
                 Return to Hiring Plan <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -553,11 +553,11 @@ export default function OMDashboardPage() {
 
           <section className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <article
-              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm"
+              className="sibs-page-card-in sibs-card p-5 sm:p-6"
               style={getAnimationStyle(210)}
             >
-              <h2 className="text-base font-black text-[#042C51]">Approved Requirement vs Filled Progress</h2>
-              <p className="mt-1 text-sm text-[#667085]">Current hiring progress for manager-accessible roles</p>
+              <h2 className="sibs-section-title">Approved Requirement vs Filled Progress</h2>
+              <p className="sibs-section-subtitle">Current hiring progress for manager-accessible roles</p>
               <div className="mt-5 space-y-4">
                 {roles.slice(0, 6).map((role) => {
                   const percent = role.req > 0 ? Math.round((role.filled / role.req) * 100) : 0;
@@ -571,10 +571,10 @@ export default function OMDashboardPage() {
             </article>
 
             <article
-              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm"
+              className="sibs-page-card-in sibs-card p-5 sm:p-6"
               style={getAnimationStyle(260)}
             >
-              <h2 className="text-base font-black text-[#042C51]">Weekly Movement Pipeline</h2>
+              <h2 className="sibs-section-title">Weekly Movement Pipeline</h2>
               <p className="mt-1 text-sm text-[#667085]">Candidate progression for the manager’s accessible hiring scope</p>
               <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
                 {funnelStages.map(([label, value, className]) => <div key={label} className={`rounded-xl border p-3 text-center ${className}`}><span className="text-[9px] font-black uppercase">{label}</span><p className="mt-2 text-lg font-black">{formatNumber(value)}</p></div>)}
@@ -585,34 +585,59 @@ export default function OMDashboardPage() {
 
           <section className="grid grid-cols-1 items-start gap-5 2xl:grid-cols-12">
             <article
-              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-8"
+              className="sibs-page-card-in sibs-card p-5 sm:p-6 2xl:col-span-8"
               style={getAnimationStyle(310)}
             >
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-                <div><h2 className="text-base font-black text-[#042C51]">Role Hiring Status</h2><p className="mt-1 text-sm text-[#667085]">Role-level delivery, risk status, aging, and ownership</p></div>
+                <div><h2 className="sibs-section-title">Role Hiring Status</h2><p className="sibs-section-subtitle">Role-level delivery, risk status, aging, and ownership</p></div>
                 <span className="w-fit rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-[9px] font-black uppercase text-amber-800">Manager Restricted View</span>
               </div>
               <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-bold text-[#042C51]">Viewing only: {scopeText || "manager-assigned scope"}</div>
-              <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_180px]">
-                <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#98A2B3]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by role, account, department, or owner..." className="h-11 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] pl-10 pr-4 text-xs font-semibold outline-none focus:border-[#FF5C28]" /></div>
-                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-11 rounded-xl border border-[#D6E0EA] bg-white px-3 text-xs font-bold text-[#042C51] outline-none"><option>All</option><option>On Track</option><option>At Risk</option><option>Delayed</option></select>
-              </div>
-              <div className="mt-4 overflow-x-auto rounded-xl border border-[#E6ECF2]">
-                <table className="min-w-[950px] w-full text-left text-xs">
-                  <thead className="bg-[#F8FAFC] text-[10px] font-black uppercase text-[#667085]"><tr><th className="p-3">Role / Account</th><th className="p-3 text-center">Req.</th><th className="p-3 text-center">Filled</th><th className="p-3 text-center">Open</th><th className="p-3">Due Date</th><th className="p-3">Status</th><th className="p-3">TA Owner</th><th className="p-3 text-center">Aging</th><th className="p-3 text-center">Action</th></tr></thead>
+              <PaginationTable
+                className="mt-4 border-0 bg-transparent p-0 shadow-none"
+                showPagination={false}
+                filterLayout="ta-inline"
+                searchValue={search}
+                searchPlaceholder="Search by role, account, department, or owner..."
+                onSearchChange={(value) => setSearch(value)}
+                filters={[
+                  {
+                    key: "status",
+                    label: "Status",
+                    value: statusFilter,
+                    options: ["On Track", "At Risk", "Delayed"],
+                    onChange: setStatusFilter,
+                    allLabel: "All Statuses",
+                    className: "sm:w-[190px]",
+                  },
+                ]}
+              />
+              <div className="mt-4 overflow-x-auto rounded-xl border border-[#E6ECF2] bg-white">
+                <table className="w-full min-w-[860px] border-collapse text-left font-jakarta text-xs">
+                  <thead className="bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-normal text-[#667085]"><tr><th className="p-3">Role / Account</th><th className="p-3 text-center">Req.</th><th className="p-3 text-center">Filled</th><th className="p-3 text-center">Open</th><th className="p-3">Due Date</th><th className="p-3">Status</th><th className="p-3">TA Owner</th><th className="p-3 text-center">Aging</th></tr></thead>
                   <tbody className="divide-y divide-[#EEF2F6]">
-                    {paginatedRoles.length === 0 ? <tr><td colSpan={9} className="p-8 text-center font-semibold text-[#667085]">No roles match the current filters.</td></tr> : paginatedRoles.map((role) => <tr key={role.id} className="hover:bg-[#FAFBFC]"><td className="p-3"><strong className="block text-[#042C51]">{role.roleTitle}</strong><span className="mt-1 block text-[10px] text-[#667085]">{role.account}</span></td><td className="p-3 text-center font-bold">{role.req}</td><td className="p-3 text-center font-black text-emerald-600">{role.filled}</td><td className="p-3 text-center font-black text-[#FF5C28]">{role.open}</td><td className="p-3 text-[#667085]">{formatDate(role.dueDate)}</td><td className="p-3"><StatusBadge status={role.status} /></td><td className="p-3 text-[#667085]">{role.taOwner}</td><td className="p-3 text-center font-bold text-[#667085]">{role.aging}d</td><td className="p-3 text-center"><button type="button" onClick={() => setSelectedRole(role)} className="inline-flex items-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 py-1.5 text-[10px] font-black text-[#042C51] hover:border-[#FF5C28] hover:text-[#FF5C28]"><Eye className="h-3.5 w-3.5" /> View</button></td></tr>)}
+                    {paginatedRoles.length === 0 ? <tr><td colSpan={8} className="p-8 text-center font-semibold text-[#667085]">No roles match the current filters.</td></tr> : paginatedRoles.map((role) => <tr key={role.id} role="button" tabIndex={0} onClick={() => setSelectedRole(role)} onKeyDown={(event) => { if (event.key !== "Enter" && event.key !== " ") return; event.preventDefault(); setSelectedRole(role); }} className="cursor-pointer text-[#344054] outline-none transition hover:bg-[#FFF8F5] focus-visible:bg-[#FFF8F5] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#FF5C28]/25"><td className="p-3"><strong className="block text-xs font-extrabold leading-snug text-[#042C51]">{role.roleTitle}</strong><span className="mt-0.5 block text-[11px] font-semibold leading-snug text-[#667085]">{role.account}</span></td><td className="p-3 text-center font-extrabold tabular-nums text-[#042C51]">{role.req}</td><td className="p-3 text-center font-extrabold tabular-nums text-emerald-600">{role.filled}</td><td className="p-3 text-center font-extrabold tabular-nums text-[#FF5C28]">{role.open}</td><td className="p-3 font-bold text-[#344054]">{formatDate(role.dueDate)}</td><td className="p-3"><StatusBadge status={role.status} /></td><td className="p-3 font-bold text-[#344054]">{role.taOwner}</td><td className="p-3 text-center font-extrabold tabular-nums text-[#344054]">{role.aging}d</td></tr>)}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-[#667085]"><span>{filteredRoles.length} accessible role{filteredRoles.length === 1 ? "" : "s"}</span><div className="flex items-center gap-2"><button type="button" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button><span>Page {safeCurrentPage} of {totalPages}</span><button type="button" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button></div></div>
+              <PaginationTable
+                className="mt-4"
+                showSearch={false}
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                loadedCount={paginatedRoles.length}
+                totalRecords={filteredRoles.length}
+                recordLabel="accessible roles"
+                onPrevious={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                onNext={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              />
             </article>
 
             <aside
-              className="sibs-page-card-in rounded-2xl border border-[#E1E8F0] bg-white p-5 shadow-sm 2xl:col-span-4"
+              className="sibs-page-card-in sibs-card h-full p-5 sm:p-6 2xl:col-span-4"
               style={getAnimationStyle(360)}
             >
-              <h2 className="text-base font-black text-[#042C51]">Recruiter Load</h2><p className="mt-1 text-sm text-[#667085]">Active accessible roles versus recruiter output</p>
+              <h2 className="sibs-section-title">Recruiter Load</h2><p className="sibs-section-subtitle">Active accessible roles versus recruiter output</p>
               <div className="mt-4 space-y-3">
                 {recruiters.length === 0 ? <p className="py-8 text-center text-sm font-semibold text-[#667085]">No recruiter ownership data is available.</p> : recruiters.map((row) => <div key={row.name} className="rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-4"><div className="flex items-start justify-between gap-3"><div><strong className="text-sm text-[#042C51]">{row.name}</strong><p className="mt-1 text-[11px] text-[#667085]">{row.activeRoles} active roles handled</p></div><span className={`rounded border px-2 py-1 text-[9px] font-black uppercase ${row.loadStatus === "High" ? "border-rose-200 bg-rose-50 text-rose-700" : row.loadStatus === "Medium" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{row.loadStatus} Load</span></div><div className="mt-3 grid grid-cols-3 border-t border-[#E6ECF2] pt-3 text-center"><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Sourced</span><p className="text-sm font-black text-[#042C51]">{row.output.sourced}</p></div><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Interviewed</span><p className="text-sm font-black text-[#042C51]">{row.output.interviewed}</p></div><div><span className="text-[8px] font-black uppercase text-[#98A2B3]">Hired</span><p className="text-sm font-black text-emerald-600">{row.output.hired}</p></div></div></div>)}
               </div>

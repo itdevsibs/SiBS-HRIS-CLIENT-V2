@@ -4144,7 +4144,7 @@ function ViewApprovalRequestModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-black/45 p-4">
+    <div className="sibs-modal-blur fixed inset-0 z-[1100] flex items-center justify-center p-4">
       <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[10px] border border-[#E1E7EF] bg-white shadow-xl">
         <div className="shrink-0 border-b border-[#E6ECF2] bg-white px-6 py-5">
           <div className="flex items-start justify-between gap-4">
@@ -5567,7 +5567,7 @@ function DecisionModal({
   );
 
   return createPortal(
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-4">
+    <div className="sibs-modal-blur fixed inset-0 z-[1200] flex items-center justify-center p-4">
       <form
         onSubmit={onSubmit}
         noValidate

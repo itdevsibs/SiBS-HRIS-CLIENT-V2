@@ -10,6 +10,14 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const EDGE = "rounded-[10px]";
+const INLINE_CONTROLS_CLASS =
+  "flex flex-col gap-3 overflow-visible xl:flex-row xl:items-end";
+const INLINE_SEARCH_CLASS =
+  "relative w-full min-w-0 xl:min-w-[280px] xl:flex-[1_1_360px]";
+const INLINE_FILTER_CLASS = "w-full xl:w-[180px] xl:flex-none";
+const INLINE_SEARCHABLE_FILTER_CLASS = "w-full xl:w-[210px] xl:flex-none";
+const INLINE_RIGHT_CONTENT_CLASS =
+  "flex w-full min-w-0 items-end xl:w-auto xl:flex-none";
 
 function AnimatedDropdown({ open, children, className = "" }) {
   return (
@@ -45,7 +53,7 @@ function getOptionLabel(option) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1.5 block font-jakarta text-[10px] font-extrabold uppercase tracking-normal text-[#667085]">
+    <label className="mb-1.5 block font-jakarta text-xs font-extrabold tracking-normal text-[#101828]">
       {children}
     </label>
   );
@@ -127,6 +135,7 @@ export default function PaginationTable({
 
   const hasPreviousPage = safeCurrentPage > 1;
   const hasNextPage = safeCurrentPage < safeTotalPages;
+  const isTaInlineLayout = filterLayout === "ta-inline";
 
   const visibleFilters = useMemo(() => {
     return filters.filter((filter) => filter && filter.show !== false);
@@ -145,7 +154,9 @@ export default function PaginationTable({
       includeAll: filter.includeAll ?? false,
       placeholder: filter.placeholder || "Select...",
       allLabel: filter.allLabel || "All",
-      className: filter.className || "sm:min-w-[190px]",
+      className:
+        filter.className ||
+        (isTaInlineLayout ? INLINE_FILTER_CLASS : "sm:min-w-[190px]"),
     }));
 
     const searchableFilters = visibleDropdownFilters.map((filter) => ({
@@ -154,11 +165,15 @@ export default function PaginationTable({
       includeAll: filter.includeAll ?? true,
       placeholder: filter.placeholder || "Search...",
       allLabel: filter.allLabel || "All",
-      className: filter.className || "sm:min-w-[220px]",
+      className:
+        filter.className ||
+        (isTaInlineLayout
+          ? INLINE_SEARCHABLE_FILTER_CLASS
+          : "sm:min-w-[220px]"),
     }));
 
     return [...searchableFilters, ...normalFilters];
-  }, [visibleFilters, visibleDropdownFilters]);
+  }, [isTaInlineLayout, visibleFilters, visibleDropdownFilters]);
 
   const visibleDateFilters = useMemo(() => {
     const suppliedDates = [
@@ -171,8 +186,6 @@ export default function PaginationTable({
       (filter) => filter && filter.show !== false,
     );
   }, [dateFilters, dateFrom, dateTo]);
-
-  const isTaInlineLayout = filterLayout === "ta-inline";
 
   const hasFilterControls =
     showSearch ||
@@ -253,6 +266,24 @@ export default function PaginationTable({
     return filter.value;
   }
 
+  function getDropdownControlLabel(filter) {
+    if (filter?.label || filter?.title) {
+      return filter.label || filter.title;
+    }
+
+    if (filter?.allLabel) {
+      return filter.allLabel.replace(/^All\s+/i, "");
+    }
+
+    if (filter?.key) {
+      return String(filter.key)
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/^./, (letter) => letter.toUpperCase());
+    }
+
+    return "";
+  }
+
   function getFilteredDropdownOptions(filter) {
     const options = Array.isArray(filter?.options) ? filter.options : [];
     const keyword = String(dropdownSearch?.[filter.key] || "")
@@ -308,7 +339,7 @@ export default function PaginationTable({
         className={
           controlsClassName ||
           (isTaInlineLayout
-            ? "flex flex-col gap-3 overflow-visible sm:flex-row sm:items-center"
+            ? INLINE_CONTROLS_CLASS
             : "grid grid-cols-1 gap-4 overflow-visible sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5")
         }
       >
@@ -317,12 +348,12 @@ export default function PaginationTable({
             className={
               searchClassName ||
               (isTaInlineLayout
-                ? "relative min-w-0 flex-1"
+                ? INLINE_SEARCH_CLASS
                 : "relative w-full sm:col-span-2 xl:col-span-1")
             }
           >
-            {searchLabel && !isTaInlineLayout ? (
-              <FieldLabel>{searchLabel}</FieldLabel>
+            {(searchLabel || isTaInlineLayout) ? (
+              <FieldLabel>{searchLabel || "Search"}</FieldLabel>
             ) : null}
 
             <div className="group relative">
@@ -347,20 +378,12 @@ export default function PaginationTable({
           </div>
         ) : null}
 
-        {isTaInlineLayout && combinedDropdownFilters.length > 0 ? (
-          <SlidersHorizontal
-            size={16}
-            className="hidden shrink-0 text-[#667085] sm:block"
-            aria-hidden="true"
-          />
-        ) : null}
-
         {combinedDropdownFilters.map((filter) => {
           const isOpen = openDropdownKey === filter.key;
           const options = getFilteredDropdownOptions(filter);
           const selectedLabel = getDropdownLabel(filter);
           const isSearchable = filter.searchable !== false;
-          const label = filter.label || filter.title || "";
+          const label = getDropdownControlLabel(filter);
 
           return (
             <div
@@ -368,12 +391,13 @@ export default function PaginationTable({
               ref={(node) => {
                 dropdownRefs.current[filter.key] = node;
               }}
-              className={`relative z-[60] w-full overflow-visible ${
-                filter.className ||
-                (isTaInlineLayout ? "sm:w-[190px]" : "")
+              className={`relative w-full overflow-visible ${
+                isOpen ? "z-[90]" : "z-[60]"
+              } ${
+                filter.className || ""
               }`}
             >
-              {label && !isTaInlineLayout ? (
+              {label ? (
                 <FieldLabel>{label}</FieldLabel>
               ) : null}
 
@@ -507,7 +531,9 @@ export default function PaginationTable({
           <div
             className={
               rightContentClassName ||
-              "flex w-full items-end xl:w-auto"
+              (isTaInlineLayout
+                ? INLINE_RIGHT_CONTENT_CLASS
+                : "flex w-full items-end xl:w-auto")
             }
           >
             {rightContent}

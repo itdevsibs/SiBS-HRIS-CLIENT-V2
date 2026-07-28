@@ -36,7 +36,7 @@ export default function OutcomeModal({ open, record, type, form, setForm, onClos
 
   return (
     // 1. Premium Backdrop
-    <div className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-slate-950/40 px-4 py-4 font-jakarta backdrop-blur-[2px]" onClick={onClose}>
+    <div className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-4 font-jakarta" onClick={onClose}>
       
       {/* 2. Premium Container with Pop-in Animation */}
       <div className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>

@@ -671,7 +671,7 @@ export default function SourceDetailsModal({
   return (
     <>
       <div
-        className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center overflow-y-auto bg-[#042C51]/80 p-3 backdrop-blur-sm sm:p-4"
+        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center overflow-y-auto p-3 sm:p-4"
         onClick={() => {
           if (!expenseMode && !removingEntry) {
             onClose?.();
@@ -1021,7 +1021,7 @@ export default function SourceDetailsModal({
 
       {expenseMode ? (
         <div
-          className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-end justify-center bg-[#042C51]/80 p-3 backdrop-blur-sm sm:items-center sm:p-4"
+          className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-end justify-center p-3 sm:items-center sm:p-4"
           onClick={closeExpenseForm}
         >
           <form
@@ -1207,7 +1207,7 @@ export default function SourceDetailsModal({
 
       {removingEntry ? (
         <div
-          className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-[#042C51]/80 p-4 backdrop-blur-sm"
+          className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-4"
           onClick={closeRemoveExpense}
         >
           <div

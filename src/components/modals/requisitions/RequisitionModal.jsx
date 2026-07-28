@@ -161,7 +161,7 @@ export default function RequisitionModal({ open, onClose, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 px-4 py-6"
+      className="sibs-modal-blur fixed inset-0 z-[120] flex items-center justify-center px-4 py-6"
       onClick={() => !submitLoading && onClose?.()}
     >
       <div

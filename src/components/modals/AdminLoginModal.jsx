@@ -133,7 +133,7 @@ export default function AdminLoginModal() {
   return (
     <>
       <div
-        className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/30 px-4 py-6 backdrop-blur-sm"
+        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-4 py-6"
         onClick={onClose}
       >
         <div

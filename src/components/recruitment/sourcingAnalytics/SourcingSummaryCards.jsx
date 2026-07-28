@@ -23,6 +23,7 @@ const metricConfig = [
     key: "totalSources",
     title: "Tracked Channels",
     icon: Compass,
+    labelClassName: "text-[#667085]",
     valueClassName: "text-[#042C51]",
     iconClassName: "bg-[#EAF2FB] text-[#042C51]",
     description: (totals) =>
@@ -36,8 +37,9 @@ const metricConfig = [
     key: "totalVolume",
     title: "Public Applicants",
     icon: UsersRound,
+    labelClassName: "text-blue-600",
     valueClassName: "text-[#042C51]",
-    iconClassName: "bg-[#EAF2FB] text-[#042C51]",
+    iconClassName: "bg-blue-50 text-blue-700",
     description: () => "Based on current records",
     format: (value) =>
       Number(value || 0).toLocaleString("en-PH"),
@@ -46,8 +48,9 @@ const metricConfig = [
     key: "totalHired",
     title: "Total Hires",
     icon: UserCheck,
-    valueClassName: "text-emerald-600",
-    iconClassName: "bg-emerald-50 text-[#042C51]",
+    labelClassName: "text-emerald-600",
+    valueClassName: "text-emerald-700",
+    iconClassName: "bg-emerald-50 text-emerald-700",
     description: () => "Current hired candidate count",
     format: (value) =>
       Number(value || 0).toLocaleString("en-PH"),
@@ -56,8 +59,9 @@ const metricConfig = [
     key: "totalSourceCost",
     title: "Total Source Cost",
     icon: ReceiptText,
-    valueClassName: "text-[#042C51]",
-    iconClassName: "bg-amber-50 text-[#042C51]",
+    labelClassName: "text-amber-600",
+    valueClassName: "text-amber-700",
+    iconClassName: "bg-amber-50 text-amber-700",
     description: (totals) =>
       `${Number(
         totals?.totalCostEntries || 0,
@@ -68,8 +72,9 @@ const metricConfig = [
     key: "overallCostPerHire",
     title: "Overall Cost / Hire",
     icon: Target,
+    labelClassName: "text-[#FF5C28]",
     valueClassName: "text-[#FF5C28]",
-    iconClassName: "bg-[#FFF0EB] text-[#042C51]",
+    iconClassName: "bg-[#FFF0EB] text-[#FF5C28]",
     description: () => "Total cost / total hires",
     format: formatCurrency,
   },
@@ -89,7 +94,11 @@ function MetricCard({
     >
       <div className="flex h-full items-start justify-between gap-4">
         <div className="min-w-0 flex-1 self-stretch">
-          <p className="sibs-kicker">
+          <p
+            className={`truncate text-[10px] font-extrabold uppercase tracking-normal ${
+              item.labelClassName || "text-[#667085]"
+            }`}
+          >
             {item.title}
           </p>
 

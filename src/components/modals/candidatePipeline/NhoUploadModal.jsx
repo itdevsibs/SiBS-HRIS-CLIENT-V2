@@ -1255,7 +1255,7 @@ export default function NhoUploadModal({
 
   return (
     <div
-      className="fixed inset-0 z-[10010] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+      className="sibs-modal-blur fixed inset-0 z-[10010] flex h-dvh items-center justify-center px-4 py-4"
       onClick={() => {
         if (!isSaving) onClose?.();
       }}

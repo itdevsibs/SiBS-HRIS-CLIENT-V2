@@ -4,9 +4,9 @@ import {
   ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
+  CalendarDays,
   Check,
   ChevronDown,
-  ChevronRight,
   Eye,
   FileImage,
   FileSpreadsheet,
@@ -700,13 +700,18 @@ function formatUploadedDate(value = "") {
   });
 }
 
-function getFileIcon(fileName = "") {
+function FileTypeIcon({ fileName = "", ...props }) {
   const value = String(fileName || "").toLowerCase();
 
-  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) return FileImage;
-  if (/\.(xls|xlsx|csv)$/i.test(value)) return FileSpreadsheet;
+  if (/\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(value)) {
+    return <FileImage {...props} />;
+  }
 
-  return FileText;
+  if (/\.(xls|xlsx|csv)$/i.test(value)) {
+    return <FileSpreadsheet {...props} />;
+  }
+
+  return <FileText {...props} />;
 }
 
 function getRequirementSortIndex(requirement = "") {
@@ -803,228 +808,85 @@ function getCandidatePublicId(candidate = {}) {
 }
 
 function AnimatedProfileTabPanel({ children }) {
-  return (
-    <div className="candidate-profile-tab-panel-in">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
-function CandidateProfileSideNav({
+function CandidateProfileHorizontalNavigation({
   tabs = [],
   activeTab = "",
   onTabChange,
 }) {
-  const activeParent = String(activeTab || "").split(".")[0];
-  const [openParent, setOpenParent] = useState(activeParent || "personal");
-
-  useEffect(() => {
-    if (activeParent) setOpenParent(activeParent);
-  }, [activeParent]);
-
-  function isParentActive(tab) {
-    return (
-      activeTab === tab.key ||
-      String(activeTab || "").startsWith(`${tab.key}.`)
-    );
-  }
-
-  function handleParentClick(tab) {
-    const hasChildren = Array.isArray(tab.children) && tab.children.length > 0;
-
-    if (!hasChildren) {
-      setOpenParent("");
-      onTabChange?.(tab.key);
-      return;
-    }
-
-    const isActive = isParentActive(tab);
-    setOpenParent((previous) =>
-      previous === tab.key && isActive ? "" : tab.key,
-    );
-
-    if (!isActive) {
-      onTabChange?.(tab.children[0].key);
-    }
-  }
-
-  const activeParentTab = tabs.find((tab) => isParentActive(tab));
-  const activeChildren = Array.isArray(activeParentTab?.children)
-    ? activeParentTab.children
+  const activePrimaryKey = String(activeTab || "personal.basic").split(".")[0];
+  const activePrimary = tabs.find((tab) => tab.key === activePrimaryKey);
+  const secondaryTabs = Array.isArray(activePrimary?.children)
+    ? activePrimary.children
     : [];
 
+  function handlePrimaryClick(tab) {
+    const nextKey = tab.children?.[0]?.key || tab.key;
+    onTabChange?.(nextKey);
+  }
+
   return (
-    <aside className="border-b border-[#E6ECF2] bg-white p-4 lg:border-b-0 lg:border-r lg:p-5">
-      {/* Mobile and tablet navigation */}
-      <div className="lg:hidden">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {tabs.map((tab) => {
-            const Icon = tab.icon || FileText;
-            const parentActive = isParentActive(tab);
-            const hasChildren =
-              Array.isArray(tab.children) && tab.children.length > 0;
+    <nav
+      className="rounded-2xl border border-[#E6ECF2] bg-white p-2.5 shadow-sm"
+      aria-label="Candidate profile navigation"
+    >
+      <div className="flex min-w-0 gap-1 overflow-x-auto pb-1 no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon || FileText;
+          const active = tab.key === activePrimaryKey;
+
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => handlePrimaryClick(tab)}
+              aria-current={active ? "page" : undefined}
+              className={`inline-flex h-9 min-w-max items-center justify-center gap-1.5 rounded-lg border px-3.5 text-xs font-bold transition-all ${
+                active
+                  ? "border-[#BFD3F2] bg-[#E9F0FC] text-[#042C51] shadow-sm"
+                  : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <Icon
+                size={14}
+                className={active ? "text-[#FF5C28]" : "text-slate-400"}
+              />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {secondaryTabs.length > 0 && (
+        <div className="mt-2 flex items-center gap-1.5 overflow-x-auto border-t border-[#F1F5F9] pt-2 no-scrollbar">
+          <span className="shrink-0 px-2 text-[9px] font-black uppercase tracking-widest text-slate-400">
+            Subsections:
+          </span>
+
+          {secondaryTabs.map((child) => {
+            const active = child.key === activeTab;
 
             return (
               <button
-                key={tab.key}
+                key={child.key}
                 type="button"
-                onClick={() => handleParentClick(tab)}
-                aria-current={parentActive ? "page" : undefined}
-                aria-expanded={hasChildren ? parentActive : undefined}
-                className={`group inline-flex min-w-max items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] ${
-                  parentActive
-                    ? "bg-sibs-primary-1 text-white shadow-sm"
-                    : "bg-white text-sibs-primary-1 hover:-translate-y-0.5 hover:bg-[#F2F6FA] hover:shadow-sm"
+                onClick={() => onTabChange?.(child.key)}
+                aria-selected={active}
+                className={`h-7 min-w-max rounded-full px-3 text-[10px] font-bold transition-all ${
+                  active
+                    ? "bg-[#042C51] text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
-                {hasChildren && (
-                  <ChevronRight
-                    size={14}
-                    className={`shrink-0 transition-transform duration-200 ${
-                      parentActive ? "rotate-90" : ""
-                    }`}
-                  />
-                )}
-
-                <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-                    parentActive
-                      ? "bg-white/15 text-white"
-                      : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
-                  }`}
-                >
-                  <Icon size={16} />
-                </span>
-
-                <span className="truncate">{tab.label}</span>
+                {child.label}
               </button>
             );
           })}
         </div>
-
-        {activeChildren.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2 rounded-xl bg-[#F8FAFC] p-2">
-            {activeChildren.map((child) => {
-              const childActive = activeTab === child.key;
-
-              return (
-                <button
-                  key={child.key}
-                  type="button"
-                  onClick={() => onTabChange?.(child.key)}
-                  aria-current={childActive ? "page" : undefined}
-                  className={`inline-flex h-9 min-w-0 items-center gap-2 rounded-full px-3 text-xs font-bold transition-all duration-200 active:scale-[0.98] ${
-                    childActive
-                      ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
-                      : "bg-white text-sibs-primary-1/80 hover:bg-[#EEF5FB]"
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                      childActive
-                        ? "bg-sibs-primary-1"
-                        : "bg-sibs-primary-1/40"
-                    }`}
-                  />
-                  <span className="truncate">{child.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Desktop navigation */}
-      <div className="hidden flex-col gap-2 lg:flex">
-        {tabs.map((tab) => {
-          const Icon = tab.icon || FileText;
-          const hasChildren =
-            Array.isArray(tab.children) && tab.children.length > 0;
-          const parentActive = isParentActive(tab);
-          const isOpen = openParent === tab.key;
-
-          return (
-            <div key={tab.key} className="min-w-0">
-              <button
-                type="button"
-                onClick={() => handleParentClick(tab)}
-                aria-current={parentActive ? "page" : undefined}
-                aria-expanded={hasChildren ? isOpen : undefined}
-                className={`group flex w-full min-w-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 active:scale-[0.98] ${
-                  parentActive
-                    ? "bg-sibs-primary-1 text-white shadow-sm lg:translate-x-1"
-                    : "bg-white text-sibs-primary-1 hover:translate-x-1 hover:bg-[#F2F6FA] hover:shadow-sm"
-                }`}
-              >
-                {hasChildren ? (
-                  <ChevronRight
-                    size={14}
-                    className={`shrink-0 transition-transform duration-200 ${
-                      isOpen ? "rotate-90" : ""
-                    }`}
-                  />
-                ) : (
-                  <span className="w-[14px] shrink-0" />
-                )}
-
-                <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
-                    parentActive
-                      ? "bg-white/15 text-white"
-                      : "bg-[#F2F6FA] text-sibs-primary-1 group-hover:bg-white"
-                  }`}
-                >
-                  <Icon size={16} />
-                </span>
-
-                <span className="truncate">{tab.label}</span>
-              </button>
-
-              {hasChildren && (
-                <div
-                  className={`grid transition-all duration-200 ease-out ${
-                    isOpen
-                      ? "grid-rows-[1fr] opacity-100"
-                      : "grid-rows-[0fr] opacity-0"
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="mt-1 space-y-1 pl-9 pr-1">
-                      {tab.children.map((child) => {
-                        const childActive = activeTab === child.key;
-
-                        return (
-                          <button
-                            key={child.key}
-                            type="button"
-                            onClick={() => onTabChange?.(child.key)}
-                            aria-current={childActive ? "page" : undefined}
-                            className={`group/sub flex h-9 w-full min-w-0 items-center gap-2 rounded-full px-3 text-left text-xs font-bold transition-all duration-200 ${
-                              childActive
-                                ? "bg-[#BDD0EE] text-sibs-primary-1 shadow-sm"
-                                : "text-sibs-primary-1/80 hover:translate-x-1 hover:bg-[#F8FAFC]"
-                            }`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                                childActive
-                                  ? "bg-sibs-primary-1"
-                                  : "bg-sibs-primary-1/40 group-hover/sub:bg-sibs-primary-1"
-                              }`}
-                            />
-                            <span className="truncate">{child.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </aside>
+      )}
+    </nav>
   );
 }
 
@@ -1138,10 +1000,6 @@ function isCandidateActivelyLinkedToPipeline(candidate = {}) {
     verifiedPipelineId &&
       (currentStage || pipelineStatus === "active"),
   );
-}
-
-function isCandidateLinkedToPipeline(candidate = {}) {
-  return isCandidateActivelyLinkedToPipeline(candidate);
 }
 
 function getResolvedFileUrl(fileUrl = "") {
@@ -2663,75 +2521,63 @@ function buildOnboardingNavigationUrl(candidate = {}, pipelineId = "") {
 
 function SectionTitle({ icon: Icon, title, description }) {
   return (
-    <div className="mb-5 flex items-start justify-between gap-4">
-      <div className="flex min-w-0 items-start gap-3">
-        {Icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#EAF2FB] text-sibs-primary-1 sm:h-10 sm:w-10">
-            <Icon size={18} className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
-          </div>
-        )}
+    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          {Icon && (
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E9F0FC] text-[#042C51]">
+              <Icon size={16} />
+            </span>
+          )}
 
-        <div className="min-w-0">
-          <h3 className="break-words text-sm font-extrabold uppercase tracking-wide text-[#101828] sm:text-base">
+          <h3 className="break-words text-sm font-black text-[#042C51]">
             {title}
           </h3>
-
-          {description && (
-            <p className="mt-1 break-words text-xs font-medium leading-5 text-sibs-tertiary-5 sm:text-sm">
-              {description}
-            </p>
-          )}
         </div>
+
+        {description && (
+          <p className="mt-1 text-[10px] font-semibold leading-4 text-slate-400">
+            {description}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function ProfileGrid({ children, cols = "md:grid-cols-2" }) {
+function ProfileGrid({ children, cols = "md:grid-cols-2", className = "" }) {
   return (
-    <div className={`grid min-w-0 grid-cols-1 gap-3 ${cols}`}>
+    <div
+      className={`grid min-w-0 grid-cols-1 gap-x-4 gap-y-4 ${cols} ${className}`}
+    >
       {children}
     </div>
   );
 }
 
-function ProfileDetail({ label, value }) {
-  const displayValue =
-    value === null || value === undefined || value === "" ? "—" : value;
-
-  const isLongText = [
-    "email",
-    "address",
-    "physical address",
-    "preferred location",
-    "how did you hear about us",
-    "training attended",
-    "skills / language",
-    "affiliations",
-    "general remarks",
-  ].includes(String(label || "").toLowerCase());
+function ProfileDetail({ label, value, mono = false, className = "" }) {
+  const hasValue = hasCandidateValue(value);
+  const displayValue = hasValue ? value : "—";
 
   return (
-    <div className="flex min-h-[84px] min-w-0 flex-col justify-center rounded-[10px] bg-[#F8FAFC] px-3 py-2.5 sm:px-4">
-      <p className="mb-1.5 break-words text-[10px] font-extrabold uppercase leading-4 tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
+    <div className={`flex min-w-0 flex-col gap-1.5 text-left ${className}`}>
+      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
         {label}
-      </p>
+      </span>
 
-      <p
-        title={String(displayValue)}
-        className={`flex min-h-9 min-w-0 items-center text-sm font-extrabold leading-[18px] text-[#344054] ${
-          isLongText ? "break-all" : "break-words"
-        }`}
-      >
-        {displayValue}
-      </p>
+      <div className="flex min-h-[40px] items-center rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 transition-colors duration-150">
+        <span
+          title={String(displayValue)}
+          className={`block min-w-0 break-words text-xs font-semibold leading-normal ${
+            hasValue ? "text-[#101828]" : "text-[#98A2B3]"
+          } ${mono ? "font-mono" : ""}`}
+        >
+          {displayValue}
+        </span>
+      </div>
     </div>
   );
 }
-
-
-
-
 
 function NhoRequirementCard({
   requirement,
@@ -2786,7 +2632,6 @@ function NhoRequirementCard({
           {hasFiles && (
             <div className="mt-3 space-y-2">
               {files.map((file) => {
-                const FileIcon = getFileIcon(file.fileName);
                 const isSelected = selectedFileId && selectedFileId === file.id;
 
                 return (
@@ -2800,7 +2645,8 @@ function NhoRequirementCard({
                         : "border-emerald-100 bg-white hover:bg-emerald-50"
                     }`}
                   >
-                    <FileIcon
+                    <FileTypeIcon
+                      fileName={file.fileName}
                       size={17}
                       className={`shrink-0 ${
                         isSelected ? "text-sibs-primary-1" : "text-emerald-700"
@@ -2840,19 +2686,25 @@ function NhoRequirementCard({
   );
 }
 
-function ProfileTextarea({ label, value }) {
-  const displayValue =
-    value === null || value === undefined || value === "" ? "—" : value;
+function ProfileTextarea({ label, value, className = "" }) {
+  const hasValue = hasCandidateValue(value);
+  const displayValue = hasValue ? value : "—";
 
   return (
-    <div className="min-w-0 rounded-[10px] bg-[#F8FAFC] px-3 py-3 sm:px-4">
-      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-wide text-sibs-primary-1/70 sm:text-[11px]">
+    <div className={`flex min-w-0 flex-col gap-1.5 text-left ${className}`}>
+      <span className="block text-[10px] font-bold uppercase tracking-wide text-[#8EA3BF]">
         {label}
-      </p>
+      </span>
 
-      <p className="whitespace-pre-wrap break-words text-sm font-extrabold leading-6 text-[#344054]">
-        {displayValue}
-      </p>
+      <div className="min-h-[80px] rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] px-3 py-2.5 transition-colors duration-150">
+        <p
+          className={`whitespace-pre-wrap break-words text-xs font-semibold leading-6 ${
+            hasValue ? "text-[#101828]" : "text-[#98A2B3]"
+          }`}
+        >
+          {displayValue}
+        </p>
+      </div>
     </div>
   );
 }
@@ -2895,7 +2747,6 @@ function NhoFilePreviewPanel({ file }) {
     );
   }
 
-  const FileIcon = getFileIcon(file.fileName);
   const resolvedFileUrl = getResolvedFileUrl(file.fileUrl);
 
   const isImageByType = String(file.fileType || "").startsWith("image/");
@@ -2912,7 +2763,7 @@ function NhoFilePreviewPanel({ file }) {
     <div className="rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-sibs-primary-1 shadow-sm">
-          <FileIcon size={24} />
+          <FileTypeIcon fileName={file.fileName} size={24} />
         </div>
 
         <div className="min-w-0">
@@ -3859,7 +3710,7 @@ export default function CandidateProfileModal() {
   const profileTabs = [
     {
       key: "personal",
-      label: "Personal",
+      label: "Personal Info",
       icon: UserRound,
       children: [
         { key: "personal.basic", label: "Basic Info" },
@@ -3870,7 +3721,7 @@ export default function CandidateProfileModal() {
     },
     {
       key: "family",
-      label: "Family",
+      label: "Family / Kin",
       icon: UserRoundPen,
       children: [
         { key: "family.spouse", label: "Spouse" },
@@ -3886,7 +3737,7 @@ export default function CandidateProfileModal() {
     },
     {
       key: "eligibility",
-      label: "Eligibility",
+      label: "Credentials",
       icon: BadgeCheck,
     },
     {
@@ -3896,12 +3747,12 @@ export default function CandidateProfileModal() {
     },
     {
       key: "training",
-      label: "Training",
+      label: "Trainings",
       icon: GraduationCap,
     },
     {
       key: "skills",
-      label: "Skills",
+      label: "Skills / Awards",
       icon: Sparkles,
       children: [
         { key: "skills.skills", label: "Skills" },
@@ -3916,7 +3767,7 @@ export default function CandidateProfileModal() {
     },
     {
       key: "application",
-      label: "Application",
+      label: "Application & HR",
       icon: Network,
       children: [
         { key: "application.overview", label: "Overview" },
@@ -3941,6 +3792,16 @@ export default function CandidateProfileModal() {
       icon: StickyNote,
     },
   ];
+
+  const activeProfileParent = profileTabs.find(
+    (tab) =>
+      activeTab === tab.key ||
+      String(activeTab || "").startsWith(`${tab.key}.`),
+  );
+
+  const activeProfileChild = Array.isArray(activeProfileParent?.children)
+    ? activeProfileParent.children.find((child) => child.key === activeTab)
+    : null;
 
   function handleProfileTabChange(tabId) {
     if (activeTab === tabId) return;
@@ -4655,180 +4516,147 @@ export default function CandidateProfileModal() {
 
   function renderPersonalBasic() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <SectionTitle
-          icon={UserRound}
-          title="Personal Information"
-          description="Basic identity and personal details."
+      <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ProfileDetail label="First Name" value={activeCandidate.firstName} />
+        <ProfileDetail
+          label="Middle Name"
+          value={activeCandidate.middleName}
         />
-
-        <div className="space-y-3">
-          <ProfileGrid cols="md:grid-cols-2">
-            <ProfileDetail
-              label="Candidate ID"
-              value={getCandidatePublicId(activeCandidate)}
-            />
-            <ProfileDetail
-              label="Candidate Status"
-              value={candidateDisplayStatus}
-            />
-          </ProfileGrid>
-
-          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-            <ProfileDetail label="First Name" value={activeCandidate.firstName} />
-            <ProfileDetail
-              label="Middle Name"
-              value={activeCandidate.middleName}
-            />
-            <ProfileDetail label="Last Name" value={activeCandidate.lastName} />
-            <ProfileDetail
-              label="Name Extension"
-              value={firstCandidateValue(
-                activeCandidate.suffix,
-                activeCandidate.nameExtension,
-                activeCandidate.name_extension,
-              )}
-            />
-          </ProfileGrid>
-
-          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-            <ProfileDetail label="Preferred Name" value={activeCandidate.nickname} />
-            <ProfileDetail
-              label="Birth Date"
-              value={formatDate(
-                firstCandidateValue(
-                  activeCandidate.dateOfBirth,
-                  activeCandidate.birthdate,
-                  activeCandidate.birthDate,
-                ),
-              )}
-            />
-            <ProfileDetail
-              label="Age"
-              value={firstCandidateValue(
-                activeCandidate.ageAsOfApplication,
-                activeCandidate.age,
-              )}
-            />
-            <ProfileDetail label="Encoded By" value={encodedBy} />
-          </ProfileGrid>
-
-          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-            <ProfileDetail
-              label="Place of Birth"
-              value={firstCandidateValue(
-                activeCandidate.placeOfBirth,
-                activeCandidate.place_of_birth,
-                activeCandidate.birthPlace,
-              )}
-            />
-            <ProfileDetail label="Gender" value={activeCandidate.gender} />
-            <ProfileDetail
-              label="Civil Status"
-              value={firstCandidateValue(
-                activeCandidate.civilStatus,
-                activeCandidate.civil_status,
-                activeCandidate.maritalStatus,
-              )}
-            />
-            <ProfileDetail
-              label="Citizenship"
-              value={firstCandidateValue(
-                activeCandidate.citizenship,
-                activeCandidate.nationality,
-              )}
-            />
-          </ProfileGrid>
-
-          <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-            <ProfileDetail
-              label="Blood Type"
-              value={firstCandidateValue(
-                activeCandidate.bloodType,
-                activeCandidate.blood_type,
-              )}
-            />
-            <ProfileDetail label="Height" value={activeCandidate.height} />
-            <ProfileDetail label="Weight" value={activeCandidate.weight} />
-            <ProfileDetail
-              label="Created At"
-              value={formatDate(activeCandidate.createdAt)}
-            />
-          </ProfileGrid>
-        </div>
-      </section>
+        <ProfileDetail label="Last Name" value={activeCandidate.lastName} />
+        <ProfileDetail
+          label="Name Extension (Jr/III)"
+          value={firstCandidateValue(
+            activeCandidate.suffix,
+            activeCandidate.nameExtension,
+            activeCandidate.name_extension,
+          )}
+        />
+        <ProfileDetail
+          label="Preferred Name"
+          value={activeCandidate.nickname}
+        />
+        <ProfileDetail
+          label="Birth Date"
+          value={formatDate(
+            firstCandidateValue(
+              activeCandidate.dateOfBirth,
+              activeCandidate.birthdate,
+              activeCandidate.birthDate,
+            ),
+          )}
+        />
+        <ProfileDetail
+          label="Place of Birth"
+          value={firstCandidateValue(
+            activeCandidate.placeOfBirth,
+            activeCandidate.place_of_birth,
+            activeCandidate.birthPlace,
+          )}
+        />
+        <ProfileDetail label="Gender" value={activeCandidate.gender} />
+        <ProfileDetail
+          label="Civil Status"
+          value={firstCandidateValue(
+            activeCandidate.civilStatus,
+            activeCandidate.civil_status,
+            activeCandidate.maritalStatus,
+          )}
+        />
+        <ProfileDetail
+          label="Citizenship"
+          value={firstCandidateValue(
+            activeCandidate.citizenship,
+            activeCandidate.nationality,
+          )}
+        />
+        <ProfileDetail
+          label="Blood Type"
+          value={firstCandidateValue(
+            activeCandidate.bloodType,
+            activeCandidate.blood_type,
+          )}
+        />
+        <ProfileDetail label="Height" value={activeCandidate.height} />
+        <ProfileDetail label="Weight" value={activeCandidate.weight} />
+      </div>
     );
   }
 
   function renderPersonalContact() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <SectionTitle
-          icon={Mail}
-          title="Contact Information"
-          description="Candidate email, mobile number, and telephone details."
+      <ProfileGrid cols="md:grid-cols-3">
+        <ProfileDetail label="Email" value={activeCandidate.email} />
+        <ProfileDetail
+          label="Mobile Number"
+          value={firstCandidateValue(
+            activeCandidate.phoneNumber1,
+            activeCandidate.contactNumber,
+            activeCandidate.phone,
+          )}
         />
-
-        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-4">
-          <ProfileDetail label="Email" value={activeCandidate.email} />
-          <ProfileDetail
-            label="Phone 1"
-            value={firstCandidateValue(
-              activeCandidate.phoneNumber1,
-              activeCandidate.contactNumber,
-              activeCandidate.phone,
-            )}
-          />
-          <ProfileDetail label="Phone 2" value={activeCandidate.phoneNumber2} />
-          <ProfileDetail
-            label="Telephone"
-            value={firstCandidateValue(
-              activeCandidate.telephone,
-              activeCandidate.telephoneNumber,
-            )}
-          />
-        </ProfileGrid>
-      </section>
+        <ProfileDetail
+          label="Telephone"
+          value={firstCandidateValue(
+            activeCandidate.telephone,
+            activeCandidate.telephoneNumber,
+            activeCandidate.phoneNumber2,
+          )}
+        />
+      </ProfileGrid>
     );
   }
 
   function renderPersonalAddress() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
-        <SectionTitle
-          icon={MapPin}
-          title="Address Information"
-          description="Candidate physical address and preferred work location."
-        />
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
+            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#FF5C28]" />
+              Residential Address
+            </h3>
+            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-[#344054]">
+              {firstCandidateValue(
+                activeCandidate.residentialAddress,
+                activeCandidate.residential_address,
+                activeCandidate.physicalAddress,
+                activeCandidate.address,
+              ) || "—"}
+            </p>
+          </div>
 
-        <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
-          <ProfileDetail
-            label="Physical Address"
-            value={firstCandidateValue(
-              activeCandidate.physicalAddress,
-              activeCandidate.address,
-            )}
-          />
-          <ProfileDetail
-            label="Residential Address"
-            value={firstCandidateValue(
-              activeCandidate.residentialAddress,
-              activeCandidate.residential_address,
-            )}
-          />
-          <ProfileDetail
-            label="Permanent Address"
-            value={firstCandidateValue(
-              activeCandidate.permanentAddress,
-              activeCandidate.permanent_address,
-            )}
-          />
+          <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-4">
+            <h3 className="mb-4 flex items-center gap-2 border-b border-slate-200 pb-2.5 text-[11px] font-black uppercase tracking-wider text-[#042C51]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#042C51]" />
+              Permanent Address
+            </h3>
+            <p className="min-h-24 rounded-xl bg-white p-4 text-sm font-bold leading-6 text-[#344054]">
+              {firstCandidateValue(
+                activeCandidate.permanentAddress,
+                activeCandidate.permanent_address,
+                activeCandidate.physicalAddress,
+                activeCandidate.address,
+              ) || "—"}
+            </p>
+          </div>
+        </div>
+
+        <ProfileGrid cols="sm:grid-cols-2">
           <ProfileDetail
             label="Preferred Location"
             value={activeCandidate.applyingLocation}
           />
+          <ProfileDetail
+            label="Work Setup Preference"
+            value={firstCandidateValue(
+              activeCandidate.workSetup,
+              activeCandidate.work_setup,
+              activeCandidate.workArrangement,
+              activeCandidate.work_arrangement,
+            )}
+          />
         </ProfileGrid>
-      </section>
+      </div>
     );
   }
 
@@ -5095,6 +4923,26 @@ export default function CandidateProfileModal() {
         />
 
         <ProfileGrid cols="sm:grid-cols-2 xl:grid-cols-3">
+          <ProfileDetail
+            label="Candidate ID"
+            value={getCandidatePublicId(activeCandidate)}
+            mono
+          />
+          <ProfileDetail
+            label="Candidate Status"
+            value={candidateDisplayStatus}
+          />
+          <ProfileDetail
+            label="Age as of Application"
+            value={firstCandidateValue(
+              activeCandidate.ageAsOfApplication,
+              activeCandidate.age,
+            )}
+          />
+          <ProfileDetail
+            label="Encoded By"
+            value={encodedBy}
+          />
           <ProfileDetail
             label="Applied Position"
             value={activeCandidate.openPosition || activeCandidate.roleCapability}
@@ -6048,202 +5896,186 @@ export default function CandidateProfileModal() {
 
   return (
     <>
-      <style>
-        {`
-          @keyframes candidateProfileTabPanelIn {
-            0% {
-              opacity: 0;
-              transform: translateY(16px) scale(0.985);
-              filter: blur(2px);
-            }
-
-            100% {
-              opacity: 1;
-              transform: translateY(0) scale(1);
-              filter: blur(0);
-            }
-          }
-
-          .candidate-profile-tab-panel-in {
-            animation: candidateProfileTabPanelIn 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
-            will-change: opacity, transform, filter;
-          }
-
-          @media (prefers-reduced-motion: reduce) {
-            .candidate-profile-tab-panel-in {
-              animation: none;
-            }
-          }
-        `}
-      </style>
-
       <div
-        className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/45 px-3 py-3 sm:px-4"
+        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-3 py-3 sm:px-4"
         onClick={handleCloseCandidateProfile}
       >
         <div
-          className="flex h-[calc(100dvh-24px)] w-[calc(100vw-24px)] max-w-[92rem] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:h-[94dvh] sm:w-full"
+          className="flex h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] shadow-2xl sm:h-[86dvh] sm:max-h-[92dvh]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-[#E6ECF2] bg-white px-5 py-4 sm:px-7">
-            <div className="min-w-0">
-              <h2 className="line-clamp-1 text-xl font-extrabold text-sibs-primary-1 sm:text-2xl">
-                Candidate Profile
-              </h2>
+          <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[#174A7C] bg-sibs-primary-1 px-5 py-3.5 text-white sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FF5C28] text-white shadow-sm">
+                <UserRound size={17} />
+              </span>
 
-              <p className="mt-1 line-clamp-3 text-sm font-semibold leading-5 text-sibs-primary-1/80 sm:line-clamp-none">
-                View the master candidate profile before moving to the pipeline.
-              </p>
+              <div className="min-w-0">
+                <h2 className="truncate text-sm font-extrabold uppercase tracking-wide text-white">
+                  Talent Pool Candidate Profile
+                </h2>
+                <p className="truncate text-[11px] font-semibold text-blue-100">
+                  Comprehensive candidate filing and talent screening dossier record
+                </p>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={handleCloseCandidateProfile}
-              className="shrink-0 rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close candidate profile"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white"
             >
-              <X size={21} />
+              <X size={19} />
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto bg-[#F8FAFC] p-4 pb-6 sm:p-6 sm:pb-6">
             <div className="space-y-5">
-              <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
-                <div className="border-b border-[#E6ECF2] bg-white px-5 py-6 sm:px-7">
-                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:text-left">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-sibs-primary-1 text-2xl font-extrabold text-white shadow-sm sm:h-24 sm:w-24 sm:text-3xl">
-                        {candidateInitials}
-                      </div>
+              <section className="relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm">
+                <span
+                  className="pointer-events-none absolute left-[1px] right-[1px] top-[1px] h-1 overflow-hidden rounded-t-[15px]"
+                  aria-hidden="true"
+                >
+                  <span className="block h-full w-full bg-gradient-to-r from-[#042C51] via-[#FF5C28] to-[#042C51]" />
+                </span>
 
-                      <div className="min-w-0 max-w-full">
-                        <h3 className="line-clamp-4 break-words text-xl font-extrabold uppercase leading-tight tracking-wide text-[#101828] sm:line-clamp-3 sm:text-2xl">
+                <div className="mt-1 flex flex-col items-center justify-between gap-5 lg:flex-row lg:items-start">
+                  <div className="flex min-w-0 flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#042C51] to-[#084782] text-xl font-extrabold text-white shadow-md">
+                      {candidateInitials}
+                      <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                        <h3 className="break-words text-lg font-black leading-tight tracking-tight text-[#042C51]">
                           {activeCandidate.name || "Unnamed Candidate"}
                         </h3>
 
-                        <p className="mt-2 break-words text-sm font-extrabold text-sibs-primary-1">
-                          {activeCandidate.email || "No email provided"}
-                        </p>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase ${getStatusClass(
+                            candidateDisplayStatus,
+                          )}`}
+                        >
+                          {candidateDisplayStatus || "—"}
+                        </span>
 
-                        <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-                          <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-                            {activeCandidate.candidateId || "—"}
-                          </span>
+                        <span className="rounded-full border border-blue-100 bg-[#E9F0FC] px-2 py-0.5 font-mono text-[9px] font-extrabold uppercase text-[#042C51]">
+                          {activeCandidate.candidateId || "—"}
+                        </span>
+                      </div>
 
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClass(
-                              candidateDisplayStatus,
-                            )}`}
-                          >
-                            {candidateDisplayStatus || "—"}
-                          </span>
+                      <p className="mt-0.5 text-xs font-semibold text-[#FF5C28]">
+                        {activeCandidate.openPosition ||
+                          activeCandidate.roleCapability ||
+                          "No position provided"}
+                      </p>
 
-                          {currentStage &&
-                            normalizeLower(currentStage) !==
-                              normalizeLower(candidateDisplayStatus) && (
-                              <span className="inline-flex rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">
-                                {currentStage}
-                              </span>
-                            )}
-
-                          {activeCandidate.isPublicSubmission && (
-                            <span className="inline-flex rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">
-                              Public Submission
-                            </span>
+                      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[10px] font-semibold text-[#667085] sm:justify-start">
+                        <span className="inline-flex items-center gap-1">
+                          <BriefcaseBusiness size={13} className="text-sibs-primary-1" />
+                          {firstCandidateValue(
+                            activeCandidate.positionDepartment,
+                            activeCandidate.department,
+                            activeCandidate.departmentName,
+                            "—",
                           )}
-                        </div>
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Mail size={13} className="text-sibs-primary-1" />
+                          {activeCandidate.email || "No email provided"}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays size={13} className="text-sibs-primary-1" />
+                          Applied: {formatDate(
+                            firstCandidateValue(
+                              activeCandidate.applicationDate,
+                              activeCandidate.application_date,
+                              activeCandidate.createdAt,
+                              activeCandidate.created_at,
+                            ),
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Network size={13} className="text-sibs-primary-1" />
+                          Fit: {firstCandidateValue(
+                            activeCandidate.currentAppliedAccount,
+                            activeCandidate.accountName,
+                            activeCandidate.account,
+                            "No account fit",
+                          )}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin size={13} className="text-sibs-primary-1" />
+                          {activeCandidate.applyingLocation || "—"}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row xl:items-center">
-                      <button
-                        type="button"
-                        onClick={handleUpdateCandidateStatus}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#F3D8A8] bg-[#FFF8E8] px-5 text-sm font-extrabold text-[#B45309] transition hover:bg-[#FFF3D6] hover:shadow-sm"
-                      >
-                        <RefreshCcw size={16} />
-                        Update Status
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 divide-y divide-[#E6ECF2] md:grid-cols-3 md:divide-x md:divide-y-0">
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Applied Position
-                    </p>
-
-                    <p
-                      title={
-                        activeCandidate.openPosition ||
-                        activeCandidate.roleCapability ||
-                        "—"
-                      }
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
-                    >
-                      {activeCandidate.openPosition ||
-                        activeCandidate.roleCapability ||
-                        "—"}
-                    </p>
                   </div>
 
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Preferred Location
-                    </p>
-
-                    <p
-                      title={activeCandidate.applyingLocation || "—"}
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <button
+                      type="button"
+                      onClick={handleUpdateCandidateStatus}
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-xs font-black text-white shadow-sm transition hover:bg-[#063560]"
                     >
-                      {activeCandidate.applyingLocation || "—"}
-                    </p>
-                  </div>
-
-                  <div className="px-5 py-4">
-                    <p className="text-xs font-bold uppercase tracking-wide text-sibs-tertiary-5">
-                      Last Activity
-                    </p>
-
-                    <p
-                      title={formatDate(activeCandidate.lastActivity)}
-                      className="mt-1 truncate text-sm font-extrabold text-[#101828]"
-                    >
-                      {formatDate(activeCandidate.lastActivity)}
-                    </p>
+                      <RefreshCcw size={15} className="text-[#FF5C28]" />
+                      Status
+                    </button>
                   </div>
                 </div>
 
                 {isDoNotReprocess && (
-                  <div className="border-t border-red-100 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+                  <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">
                     This candidate is marked as Do Not Reprocess and cannot be
                     moved to the pipeline unless the status is updated.
                   </div>
                 )}
               </section>
 
-              <section className="overflow-hidden rounded-2xl border border-[#DDE7F1] bg-white shadow-sm">
-                <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
-                  {/* LEFT TABS */}
-                  <CandidateProfileSideNav
-                    tabs={profileTabs}
-                    activeTab={activeTab}
-                    onTabChange={handleProfileTabChange}
-                  />
+              <CandidateProfileHorizontalNavigation
+                tabs={profileTabs}
+                activeTab={activeTab}
+                onTabChange={handleProfileTabChange}
+              />
 
-                  {/* RIGHT TAB CONTENT */}
-                  <div className="min-w-0 bg-[#F8FAFC] p-4 sm:p-5">
-                    <AnimatedProfileTabPanel key={`${activeTab}-${tabAnimationKey}`}>
-                      {renderActiveTabContent()}
-                    </AnimatedProfileTabPanel>
+              <div className="sibs-page-card-in grid grid-cols-1 items-start gap-6">
+                <section
+                  key={activeTab}
+                  className="sibs-profile-tab-panel min-w-0 rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm"
+                >
+                  <div className="mb-5 flex flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-black uppercase tracking-wider text-[#042C51]">
+                        {activeProfileParent?.label || "Profile"}
+                        {activeProfileChild?.label
+                          ? ` > ${activeProfileChild.label}`
+                          : ""}
+                      </h3>
+                      <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+                        Official candidate values are shown from the existing Talent Pool data source.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#042C51]" />
+                      <span className="text-[10px] font-bold uppercase text-slate-500">
+                        Official Dossier Record
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </section>
+
+                  <AnimatedProfileTabPanel key={`${activeTab}-${tabAnimationKey}`}>
+                    {renderActiveTabContent()}
+                  </AnimatedProfileTabPanel>
+                </section>
+              </div>
             </div>
           </div>
 
           <div className="relative z-[40] flex flex-col-reverse gap-4 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-            <p className="text-xs font-bold leading-5 text-sibs-tertiary-5">
+            <p className="inline-flex w-fit max-w-full items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1.5 text-xs font-extrabold leading-5 text-[#344054]">
               {isDropOffCandidate ? (
                 <span className="font-extrabold text-red-600">
                   Candidate is marked as Drop-off. Update the candidate status
@@ -6280,7 +6112,7 @@ export default function CandidateProfileModal() {
               <button
                 type="button"
                 onClick={handleCloseCandidateProfile}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#475467] transition hover:bg-[#F8FAFC] hover:shadow-sm"
+                className="inline-flex h-10 items-center justify-center rounded-[10px] border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/10"
               >
                 Close
               </button>
@@ -6305,7 +6137,7 @@ export default function CandidateProfileModal() {
                   type="button"
                   disabled={isMovingToOnboarding}
                   onClick={handleMoveToOnboarding}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isMovingToOnboarding ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -6320,7 +6152,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleOpenLinkedCandidateDestination}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20"
                 >
                   <ArrowRight size={16} />
                   Already Linked
@@ -6333,7 +6165,7 @@ export default function CandidateProfileModal() {
                 <button
                   type="button"
                   onClick={handleMoveToPipeline}
-                  className="relative z-[60] inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white shadow-sm transition hover:opacity-90 active:scale-[0.98]"
+                  className="relative z-[60] inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF5C28]/20 active:scale-[0.98]"
                 >
                   <ArrowRight size={16} />
                   Move to Pipeline
@@ -6346,7 +6178,7 @@ export default function CandidateProfileModal() {
 
       {statusUpdateOpen && (
         <div
-          className="fixed inset-0 z-[10025] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+          className="sibs-modal-blur fixed inset-0 z-[10025] flex h-dvh items-center justify-center px-4 py-4"
           onClick={(event) => {
             event.stopPropagation();
             handleCloseStatusUpdate();
@@ -6443,7 +6275,7 @@ export default function CandidateProfileModal() {
 
       {dropOffOpen && (
         <div
-          className="fixed inset-0 z-[10030] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+          className="sibs-modal-blur fixed inset-0 z-[10030] flex h-dvh items-center justify-center px-4 py-4"
           onClick={(event) => {
             event.stopPropagation();
             handleCloseDropOff();
