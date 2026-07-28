@@ -132,7 +132,7 @@ const Details = ({
         </section>
       )}
 
-      <section className="relative isolate overflow-visible bg-white pb-6 sm:pb-8">
+      <section className="relative isolate overflow-visible bg-white pb-3 sm:pb-4">
         {(approvalPage && canManageJdDetails) ||
         getSectionComments("recordInformation").length > 0 ? (
           <div

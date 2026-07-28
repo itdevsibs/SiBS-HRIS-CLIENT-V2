@@ -924,6 +924,71 @@ export const detailsResponsiveAuditStyles = `
     line-height: 16px !important;
     text-align: left !important;
   }
+
+  .jd-manual-header-grid .jd-manual-header-logo-column {
+    min-height: 256px !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  /*
+   * Manual title row sizing.
+   * The visible document preview uses .jd-manual-header-grid, while generated
+   * pages use .jd-paged-running-header. Keep both in sync.
+   */
+  .jd-manual-header-grid .jd-manual-title-row > .record-info-manualHero,
+  .jd-paged-running-header .jd-manual-title-row > .record-info-manualHero {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-title-row .record-info-manualMeta,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-title-row .record-info-manualHero > p:last-of-type,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualHero > p:last-of-type,
+  .jd-manual-header-grid .jd-manual-title-row .record-info-manualMeta > p:last-of-type,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 4px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-document-title-row > .record-info-manualDocumentTitle,
+  .jd-paged-running-header .jd-manual-document-title-row > .record-info-manualDocumentTitle {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-document-title-row .record-info-manualMeta,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-document-title-row .record-info-manualDocumentTitle > p:last-of-type,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualDocumentTitle > p:last-of-type,
+  .jd-manual-header-grid .jd-manual-document-title-row .record-info-manualMeta > p:last-of-type,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 5px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-header-footer-row > .record-info-manualFooter,
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter {
+    min-height: 64px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .jd-manual-header-grid .jd-manual-header-footer-row > .record-info-manualFooter > p:last-of-type,
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter > p:last-of-type {
+    margin-top: 5px !important;
+  }
   /*
    * Dedicated mobile header. Do not resize or reflow the fixed desktop grid.
    */
@@ -1199,7 +1264,7 @@ export const pagedJobDescriptionStyles = String.raw`
      * - right: 0.5 inch / 48px
      */
     size: 1100px 1556px;
-    margin-top: 390px;
+    margin-top: 315px;
     margin-right: 48px;
     margin-bottom: 56px;
     margin-left: 96px;
@@ -1288,8 +1353,8 @@ export const pagedJobDescriptionStyles = String.raw`
   }
 
   .jd-paged-running-header .jd-manual-header-logo-column {
-    min-height: 344px !important;
-    padding: 24px 16px !important;
+    min-height: 256px !important;
+    padding: 16px !important;
   }
 
   .jd-paged-running-header .jd-manual-header-logo {
@@ -1347,23 +1412,67 @@ export const pagedJobDescriptionStyles = String.raw`
   }
 
   .jd-paged-running-header .record-info-manualHero {
-    min-height: 126px !important;
-    padding: 16px !important;
+    min-height: 110px !important;
+    padding: 10px 16px !important;
   }
 
   .jd-paged-running-header .record-info-manualDocumentTitle {
-    min-height: 134px !important;
-    padding: 16px !important;
+    min-height: 96px !important;
+    padding: 6px 16px !important;
   }
 
   .jd-paged-running-header .record-info-manualMeta {
     min-height: 62px !important;
-    padding: 8px 10px !important;
+    padding: 5px 10px !important;
   }
 
   .jd-paged-running-header .record-info-manualFooter {
-    min-height: 82px !important;
-    padding: 8px 10px !important;
+    min-height: 64px !important;
+    padding: 5px 10px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row > .record-info-manualHero {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualHero > p:last-of-type,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 4px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row > .record-info-manualDocumentTitle {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualDocumentTitle > p:last-of-type,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter {
+    min-height: 64px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter > p:last-of-type {
+    margin-top: 5px !important;
   }
 
   .jd-paged-running-header .record-info-manualHero > p:last-of-type {
@@ -1431,7 +1540,7 @@ export const pagedJobDescriptionStyles = String.raw`
   }
 
   .jd-paged-document-body > section + section {
-    margin-top: 6mm !important;
+    margin-top: 3mm !important;
   }
 
   .jd-paged-document-body h4 {
@@ -1591,23 +1700,67 @@ export const pagedJobDescriptionStyles = String.raw`
   }
 
   .jd-paged-running-header .record-info-manualHero {
-    min-height: 126px !important;
-    padding: 16px !important;
+    min-height: 110px !important;
+    padding: 10px 16px !important;
   }
 
   .jd-paged-running-header .record-info-manualDocumentTitle {
-    min-height: 134px !important;
-    padding: 16px !important;
+    min-height: 96px !important;
+    padding: 6px 16px !important;
   }
 
   .jd-paged-running-header .record-info-manualMeta {
     min-height: 62px !important;
-    padding: 8px 10px !important;
+    padding: 5px 10px !important;
   }
 
   .jd-paged-running-header .record-info-manualFooter {
-    min-height: 82px !important;
-    padding: 8px 10px !important;
+    min-height: 64px !important;
+    padding: 5px 10px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row > .record-info-manualHero {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualHero > p:last-of-type,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 4px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row > .record-info-manualDocumentTitle {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualDocumentTitle > p:last-of-type,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter {
+    min-height: 64px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter > p:last-of-type {
+    margin-top: 5px !important;
   }
 
   .jd-paged-running-header .record-info-manualHero > p:last-of-type {
@@ -1654,6 +1807,57 @@ export const pagedJobDescriptionStyles = String.raw`
     font-weight: 800 !important;
     line-height: 16px !important;
     text-align: left !important;
+  }
+
+  /* Keep these last: Paged.js clones the source and generic header rules can win otherwise. */
+  .jd-paged-running-header .jd-manual-header-logo-column {
+    min-height: 256px !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row > .record-info-manualHero {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualHero > p:last-of-type,
+  .jd-paged-running-header .jd-manual-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 4px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row > .record-info-manualDocumentTitle {
+    min-height: 96px !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta {
+    min-height: 48px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualDocumentTitle > p:last-of-type,
+  .jd-paged-running-header .jd-manual-document-title-row .record-info-manualMeta > p:last-of-type {
+    margin-top: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter {
+    min-height: 64px !important;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .jd-paged-running-header .jd-manual-header-footer-row > .record-info-manualFooter > p:last-of-type {
+    margin-top: 5px !important;
   }
 `;
 

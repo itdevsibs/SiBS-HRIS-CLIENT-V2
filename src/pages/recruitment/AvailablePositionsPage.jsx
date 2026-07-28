@@ -10,12 +10,10 @@ import Header from "../../components/layout/Header";
 import { useUser } from "../../services/context/UserContext";
 import StatusModal from "../../components/modals/StatusModal";
 import {
-  BriefcaseBusiness,
   Database,
   Plus,
   RefreshCw,
   RotateCcw,
-  Search,
 } from "lucide-react";
 import {
   createAvailablePosition,
@@ -39,8 +37,8 @@ import {
 } from "../../lib/utils/availablePositions/availablePositionsConstants";
 import PositionFormModal from "../../components/modals/availablePositions/PositionFormModal";
 import ConfirmationModal from "../../components/modals/availablePositions/ConfirmationModal";
-import DropdownField from "../../components/recruitment/availablePositions/DropdownField";
 import AvailablePositionsTable from "../../components/tables/availablePositions/AvailablePositionsTable";
+import PaginationTable from "../../services/pagination/PaginationTable";
 import {
   normalizeAvailablePositionRecord,
   normalizeAvailablePositionRecords,
@@ -882,16 +880,16 @@ export default function AvailablePositionsPage() {
     locationFilter !== "All";
 
   return (
-    <div className="flex h-dvh min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sibs-tertiary-10 font-jakarta">
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
       <main
         ref={mainRef}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-sibs-tertiary-10 p-4 sm:p-6"
+        className="sibs-dashboard-main-wide"
       >
-        <div className="mx-auto max-w-[1600px] space-y-5">
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
           <section className="sibs-page-header-in sibs-page-card-in sibs-card relative overflow-hidden rounded-2xl border border-[#E6ECF2] bg-white p-5 font-jakarta shadow-sm sm:p-6">
             <span className="sibs-top-accent" aria-hidden="true" />
 
@@ -970,8 +968,8 @@ export default function AvailablePositionsPage() {
             </section>
           ) : null}
 
-          <section className="sibs-profile-tab-panel overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-sm">
-            <div className="border-b border-[#E6ECF2] px-4 py-4 sm:px-5">
+          <section className="sibs-profile-tab-panel sibs-page-card-in overflow-visible rounded-2xl border border-[#E6ECF2] bg-white font-jakarta shadow-sm">
+            <div className="border-b border-[#E6ECF2] bg-white px-4 py-5 sm:px-5">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="sibs-section-title">
@@ -990,103 +988,101 @@ export default function AvailablePositionsPage() {
               </div>
             </div>
 
-            <div className="relative z-[90] p-4 sm:p-5">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_165px_205px_205px_190px_auto] xl:items-end">
-                <div className="relative min-w-0 md:col-span-2 xl:col-span-1">
-                  <Search
-                    size={15}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]"
-                  />
+            <div className="relative z-[90] space-y-5 overflow-visible p-4 sm:p-5">
+              <PaginationTable
+                filterLayout="ta-inline"
+                showFilterPanel={false}
+                showFilterHeader={false}
+                showPagination={false}
+                loading={isLoading}
+                searchValue={search}
+                searchPlaceholder="Search position, JD, department, account, or skills..."
+                onSearchChange={setSearch}
+                dropdownFilters={[
+                  {
+                    key: "status",
+                    value: statusFilter,
+                    options: statusFilterOptions,
+                    onChange: setStatusFilter,
+                    includeAll: false,
+                    allLabel: "All Statuses",
+                    label: "Status",
+                    placeholder: "All Statuses",
+                    searchable: false,
+                    disabled: isLoading,
+                  },
+                  {
+                    key: "department",
+                    value: departmentFilter,
+                    options: departmentFilterOptions,
+                    onChange: handleDepartmentFilterChange,
+                    includeAll: false,
+                    allLabel: "All Departments",
+                    label: "Department",
+                    placeholder: "Search departments...",
+                    searchable: true,
+                    disabled: isLoading,
+                  },
+                  {
+                    key: "account",
+                    value: accountFilter,
+                    options: accountFilterOptions,
+                    onChange: setAccountFilter,
+                    includeAll: false,
+                    allLabel: "All Accounts",
+                    label: "Account",
+                    placeholder: "Search accounts...",
+                    searchable: true,
+                    disabled:
+                      isLoading ||
+                      (departmentFilter !== "All" &&
+                        !filteredAccountOptions.length),
+                  },
+                  {
+                    key: "location",
+                    value: locationFilter,
+                    options: locationFilterOptions,
+                    onChange: setLocationFilter,
+                    includeAll: false,
+                    allLabel: "All Locations",
+                    label: "Location",
+                    placeholder: "Search locations...",
+                    searchable: true,
+                    disabled: isLoading,
+                  },
+                ]}
+                rightContent={
+                  <button
+                    type="button"
+                    onClick={handleClearFilters}
+                    disabled={!hasActiveFilters || isLoading}
+                    className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
+                  >
+                    <RotateCcw size={14} />
+                    Clear
+                  </button>
+                }
+                className="border-0 bg-transparent p-0 shadow-none"
+              />
 
-                  <input
-                    value={search}
-                    onChange={(event) =>
-                      setSearch(event.target.value)
-                    }
-                    placeholder="Search position, JD, department, account, or skills..."
-                    aria-label="Search available positions"
-                    className="h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 pl-9 text-xs font-semibold text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10"
-                  />
-                </div>
-
-                <DropdownField
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                  options={statusFilterOptions}
-                  placeholder="All Statuses"
-                  disabled={isLoading}
-                  zIndex="z-[140]"
-                />
-
-                <DropdownField
-                  value={departmentFilter}
-                  onChange={handleDepartmentFilterChange}
-                  options={departmentFilterOptions}
-                  placeholder="All Departments"
-                  disabled={isLoading}
-                  zIndex="z-[130]"
-                  searchable
-                  searchPlaceholder="Search departments..."
-                />
-
-                <DropdownField
-                  value={accountFilter}
-                  onChange={setAccountFilter}
-                  options={accountFilterOptions}
-                  placeholder="All Accounts"
-                  disabled={
-                    isLoading ||
-                    (departmentFilter !== "All" &&
-                      !filteredAccountOptions.length)
-                  }
-                  zIndex="z-[120]"
-                  searchable
-                  searchPlaceholder="Search accounts..."
-                  emptyMessage="No matching account found."
-                />
-
-                <DropdownField
-                  value={locationFilter}
-                  onChange={setLocationFilter}
-                  options={locationFilterOptions}
-                  placeholder="All Locations"
-                  disabled={isLoading}
-                  zIndex="z-[110]"
-                  searchable
-                  searchPlaceholder="Search locations..."
-                />
-
-                <button
-                  type="button"
-                  onClick={handleClearFilters}
-                  disabled={
-                    !hasActiveFilters || isLoading
-                  }
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RotateCcw size={14} />
-                  Clear
-                </button>
-              </div>
+              <AvailablePositionsTable
+                isLoading={isLoading}
+                paginatedPositions={paginatedPositions}
+                filteredPositionsCount={
+                  filteredPositions.length
+                }
+                showingFrom={showingFrom}
+                showingTo={showingTo}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                onEdit={openEditModal}
+                onSetStatus={handleSetStatus}
+                isSaving={isSaving}
+                activeStatus={activeStatus}
+                inactiveStatus={inactiveStatus}
+              />
             </div>
-
-            <AvailablePositionsTable
-              isLoading={isLoading}
-              paginatedPositions={paginatedPositions}
-              filteredPositionsCount={
-                filteredPositions.length
-              }
-              showingFrom={showingFrom}
-              showingTo={showingTo}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onEdit={openEditModal}
-              onSetStatus={handleSetStatus}
-              isSaving={isSaving}
-              activeStatus={activeStatus}
-              inactiveStatus={inactiveStatus}
-            />
           </section>
 
           <section className="sibs-profile-tab-panel rounded-xl border border-blue-100 bg-blue-50 p-4">

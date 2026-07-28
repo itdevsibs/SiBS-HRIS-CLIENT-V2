@@ -920,7 +920,7 @@ export default function ResignationModal({
   return (
     <>
       <div
-        className={`fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto bg-black/40 px-4 py-6 ${
+        className={`sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center overflow-y-auto px-4 py-6 ${
           isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
         }`}
       >
@@ -1312,7 +1312,7 @@ export default function ResignationModal({
       </div>
 
       {policyModalOpen && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40 px-4 py-6 sibs-modal-backdrop-in">
+        <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10001] flex items-center justify-center px-4 py-6">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl sibs-modal-pop-in">
             <div className="px-6 pb-6 pt-6 text-center">
               <h2 className="mx-auto max-w-[320px] text-xl font-bold leading-tight text-sibs-primary-1">

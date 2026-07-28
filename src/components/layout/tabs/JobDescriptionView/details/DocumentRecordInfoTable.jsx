@@ -44,12 +44,10 @@ function DocumentRecordInfoTable({
     ]) || "MASTER OPERATING MANUAL";
 
   const documentTitle =
-    recordInfoDraft.roleTitle ||
+    recordInfoDraft.documentTitle ||
     getFirstManualValue(item, [
       "documentTitle",
       "document_title",
-      "roleTitle",
-      "role_title",
     ]) ||
     "—";
 
@@ -158,11 +156,11 @@ function DocumentRecordInfoTable({
 
         <RecordInfoDocumentCell
           label="DOCUMENT TITLE:"
-          value={recordInfoDraft.roleTitle || ""}
+          value={recordInfoDraft.documentTitle || ""}
           displayValue={documentTitle}
           editable={editingRecordInfo}
           comments={getRecordFieldComments?.(documentTitle)}
-          onChange={(value) => onChange?.("roleTitle", value)}
+          onChange={(value) => onChange?.("documentTitle", value)}
           variant="manualDocumentTitle"
           className="jd-manual-mobile-full-row border-b-2 border-black"
         />
@@ -267,7 +265,7 @@ function DocumentRecordInfoTable({
       {/* Original desktop/Paged.js/print layout */}
       <div className="jd-manual-header-desktop overflow-x-auto">
         <div className="jd-manual-header-grid grid min-w-[920px] grid-cols-[210px_minmax(0,1fr)] overflow-hidden border-2 border-black bg-white text-black print:min-w-0">
-          <div className="jd-manual-header-logo-column flex min-h-[344px] flex-col items-center justify-center border-r-2 border-black px-4 py-6 text-center">
+          <div className="jd-manual-header-logo-column flex min-h-[256px] flex-col items-center justify-center border-r-2 border-black px-4 py-4 text-center">
             <img
               src={SibsLogo}
               alt="SiBS Logo"
@@ -280,17 +278,17 @@ function DocumentRecordInfoTable({
           </div>
 
           <div className="min-w-0">
-            <div className="jd-manual-header-main-row grid grid-cols-[minmax(0,1fr)_185px] border-b-2 border-black">
+            <div className="jd-manual-header-main-row jd-manual-title-row grid grid-cols-[minmax(0,1fr)_185px] border-b-2 border-black">
               <RecordInfoDocumentCell
                 label="MANUAL TITLE:"
                 value={manualTitle}
                 editable={false}
                 comments={getRecordFieldComments?.(manualTitle)}
                 variant="manualHero"
-                className="min-h-[126px] border-r-2 border-black"
+                className="min-h-[96px] border-r-2 border-black"
               />
 
-              <div className="jd-manual-header-meta-pair grid grid-rows-2">
+              <div className="jd-manual-header-meta-pair jd-manual-title-meta-pair grid grid-rows-2">
                 <RecordInfoDocumentCell
                   label="DOCUMENT CODE"
                   value={documentCode}
@@ -310,21 +308,21 @@ function DocumentRecordInfoTable({
               </div>
             </div>
 
-            <div className="jd-manual-header-main-row grid grid-cols-[minmax(0,1fr)_185px] border-b-2 border-black">
+            <div className="jd-manual-header-main-row jd-manual-document-title-row grid grid-cols-[minmax(0,1fr)_185px] border-b-2 border-black">
               <RecordInfoDocumentCell
                 label="DOCUMENT TITLE:"
-                value={recordInfoDraft.roleTitle || ""}
+                value={recordInfoDraft.documentTitle || ""}
                 displayValue={documentTitle}
                 editable={editingRecordInfo}
                 comments={getRecordFieldComments?.(documentTitle)}
                 onChange={(value) =>
-                  onChange?.("roleTitle", value)
+                  onChange?.("documentTitle", value)
                 }
                 variant="manualDocumentTitle"
-                className="min-h-[134px] border-r-2 border-black"
+                className="min-h-[96px] border-r-2 border-black"
               />
 
-              <div className="jd-manual-header-meta-pair grid grid-rows-2">
+              <div className="jd-manual-header-meta-pair jd-manual-document-title-meta-pair grid grid-rows-2">
                 <RecordInfoDocumentCell
                   label="EFFECTIVITY DATE"
                   value={effectiveDate}

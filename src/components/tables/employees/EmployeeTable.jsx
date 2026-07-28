@@ -771,7 +771,6 @@ export default function EmployeeTable({
           searchPlaceholder="Search by employee, SIBS ID, department, or account..."
           onSearchChange={(value) => setSearchInput?.(value)}
           onSearchKeyDown={handleEmployeeSearchKeyDown}
-          searchClassName="relative min-w-0 flex-1"
           dropdownFilters={
             showEmployeeFilters
               ? [
@@ -782,9 +781,9 @@ export default function EmployeeTable({
                     onChange: handleDepartmentChange,
                     includeAll: true,
                     allLabel: "All Departments",
+                    label: "Department",
                     placeholder: "Search departments...",
                     searchable: true,
-                    className: "w-full sm:w-[200px] xl:w-[220px]",
                   },
                   {
                     key: "account",
@@ -793,9 +792,9 @@ export default function EmployeeTable({
                     onChange: handleAccountChange,
                     includeAll: true,
                     allLabel: "All Accounts",
+                    label: "Account",
                     placeholder: "Search accounts...",
                     searchable: true,
-                    className: "w-full sm:w-[190px] xl:w-[210px]",
                   },
                 ]
               : []

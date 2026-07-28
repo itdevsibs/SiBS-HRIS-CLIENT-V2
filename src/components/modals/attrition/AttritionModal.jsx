@@ -688,7 +688,7 @@ export default function AttritionModal({
 
   const content = (
     <div
-      className="fixed inset-0 z-[99999] flex h-dvh w-screen items-center justify-center bg-black/40 px-4 py-6"
+      className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh w-screen items-center justify-center px-4 py-6"
       onClick={() => {
         if (!submitting) onClose?.();
       }}

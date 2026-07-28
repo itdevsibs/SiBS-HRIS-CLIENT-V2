@@ -225,7 +225,7 @@ export default function AttachmentsModal({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[999999] flex h-dvh items-center justify-center bg-[#042C51]/80 p-2 backdrop-blur-sm sm:p-5 ${
+      className={`sibs-modal-blur fixed inset-0 z-[999999] flex h-dvh items-center justify-center p-2 sm:p-5 ${
         isClosing ? "sibs-modal-backdrop-out" : "sibs-modal-backdrop-in"
       }`}
       onClick={requestClose}

@@ -1082,6 +1082,7 @@ export default function usePagedJobDescriptionPreview({
     editableContent,
     recordInfoDraft,
     competencyDrafts,
+    pagedJobDescriptionStyles,
   ]);
 
   /*

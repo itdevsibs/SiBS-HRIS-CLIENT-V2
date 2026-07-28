@@ -13,7 +13,7 @@ function ConfirmationModal({
 
   return (
     <div
-      className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-slate-950/40 px-4 py-4 backdrop-blur-[1px]"
+      className="sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center px-4 py-4"
       onClick={onCancel}
     >
       <div

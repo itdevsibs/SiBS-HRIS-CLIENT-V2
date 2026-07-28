@@ -133,7 +133,7 @@ export default function AddActionItemModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex h-dvh items-center justify-center bg-black/40 p-3 font-jakarta sm:p-5"
+      className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center p-3 font-jakarta sm:p-5"
       onMouseDown={closeAddModal}
       role="presentation"
     >

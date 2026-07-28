@@ -1,7 +1,5 @@
 import React from "react";
 import {
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Pencil,
 } from "lucide-react";
@@ -19,6 +17,7 @@ import {
   getAvailablePositionUpdatedAt,
   getAvailablePositionUpdatedBy,
 } from "../../../lib/utils/availablePositions/availablePositionsPresentation";
+import PaginationTable from "../../../services/pagination/PaginationTable";
 
 function normalizeText(value = "") {
   return String(value || "")
@@ -82,8 +81,6 @@ export default function AvailablePositionsTable({
   isLoading = false,
   paginatedPositions = [],
   filteredPositionsCount = 0,
-  showingFrom = 0,
-  showingTo = 0,
   currentPage = 1,
   totalPages = 1,
   onPageChange,
@@ -94,7 +91,7 @@ export default function AvailablePositionsTable({
   inactiveStatus = "Inactive",
 }) {
   return (
-    <div className="relative z-[1] px-4 pb-4 pt-0 font-jakarta sm:px-5 sm:pb-5">
+    <div className="relative z-[1] font-jakarta">
       {isLoading ? (
         <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-12 text-center text-sm font-extrabold text-[#042C51]">
           Loading available positions from the database...
@@ -397,62 +394,27 @@ export default function AvailablePositionsTable({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-col justify-between gap-3 border-t border-[#E6ECF2] pt-4 md:flex-row md:items-center">
-            <p className="text-xs font-bold text-[#667085]">
-              Showing {showingFrom} to {showingTo} of{" "}
-              {filteredPositionsCount} positions
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  onPageChange?.(currentPage - 1)
-                }
-                disabled={currentPage <= 1}
-                aria-label="Previous page"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-35"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              {Array.from({
-                length: totalPages,
-              }).map((_, index) => {
-                const pageNumber = index + 1;
-                const active =
-                  currentPage === pageNumber;
-
-                return (
-                  <button
-                    key={pageNumber}
-                    type="button"
-                    onClick={() =>
-                      onPageChange?.(pageNumber)
-                    }
-                    className={`flex h-9 min-w-9 items-center justify-center rounded-lg px-3 text-xs font-extrabold transition ${
-                      active
-                        ? "bg-[#042C51] text-white"
-                        : "border border-[#E6ECF2] bg-white text-[#042C51] hover:bg-[#F8FAFC]"
-                    }`}
-                  >
-                    {pageNumber}
-                  </button>
-                );
-              })}
-
-              <button
-                type="button"
-                onClick={() =>
-                  onPageChange?.(currentPage + 1)
-                }
-                disabled={currentPage >= totalPages}
-                aria-label="Next page"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white text-[#042C51] transition hover:bg-[#F8FAFC] disabled:cursor-not-allowed disabled:opacity-35"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+          <div>
+            <PaginationTable
+              showSearch={false}
+              showPagination
+              showCount
+              loading={isLoading}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              loadedCount={paginatedPositions.length}
+              totalRecords={filteredPositionsCount}
+              recordLabel="positions"
+              onPrevious={() =>
+                onPageChange?.(Math.max(currentPage - 1, 1))
+              }
+              onNext={() =>
+                onPageChange?.(
+                  Math.min(currentPage + 1, totalPages),
+                )
+              }
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
           </div>
         </>
       )}

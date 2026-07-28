@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   Save,
@@ -750,15 +750,6 @@ function normalizeDropdownOptions(options = []) {
     .filter(Boolean);
 }
 
-function getFileExtensionFromName(fileName = "") {
-  const name = String(fileName || "");
-  const dotIndex = name.lastIndexOf(".");
-
-  if (dotIndex === -1) return "";
-
-  return name.slice(dotIndex).toLowerCase();
-}
-
 function formatFileSizeFromBytes(size = 0) {
   const numberSize = Number(size || 0);
 
@@ -807,13 +798,13 @@ function getCandidateFileName(candidateForm = {}, type = "audio") {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold ${
+  return `h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
-  } text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-[var(--sibs-primary-1)] focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+  } text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function textareaInputClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase text-gray-800 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-[var(--sibs-primary-1)] focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -825,16 +816,16 @@ function AutoResizeTextarea({
 }) {
   const textareaRef = useRef(null);
 
-  function resizeTextarea(textarea) {
+  const resizeTextarea = useCallback((textarea) => {
     if (!textarea) return;
 
     textarea.style.height = "auto";
     textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
-  }
+  }, [minHeight]);
 
   useEffect(() => {
     resizeTextarea(textareaRef.current);
-  }, [value, minHeight]);
+  }, [value, minHeight, resizeTextarea]);
 
   return (
     <textarea
@@ -854,7 +845,7 @@ function AutoResizeTextarea({
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1 flex min-h-0 items-end text-xs font-bold uppercase leading-4 tracking-wide text-gray-400 md:min-h-[36px]">
+    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
       <span>{children}</span>
     </label>
   );
@@ -864,29 +855,44 @@ function RequiredMark() {
   return <span className="text-red-500">*</span>;
 }
 
-function SectionCard({ icon: Icon, title, description, children }) {
+function SectionCard({
+  number,
+  icon: Icon,
+  title,
+  description,
+  meta = "Candidate Profile",
+  children,
+}) {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start gap-3">
-        {Icon && (
-          <div className="rounded-2xl bg-[var(--sibs-primary-1)]/10 p-3 text-sibs-primary-1">
-            <Icon size={18} />
-          </div>
-        )}
-
-        <div>
-          <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
-
-          {description && (
-            <p className="mt-1 text-sm leading-6 text-gray-500">
-              {description}
-            </p>
+    <section className="overflow-visible rounded-2xl border border-[#D6E0EA] bg-white p-4 sm:p-5">
+      <div className="mb-4 flex flex-col gap-3 border-b border-[#F1F5F9] pb-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon && (
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
+              <Icon size={17} />
+            </span>
           )}
+
+          <div className="min-w-0">
+            <h3 className="text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
+              Section {number}: {title}
+            </h3>
+
+            {description && (
+              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                {description}
+              </p>
+            )}
+          </div>
         </div>
+
+        <span className="shrink-0 text-[10px] font-bold text-[#98A2B3]">
+          {meta}
+        </span>
       </div>
 
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -955,19 +961,19 @@ function HiringNeedsDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-gray-800"
+            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085] opacity-70"
+            : "text-[#042C51]"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-gray-800" : "text-gray-400"
+            selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
           }`}
         >
           {displayText}
@@ -975,7 +981,7 @@ function HiringNeedsDropdown({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -992,8 +998,8 @@ function HiringNeedsDropdown({
       )}
 
       {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-72 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+          <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
             {normalizedOptions.length > 0 ? (
               normalizedOptions.map((option) => {
                 const active = String(option.value) === String(value || "");
@@ -1003,10 +1009,10 @@ function HiringNeedsDropdown({
                     key={option.id || option.value}
                     type="button"
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-4 py-3 text-left text-xs font-bold transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28]"
+                        : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     <span className="block min-w-0 truncate">
@@ -1016,7 +1022,7 @@ function HiringNeedsDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+              <div className="px-4 py-3 text-xs font-bold text-[#98A2B3]">
                 No options found.
               </div>
             )}
@@ -1111,17 +1117,17 @@ function CalendarHeaderDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-xs font-extrabold shadow-sm outline-none transition ${
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border px-3 text-left text-xs font-extrabold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
-        } text-sibs-primary-1`}
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] text-[#042C51] hover:border-[#FF5C28]/40 hover:bg-white"
+        }`}
       >
         <span className="min-w-0 flex-1 truncate">{displayText}</span>
 
         <ChevronDown
           size={14}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -1129,9 +1135,9 @@ function CalendarHeaderDropdown({
 
       {open && (
         <div
-          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)] ${menuClassName}`}
+          className={`absolute left-0 top-[calc(100%+8px)] z-[100000] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl ${menuClassName}`}
         >
-          <div className="max-h-72 overflow-y-auto">
+          <div className="max-h-72 overflow-y-auto py-2 sibs-scrollbar">
             {options.map((option) => {
               const active = String(option.value) === String(value);
 
@@ -1140,10 +1146,10 @@ function CalendarHeaderDropdown({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                  className={`block w-full px-4 py-3 text-left text-xs font-bold transition ${
                     active
-                      ? "bg-[#EAF4FF] text-sibs-primary-1"
-                      : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                      ? "bg-[#FFF0EB] text-[#FF5C28]"
+                      : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                   }`}
                 >
                   <span className="block min-w-0 truncate">
@@ -1250,25 +1256,19 @@ function CalendarDatePicker({
   const minimumYear = currentYear - 80;
   const maximumYear = currentYear;
 
-  const monthOptions = useMemo(() => {
-    return monthNames.map((month, index) => ({
-      value: index,
-      label: month,
-    }));
-  }, []);
+  const monthOptions = monthNames.map((month, index) => ({
+    value: index,
+    label: month,
+  }));
 
-  const yearOptions = useMemo(() => {
-    const years = [];
+  const yearOptions = [];
 
-    for (let year = maximumYear; year >= minimumYear; year -= 1) {
-      years.push({
-        value: year,
-        label: String(year),
-      });
-    }
-
-    return years;
-  }, [maximumYear, minimumYear]);
+  for (let year = maximumYear; year >= minimumYear; year -= 1) {
+    yearOptions.push({
+      value: year,
+      label: String(year),
+    });
+  }
 
   const [open, setOpen] = useState(false);
   const [displayDate, setDisplayDate] = useState(
@@ -1281,14 +1281,6 @@ function CalendarDatePicker({
   );
 
   const displayText = value ? formatDateDisplay(value) : placeholder;
-
-  useEffect(() => {
-    if (selectedDate) {
-      setDisplayDate(
-        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-      );
-    }
-  }, [value]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -1356,31 +1348,41 @@ function CalendarDatePicker({
     setOpen(false);
   }
 
+  function handleToggleOpen() {
+    if (!open && selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+
+    setOpen((previous) => !previous);
+  }
+
   return (
     <div ref={calendarRef} className="relative z-[220] min-w-0">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        onClick={handleToggleOpen}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border px-3 text-left text-xs font-bold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] bg-white text-[#042C51] ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-gray-800"
+            ? "cursor-not-allowed border-[#D7DEE8] bg-[#F2F4F7] text-[#667085] opacity-70"
+            : "text-[#042C51]"
         }`}
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
           <CalendarDays
             size={16}
-            className="shrink-0 text-[var(--sibs-primary-1)]"
+            className="shrink-0 text-[#215789]"
           />
 
           <span
             className={`min-w-0 truncate ${
-              value ? "text-gray-800" : "text-gray-400"
+              value ? "text-[#042C51]" : "text-[#98A2B3]"
             }`}
           >
             {displayText}
@@ -1389,14 +1391,14 @@ function CalendarDatePicker({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          className={`shrink-0 text-[#215789] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[300px] overflow-visible rounded-2xl border border-[#D7DEE8] bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
             <button
               type="button"
@@ -1454,14 +1456,14 @@ function CalendarDatePicker({
                     key={day.dateValue}
                     type="button"
                     onClick={() => handleSelectDate(day.date)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-extrabold transition ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-extrabold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] ${
                       active
-                        ? "bg-[#E7F0FA] text-sibs-primary-1 ring-2 ring-sibs-primary-1/20"
+                        ? "bg-[#FF5C28] text-white shadow-sm"
                         : currentDay
-                          ? "bg-[#F2F6FA] text-sibs-primary-1"
+                          ? "border border-[#B9D7FF] bg-[#EFF6FF] text-[#042C51]"
                           : day.isCurrentMonth
-                            ? "text-sibs-primary-1 hover:bg-[#EAF2FB]"
-                            : "text-[#98A7BA] hover:bg-[#F7FAFC]"
+                            ? "border border-transparent bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
+                            : "border border-transparent bg-white text-[#C7D2E0] hover:bg-[#F8FAFC]"
                     }`}
                   >
                     {day.dayNumber}
@@ -1475,7 +1477,7 @@ function CalendarDatePicker({
             <button
               type="button"
               onClick={handleClear}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-sibs-tertiary-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm active:scale-[0.98]"
             >
               Clear
             </button>
@@ -1483,7 +1485,7 @@ function CalendarDatePicker({
             <button
               type="button"
               onClick={handleToday}
-              className="rounded-lg px-2 py-1 text-xs font-extrabold text-sibs-primary-1 transition hover:bg-[#F2F6FA]"
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-sibs-primary-1 px-3 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0D4676] hover:shadow-md active:scale-[0.98]"
             >
               Today
             </button>
@@ -1646,15 +1648,15 @@ function SchoolYearSearchableDropdown({
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       <div
-        className={`flex h-11 w-full min-w-0 items-center gap-3 rounded-xl border bg-white px-4 text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center gap-3 rounded-[10px] border px-3 text-xs font-bold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-white"
         }`}
       >
         <Search
           size={17}
-          className="shrink-0 text-[var(--sibs-primary-1)]"
+          className="shrink-0 text-[#215789]"
         />
 
         <input
@@ -1668,8 +1670,8 @@ function SchoolYearSearchableDropdown({
           placeholder={open ? "Search school year" : placeholder}
           aria-expanded={open}
           aria-haspopup="listbox"
-          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold outline-none placeholder:text-gray-400 ${
-            selectedOption && !open ? "text-gray-800" : "text-gray-700"
+          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-bold outline-none placeholder:text-[#98A2B3] ${
+            selectedOption && !open ? "text-[#042C51]" : "text-[#042C51]"
           }`}
         />
 
@@ -1677,11 +1679,11 @@ function SchoolYearSearchableDropdown({
           type="button"
           onClick={handleToggle}
           aria-label={open ? "Close school year options" : "Open school year options"}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#F2F6FA]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition hover:bg-[#FFF7F3]"
         >
           <ChevronDown
             size={18}
-            className={`text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+            className={`text-[#215789] transition-transform duration-200 ${
               open ? "rotate-180" : ""
             }`}
           />
@@ -1699,8 +1701,8 @@ function SchoolYearSearchableDropdown({
       )}
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
-          <div className="max-h-64 overflow-y-auto" role="listbox">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D7DEE8] bg-white shadow-2xl">
+          <div className="max-h-64 overflow-y-auto py-2 sibs-scrollbar" role="listbox">
             {visibleOptions.length > 0 ? (
               visibleOptions.map((option) => {
                 const active = option.value === normalizedValue;
@@ -1712,10 +1714,10 @@ function SchoolYearSearchableDropdown({
                     role="option"
                     aria-selected={active}
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-4 py-3 text-left text-xs font-bold transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28]"
+                        : "bg-white text-[#042C51] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     {option.label}
@@ -1723,7 +1725,7 @@ function SchoolYearSearchableDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-4 text-sm font-semibold text-gray-400">
+              <div className="px-4 py-3 text-xs font-bold text-[#98A2B3]">
                 No school year found.
               </div>
             )}
@@ -1860,12 +1862,12 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-gray-100 bg-gray-50 p-5">
+    <div className="space-y-4 rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4 sm:p-5">
       <div>
-        <h4 className="text-sm font-extrabold text-gray-900">
+        <h4 className="text-xs font-extrabold uppercase tracking-normal text-[#042C51]">
           Required Education Details
         </h4>
-        <p className="mt-1 text-sm leading-6 text-gray-500">
+        <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
           The school fields below are based on the selected highest educational
           attainment. Every displayed school name and address is required.
         </p>
@@ -1885,20 +1887,26 @@ function EducationDetailsFields({ attainment, details, onChange }) {
             {config.seniorHighMode === "optional" &&
               section.key === "highSchool" && (
                 <>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-100 bg-white p-4">
+                  <label
+                    className={`flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5 transition ${
+                      educationDetails.attendedSeniorHighSchool
+                        ? "border-[#FF5C28] bg-[#FFF0EB] shadow-sm"
+                        : "border-[#D7DEE8] bg-white hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+                    }`}
+                  >
                     <input
                       type="checkbox"
                       checked={educationDetails.attendedSeniorHighSchool}
                       onChange={(event) =>
                         handleSeniorHighAttendanceChange(event.target.checked)
                       }
-                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#FF5C28]"
                     />
                     <span>
-                      <span className="block text-sm font-extrabold text-sibs-primary-1">
+                      <span className="block text-xs font-extrabold text-[#042C51]">
                         I attended Senior High School
                       </span>
-                      <span className="mt-1 block text-xs font-semibold leading-5 text-gray-500">
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-[#667085]">
                         Check this box to add the required Senior High School
                         name, address, and school year graduated.
                       </span>
@@ -1940,26 +1948,29 @@ function MultiCheckGroup({ options = [], value = [], onChange }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 rounded-xl border border-[#E6ECF2] bg-[#F8FAFC] p-3 md:grid-cols-2">
       {options.map((option) => {
         const optionValue = getOptionValue(option);
         const optionLabel = getOptionLabel(option);
+        const checked = safeValue.includes(optionValue);
 
         return (
           <label
             key={option?.id || optionValue}
-            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+            className={`flex cursor-pointer items-center gap-2.5 rounded-[10px] border px-3 py-2.5 text-xs transition ${
+              checked
+                ? "border-[#FF5C28] bg-[#FFF0EB] font-extrabold text-[#042C51] shadow-sm"
+                : "border-[#D7DEE8] bg-white font-semibold text-[#52637A] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+            }`}
           >
             <input
               type="checkbox"
-              checked={safeValue.includes(optionValue)}
+              checked={checked}
               onChange={() => toggle(optionValue)}
-              className="h-4 w-4 accent-[var(--sibs-primary-1)]"
+              className="h-4 w-4 shrink-0 cursor-pointer accent-[#FF5C28]"
             />
 
-            <span className="text-sm font-semibold text-gray-700">
-              {optionLabel}
-            </span>
+            <span className="leading-5">{optionLabel}</span>
           </label>
         );
       })}
@@ -2765,41 +2776,89 @@ export default function AddCandidateModal() {
   return (
     <>
       <div
-        className="fixed inset-0 z-[10001] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+        className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10001] flex h-dvh items-center justify-center p-2 font-jakarta sm:p-4"
         onClick={closeAddCandidateModal}
       >
         <div
-          className="flex max-h-[92dvh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+          className="sibs-modal-pop-in flex max-h-[92dvh] w-full max-w-[1050px] flex-col overflow-hidden rounded-2xl border border-[#9FB3C8] bg-[#F7F9FC] font-jakarta shadow-[0_30px_90px_rgba(2,26,48,0.42)]"
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-5 py-4 sm:px-6">
-            <div>
-              <h2 className="text-xl font-extrabold text-sibs-primary-1">
-                Add Candidate
-              </h2>
+          <div className="flex shrink-0 flex-col gap-3 bg-[#07365F] px-4 py-4 text-white sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#FF5C28] ring-1 ring-white/15">
+                <UserPlus size={19} />
+              </span>
 
-              <p className="mt-1 text-sm font-medium text-sibs-tertiary-5">
-                Create a reusable Talent Pool candidate profile using database
-                options and backend storage.
-              </p>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-extrabold text-white">
+                    Add Candidate
+                  </h2>
+                  <span className="rounded bg-[#FF5C28] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-normal text-white">
+                    Registration
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs font-semibold leading-relaxed text-blue-100">
+                  Create a reusable candidate profile using database options and backend storage.
+                </p>
+              </div>
             </div>
 
-            <button
-              type="button"
-              onClick={closeAddCandidateModal}
-              disabled={isSaving}
-              className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <X size={20} />
-            </button>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleResetCandidate}
+                disabled={isSaving}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-white/10 bg-white/10 px-3 text-[10px] font-extrabold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <RotateCcw size={14} />
+                Reset
+              </button>
+
+              <button
+                type="submit"
+                form="add-candidate-form"
+                disabled={isSaving}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#FF5C28] px-3.5 text-[10px] font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save size={14} />
+                {isSaving ? "Saving..." : "Save Candidate"}
+              </button>
+
+              <button
+                type="button"
+                onClick={closeAddCandidateModal}
+                disabled={isSaving}
+                aria-label="Close add candidate modal"
+                className="flex h-9 w-9 items-center justify-center rounded-[10px] text-blue-100 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <form
             id="add-candidate-form"
             onSubmit={handleSubmitCandidate}
-            className="flex-1 space-y-5 overflow-y-auto bg-[#F8FAFC] px-5 py-5 sm:px-6"
+            className="thin-scroll flex-1 space-y-4 overflow-y-auto bg-[#F7F9FC] p-3 sm:p-5"
           >
+            <div className="rounded-2xl border border-blue-200 bg-[#EEF5FF] p-4">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sibs-primary-1 text-white shadow-sm">
+                  <ShieldCheck size={17} />
+                </span>
+                <div className="min-w-0">
+                  <h3 className="text-xs font-extrabold text-sibs-primary-1">
+                    Candidate Profile Registration Standard
+                  </h3>
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                    Complete the sourcing, personal, work, education, readiness, reference, and upload information required for a reusable Talent Pool profile.
+                  </p>
+                </div>
+              </div>
+            </div>
             <SectionCard
+              number={1}
               icon={BriefcaseBusiness}
               title="Application Source and Position"
               description="Tell us where the applicant learned about SiBS and what position they are applying for."
@@ -2945,6 +3004,7 @@ export default function AddCandidateModal() {
             </SectionCard>
 
             <SectionCard
+              number={2}
               icon={UserPlus}
               title="Personal Information"
               description="Enter the applicant legal name, contact details, and address."
@@ -3043,6 +3103,7 @@ export default function AddCandidateModal() {
             </SectionCard>
 
             <SectionCard
+              number={3}
               icon={BriefcaseBusiness}
               title="Work Experience"
               description="Additional work experience fields will appear when Has work Experience is selected."
@@ -3121,6 +3182,7 @@ export default function AddCandidateModal() {
 
             <div ref={educationSectionRef}>
               <SectionCard
+              number={4}
                 icon={GraduationCap}
                 title="Education, Affiliations, and Training"
                 description="Select educational attainment and complete the school details required for that level."
@@ -3171,6 +3233,7 @@ export default function AddCandidateModal() {
             </div>
 
             <SectionCard
+              number={5}
               icon={ShieldCheck}
               title="Work Readiness Questions"
               description="These questions help Talent Acquisition review work setup and compliance readiness."
@@ -3265,6 +3328,7 @@ export default function AddCandidateModal() {
             </SectionCard>
 
             <SectionCard
+              number={6}
               icon={Users}
               title="References"
               description="Please list at least three references and their contact information."
@@ -3296,6 +3360,7 @@ export default function AddCandidateModal() {
             </SectionCard>
 
             <SectionCard
+              number={7}
               icon={Mic}
               title="Audio and File Upload"
               description="Upload a single audio file and one supporting document/file."
@@ -3324,10 +3389,10 @@ export default function AddCandidateModal() {
                 <div>
                   <FieldLabel>Upload single audio file</FieldLabel>
                   <label
-                    className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                    className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] ${
                       audioFileName
                         ? "border-emerald-300 bg-emerald-50"
-                        : "border-gray-300 bg-gray-50"
+                        : "border-[#D7DEE8] bg-[#F8FAFC]"
                     }`}
                   >
                     <Mic
@@ -3368,10 +3433,10 @@ export default function AddCandidateModal() {
                 <div>
                   <FieldLabel>Upload supporting file</FieldLabel>
                   <label
-                    className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                    className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] ${
                       attachmentFileName
                         ? "border-emerald-300 bg-emerald-50"
-                        : "border-gray-300 bg-gray-50"
+                        : "border-[#D7DEE8] bg-[#F8FAFC]"
                     }`}
                   >
                     <UploadCloud
@@ -3413,6 +3478,7 @@ export default function AddCandidateModal() {
             </SectionCard>
 
             <SectionCard
+              number={8}
               title="Remarks"
               description="Optional internal notes, screening observations, or other details."
             >
@@ -3425,34 +3491,46 @@ export default function AddCandidateModal() {
               />
             </SectionCard>
 
-            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
-              <label className="flex cursor-pointer items-start gap-3">
+            <SectionCard
+              number={9}
+              icon={ShieldCheck}
+              title="Terms and Privacy Consent"
+              description="Confirm the candidate consent required for recruitment processing."
+              meta="Privacy and Compliance"
+            >
+              <label
+                className={`flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5 transition ${
+                  candidateForm.consent
+                    ? "border-[#FF5C28] bg-[#FFF0EB] shadow-sm"
+                    : "border-[#D7DEE8] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={Boolean(candidateForm.consent)}
                   onChange={(event) =>
                     updateField("consent", event.target.checked)
                   }
-                  className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-[#FF5C28]"
                 />
 
-                <span className="text-sm font-semibold leading-6 text-gray-600">
+                <span className="text-xs font-semibold leading-5 text-[#667085]">
                   I agree to terms & conditions provided by the company. By
                   providing the candidate phone number, I confirm that the
                   candidate agreed to the collection and use of these details for
                   recruitment processing.
                 </span>
               </label>
-            </div>
+            </SectionCard>
           </form>
 
-          <div className="border-t border-gray-100 bg-white px-5 py-4 sm:px-6">
+          <div className="shrink-0 border-t border-[#E6ECF2] bg-white px-5 py-4 sm:px-6">
             <div className="flex flex-col justify-end gap-2 sm:flex-row">
               <button
                 type="button"
                 onClick={handleResetCandidate}
                 disabled={isSaving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#D6E0EA] bg-white px-4 text-xs font-extrabold text-sibs-primary-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FF5C28]/35 hover:bg-[#FFF7F3] hover:text-[#FF5C28] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <RotateCcw size={16} />
                 Reset
@@ -3462,7 +3540,7 @@ export default function AddCandidateModal() {
                 type="submit"
                 form="add-candidate-form"
                 disabled={isSaving}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-[#FF5C28] px-4 text-xs font-extrabold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#E95324] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={16} />
                 {isSaving ? "Saving..." : "Save Candidate"}

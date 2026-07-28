@@ -76,7 +76,7 @@ export default function StatusModal({
 
   return createPortal(
     <div
-      className="fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center bg-black/40 px-4"
+      className="sibs-modal-blur fixed left-0 top-0 z-[999999] flex h-[100dvh] w-[100dvw] items-center justify-center px-4"
       onClick={handleClose}
     >
       {variant === "compact" ? (

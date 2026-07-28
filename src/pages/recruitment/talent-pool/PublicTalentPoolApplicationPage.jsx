@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Send,
   UserPlus,
@@ -894,13 +895,13 @@ function buildCalendarDays(displayDate) {
 function inputClass(extra = "", options = {}) {
   const shouldUppercase = options.uppercase !== false;
 
-  return `h-11 w-full rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold ${
+  return `h-10 w-full rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 text-xs font-semibold ${
     shouldUppercase ? "uppercase" : "normal-case"
-  } text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+  } text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function textareaClass(extra = "") {
-  return `w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold uppercase text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-[var(--sibs-primary-1)] focus:ring-4 focus:ring-[var(--sibs-primary-1)]/10 ${extra}`;
+  return `w-full resize-none rounded-[10px] border border-[#D7DEE8] bg-[#F8FAFC] px-3 py-2.5 text-xs font-semibold uppercase text-[#042C51] outline-none transition placeholder:text-[#98A2B3] hover:border-[#FF5C28]/40 hover:bg-white focus:border-[#FF5C28] focus:bg-white focus:ring-4 focus:ring-[#FF5C28]/10 disabled:cursor-not-allowed disabled:border-[#D7DEE8] disabled:bg-[#F2F4F7] disabled:text-[#667085] ${extra}`;
 }
 
 function AutoResizeTextarea({
@@ -912,16 +913,16 @@ function AutoResizeTextarea({
 }) {
   const textareaRef = useRef(null);
 
-  function resizeTextarea(textarea) {
+  const resizeTextarea = useCallback((textarea) => {
     if (!textarea) return;
 
     textarea.style.height = "auto";
     textarea.style.height = `${Math.max(textarea.scrollHeight, minHeight)}px`;
-  }
+  }, [minHeight]);
 
   useEffect(() => {
     resizeTextarea(textareaRef.current);
-  }, [value, minHeight]);
+  }, [value, minHeight, resizeTextarea]);
 
   return (
     <textarea
@@ -1088,44 +1089,89 @@ function normalizePosition(position) {
 
 function FieldLabel({ children }) {
   return (
-    <label className="mb-1 flex min-h-0 items-end text-xs font-bold uppercase leading-4 tracking-wide text-gray-400 md:min-h-[36px]">
+    <label className="mb-1.5 block text-xs font-extrabold text-[#042C51]">
       <span>{children}</span>
     </label>
   );
 }
 
 function RequiredMark() {
-  return <span className="text-red-500">*</span>;
+  return <span className="text-[#E5484D]">*</span>;
 }
 
-function SectionCard({ icon: Icon, title, description, children }) {
+function PublicSibsLogo() {
   return (
-    <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-      <div className="mb-4 flex items-start gap-3">
-        {Icon && (
-          <div className="rounded-2xl bg-[var(--sibs-primary-1)]/10 p-3 text-sibs-primary-1">
-            <Icon size={18} />
-          </div>
-        )}
-
-        <div>
-          <h3 className="text-sm font-extrabold text-gray-900">{title}</h3>
-          {description && (
-            <p className="mt-1 text-sm leading-6 text-gray-500">
-              {description}
-            </p>
-          )}
-        </div>
+    <div className="flex min-w-0 select-none items-center gap-3">
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[15px] bg-[#FF5C28] shadow-[0_10px_24px_rgba(255,92,40,0.22)]">
+        <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-[#042C51] bg-white" />
+        <span className="relative text-[20px] font-semibold leading-none tracking-[-0.04em] text-white">
+          S
+        </span>
       </div>
 
-      {children}
+      <div className="min-w-0 leading-none">
+        <div className="flex min-w-0 items-baseline whitespace-nowrap">
+          <span className="text-[22px] font-semibold tracking-[-0.035em] text-white">
+            SiBS&nbsp;
+          </span>
+          <span className="text-[22px] font-semibold tracking-[-0.035em] text-[#FF5C28]">
+            HRIS
+          </span>
+        </div>
+
+        <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-300/80">
+          Human Resource System
+        </p>
+      </div>
     </div>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  description,
+  step,
+  totalSteps = 8,
+  children,
+}) {
+  return (
+    <section className="sibs-page-card-in relative overflow-visible rounded-2xl border border-[#E6ECF2] bg-white shadow-[0_8px_24px_rgba(4,44,81,0.05)]">
+      <div className="flex flex-col gap-3 border-b border-[#F1F5F9] px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div className="flex min-w-0 items-start gap-3">
+          {Icon && (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0EB] text-[#FF5C28]">
+              <Icon size={18} />
+            </div>
+          )}
+
+          <div className="min-w-0">
+            <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51] sm:text-sm">
+              {title}
+            </h3>
+            {description && (
+              <p className="mt-1 text-xs font-semibold leading-5 text-[#667085] sm:text-sm">
+                {description}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {step ? (
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full border border-[#DCE6F1] bg-[#F8FAFC] px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+            Step {step} of {totalSteps}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="p-5 sm:p-6">{children}</div>
+    </section>
   );
 }
 
 function EmptyOptionNotice({ message = "No options configured in database." }) {
   return (
-    <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
       {message}
     </div>
   );
@@ -1141,7 +1187,13 @@ function HiringNeedsDropdown({
   zIndex = "z-[90]",
 }) {
   const dropdownRef = useRef(null);
+  const dropdownPanelRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const normalizedOptions = normalizeDropdownOptions(options);
   const selectedOption = normalizedOptions.find(
@@ -1154,7 +1206,10 @@ function HiringNeedsDropdown({
     function handleClickOutside(event) {
       if (!dropdownRef.current) return;
 
-      if (!dropdownRef.current.contains(event.target)) {
+      if (
+        !dropdownRef.current.contains(event.target) &&
+        !dropdownPanelRef.current?.contains(event.target)
+      ) {
         setOpen(false);
       }
     }
@@ -1174,6 +1229,32 @@ function HiringNeedsDropdown({
     };
   }, []);
 
+  useEffect(() => {
+    if (!open || !dropdownRef.current) return;
+
+    function updatePanelPosition() {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const gutter = 12;
+      const panelWidth = rect.width;
+      const maxLeft = window.innerWidth - panelWidth - gutter;
+
+      setPanelPosition({
+        top: rect.bottom + 8,
+        left: Math.max(gutter, Math.min(rect.left, maxLeft)),
+        width: panelWidth,
+      });
+    }
+
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [open]);
+
   function handleSelect(nextValue) {
     onChange(nextValue);
     setOpen(false);
@@ -1188,27 +1269,27 @@ function HiringNeedsDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] bg-white ring-4 ring-[#FF5C28]/10"
+            : "border-[#D7DEE8] hover:border-[#FF5C28]/40 hover:bg-white"
         } ${
           disabled
-            ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-gray-800"
+            ? "cursor-not-allowed bg-[#F8FAFC] text-[#98A2B3] opacity-70"
+            : "text-[#042C51]"
         }`}
       >
         <span
           className={`min-w-0 flex-1 truncate ${
-            selectedOption ? "text-gray-800" : "text-gray-400"
+            selectedOption ? "text-[#042C51]" : "text-[#98A2B3]"
           }`}
         >
           {displayText}
         </span>
 
         <ChevronDown
-          size={18}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          size={16}
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -1224,8 +1305,17 @@ function HiringNeedsDropdown({
         />
       )}
 
-      {open && !disabled && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+      {open && !disabled
+        ? createPortal(
+        <div
+          ref={dropdownPanelRef}
+          className="sibs-profile-dropdown-panel fixed z-[100000] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+          style={{
+            left: `${panelPosition.left}px`,
+            top: `${panelPosition.top}px`,
+            width: `${panelPosition.width}px`,
+          }}
+        >
           <div className="max-h-72 overflow-y-auto">
             {normalizedOptions.length > 0 ? (
               normalizedOptions.map((option) => {
@@ -1236,10 +1326,10 @@ function HiringNeedsDropdown({
                     key={option.id || option.value}
                     type="button"
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28]"
+                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     <span className="block min-w-0 truncate">
@@ -1249,13 +1339,15 @@ function HiringNeedsDropdown({
                 );
               })
             ) : (
-              <div className="px-4 py-3.5 text-sm font-semibold text-gray-400">
+              <div className="px-3 py-2.5 text-xs font-semibold text-[#98A2B3]">
                 No options found.
               </div>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }
@@ -1310,17 +1402,17 @@ function CalendarHeaderDropdown({
       <button
         type="button"
         onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-xs font-extrabold shadow-sm outline-none transition ${
+        className={`flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-[10px] border bg-white px-3 text-left text-xs font-extrabold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-[#D0D5DD] hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+            : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
         } text-sibs-primary-1`}
       >
         <span className="min-w-0 flex-1 truncate">{displayText}</span>
 
         <ChevronDown
           size={14}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -1341,8 +1433,8 @@ function CalendarHeaderDropdown({
                   onClick={() => handleSelect(option.value)}
                   className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
                     active
-                      ? "bg-[#EAF4FF] text-sibs-primary-1"
-                      : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                      ? "bg-[#FFF0EB] text-[#FF5C28]"
+                      : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                   }`}
                 >
                   <span className="block min-w-0 truncate">
@@ -1366,6 +1458,7 @@ function CalendarDatePicker({
   hasError = false,
 }) {
   const calendarRef = useRef(null);
+  const calendarPanelRef = useRef(null);
   const selectedDate = parseDateInputValue(value);
   const today = new Date();
 
@@ -1373,27 +1466,26 @@ function CalendarDatePicker({
   const minimumYear = currentYear - 80;
   const maximumYear = currentYear;
 
-  const monthOptions = useMemo(() => {
-    return monthNames.map((month, index) => ({
-      value: index,
-      label: month,
-    }));
-  }, []);
+  const monthOptions = monthNames.map((month, index) => ({
+    value: index,
+    label: month,
+  }));
 
-  const yearOptions = useMemo(() => {
-    const years = [];
+  const yearOptions = [];
 
-    for (let year = maximumYear; year >= minimumYear; year -= 1) {
-      years.push({
-        value: year,
-        label: String(year),
-      });
-    }
-
-    return years;
-  }, [maximumYear, minimumYear]);
+  for (let year = maximumYear; year >= minimumYear; year -= 1) {
+    yearOptions.push({
+      value: year,
+      label: String(year),
+    });
+  }
 
   const [open, setOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 340,
+  });
   const [displayDate, setDisplayDate] = useState(
     selectedDate || new Date(currentYear - 18, today.getMonth(), 1),
   );
@@ -1406,18 +1498,13 @@ function CalendarDatePicker({
   const displayText = value ? formatDateDisplay(value) : placeholder;
 
   useEffect(() => {
-    if (selectedDate) {
-      setDisplayDate(
-        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
-      );
-    }
-  }, [value]);
-
-  useEffect(() => {
     function handleClickOutside(event) {
       if (!calendarRef.current) return;
 
-      if (!calendarRef.current.contains(event.target)) {
+      if (
+        !calendarRef.current.contains(event.target) &&
+        !calendarPanelRef.current?.contains(event.target)
+      ) {
         setOpen(false);
       }
     }
@@ -1436,6 +1523,32 @@ function CalendarDatePicker({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!open || !calendarRef.current) return;
+
+    function updatePanelPosition() {
+      const rect = calendarRef.current.getBoundingClientRect();
+      const panelWidth = 340;
+      const gutter = 12;
+      const maxLeft = window.innerWidth - panelWidth - gutter;
+
+      setPanelPosition({
+        top: rect.bottom + 8,
+        left: Math.max(gutter, Math.min(rect.left, maxLeft)),
+        width: panelWidth,
+      });
+    }
+
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [open]);
 
   function goPreviousMonth() {
     setDisplayDate(
@@ -1479,22 +1592,32 @@ function CalendarDatePicker({
     setOpen(false);
   }
 
+  function handleToggleOpen() {
+    if (!open && selectedDate) {
+      setDisplayDate(
+        new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
+      );
+    }
+
+    setOpen((previous) => !previous);
+  }
+
   return (
     <div ref={calendarRef} className="relative z-[220] min-w-0">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((previous) => !previous)}
-        className={`flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 text-left text-sm font-bold shadow-sm outline-none transition ${
+        onClick={handleToggleOpen}
+        className={`flex h-10 w-full min-w-0 items-center justify-between gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-left text-xs font-semibold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
+            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
             : hasError
               ? "border-red-300 hover:border-red-500"
-              : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+              : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
         } ${
           disabled
             ? "cursor-not-allowed bg-gray-50 text-gray-400 opacity-70"
-            : "text-gray-800"
+            : "text-[#042C51]"
         }`}
       >
         <span className="inline-flex min-w-0 flex-1 items-center gap-2 truncate">
@@ -1505,7 +1628,7 @@ function CalendarDatePicker({
 
           <span
             className={`min-w-0 truncate ${
-              value ? "text-gray-800" : "text-gray-400"
+              value ? "text-[#042C51]" : "text-[#98A2B3]"
             }`}
           >
             {displayText}
@@ -1514,14 +1637,23 @@ function CalendarDatePicker({
 
         <ChevronDown
           size={18}
-          className={`shrink-0 text-[var(--sibs-primary-1)] transition-transform duration-200 ${
+          className={`shrink-0 text-[#FF5C28] transition-transform duration-200 ${
             open ? "rotate-180" : ""
           }`}
         />
       </button>
 
-      {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-[99999] w-[340px] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+      {open && !disabled
+        ? createPortal(
+        <div
+          ref={calendarPanelRef}
+          className="fixed z-[100000] overflow-visible rounded-2xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]"
+          style={{
+            left: `${panelPosition.left}px`,
+            top: `${panelPosition.top}px`,
+            width: `${panelPosition.width}px`,
+          }}
+        >
           <div className="flex items-center justify-between border-b border-[#E6ECF2] px-4 py-3">
             <button
               type="button"
@@ -1613,8 +1745,10 @@ function CalendarDatePicker({
               Today
             </button>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+      )
+        : null}
     </div>
   );
 }
@@ -1771,10 +1905,10 @@ function SchoolYearSearchableDropdown({
       className={`relative min-w-0 ${open ? zIndex : "z-[1]"}`}
     >
       <div
-        className={`flex h-11 w-full min-w-0 items-center gap-3 rounded-xl border bg-white px-4 text-sm font-bold shadow-sm outline-none transition ${
+        className={`flex h-10 w-full min-w-0 items-center gap-3 rounded-[10px] border bg-[#F8FAFC] px-3 text-xs font-semibold outline-none transition ${
           open
-            ? "border-[var(--sibs-primary-1)] ring-4 ring-[var(--sibs-primary-1)]/10"
-            : "border-gray-200 hover:border-[var(--sibs-primary-1)]"
+            ? "border-[#FF5C28] ring-4 ring-[#FF5C28]/10"
+            : "border-[#DCE6F1] hover:border-[#FF5C28]/40"
         }`}
       >
         <Search
@@ -1793,8 +1927,8 @@ function SchoolYearSearchableDropdown({
           placeholder={open ? "Search school year" : placeholder}
           aria-expanded={open}
           aria-haspopup="listbox"
-          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-sm font-bold outline-none placeholder:text-gray-400 ${
-            selectedOption && !open ? "text-gray-800" : "text-gray-700"
+          className={`h-full min-w-0 flex-1 border-0 bg-transparent text-xs font-semibold outline-none placeholder:text-[#98A2B3] ${
+            selectedOption && !open ? "text-[#042C51]" : "text-[#344054]"
           }`}
         />
 
@@ -1824,7 +1958,7 @@ function SchoolYearSearchableDropdown({
       )}
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-xl border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+        <div className="sibs-profile-dropdown-panel absolute left-0 right-0 top-[calc(100%+8px)] z-[99999] overflow-hidden rounded-[10px] border border-[#D9E2EC] bg-white shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
           <div className="max-h-64 overflow-y-auto" role="listbox">
             {visibleOptions.length > 0 ? (
               visibleOptions.map((option) => {
@@ -1837,10 +1971,10 @@ function SchoolYearSearchableDropdown({
                     role="option"
                     aria-selected={active}
                     onClick={() => handleSelect(option.value)}
-                    className={`block w-full px-4 py-3.5 text-left text-sm font-semibold transition ${
+                    className={`block w-full px-3 py-2.5 text-left text-xs font-semibold transition ${
                       active
-                        ? "bg-[#EAF4FF] text-sibs-primary-1"
-                        : "bg-white text-gray-700 hover:bg-[#F5F9FF] hover:text-sibs-primary-1"
+                        ? "bg-[#FFF0EB] text-[#FF5C28]"
+                        : "bg-white text-[#344054] hover:bg-[#FFF7F3] hover:text-[#FF5C28]"
                     }`}
                   >
                     {option.label}
@@ -1875,12 +2009,12 @@ function EducationSchoolFields({ section, value, onChange }) {
   }
 
   return (
-    <div className="rounded-3xl border border-blue-100 bg-blue-50/60 p-5">
+    <div className="rounded-[12px] border border-[#DCE6F1] bg-white p-4 sm:p-5">
       <div className="flex flex-col gap-1">
         <h4 className="text-sm font-extrabold text-sibs-primary-1">
           {section.title}
         </h4>
-        <p className="text-xs font-semibold leading-5 text-gray-500">
+        <p className="text-xs font-semibold leading-5 text-[#667085]">
           Complete all required information for this school level.
         </p>
       </div>
@@ -1944,7 +2078,7 @@ function EducationSchoolFields({ section, value, onChange }) {
               }
               placeholder="Search and select school year"
             />
-            <p className="mt-2 text-xs font-semibold text-gray-500">
+            <p className="mt-2 text-xs font-semibold text-[#667085]">
               Search using either the starting or ending year.
             </p>
           </div>
@@ -1985,12 +2119,12 @@ function EducationDetailsFields({ attainment, details, onChange }) {
   };
 
   return (
-    <div className="space-y-4 rounded-3xl border border-gray-100 bg-gray-50 p-5">
+    <div className="space-y-4 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
       <div>
-        <h4 className="text-sm font-extrabold text-gray-900">
+        <h4 className="text-sm font-extrabold text-[#042C51]">
           Required Education Details
         </h4>
-        <p className="mt-1 text-sm leading-6 text-gray-500">
+        <p className="mt-1 text-sm font-semibold leading-6 text-[#667085]">
           The school fields below are based on the selected highest educational
           attainment. Every displayed school name and address is required.
         </p>
@@ -2010,20 +2144,20 @@ function EducationDetailsFields({ attainment, details, onChange }) {
             {config.seniorHighMode === "optional" &&
               section.key === "highSchool" && (
                 <>
-                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-blue-100 bg-white p-4">
+                  <label className="group flex cursor-pointer items-start gap-3 rounded-[10px] border border-[#DCE6F1] bg-white p-3.5 transition hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]">
                     <input
                       type="checkbox"
                       checked={educationDetails.attendedSeniorHighSchool}
                       onChange={(event) =>
                         handleSeniorHighAttendanceChange(event.target.checked)
                       }
-                      className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
                     />
                     <span>
-                      <span className="block text-sm font-extrabold text-sibs-primary-1">
+                      <span className="block text-[13px] font-extrabold text-[#042C51] transition group-hover:text-[#FF5C28]">
                         I attended Senior High School
                       </span>
-                      <span className="mt-1 block text-xs font-semibold leading-5 text-gray-500">
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-[#667085]">
                         Check this box to add the required Senior High School
                         name, address, and school year graduated.
                       </span>
@@ -2063,28 +2197,79 @@ function MultiSelectCheckboxGroup({ options, values, onChange }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-3 sm:grid-cols-2 lg:grid-cols-3">
       {options.map((option) => {
         const optionValue = getOptionValue(option);
         const optionLabel = getOptionLabel(option);
+        const checked = values.includes(optionValue);
 
         return (
           <label
             key={option?.id || optionValue}
-            className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4"
+            className={`group flex cursor-pointer items-start gap-2.5 rounded-[10px] border px-3 py-2.5 text-xs transition ${
+              checked
+                ? "border-[#FF5C28] bg-[#FFF0EB] font-extrabold text-[#042C51] shadow-sm"
+                : "border-[#DCE6F1] bg-white font-bold text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+            }`}
           >
             <input
               type="checkbox"
-              checked={values.includes(optionValue)}
+              checked={checked}
               onChange={() => toggleValue(optionValue)}
-              className="h-4 w-4"
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
             />
-            <span className="text-sm font-semibold text-gray-700">
-              {optionLabel}
-            </span>
+            <span className="leading-5">{optionLabel}</span>
           </label>
         );
       })}
+    </div>
+  );
+}
+
+function ChoiceCardGroup({
+  value,
+  onChange,
+  options,
+  required = true,
+  columns = "grid-cols-2",
+}) {
+  const normalizedOptions = normalizeDropdownOptions(options);
+
+  if (!normalizedOptions.length) {
+    return <EmptyOptionNotice />;
+  }
+
+  return (
+    <div className={`relative grid gap-2 ${columns}`}>
+      {normalizedOptions.map((option) => {
+        const active = String(option.value) === String(value || "");
+
+        return (
+          <button
+            key={option.id || option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`min-h-10 rounded-[10px] border px-3 py-2 text-xs font-extrabold transition ${
+              active
+                ? "border-[#FF5C28] bg-[#FFF0EB] text-[#FF5C28] shadow-sm"
+                : "border-[#DCE6F1] bg-[#F8FAFC] text-[#344054] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6] hover:text-[#FF5C28]"
+            }`}
+            aria-pressed={active}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+
+      {required ? (
+        <input
+          tabIndex={-1}
+          value={value || ""}
+          onChange={() => {}}
+          required
+          className="pointer-events-none absolute h-px w-px opacity-0"
+        />
+      ) : null}
     </div>
   );
 }
@@ -2113,12 +2298,11 @@ function DatabaseSelect({
 
 function YesNoSelect({ value, onChange, options, required = true }) {
   return (
-    <DatabaseSelect
+    <ChoiceCardGroup
       required={required}
       value={value}
       onChange={onChange}
       options={options}
-      placeholder="Select answer"
     />
   );
 }
@@ -2132,15 +2316,15 @@ function ExperienceFields({
   onRemove,
 }) {
   return (
-    <div className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-extrabold text-sibs-primary-1">{title}</h4>
+        <h4 className="text-sm font-extrabold text-[#042C51]">{title}</h4>
 
         {showRemove && (
           <button
             type="button"
             onClick={onRemove}
-            className="inline-flex h-9 items-center justify-center rounded-xl border border-red-100 bg-white px-4 text-xs font-bold text-red-600 transition hover:bg-red-50"
+            className="inline-flex h-9 items-center justify-center rounded-[10px] border border-red-100 bg-white px-4 text-xs font-bold text-red-600 transition hover:bg-red-50"
           >
             Remove
           </button>
@@ -2317,10 +2501,15 @@ export default function PublicTalentPoolApplicationPage() {
     document.body.classList.add("public-talent-pool-form-page");
     document.documentElement.classList.add("public-talent-pool-form-page");
 
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement("style");
+    let style = document.getElementById(styleId);
+
+    if (!style) {
+      style = document.createElement("style");
       style.id = styleId;
-      style.innerHTML = `
+      document.head.appendChild(style);
+    }
+
+    style.innerHTML = `
         body.public-talent-pool-form-page aside,
         body.public-talent-pool-form-page .sidebar,
         body.public-talent-pool-form-page [data-sidebar],
@@ -2333,7 +2522,6 @@ export default function PublicTalentPoolApplicationPage() {
           max-width: 0 !important;
         }
 
-        body.public-talent-pool-form-page main,
         body.public-talent-pool-form-page .main-content,
         body.public-talent-pool-form-page .content-wrapper,
         body.public-talent-pool-form-page .page-content,
@@ -2348,8 +2536,6 @@ export default function PublicTalentPoolApplicationPage() {
           overflow-x: hidden !important;
         }
       `;
-      document.head.appendChild(style);
-    }
 
     return () => {
       document.body.classList.remove("public-talent-pool-form-page");
@@ -2454,6 +2640,81 @@ export default function PublicTalentPoolApplicationPage() {
       label: position.positionTitle,
     }));
   }, [activePositionOptions]);
+
+  const completionPercentage = useMemo(() => {
+    const educationComplete =
+      Boolean(form.highestEducationalAttainment) &&
+      !validateEducationDetails(
+        form.highestEducationalAttainment,
+        form.educationDetails,
+      );
+
+    const checks = [
+      Boolean(form.openPosition),
+      Boolean(form.applyingLocation),
+      Boolean(form.firstName.trim()),
+      Boolean(form.lastName.trim()),
+      Boolean(form.dateOfBirth),
+      Boolean(form.email.trim()),
+      Boolean(form.physicalAddress.trim()),
+      Boolean(form.workExperience),
+      Boolean(form.highestEducationalAttainment),
+      educationComplete,
+      Boolean(form.reference1Name.trim() && form.reference1Phone.trim()),
+      Boolean(form.reference2Name.trim() && form.reference2Phone.trim()),
+      Boolean(form.reference3Name.trim() && form.reference3Phone.trim()),
+      Boolean(selectedAudioFile),
+      Boolean(selectedAttachmentFile),
+      Boolean(form.consent),
+    ];
+
+    if (hasEmployeeReferralProgram) {
+      checks.push(Boolean(form.referredBy.trim() && form.employeeId.trim()));
+    }
+
+    if (hasRelevantExperience) {
+      checks.push(
+        Boolean(
+          form.lengthOfWorkExperience &&
+            form.years.trim() &&
+            form.role.trim() &&
+            form.company.trim() &&
+            form.monthlyCompensation.trim() &&
+            form.reasonForLeaving.trim(),
+        ),
+      );
+
+      if (form.hasOtherExperience === "Yes") {
+        checks.push(
+          Boolean(
+            form.otherExperiences.length &&
+              form.otherExperiences.every(
+                (experience) =>
+                  experience.lengthOfWorkExperience &&
+                  experience.years.trim() &&
+                  experience.role.trim() &&
+                  experience.company.trim() &&
+                  experience.monthlyCompensation.trim() &&
+                  experience.reasonForLeaving.trim(),
+              ),
+          ),
+        );
+      }
+    }
+
+    const completed = checks.filter(Boolean).length;
+
+    return Math.min(
+      100,
+      Math.max(0, Math.round((completed / checks.length) * 100)),
+    );
+  }, [
+    form,
+    hasEmployeeReferralProgram,
+    hasRelevantExperience,
+    selectedAttachmentFile,
+    selectedAudioFile,
+  ]);
 
   const canSubmit = useMemo(() => {
     if (isLoadingData) return false;
@@ -3140,100 +3401,96 @@ export default function PublicTalentPoolApplicationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--sibs-tertiary-10)] px-4 py-8">
-      <div className="mx-auto max-w-6xl space-y-5">
-        <section className="overflow-hidden rounded-3xl bg-white shadow-sm">
-          <div className="bg-[var(--sibs-primary-1)] px-6 py-8 text-white">
-            <div className="mb-8 flex w-full justify-center">
-              <style>
-                {`
-                  @keyframes sibsLogoReflect {
-                    0% {
-                      transform: translateX(-160%) skewX(-18deg);
-                      opacity: 0;
-                    }
-                    18% {
-                      opacity: 0.75;
-                    }
-                    45% {
-                      opacity: 0.95;
-                    }
-                    70% {
-                      opacity: 0.35;
-                    }
-                    100% {
-                      transform: translateX(260%) skewX(-18deg);
-                      opacity: 0;
-                    }
-                  }
+    <div className="min-h-screen overflow-x-hidden bg-[#F4F7FB] font-jakarta text-[#101828]">
+      <header className="sticky top-0 z-[500] border-b border-[#083A69] bg-[#042C51] text-white shadow-md">
+        <div className="mx-auto flex w-full max-w-[1060px] items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <PublicSibsLogo />
 
-                  @keyframes sibsLogoGlow {
-                    0%, 100% {
-                      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
-                    }
-                    50% {
-                      filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.45));
-                    }
-                  }
-                `}
-              </style>
+            <div className="min-w-0 border-l border-white/10 pl-3">
+              <span className="rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-[#FF8A63] sm:text-[10px]">
+                Public Portal
+              </span>
+              <p className="mt-1.5 truncate text-[10px] font-semibold text-slate-300 sm:text-[11px]">
+                Talent Pool Master Registration Form
+              </p>
+            </div>
+          </div>
 
-              <div className="relative inline-flex overflow-hidden rounded-2xl">
-                <img
-                  src="/SiBS_Logo%20w%20Tagline-white.png"
-                  alt="SiBS Logo"
-                  className="h-16 w-auto md:h-20"
-                  style={{
-                    animation: "sibsLogoGlow 2.8s ease-in-out infinite",
-                  }}
-                />
+          <div className="hidden items-center gap-2 rounded-xl border border-white/10 bg-[#021B33] px-3 py-2 sm:flex">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-sibs-pulse" />
+            <span className="text-[10px] font-bold text-slate-300 sm:text-[11px]">
+              Live Submissions Active
+            </span>
+          </div>
+        </div>
 
-                <span
-                  className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/80 to-transparent"
-                  style={{
-                    animation: "sibsLogoReflect 2.6s ease-in-out infinite",
-                  }}
-                />
-              </div>
+        <div
+          className="h-1.5 bg-[#02172C]"
+          role="progressbar"
+          aria-label="Form completion"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={completionPercentage}
+        >
+          <div
+            className="h-full bg-[#FF5C28] transition-[width] duration-500 ease-out"
+            style={{ width: `${completionPercentage}%` }}
+          />
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-[1060px] px-4 py-6 sm:px-6 sm:py-8">
+        <section className="relative mb-6 overflow-hidden h-auto rounded-2xl border border-[#0A467E] bg-gradient-to-r from-[#042C51] via-[#073A6B] to-[#042C51] p-5 text-white shadow-lg sm:p-6">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#FF5C28]/15 blur-3xl" />
+
+          <div className="relative z-10 h-full">
+            <div className="min-w-0 h-full text-left">
+              <img
+                alt="SiBS Logo"
+                className="mx-auto mb-5 block h-16 w-auto select-none md:h-20"
+                src="/SiBS_Logo%20w%20Tagline-white.png"
+                style={{
+                  animation:
+                    "2.8s ease-in-out 0s infinite normal none running sibsLogoGlow",
+                }}
+              />
+
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#FF5C28]/40 bg-[#FF5C28]/15 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#FF8A63]">
+                <UserPlus size={13} />
+                No Login Required • Direct Candidate Entry
+              </span>
+
+              <h2 className="mt-3 text-xl font-extrabold tracking-tight sm:text-2xl">
+                Talent Pool Master Application
+              </h2>
+
+              <p className="mt-2 max-w-3xl text-xs font-semibold leading-6 text-slate-200 sm:max-w-[720px] sm:text-sm">
+                Complete this form to submit your candidate profile directly to
+                the SiBS HRIS Talent Pool for active and future recruitment
+                opportunities. Fields marked with * are required.
+              </p>
             </div>
 
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide">
-                  <UserPlus size={15} />
-                  Candidate Talent Pool
-                </div>
-
-                <h1 className="mt-4 text-3xl font-extrabold">
-                  Public Application Form
-                </h1>
-
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/80">
-                  Complete your candidate profile for current and future SiBS
-                  openings. Fields marked with * are required.
-                </p>
-              </div>
-
-              <div className="rounded-3xl bg-white/10 p-5">
-                <p className="text-xs font-bold uppercase tracking-wide text-white/70">
-                  Application Type
-                </p>
-                <p className="mt-1 text-lg font-extrabold">
-                  Public Talent Pool
-                </p>
-              </div>
+            <div className="mt-4 w-full shrink-0 rounded-xl border border-white/10 bg-[#021930]/80 px-5 py-4 text-left backdrop-blur-sm sm:absolute sm:bottom-0 sm:right-0 sm:mt-0 sm:w-auto sm:min-w-[160px] sm:text-center">
+              <p className="text-[9px] font-extrabold uppercase tracking-wide text-slate-300">
+                Form Completion
+              </p>
+              <p className="mt-1 text-2xl font-extrabold text-[#FF5C28]">
+                {completionPercentage}%
+              </p>
             </div>
           </div>
         </section>
 
         {loadError && (
-          <section className="rounded-3xl border border-red-100 bg-red-50 p-5 text-sm font-bold text-red-700">
+          <section className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700 shadow-sm">
             {loadError}
           </section>
         )}
 
         {submittedRecord && (
-          <section className="rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
+          <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
             <div className="flex items-start gap-3">
               <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700">
                 <CheckCircle2 size={22} />
@@ -3261,24 +3518,16 @@ export default function PublicTalentPoolApplicationPage() {
           </section>
         )}
 
-        <section>
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5 rounded-3xl bg-white p-6 shadow-sm"
-          >
-            <div>
-              <h2 className="text-xl font-extrabold text-sibs-primary-1">
-                Candidate Information
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {isLoadingData
-                  ? "Loading form data from database..."
-                  : "Please complete the required details before submitting."}
-              </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {isLoadingData ? (
+            <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold text-[#174A7C] shadow-sm">
+              Loading form options and active positions from the database...
             </div>
+          ) : null}
 
             <SectionCard
               icon={BriefcaseBusiness}
+              step={1}
               title="Application Source and Position"
               description="Tell us where you learned about SiBS and what position you are applying for."
             >
@@ -3388,6 +3637,7 @@ export default function PublicTalentPoolApplicationPage() {
 
             <SectionCard
               icon={UserPlus}
+              step={2}
               title="Personal Information"
               description="Enter your legal name, contact details, and address."
             >
@@ -3520,6 +3770,7 @@ export default function PublicTalentPoolApplicationPage() {
 
             <SectionCard
               icon={BriefcaseBusiness}
+              step={3}
               title="Work Experience"
               description="Additional work experience fields will appear when you select Has work Experience."
             >
@@ -3556,7 +3807,7 @@ export default function PublicTalentPoolApplicationPage() {
                       onChange={updatePrimaryExperience}
                     />
 
-                    <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
+                    <div className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4 sm:p-5">
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_220px] md:items-end">
                         <div>
                           <FieldLabel>Do you have other experience?</FieldLabel>
@@ -3572,7 +3823,7 @@ export default function PublicTalentPoolApplicationPage() {
                           <button
                             type="button"
                             onClick={addOtherExperience}
-                            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--sibs-primary-1)] px-4 text-sm font-bold text-white transition hover:opacity-90"
+                            className="inline-flex h-10 items-center justify-center rounded-[10px] bg-[#FF5C28] px-4 text-sm font-extrabold text-white shadow-sm shadow-[#FF5C28]/15 transition hover:bg-[#E94F1F]"
                           >
                             Add Other Experience
                           </button>
@@ -3602,6 +3853,7 @@ export default function PublicTalentPoolApplicationPage() {
             <div ref={educationSectionRef}>
               <SectionCard
                 icon={GraduationCap}
+                step={4}
                 title="Education, Affiliations, and Training"
                 description="Select educational attainment and complete the school details required for that level."
               >
@@ -3655,6 +3907,7 @@ export default function PublicTalentPoolApplicationPage() {
 
             <SectionCard
               icon={ShieldCheck}
+              step={5}
               title="Work Readiness Questions"
               description="These questions help Talent Acquisition review work setup and compliance readiness."
             >
@@ -3702,15 +3955,14 @@ export default function PublicTalentPoolApplicationPage() {
                   <FieldLabel>
                     Full-time, part-time, or either? <RequiredMark />
                   </FieldLabel>
-                  <DatabaseSelect
+                  <ChoiceCardGroup
                     required
                     value={form.employmentInterest}
                     options={formOptions.employmentInterest}
-                    placeholder="Select employment preference"
                     onChange={(value) =>
                       updateFormField("employmentInterest", value)
                     }
-                    zIndex="z-[160]"
+                    columns="grid-cols-1 sm:grid-cols-3"
                   />
                 </div>
 
@@ -3761,98 +4013,96 @@ export default function PublicTalentPoolApplicationPage() {
 
             <SectionCard
               icon={Users}
-              title="References"
-              description="Please list at least three references and their contact information."
+              step={6}
+              title="Character References"
+              description="Provide three people who can confirm your employment, education, or character background."
             >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <FieldLabel>
-                    Reference 1 <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    value={form.reference1Name}
-                    onChange={(e) =>
-                      updateFormField("reference1Name", e.target.value)
-                    }
-                    placeholder="Reference 1 name"
-                    className={inputClass()}
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+                {[
+                  {
+                    number: 1,
+                    name: form.reference1Name,
+                    phone: form.reference1Phone,
+                    nameField: "reference1Name",
+                    phoneField: "reference1Phone",
+                  },
+                  {
+                    number: 2,
+                    name: form.reference2Name,
+                    phone: form.reference2Phone,
+                    nameField: "reference2Name",
+                    phoneField: "reference2Phone",
+                  },
+                  {
+                    number: 3,
+                    name: form.reference3Name,
+                    phone: form.reference3Phone,
+                    nameField: "reference3Name",
+                    phoneField: "reference3Phone",
+                  },
+                ].map((reference) => (
+                  <div
+                    key={reference.number}
+                    className="rounded-[12px] border border-[#DCE6F1] bg-[#F8FAFC] p-4"
+                  >
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-[10px] bg-[#FFF0EB] text-[10px] font-extrabold text-[#FF5C28]">
+                        {reference.number}
+                      </span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-normal text-[#042C51]">
+                        Reference {reference.number}
+                      </span>
+                    </div>
 
-                <div>
-                  <FieldLabel>Phone</FieldLabel>
-                  <input
-                    value={form.reference1Phone}
-                    onChange={(e) =>
-                      updateFormField("reference1Phone", e.target.value)
-                    }
-                    placeholder="Reference 1 phone"
-                    className={inputClass()}
-                  />
-                </div>
+                    <div className="space-y-3">
+                      <div>
+                        <FieldLabel>
+                          Full Name <RequiredMark />
+                        </FieldLabel>
+                        <input
+                          value={reference.name}
+                          onChange={(event) =>
+                            updateFormField(
+                              reference.nameField,
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Reference name"
+                          className={inputClass()}
+                        />
+                      </div>
 
-                <div>
-                  <FieldLabel>
-                    Reference 2 <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    value={form.reference2Name}
-                    onChange={(e) =>
-                      updateFormField("reference2Name", e.target.value)
-                    }
-                    placeholder="Reference 2 name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Phone</FieldLabel>
-                  <input
-                    value={form.reference2Phone}
-                    onChange={(e) =>
-                      updateFormField("reference2Phone", e.target.value)
-                    }
-                    placeholder="Reference 2 phone"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>
-                    Reference 3 <RequiredMark />
-                  </FieldLabel>
-                  <input
-                    value={form.reference3Name}
-                    onChange={(e) =>
-                      updateFormField("reference3Name", e.target.value)
-                    }
-                    placeholder="Reference 3 name"
-                    className={inputClass()}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel>Phone</FieldLabel>
-                  <input
-                    value={form.reference3Phone}
-                    onChange={(e) =>
-                      updateFormField("reference3Phone", e.target.value)
-                    }
-                    placeholder="Reference 3 phone"
-                    className={inputClass()}
-                  />
-                </div>
+                      <div>
+                        <FieldLabel>
+                          Phone Number <RequiredMark />
+                        </FieldLabel>
+                        <input
+                          value={reference.phone}
+                          onChange={(event) =>
+                            updateFormField(
+                              reference.phoneField,
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Reference phone"
+                          className={inputClass()}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </SectionCard>
 
             <div ref={fileSectionRef}>
               <SectionCard
                 icon={Mic}
+                step={7}
                 title="Audio and File Upload"
                 description="Upload a single audio file answering the listed questions and one supporting document/file."
               >
                 <div className="space-y-5">
-                  <div className="rounded-3xl border border-amber-100 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-800">
+                  <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-800 sm:text-sm">
                     <p className="font-extrabold">
                       Your audio file must answer these questions:
                     </p>
@@ -3872,17 +4122,18 @@ export default function PublicTalentPoolApplicationPage() {
                     )}
                   </div>
 
-                  <div>
-                    <FieldLabel>
-                      Upload single audio file <RequiredMark />
-                    </FieldLabel>
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div>
+                      <FieldLabel>
+                        Upload single audio file <RequiredMark />
+                      </FieldLabel>
                     <label
-                      className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                      className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAudio && !selectedAudioFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAudioFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-gray-300 bg-gray-50"
+                            : "border-[#DCE6F1] bg-[#F8FAFC]"
                       }`}
                     >
                       <Mic
@@ -3893,7 +4144,7 @@ export default function PublicTalentPoolApplicationPage() {
                             : "text-sibs-primary-1"
                         }
                       />
-                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#042C51]">
                         {selectedAudioFile?.name || "Choose audio file"}
                       </p>
                       {selectedAudioFile && (
@@ -3901,7 +4152,7 @@ export default function PublicTalentPoolApplicationPage() {
                           Audio selected • {formatFileSize(selectedAudioFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-xs font-semibold text-gray-500">
+                      <p className="mt-1 text-xs font-semibold text-[#667085]">
                         Accepted: MP3, WAV, M4A, AAC, OGG, WEBM, MP4, FLAC,
                         AMR, 3GP, OPUS, AIFF, CAF, WMA
                       </p>
@@ -3930,17 +4181,17 @@ export default function PublicTalentPoolApplicationPage() {
                     )}
                   </div>
 
-                  <div>
-                    <FieldLabel>
-                      Upload supporting file <RequiredMark />
-                    </FieldLabel>
+                    <div>
+                      <FieldLabel>
+                        Upload supporting file <RequiredMark />
+                      </FieldLabel>
                     <label
-                      className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed px-5 py-8 text-center transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 ${
+                      className={`flex min-h-[190px] cursor-pointer flex-col items-center justify-center rounded-[12px] border border-dashed px-5 py-8 text-center transition hover:border-[#FF5C28] hover:bg-[#FFF9F6] ${
                         highlightAttachment && !selectedAttachmentFile
                           ? "border-red-300 bg-red-50 ring-4 ring-red-100"
                           : selectedAttachmentFile
                             ? "border-emerald-300 bg-emerald-50"
-                            : "border-gray-300 bg-gray-50"
+                            : "border-[#DCE6F1] bg-[#F8FAFC]"
                       }`}
                     >
                       <UploadCloud
@@ -3951,7 +4202,7 @@ export default function PublicTalentPoolApplicationPage() {
                             : "text-sibs-primary-1"
                         }
                       />
-                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-gray-800">
+                      <p className="mt-2 max-w-full truncate text-sm font-extrabold text-[#042C51]">
                         {selectedAttachmentFile?.name || "Choose file"}
                       </p>
                       {selectedAttachmentFile && (
@@ -3959,7 +4210,7 @@ export default function PublicTalentPoolApplicationPage() {
                           File selected • {formatFileSize(selectedAttachmentFile)}
                         </p>
                       )}
-                      <p className="mt-1 text-xs font-semibold text-gray-500">
+                      <p className="mt-1 text-xs font-semibold text-[#667085]">
                         PDF, DOC/DOCX, XLS/CSV, JPG/JPEG, PNG, GIF
                       </p>
                       <input
@@ -3980,77 +4231,103 @@ export default function PublicTalentPoolApplicationPage() {
                       />
                     </label>
 
-                    {highlightAttachment && !selectedAttachmentFile && (
-                      <p className="mt-2 text-sm font-bold text-red-600">
-                        Please upload your supporting file before submitting.
-                      </p>
-                    )}
+                      {highlightAttachment && !selectedAttachmentFile && (
+                        <p className="mt-2 text-sm font-bold text-red-600">
+                          Please upload your supporting file before submitting.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </SectionCard>
             </div>
 
-            <div
-              ref={consentRef}
-              className={`rounded-3xl border p-5 transition ${
-                highlightConsent && !form.consent
-                  ? "border-red-300 bg-red-50 ring-4 ring-red-100"
-                  : "border-gray-100 bg-gray-50"
-              }`}
-            >
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={form.consent}
-                  onChange={(e) => {
-                    updateFormField("consent", e.target.checked);
-                    setHighlightConsent(false);
-                  }}
-                  className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-[var(--sibs-primary-1)]"
-                />
-                <span
-                  className={`text-sm font-semibold leading-6 ${
+            <div ref={consentRef}>
+              <SectionCard
+                icon={ShieldCheck}
+                step={8}
+                title="Terms and Privacy Consent"
+                description="Review the consent statement before submitting your candidate profile."
+              >
+                <label
+                  className={`group flex cursor-pointer items-start gap-3 rounded-[10px] border p-3.5 transition ${
                     highlightConsent && !form.consent
-                      ? "text-red-700"
-                      : "text-gray-600"
+                      ? "border-red-300 bg-red-50 ring-4 ring-red-100"
+                    : form.consent
+                      ? "border-[#FF5C28] bg-[#FFF0EB]"
+                        : "border-[#DCE6F1] bg-[#F8FAFC] hover:border-[#FF5C28]/40 hover:bg-[#FFF9F6]"
                   }`}
                 >
-                  I agree to terms & conditions provided by the company. By
-                  providing my phone number, I agree to receive text messages
-                  from the business.
-                </span>
-              </label>
+                  <input
+                    type="checkbox"
+                    checked={form.consent}
+                    onChange={(event) => {
+                      updateFormField("consent", event.target.checked);
+                      setHighlightConsent(false);
+                    }}
+                    className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#98A2B3] accent-[#FF5C28]"
+                  />
 
-              {highlightConsent && !form.consent && (
-                <p className="mt-3 text-sm font-bold text-red-600">
-                  Please check this consent box before submitting.
+                  <span
+                    className={`text-[13px] font-bold leading-6 transition ${
+                      highlightConsent && !form.consent
+                        ? "text-red-700"
+                        : form.consent
+                          ? "text-[#042C51]"
+                          : "text-[#344054] group-hover:text-[#FF5C28]"
+                    }`}
+                  >
+                    I agree to terms &amp; conditions provided by the company. By
+                    providing my phone number, I agree to receive text messages
+                    from the business.
+                  </span>
+                </label>
+
+                {highlightConsent && !form.consent ? (
+                  <p className="mt-3 text-sm font-bold text-red-600">
+                    Please check this consent box before submitting.
+                  </p>
+                ) : null}
+              </SectionCard>
+            </div>
+
+            <section className="flex flex-col gap-4 rounded-[12px] border border-[#DCE6F1] bg-white p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="min-w-0">
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#98A2B3]">
+                  Ready to submit
                 </p>
-              )}
-            </div>
+                <p className="mt-1 text-sm font-extrabold text-[#042C51]">
+                  Your form is {completionPercentage}% complete.
+                </p>
+                <p className="mt-1 text-xs font-semibold leading-5 text-[#667085]">
+                  Review your information and uploaded files before sending the
+                  application to Talent Acquisition.
+                </p>
+              </div>
 
-            <div className="flex flex-col justify-end gap-2 sm:flex-row">
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-bold text-sibs-primary-1 transition hover:border-[var(--sibs-primary-1)] hover:bg-[var(--sibs-primary-1)]/5 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <RotateCcw size={16} />
-                Reset
-              </button>
+              <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isSubmitting}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#D6DEE8] bg-white px-5 text-sm font-extrabold text-[#042C51] transition hover:border-[#FF5C28]/50 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RotateCcw size={16} />
+                  Reset Form
+                </button>
 
-              <button
-                type="submit"
-                disabled={!canSubmit}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[var(--sibs-primary-1)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Send size={16} />
-                {isSubmitting ? "Submitting..." : "Submit Application"}
-              </button>
-            </div>
-          </form>
-        </section>
-      </div>
+                <button
+                  type="submit"
+                  disabled={!canSubmit}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#FF5C28] px-5 text-sm font-extrabold text-white shadow-md shadow-[#FF5C28]/15 transition hover:-translate-y-0.5 hover:bg-[#E94F1F] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  <Send size={16} />
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
+                </button>
+              </div>
+            </section>
+        </form>
+      </main>
 
       <StatusModal
         open={statusModal.open}

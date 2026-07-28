@@ -8,6 +8,20 @@ import { approveJobDescriptionRequest } from "../../../lib/axios/getApprovalRequ
 
 const detailTabs = ["Details", "Revision History"];
 
+function getJobDescriptionDisplayTitle(item = {}) {
+  return (
+    item.documentTitle ||
+    item.document_title ||
+    item.raw?.documentTitle ||
+    item.raw?.document_title ||
+    item.roleTitle ||
+    item.role_title ||
+    item.raw?.roleTitle ||
+    item.raw?.role_title ||
+    "Job Description"
+  );
+}
+
 export default function ViewJobDescriptionDetailsModal({
   open,
   onClose,
@@ -395,7 +409,7 @@ export default function ViewJobDescriptionDetailsModal({
 
   if (!open || !item) return null;
 
-  const jdTitle = `${item.roleTitle || "Job Description"} - Version ${
+  const jdTitle = `${getJobDescriptionDisplayTitle(item)} - Version ${
     item.revisionNo || item.currentVersion || "1"
   }.0`;
 
@@ -408,7 +422,7 @@ export default function ViewJobDescriptionDetailsModal({
 
   return (
     <div
-      className="sibs-modal-backdrop-in fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-[#042C51]/80 px-2 py-2 font-jakarta backdrop-blur-sm sm:px-4 sm:py-4"
+      className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-2 py-2 font-jakarta sm:px-4 sm:py-4"
       onClick={saving ? undefined : onClose}
     >
       <div
@@ -559,7 +573,7 @@ export default function ViewJobDescriptionDetailsModal({
       </div>
 
       {showEditedChanges && (
-        <div className="sibs-modal-backdrop-in fixed inset-0 z-[10000] flex items-center justify-center bg-[#042C51]/80 px-4 backdrop-blur-sm">
+        <div className="sibs-modal-backdrop-in sibs-modal-blur fixed inset-0 z-[10000] flex items-center justify-center px-4">
           <div
             className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}

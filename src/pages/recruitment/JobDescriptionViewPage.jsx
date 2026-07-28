@@ -465,10 +465,6 @@ function buildFallbackRevisionDraftPayload(item = {}, editedChangeDetails = []) 
     item.document_title,
     raw.documentTitle,
     raw.document_title,
-    item.roleTitle,
-    item.role_title,
-    raw.roleTitle,
-    raw.role_title,
   );
 
   const roleTitle = getFirstValue(
@@ -1397,7 +1393,16 @@ export default function JobDescriptionViewPage() {
 
 
   const jdCode = item.jdCode || item.jd_code || item.raw?.jdCode || item.raw?.jd_code || "JD";
-  const jdScreenTitle = `${jdCode} • ${item.roleTitle || "Job Description"}`;
+  const jdDisplayTitle =
+    item.documentTitle ||
+    item.document_title ||
+    item.raw?.documentTitle ||
+    item.raw?.document_title ||
+    item.roleTitle ||
+    item.role_title ||
+    item.raw?.roleTitle ||
+    item.raw?.role_title ||
+    "Job Description";
 
   const revisionHistory = Array.isArray(item.revisionHistory)
     ? item.revisionHistory
@@ -1427,7 +1432,7 @@ export default function JobDescriptionViewPage() {
               </div>
 
               <h1 className="mt-1 min-w-0 break-words text-sm font-extrabold leading-tight text-sibs-primary-1 sm:text-xl">
-                {jdScreenTitle}
+                {jdCode} • {jdDisplayTitle}
               </h1>
 
               <p className="mt-1 text-xs font-semibold text-[#475467] sm:text-sm">
@@ -1574,7 +1579,7 @@ export default function JobDescriptionViewPage() {
       </div>
 
       {showEditedChanges && (
-        <div className="jd-view-overlay fixed inset-0 z-[10000] flex items-end justify-center bg-black/40 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
+        <div className="jd-view-overlay sibs-modal-blur fixed inset-0 z-[10000] flex items-end justify-center px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
           <div
             className="jd-view-dialog max-h-[94dvh] w-full max-w-3xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -1664,7 +1669,7 @@ export default function JobDescriptionViewPage() {
       )}
 
       {saveAsNewVersionModal.open && (
-        <div className="jd-view-overlay fixed inset-0 z-[10000] flex items-end justify-center bg-black/40 px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
+        <div className="jd-view-overlay sibs-modal-blur fixed inset-0 z-[10000] flex items-end justify-center px-3 pb-3 pt-6 sm:items-center sm:px-4 sm:py-4">
           <div
             className="jd-view-dialog max-h-[94dvh] w-full max-w-xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}

@@ -555,7 +555,7 @@ export default function JobDescriptionTable({
         </p>
       </div>
 
-      <div className="relative overflow-visible p-4 sm:p-5">
+      <div className="relative space-y-5 overflow-visible p-4 sm:p-5">
         <PaginationTable
           filterLayout="ta-inline"
           showFilterPanel={false}
@@ -564,7 +564,6 @@ export default function JobDescriptionTable({
           searchValue={searchTerm}
           searchPlaceholder="Search role title, document, department, account, or hiring need..."
           onSearchChange={(value) => updateFilter(setSearchTerm, value)}
-          searchClassName="relative min-w-0 flex-1"
           dropdownFilters={[
             {
               key: "department",
@@ -573,9 +572,9 @@ export default function JobDescriptionTable({
               onChange: (value) => updateFilter(setDepartmentFilter, value),
               includeAll: true,
               allLabel: "All Departments",
+              label: "Department",
               placeholder: "Search departments...",
               searchable: true,
-              className: "w-full sm:w-[200px] xl:w-[220px]",
             },
             {
               key: "account",
@@ -584,9 +583,9 @@ export default function JobDescriptionTable({
               onChange: (value) => updateFilter(setAccountFilter, value),
               includeAll: true,
               allLabel: "All Accounts",
+              label: "Account",
               placeholder: "Search accounts...",
               searchable: true,
-              className: "w-full sm:w-[190px] xl:w-[210px]",
             },
             {
               key: "supervisory",
@@ -595,9 +594,9 @@ export default function JobDescriptionTable({
               onChange: (value) => updateFilter(setSupervisoryFilter, value),
               includeAll: true,
               allLabel: "All Levels",
+              label: "Supervisory Level",
               placeholder: "Search levels...",
               searchable: true,
-              className: "w-full sm:w-[180px] xl:w-[200px]",
             },
           ]}
           rightContent={
@@ -605,17 +604,16 @@ export default function JobDescriptionTable({
               type="button"
               onClick={handleResetFilters}
               disabled={!hasActiveFilters}
-              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] sm:w-auto"
+              className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-[10px] border border-[#E6ECF2] bg-white px-3 text-xs font-extrabold text-[#98A2B3] transition hover:border-[#FF5C28]/40 hover:bg-[#FFF7F3] hover:text-[#FF5C28] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[#E6ECF2] disabled:hover:bg-white disabled:hover:text-[#98A2B3] xl:w-auto"
             >
               <RotateCcw size={14} />
               Clear
             </button>
           }
-          rightContentClassName="flex w-full items-end sm:w-auto"
           className="border-0 bg-transparent p-0 shadow-none"
         />
 
-        <div className="mt-5 overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
+        <div className="overflow-hidden rounded-xl border border-[#E6ECF2] bg-white">
           <div className="flex overflow-x-auto border-b border-[#E6ECF2] bg-[#F8FAFC] px-3 pt-3 no-scrollbar sm:px-4">
             {STATUS_TABS.map((tab) => {
               const active = selectedStatusTab === tab.key;
@@ -711,10 +709,10 @@ export default function JobDescriptionTable({
                             <FileText className="mt-0.5 h-4 w-4 shrink-0 text-[#FF5C28]" />
                             <div className="min-w-0">
                               <p className="max-w-[340px] text-xs font-extrabold leading-5 text-[#042C51]">
-                                {roleTitle}
+                                {documentTitle}
                               </p>
                               <p className="mt-0.5 max-w-[340px] truncate text-[10px] font-semibold text-[#98A2B3]">
-                                {documentTitle}
+                                {roleTitle}
                               </p>
                             </div>
                           </div>

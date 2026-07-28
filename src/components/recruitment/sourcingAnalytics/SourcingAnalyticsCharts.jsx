@@ -145,7 +145,7 @@ function ChartCard({ title, description, icon: Icon, children, delay = 0 }) {
           </p>
         </div>
 
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-[#EAF2FB] text-[#042C51]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF2FB] text-[#042C51]">
           <Icon size={15} />
         </span>
       </div>

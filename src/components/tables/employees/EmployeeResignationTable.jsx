@@ -234,7 +234,7 @@ function EditResignationModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex h-dvh items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-sm"
+      className="sibs-modal-blur fixed inset-0 z-[99999] flex h-dvh items-center justify-center px-4 py-4"
       onClick={onClose}
     >
       <form

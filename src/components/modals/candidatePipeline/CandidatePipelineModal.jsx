@@ -2672,7 +2672,7 @@ function UpdateAssessmentModal({
 
   return (
     <div
-      className="fixed inset-0 z-[11000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
+      className="sibs-modal-blur fixed inset-0 z-[11000] flex h-dvh items-center justify-center px-4 py-4"
       onClick={(event) => event.stopPropagation()}
       onMouseDown={(event) => event.stopPropagation()}
     >
@@ -3496,7 +3496,7 @@ function NhoScheduleModal({
 
   return (
     <div
-      className="fixed inset-0 z-[11500] flex h-dvh items-center justify-center bg-black/50 px-4 py-4"
+      className="sibs-modal-blur fixed inset-0 z-[11500] flex h-dvh items-center justify-center px-4 py-4"
       onClick={handleClose}
     >
       <div
@@ -4023,7 +4023,7 @@ function AssessmentEmailFormatModal({
 
   return (
     <div
-      className="fixed inset-0 z-[12000] flex h-dvh items-center justify-center bg-black/45 px-4 py-4"
+      className="sibs-modal-blur fixed inset-0 z-[12000] flex h-dvh items-center justify-center px-4 py-4"
       onClick={onClose}
     >
       <div
@@ -6926,7 +6926,7 @@ const CandidatePipelineModal = ({
       {!statusModal.open && (
         <>
           <div
-            className="fixed inset-0 z-[9999] flex h-dvh items-center justify-center bg-black/40 px-4 py-4"
+            className="sibs-modal-blur fixed inset-0 z-[9999] flex h-dvh items-center justify-center px-4 py-4"
         onClick={onClose}
       >
         <div
