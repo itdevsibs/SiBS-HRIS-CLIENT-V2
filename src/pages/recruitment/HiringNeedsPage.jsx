@@ -130,6 +130,7 @@ export default function HiringNeedsPage() {
     useState(true);
   const [canApproveHiringNeeds, setCanApproveHiringNeeds] =
     useState(false);
+  const [approvalUsers, setApprovalUsers] = useState([]);
 
   const [statusModal, setStatusModal] = useState({
     open: false,
@@ -186,6 +187,7 @@ export default function HiringNeedsPage() {
         });
 
         if (!cancelled) {
+          setApprovalUsers(rows);
           setCanApproveHiringNeeds(allowed);
         }
       } catch (error) {
@@ -195,6 +197,7 @@ export default function HiringNeedsPage() {
         );
 
         if (!cancelled) {
+          setApprovalUsers([]);
           setCanApproveHiringNeeds(false);
 
           showStatusModal({
@@ -447,6 +450,7 @@ export default function HiringNeedsPage() {
         onStatus={showStatusModal}
         canApprove={canApproveHiringNeeds}
         approvalAccessLoading={approvalAccessLoading}
+        approvalUsers={approvalUsers}
         onDecision={handleApprovalDecision}
       />
 

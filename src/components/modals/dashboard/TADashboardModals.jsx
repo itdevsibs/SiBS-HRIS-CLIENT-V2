@@ -10,7 +10,7 @@ import {
 import {
   formatDate,
   safePercentage,
-} from "../../../pages/dashboard/TADashboard/TADashboardComponents";
+} from "../../../lib/utils/Dashboards/TADashboard/taDashboardHelpers.js";
 
 const movementStages = [
   ["Sourced", "sourced"],

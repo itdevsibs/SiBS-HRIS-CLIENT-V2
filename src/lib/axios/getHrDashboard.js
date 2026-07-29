@@ -1,12 +1,12 @@
 import api from "./api-template";
-import { getDashboardDetailEndpoint } from "../../pages/dashboard/HrAdmin/adminDashboardData";
+import { getDashboardDetailEndpoint } from "../utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 
 function refreshParams(forceRefresh) {
   return forceRefresh
     ? {
-        refresh: 1,
-        _t: Date.now(),
-      }
+      refresh: 1,
+      _t: Date.now(),
+    }
     : undefined;
 }
 
