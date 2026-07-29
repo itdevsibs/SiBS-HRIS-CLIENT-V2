@@ -4,7 +4,19 @@ import api from "./api-template";
    AVAILABLE POSITION API
 ========================================= */
 
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 15000;
+const DEFAULT_PAGE_LIMIT = 100;
+const MAX_PAGE_LIMIT = 200;
+
+function normalizePageLimit(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return DEFAULT_PAGE_LIMIT;
+  }
+
+  return Math.min(Math.floor(numericValue), MAX_PAGE_LIMIT);
+}
 
 function normalizeApiError(err, fallbackMessage) {
   const isTimeout =
@@ -58,17 +70,19 @@ export async function getAvailablePositionMeta() {
 
 export async function getAvailablePositions({
   page = 1,
-  limit = 500,
+  limit = DEFAULT_PAGE_LIMIT,
   search = "",
   status = "All",
   departmentId = "All",
   accountId = "All",
 } = {}) {
+  const normalizedLimit = normalizePageLimit(limit);
+
   try {
     const res = await api.get("/api/available-position", {
       params: {
         page,
-        limit,
+        limit: normalizedLimit,
         search,
         status,
         departmentId,
@@ -94,7 +108,7 @@ export async function getAvailablePositions({
       },
       pagination: {
         page,
-        limit,
+        limit: normalizedLimit,
         total: 0,
         totalPages: 1,
       },
