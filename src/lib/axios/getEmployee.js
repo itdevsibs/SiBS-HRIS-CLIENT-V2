@@ -267,6 +267,7 @@ export async function getEmployeeProfileDocuments(sibsId) {
       return {
         success: false,
         data: [],
+        requirementGroups: [],
         message: "A valid employee SIBS ID is required",
         status: 400,
       };
@@ -282,6 +283,9 @@ export async function getEmployeeProfileDocuments(sibsId) {
       data: res.data?.data || [],
       folderStatus: res.data?.folderStatus || null,
       sources: res.data?.sources || null,
+      requirementGroups: Array.isArray(res.data?.requirementGroups)
+        ? res.data.requirementGroups
+        : [],
       message: res.data?.message || "",
       status: res.status,
     };
@@ -295,6 +299,7 @@ export async function getEmployeeProfileDocuments(sibsId) {
     return {
       success: false,
       data: [],
+      requirementGroups: [],
       message:
         err?.response?.data?.message ||
         err?.response?.data?.error ||
@@ -359,6 +364,169 @@ export async function uploadEmployeeProfileDocument(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         "Failed to upload employee document",
+      status: err?.response?.status || 500,
+      error: err,
+    };
+  }
+}
+
+const EMPLOYEE_DOCUMENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+export async function uploadEmployeePreEmploymentRequirement(
+  sibsId,
+  requirementId,
+  file,
+) {
+  try {
+    const normalizedSibsId = String(sibsId || "").trim();
+    const normalizedRequirementId = String(requirementId || "").trim();
+
+    if (!normalizedSibsId || !normalizedRequirementId || !file) {
+      return {
+        success: false,
+        data: null,
+        message: "Employee, requirement, and file are required",
+        status: 400,
+      };
+    }
+
+    if (Number(file.size || 0) > EMPLOYEE_DOCUMENT_MAX_FILE_SIZE) {
+      return {
+        success: false,
+        data: null,
+        message: "The maximum file size is 10 MB",
+        status: 400,
+      };
+    }
+
+    const res = await api.post(
+      `/api/employees/${encodeURIComponent(
+        normalizedSibsId,
+      )}/profile-documents/requirements/${encodeURIComponent(
+        normalizedRequirementId,
+      )}`,
+      file,
+      {
+        params: { originalName: file.name },
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+        withCredentials: true,
+        transformRequest: [(data) => data],
+      },
+    );
+
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || null,
+      message: res.data?.message || "Pre-employment file uploaded successfully",
+      status: res.status,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to upload pre-employment file",
+      status: err?.response?.status || 500,
+      error: err,
+    };
+  }
+}
+
+export async function deleteEmployeePreEmploymentRequirement(
+  sibsId,
+  requirementId,
+) {
+  try {
+    const normalizedSibsId = String(sibsId || "").trim();
+    const normalizedRequirementId = String(requirementId || "").trim();
+
+    if (!normalizedSibsId || !normalizedRequirementId) {
+      return {
+        success: false,
+        data: null,
+        message: "A valid employee and requirement are required",
+        status: 400,
+      };
+    }
+
+    const res = await api.delete(
+      `/api/employees/${encodeURIComponent(
+        normalizedSibsId,
+      )}/profile-documents/requirements/${encodeURIComponent(
+        normalizedRequirementId,
+      )}`,
+      { withCredentials: true },
+    );
+
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || null,
+      message: res.data?.message || "Pre-employment file permanently deleted",
+      status: res.status,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to delete pre-employment file",
+      status: err?.response?.status || 500,
+      error: err,
+    };
+  }
+}
+
+export async function deleteEmployeeRecruitmentDocument(sibsId, document) {
+  try {
+    const normalizedSibsId = String(sibsId || "").trim();
+    const sourceKey = String(document?.sourceKey || document?.source_key || "").trim();
+    const sourceRecordId = String(
+      document?.sourceRecordId || document?.source_record_id || "",
+    ).trim();
+    const externalKey = String(
+      document?.externalKey ?? document?.external_key ?? "",
+    ).trim();
+
+    if (!normalizedSibsId || !sourceKey || !sourceRecordId || !externalKey) {
+      return {
+        success: false,
+        data: null,
+        message: "A valid managed recruitment document is required",
+        status: 400,
+      };
+    }
+
+    const res = await api.delete(
+      `/api/employees/${encodeURIComponent(
+        normalizedSibsId,
+      )}/profile-documents/external/${encodeURIComponent(
+        sourceKey,
+      )}/${encodeURIComponent(sourceRecordId)}/${encodeURIComponent(
+        externalKey,
+      )}`,
+      { withCredentials: true },
+    );
+
+    return {
+      success: res.data?.success ?? true,
+      data: res.data?.data || null,
+      message: res.data?.message || "Recruitment document permanently deleted",
+      status: res.status,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      data: null,
+      message:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to delete recruitment document",
       status: err?.response?.status || 500,
       error: err,
     };

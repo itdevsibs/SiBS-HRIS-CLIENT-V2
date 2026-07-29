@@ -52,9 +52,12 @@ import {
   normalizeEducationRecordForLevel,
 } from "./educationRecordFields.js";
 import {
+  deleteEmployeePreEmploymentRequirement,
   deleteEmployeeProfileDocument,
+  deleteEmployeeRecruitmentDocument,
   fetchEmployeeDocumentFile,
   getEmployeeProfileDocuments,
+  uploadEmployeePreEmploymentRequirement,
   uploadEmployeeProfileDocument,
 } from "../../lib/axios/getEmployee.js";
 import {
@@ -1645,8 +1648,15 @@ function getEmployeeDocumentKey(document) {
 
 function canDeleteEmployeeDocument(document) {
   const sourceKey = text(document?.sourceKey || "employee-profile");
+  const sourceRecordId = text(
+    document?.sourceRecordId || document?.source_record_id,
+  );
+  const isManagedTalentPoolUpload =
+    sourceKey === "talent-pool" &&
+    sourceRecordId === "employee-upload-folder";
+
   return (
-    sourceKey === "employee-profile" &&
+    (sourceKey === "employee-profile" || isManagedTalentPoolUpload) &&
     document?.readOnly !== true &&
     document?.canDelete !== false
   );
@@ -1676,25 +1686,41 @@ function getEmployeeDocumentSourceClass(document) {
   return "border-blue-100 bg-[#E9F0FC] text-[#042C51]";
 }
 
+function getEmployeeRequirementGroupTitle(group) {
+  if (text(group?.title)) return text(group.title);
+  if (group?.id === "major") return "Major Requirements";
+  if (group?.id === "other") return "Other Requirements";
+  if (group?.id === "previous-employment") return "Previous Employment";
+  return "Requirements";
+}
+
 export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   const fileInputRef = useRef(null);
+  const requirementFileInputRef = useRef(null);
   const previewUrlRef = useRef("");
 
   const sibsId = getEmployeeDocumentSibsId(employee);
   const [documents, setDocuments] = useState(
     Array.isArray(employee?.documents) ? employee.documents : [],
   );
+  const [requirementGroups, setRequirementGroups] = useState([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [layout, setLayout] = useState("table");
   const [activeDocumentGroup, setActiveDocumentGroup] = useState("uploaded");
+  const [activeRequirementGroup, setActiveRequirementGroup] = useState("major");
   const [dragActive, setDragActive] = useState(false);
 
   const [uploadOpen, setUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [newCategory, setNewCategory] = useState("Certificate");
   const [uploading, setUploading] = useState(false);
+
+  const [selectedRequirement, setSelectedRequirement] = useState(null);
+  const [uploadingRequirementId, setUploadingRequirementId] = useState("");
+  const [requirementDeleteTarget, setRequirementDeleteTarget] = useState(null);
+  const [deletingRequirementId, setDeletingRequirementId] = useState("");
 
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -1707,12 +1733,52 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     onDocumentsChange?.(normalized);
   }
 
+  async function loadDocumentsFromServer({ silent = false } = {}) {
+    if (!sibsId) {
+      syncDocuments([]);
+      setRequirementGroups([]);
+      return false;
+    }
+
+    if (!silent) setLoadingDocuments(true);
+
+    try {
+      const result = await getEmployeeProfileDocuments(sibsId);
+
+      if (!result?.success) {
+        onFeedback?.(
+          result?.message || "Failed to load employee documents.",
+          "error",
+        );
+        return false;
+      }
+
+      syncDocuments(result.data || []);
+      setRequirementGroups(result.requirementGroups || []);
+
+      if (result?.folderStatus?.warning) {
+        onFeedback?.(result.folderStatus.warning, "warning");
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Failed to load employee documents:", error);
+      onFeedback?.("Failed to load employee documents.", "error");
+      return false;
+    } finally {
+      if (!silent) setLoadingDocuments(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     async function loadDocuments() {
       if (!sibsId) {
-        syncDocuments([]);
+        if (!cancelled) {
+          syncDocuments([]);
+          setRequirementGroups([]);
+        }
         return;
       }
 
@@ -1720,7 +1786,6 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
 
       try {
         const result = await getEmployeeProfileDocuments(sibsId);
-
         if (cancelled) return;
 
         if (!result?.success) {
@@ -1732,6 +1797,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         }
 
         syncDocuments(result.data || []);
+        setRequirementGroups(result.requirementGroups || []);
 
         if (result?.folderStatus?.warning) {
           onFeedback?.(result.folderStatus.warning, "warning");
@@ -1761,38 +1827,64 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (
+      requirementGroups.length > 0 &&
+      !requirementGroups.some((group) => group.id === activeRequirementGroup)
+    ) {
+      setActiveRequirementGroup(requirementGroups[0].id);
+    }
+  }, [requirementGroups, activeRequirementGroup]);
+
   const categoryOptions = useMemo(() => {
     const values = documents
+      .filter((document) => getEmployeeDocumentGroup(document) === "uploaded")
       .map((document) => text(document?.category))
       .filter(Boolean);
 
-    return [
-      "All",
-      ...new Set([...PROFILE_DOCUMENT_TYPES, ...values]),
-    ];
+    return ["All", ...new Set([...PROFILE_DOCUMENT_TYPES, ...values])];
   }, [documents]);
 
-  const filtered = documents.filter((document) => {
+  const uploadedDocuments = useMemo(() => {
     const query = search.toLowerCase();
-    const searchMatch =
-      text(document?.name).toLowerCase().includes(query) ||
-      text(document?.uploadedBy).toLowerCase().includes(query) ||
-      text(document?.category).toLowerCase().includes(query) ||
-      getEmployeeDocumentSource(document).toLowerCase().includes(query);
-    const categoryMatch = category === "All" || document?.category === category;
-    return searchMatch && categoryMatch;
-  });
 
-  const uploadedDocuments = filtered.filter(
-    (document) => getEmployeeDocumentGroup(document) === "uploaded",
+    return documents.filter((document) => {
+      if (getEmployeeDocumentGroup(document) !== "uploaded") return false;
+
+      const searchMatch =
+        text(document?.name).toLowerCase().includes(query) ||
+        text(document?.uploadedBy).toLowerCase().includes(query) ||
+        text(document?.category).toLowerCase().includes(query) ||
+        getEmployeeDocumentSource(document).toLowerCase().includes(query);
+      const categoryMatch =
+        category === "All" || document?.category === category;
+
+      return searchMatch && categoryMatch;
+    });
+  }, [documents, search, category]);
+
+  const activeRequirementDefinition = useMemo(
+    () =>
+      requirementGroups.find((group) => group.id === activeRequirementGroup) ||
+      requirementGroups[0] ||
+      null,
+    [requirementGroups, activeRequirementGroup],
   );
-  const preEmploymentDocuments = filtered.filter(
-    (document) => getEmployeeDocumentGroup(document) === "pre-employment",
+
+  const totalUploadedRequirements = useMemo(
+    () =>
+      requirementGroups.reduce(
+        (total, group) =>
+          total +
+          (Array.isArray(group?.requirements)
+            ? group.requirements.filter(
+                (requirement) => requirement?.uploaded || requirement?.file,
+              ).length
+            : 0),
+        0,
+      ),
+    [requirementGroups],
   );
-  const visibleDocuments =
-    activeDocumentGroup === "pre-employment"
-      ? preEmploymentDocuments
-      : uploadedDocuments;
 
   function openFilePicker() {
     if (uploading) return;
@@ -1867,7 +1959,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         newCategory,
       );
 
-      if (!result?.success || !result?.data) {
+      if (!result?.success) {
         onFeedback?.(
           result?.message || "Failed to upload employee document.",
           "error",
@@ -1875,9 +1967,9 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         return;
       }
 
-      syncDocuments([result.data, ...documents]);
       setUploadOpen(false);
       setSelectedFile(null);
+      await loadDocumentsFromServer({ silent: true });
       onFeedback?.(
         result.message || "Employee document uploaded successfully.",
         "success",
@@ -1887,6 +1979,100 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
       onFeedback?.("Failed to upload employee document.", "error");
     } finally {
       setUploading(false);
+    }
+  }
+
+  function openRequirementFilePicker(requirement) {
+    if (!requirement?.id || uploadingRequirementId) return;
+    setSelectedRequirement(requirement);
+
+    window.setTimeout(() => {
+      if (requirementFileInputRef.current) {
+        requirementFileInputRef.current.value = "";
+        requirementFileInputRef.current.click();
+      }
+    }, 0);
+  }
+
+  async function handleRequirementFileChange(event) {
+    const file = event.target.files?.[0];
+    const requirement = selectedRequirement;
+
+    if (!file || !requirement?.id || !sibsId) return;
+
+    const validation = validateProfileDocumentFile(file);
+    if (!validation.valid) {
+      onFeedback?.(validation.message, "error");
+      setSelectedRequirement(null);
+      return;
+    }
+
+    setUploadingRequirementId(requirement.id);
+
+    try {
+      const result = await uploadEmployeePreEmploymentRequirement(
+        sibsId,
+        requirement.id,
+        file,
+      );
+
+      if (!result?.success) {
+        onFeedback?.(
+          result?.message || `Failed to upload ${requirement.name}.`,
+          "error",
+        );
+        return;
+      }
+
+      await loadDocumentsFromServer({ silent: true });
+      onFeedback?.(
+        result.message || `${requirement.name} uploaded successfully.`,
+        "success",
+      );
+    } catch (error) {
+      console.error("Failed to upload pre-employment requirement:", error);
+      onFeedback?.(`Failed to upload ${requirement.name}.`, "error");
+    } finally {
+      setUploadingRequirementId("");
+      setSelectedRequirement(null);
+      if (requirementFileInputRef.current) {
+        requirementFileInputRef.current.value = "";
+      }
+    }
+  }
+
+  async function permanentlyDeleteRequirement() {
+    const requirement = requirementDeleteTarget;
+
+    if (!sibsId || !requirement?.id || deletingRequirementId) return;
+
+    setDeletingRequirementId(requirement.id);
+
+    try {
+      const result = await deleteEmployeePreEmploymentRequirement(
+        sibsId,
+        requirement.id,
+      );
+
+      if (!result?.success) {
+        onFeedback?.(
+          result?.message || `Failed to delete ${requirement.name}.`,
+          "error",
+        );
+        return;
+      }
+
+      setRequirementDeleteTarget(null);
+      await loadDocumentsFromServer({ silent: true });
+      onFeedback?.(
+        result.message || `${requirement.name} permanently deleted.`,
+        "success",
+      );
+    } catch (error) {
+      console.error("Failed to delete pre-employment requirement:", error);
+      onFeedback?.(`Failed to delete ${requirement.name}.`, "error");
+    } finally {
+      setDeletingRequirementId("");
     }
   }
 
@@ -1907,10 +2093,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     setPreviewLoading(true);
 
     try {
-      const result = await fetchEmployeeDocumentFile(
-        sibsId,
-        document,
-      );
+      const result = await fetchEmployeeDocumentFile(sibsId, document);
 
       if (!result?.success || !result?.blob) {
         closePreview();
@@ -1943,11 +2126,9 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     if (!sibsId || !document?.id) return;
 
     try {
-      const result = await fetchEmployeeDocumentFile(
-        sibsId,
-        document,
-        { download: true },
-      );
+      const result = await fetchEmployeeDocumentFile(sibsId, document, {
+        download: true,
+      });
 
       if (!result?.success || !result?.blob) {
         onFeedback?.(
@@ -1984,10 +2165,13 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
     setDeleting(true);
 
     try {
-      const result = await deleteEmployeeProfileDocument(
-        sibsId,
-        deleteTarget.id,
+      const sourceKey = text(
+        deleteTarget?.sourceKey || deleteTarget?.source_key || "employee-profile",
       );
+      const result =
+        sourceKey === "employee-profile"
+          ? await deleteEmployeeProfileDocument(sibsId, deleteTarget.id)
+          : await deleteEmployeeRecruitmentDocument(sibsId, deleteTarget);
 
       if (!result?.success) {
         onFeedback?.(
@@ -1997,10 +2181,8 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         return;
       }
 
-      syncDocuments(
-        documents.filter((document) => document?.id !== deleteTarget.id),
-      );
       setDeleteTarget(null);
+      await loadDocumentsFromServer({ silent: true });
       onFeedback?.(
         result.message || "Employee document permanently deleted.",
         "success",
@@ -2016,6 +2198,14 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
   const previewDocument = preview?.document;
   const previewIsImage = text(previewDocument?.mimeType).startsWith("image/");
   const previewSupported = isInlinePreviewSupported(previewDocument);
+  const visibleRequirements = Array.isArray(
+    activeRequirementDefinition?.requirements,
+  )
+    ? activeRequirementDefinition.requirements
+    : [];
+  const activeRequirementCompleted = visibleRequirements.filter(
+    (requirement) => requirement?.uploaded || requirement?.file,
+  ).length;
 
   return (
     <div className="rounded-[20px] border border-[#D6E0EA] bg-white p-4 shadow-sm sm:p-6">
@@ -2024,6 +2214,13 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         type="file"
         accept={PROFILE_DOCUMENT_ACCEPT}
         onChange={handleFileInputChange}
+        className="hidden"
+      />
+      <input
+        ref={requirementFileInputRef}
+        type="file"
+        accept={PROFILE_DOCUMENT_ACCEPT}
+        onChange={handleRequirementFileChange}
         className="hidden"
       />
 
@@ -2037,47 +2234,30 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
               Document Vault Manager
             </h2>
           </div>
-          <p className="mt-1 text-xs font-medium text-[#667085]">
-            Files are stored in the secured HRIS profile-documents folder.
+          <p className="mt-1 max-w-3xl text-xs font-medium leading-5 text-[#667085]">
+            Uploaded Files are saved in the Talent Pool folder. Pre-Employment Files are saved in the Candidate Pipeline folder.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={openFilePicker}
-          disabled={uploading}
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Upload size={15} className="text-[#FF5C28]" />
-          Upload Document
-        </button>
+        {activeDocumentGroup === "uploaded" ? (
+          <button
+            type="button"
+            onClick={openFilePicker}
+            disabled={uploading}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#042C51] px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Upload size={15} className="text-[#FF5C28]" />
+            Upload Document
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700">
+            <ShieldCheck size={15} />
+            Candidate Pipeline Requirements
+          </span>
+        )}
       </div>
 
-      <button
-        type="button"
-        onClick={openFilePicker}
-        onDragEnter={handleDragOver}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition ${
-          dragActive
-            ? "border-[#FF5C28] bg-[#FFF7F3]"
-            : "border-[#C8D3DF] bg-[#F8FAFC] hover:border-[#042C51]/40 hover:bg-white"
-        }`}
-      >
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E9F0FC] text-[#042C51]">
-          <Upload size={22} />
-        </span>
-        <span className="mt-3 text-sm font-extrabold text-[#042C51]">
-          Drag and drop files here or click to upload
-        </span>
-        <span className="mt-1 text-xs font-medium text-[#667085]">
-          PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, or PNG — maximum 10 MB
-        </span>
-      </button>
-
-      <div className="my-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={() => setActiveDocumentGroup("uploaded")}
@@ -2089,13 +2269,19 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-extrabold text-[#042C51]">Uploaded Files</p>
+              <p className="text-xs font-extrabold text-[#042C51]">
+                Uploaded Files
+              </p>
               <p className="mt-1 text-[10px] font-semibold text-[#667085]">
-                Employee Profile uploads and Talent Pool audio or attachments.
+                Employee uploads and matching Talent Pool attachments.
               </p>
             </div>
             <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-[#042C51]">
-              {documents.filter((document) => getEmployeeDocumentGroup(document) === "uploaded").length}
+              {
+                documents.filter(
+                  (document) => getEmployeeDocumentGroup(document) === "uploaded",
+                ).length
+              }
             </span>
           </div>
         </button>
@@ -2111,238 +2297,481 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
         >
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-extrabold text-[#042C51]">Pre-Employment Files</p>
+              <p className="text-xs font-extrabold text-[#042C51]">
+                Pre-Employment Files
+              </p>
               <p className="mt-1 text-[10px] font-semibold text-[#667085]">
-                Candidate Pipeline requirements grouped the same way as Candidate Profile.
+                Major, other, and previous-employment requirements.
               </p>
             </div>
             <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-extrabold text-emerald-700">
-              {documents.filter((document) => getEmployeeDocumentGroup(document) === "pre-employment").length}
+              {totalUploadedRequirements}
             </span>
           </div>
         </button>
       </div>
 
-      <div className="my-5 flex flex-col gap-3 rounded-2xl border border-[#D6E0EA] bg-white p-4 md:flex-row md:items-center md:justify-between">
-        <div className="relative w-full md:max-w-sm">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]"
-          />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search documents..."
-            className="h-10 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold outline-none focus:bg-white"
-          />
-        </div>
+      {activeDocumentGroup === "uploaded" ? (
+        <>
+          <button
+            type="button"
+            onClick={openFilePicker}
+            onDragEnter={handleDragOver}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition ${
+              dragActive
+                ? "border-[#FF5C28] bg-[#FFF7F3]"
+                : "border-[#C8D3DF] bg-[#F8FAFC] hover:border-[#042C51]/40 hover:bg-white"
+            }`}
+          >
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#E9F0FC] text-[#042C51]">
+              <Upload size={22} />
+            </span>
+            <span className="mt-3 text-sm font-extrabold text-[#042C51]">
+              Drag and drop files here or click to upload
+            </span>
+            <span className="mt-1 text-xs font-medium text-[#667085]">
+              PDF, DOC, DOCX, XLS, XLSX, CSV, JPG, JPEG, or PNG — maximum 10 MB
+            </span>
+          </button>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Filter size={14} className="text-[#667085]" />
-          <div className="w-full min-w-[180px] sm:w-[210px]">
-            <EmployeeDataDropdown
-              id="employee-document-category-filter"
-              value={category}
-              onChange={setCategory}
-              options={categoryOptions}
-              placeholder="Search categories..."
-              includeEmptyOption={false}
-              compact
-            />
+          <div className="my-5 flex flex-col gap-3 rounded-2xl border border-[#D6E0EA] bg-white p-4 md:flex-row md:items-center md:justify-between">
+            <div className="relative w-full md:max-w-sm">
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#667085]"
+              />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search uploaded files..."
+                className="h-10 w-full rounded-xl border border-[#D6E0EA] bg-[#F8FAFC] pl-9 pr-3 text-xs font-semibold outline-none focus:bg-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Filter size={14} className="text-[#667085]" />
+              <div className="w-full min-w-[180px] sm:w-[210px]">
+                <EmployeeDataDropdown
+                  id="employee-document-category-filter"
+                  value={category}
+                  onChange={setCategory}
+                  options={categoryOptions}
+                  placeholder="Search categories..."
+                  includeEmptyOption={false}
+                  compact
+                />
+              </div>
+              <span className="mx-1 h-6 w-px bg-[#D6E0EA]" />
+              <button
+                type="button"
+                onClick={() => setLayout("table")}
+                className={`rounded-lg p-2 ${
+                  layout === "table"
+                    ? "bg-[#E9F0FC] text-[#042C51]"
+                    : "text-[#98A2B3]"
+                }`}
+                title="Table layout"
+              >
+                <List size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setLayout("grid")}
+                className={`rounded-lg p-2 ${
+                  layout === "grid"
+                    ? "bg-[#E9F0FC] text-[#042C51]"
+                    : "text-[#98A2B3]"
+                }`}
+                title="Grid layout"
+              >
+                <Grid size={16} />
+              </button>
+            </div>
           </div>
-          <span className="mx-1 h-6 w-px bg-[#D6E0EA]" />
-          <button
-            type="button"
-            onClick={() => setLayout("table")}
-            className={`rounded-lg p-2 ${
-              layout === "table"
-                ? "bg-[#E9F0FC] text-[#042C51]"
-                : "text-[#98A2B3]"
-            }`}
-          >
-            <List size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setLayout("grid")}
-            className={`rounded-lg p-2 ${
-              layout === "grid"
-                ? "bg-[#E9F0FC] text-[#042C51]"
-                : "text-[#98A2B3]"
-            }`}
-          >
-            <Grid size={16} />
-          </button>
-        </div>
-      </div>
 
-      {loadingDocuments ? (
-        <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">
-          Loading employee documents...
-        </div>
-      ) : visibleDocuments.length === 0 ? (
-        <EmptyState
-          message={
-            activeDocumentGroup === "pre-employment"
-              ? "No matching Candidate Pipeline pre-employment files found."
-              : "No matching Employee Profile or Talent Pool files found."
-          }
-        />
-      ) : layout === "table" ? (
-        <div className="overflow-hidden rounded-2xl border border-[#D6E0EA]">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-[#D6E0EA] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
-                  <th className="px-4 py-3">Document</th>
-                  <th className="px-4 py-3">Category</th>
-                  <th className="px-4 py-3">Source</th>
-                  <th className="px-4 py-3">Size</th>
-                  <th className="px-4 py-3">Uploaded By</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E6ECF2]">
-                {visibleDocuments.map((document) => (
-                  <tr key={getEmployeeDocumentKey(document)} className="hover:bg-[#F8FAFC]">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
-                          {fileIcon(document?.name)}
+          {loadingDocuments ? (
+            <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">
+              Loading employee documents...
+            </div>
+          ) : uploadedDocuments.length === 0 ? (
+            <EmptyState message="No matching Employee or Talent Pool files found." />
+          ) : layout === "table" ? (
+            <div className="overflow-hidden rounded-2xl border border-[#D6E0EA]">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-[#D6E0EA] bg-[#F8FAFC] text-[10px] font-extrabold uppercase tracking-wide text-[#667085]">
+                      <th className="px-4 py-3">Document</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3">Source</th>
+                      <th className="px-4 py-3">Size</th>
+                      <th className="px-4 py-3">Uploaded By</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E6ECF2]">
+                    {uploadedDocuments.map((document) => (
+                      <tr
+                        key={getEmployeeDocumentKey(document)}
+                        className="hover:bg-[#F8FAFC]"
+                      >
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
+                              {fileIcon(document?.name)}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="max-w-xs truncate font-extrabold text-[#344054]">
+                                {document?.name}
+                              </p>
+                              <p className="mt-0.5 text-[9px] text-[#667085]">
+                                Uploaded {formatDate(document?.uploadedAt)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+                            {document?.category || "Other"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
+                              document,
+                            )}`}
+                          >
+                            {document?.source || "Employee Profile"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 font-mono text-[#667085]">
+                          {document?.fileSize || "—"}
+                        </td>
+                        <td className="px-4 py-4 font-semibold text-[#52637A]">
+                          {document?.uploadedBy || "—"}
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => openDocumentPreview(document)}
+                              className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
+                              title="Preview"
+                            >
+                              <Eye size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadDocument(document)}
+                              className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
+                              title="Download"
+                            >
+                              <Download size={15} />
+                            </button>
+                            {canDeleteEmployeeDocument(document) ? (
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTarget(document)}
+                                className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                                title="Permanently delete"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {uploadedDocuments.map((document) => (
+                <article
+                  key={getEmployeeDocumentKey(document)}
+                  className="rounded-2xl border border-[#D6E0EA] bg-white p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
+                      {fileIcon(document?.name)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-xs font-extrabold text-[#344054]">
+                        {document?.name}
+                      </h3>
+                      <p className="mt-1 text-[9px] text-[#667085]">
+                        Uploaded {formatDate(document?.uploadedAt)}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <span className="inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
+                          {document?.category || "Other"}
                         </span>
-                        <div className="min-w-0">
-                          <p className="max-w-xs truncate font-extrabold text-[#344054]">
-                            {document?.name}
-                          </p>
-                          <p className="mt-0.5 text-[9px] text-[#667085]">
-                            Uploaded {formatDate(document?.uploadedAt)}
-                          </p>
+                        <span
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
+                            document,
+                          )}`}
+                        >
+                          {document?.source || "Employee Profile"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
+                    <span className="font-mono text-[10px] text-[#667085]">
+                      {document?.fileSize || "—"}
+                    </span>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openDocumentPreview(document)}
+                        className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
+                        title="Preview"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => downloadDocument(document)}
+                        className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
+                        title="Download"
+                      >
+                        <Download size={14} />
+                      </button>
+                      {canDeleteEmployeeDocument(document) ? (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(document)}
+                          className="rounded-lg p-1.5 text-red-500 hover:bg-red-50"
+                          title="Permanently delete"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {requirementGroups.map((group) => {
+              const requirements = Array.isArray(group?.requirements)
+                ? group.requirements
+                : [];
+              const completed = requirements.filter(
+                (requirement) => requirement?.uploaded || requirement?.file,
+              ).length;
+              const active = activeRequirementDefinition?.id === group.id;
+
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  onClick={() => setActiveRequirementGroup(group.id)}
+                  className={`rounded-2xl border p-4 text-left transition ${
+                    active
+                      ? "border-[#042C51] bg-[#042C51] text-white shadow-sm"
+                      : "border-[#D6E0EA] bg-white text-[#042C51] hover:border-[#8EA3BF]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-extrabold">{getEmployeeRequirementGroupTitle(group)}</p>
+                      <p
+                        className={`mt-1 text-[10px] font-semibold ${
+                          active ? "text-white/70" : "text-[#667085]"
+                        }`}
+                      >
+                        {completed} of {requirements.length} uploaded
+                      </p>
+                    </div>
+                    <span
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${
+                        active
+                          ? "bg-white/10 text-[#FF9C73]"
+                          : "bg-[#E9F0FC] text-[#042C51]"
+                      }`}
+                    >
+                      {group.id === "major" ? (
+                        <ShieldCheck size={17} />
+                      ) : group.id === "previous-employment" ? (
+                        <Briefcase size={17} />
+                      ) : (
+                        <FileText size={17} />
+                      )}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {loadingDocuments ? (
+            <div className="rounded-2xl border border-dashed border-[#D6E0EA] bg-[#F8FAFC] px-5 py-12 text-center text-xs font-bold text-[#667085]">
+              Loading pre-employment requirements...
+            </div>
+          ) : !activeRequirementDefinition ? (
+            <EmptyState message="No Candidate Pipeline requirement configuration is available." />
+          ) : (
+            <section className="rounded-2xl border border-[#D6E0EA] bg-[#F8FAFC] p-4 sm:p-5">
+              <div className="mb-5 flex flex-col gap-3 border-b border-[#D6E0EA] pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-[#FF5C28]" />
+                    <h3 className="text-sm font-extrabold text-[#042C51]">
+                      {getEmployeeRequirementGroupTitle(activeRequirementDefinition)}
+                    </h3>
+                  </div>
+                  <p className="mt-1 text-[10px] font-semibold leading-4 text-[#667085]">
+                    Upload one active file for each specified requirement. A new
+                    upload permanently replaces the previous file.
+                  </p>
+                </div>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-extrabold text-emerald-700">
+                  {activeRequirementCompleted} / {visibleRequirements.length} Complete
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {visibleRequirements.map((requirement) => {
+                  const document = requirement?.file || null;
+                  const isUploaded = Boolean(requirement?.uploaded || document);
+                  const isUploading = uploadingRequirementId === requirement.id;
+                  const isDeleting = deletingRequirementId === requirement.id;
+                  const badgeLabel =
+                    requirement.groupId === "previous-employment"
+                      ? "PREVIOUS EMPLOYMENT"
+                      : `${text(requirement.groupTitle || "REQUIREMENT")
+                          .replace(/\s+REQUIREMENTS?$/i, "")
+                          .toUpperCase()} REQUIREMENT`;
+
+                  return (
+                    <article
+                      key={requirement.id}
+                      className={`rounded-2xl border bg-white p-4 transition ${
+                        isUploaded
+                          ? "border-emerald-200 shadow-sm"
+                          : "border-[#D6E0EA]"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                            isUploaded
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-[#E9F0FC] text-[#042C51]"
+                          }`}
+                        >
+                          {isUploaded ? (
+                            <CheckCircle2 size={19} />
+                          ) : (
+                            <FileText size={18} />
+                          )}
+                        </span>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-extrabold leading-5 text-[#042C51]">
+                                {requirement.name}
+                              </h4>
+                              <p className="mt-1 font-mono text-[9px] font-bold text-[#8EA3BF]">
+                                {requirement.id}
+                              </p>
+                            </div>
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-[8px] font-extrabold uppercase tracking-wide ${
+                                isUploaded
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-[#E9F0FC] text-[#042C51]"
+                              }`}
+                            >
+                              {badgeLabel}
+                            </span>
+                          </div>
+
+                          {document ? (
+                            <div className="mt-3 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+                              <p className="truncate text-[10px] font-extrabold text-[#344054]">
+                                {document.name}
+                              </p>
+                              <p className="mt-1 text-[9px] font-semibold text-[#667085]">
+                                {document.fileSize || "—"} · Uploaded {formatDate(document.uploadedAt)}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="mt-3 rounded-xl border border-dashed border-[#C8D3DF] bg-[#F8FAFC] p-4 text-center">
+                              <Upload size={18} className="mx-auto text-[#98A2B3]" />
+                              <p className="mt-2 text-[10px] font-bold text-[#667085]">
+                                No uploaded file yet.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span className="rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
-                        {document?.category || "Other"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
-                          document,
-                        )}`}
-                      >
-                        {document?.source || "Employee Profile"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 font-mono text-[#667085]">
-                      {document?.fileSize || "—"}
-                    </td>
-                    <td className="px-4 py-4 font-semibold text-[#52637A]">
-                      {document?.uploadedBy || "—"}
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex justify-end gap-1">
+
+                      <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-[#E6ECF2] pt-3">
+                        {document ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openDocumentPreview(document)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#52637A] hover:bg-[#F8FAFC]"
+                            >
+                              <Eye size={13} />
+                              Preview
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadDocument(document)}
+                              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#D6E0EA] bg-white px-3 text-[10px] font-extrabold text-[#52637A] hover:bg-[#F8FAFC]"
+                            >
+                              <Download size={13} />
+                              Download
+                            </button>
+                          </>
+                        ) : null}
+
                         <button
                           type="button"
-                          onClick={() => openDocumentPreview(document)}
-                          className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
-                          title="Preview"
+                          onClick={() => openRequirementFilePicker(requirement)}
+                          disabled={isUploading || isDeleting}
+                          className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#042C51] px-3 text-[10px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          <Eye size={15} />
+                          <Upload size={13} className="text-[#FF5C28]" />
+                          {isUploading
+                            ? "Uploading..."
+                            : document
+                              ? "Replace File"
+                              : "Upload File"}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => downloadDocument(document)}
-                          className="rounded-lg p-2 text-[#667085] hover:bg-[#E9F0FC] hover:text-[#042C51]"
-                          title="Download"
-                        >
-                          <Download size={15} />
-                        </button>
-                        {canDeleteEmployeeDocument(document) ? (
+
+                        {document ? (
                           <button
                             type="button"
-                            onClick={() => setDeleteTarget(document)}
-                            className="rounded-lg p-2 text-red-500 hover:bg-red-50"
-                            title="Permanently delete"
+                            onClick={() => setRequirementDeleteTarget(requirement)}
+                            disabled={isUploading || isDeleting}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 text-[10px] font-extrabold text-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={13} />
+                            {isDeleting ? "Deleting..." : "Delete"}
                           </button>
                         ) : null}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleDocuments.map((document) => (
-            <article
-              key={getEmployeeDocumentKey(document)}
-              className="rounded-2xl border border-[#D6E0EA] bg-white p-4"
-            >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-[10px] font-extrabold text-red-600">
-                  {fileIcon(document?.name)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-xs font-extrabold text-[#344054]">
-                    {document?.name}
-                  </h3>
-                  <p className="mt-1 text-[9px] text-[#667085]">
-                    Uploaded {formatDate(document?.uploadedAt)}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="inline-flex rounded-full bg-[#E9F0FC] px-2.5 py-1 text-[9px] font-extrabold text-[#042C51]">
-                      {document?.category || "Other"}
-                    </span>
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${getEmployeeDocumentSourceClass(
-                        document,
-                      )}`}
-                    >
-                      {document?.source || "Employee Profile"}
-                    </span>
-                  </div>
-                </div>
+                    </article>
+                  );
+                })}
               </div>
-              <div className="mt-4 flex items-center justify-between border-t border-[#E6ECF2] pt-3">
-                <span className="font-mono text-[10px] text-[#667085]">
-                  {document?.fileSize || "—"}
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => openDocumentPreview(document)}
-                    className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
-                    title="Preview"
-                  >
-                    <Eye size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => downloadDocument(document)}
-                    className="rounded-lg p-1.5 text-[#667085] hover:bg-[#E9F0FC]"
-                    title="Download"
-                  >
-                    <Download size={14} />
-                  </button>
-                  {canDeleteEmployeeDocument(document) ? (
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(document)}
-                      className="rounded-lg p-1.5 text-red-500 hover:bg-red-50"
-                      title="Permanently delete"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </article>
-          ))}
+            </section>
+          )}
         </div>
       )}
 
@@ -2357,7 +2786,7 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
           >
             <div className="flex items-center justify-between border-b border-[#E6ECF2] pb-3">
               <h3 className="text-xs font-extrabold uppercase tracking-wide text-[#042C51]">
-                Configure Upload
+                Configure Talent Pool Upload
               </h3>
               <button
                 type="button"
@@ -2375,8 +2804,8 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                   {selectedFile.name}
                 </p>
                 <p className="mt-1 text-[10px] font-semibold text-[#667085]">
-                  {formatProfileDocumentSize(selectedFile.size)} · The server will
-                  rename this file using SIBS ID, document type, and upload time.
+                  {formatProfileDocumentSize(selectedFile.size)} · Saved in the
+                  employee Talent Pool UPLOADED FILES folder.
                 </p>
               </div>
 
@@ -2511,8 +2940,8 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
                   Permanently delete document?
                 </h3>
                 <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
-                  This permanently deletes both the HRIS database record and the
-                  physical file for <strong>{deleteTarget.name}</strong>. This action
+                  This permanently deletes the physical file and any linked HRIS
+                  metadata for <strong>{deleteTarget.name}</strong>. This action
                   cannot be undone.
                 </p>
               </div>
@@ -2539,9 +2968,59 @@ export function DocumentsSection({ employee, onDocumentsChange, onFeedback }) {
           </div>
         </div>
       )}
+
+      {requirementDeleteTarget && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 p-4"
+          onClick={() =>
+            !deletingRequirementId && setRequirementDeleteTarget(null)
+          }
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <Trash2 size={18} />
+              </span>
+              <div>
+                <h3 className="text-sm font-extrabold text-[#042C51]">
+                  Delete pre-employment file?
+                </h3>
+                <p className="mt-2 text-xs font-semibold leading-5 text-[#667085]">
+                  This permanently deletes the Candidate Pipeline file for
+                  <strong> {requirementDeleteTarget.name}</strong> and removes its
+                  linked NHO file metadata. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRequirementDeleteTarget(null)}
+                disabled={Boolean(deletingRequirementId)}
+                className="h-9 rounded-xl border border-[#D6E0EA] px-4 text-xs font-extrabold text-[#667085] disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={permanentlyDeleteRequirement}
+                disabled={Boolean(deletingRequirementId)}
+                className="h-9 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {deletingRequirementId ? "Deleting..." : "Delete Permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export function NotesSection({ employee, onCommitNote, onFeedback }) {
   const existingHistory = Array.isArray(employee?.notesHistory) ? employee.notesHistory : [];
