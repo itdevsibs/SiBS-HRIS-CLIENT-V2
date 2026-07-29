@@ -7,7 +7,7 @@ import PaginationTable from "../../../services/pagination/PaginationTable";
 import {
   getHiringNeedsReason,
   getHiringNeedsSite,
-} from "./hiringNeedsPresentation";
+} from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 const HIRING_NEEDS_ENTITY = "hiring-needs";
 

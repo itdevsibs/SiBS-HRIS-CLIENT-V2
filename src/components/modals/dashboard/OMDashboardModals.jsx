@@ -10,7 +10,7 @@ import {
 import {
   formatDate,
   safePercentage,
-} from "../../../pages/dashboard/OMDashboard/OMDashboardComponents";
+} from "../../../lib/utils/OMDashboard/omDashboardHelpers.js";
 
 const movementStages = [
   ["Sourced", "sourced"],

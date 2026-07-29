@@ -3721,7 +3721,7 @@ export default function CandidateProfileModal() {
     },
     {
       key: "family",
-      label: "Family / Kin",
+      label: "Family",
       icon: UserRoundPen,
       children: [
         { key: "family.spouse", label: "Spouse" },
@@ -4694,7 +4694,7 @@ export default function CandidateProfileModal() {
     const hasGovernmentId = Object.values(governmentIds).some(hasCandidateValue);
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={WalletCards}
           title="Government IDs"
@@ -4735,7 +4735,7 @@ export default function CandidateProfileModal() {
       ];
 
       return (
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="space-y-4">
           <SectionTitle
             icon={UserRoundPen}
             title="Spouse Information"
@@ -4778,7 +4778,7 @@ export default function CandidateProfileModal() {
       ];
 
       return (
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="space-y-4">
           <SectionTitle
             icon={UserRound}
             title="Parents Information"
@@ -4820,7 +4820,7 @@ export default function CandidateProfileModal() {
       const children = normalizeCandidateRecordList(activeCandidate.children);
 
       return (
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="space-y-4">
           <SectionTitle
             icon={UserRound}
             title="Children"
@@ -4892,7 +4892,7 @@ export default function CandidateProfileModal() {
     ];
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={Phone}
           title="Emergency Contact"
@@ -4915,7 +4915,7 @@ export default function CandidateProfileModal() {
 
   function renderApplicationOverview() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={BriefcaseBusiness}
           title="Application Overview"
@@ -4991,7 +4991,7 @@ export default function CandidateProfileModal() {
 
   function renderPipelineLink() {
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+    <section className="space-y-4">
       <SectionTitle
         icon={Network}
         title="Pipeline Link"
@@ -5047,7 +5047,7 @@ export default function CandidateProfileModal() {
     const records = getCandidateEducationRecords(activeCandidate);
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={GraduationCap}
           title="Educational Background"
@@ -5142,7 +5142,7 @@ export default function CandidateProfileModal() {
     );
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={BadgeCheck}
           title="Eligibility"
@@ -5207,7 +5207,7 @@ export default function CandidateProfileModal() {
     const attended = activeCandidate.trainingAttended;
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={GraduationCap}
           title="Training"
@@ -5282,7 +5282,7 @@ export default function CandidateProfileModal() {
 
     if (section === "recognitions") {
       return (
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="space-y-4">
           <SectionTitle
             icon={BadgeCheck}
             title="Recognition"
@@ -5302,7 +5302,7 @@ export default function CandidateProfileModal() {
 
     if (section === "organizations") {
       return (
-        <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+        <section className="space-y-4">
           <SectionTitle
             icon={UserRoundPen}
             title="Organizations"
@@ -5321,7 +5321,7 @@ export default function CandidateProfileModal() {
     }
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={Sparkles}
           title="Skills"
@@ -5338,7 +5338,7 @@ export default function CandidateProfileModal() {
 
   function renderWorkExperience() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <section className="space-y-4">
         <SectionTitle
           icon={BriefcaseBusiness}
           title="Work Experience"
@@ -5448,7 +5448,7 @@ export default function CandidateProfileModal() {
     ].some(hasCandidateValue);
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+      <section className="space-y-4">
         <SectionTitle
           icon={BadgeCheck}
           title="Assessment"
@@ -5478,7 +5478,7 @@ export default function CandidateProfileModal() {
 
  function renderReadiness() {
   return (
-    <section className="rounded-2xl border border-[#E6ECF2] bg-white p-4 shadow-sm sm:p-5">
+    <section className="space-y-4">
       <SectionTitle
         icon={ShieldCheck}
         title="Readiness and Compliance"
@@ -5523,7 +5523,7 @@ export default function CandidateProfileModal() {
 
   function renderReferences() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <section className="space-y-4">
         <SectionTitle
           icon={Phone}
           title="References"
@@ -5569,7 +5569,7 @@ export default function CandidateProfileModal() {
     }
 
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <section className="space-y-4">
         <SectionTitle
           icon={FileText}
           title="Uploaded Files"
@@ -5675,7 +5675,7 @@ export default function CandidateProfileModal() {
 
   function renderApplicationHistory() {
     return (
-      <section className="rounded-2xl border border-[#E6ECF2] bg-white p-5 shadow-sm">
+      <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <SectionTitle
             icon={Network}
@@ -5897,7 +5897,7 @@ export default function CandidateProfileModal() {
   return (
     <>
       <div
-        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-3 py-3 sm:px-4"
+        className="sibs-modal-blur fixed inset-0 z-[10000] flex h-dvh items-center justify-center px-3 py-3 font-jakarta sm:px-4"
         onClick={handleCloseCandidateProfile}
       >
         <div
@@ -5915,7 +5915,7 @@ export default function CandidateProfileModal() {
                   Talent Pool Candidate Profile
                 </h2>
                 <p className="truncate text-[11px] font-semibold text-blue-100">
-                  Comprehensive candidate filing and talent screening dossier record
+                  Comprehensive candidate filing and talent screening profile record
                 </p>
               </div>
             </div>
@@ -6050,7 +6050,7 @@ export default function CandidateProfileModal() {
                       <h3 className="text-sm font-black uppercase tracking-wider text-[#042C51]">
                         {activeProfileParent?.label || "Profile"}
                         {activeProfileChild?.label
-                          ? ` > ${activeProfileChild.label}`
+                          ? ` - ${activeProfileChild.label}`
                           : ""}
                       </h3>
                       <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
@@ -6061,7 +6061,7 @@ export default function CandidateProfileModal() {
                     <div className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-full bg-[#042C51]" />
                       <span className="text-[10px] font-bold uppercase text-slate-500">
-                        Official Dossier Record
+                        Official Profile Record
                       </span>
                     </div>
                   </div>
