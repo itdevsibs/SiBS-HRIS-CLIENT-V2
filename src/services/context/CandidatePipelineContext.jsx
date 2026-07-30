@@ -740,6 +740,47 @@ function normalizePipelineCandidateForBoard(candidate = {}) {
       candidate.interview_status ||
       "For Assessment",
 
+    proposedInterviewDate:
+      candidate.proposedInterviewDate ||
+      candidate.proposed_interview_date ||
+      null,
+
+    finalInterviewDate:
+      candidate.finalInterviewDate ||
+      candidate.final_interview_date ||
+      null,
+
+    interviewResponseStatus:
+      candidate.interviewResponseStatus ||
+      candidate.interview_response_status ||
+      "",
+
+    interviewResponseReason:
+      candidate.interviewResponseReason ||
+      candidate.interview_response_reason ||
+      "",
+
+    interviewResponseAt:
+      candidate.interviewResponseAt ||
+      candidate.interview_response_at ||
+      null,
+
+    interviewResponseDeadline:
+      candidate.interviewResponseDeadline ||
+      candidate.interview_response_deadline ||
+      null,
+
+    interviewNextFollowUpAt:
+      candidate.interviewNextFollowUpAt ||
+      candidate.interview_next_follow_up_at ||
+      null,
+
+    interviewFollowUpCount: Number(
+      candidate.interviewFollowUpCount ??
+        candidate.interview_follow_up_count ??
+        0,
+    ),
+
     roleTitle,
     currentAppliedRole: candidate.currentAppliedRole || roleTitle,
     openPosition: candidate.openPosition || roleTitle,

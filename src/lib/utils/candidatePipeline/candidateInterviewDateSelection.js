@@ -45,9 +45,26 @@ export function parseCandidateInterviewDateValue(value) {
   return date;
 }
 
+export function normalizeCandidateInterviewHolidayDates(values = []) {
+  const list = values instanceof Set ? [...values] : values;
+
+  return new Set(
+    (Array.isArray(list) ? list : [])
+      .map((value) =>
+        cleanText(
+          typeof value === "object"
+            ? value?.holidayDate || value?.holiday_date || value?.date
+            : value,
+        ),
+      )
+      .filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)),
+  );
+}
+
 export function isSelectableCandidateInterviewDate(
   date,
   today = new Date(),
+  holidayDates = [],
 ) {
   const target = startOfLocalDay(date);
   const todayStart = startOfLocalDay(today);
@@ -55,7 +72,11 @@ export function isSelectableCandidateInterviewDate(
   if (!target || !todayStart || target < todayStart) return false;
 
   const weekday = target.getDay();
-  return weekday !== 0 && weekday !== 6;
+  if (weekday === 0 || weekday === 6) return false;
+
+  return !normalizeCandidateInterviewHolidayDates(holidayDates).has(
+    toCandidateInterviewDateValue(target),
+  );
 }
 
 export function validateCandidateInterviewTime(value) {

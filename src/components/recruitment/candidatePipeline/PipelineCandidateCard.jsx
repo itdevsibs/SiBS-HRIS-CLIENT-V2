@@ -7,6 +7,7 @@ import {
   getDisplayInterviewStatus,
   getDisplayInterviewType,
   getInterviewStatusClass,
+  getInterviewResponseStatusClass,
   getNextStage,
   getPrfStatusClass,
   getRoleTitle,
@@ -51,6 +52,14 @@ const PipelineCandidateCard = ({
     candidate.assessmentResult || candidate.assessmentStatus || "Not Take";
 
   const interviewStatus = getDisplayInterviewStatus(candidate);
+  const interviewResponseStatus = candidate.interviewResponseStatus || "";
+  const finalInterviewDate =
+    candidate.finalInterviewDate || candidate.interviewDate || null;
+  const nextResponseDate =
+    candidate.interviewNextFollowUpAt ||
+    candidate.interviewResponseDeadline ||
+    null;
+  const followUpCount = Number(candidate.interviewFollowUpCount || 0);
 
   const showScheduleButton =
     candidate.currentStage === "Assessment Fit" &&
@@ -172,6 +181,42 @@ const PipelineCandidateCard = ({
             <p className="mt-1 text-[10px] font-bold text-[#667085]">
               {getDisplayInterviewType(candidate)}
             </p>
+          </div>
+        )}
+
+        {interviewResponseStatus && (
+          <div className="mt-3 rounded-md border border-[#E6ECF2] bg-[#F8FAFC] px-2 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[9px] font-extrabold uppercase tracking-wide text-[#667085]">
+                Candidate Response
+              </span>
+              <span
+                className={`max-w-[138px] truncate rounded-full border px-2 py-0.5 text-[9px] font-extrabold ${getInterviewResponseStatusClass(
+                  interviewResponseStatus,
+                )}`}
+              >
+                {interviewResponseStatus}
+              </span>
+            </div>
+
+            {["Accepted", "Rescheduled"].includes(interviewResponseStatus) &&
+              finalInterviewDate && (
+                <p className="mt-2 flex items-start gap-1.5 text-[10px] font-bold leading-4 text-sibs-primary-1">
+                  <CalendarDays size={12} className="mt-0.5 shrink-0" />
+                  {formatDateTime(finalInterviewDate)}
+                </p>
+              )}
+
+            {interviewResponseStatus === "Pending" && (
+              <div className="mt-2 space-y-1 text-[10px] font-bold text-[#667085]">
+                <p>Follow-ups: {followUpCount} of 3</p>
+                {nextResponseDate && (
+                  <p className="line-clamp-2">
+                    Next deadline: {formatDateTime(nextResponseDate)}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
 

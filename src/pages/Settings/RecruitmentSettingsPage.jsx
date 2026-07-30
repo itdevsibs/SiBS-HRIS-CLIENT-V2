@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CalendarDays,
   ClipboardCheck,
   ClipboardList,
   FileCheck2,
@@ -30,6 +31,7 @@ import PlaceholderSettingsPanel from "../../components/recruitment/settings/Plac
 import RelatedRecruitmentSettingsCard from "../../components/recruitment/settings/RelatedRecruitmentSettingsCard";
 import SettingsInfoCards from "../../components/recruitment/settings/SettingsInfoCards";
 import ApprovalRulesSettings from "../../components/recruitment/settings/ApprovalRulesSettings";
+import RecruitmentHolidayCalendar from "../../components/recruitment/settings/RecruitmentHolidayCalendar";
 import StatusModal from "../../components/modals/StatusModal";
 
 import api from "../../lib/axios/api-template";
@@ -43,6 +45,7 @@ const tabIconMap = {
   "Pipeline Settings": SlidersHorizontal,
   "Assessment Settings": FileCheck2,
   "Email Templates": Mail,
+  "Holiday Calendar": CalendarDays,
   "Approval Rules": ShieldCheck,
 };
 
@@ -2138,6 +2141,8 @@ export default function RecruitmentSettingsPage() {
                   <RelatedRecruitmentSettingsCard />
                 </div>
               </div>
+            ) : activeTab === "Holiday Calendar" ? (
+              <RecruitmentHolidayCalendar />
             ) : activeTab === "Approval Rules" ? (
               <div className="space-y-5 bg-[#F5F7FA] p-4">
                 <ApprovalRulesSettings />

@@ -2,24 +2,28 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   AlertCircle,
+  CalendarClock,
   CalendarDays,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock3,
   Loader2,
+  RotateCcw,
+  XCircle,
 } from "lucide-react";
 
 import {
   getPublicCandidateInterviewDate,
-  submitPublicCandidateInterviewDate,
+  submitPublicCandidateInterviewResponse,
 } from "../../../lib/axios/publicCandidateInterviewDate";
 import {
   buildCandidateInterviewCalendarDays,
-  CANDIDATE_INTERVIEW_MAX_TIME,
   CANDIDATE_INTERVIEW_MIN_TIME,
   formatCandidateInterviewTime,
   isSelectableCandidateInterviewDate,
+  normalizeCandidateInterviewHolidayDates,
   parseCandidateInterviewDateValue,
   toCandidateInterviewDateValue,
   validateCandidateInterviewTime,
@@ -42,11 +46,7 @@ const MONTH_NAMES = [
 ];
 
 function getErrorMessage(error, fallback) {
-  return (
-    error?.response?.data?.message ||
-    error?.message ||
-    fallback
-  );
+  return error?.response?.data?.message || error?.message || fallback;
 }
 
 function getErrorStatus(error) {
@@ -64,7 +64,7 @@ function isSameDate(left, right) {
 }
 
 function formatDateOnly(value) {
-  const date = parseCandidateInterviewDateValue(value);
+  const date = parseCandidateInterviewDateValue(String(value || "").slice(0, 10));
 
   if (!date) return "—";
 
@@ -76,23 +76,39 @@ function formatDateOnly(value) {
   });
 }
 
-function getFirstSelectableDate(todayDateValue) {
-  const today =
-    parseCandidateInterviewDateValue(todayDateValue) || new Date();
+function formatDateTime(value) {
+  if (!value) return "—";
+
+  const raw = String(value).trim();
+  const match = raw.match(
+    /^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}))?/,
+  );
+
+  if (!match) return raw;
+
+  return `${formatDateOnly(match[1])}${
+    match[2] ? ` at ${formatCandidateInterviewTime(match[2])}` : ""
+  }`;
+}
+
+function getFirstSelectableDate(todayDateValue, holidayDates) {
+  const today = parseCandidateInterviewDateValue(todayDateValue) || new Date();
   const candidate = new Date(
     today.getFullYear(),
     today.getMonth(),
     today.getDate(),
   );
 
-  while (!isSelectableCandidateInterviewDate(candidate, today)) {
+  while (
+    !isSelectableCandidateInterviewDate(candidate, today, holidayDates)
+  ) {
     candidate.setDate(candidate.getDate() + 1);
   }
 
   return candidate;
 }
 
-function PublicStateCard({ icon, title, message, tone = "blue" }) {
+function PublicStateCard({ icon, title, message, tone = "blue", children }) {
   const toneClasses = {
     blue: "border-blue-100 bg-blue-50 text-sibs-primary-1",
     red: "border-red-100 bg-red-50 text-red-700",
@@ -113,7 +129,65 @@ function PublicStateCard({ icon, title, message, tone = "blue" }) {
       <p className="mx-auto mt-3 max-w-md text-sm font-semibold leading-6 text-[#667085]">
         {message}
       </p>
+      {children}
     </div>
+  );
+}
+
+function ReadOnlyResponse({ schedule, warning = "" }) {
+  const status = schedule?.responseStatus || "Submitted";
+  const declined = status === "Declined" || status === "No Response";
+  const title =
+    status === "Accepted"
+      ? "Interview Schedule Accepted"
+      : status === "Rescheduled"
+        ? "Interview Schedule Rescheduled"
+        : status === "No Response"
+          ? "Response Period Ended"
+          : "Interview Declined";
+  const message = declined
+    ? status === "No Response"
+      ? "The response period ended after three follow-ups. Please contact Talent Acquisition for assistance."
+      : "Your decline response has been recorded and cannot be changed."
+    : `Your final interview schedule is ${formatDateTime(
+        schedule?.finalInterviewDate || schedule?.selectedInterviewDate,
+      )}.`;
+
+  return (
+    <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
+      <PublicStateCard
+        icon={declined ? <XCircle size={32} /> : <CheckCircle2 size={32} />}
+        title={title}
+        message={message}
+        tone={declined ? "amber" : "green"}
+      >
+        <div className="mt-6 rounded-2xl border border-[#E6ECF2] bg-[#F8FAFC] p-4 text-left">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[#667085]">
+            Response
+          </p>
+          <p className="mt-1 text-base font-extrabold text-sibs-primary-1">
+            {status}
+          </p>
+          {!declined && (
+            <p className="mt-3 text-sm font-bold text-[#344054]">
+              {formatDateTime(
+                schedule?.finalInterviewDate || schedule?.selectedInterviewDate,
+              )}
+            </p>
+          )}
+          {schedule?.responseReason && (
+            <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
+              {schedule.responseReason}
+            </p>
+          )}
+        </div>
+        {warning && (
+          <p className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
+            {warning}
+          </p>
+        )}
+      </PublicStateCard>
+    </main>
   );
 }
 
@@ -121,8 +195,10 @@ export default function PublicInterviewDateSelectionPage() {
   const { token = "" } = useParams();
   const [phase, setPhase] = useState("loading");
   const [schedule, setSchedule] = useState(null);
+  const [action, setAction] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
+  const [declineReason, setDeclineReason] = useState("");
   const [viewDate, setViewDate] = useState(() => new Date());
   const [message, setMessage] = useState("");
   const [warning, setWarning] = useState("");
@@ -140,16 +216,20 @@ export default function PublicInterviewDateSelectionPage() {
 
         if (!active) return;
 
-        const today =
-          parseCandidateInterviewDateValue(data.today) || new Date();
-        const proposedDate = parseCandidateInterviewDateValue(
-          data.proposedDate,
+        const holidayDates = normalizeCandidateInterviewHolidayDates(
+          data.holidayDates,
         );
+        const today = parseCandidateInterviewDateValue(data.today) || new Date();
+        const proposedDate = parseCandidateInterviewDateValue(data.proposedDate);
         const initialDate =
           proposedDate &&
-          isSelectableCandidateInterviewDate(proposedDate, today)
+          isSelectableCandidateInterviewDate(
+            proposedDate,
+            today,
+            holidayDates,
+          )
             ? proposedDate
-            : getFirstSelectableDate(data.today);
+            : getFirstSelectableDate(data.today, holidayDates);
         const proposedTimeValidation = validateCandidateInterviewTime(
           data.proposedTime,
         );
@@ -164,15 +244,23 @@ export default function PublicInterviewDateSelectionPage() {
         setViewDate(
           new Date(initialDate.getFullYear(), initialDate.getMonth(), 1),
         );
-        setPhase("ready");
+        setPhase(data.readOnly ? "readonly" : "ready");
       } catch (error) {
         if (!active) return;
+
+        const errorData = error?.response?.data?.data;
+
+        if (errorData?.readOnly) {
+          setSchedule(errorData);
+          setPhase("readonly");
+          return;
+        }
 
         setPhase(getErrorStatus(error));
         setMessage(
           getErrorMessage(
             error,
-            "The interview scheduling link could not be loaded.",
+            "The interview response link could not be loaded.",
           ),
         );
       }
@@ -185,9 +273,13 @@ export default function PublicInterviewDateSelectionPage() {
     };
   }, [token]);
 
+  const holidayDates = useMemo(
+    () => normalizeCandidateInterviewHolidayDates(schedule?.holidayDates),
+    [schedule?.holidayDates],
+  );
+
   const today = useMemo(
-    () =>
-      parseCandidateInterviewDateValue(schedule?.today) || new Date(),
+    () => parseCandidateInterviewDateValue(schedule?.today) || new Date(),
     [schedule?.today],
   );
 
@@ -211,45 +303,63 @@ export default function PublicInterviewDateSelectionPage() {
     setMessage("");
     setWarning("");
 
-    if (
-      !selectedDateObject ||
-      !isSelectableCandidateInterviewDate(selectedDateObject, today)
-    ) {
-      setMessage(
-        "Select today or a future interview date from Monday to Friday.",
-      );
+    if (!action) {
+      setMessage("Choose Accept, Reschedule, or Decline.");
       return;
     }
 
-    if (!timeValidation.valid) {
-      setMessage(timeValidation.message);
-      return;
+    if (action === "reschedule") {
+      if (
+        !selectedDateObject ||
+        !isSelectableCandidateInterviewDate(
+          selectedDateObject,
+          today,
+          holidayDates,
+        )
+      ) {
+        setMessage(
+          "Select a future working day that is not a configured holiday.",
+        );
+        return;
+      }
+
+      if (!timeValidation.valid) {
+        setMessage(timeValidation.message);
+        return;
+      }
     }
 
     setPhase("submitting");
 
     try {
-      const response = await submitPublicCandidateInterviewDate(
-        token,
-        selectedDate,
-        selectedTime,
-      );
+      const response = await submitPublicCandidateInterviewResponse(token, {
+        action,
+        selectedDate: action === "reschedule" ? selectedDate : "",
+        selectedTime: action === "reschedule" ? selectedTime : "",
+        reason: action === "decline" ? declineReason : "",
+      });
+
+      const responseData = response?.data || {};
 
       setWarning(response?.notificationWarning || "");
       setSchedule((previous) => ({
         ...(previous || {}),
-        selectedInterviewDate: response?.data?.selectedInterviewDate,
+        ...responseData,
+        readOnly: true,
       }));
       setPhase("success");
     } catch (error) {
       const status = getErrorStatus(error);
       const errorMessage = getErrorMessage(
         error,
-        "The interview schedule could not be saved.",
+        "The interview response could not be saved.",
       );
 
-      if (["expired", "used", "revoked", "invalid"].includes(status)) {
-        setPhase(status);
+      if (["expired", "responded", "revoked", "invalid"].includes(status)) {
+        const errorData = error?.response?.data?.data;
+
+        if (errorData) setSchedule(errorData);
+        setPhase(status === "responded" ? "readonly" : status);
         setMessage(errorMessage);
         return;
       }
@@ -265,43 +375,27 @@ export default function PublicInterviewDateSelectionPage() {
         <PublicStateCard
           icon={<Loader2 size={30} className="animate-spin" />}
           title="Loading Interview Schedule"
-          message="Please wait while we verify your secure scheduling link."
+          message="Please wait while we verify your secure response link."
         />
       </main>
     );
   }
 
-  if (phase === "success") {
-    return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
-        <div className="w-full max-w-xl">
-          <PublicStateCard
-            icon={<CheckCircle2 size={32} />}
-            title="Interview Schedule Confirmed"
-            message={`Your interview is scheduled for ${formatDateOnly(
-              selectedDate,
-            )} at ${formatCandidateInterviewTime(selectedTime)}. Talent Acquisition has been notified.`}
-            tone="green"
-          />
-          {warning && (
-            <p className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-700">
-              {warning}
-            </p>
-          )}
-        </div>
-      </main>
-    );
+  if (phase === "readonly") {
+    return <ReadOnlyResponse schedule={schedule} />;
   }
 
-  if (["expired", "used", "revoked", "invalid", "error"].includes(phase)) {
+  if (phase === "success") {
+    return <ReadOnlyResponse schedule={schedule} warning={warning} />;
+  }
+
+  if (["expired", "revoked", "invalid", "error"].includes(phase)) {
     const title =
       phase === "expired"
-        ? "Scheduling Link Expired"
-        : phase === "used"
-          ? "Schedule Already Submitted"
-          : phase === "revoked"
-            ? "Scheduling Link Replaced"
-            : "Scheduling Link Unavailable";
+        ? "Response Link Expired"
+        : phase === "revoked"
+          ? "Response Link Replaced"
+          : "Response Link Unavailable";
 
     return (
       <main className="flex min-h-dvh items-center justify-center bg-[#F4F7FB] px-4 py-10 font-jakarta">
@@ -312,7 +406,7 @@ export default function PublicInterviewDateSelectionPage() {
             message ||
             "Please contact Talent Acquisition at careers@thesiblingssolutions.com."
           }
-          tone={phase === "used" ? "amber" : "red"}
+          tone="red"
         />
       </main>
     );
@@ -322,7 +416,7 @@ export default function PublicInterviewDateSelectionPage() {
 
   return (
     <main className="min-h-dvh bg-[#F4F7FB] px-4 py-8 font-jakarta sm:py-12">
-      <div className="mx-auto w-full max-w-5xl overflow-hidden rounded-3xl border border-[#D9E2EC] bg-white shadow-xl">
+      <div className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border border-[#D9E2EC] bg-white shadow-xl">
         <header className="border-b border-[#E6ECF2] bg-white px-5 py-5 sm:px-8">
           <img
             src="/SiBSLogoNavy.png"
@@ -331,17 +425,18 @@ export default function PublicInterviewDateSelectionPage() {
           />
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="grid grid-cols-1 lg:grid-cols-[0.78fr_1.22fr]">
           <section className="border-b border-[#E6ECF2] bg-[#F8FAFC] p-5 sm:p-8 lg:border-b-0 lg:border-r">
             <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-sibs-primary-1">
-              Candidate Scheduling
+              Interview Response
             </span>
             <h1 className="mt-4 text-2xl font-extrabold text-sibs-primary-1 sm:text-3xl">
-              Choose Interview Date and Time
+              Respond to Interview Schedule
             </h1>
             <p className="mt-3 text-sm font-semibold leading-6 text-[#667085]">
-              Select today or any future date from Monday to Friday. Available
-              interview times are from 10:00 AM to 5:00 PM only.
+              Accept the proposed schedule, choose a different date and time, or
+              decline the interview. Your response becomes final after
+              submission.
             </p>
 
             <div className="mt-6 space-y-3 rounded-2xl border border-[#D9E2EC] bg-white p-5">
@@ -363,7 +458,7 @@ export default function PublicInterviewDateSelectionPage() {
               </div>
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-wide text-[#667085]">
-                  TA Proposed Schedule
+                  Proposed Schedule
                 </p>
                 <p className="mt-1 text-sm font-bold text-sibs-primary-1">
                   {formatDateOnly(schedule?.proposedDate)} at{" "}
@@ -380,134 +475,242 @@ export default function PublicInterviewDateSelectionPage() {
               </div>
             </div>
 
-            <p className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
-              This secure link expires 30 days after it was sent and can be
-              submitted only once.
-            </p>
+            <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-xs font-semibold leading-5 text-amber-700">
+              <p>
+                Current response deadline: {formatDateTime(schedule?.responseDeadline)}
+              </p>
+              <p className="mt-1">
+                Follow-ups sent: {Number(schedule?.followUpCount || 0)} of 3.
+                Saturdays, Sundays, and configured Philippine holidays are not
+                counted as working days.
+              </p>
+            </div>
           </section>
 
           <form onSubmit={handleSubmit} className="p-5 sm:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() =>
-                  setViewDate(
-                    (previous) =>
-                      new Date(
-                        previous.getFullYear(),
-                        previous.getMonth() - 1,
-                        1,
-                      ),
-                  )
-                }
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <h2 className="text-center text-base font-extrabold text-sibs-primary-1">
-                {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
-              </h2>
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={() =>
-                  setViewDate(
-                    (previous) =>
-                      new Date(
-                        previous.getFullYear(),
-                        previous.getMonth() + 1,
-                        1,
-                      ),
-                  )
-                }
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-7 gap-1">
-              {WEEKDAY_LABELS.map((label) => (
-                <div
-                  key={label}
-                  className="flex h-9 items-center justify-center text-xs font-extrabold text-[#667085]"
-                >
-                  {label}
-                </div>
-              ))}
-
-              {calendarDays.map((item) => {
-                const selectable = isSelectableCandidateInterviewDate(
-                  item.date,
-                  today,
-                );
-                const active =
-                  selectedDateObject &&
-                  isSameDate(item.date, selectedDateObject);
-                const weekend = [0, 6].includes(item.date.getDay());
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {[
+                {
+                  key: "accept",
+                  label: "Accept",
+                  description: "Use the proposed schedule",
+                  icon: Check,
+                },
+                {
+                  key: "reschedule",
+                  label: "Reschedule",
+                  description: "Choose another date and time",
+                  icon: RotateCcw,
+                },
+                {
+                  key: "decline",
+                  label: "Decline",
+                  description: "Do not continue with interview",
+                  icon: XCircle,
+                },
+              ].map((option) => {
+                const active = action === option.key;
+                const Icon = option.icon;
 
                 return (
                   <button
-                    key={item.dateValue}
+                    key={option.key}
                     type="button"
-                    disabled={!selectable || isSubmitting}
-                    onClick={() => setSelectedDate(item.dateValue)}
-                    title={
-                      weekend
-                        ? "Saturday and Sunday are unavailable"
-                        : selectable
-                          ? "Select interview date"
-                          : "Past dates are unavailable"
-                    }
-                    className={`flex h-10 items-center justify-center rounded-xl text-sm font-extrabold transition ${
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setAction(option.key);
+                      setMessage("");
+                    }}
+                    className={`rounded-2xl border p-4 text-left transition ${
                       active
-                        ? "bg-sibs-primary-1 text-white shadow-sm"
-                        : selectable
-                          ? item.isCurrentMonth
-                            ? "text-[#344054] hover:bg-blue-50 hover:text-sibs-primary-1"
-                            : "text-[#98A2B3] hover:bg-[#F8FAFC]"
-                          : weekend
-                            ? "cursor-not-allowed bg-slate-50 text-slate-300"
-                            : "cursor-not-allowed text-slate-300 opacity-50"
-                    }`}
+                        ? "border-sibs-primary-1 bg-blue-50 shadow-sm"
+                        : "border-[#D9E2EC] bg-white hover:border-sibs-primary-1/40 hover:bg-[#F8FAFC]"
+                    } disabled:opacity-60`}
                   >
-                    {item.dayNumber}
+                    <span
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                        active
+                          ? "bg-sibs-primary-1 text-white"
+                          : "bg-[#F2F4F7] text-sibs-primary-1"
+                      }`}
+                    >
+                      <Icon size={19} />
+                    </span>
+                    <span className="mt-3 block text-sm font-extrabold text-sibs-primary-1">
+                      {option.label}
+                    </span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-[#667085]">
+                      {option.description}
+                    </span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
-              <label className="flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
-                <Clock3 size={17} />
-                Interview Time
-              </label>
-              <input
-                type="time"
-                min="10:00"
-                max="17:00"
-                step="60"
-                required
-                disabled={isSubmitting}
-                value={selectedTime}
-                onChange={(event) => setSelectedTime(event.target.value)}
-                className="mt-3 h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:opacity-60"
-              />
-              <p className="mt-2 text-xs font-semibold text-[#667085]">
-                Available from 10:00 AM through 5:00 PM.
-              </p>
-            </div>
+            {action === "accept" && (
+              <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                <p className="flex items-center gap-2 text-sm font-extrabold text-emerald-700">
+                  <CheckCircle2 size={18} />
+                  Accept Proposed Interview Schedule
+                </p>
+                <p className="mt-2 text-sm font-bold text-[#344054]">
+                  {formatDateOnly(schedule?.proposedDate)} at{" "}
+                  {formatCandidateInterviewTime(schedule?.proposedTime)}
+                </p>
+              </div>
+            )}
 
-            <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-              <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
-                Selected Interview Schedule
-              </p>
-              <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
-                {formatDateOnly(selectedDate)} at{" "}
-                {formatCandidateInterviewTime(selectedTime)}
-              </p>
-            </div>
+            {action === "reschedule" && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() =>
+                      setViewDate(
+                        (previous) =>
+                          new Date(
+                            previous.getFullYear(),
+                            previous.getMonth() - 1,
+                            1,
+                          ),
+                      )
+                    }
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <h2 className="text-center text-base font-extrabold text-sibs-primary-1">
+                    {MONTH_NAMES[viewDate.getMonth()]} {viewDate.getFullYear()}
+                  </h2>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() =>
+                      setViewDate(
+                        (previous) =>
+                          new Date(
+                            previous.getFullYear(),
+                            previous.getMonth() + 1,
+                            1,
+                          ),
+                      )
+                    }
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D9E2EC] text-sibs-primary-1 transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                <div className="mt-4 grid grid-cols-7 gap-1">
+                  {WEEKDAY_LABELS.map((label) => (
+                    <div
+                      key={label}
+                      className="flex h-9 items-center justify-center text-xs font-extrabold text-[#667085]"
+                    >
+                      {label}
+                    </div>
+                  ))}
+
+                  {calendarDays.map((item) => {
+                    const selectable = isSelectableCandidateInterviewDate(
+                      item.date,
+                      today,
+                      holidayDates,
+                    );
+                    const active =
+                      selectedDateObject &&
+                      isSameDate(item.date, selectedDateObject);
+                    const weekend = [0, 6].includes(item.date.getDay());
+                    const holiday = holidayDates.has(item.dateValue);
+
+                    return (
+                      <button
+                        key={item.dateValue}
+                        type="button"
+                        disabled={!selectable || isSubmitting}
+                        onClick={() => setSelectedDate(item.dateValue)}
+                        title={
+                          holiday
+                            ? "Configured Philippine holiday"
+                            : weekend
+                              ? "Saturday and Sunday are unavailable"
+                              : selectable
+                                ? "Select interview date"
+                                : "Past dates are unavailable"
+                        }
+                        className={`flex h-10 items-center justify-center rounded-xl text-sm font-extrabold transition ${
+                          active
+                            ? "bg-sibs-primary-1 text-white shadow-sm"
+                            : selectable
+                              ? item.isCurrentMonth
+                                ? "text-[#344054] hover:bg-blue-50 hover:text-sibs-primary-1"
+                                : "text-[#98A2B3] hover:bg-[#F8FAFC]"
+                              : holiday
+                                ? "cursor-not-allowed bg-amber-50 text-amber-300"
+                                : weekend
+                                  ? "cursor-not-allowed bg-slate-50 text-slate-300"
+                                  : "cursor-not-allowed text-slate-300 opacity-50"
+                        }`}
+                      >
+                        {item.dayNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-[#D9E2EC] bg-[#F8FAFC] p-5">
+                  <label className="flex items-center gap-2 text-sm font-extrabold text-sibs-primary-1">
+                    <Clock3 size={17} />
+                    Interview Time
+                  </label>
+                  <input
+                    type="time"
+                    min="10:00"
+                    max="17:00"
+                    step="60"
+                    required
+                    disabled={isSubmitting}
+                    value={selectedTime}
+                    onChange={(event) => setSelectedTime(event.target.value)}
+                    className="mt-3 h-12 w-full rounded-xl border border-[#D0D5DD] bg-white px-4 text-sm font-extrabold text-sibs-primary-1 outline-none transition focus:border-sibs-primary-1 focus:ring-4 focus:ring-sibs-primary-1/10 disabled:opacity-60"
+                  />
+                  <p className="mt-2 text-xs font-semibold text-[#667085]">
+                    Available from 10:00 AM through 5:00 PM.
+                  </p>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-sibs-primary-1">
+                    New Interview Schedule
+                  </p>
+                  <p className="mt-1 text-sm font-extrabold text-sibs-primary-1">
+                    {formatDateOnly(selectedDate)} at{" "}
+                    {formatCandidateInterviewTime(selectedTime)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {action === "decline" && (
+              <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5">
+                <label className="text-sm font-extrabold text-red-700">
+                  Reason for declining (optional)
+                </label>
+                <textarea
+                  rows={4}
+                  disabled={isSubmitting}
+                  value={declineReason}
+                  onChange={(event) => setDeclineReason(event.target.value)}
+                  placeholder="Share a reason when applicable."
+                  className="mt-3 w-full resize-none rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-[#344054] outline-none transition focus:border-red-300 focus:ring-4 focus:ring-red-100 disabled:opacity-60"
+                />
+                <p className="mt-2 text-xs font-semibold leading-5 text-red-600">
+                  Declining moves your application to Drop-off and the response
+                  cannot be changed.
+                </p>
+              </div>
+            )}
 
             {message && (
               <div className="mt-5 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
@@ -517,15 +720,27 @@ export default function PublicInterviewDateSelectionPage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !action}
               className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-extrabold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? (
                 <Loader2 size={17} className="animate-spin" />
+              ) : action === "decline" ? (
+                <XCircle size={17} />
+              ) : action === "reschedule" ? (
+                <CalendarClock size={17} />
               ) : (
                 <CalendarDays size={17} />
               )}
-              {isSubmitting ? "Saving Schedule..." : "Confirm Interview Schedule"}
+              {isSubmitting
+                ? "Submitting Response..."
+                : action === "decline"
+                  ? "Confirm Decline"
+                  : action === "reschedule"
+                    ? "Confirm New Schedule"
+                    : action === "accept"
+                      ? "Confirm Acceptance"
+                      : "Choose a Response"}
             </button>
           </form>
         </div>
