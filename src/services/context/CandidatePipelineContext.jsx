@@ -47,6 +47,12 @@ import {
 
 import { useConfirmDialog } from "../../components/layout/common/ConfirmationModal";
 
+import {
+  isSelectableCandidateInterviewDate,
+  parseCandidateInterviewDateValue,
+  validateCandidateInterviewTime,
+} from "../../lib/utils/candidatePipeline/candidateInterviewDateSelection";
+
 const CandidatePipelineContext = createContext(null);
 
 const INCOMPLETE_REQUIREMENTS_STAGE =
@@ -994,11 +1000,23 @@ export function CandidatePipelineProvider({ children }) {
     user?.username ||
     "Current User";
 
+  const currentUserEmail = cleanText(
+    user?.email ||
+      user?.workEmail ||
+      user?.work_email ||
+      user?.companyEmail ||
+      user?.company_email ||
+      user?.employeeEmail ||
+      user?.employee_email ||
+      user?.gy_emp_email,
+  );
+
   const [candidateList, setCandidateList] = useState([]);
   const [hasLoadedStorage, setHasLoadedStorage] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false);
   const [loadError, setLoadError] = useState("");
 
   const [search, setSearch] = useState("");
@@ -1036,11 +1054,13 @@ export function CandidatePipelineProvider({ children }) {
 
   const hideInterviewColumns =
     normalizedActiveStage === "Initial Screening" ||
-    normalizedActiveStage === "Online Assessment";
+    normalizedActiveStage === "Online Assessment" ||
+    normalizedActiveStage === "Assessment Fit";
 
   const showAssessmentStatusColumn = false;
   const showAssessmentResultColumn =
-    normalizedActiveStage === "Online Assessment";
+    normalizedActiveStage === "Online Assessment" ||
+    normalizedActiveStage === "Assessment Fit";
 
   function openStatusModal(type, title, message, options = {}) {
     const isSuccess = type === "success";
@@ -1276,6 +1296,13 @@ export function CandidatePipelineProvider({ children }) {
         return getCandidatePrfStatus(candidate) === "Matched";
       }
 
+      if (currentStage === "Assessment Fit") {
+        return (
+          candidate.assessmentStatus === "Taken" &&
+          candidate.assessmentResult === "Assessment Fit"
+        );
+      }
+
       if (currentStage === "Interview Scheduled") {
         return (
           candidate.assessmentStatus === "Taken" &&
@@ -1315,6 +1342,7 @@ export function CandidatePipelineProvider({ children }) {
     return {
       initialScreening: stageCounts["Initial Screening"] || 0,
       onlineAssessment: stageCounts["Online Assessment"] || 0,
+      assessmentFit: stageCounts["Assessment Fit"] || 0,
       interviewScheduled: stageCounts["Interview Scheduled"] || 0,
       interviewed: stageCounts.Interviewed || 0,
       offered: stageCounts.Offered || 0,
@@ -1626,9 +1654,14 @@ export function CandidatePipelineProvider({ children }) {
         }
       }
 
-      if (activeStageAfter) {
+      const resolvedActiveStageAfter =
+        typeof activeStageAfter === "function"
+          ? activeStageAfter(response, updatedCandidate)
+          : activeStageAfter;
+
+      if (resolvedActiveStageAfter) {
         setActiveStage(
-          normalizePipelineStageName(activeStageAfter),
+          normalizePipelineStageName(resolvedActiveStageAfter),
         );
       }
 
@@ -2111,6 +2144,41 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
+    const scheduleMatch = cleanText(scheduleForm.interviewDate).match(
+      /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}:\d{2})/,
+    );
+    const scheduleDate = parseCandidateInterviewDateValue(
+      scheduleMatch?.[1] || "",
+    );
+    const scheduleTimeValidation = validateCandidateInterviewTime(
+      scheduleMatch?.[2] || "",
+    );
+
+    if (
+      !scheduleDate ||
+      !isSelectableCandidateInterviewDate(scheduleDate, new Date())
+    ) {
+      showError(
+        "Interview date must be today or a future Monday to Friday.",
+      );
+      return null;
+    }
+
+    if (!scheduleTimeValidation.valid) {
+      showError(
+        scheduleTimeValidation.message ||
+          "Interview time must be between 10:00 AM and 5:00 PM.",
+      );
+      return null;
+    }
+
+    if (!currentUserEmail) {
+      showError(
+        "Your TA email address is required before sending the interview schedule.",
+      );
+      return null;
+    }
+
     if (
       scheduleForm.interviewType === "Online" &&
       !String(scheduleForm.onlineInterviewLink || "").trim()
@@ -2129,29 +2197,55 @@ export function CandidatePipelineProvider({ children }) {
       return null;
     }
 
-    const id = getCandidateRecordId(scheduleCandidate);
+    const submittedCandidate = scheduleCandidate;
+    const submittedForm = {
+      ...scheduleForm,
+    };
+    const id = getCandidateRecordId(submittedCandidate);
 
-    return runCandidateAction(
-      () =>
-        scheduleCandidatePipelineInterview(id, {
-          interviewDate: scheduleForm.interviewDate,
-          interviewType: scheduleForm.interviewType,
-          onlineInterviewLink:
-            scheduleForm.interviewType === "Online"
-              ? scheduleForm.onlineInterviewLink
-              : "",
-          remarks: scheduleForm.remarks,
-        }),
-      {
-        activeStageAfter: "Interview Scheduled",
-        successTitle: isUpdatingSchedule
-          ? "Interview Schedule Updated"
-          : "Interview Scheduled",
-        successMessage: isUpdatingSchedule
-          ? `${scheduleCandidate.name}'s interview schedule was updated successfully.`
-          : `${scheduleCandidate.name}'s interview was scheduled successfully.`,
-      },
-    );
+    /*
+     * Show the same full-page loading treatment used by the HR Dashboard,
+     * then hide Candidate Details and Schedule Interview. The request uses
+     * the snapshots above, so closing the forms cannot clear the submitted
+     * values while the interview email and schedule are being processed.
+     */
+    setIsSchedulingInterview(true);
+    closeAllPipelineModals();
+
+    try {
+      return await runCandidateAction(
+        () =>
+          scheduleCandidatePipelineInterview(id, {
+            interviewDate: submittedForm.interviewDate,
+            interviewType: submittedForm.interviewType,
+            onlineInterviewLink:
+              submittedForm.interviewType === "Online"
+                ? submittedForm.onlineInterviewLink
+                : "",
+            remarks: submittedForm.remarks,
+            taEmail: currentUserEmail,
+            taName: currentUserName,
+          }),
+        {
+          activeStageAfter: "Interview Scheduled",
+          successTitle: isUpdatingSchedule
+            ? "Interview Schedule Updated"
+            : "Interview Scheduled",
+          successMessage: (response) =>
+            response?.message ||
+            (isUpdatingSchedule
+              ? `${submittedCandidate.name}'s interview schedule was updated and the email sent successfully.`
+              : `${submittedCandidate.name}'s interview was scheduled and the email sent successfully.`),
+        },
+      );
+    } finally {
+      /*
+       * runCandidateAction opens the success or error StatusModal before it
+       * resolves. Removing this loading state here makes the StatusModal the
+       * next visible UI after the loader.
+       */
+      setIsSchedulingInterview(false);
+    }
   }
 
   async function handleCancelInterview(candidate) {
@@ -2524,6 +2618,11 @@ export function CandidatePipelineProvider({ children }) {
     }
 
     if (currentStage === "Online Assessment") {
+      handleOpenAssessmentModal(normalizedCandidate);
+      return;
+    }
+
+    if (currentStage === "Assessment Fit") {
       handleOpenScheduleInterview(normalizedCandidate);
       return;
     }
@@ -2825,7 +2924,14 @@ export function CandidatePipelineProvider({ children }) {
           assessmentRemarks: assessmentForm.assessmentRemarks.trim(),
         }),
       {
-        activeStageAfter: "Online Assessment",
+        activeStageAfter: (response, updatedCandidate) => {
+          const responseCandidate =
+            updatedCandidate || getApiCandidate(response);
+
+          return responseCandidate
+            ? getCandidateStage(responseCandidate)
+            : "Online Assessment";
+        },
         successTitle: "Assessment Saved",
         successMessage:
           `${assessmentCandidate.name}'s assessment was saved successfully.`,
@@ -3238,6 +3344,7 @@ export function CandidatePipelineProvider({ children }) {
 
     isLoading,
     isSaving,
+    isSchedulingInterview,
     loadError,
     refreshCandidatePipeline,
 

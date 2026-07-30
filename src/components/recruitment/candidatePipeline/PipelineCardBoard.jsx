@@ -45,6 +45,8 @@ function getStageDescription(stage) {
       return "PRF review";
     case "Online Assessment":
       return "Assessment";
+    case "Assessment Fit":
+      return "Ready to schedule";
     case "Interview Scheduled":
       return "Calendar";
     case "Interviewed":

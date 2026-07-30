@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Loader2,
   X,
 } from "lucide-react";
 
@@ -31,6 +32,9 @@ const MONTH_OPTIONS = [
   { value: 10, label: "November" },
   { value: 11, label: "December" },
 ];
+
+const MIN_INTERVIEW_HOUR = 10;
+const MAX_INTERVIEW_HOUR = 17;
 
 const MINUTE_OPTIONS = [
   "00",
@@ -91,6 +95,51 @@ function isDateBeforeToday(date) {
   return dateStart < todayStart;
 }
 
+function isWeekendDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return true;
+
+  return date.getDay() === 0 || date.getDay() === 6;
+}
+
+function isSelectableInterviewDate(date) {
+  return !isDateBeforeToday(date) && !isWeekendDate(date);
+}
+
+function getNextSelectableInterviewDate(value = new Date()) {
+  const date = new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate(),
+  );
+
+  while (!isSelectableInterviewDate(date)) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return date;
+}
+
+function toHour24(hour12, period) {
+  let hour = Number(hour12);
+
+  if (period === "AM" && hour === 12) hour = 0;
+  if (period === "PM" && hour !== 12) hour += 12;
+
+  return hour;
+}
+
+function isTimeWithinInterviewWindow(hour12, minute, period) {
+  const hour24 = toHour24(hour12, period);
+  const minuteNumber = Number(minute);
+  const totalMinutes = hour24 * 60 + minuteNumber;
+
+  return (
+    Number.isFinite(totalMinutes) &&
+    totalMinutes >= MIN_INTERVIEW_HOUR * 60 &&
+    totalMinutes <= MAX_INTERVIEW_HOUR * 60
+  );
+}
+
 function parseDateTimeValue(value) {
   if (!value) return null;
 
@@ -101,7 +150,7 @@ function parseDateTimeValue(value) {
   return date;
 }
 
-function toDateTimeInputValue(date, hour12 = 9, minute = "00", period = "AM") {
+function toDateTimeInputValue(date, hour12 = 10, minute = "00", period = "AM") {
   if (!date) return "";
 
   let hour24 = Number(hour12);
@@ -119,7 +168,7 @@ function getTimeParts(value) {
 
   if (!parsed) {
     return {
-      hour12: 9,
+      hour12: 10,
       minute: "00",
       period: "AM",
     };
@@ -365,9 +414,9 @@ function PickerDropdown({
 function DateTimePicker({ value, onChange }) {
   const parsedValue = parseDateTimeValue(value);
   const safeInitialDate =
-    parsedValue && !isDateBeforeToday(parsedValue)
+    parsedValue && isSelectableInterviewDate(parsedValue)
       ? parsedValue
-      : getTodayDateOnly();
+      : getNextSelectableInterviewDate(getTodayDateOnly());
 
   const pickerRef = useRef(null);
 
@@ -404,12 +453,20 @@ function DateTimePicker({ value, onChange }) {
   const days = useMemo(() => buildCalendarDays(viewDate), [viewDate]);
 
   const displayValue =
-    parsedValue && !isDateBeforeToday(parsedValue) ? value : "";
+    parsedValue &&
+    isSelectableInterviewDate(parsedValue) &&
+    isTimeWithinInterviewWindow(
+      currentTimeParts.hour12,
+      currentTimeParts.minute,
+      currentTimeParts.period,
+    )
+      ? value
+      : "";
 
   useEffect(() => {
     const nextDate = parseDateTimeValue(value);
 
-    if (nextDate && !isDateBeforeToday(nextDate)) {
+    if (nextDate && isSelectableInterviewDate(nextDate)) {
       setActiveDate(nextDate);
       setViewDate(getMonthStart(nextDate));
 
@@ -420,8 +477,8 @@ function DateTimePicker({ value, onChange }) {
       return;
     }
 
-    if (nextDate && isDateBeforeToday(nextDate)) {
-      const today = getTodayDateOnly();
+    if (nextDate && !isSelectableInterviewDate(nextDate)) {
+      const today = getNextSelectableInterviewDate(getTodayDateOnly());
 
       setActiveDate(today);
       setViewDate(getMonthStart(today));
@@ -461,13 +518,14 @@ function DateTimePicker({ value, onChange }) {
     nextPeriod = period,
   ) {
     if (!nextDate) return;
-    if (isDateBeforeToday(nextDate)) return;
+    if (!isSelectableInterviewDate(nextDate)) return;
+    if (!isTimeWithinInterviewWindow(nextHour, nextMinute, nextPeriod)) return;
 
     onChange?.(toDateTimeInputValue(nextDate, nextHour, nextMinute, nextPeriod));
   }
 
   function handleDateSelect(nextDate) {
-    if (isDateBeforeToday(nextDate)) return;
+    if (!isSelectableInterviewDate(nextDate)) return;
 
     setOpenDropdown("");
     setActiveDate(nextDate);
@@ -515,9 +573,9 @@ function DateTimePicker({ value, onChange }) {
         Math.min(activeDate.getDate(), lastDayOfMonth),
       );
 
-      const nextActiveDate = isDateBeforeToday(nextActiveDateCandidate)
-        ? getTodayDateOnly()
-        : nextActiveDateCandidate;
+      const nextActiveDate = isSelectableInterviewDate(nextActiveDateCandidate)
+        ? nextActiveDateCandidate
+        : getNextSelectableInterviewDate(nextActiveDateCandidate);
 
       setActiveDate(nextActiveDate);
       commitValue(nextActiveDate, hour12, minute, period);
@@ -548,9 +606,9 @@ function DateTimePicker({ value, onChange }) {
         Math.min(activeDate.getDate(), lastDayOfMonth),
       );
 
-      const nextActiveDate = isDateBeforeToday(nextActiveDateCandidate)
-        ? getTodayDateOnly()
-        : nextActiveDateCandidate;
+      const nextActiveDate = isSelectableInterviewDate(nextActiveDateCandidate)
+        ? nextActiveDateCandidate
+        : getNextSelectableInterviewDate(nextActiveDateCandidate);
 
       setActiveDate(nextActiveDate);
       commitValue(nextActiveDate, hour12, minute, period);
@@ -560,23 +618,41 @@ function DateTimePicker({ value, onChange }) {
   function handleHourChange(nextHourValue) {
     const nextHour = Number(nextHourValue);
 
+    if (!isTimeWithinInterviewWindow(nextHour, minute, period)) return;
+
     setHour12(nextHour);
     commitValue(activeDate, nextHour, minute, period);
   }
 
   function handleMinuteChange(nextMinute) {
+    if (!isTimeWithinInterviewWindow(hour12, nextMinute, period)) return;
+
     setMinute(nextMinute);
     commitValue(activeDate, hour12, nextMinute, period);
   }
 
   function handlePeriodChange(nextPeriod) {
     setOpenDropdown("");
+
+    const nextHour =
+      nextPeriod === "AM"
+        ? hour12 >= 10 && hour12 <= 11
+          ? hour12
+          : 10
+        : hour12 === 12 || hour12 <= 5
+          ? hour12
+          : 12;
+    const nextMinute =
+      nextPeriod === "PM" && nextHour === 5 ? "00" : minute;
+
     setPeriod(nextPeriod);
-    commitValue(activeDate, hour12, minute, nextPeriod);
+    setHour12(nextHour);
+    setMinute(nextMinute);
+    commitValue(activeDate, nextHour, nextMinute, nextPeriod);
   }
 
   function setToday() {
-    const today = getTodayDateOnly();
+    const today = getNextSelectableInterviewDate(getTodayDateOnly());
 
     setOpenDropdown("");
     setActiveDate(today);
@@ -695,7 +771,7 @@ function DateTimePicker({ value, onChange }) {
                 {days.map((item) => {
                   const active = isSameDate(item.date, activeDate);
                   const today = isSameDate(item.date, getTodayDateOnly());
-                  const disabledDay = isDateBeforeToday(item.date);
+                  const disabledDay = !isSelectableInterviewDate(item.date);
 
                   return (
                     <button
@@ -761,7 +837,14 @@ function DateTimePicker({ value, onChange }) {
                     openDropdown={openDropdown}
                     setOpenDropdown={setOpenDropdown}
                     value={hour12}
-                    options={HOUR_OPTIONS}
+                    options={HOUR_OPTIONS.map((option) => ({
+                      ...option,
+                      disabled: !isTimeWithinInterviewWindow(
+                        option.value,
+                        minute,
+                        period,
+                      ),
+                    }))}
                     onChange={handleHourChange}
                     placeholder="Hour"
                     buttonClassName="h-11"
@@ -778,7 +861,14 @@ function DateTimePicker({ value, onChange }) {
                     openDropdown={openDropdown}
                     setOpenDropdown={setOpenDropdown}
                     value={minute}
-                    options={MINUTE_OPTIONS}
+                    options={MINUTE_OPTIONS.map((option) => ({
+                      ...option,
+                      disabled: !isTimeWithinInterviewWindow(
+                        hour12,
+                        option.value,
+                        period,
+                      ),
+                    }))}
                     onChange={handleMinuteChange}
                     placeholder="Minute"
                     buttonClassName="h-11"
@@ -864,6 +954,7 @@ const ScheduleInterviewModal = ({
   candidate,
   form,
   setForm,
+  isSaving = false,
   onClose,
   onSubmit,
 }) => {
@@ -898,8 +989,9 @@ const ScheduleInterviewModal = ({
 
           <button
             type="button"
+            disabled={isSaving}
             onClick={onClose}
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <X size={20} />
           </button>
@@ -948,6 +1040,11 @@ const ScheduleInterviewModal = ({
                   setForm({ ...form, interviewDate: nextValue })
                 }
               />
+
+              <p className="mt-2 text-xs font-semibold leading-5 text-sibs-tertiary-5">
+                Monday to Friday only. Available interview times are from
+                10:00 AM through 5:00 PM.
+              </p>
             </div>
 
             <div>
@@ -1016,19 +1113,32 @@ const ScheduleInterviewModal = ({
           <div className="flex flex-col justify-end gap-2 sm:flex-row">
             <button
               type="button"
+              disabled={isSaving}
               onClick={onClose}
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl border border-[#E6ECF2] bg-white px-5 text-sm font-bold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>
 
             <button
               type="button"
+              disabled={isSaving}
+              aria-busy={isSaving}
               onClick={onSubmit}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90"
+              className="inline-flex h-11 min-w-[154px] items-center justify-center gap-2 rounded-xl bg-sibs-primary-1 px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              <CalendarDays size={16} />
-              {isUpdatingSchedule ? "Update Schedule" : "Save Schedule"}
+              {isSaving ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <CalendarDays size={16} />
+              )}
+              {isSaving
+                ? isUpdatingSchedule
+                  ? "Updating Schedule..."
+                  : "Saving Schedule..."
+                : isUpdatingSchedule
+                  ? "Update Schedule"
+                  : "Save Schedule"}
             </button>
           </div>
         </div>

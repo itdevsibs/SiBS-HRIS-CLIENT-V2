@@ -53,7 +53,7 @@ const PipelineCandidateCard = ({
   const interviewStatus = getDisplayInterviewStatus(candidate);
 
   const showScheduleButton =
-    candidate.currentStage === "Online Assessment" &&
+    candidate.currentStage === "Assessment Fit" &&
     canScheduleInterview(candidate);
 
   const showAssessmentButton = candidate.currentStage === "Online Assessment";
@@ -64,6 +64,7 @@ const PipelineCandidateCard = ({
     candidate.currentStage !== "Drop-off" &&
     candidate.currentStage !== "Accepted" &&
     candidate.currentStage !== "Online Assessment" &&
+    candidate.currentStage !== "Assessment Fit" &&
     candidate.currentStage !== "Interview Scheduled" &&
     candidate.currentStage !== "Offered" &&
     Boolean(nextStage);

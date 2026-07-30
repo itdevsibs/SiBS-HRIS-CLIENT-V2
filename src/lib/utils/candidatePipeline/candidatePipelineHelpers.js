@@ -1,5 +1,6 @@
 import {
-  normalStageFlow,
+  canScheduleInterviewFromStage,
+  getNextPipelineStage as getNextPipelineStageFromContract,
   INTERNAL_CANDIDATES_STORAGE_KEY,
   PUBLIC_SUBMISSIONS_KEY,
   OFFER_RECORDS_STORAGE_KEY,
@@ -75,13 +76,7 @@ export function isPrfReviewed(candidate) {
 }
 
 export function getNextStage(currentStage) {
-  const normalizedStage = String(currentStage || "").trim();
-  const currentIndex = normalStageFlow.indexOf(normalizedStage);
-
-  if (currentIndex === -1) return "";
-  if (currentIndex === normalStageFlow.length - 1) return "";
-
-  return normalStageFlow[currentIndex + 1];
+  return getNextPipelineStageFromContract(currentStage);
 }
 
 export function getAssessmentStatus(candidate) {
@@ -103,6 +98,10 @@ export function getDisplayInterviewStatus(candidate) {
     return getAssessmentResult(candidate) ? "" : "For Assessment";
   }
 
+  if (currentStage === "Assessment Fit") {
+    return candidate.interviewStatus || "For Scheduling";
+  }
+
   return candidate.interviewStatus || "—";
 }
 
@@ -113,7 +112,8 @@ export function getDisplayInterviewType(candidate) {
 
   if (
     currentStage === "Initial Screening" ||
-    currentStage === "Online Assessment"
+    currentStage === "Online Assessment" ||
+    currentStage === "Assessment Fit"
   ) {
     return "—";
   }
@@ -130,12 +130,9 @@ export function canMoveToOnlineAssessment(candidate = {}) {
 }
 
 export function canScheduleInterview(candidate) {
-  const currentStage = getCandidateStage(candidate);
-
-  return (
-    currentStage === "Online Assessment" &&
-    candidate?.assessmentStatus === "Taken" &&
-    candidate?.assessmentResult === "Assessment Fit"
+  return canScheduleInterviewFromStage(
+    getCandidateStage(candidate),
+    candidate,
   );
 }
 
@@ -155,6 +152,8 @@ export function getStageClass(stage) {
       return "border-blue-100 bg-blue-50 text-blue-700";
     case "Online Assessment":
       return "border-cyan-100 bg-cyan-50 text-cyan-700";
+    case "Assessment Fit":
+      return "border-indigo-100 bg-indigo-50 text-indigo-700";
     case "Interview Scheduled":
       return "border-sky-100 bg-sky-50 text-sky-700";
     case "Interviewed":
@@ -782,6 +781,16 @@ export function normalizeCandidate(candidate) {
       interviewDate: null,
       interviewType: "-",
       interviewStatus: "For Assessment",
+      onlineInterviewLink: "",
+    };
+  }
+
+  if (currentStage === "Assessment Fit") {
+    return {
+      ...normalized,
+      interviewDate: null,
+      interviewType: "-",
+      interviewStatus: normalized.interviewStatus || "For Scheduling",
       onlineInterviewLink: "",
     };
   }
