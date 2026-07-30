@@ -14,7 +14,6 @@ import {
   CreditCard,
   FileText,
   Info,
-  LoaderCircle,
   ShieldAlert,
   UserCheck,
   UserPlus,
@@ -31,20 +30,18 @@ import {
   getHrDashboardOverview,
 } from "../../../lib/axios/getHrDashboard";
 
-import {
-  DashboardMetricCard,
-  DashboardToast,
-  DashboardWelcome,
-  NotificationsPanel,
-  QuickActionsPanel,
-  RecentActivityPanel,
-  WorkforceKpiCard,
-} from "./AdminDashboardComponents";
+import AdminDashboardWelcome from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWelcome";
+import AdminDashboardStats from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardStats";
+import AdminDashboardActivity from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardActivity";
+import AdminDashboardNotifications from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardNotifications";
+import AdminDashboardQuickActions from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardQuickActions";
+import AdminDashboardWorkforceKpi from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardWorkforceKpi";
+import AdminDashboardToast from "../../../components/Dashboard/HRAdminDashboard/AdminDashboardToast";
 import { DashboardModalManager } from "../../../components/modals/dashboard/AdminDashboardModals";
 import {
   EMPTY_OVERVIEW,
   normalizeDashboardOverview,
-} from "./adminDashboardData";
+} from "../../../lib/utils/Dashboards/AdminDashboard/adminDashboardHelpers";
 
 const EXISTING_ADMIN_ROUTES = {
   employees: "/employee",
@@ -78,8 +75,6 @@ const notificationIconMap = {
   info: Info,
 };
 
-const pageShellClass = "sibs-dashboard-shell";
-const mainShellClass = "sibs-dashboard-main-wide";
 const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 function normalizeRole(value) {
@@ -110,34 +105,6 @@ function getErrorMessage(error, fallback) {
 }
 
 
-function HRDashboardLoadingState() {
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-[#e8eef5] px-6 py-10">
-      <div
-        className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-[#dfe7ef] bg-white px-8 py-10 text-center shadow-sm"
-        role="status"
-        aria-live="polite"
-        aria-label="Loading HR dashboard"
-      >
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50">
-          <LoaderCircle
-            className="h-8 w-8 animate-spin text-[#ff5c28]"
-            aria-hidden="true"
-          />
-        </div>
-
-        <h2 className="mt-5 text-lg font-extrabold text-[#042c51]">
-          Loading HR Dashboard
-        </h2>
-
-        <p className="mt-2 max-w-[300px] text-sm font-medium leading-6 text-[#667085]">
-          Loading current workforce information and dashboard metrics...
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function mergeDashboardFeed(previous, payload = {}) {
   const nextReports =
     payload?.reports && typeof payload.reports === "object"
@@ -154,7 +121,7 @@ function mergeDashboardFeed(previous, payload = {}) {
       : previous.notifications,
     notificationCounts:
       payload?.notificationCounts &&
-      typeof payload.notificationCounts === "object"
+        typeof payload.notificationCounts === "object"
         ? payload.notificationCounts
         : previous.notificationCounts,
     reports: {
@@ -439,9 +406,8 @@ export default function AdminDashboardPage() {
   }, [toast]);
 
   const fullName = (
-    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${user?.firstName || ""}${
-      user?.middleName ? ` ${user.middleName}` : ""
-    }`.trim() || "User"
+    `${user?.lastName || ""}${user?.lastName ? ", " : ""}${user?.firstName || ""}${user?.middleName ? ` ${user.middleName}` : ""
+      }`.trim() || "User"
   ).toUpperCase();
 
   const dashboardTitle = dashboardTitleMap[userRole] || "Admin Dashboard";
@@ -591,19 +557,15 @@ export default function AdminDashboardPage() {
     setDetailState({ data: null, loading: false, error: "" });
   }, []);
 
-  if (loading || !user || !isAdminSide || !initialLoadFinished) {
-    return <HRDashboardLoadingState />;
-  }
-
   return (
-    <div className={pageShellClass}>
+    <div className="sibs-dashboard-shell">
       <div className="shrink-0">
         <Header />
       </div>
 
-      <main className={mainShellClass}>
+      <main className="sibs-dashboard-main-wide">
         <div className="mx-auto w-full max-w-[1600px] space-y-5 sm:space-y-6">
-          <DashboardWelcome
+          <AdminDashboardWelcome
             title={dashboardTitle}
             fullName={fullName}
             onOpenEmployees={() => navigate(EXISTING_ADMIN_ROUTES.employees)}
@@ -616,20 +578,14 @@ export default function AdminDashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-            {metricCards.map((metric, index) => (
-              <DashboardMetricCard
-                key={metric.id}
-                item={metric}
-                onClick={() => handleMetricClick(metric)}
-                delay={80 + index * 55}
-              />
-            ))}
-          </section>
+          <AdminDashboardStats
+            metrics={metricCards}
+            onMetricClick={handleMetricClick}
+          />
 
           <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
             <div className="space-y-5 lg:col-span-8">
-              <RecentActivityPanel
+              <AdminDashboardActivity
                 activities={overview.recentActivities}
                 onSync={() => {
                   refreshOverview({ manual: true, forceRefresh: true });
@@ -640,7 +596,7 @@ export default function AdminDashboardPage() {
                 onViewAll={() => navigate(EXISTING_ADMIN_ROUTES.approvals)}
               />
 
-              <NotificationsPanel
+              <AdminDashboardNotifications
                 notifications={notifications}
                 onAction={handleNotificationAction}
                 delay={260}
@@ -649,12 +605,12 @@ export default function AdminDashboardPage() {
             </div>
 
             <aside className="space-y-5 lg:col-span-4">
-              <QuickActionsPanel
+              <AdminDashboardQuickActions
                 actions={quickActions}
                 onAction={handleQuickAction}
                 delay={310}
               />
-              <WorkforceKpiCard
+              <AdminDashboardWorkforceKpi
                 utilization={overview.workforceKpi.utilization}
                 absenteeismBuffer={overview.workforceKpi.absenteeismBuffer}
                 delay={360}
@@ -675,7 +631,7 @@ export default function AdminDashboardPage() {
         generatedAt={overview.generatedAt}
       />
 
-      <DashboardToast toast={toast} onClose={() => setToast(null)} />
+      <AdminDashboardToast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

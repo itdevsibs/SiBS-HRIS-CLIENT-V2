@@ -21,7 +21,7 @@ import {
   getHiringNeedsSubtitle,
   getHiringNeedsTitle,
   normalizeHiringNeedsStatus,
-} from "./hiringNeedsPresentation";
+} from "../../../lib/utils/hiringNeeds/hiringNeedsHelpers";
 
 const HIRING_NEEDS_ENTITY = "hiring-needs";
 const DEFAULT_PAGE_LIMIT = 15;

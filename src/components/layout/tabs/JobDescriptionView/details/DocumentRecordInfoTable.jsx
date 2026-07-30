@@ -123,10 +123,12 @@ function DocumentRecordInfoTable({
 
   const approvedBy =
     getFirstManualValue(item, [
-      "approvedBy",
-      "approved_by",
       "approverName",
       "approver_name",
+      "approvedByName",
+      "approved_by_name",
+      "approvedBy",
+      "approved_by",
     ]) || "—";
 
   return (

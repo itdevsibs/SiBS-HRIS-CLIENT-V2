@@ -9,6 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { buildHiringNeedsAuditTrail } from "../../../lib/utils/hiringNeeds/hiringNeedsAuditTrail.js";
+import { useUser } from "../../../services/context/UserContext";
 
 const API_BASE_URL = String(
   import.meta.env.VITE_API_URL || "http://localhost:5000",
@@ -28,6 +29,146 @@ function firstText(...values) {
   }
 
   return "";
+}
+
+function getUserDisplayName(user = {}) {
+  const candidateSources = [
+    user,
+    user.employee,
+    user.profile,
+    user.employeeProfile,
+    user.employee_profile,
+  ].filter(Boolean);
+
+  for (const source of candidateSources) {
+    const lastName = firstText(
+      source.lastName,
+      source.last_name,
+      source.gy_emp_lname,
+    );
+    const firstName = firstText(
+      source.firstName,
+      source.first_name,
+      source.gy_emp_fname,
+    );
+    const middleName = firstText(
+      source.middleName,
+      source.middle_name,
+      source.gy_emp_mname,
+    );
+
+    if (lastName || firstName || middleName) {
+      return `${lastName}${lastName && firstName ? ", " : ""}${firstName}${
+        middleName ? ` ${middleName}` : ""
+      }`
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+    }
+  }
+
+  return firstText(
+    user.fullName,
+    user.full_name,
+    user.gy_emp_fullname,
+    user.name,
+    user.employeeName,
+    user.employee_name,
+    user.displayName,
+    user.display_name,
+    user.employee?.fullName,
+    user.employee?.full_name,
+    user.employee?.gy_emp_fullname,
+    user.employee?.name,
+    user.profile?.fullName,
+    user.profile?.full_name,
+    user.profile?.gy_emp_fullname,
+    user.profile?.name,
+    user.username,
+    user.sibs_id,
+    user.sibsId,
+    user.userCode,
+  );
+}
+
+function getUserSibsId(user = {}) {
+  return firstText(
+    user.employee?.sibsId,
+    user.employee?.sibs_id,
+    user.employee?.employeeSibsId,
+    user.employee?.employee_sibs_id,
+    user.employee?.gy_emp_code,
+    user.employee?.gy_user_code,
+    user.profile?.sibsId,
+    user.profile?.sibs_id,
+    user.profile?.employeeSibsId,
+    user.profile?.employee_sibs_id,
+    user.profile?.gy_emp_code,
+    user.profile?.gy_user_code,
+    user.employeeProfile?.sibsId,
+    user.employeeProfile?.sibs_id,
+    user.employeeProfile?.employeeSibsId,
+    user.employeeProfile?.employee_sibs_id,
+    user.employeeProfile?.gy_emp_code,
+    user.employeeProfile?.gy_user_code,
+    user.sibs_id,
+    user.sibsId,
+    user.employeeSibsId,
+    user.employee_sibs_id,
+    user.gy_emp_code,
+    user.gy_user_code,
+    user.userCode,
+    user.user_code,
+    user.username,
+    user.employeeCode,
+    user.employee_code,
+  );
+}
+
+function normalizeSibsId(value) {
+  return cleanText(value).replace(/^SIBS[-_ ]?/i, "").toLowerCase();
+}
+
+function isLikelyIdOnly(value = "") {
+  return /^\d+$/.test(cleanText(value));
+}
+
+function getApprovalUserDisplayById(value = "", approvalUsers = []) {
+  const targetId = normalizeSibsId(value);
+
+  if (!targetId || !Array.isArray(approvalUsers)) return "";
+
+  const match = approvalUsers.find((approvalUser) => {
+    const ids = [
+      approvalUser.sibsId,
+      approvalUser.sibs_id,
+      approvalUser.employeeSibsId,
+      approvalUser.employee_sibs_id,
+      approvalUser.gy_emp_code,
+      approvalUser.gy_user_code,
+      approvalUser.userCode,
+      approvalUser.user_code,
+      approvalUser.employeeCode,
+      approvalUser.employee_code,
+      approvalUser.username,
+    ];
+
+    return ids.some((id) => normalizeSibsId(id) === targetId);
+  });
+
+  if (!match) return "";
+
+  return firstText(
+    match.fullName,
+    match.full_name,
+    match.employeeName,
+    match.employee_name,
+    match.name,
+    match.displayName,
+    match.display_name,
+    match.approverName,
+    match.approver_name,
+  );
 }
 
 function formatDate(date) {
@@ -386,8 +527,10 @@ export default function ViewHiringNeedsModal({
   onStatus,
   canApprove = false,
   approvalAccessLoading = false,
+  approvalUsers = [],
   onDecision,
 }) {
+  const { user } = useUser();
   const [remarks, setRemarks] = useState("");
   const [decisionLoading, setDecisionLoading] = useState(false);
   const [decisionAction, setDecisionAction] = useState("");
@@ -471,6 +614,18 @@ export default function ViewHiringNeedsModal({
     safeItem.approvalDate || safeItem.approval_date,
   );
   const approvedBy = firstText(
+    safeItem.approverName,
+    safeItem.approver_name,
+    safeItem.approvedByName,
+    safeItem.approved_by_name,
+    normalizeSibsId(safeItem.approvedBy) === normalizeSibsId(getUserSibsId(user))
+      ? getUserDisplayName(user)
+      : "",
+    normalizeSibsId(safeItem.approved_by) === normalizeSibsId(getUserSibsId(user))
+      ? getUserDisplayName(user)
+      : "",
+    getApprovalUserDisplayById(safeItem.approvedBy, approvalUsers),
+    getApprovalUserDisplayById(safeItem.approved_by, approvalUsers),
     safeItem.approvedBy,
     safeItem.approved_by,
   );
@@ -497,8 +652,43 @@ export default function ViewHiringNeedsModal({
       : `PR-${requestIdRaw}`
     : "PR-—";
   const auditTrail = useMemo(
-    () => buildHiringNeedsAuditTrail(safeItem, status),
-    [safeItem, status],
+    () => {
+      const entries = buildHiringNeedsAuditTrail(safeItem, status, {
+        currentUserName: getUserDisplayName(user),
+        currentUserSibsId: getUserSibsId(user),
+        approvalUsers,
+      });
+
+      const approvalActorIds = [
+        safeItem.approvedBy,
+        safeItem.approved_by,
+        safeItem.approverSibsId,
+        safeItem.approver_sibs_id,
+        safeItem.approvedBySibsId,
+        safeItem.approved_by_sibs_id,
+      ]
+        .map(normalizeSibsId)
+        .filter(Boolean);
+
+      if (!approvedBy || isLikelyIdOnly(approvedBy)) return entries;
+
+      return entries.map((entry) => {
+        const action = cleanText(entry.action).toLowerCase();
+        const actorId = normalizeSibsId(entry.actor);
+        const isDecisionEntry =
+          action.includes("approved") || action.includes("rejected");
+
+        if (isDecisionEntry && approvalActorIds.includes(actorId)) {
+          return {
+            ...entry,
+            actor: approvedBy,
+          };
+        }
+
+        return entry;
+      });
+    },
+    [approvalUsers, approvedBy, safeItem, status, user],
   );
 
   const decisionDescription = useMemo(() => {

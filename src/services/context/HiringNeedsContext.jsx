@@ -163,8 +163,25 @@ function normalizeItem(item = {}) {
     approvedBy:
       item.approvedBy ||
       item.approved_by ||
-      item.approver ||
       item.approvedByName ||
+      item.approved_by_name ||
+      item.approverName ||
+      item.approver_name ||
+      item.approver ||
+      "",
+
+    approverName:
+      item.approverName ||
+      item.approver_name ||
+      item.approvedByName ||
+      item.approved_by_name ||
+      "",
+
+    approverSibsId:
+      item.approverSibsId ||
+      item.approver_sibs_id ||
+      item.approvedBySibsId ||
+      item.approved_by_sibs_id ||
       "",
 
     createdAt: item.createdAt || item.created_at || "",

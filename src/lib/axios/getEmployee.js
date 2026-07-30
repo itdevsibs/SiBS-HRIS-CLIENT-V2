@@ -180,6 +180,16 @@ export async function getEmployeeProfileSections(sibsId) {
       status: res.status,
     };
   } catch (err) {
+    if (err?.response?.status === 404) {
+      return {
+        success: true,
+        data: null,
+        message: "Employee profile sections endpoint is not available.",
+        status: 404,
+        optionalMissing: true,
+      };
+    }
+
     console.error(
       "Axios getEmployeeProfileSections API error:",
       err?.response?.status,
