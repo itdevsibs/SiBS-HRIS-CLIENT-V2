@@ -42,7 +42,6 @@ import {
   getRecruitmentSettingsStatus,
   getSelectedWeekEnd,
   getSelectedWeekStart,
-  getSingleSelectedValue,
   getUpdateHeadcountStatus,
   getWeekHiringPlanPercent,
   hasActiveRecruitmentSettingsRequest,

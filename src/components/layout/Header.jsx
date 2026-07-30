@@ -40,6 +40,7 @@ import {
 import { useUser } from "../../services/context/UserContext";
 import { getEmployee } from "../../lib/axios/getEmployee";
 import UserDropdown from "./dropdown/UserDropdown";
+import HeaderCalendarModal from "./HeaderCalendarModal";
 
 const ADMIN_ROLES = [
   "admin",
@@ -678,6 +679,7 @@ export default function Header() {
 
   const [mounted, setMounted] = useState(false);
   const [timeStr, setTimeStr] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [employeeResults, setEmployeeResults] = useState([]);
@@ -949,7 +951,7 @@ export default function Header() {
     (!employeeSearchAllowed || query.trim().length >= 2);
 
   return (
-    <header className="relative z-[999] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-white px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
+    <header className="relative z-[70] flex h-[74px] shrink-0 items-center border-b border-[#D7E0E9] bg-white px-2 font-jakarta shadow-sm sm:h-[86px] sm:px-6">
       <div className="flex h-full min-w-0 flex-1 items-center justify-between gap-1.5 pl-14 sm:gap-4 sm:pl-0">
         <div
           ref={searchRootRef}
@@ -1119,10 +1121,17 @@ export default function Header() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-          <div className="hidden items-center gap-2 border-r border-[#E0E6ED] pr-3 text-[10px] font-semibold text-[#667085] xl:flex">
+          <button
+            type="button"
+            onClick={() => setCalendarOpen(true)}
+            className="hidden h-10 items-center gap-2 rounded-[12px] border border-transparent px-3 text-[10px] font-semibold text-[#667085] transition hover:border-[#C9D6E4] hover:bg-white hover:text-sibs-primary-1 hover:shadow-sm xl:flex"
+            aria-label="Open HR and talent acquisition calendar"
+          >
             <CalendarDays className="h-3.5 w-3.5 text-[#98A2B3]" />
             <span className="whitespace-nowrap">{timeStr}</span>
-          </div>
+          </button>
+
+          <div className="hidden h-6 w-px bg-[#E0E6ED] xl:block" />
 
           <button
             type="button"
@@ -1152,6 +1161,11 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      <HeaderCalendarModal
+        open={calendarOpen}
+        onClose={() => setCalendarOpen(false)}
+      />
     </header>
   );
 }
