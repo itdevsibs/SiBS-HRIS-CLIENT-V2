@@ -48,15 +48,19 @@ export async function getPublicCandidateInterviewDate(token) {
   return response.data;
 }
 
-export async function submitPublicCandidateInterviewDate(
+export async function submitPublicCandidateInterviewResponse(
   token,
-  selectedDate,
-  selectedTime,
+  {
+    action,
+    selectedDate = "",
+    selectedTime = "",
+    reason = "",
+  } = {},
 ) {
   const resolvedToken = cleanToken(token);
 
   if (!resolvedToken) {
-    throw new Error("Interview scheduling token is missing.");
+    throw new Error("Interview response token is missing.");
   }
 
   const response = await publicInterviewDateApi.post(
@@ -64,12 +68,26 @@ export async function submitPublicCandidateInterviewDate(
       resolvedToken,
     )}`,
     {
+      action,
       selectedDate,
       selectedTime,
+      reason,
     },
   );
 
   return response.data;
+}
+
+export async function submitPublicCandidateInterviewDate(
+  token,
+  selectedDate,
+  selectedTime,
+) {
+  return submitPublicCandidateInterviewResponse(token, {
+    action: "reschedule",
+    selectedDate,
+    selectedTime,
+  });
 }
 
 export default publicInterviewDateApi;

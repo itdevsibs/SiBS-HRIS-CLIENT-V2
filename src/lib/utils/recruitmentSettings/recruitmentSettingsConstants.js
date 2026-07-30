@@ -8,6 +8,7 @@ export const recruitmentTabs = [
   "Pipeline Settings",
   "Assessment Settings",
   "Email Templates",
+  "Holiday Calendar",
   "Approval Rules",
 ];
 

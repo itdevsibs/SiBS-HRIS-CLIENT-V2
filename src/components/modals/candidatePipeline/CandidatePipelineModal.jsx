@@ -4512,6 +4512,30 @@ const CandidatePipelineModal = ({
           candidate?.interviewStatus ||
           candidate?.interview_status ||
           "",
+        interviewResponseStatus:
+          candidate?.interviewResponseStatus ||
+          candidate?.interview_response_status ||
+          "",
+        interviewResponseReason:
+          candidate?.interviewResponseReason ||
+          candidate?.interview_response_reason ||
+          "",
+        interviewResponseDeadline:
+          candidate?.interviewResponseDeadline ||
+          candidate?.interview_response_deadline ||
+          "",
+        interviewNextFollowUpAt:
+          candidate?.interviewNextFollowUpAt ||
+          candidate?.interview_next_follow_up_at ||
+          "",
+        interviewFollowUpCount:
+          candidate?.interviewFollowUpCount ??
+          candidate?.interview_follow_up_count ??
+          0,
+        finalInterviewDate:
+          candidate?.finalInterviewDate ||
+          candidate?.final_interview_date ||
+          "",
         onlineInterviewLink:
           candidate?.onlineInterviewLink ||
           candidate?.online_interview_link ||
@@ -7385,6 +7409,64 @@ const CandidatePipelineModal = ({
                               getDisplayInterviewStatus(activeCandidate) || "—"
                             }
                           />
+                          {(activeCandidate.interviewResponseStatus ||
+                            activeCandidate.interview_response_status) && (
+                            <>
+                            <DetailRow
+                              label="Candidate Response"
+                              value={
+                                activeCandidate.interviewResponseStatus ||
+                                activeCandidate.interview_response_status ||
+                                "—"
+                              }
+                            />
+                            <DetailRow
+                              label="Proposed Schedule"
+                              value={formatDateTime(
+                                activeCandidate.proposedInterviewDate ||
+                                  activeCandidate.proposed_interview_date,
+                              )}
+                            />
+                            <DetailRow
+                              label="Final Schedule"
+                              value={formatDateTime(
+                                activeCandidate.finalInterviewDate ||
+                                  activeCandidate.final_interview_date,
+                              )}
+                            />
+                            <DetailRow
+                              label="Response Deadline"
+                              value={formatDateTime(
+                                activeCandidate.interviewResponseDeadline ||
+                                  activeCandidate.interview_response_deadline,
+                              )}
+                            />
+                            <DetailRow
+                              label="Follow-ups"
+                              value={`${Number(
+                                activeCandidate.interviewFollowUpCount ??
+                                  activeCandidate.interview_follow_up_count ??
+                                  0,
+                              )} of 3`}
+                            />
+                            <DetailRow
+                              label="Next Follow-up / Deadline"
+                              value={formatDateTime(
+                                activeCandidate.interviewNextFollowUpAt ||
+                                  activeCandidate.interview_next_follow_up_at,
+                              )}
+                            />
+                            <DetailRow
+                              label="Response Reason"
+                              value={
+                                activeCandidate.interviewResponseReason ||
+                                activeCandidate.interview_response_reason ||
+                                "—"
+                              }
+                            />
+
+                            </>
+                          )}
 
                           <div className="mt-4 flex items-center justify-between gap-4 text-[12px]">
                             <span className="shrink-0 font-bold uppercase text-sibs-tertiary-5">

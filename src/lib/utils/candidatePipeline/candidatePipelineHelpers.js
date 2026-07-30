@@ -186,7 +186,12 @@ export function getPrfStatusClass(status) {
 export function getInterviewStatusClass(status) {
   switch (status) {
     case "Scheduled":
+    case "Accepted":
       return "border-blue-100 bg-blue-50 text-blue-700";
+
+    case "Awaiting Candidate Response":
+    case "Pending":
+      return "border-amber-100 bg-amber-50 text-amber-700";
 
     case "Interview in Progress":
       return "border-amber-100 bg-amber-50 text-amber-700";
@@ -198,6 +203,8 @@ export function getInterviewStatusClass(status) {
       return "border-violet-100 bg-violet-50 text-violet-700";
 
     case "Cancelled":
+    case "Declined":
+    case "No Response":
       return "border-red-100 bg-red-50 text-sibs-primary-1";
 
     case "For Assessment":
@@ -209,6 +216,10 @@ export function getInterviewStatusClass(status) {
     default:
       return "border-gray-100 bg-gray-50 text-gray-600";
   }
+}
+
+export function getInterviewResponseStatusClass(status) {
+  return getInterviewStatusClass(status);
 }
 
 export function getAssessmentStatusClass(status) {

@@ -261,3 +261,60 @@ export async function updateHeadcountRequestStatus(
     throw err;
   }
 }
+
+/* =========================================
+   PHILIPPINE HOLIDAY CALENDAR
+========================================= */
+
+export async function getRecruitmentHolidays({
+  includeInactive = true,
+} = {}) {
+  const res = await api.get(
+    "/api/recruitment-settings/holidays",
+    {
+      params: {
+        includeInactive: includeInactive ? "1" : "0",
+        _t: Date.now(),
+      },
+      withCredentials: true,
+    },
+  );
+
+  return res.data;
+}
+
+export async function createRecruitmentHoliday(payload = {}) {
+  const res = await api.post(
+    "/api/recruitment-settings/holidays",
+    payload,
+    {
+      withCredentials: true,
+    },
+  );
+
+  return res.data;
+}
+
+export async function updateRecruitmentHoliday(id, payload = {}) {
+  const res = await api.put(
+    `/api/recruitment-settings/holidays/${encodeIdentifier(id)}`,
+    payload,
+    {
+      withCredentials: true,
+    },
+  );
+
+  return res.data;
+}
+
+export async function deleteRecruitmentHoliday(id) {
+  const res = await api.delete(
+    `/api/recruitment-settings/holidays/${encodeIdentifier(id)}`,
+    {
+      withCredentials: true,
+    },
+  );
+
+  return res.data;
+}
+
